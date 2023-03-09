@@ -1,0 +1,30 @@
+diff --git a/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl b/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
+index e973ff5..ab4748b 100644
+--- a/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
++++ b/other_codes/chplGPU/modules/queens_GPU_call_device_search.chpl
+@@ -8,14 +8,14 @@ module queens_GPU_call_device_search{
+ 	use Math;
+ 	//use CPtr;
+ 	use Time;
+-  use GPUDiagnostics;
++  use GpuDiagnostics;
+ 
+ 	config const CPUGPUVerbose: bool = false;
+ 
+ 	proc queens_GPU_call_device_search(const num_gpus: c_int, const size: uint(16), const depthPreFixos: c_int,
+ 		ref local_active_set: [] queens_node, const initial_num_prefixes: uint(64)): (uint(64), uint(64)) {
+ 
+-    startVerboseGPU();
++    startVerboseGpu();
+ 
+ 		var vector_of_tree_size_h: [0..#initial_num_prefixes] c_ulonglong;
+ 		var sols_h: [0..#initial_num_prefixes] c_ulonglong;
+@@ -106,7 +106,7 @@ module queens_GPU_call_device_search{
+         }
+     }//end of gpu search
+ 
+-    stopVerboseGPU();
++    stopVerboseGpu();
+ 
+ 		var redTree = (+ reduce vector_of_tree_size_h):uint(64);
+ 		var redSol  = (+ reduce sols_h):uint(64);
