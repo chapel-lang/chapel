@@ -31,4 +31,12 @@ if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; the
   exit
 fi
 
+# Apply the GPU diagnostics patch, skipif that fails.
+if ! (for p in patches/*patch; do git -C ChOp apply ../$p; done) 2>gitPatch.out; then
+  echo "Patching failed; output:"
+  cat gitPatch.out
+  echo "True"
+  exit
+fi
+
 echo "False"
