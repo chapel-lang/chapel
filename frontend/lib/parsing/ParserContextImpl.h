@@ -192,13 +192,14 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
       ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
+  auto attrList = consumeList(attributeGroupParts.attributeList);
   auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
-                                std::move(consumeList(attributeGroupParts.attributeList)));
+                                std::move(attrList));
   return node;
 }
 
