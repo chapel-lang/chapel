@@ -1,2 +1,1 @@
 SUCCESS
-guru-interface-example.chpl:27: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (0..99 by -1, 0..23 by -1)
