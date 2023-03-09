@@ -241,16 +241,16 @@ class QueryMapResultBase {
   //  * if it is a previous revision, dependencies need to be checked
   //    and re-run if they are out of date.
   //  * if it is the current revision, the result can be reused
-  mutable RevisionNumber lastChecked;
+  mutable RevisionNumber lastChecked = -1;
   // lastChanged indicates the last revision in which the query result
   // has changed
-  mutable RevisionNumber lastChanged;
+  mutable RevisionNumber lastChanged = -1;
 
   mutable QueryDependencyVec dependencies;
 
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
-  mutable bool emittedErrors;
+  mutable bool emittedErrors = false;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
