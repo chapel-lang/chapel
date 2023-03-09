@@ -1,2 +1,10 @@
-issue-19167-4-x.chpl:9: error: symbol x is multiply defined
-issue-19167-4-x.chpl:3: note: also defined here
+issue-19167-4-x.chpl:6: In module 'CUseA':
+issue-19167-4-x.chpl:9: error: 'x' has multiple definitions
+issue-19167-4-x.chpl:7: note: redefined through the 'use' statement here
+issue-19167-4-x.chpl:3: note: leading to the definition here
+issue-19167-4-x.chpl:12: error: 'x' has multiple definitions in this scope
+issue-19167-4-x.chpl:13: note: it was first defined through the 'use' statement here
+issue-19167-4-x.chpl:9: note: leading to the definition here
+issue-19167-4-x.chpl:13: note: redefined through the 'use' statement here
+issue-19167-4-x.chpl:7: note: and then through the 'use' statement here
+issue-19167-4-x.chpl:3: note: leading to the definition here

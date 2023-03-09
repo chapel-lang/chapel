@@ -1,4 +1,5 @@
-issue-19167-1-f.chpl:18: In function 'main':
-issue-19167-1-f.chpl:19: error: ambiguous call 'f()'
-issue-19167-1-f.chpl:2: note: candidates are: f()
-issue-19167-1-f.chpl:6: note:                 f()
+issue-19167-1-f.chpl:10: error: 'x' has multiple definitions in this scope
+issue-19167-1-f.chpl:11: note: it was first defined through the 'use' statement here
+issue-19167-1-f.chpl:3: note: leading to the definition here
+issue-19167-1-f.chpl:12: note: redefined through the 'use' statement here
+issue-19167-1-f.chpl:7: note: leading to the definition here
