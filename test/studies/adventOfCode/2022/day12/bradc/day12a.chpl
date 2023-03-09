@@ -15,8 +15,10 @@ var Elevation: [Grid] int = [(i,j) in Grid] AlphaGrid[i][j] - a,
 const (_, startLoc) = maxloc reduce zip((Elevation == (b"S".toByte() - a)), Grid),
       (_, endLoc) = maxloc reduce zip((Elevation == (b"E".toByte() - a)), Grid);
 
+/*
 writeln(startLoc);
 writeln(endLoc);
+*/
 
 Elevation[startLoc] = 0;
 Elevation[endLoc] = 25;

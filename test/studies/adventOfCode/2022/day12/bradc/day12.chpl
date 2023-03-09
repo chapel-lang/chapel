@@ -15,8 +15,10 @@ var Elevation: [Grid] int = [(i,j) in Grid] AlphaGrid[i][j] - a,
 const (_, startLoc) = maxloc reduce zip((Elevation == (b"S".toByte() - a)), Grid),
       (_, endLoc) = maxloc reduce zip((Elevation == (b"E".toByte() - a)), Grid);
 
+/*
 writeln(startLoc);
 writeln(endLoc);
+*/
 
 Elevation[startLoc] = 0;
 Elevation[endLoc] = 25;
@@ -39,7 +41,7 @@ proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
   } else { // steps < Steps[pos]
     Steps[pos] = steps;
     if pos == endLoc {
-      writeln("Readed the end!");
+//      writeln("Readed the end!");
       return;
     }
   }
@@ -58,7 +60,7 @@ proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
 //writeln(Steps);
 
 writeln(Steps[endLoc]);
-writeln("numSteps = ", numSteps);  // 4822392 for the real input, 191 for fake
+//writeln("numSteps = ", numSteps);  // 4822392 for the real input, 191 for fake
 
 iter readGrid() {
   var line: bytes;
