@@ -1,0 +1,1 @@
+owned-release-method.chpl:7: warning: owned.release method is deprecated - please use owned.release type function instead
