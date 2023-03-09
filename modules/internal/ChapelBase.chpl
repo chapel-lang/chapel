@@ -1491,7 +1491,7 @@ module ChapelBase {
   // Routines for re-interpreting reals as uints and vice-versa, at
   // the bit level
   //
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   proc param (real(64)).transmute(type t) param : t {
     if t != uint {
       compilerError("Cannot (currently) transmute from real(64) to " +
@@ -1502,7 +1502,7 @@ module ChapelBase {
     }
   }
 
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   proc param (real(32)).transmute(type t) param : t {
     if t != uint(32) {
       compilerError("Cannot (currently) transmute from real(32) to " +
@@ -1513,7 +1513,7 @@ module ChapelBase {
     }
   }
 
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   inline proc (real(?w)).transmute(type t): t {
     use CTypes;
 
@@ -1527,7 +1527,7 @@ module ChapelBase {
     }
   }
 
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   proc param (uint(64)).transmute(type t) param : t {
     if t != real(64) {
       compilerError("Cannot (currently) transmute from uint(64) to " +
@@ -1538,7 +1538,7 @@ module ChapelBase {
     }
   }
 
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   proc param (uint(32)).transmute(type t) param : t {
     if t != real(32) {
       compilerError("Cannot (currently) transmute from uint(32) to " +
@@ -1549,7 +1549,7 @@ module ChapelBase {
     }
   }
 
-  @unstable "This routine may change names / signatures"
+  @unstable("This routine may change names / signatures")
   inline proc (uint(?w)).transmute(type t): t {
     use CTypes;
 
