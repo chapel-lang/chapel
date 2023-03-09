@@ -1489,8 +1489,8 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
   if (depth) {
     var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
-      use Sort /* only sort */;
-      sort(subdirs);
+      use Sort only sort as sortList;
+      sortList(subdirs);
     }
 
     for subdir in subdirs {
