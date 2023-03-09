@@ -1,0 +1,2 @@
+bad-retain-error.chpl:13: In function 'main':
+bad-retain-error.chpl:18: error: Cannot assign to borrowed A? from unmanaged B
