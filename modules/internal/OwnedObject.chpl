@@ -180,12 +180,11 @@ module OwnedObject {
       Empty `obj` so that it manages `nil` and
       return the instance previously managed by this owned object.
 
-      If the argument is `nil` it returns `nil`.
+      If the argument is `nil` it will halt
     */
     inline proc type release(
       pragma "leaves arg nil"
       pragma "nil from arg" ref obj: owned) {
-
       var oldPtr = obj.chpl_p;
       type t = obj.chpl_t;
 
@@ -266,14 +265,6 @@ module OwnedObject {
     pragma "nil from this"
     @deprecated(notes="owned.release method is deprecated - please use :proc:`owned.release` type function instead")
     proc ref release() {
-      //       var oldPtr = chpl_p;
-      // chpl_p = nil;
-
-      // if _to_nilable(chpl_t) == chpl_t {
-      //   return _to_unmanaged(oldPtr);
-      // } else {
-      //   return _to_unmanaged(oldPtr!);
-      // }
       return owned.release(this);
     }
 
@@ -330,11 +321,8 @@ module OwnedObject {
       }
     }
 
-    // if !isCoercible(rhs.type, lhs.chpl_t) then
-    //   compilerError("cannot assign '" + rhs.type:string + "' " +
-    //                   "(expected '" + _to_unmanaged(lhs.chpl_t):string + "')");
     var tmp = owned.release(rhs);
-    delete owned.release(lhs);
+    if lhs.chpl_p != nil then delete owned.release(lhs);
     lhs.chpl_p = tmp;
     // NOTE: this cannot be `lhs = owned.adopt(owned.release(rhs))`
     // this is the assignment op we are iplementing, causes infinite recursion
