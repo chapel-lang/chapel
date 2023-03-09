@@ -20,7 +20,7 @@ Warning and Language Control Options:
                                       unknown tool name is found in an
                                       attribute
       --using-attribute-toolname <toolname>
-                                      Specify additional toolnames for
+                                      Specify additional tool names for
                                       attributes that are expected in the
                                       source
 

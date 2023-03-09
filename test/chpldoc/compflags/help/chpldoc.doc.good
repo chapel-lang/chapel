@@ -17,10 +17,10 @@ Documentation Options:
                                       <projectversion>
       --[no-]print-commands           [Don't] print system commands
       --[no-]warn-unknown-attribute-toolname
-                                      Enable warnings when an unknown tool name
-                                      is found in an attribute
+                                      Enable warnings when an unknown tool
+                                      name is found in an attribute
       --using-attribute-toolname <toolname>
-                                      Specify additional toolnames for
+                                      Specify additional tool names for
                                       attributes that are expected in the
                                       source
 

@@ -128,7 +128,7 @@ OPTIONS
 
     [Don't] warn about attribute tool names that aren't recognized. Without this
     warning, attributes belonging to unknown tools will be silently ignored.
-    The default is to warn about all unkown tool names
+    The default is to warn about all unkown tool names.
 
 **\--using-attribute-toolname <**\ *toolname*\ **>**
 
