@@ -44,7 +44,7 @@ var global:borrowed MyClass?;
 
 proc bad1() {
   var r:R;
-  r.c.retain(new unmanaged MyClass(1));
+  r.c = owned.adopt(new unmanaged MyClass(1));
   global = r.get();
   // r.c deleted here
 }
@@ -53,7 +53,7 @@ proc bad2() {
   var outer:borrowed MyClass?;
   {
     var r:R;
-    r.c.retain(new unmanaged MyClass(1));
+    r.c = owned.adopt(new unmanaged MyClass(1));
     outer = r.get();
     // r.c deleted here
   }
@@ -62,8 +62,8 @@ proc bad2() {
 
 proc bad3() {
   var group:MyCollection;
-  group.a.c.retain(new unmanaged MyClass(1));
-  group.b.c.retain(new unmanaged MyClass(2));
+  group.a.c = owned.adopt(new unmanaged MyClass(1));
+  group.b.c = owned.adopt(new unmanaged MyClass(2));
   global = group.this(1);
   global = group.this(2);
   // group.{a.b}.c deleted here
@@ -75,7 +75,7 @@ proc bad10() : borrowed MyClass {
   //var tmp = new Owned(new MyClass(1));
   //r.c = tmp;
   var r:R;
-  r.c.retain(new unmanaged MyClass(1));
+  r.c = owned.adopt(new unmanaged MyClass(1));
   return r.get();
   // r.c deleted here
 }
@@ -84,7 +84,7 @@ proc bad21() {
   var outer:borrowed MyClass? = nil;
   {
     var r:R;
-    r.c.retain(new unmanaged MyClass(1));
+    r.c = owned.adopt(new unmanaged MyClass(1));
     outer = r.get();
     // r.c deleted here
   }
@@ -95,7 +95,7 @@ proc bad22() {
   var outer:borrowed MyClass = (new owned MyClass(1)).borrow();
   {
     var r:R;
-    r.c.retain(new unmanaged MyClass(1));
+    r.c = owned.adopt(new unmanaged MyClass(1));
 
     outer = r.get();
     // r.c deleted here
@@ -107,7 +107,7 @@ proc bad23() {
   var outer:borrowed MyClass?;
   {
     var r:R;
-    r.c.retain(new unmanaged MyClass(1));
+    r.c = owned.adopt(new unmanaged MyClass(1));
     outer = r.get();
     // r.c deleted here
   }
@@ -130,8 +130,8 @@ proc ok1() {
 
 proc ok2() {
   var group:MyCollection;
-  group.a.c.retain(new unmanaged MyClass(1));
-  group.b.c.retain(new unmanaged MyClass(2));
+  group.a.c = owned.adopt(new unmanaged MyClass(1));
+  group.b.c = owned.adopt(new unmanaged MyClass(2));
   var x = group.returnsNil();
 }
 
@@ -139,15 +139,15 @@ proc ok3() {
   var x:borrowed MyClass? = nil;
 
   var r:R;
-  r.c.retain(new unmanaged MyClass(1));
+  r.c = owned.adopt(new unmanaged MyClass(1));
  
   x = r.get();
 }
 
 proc ok4() {
   var group:MyCollection;
-  group.a.c.retain(new unmanaged MyClass(1));
-  group.b.c.retain(new unmanaged MyClass(2));
+  group.a.c = owned.adopt(new unmanaged MyClass(1));
+  group.b.c = owned.adopt(new unmanaged MyClass(2));
 
   var first:borrowed MyClass? = nil;
 
@@ -160,8 +160,8 @@ proc ok4() {
 
 proc ok5() {
   var group:MyCollection;
-  group.a.c.retain(new unmanaged MyClass(1));
-  group.b.c.retain(new unmanaged MyClass(2));
+  group.a.c = owned.adopt(new unmanaged MyClass(1));
+  group.b.c = owned.adopt(new unmanaged MyClass(2));
 
   var first:borrowed MyClass? = nil;
 

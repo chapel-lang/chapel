@@ -17,13 +17,13 @@ owned1 = {x = 4}
 owned4 = nil
 declaring owned5 storing C(5)
 owned5 = {x = 5}
-after owned5.clear()
+after delete owned.release(owned5)
 owned5 = nil
-after owned1.retain C(100)
+after owned1.adopt C(100)
 owned1 = {x = 100}
-after owned1.release()
+after owned.release(owned1)
 owned1 = nil
-owned1.release() returned = {x = 100}
+owned.release(owned1) returned = {x = 100}
 declaring owned6 storing C(6)
 in takesOwnership, arg = {x = 6}
 owned6 = nil
