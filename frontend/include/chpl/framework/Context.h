@@ -123,7 +123,7 @@ class Context {
     const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
     /**
       Checks if any syntax errors or errors occurred while running.
-      Warnigns do not cause this method to return true.
+      Warnigns do not cause this method to return false.
     */
     bool ranWithoutErrors() const;
   };
