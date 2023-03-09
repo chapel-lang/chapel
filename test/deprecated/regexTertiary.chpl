@@ -1,4 +1,4 @@
-use Regex;
+use Regex;   // vass: deprecated for 1.29.0
 
 writeln("Search");
 {
