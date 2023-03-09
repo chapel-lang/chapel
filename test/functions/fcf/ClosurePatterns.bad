@@ -1,0 +1,6 @@
+ClosurePatterns.chpl:7: In function 'test0':
+ClosurePatterns.chpl:11: error: cannot capture proc because it refers to outer variables
+ClosurePatterns.chpl:11: note: such as 'f', here
+ClosurePatterns.chpl:11: note: such as 'g', here
+ClosurePatterns.chpl:7: In function 'test0':
+ClosurePatterns.chpl:12: error: illegal cast from proc(x: int): int to proc(_: int): int
