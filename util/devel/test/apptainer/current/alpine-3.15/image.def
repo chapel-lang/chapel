@@ -6,6 +6,7 @@ From: alpine:3.15
 
 %post
     /provision-scripts/apk-deps.sh
+    # default llvm/clang version is 12
     /provision-scripts/apk-llvm.sh
 
 %runscript

@@ -6,7 +6,7 @@ From: archlinux:base-devel
 
 %post
     /provision-scripts/pacman-deps.sh
-    /provision-scripts/pacman-llvm.sh
+    /provision-scripts/pacman-llvm14.sh
 
 %runscript
     ../../provision-scripts/run.sh

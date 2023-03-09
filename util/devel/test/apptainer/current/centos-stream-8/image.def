@@ -6,8 +6,8 @@ From: quay.io/centos/centos:stream8
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installing llvm-devel installs LLVM 14
-    /provision-scripts/dnf-llvm.sh
+    # installing llvm-devel installs LLVM 15 so opt in to 14
+    /provision-scripts/dnf-llvm-14.sh
 
 %runscript
     ../../provision-scripts/run.sh

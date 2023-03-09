@@ -8,7 +8,7 @@ From: fedora:37
     /provision-scripts/dnf-deps.sh
     # installing llvm-devel installs LLVM 15,
     # clang14 package seems to be missing even
-    # though there are llvm14 etc
+    # though there are llvm14-devel and clang14-devel
 
 %runscript
     ../../provision-scripts/run.sh
