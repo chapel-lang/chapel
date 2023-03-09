@@ -34,7 +34,7 @@ static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
                                                   bool shouldBeType = true) {
   if ((type.kind() == QualifiedType::TYPE) == shouldBeType) {
     if (auto t = type.type()) {
-      if (auto ct = t->toCompositeType()) {
+      if (auto ct = t->getCompositeType()) {
         return ct;
       }
     }
