@@ -1,2 +1,5 @@
-issue-19167-1-x.chpl:3: error: symbol x is multiply defined
-issue-19167-1-x.chpl:7: note: also defined here
+issue-19167-1-x.chpl:10: error: 'x' has multiple definitions in this scope
+issue-19167-1-x.chpl:11: note: it was first defined through the 'use' statement here
+issue-19167-1-x.chpl:3: note: leading to the definition here
+issue-19167-1-x.chpl:12: note: redefined through the 'use' statement here
+issue-19167-1-x.chpl:7: note: leading to the definition here

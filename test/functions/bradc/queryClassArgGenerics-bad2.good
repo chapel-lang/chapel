@@ -1,2 +1,5 @@
-queryClassArgGenerics-bad2.chpl:11: error: 'tt' has multiple definitions, redefined at:
-  queryClassArgGenerics-bad2.chpl:12
+queryClassArgGenerics-bad2.chpl:11: In function 'foo':
+queryClassArgGenerics-bad2.chpl:11: error: 'rr' has multiple definitions
+queryClassArgGenerics-bad2.chpl:12: note: redefined here
+queryClassArgGenerics-bad2.chpl:11: error: 'tt' has multiple definitions
+queryClassArgGenerics-bad2.chpl:12: note: redefined here

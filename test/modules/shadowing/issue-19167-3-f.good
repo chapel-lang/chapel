@@ -1,4 +1,4 @@
-issue-19167-3-f.chpl:15: In function 'main':
-issue-19167-3-f.chpl:16: error: ambiguous call 'f()'
-issue-19167-3-f.chpl:8: note: candidates are: f()
-issue-19167-3-f.chpl:2: note:                 f()
+issue-19167-3-f.chpl:6: In module 'CUseA':
+issue-19167-3-f.chpl:9: error: 'x' has multiple definitions
+issue-19167-3-f.chpl:7: note: redefined through the 'use' statement here
+issue-19167-3-f.chpl:3: note: leading to the definition here
