@@ -212,6 +212,8 @@ def find_system_llvm_config():
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
         paths.append("llvm-config" + vers)
+        # this format is used by Alpine Linux
+        paths.append("llvm" + vers + "-config")
         if homebrew_prefix:
             # look for homebrew install of LLVM
             paths.append(homebrew_prefix +
