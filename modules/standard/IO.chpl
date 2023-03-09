@@ -5926,7 +5926,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-@deprecated("fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
+@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
 proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
