@@ -382,3 +382,8 @@ PRIMITIVE_R(VERSION_UPDATE, "version update")
 PRIMITIVE_R(VERSION_SHA, "version sha")
 
 PRIMITIVE_R(REF_DESERIALIZE, "deserialize for ref fields")
+
+PRIMITIVE_R(UINT32_AS_REAL32, "uint32 as real32")
+PRIMITIVE_R(UINT64_AS_REAL64, "uint64 as real64")
+PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
+PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")

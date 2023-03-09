@@ -1488,6 +1488,84 @@ module ChapelBase {
       throw new owned TaskErrors(e.errors);
   }
 
+  // Routines for re-interpreting reals as uints and vice-versa, at
+  // the bit level
+  //
+  @unstable("This routine may change names / signatures")
+  proc param (real(64)).transmute(type t) param : t {
+    if t != uint {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param ui: uint(64) = __primitive("real64 as uint64", this);
+      return ui;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  proc param (real(32)).transmute(type t) param : t {
+    if t != uint(32) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param ui: uint(32) = __primitive("real32 as uint32", this);
+      return ui;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc (real(?w)).transmute(type t): t {
+    use CTypes;
+
+    if t != uint(w) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      var src = this,
+          dst: uint(w);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      return dst;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  proc param (uint(64)).transmute(type t) param : t {
+    if t != real(64) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param r: real(64) = __primitive("uint64 as real64", this);
+      return r;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc param (uint(32)).transmute(type t) param : t {
+    if t != real(32) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      param r: real(32) = __primitive("uint32 as real32", this);
+      return r;
+    }
+  }
+
+  @unstable("This routine may change names / signatures")
+  inline proc (uint(?w)).transmute(type t): t {
+    use CTypes;
+
+    if t != real(w) {
+      compilerError("Cannot (currently) transmute from " + this.type:string +
+                    " to " + t:string);
+    } else {
+      var src = this,
+          dst: real(w);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      return dst;
+    }
+  }
+
+
   //
   // Similar to isPrimitiveType, but excludes imaginaries because they
   // are handled within the Chapel code directly (using overloads further

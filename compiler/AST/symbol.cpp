@@ -1853,6 +1853,22 @@ VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
 }
 
+VarSymbol *new_RealSymbol(float val) {
+  Immediate imm;
+  imm.v_float32 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_32;
+  return new_ImmediateSymbol(&imm);
+}
+
+VarSymbol *new_RealSymbol(double val) {
+  Immediate imm;
+  imm.v_float64 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_64;
+  return new_ImmediateSymbol(&imm);
+}
+
 VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_IMAG, dtImag[size]);
 }

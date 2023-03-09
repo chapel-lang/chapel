@@ -131,7 +131,11 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_UNDECORATED_CLASS:
     case PRIM_TO_NILABLE_CLASS:
     case PRIM_TO_NON_NILABLE_CLASS:
-      CHPL_ASSERT(false && "not implemented yet");
+    case PRIM_UINT32_AS_REAL32:
+    case PRIM_UINT64_AS_REAL64:
+    case PRIM_REAL32_AS_UINT32:
+    case PRIM_REAL64_AS_UINT64:
+      assert(false && "not implemented yet");
       break;
 
     /* string operations */
