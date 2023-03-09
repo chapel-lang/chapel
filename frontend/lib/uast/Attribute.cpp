@@ -26,11 +26,13 @@ namespace uast {
 
 owned<Attribute> Attribute::build(Builder* builder, Location loc,
                                   UniqueString name,
+                                  bool usedParens,
                                   AstList actuals,
                                   std::vector<UniqueString> actualNames) {
   int numActuals = actuals.size();
 
-  Attribute* ret = new Attribute(name, numActuals, std::move(actuals), std::move(actualNames));
+  Attribute* ret = new Attribute(name, numActuals, usedParens,
+                                 std::move(actuals), std::move(actualNames));
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -1,0 +1,2 @@
+noParens.chpl:2: In function 'foo':
+noParens.chpl:1: warning: Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'

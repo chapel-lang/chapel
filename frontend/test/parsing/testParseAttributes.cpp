@@ -820,7 +820,7 @@ static void test14(Parser* parser) {
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() == "Unknown attribute tool name 'othertool'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
-  assert(guard.realizeErrors());
+  assert(guard.realizeErrors() == 1);
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, false);
   assert(!isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
 }
@@ -905,7 +905,33 @@ static void test18(Parser* parser) {
   assert(guard.realizeErrors() == 3);
 }
 
+// test for supporting attributes with arguments outside of parentheses
+// this is just while we are deprecating the old syntax so that
+// @unstable "message" doesn't stop working suddenly - although technically it
+// will allow ANY attribute to be written without parentheses
+static void test19(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    @unstable "this thing is unstable"
+    proc Foo(bar) {  }
+    @deprecated "this thing is deprecated"
+    var x: int;
+    @stable "1.28"
+    var y: int;
+  )"""";
 
+  auto parseResult = parseStringAndReportErrors(parser, "test19.chpl",
+                                                program.c_str());
+  assert(guard.numErrors() == 3);
+  assert(guard.error(0)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.error(1)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(1)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.error(2)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(2)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.realizeErrors() == 3);
+}
 
 int main() {
   Context context;
@@ -933,6 +959,7 @@ int main() {
   test16(p);
   test17(p);
   test18(p);
+  test19(p);
 
   return 0;
 }
