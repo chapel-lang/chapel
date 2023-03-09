@@ -3,17 +3,28 @@ import os
 import glob
 import chpl_locale_model
 import chpl_llvm
-from utils import error, memoize, run_command
+from utils import error, memoize, run_command, which
 
 # Format:
 #   SDK path environment variable
 #   program to locate SDK folder
 #   depth of program within SDK folder
 #   Default GPU architecure for the vendor
+#   LLVM target
 GPU_TYPES = {
-    "cuda": ("CHPL_CUDA_PATH", "nvcc", 2, "sm_60"),
-    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906")
+    "cuda": ("CHPL_CUDA_PATH", "nvcc",  2,"sm_60",  "NVPTX"),
+    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU")
 }
+
+def determineGpuType():
+    typesFound = [gpuType for gpuType in GPU_TYPES.keys() if which(GPU_TYPES[gpuType][1])]
+    if len(typesFound) == 1:
+      return typesFound[0]
+
+    error("Unable to determine GPU type%s, assign 'CHPL_GPU_CODEGEN' to one of: [%s]" %
+      ("" if len(typesFound) == 0 else " (detected: [%s])" %  ", ".join(typesFound),
+       ", ".join(GPU_TYPES.keys())))
+    return None;
 
 @memoize
 def get():
@@ -27,7 +38,7 @@ def get():
         else:
             return chpl_gpu_codegen
     else:
-        return 'cuda'
+        return determineGpuType();
 
 @memoize
 def get_arch():
@@ -43,7 +54,7 @@ def get_arch():
         return arch
 
     # Return vendor-specific default architecture
-    _, _, _, gpu_default_arch = GPU_TYPES[gpu_type]
+    _, _, _, gpu_default_arch, _ = GPU_TYPES[gpu_type]
     return gpu_default_arch
 
 @memoize
@@ -55,7 +66,7 @@ def get_sdk_path(for_gpu):
         return ''
 
     # Check vendor-specific environment variable for SDK path
-    gpu_variable, gpu_program, gpu_bin_depth, _ = GPU_TYPES[for_gpu]
+    gpu_variable, gpu_program, gpu_bin_depth, _, _ = GPU_TYPES[for_gpu]
     chpl_sdk_path = os.environ.get(gpu_variable)
     if chpl_sdk_path:
         return chpl_sdk_path
@@ -114,5 +125,24 @@ def get_runtime():
             return chpl_gpu_runtime
     return get()
 
+def validateLlvmBuiltForTgt(expectedTgt):
+    exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+        [chpl_llvm.get_llvm_config(), "--targets-built"])
+
+    if not exists or returncode != 0:
+        return False
+
+    targets = my_stdout.strip().split(" ")
+    return expectedTgt in targets
+
+
+@memoize
 def validate(chplLocaleModel, chplComm):
-    pass
+    if chplLocaleModel != "gpu":
+        return True
+
+    llvmTgt = GPU_TYPES[get()][4]
+    if not validateLlvmBuiltForTgt(llvmTgt):
+        error("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'" % llvmTgt)
+
+    return True

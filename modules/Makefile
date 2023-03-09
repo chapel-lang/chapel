@@ -77,7 +77,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
-	standard/GPUDiagnostics.chpl \
+	standard/GpuDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
 	standard/DynamicIters.chpl \
@@ -100,7 +100,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
-	standard/Spawn.chpl \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \

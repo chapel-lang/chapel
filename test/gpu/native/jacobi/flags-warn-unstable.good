@@ -1,7 +1,7 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 $CHPL_HOME/modules/internal/ChapelStandard.chpl:53: warning: GPU support is a prototype in this version of Chapel. As such, the interface is unstable and expected to change in the forthcoming releases.
 $CHPL_HOME/modules/internal/ChapelLocale.chpl:29: warning: GPU support is a prototype in this version of Chapel. As such, the interface is unstable and expected to change in the forthcoming releases.
-flags.chpl:1: warning: The GPUDiagnostics module is unstable and its interface is subject to change in the future.
+flags.chpl:1: warning: The GpuDiagnostics module is unstable and its interface is subject to change in the future.
 on GPU:
 1.0 1.20906 2.19525 2.9034 3.5552 4.01125 4.21599 4.10448 3.62297 2.85669 1.60226 1.0
 on CPU:

@@ -207,7 +207,7 @@ proc locale.chdir(name: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
-deprecated "'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead"
+@deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
@@ -446,7 +446,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   try srcFile.close();
 }
 
-deprecated "'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead"
+@deprecated(notes="'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead")
 proc copyFile(src: string, dest: string) throws {
   copyFileImpl(src, dest);
 }
@@ -464,7 +464,7 @@ proc copyFile(src: string, dest: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
-deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
+@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(src: string, dest: string) throws {
   try {
     // Gets the mode from the source file.
@@ -478,7 +478,7 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 pragma "no doc"
-deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
+@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
   try {
@@ -670,7 +670,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 
 // When this deprecated iterator is removed remember to remove the standalone
 // parallel version below as well.
-deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
+@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -703,7 +703,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 // that calls this. (serial, leader, follower, standalone). Rely on just
 // the serial deprecation warning to reduce it to a single message.
 pragma "no doc"
-//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
+//@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -719,7 +719,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-deprecated "getGID is deprecated, please use getGid instead"
+@deprecated(notes="getGID is deprecated, please use getGid instead")
 proc getGID(name: string): int throws {
   return getGid(name);
 }
@@ -757,7 +757,7 @@ proc getGid(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-deprecated "'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead"
+@deprecated(notes="'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead")
 proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
@@ -786,7 +786,7 @@ proc getFileSize(name: string): int throws {
   return result;
 }
 
-deprecated "getUID is deprecated, please use getUid instead"
+@deprecated(notes="getUID is deprecated, please use getUid instead")
 proc getUID(name: string): int throws {
   return getUid(name);
 }
@@ -1029,7 +1029,7 @@ proc isSymlink(name: string): bool throws {
   return ret != 0;
 }
 
-deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+@deprecated(notes="'isLink' is deprecated. Please use 'isSymlink' instead")
 proc isLink(name: string): bool throws {
   return isSymlink(name);
 }
@@ -1064,7 +1064,7 @@ proc isMount(name: string): bool throws {
   return ret != 0;
 }
 
-deprecated "listdir is deprecated, please use listDir instead"
+@deprecated(notes="listdir is deprecated, please use listDir instead")
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
              files: bool = true, listlinks: bool = true): string {
   for filename in listDir(path, hidden, dirs, files, listlinks) {
@@ -1374,7 +1374,7 @@ proc sameFile(file1: string, file2: string): bool throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-deprecated "'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead"
+@deprecated(notes="'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead")
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
@@ -1441,7 +1441,7 @@ proc locale.umask(mask: int): int {
 }
 
 
-deprecated "walkdirs is deprecated; please use walkDirs instead"
+@deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
@@ -1489,8 +1489,8 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
   if (depth) {
     var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
-      use Sort /* only sort */;
-      sort(subdirs);
+      use Sort only sort as sortList;
+      sortList(subdirs);
     }
 
     for subdir in subdirs {

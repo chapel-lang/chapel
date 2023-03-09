@@ -58,7 +58,7 @@
    this barrier implementation is optimized and as the task-team concept is
    implemented and optimized.
 */
-deprecated "The 'Barriers' module is deprecated, please use 'Collectives' instead"
+@deprecated(notes="The 'Barriers' module is deprecated, please use 'Collectives' instead")
 module Barriers {
   import HaltWrappers;
   import ChplConfig;
@@ -70,11 +70,11 @@ module Barriers {
      * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
      * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
   */
-  deprecated "BarrierType is deprecated, please use the default barrier implementation"
+  @deprecated(notes="BarrierType is deprecated, please use the default barrier implementation")
   enum BarrierType {Atomic, Sync}
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
-  deprecated "The 'Barrier' type is deprecated, please use 'Collectives.barrier' instead"
+  @deprecated(notes="The 'Barrier' type is deprecated, please use 'Collectives.barrier' instead")
   record Barrier {
     pragma "no doc"
     var bar: unmanaged BarrierBaseType;
@@ -104,7 +104,7 @@ module Barriers {
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    deprecated "choosing a barrier type is deprecated, please remove the 'barrierType' argument"
+    @deprecated(notes="choosing a barrier type is deprecated, please remove the 'barrierType' argument")
     proc init(numTasks: int,
               barrierType: BarrierType,
               reusable: bool = true) {

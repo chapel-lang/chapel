@@ -1,0 +1,5 @@
+use-shadows-formal1.chpl:13: In function 'foo':
+use-shadows-formal1.chpl:14: warning: module-level symbol is hiding function argument 'a'
+use-shadows-formal1.chpl:6: note: and then through the 'use' statement here
+use-shadows-formal1.chpl:2: note: found 'b' defined here
+0

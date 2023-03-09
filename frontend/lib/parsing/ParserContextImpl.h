@@ -42,6 +42,22 @@ static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
           lhs.first_column <= rhs.first_column);
 }
 
+
+static bool checkNoDuplicateNamedActuals(const MaybeNamedActualList& actuals,
+                                         std::set<UniqueString>& duplicates) {
+  std::set<UniqueString> seen;
+  for (auto& actual : actuals) {
+    if (actual.name.isEmpty()) {
+      continue;
+    }
+    if (seen.count(actual.name) > 0) {
+      duplicates.insert(actual.name);
+    }
+    seen.insert(actual.name);
+  }
+  return duplicates.size() == 0;
+}
+
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // If there were no comments, there is nothing to do.
@@ -128,7 +144,40 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
+owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                               ParserExprList* toolspace,
+                                               MaybeNamedActualList* actuals) {
 
+  UniqueString fullName;
+  std::string tmpName;
+
+  // the firstIdentifier may be the name of the attribute of the first element
+  // of the toolspace. If so, we need to move it into the toolspace and get the
+  // name of the attribute from the last entry in the toolspace.
+  // e.g. @toolspace.attribute vs @attribute
+  if (toolspace == nullptr) {
+    toolspace = makeList();
+  }
+  if (actuals == nullptr) {
+    actuals = new MaybeNamedActualList();
+  }
+  if (toolspace->size() == 0) {
+    fullName = firstIdent->toIdentifier()->name();
+  } else {
+    tmpName = firstIdent->toIdentifier()->name().str();
+    for (auto& tool : *toolspace) {
+      tmpName += "." + tool->toIdentifier()->name().str();
+    }
+    fullName = UniqueString::get(context(), tmpName);
+  }
+
+  AstList actualsForReal;
+  std::vector<UniqueString> actualNames;
+  consumeNamedActuals(actuals, actualsForReal, actualNames);
+  auto node = Attribute::build(builder, convertLocation(loc),
+                               fullName, std::move(actualsForReal), std::move(actualNames));
+  return node;
+}
 
 owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
@@ -143,12 +192,14 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
       ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
+  auto attrList = consumeList(attributeGroupParts.attributeList);
   auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.deprecationMessage,
-                                attributeGroupParts.unstableMessage);
+                                attributeGroupParts.unstableMessage,
+                                std::move(attrList));
   return node;
 }
 
@@ -179,36 +230,160 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
   return ret;
 }
 
-
-// void ParserContext::noteAttribute(YYLTYPE loc) {
-
-// }
-
-void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
+void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  ParserExprList* toolspace,
+                                  MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
-  attributeGroupParts.isDeprecated = true;
+  // initialize the list if it wasn't already
+  auto& attrs = attributeGroupParts.attributeList;
+  if (attrs == nullptr) {
+    attrs = makeList();
+  }
 
+  // do some special handling for unstable and deprecated, because they
+  // existed before the changes to allow general attributes
+  auto ident = firstIdent->toIdentifier();
+  if (ident->name()==USTR("unstable")) {
+    noteUnstable(loc, actuals);
+  } else if (ident->name()==USTR("deprecated")) {
+    noteDeprecation(loc, actuals);
+  } else if (ident->name()==USTR("stable")) {
+    noteStable(loc, actuals);
+  }
+
+  // check the actual names are not duplicates
+  if (actuals != nullptr) {
+    std::set<UniqueString> duplicates;
+    if (!checkNoDuplicateNamedActuals(*actuals, duplicates)) {
+      for (auto& duplicate : duplicates) {
+        error(loc, "repeated argument name '%s'", duplicate.c_str());
+      }
+    }
+  }
+
+  // make sure we don't put duplicate attributes (based on names) on one symbol
+  auto attr = buildAttribute(loc, ident, toolspace, actuals);
+  for (auto& attribute : *attrs) {
+    if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
+      error(loc, "repteated attribute '%s'", attr->toAttribute()->name().c_str());
+    }
+  }
+  attrs = appendList(attrs, attr.release());
+}
+
+
+
+void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
+  }
+  attributeGroupParts.isDeprecated = true;
+  AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
+      }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "deprecated attribute arguments must be string literals for now");
+      }
+      // TODO: Decide how this interaction should work, if we want to continue
+      // supporting "message" or if we should adapt that field to match the
+      // argument names here
+      // For now, use the notes field, or assume if there's only one argument
+      // then it's the message
+      if (actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "deprecated attribute only accepts one unnamed argument");
+  }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.deprecationMessage = strLit->value();
     }
-
-    delete messageStr;
   }
 }
 
-void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
+void ParserContext::noteStable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
+  if (attributeGroupParts.isUnstable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
+  // TODO: does it make sense to deprecate something that's stable? Shouldn't
+  // the stable attribute come off when it's marked deprecated?
+  if (attributeGroupParts.isDeprecated) {
+    error(loc, "cannot apply both deprecated and stable attributes to the same symbol");
+  }
+  attributeGroupParts.isStable = true;
+  if (actuals->size() > 1) {
+    error(loc, "stable attribute only accepts one argument");
+  }
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@stable' attribute only accepts 'since' or unnamed argument", actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "stable attribute arguments must be string literals for now");
+      }
+    }
+  }
+}
+
+void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
   attributeGroupParts.isUnstable = true;
 
+  AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "category").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "reason").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
+      }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "unstable attribute arguments must be string literals for now");
+      }
+     // use the reason field or assume if there's only one argument it's the message
+      if (actual.name == UniqueString::get(context(), "reason").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "unstable attribute only accepts one unnamed argument");
+  }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.unstableMessage = strLit->value();
     }
-
-    delete messageStr;
   }
 }
 
@@ -216,13 +391,15 @@ void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
   CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+  CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isStable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
@@ -239,7 +416,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   // If statement is not a decl, we should not have built any, otherwise
   // it was and the counter got reset at some point before this.
-  CHPL_ASSERT(numAttributesBuilt == 0);
+  // CHPL_ASSERT(numAttributesBuilt == 0);
 
   if (cs.stmt && cs.stmt->isDecl()) {
 
@@ -256,7 +433,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     }
 
   } else {
-    CHPL_ASSERT(numAttributesBuilt == 0);
+    // CHPL_ASSERT(numAttributesBuilt == 0);
     if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
 
     // TODO: The original builder also states the first pragma.
@@ -1747,6 +1924,10 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
+  auto attributeGroup = buildAttributeGroup(locFor);
+  if (attributeGroup != nullptr) {
+     resetAttributeGroupPartsState();
+  }
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
@@ -1754,7 +1935,9 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          blockStyle,
                          std::move(body),
                          /*isExpressionLevel*/ false,
-                         /*isParam*/ false);
+                         /*isParam*/ false,
+                         std::move(attributeGroup));
+
 
   return { .comments=comments, .stmt=node.release() };
 }

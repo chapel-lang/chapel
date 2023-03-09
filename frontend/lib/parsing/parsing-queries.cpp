@@ -875,7 +875,19 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 }
 
 bool idIsParenlessFunction(Context* context, ID id) {
-  return idIsParenlessFunctionQuery(context, id);
+  return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
+}
+
+bool idIsFunction(Context* context, ID id) {
+  // Functions always have their own ID symbol scope,
+  // and if it's not a function, we can return false
+  // without doing further work.
+  if (id.postOrderId() != -1) {
+    return false;
+  }
+
+  AstTag tag = idToTag(context, id);
+  return asttags::isFunction(tag);
 }
 
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
@@ -926,7 +938,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 }
 
 bool idIsMethod(Context* context, ID id) {
-  return idIsMethodQuery(context, id);
+  return idIsFunction(context, id) && idIsMethodQuery(context, id);
 }
 
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
@@ -1221,6 +1233,19 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+void setAttributeToolNames(Context* context, AttributeToolNamesList toolNames) {
+  QUERY_STORE_INPUT_RESULT(AttributeToolNames, context, toolNames);
+}
+
+const AttributeToolNamesList& AttributeToolNames(Context *context) {
+  QUERY_BEGIN_INPUT(AttributeToolNames, context);
+
+  // return empty AttributeToolNamesList if not already set
+
+  AttributeToolNamesList result;
+  return QUERY_END(result);
+}
+
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   const uast::AttributeGroup* ret = nullptr;
   if (id.isEmpty()) return ret;
@@ -1305,7 +1330,7 @@ removeSphinxMarkupFromWarningMessage(const std::string msg) {
   // hyperlinks (and having only target show up in sanitized message).
   // TODO: Prefixing content with ! (and filtering it out)
   // TODO: Prefixing content with ~ (and displaying only the last component)
-  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param)"
+  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param|enum)"
                          R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
   auto ret = std::regex_replace(msg, std::regex(re), "$2");
   return ret;
@@ -1384,6 +1409,8 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();
+
+  msg = removeSphinxMarkupFromWarningMessage(msg);
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);

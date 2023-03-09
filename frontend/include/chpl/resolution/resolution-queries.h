@@ -387,6 +387,8 @@ resolveGeneratedCallInMethod(Context* context,
 */
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
+
+
 } // end namespace resolution
 } // end namespace chpl
 #endif

@@ -1,5 +1,5 @@
 use Time;
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 config const numOps = 10;
@@ -21,7 +21,7 @@ var copyIn = 0.0,
     copyOut = 0.0,
     total = 0.0;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 totalTimer.start();
 if useGPU {
   on here.gpus[0] {
@@ -63,9 +63,9 @@ else {
 }
 totalTimer.stop();
 total = totalTimer.elapsed();
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
-assert(getGPUDiagnostics().kernel_launch == 1);
+assert(getGpuDiagnostics().kernel_launch == 1);
 
 if printTimes {
   writeln("copyIn: ", copyIn);

@@ -7,8 +7,6 @@
 module A {
   public use B;
 
-  var foo = 15; // Should be hidden
-
   var wanted = 97.3; // Should be visible
 }
 

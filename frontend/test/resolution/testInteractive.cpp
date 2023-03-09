@@ -93,6 +93,13 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
     }
   }
 
+  if (ast->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a nested Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it separately.
+    return nullptr;
+  }
+
   if (inFn != nullptr && inFn->id() != ast->id() &&
       inFn->id().contains(ast->id())) {
     return &inFn->byAst(ast);

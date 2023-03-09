@@ -41,7 +41,7 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
-   GPUDiagnostics <standard/GPUDiagnostics>
+   GpuDiagnostics <standard/GpuDiagnostics>
    Memory <standard/Memory>
 
 
@@ -101,7 +101,6 @@ System/Interoperability
 
    CTypes <standard/CTypes>
    OS <standard/OS>
-   Spawn <standard/Spawn>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>

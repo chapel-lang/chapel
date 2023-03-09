@@ -36,7 +36,7 @@ namespace chpl {
 namespace parsing {
 
 using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
-
+using AttributeToolNamesList = std::vector<UniqueString>;
 /**
  This query returns the contents of a file as the string field in the
  FileContents.
@@ -332,6 +332,11 @@ bool idIsParenlessFunction(Context* context, ID id);
 bool idIsPrivateDecl(Context* context, ID id);
 
 /**
+ Returns true if the ID is a function.
+ */
+bool idIsFunction(Context* context, ID id);
+
+/**
  Returns true if the ID is a method.
  */
 bool idIsMethod(Context* context, ID id);
@@ -412,6 +417,11 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
  */
 const
 ConfigSettingsList& configSettings(Context* context);
+
+
+void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
+
+const AttributeToolNamesList& AttributeToolNames(Context* context);
 
 /**
   Given an ID, returns the attributes associated with the ID. Only

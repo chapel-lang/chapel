@@ -1,0 +1,7 @@
+use-shadows-formal2.chpl:1: In module 'M0':
+use-shadows-formal2.chpl:2: error: 'b' has multiple definitions
+use-shadows-formal2.chpl:3: note: redefined here
+use-shadows-formal2.chpl:14: In function 'foo':
+use-shadows-formal2.chpl:15: warning: module-level symbol is hiding function argument 'a'
+use-shadows-formal2.chpl:7: note: and then through the 'use' statement here
+use-shadows-formal2.chpl:2: note: found 'b' defined here

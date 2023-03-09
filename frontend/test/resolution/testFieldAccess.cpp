@@ -131,10 +131,49 @@ static void test3() {
   guard.realizeErrors();
 }
 
+static void test4() {
+  printf("test3\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "test3.chpl");
+  std::string contents = R""""(
+    class Outer {
+        var outerField: int;
+        record Inner {
+            proc innerMethod() {
+                return new Outer();
+            }
+        }
+
+        var inner: Inner;
+        proc outerMethod() {
+            return inner.innerMethod();
+        }
+    }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 1);
+
+  const AggregateDecl* outerAd = m->stmt(0)->toAggregateDecl();
+  const AggregateDecl* innerId = outerAd->declOrComment(1)->toAggregateDecl();
+  const Function* innerMethod = innerId->declOrComment(0)->toFunction();
+
+  scopeResolveFunction(context, innerMethod->id());
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

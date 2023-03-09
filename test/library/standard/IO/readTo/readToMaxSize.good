@@ -1,0 +1,11 @@
+BadFormatError: bad format (in fileReader.readTo(string) with path "../readThrough/maxSizeInput.txt" offset 0)
+123456xABCDEF
+
+123456
+123456
+
+BadFormatError: bad format (in fileReader.readTo(bytes) with path "../readThrough/maxSizeInput.txt" offset 0)
+123456xABCDEF
+
+123456
+123456

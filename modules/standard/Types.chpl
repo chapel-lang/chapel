@@ -77,7 +77,7 @@ proc isIntegralType(type t) param do return
 Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``real``, ``imag``.
 */
-deprecated "isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead"
+@deprecated(notes="isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead")
 proc isFloatType(type t) param do return
   isRealType(t) || isImagType(t);
 
@@ -310,7 +310,7 @@ proc isIntegralValue(e)  param do  return isIntegralType(e.type);
 
 /* Returns ``true`` if the argument is a value of one the following types:
 ``real``, ``imag``. */
-deprecated "isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead"
+@deprecated(notes="isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead")
 proc isFloatValue(e)     param do  return isFloatType(e.type);
 
 /* Returns ``true`` if the argument is a ``nothing`` value (i.e., ``none``) */
@@ -424,7 +424,7 @@ proc isNumeric(type t)   param do  return isNumericType(t);
 pragma "no doc"
 proc isIntegral(type t)  param do  return isIntegralType(t);
 pragma "no doc"
-deprecated "isFloat is deprecated use `isReal(t) || isImag(t)` instead"
+@deprecated(notes="isFloat is deprecated use `isReal(t) || isImag(t)` instead")
 proc isFloat(type t)     param do  return isFloatType(t);
 
 pragma "no doc"
@@ -523,7 +523,7 @@ proc isIntegral(e)  param do  return isIntegralValue(e);
 Returns ``true`` if the argument is one the following types, of any width:
 ``real``, ``imag``, or a value of such a type.
 */
-deprecated "isFloat is deprecated use `isReal(e) || isImag(e)` instead"
+@deprecated(notes="isFloat is deprecated use `isReal(e) || isImag(e)` instead")
 proc isFloat(e)     param do  return isFloatValue(e);
 
 /* Returns ``true`` if the argument is ``none`` or the ``nothing`` type.
@@ -1043,25 +1043,25 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-deprecated "< operator is deprecated when comparing types; use isProperSubtype() instead"
+@deprecated(notes="< operator is deprecated when comparing types; use isProperSubtype() instead")
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-deprecated "<= operator is deprecated when comparing types; use isSubtype() instead"
+@deprecated(notes="<= operator is deprecated when comparing types; use isSubtype() instead")
 operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-deprecated "> operator is deprecated when comparing types; use isProperSubtype() instead"
+@deprecated(notes="> operator is deprecated when comparing types; use isProperSubtype() instead")
 operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-deprecated ">= operator is deprecated when comparing types; use isSubtype() instead"
+@deprecated(notes=">= operator is deprecated when comparing types; use isSubtype() instead")
 operator >=(type a, type b) param {
   return isSubtype(b,a);
 }

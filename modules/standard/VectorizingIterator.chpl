@@ -39,7 +39,7 @@
  */
 pragma "error mode fatal"
 pragma "unsafe"
-deprecated "The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead"
+@deprecated(notes="The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead")
 module VectorizingIterator {
   private use ChapelStandard;
 

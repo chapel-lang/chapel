@@ -501,7 +501,7 @@ enum ioMode {
   cwr = 4,
 }
 
-deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
+@deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
 enum iomode {
   r = 1,
   cw = 2,
@@ -614,8 +614,7 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
-@unstable
-"iostringstyle is unstable and will eventually be replaced"
+@unstable("iostringstyle is unstable and will eventually be replaced")
 enum iostringstyle {
   len1b_data = -1,
   len2b_data = -2,
@@ -658,7 +657,7 @@ via the ``string_format`` field in :record:`iostyle`.
     end of file
 */
 @unstable
-"iostringformat is unstable and will eventually be replaced"
+(reason="iostringformat is unstable and will eventually be replaced")
 enum iostringformat {
   word = 0,
   basic = 1,
@@ -692,7 +691,7 @@ enum iostringformatInternal {
             to store in iostyle.str_style.
  */
 @unstable
-"stringStyleTerminated is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleTerminated is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleTerminated(terminator:uint(8)) {
   return -(terminator - iostringstyleInternal.data_null:int(64));
 }
@@ -704,7 +703,7 @@ proc stringStyleTerminated(terminator:uint(8)) {
  */
 
 @unstable
-"stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleNullTerminated() {
   return iostringstyleInternal.data_null;
 }
@@ -715,7 +714,7 @@ proc stringStyleNullTerminated() {
  */
 pragma "no doc"
 @unstable
-"stringStyleExactLen is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleExactLen is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -727,7 +726,7 @@ proc stringStyleExactLen(len:int(64)) {
  */
 pragma "no doc"
 @unstable
-"stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleWithVariableLength() {
   return iostringstyleInternal.lenVb_data: int(64);
 }
@@ -741,7 +740,7 @@ proc stringStyleWithVariableLength() {
   :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
 @unstable
-"stringStyleWithLength is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleWithLength is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleWithLength(lengthBytes:int) throws {
   return stringStyleWithLengthInternal(lengthBytes);
 }
@@ -967,7 +966,7 @@ extern record iostyleInternal { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-@unstable "iostyle is unstable, a new way of controlling fileReader and fileWriter output is planned"
+@unstable("iostyle is unstable, a new way of controlling fileReader and fileWriter output is planned")
 type iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
@@ -1189,7 +1188,7 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):errorCode;
-private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int):errorCode;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int, consume:c_int):errorCode;
 
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
@@ -1360,7 +1359,7 @@ private extern proc qio_format_error_write_regex():errorCode;
 
  */
 @unstable
-"defaultIOStyle is unstable due to returning an unstable type"
+(reason="defaultIOStyle is unstable due to returning an unstable type")
 proc defaultIOStyle():iostyle {
   return defaultIOStyleInternal() : iostyle;
 }
@@ -1500,7 +1499,7 @@ record ioHintSet {
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
-  deprecated "`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead"
+  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead")
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
@@ -1617,7 +1616,7 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
   }
 }
 
-@unstable "initializing a file with a style argument is unstable"
+@unstable("initializing a file with a style argument is unstable")
   proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
                  own=false) throws {
   this.init();
@@ -1687,7 +1686,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
   }
 }
 
-@unstable "initializing a file with a style argument is unstable"
+@unstable("initializing a file with a style argument is unstable")
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
                style:iostyle, own=false) throws {
   this.init();
@@ -1746,7 +1745,7 @@ proc file.checkAssumingLocal() throws {
 
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
- deprecated "'file.check()' is deprecated, please use :proc:`file.isOpen` instead"
+ @deprecated(notes="'file.check()' is deprecated, please use :proc:`file.isOpen` instead")
 proc file.check() throws {
   on this._home {
     this.checkAssumingLocal(); // Remove this function, too?
@@ -1874,7 +1873,7 @@ proc file.fsync() throws {
 */
 config param filePathAbsolute = false;
 
-deprecated "The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant"
+@deprecated(notes="The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant")
 proc file.path: string throws where !filePathAbsolute {
   return fileRelPathHelper(this);
 }
@@ -2003,13 +2002,13 @@ proc convertIoMode(mode:iomode):ioMode {
 }
 
 pragma "last resort"
-deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return open(path, convertIoMode(mode), hints, style);
 }
 
-@unstable "open with a style argument is unstable"
+@unstable("open with a style argument is unstable")
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
@@ -2041,7 +2040,7 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
 }
 
 pragma "last resort"
-deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
 proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
   return open(path, convertIoMode(mode), hints);
 }
@@ -2123,7 +2122,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   return ret;
 }
 
-deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
+@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
 proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
@@ -2155,7 +2154,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
+@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
 proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
@@ -2181,7 +2180,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   return ret;
 }
 
-deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
+@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
 proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
@@ -2211,13 +2210,13 @@ operations on the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
-deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
+@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
 pragma "last resort"
-deprecated "'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead"
+@deprecated(notes="'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead")
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
@@ -2243,12 +2242,12 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "openTempFile with a style argument is unstable"
+@unstable("openTempFile with a style argument is unstable")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
-deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
+@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
 proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
@@ -2278,7 +2277,7 @@ proc openTempFile(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
+@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
 proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
@@ -2295,17 +2294,17 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
 proc openmem(style:iostyle):file throws {
   return openMemFile(style);
 }
 
-deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
 proc openmem():file throws {
   return openMemFile();
 }
 
-@unstable "openMemFile with a style argument is unstable"
+@unstable("openMemFile with a style argument is unstable")
 proc openMemFile(style:iostyle):file throws {
   return openMemFileHelper(style: iostyleInternal);
 }
@@ -2952,7 +2951,7 @@ and :proc:`fileWriter.write`) can use arguments of this type in order to read or
 write a single Unicode codepoint.
 
  */
-deprecated "ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead"
+@deprecated(notes="ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead")
 type ioChar = _internalIoChar;
 
 pragma "no doc"
@@ -3043,7 +3042,7 @@ record _internalIoBits {
   proc nbits:numBits.type {return numBits;}
 }
 
-deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
+@deprecated(notes="ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead")
 type ioBits = _internalIoBits;
 
 pragma "no doc"
@@ -3339,14 +3338,117 @@ proc fileReader.advancePastByte(byte:uint(8)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
+@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
 proc fileWriter.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
   }
-  if err then try this._ch_ioerror(err, "in advanceToByte");
+  if err then try this._ch_ioerror(err, "in advancePastByte");
 }
+
+/*
+   Read until a separator is found, leaving the ``fileReader`` position just
+   after it.
+
+   If the separator cannot be found, the ``fileReader`` position is left at EOF
+   and an ``UnexpectedEofError`` is thrown.
+
+   .. note::
+
+    If a single byte ``string`` or ``bytes`` is passed to the ``separator``
+    argument, a faster implementation is used.
+
+   :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+
+   :throws EofError: Thrown if the ``fileReader`` position is already at EOF.
+   :throws UnexpectedEofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, true);
+      if err then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+    } else {
+      // slow advance to multi-byte separator
+      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      // handle system errors
+      if readError != 0 && readError != EEOF
+        then try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
+
+      // advance past the separator
+      err = qio_channel_advance(false, this._channel_internal, byteOffset + separator.numBytes);
+      // handle system errors
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+
+      // didn't read anything
+      if err == EEOF && byteOffset == 0
+        then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+      // separator not found
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+    }
+  }
+}
+
+/*
+   Read until a separator is found, leaving the ``fileReader`` position just before it.
+
+   If the separator cannot be found, the ``fileReader`` position is left at EOF and an
+   ``UnexpectedEofError`` is thrown.
+
+   .. note::
+
+      If a single byte ``string`` or ``bytes`` is passed to the ``separator`` argument,
+      a faster implementation is used.
+
+   :arg separator: The separator to match with. Must be a :type:`~String.string` or
+    :type:`~Bytes.bytes`.
+
+   :throws EofError: Thrown if the ``fileReader`` position is already at EOF.
+   :throws UnexpectedEofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, false);
+      if err then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+
+    } else {
+      // slow advance to multi-byte separator or EOF
+      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF
+        then try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
+
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        byteOffset + if found then 0 else separator.numBytes
+      );
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+
+      // didn't read anything
+      if err == EEOF && byteOffset == 0
+        then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+      // didn't find separator
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceTo(" + t:string + ")");
+    }
+  }
+}
+
 
 /*
    *Mark* a fileReader - that is, save the current offset of the fileReader
@@ -3580,7 +3682,7 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
   }
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
@@ -3594,7 +3696,7 @@ proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
   }
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                      !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
@@ -3735,7 +3837,7 @@ inline proc fileWriter._commit() {
    called on a locked fileReader.
 
  */
-@unstable "fileReader._style is unstable because it returns a type that is unstable"
+@unstable("fileReader._style is unstable because it returns a type that is unstable")
 proc fileReader._style():iostyle {
   var ret:iostyle;
   on this._home {
@@ -3752,7 +3854,7 @@ proc fileReader._style():iostyle {
    called on a locked fileWriter.
 
  */
-@unstable "fileWriter._style is unstable because it returns a type that is unstable"
+@unstable("fileWriter._style is unstable because it returns a type that is unstable")
 proc fileWriter._style():iostyle {
   var ret:iostyle;
   on this._home {
@@ -3795,7 +3897,7 @@ proc fileWriter._styleInternal(): iostyleInternal {
    be called on a locked fileReader.
 
  */
-@unstable "fileReader._set_style is unstable because its purpose involves an unstable type"
+@unstable("fileReader._set_style is unstable because its purpose involves an unstable type")
 proc fileReader._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
@@ -3809,7 +3911,7 @@ proc fileReader._set_style(style:iostyle) {
    be called on a locked fileWriter.
 
  */
-@unstable "fileWriter._set_style is unstable because its purpose involves an unstable type"
+@unstable("fileWriter._set_style is unstable because its purpose involves an unstable type")
 proc fileWriter._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
@@ -3916,7 +4018,7 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3927,7 +4029,7 @@ proc openreader(path:string,
 }
 
 
-@unstable "openReader with a style argument is unstable"
+@unstable("openReader with a style argument is unstable")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3987,7 +4089,7 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
  */
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -4042,7 +4144,7 @@ proc openReader(path:string,
   return openReaderHelper(path, kind, locking, region, hints);
 }
 
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -4051,7 +4153,7 @@ proc openreader(path:string,
   return openReader(path, kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -4072,7 +4174,7 @@ private proc openReaderHelper(path:string,
                              fromOpenReader=true);
 }
 
-deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
+@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4082,7 +4184,7 @@ proc openwriter(path:string,
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
-@unstable "openWriter with a style argument is unstable"
+@unstable("openWriter with a style argument is unstable")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -4123,7 +4225,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
                               0.
 */
-deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
+@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
@@ -4178,7 +4280,7 @@ private proc openWriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
-@unstable "reader with a style argument is unstable"
+@unstable("reader with a style argument is unstable")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
@@ -4242,7 +4344,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty)
   : fileReader(kind, locking) throws where (region.hasHighBound() &&
@@ -4326,7 +4428,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-@unstable "lines with a local_style argument is unstable"
+@unstable("lines with a local_style argument is unstable")
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints=ioHintSet.empty,
                 in local_style:iostyle) throws {
@@ -4347,14 +4449,14 @@ config param useNewLinesRegionBounds = false;
 
    :throws SystemError: Thrown if an object could not be returned.
  */
-deprecated "`file.lines` is deprecated; please use `fileReader.lines` instead"
+@deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
                                                        useNewLinesRegionBounds) {
   return this.linesHelper(locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (region.hasHighBound() &&
                                                        !useNewLinesRegionBounds) {
@@ -4413,7 +4515,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-@unstable "writer with a style argument is unstable"
+@unstable("writer with a style argument is unstable")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
@@ -4483,7 +4585,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
                  fileWriter(kind,locking) throws where (region.hasHighBound() &&
@@ -5327,7 +5429,7 @@ proc fileReader._readLiteral(literal:string,
   :throws EofError: Thrown if end of fileReader is encountered.
 
 */
-@unstable "fileReader.readLiteral is unstable and subject to change."
+@unstable("fileReader.readLiteral is unstable and subject to change.")
 inline
 proc fileReader.readLiteral(literal:string,
                             ignoreWhitespace=true) : void throws {
@@ -5351,7 +5453,7 @@ proc fileReader.readLiteral(literal:string,
   :throws EofError: Thrown if end of fileReader is encountered.
 
 */
-@unstable "fileReader.readLiteral is unstable and subject to change."
+@unstable("fileReader.readLiteral is unstable and subject to change.")
 inline
 proc fileReader.readLiteral(literal:bytes,
                             ignoreWhitespace=true) : void throws {
@@ -5397,7 +5499,7 @@ inline proc fileReader._readNewline() : void throws {
   :throws EofError: Thrown if end of fileReader is encountered.
 
 */
-@unstable "fileReader.readNewline is unstable and subject to change."
+@unstable("fileReader.readNewline is unstable and subject to change.")
 inline
 proc fileReader.readNewline() : void throws {
   _readNewlineCommon(isMatch=false);
@@ -5436,7 +5538,7 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the literal could not be matched.
 */
-@unstable "fileReader.matchLiteral is unstable and subject to change."
+@unstable("fileReader.matchLiteral is unstable and subject to change.")
 inline
 proc fileReader.matchLiteral(literal:string,
                              ignoreWhitespace=true) : bool throws {
@@ -5462,7 +5564,7 @@ proc fileReader.matchLiteral(literal:string,
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the literal could not be matched.
 */
-@unstable "fileReader.matchLiteral is unstable and subject to change."
+@unstable("fileReader.matchLiteral is unstable and subject to change.")
 inline
 proc fileReader.matchLiteral(literal:bytes,
                              ignoreWhitespace=true) : bool throws {
@@ -5484,7 +5586,7 @@ proc fileReader.matchLiteral(literal:bytes,
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
             the newline could not be matched.
 */
-@unstable "fileReader.matchNewline is unstable and subject to change."
+@unstable("fileReader.matchNewline is unstable and subject to change.")
 inline
 proc fileReader.matchNewline() : bool throws {
   try {
@@ -5524,7 +5626,7 @@ proc fileWriter._writeLiteral(literal:string) : void throws {
   Writes a string to the fileWriter, ignoring any formatting configured for
   this fileWriter.
 */
-@unstable "fileWriter.writeLiteral is unstable and subject to change."
+@unstable("fileWriter.writeLiteral is unstable and subject to change.")
 inline
 proc fileWriter.writeLiteral(literal:string) : void throws {
   _writeLiteralCommon(literal);
@@ -5534,7 +5636,7 @@ proc fileWriter.writeLiteral(literal:string) : void throws {
   Writes bytes to the fileWriter, ignoring any formatting configured for this
   fileWriter.
 */
-@unstable "fileWriter.writeLiteral is unstable and subject to change."
+@unstable("fileWriter.writeLiteral is unstable and subject to change.")
 inline
 proc fileWriter.writeLiteral(literal:bytes) : void throws {
   _writeLiteralCommon(literal);
@@ -5545,7 +5647,7 @@ proc fileWriter.writeLiteral(literal:bytes) : void throws {
   Writes a newline to the fileWriter, ignoring any formatting configured for
   this fileWriter.
 */
-@unstable "fileWriter.writeNewline is unstable and subject to change."
+@unstable("fileWriter.writeNewline is unstable and subject to change.")
 inline
 proc fileWriter.writeNewline() : void throws {
   on this._home {
@@ -5620,7 +5722,7 @@ proc fileWriter.styleElement(element:int):int {
   :throws SystemError: Thrown if the byte sequence could not be written for another reason.
 */
 pragma "last resort"
-deprecated "'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object"
+@deprecated(notes="'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object")
 proc fileWriter.writeBytes(x, len:c_ssize_t) throws {
   try this._writeBytes(x, len);
 }
@@ -5775,7 +5877,7 @@ inline proc fileReader.read(ref args ...?k):bool throws {
   return true;
 }
 
-@unstable "read with a style argument is unstable"
+@unstable("read with a style argument is unstable")
 proc fileReader.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
@@ -5823,7 +5925,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-deprecated "fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead"
+@deprecated("fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
 proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
@@ -5880,8 +5982,8 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
   :throws SystemError: Thrown if data could not be read from the fileReader for
                        another reason.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the input marker at the beginning of the offending
-                          line.
+                          the fileReader position at the beginning of the
+                          offending line.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
@@ -5960,7 +6062,7 @@ inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the fileReader.
 */
-deprecated "fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead"
+@deprecated(notes="fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead")
 proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -5992,7 +6094,10 @@ proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // site should do that.
 // Assumes we are already on the locale with the fileReader and that
 // it is already locked.
-private proc readStringBytesData(ref s /*: string or bytes*/,
+// Passing -1 to 'nCodepoints' tells this function to compute the number
+// of codepoints itself, and store the result in 'cachedNumCodepoints'.
+pragma "no doc"
+proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
                                  nCodepoints: int): errorCode {
@@ -6011,7 +6116,9 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
     s.buffLen = nBytes;
     if nBytes != 0 then s.buff[nBytes] = 0; // include null-byte
     if s.type == string {
-      s.cachedNumCodepoints = nCodepoints;
+      if nCodepoints == -1
+        then s.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(s);
+        else s.cachedNumCodepoints = nCodepoints;
       s.hasEscapes = false;
     }
   } else {
@@ -6037,8 +6144,8 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
                               reading.
   :throws SystemError: Thrown if data could not be read from the fileReader.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the input marker at the beginning of the offending
-                          line.
+                          the fileReader position at the beginning of the
+                          offending line.
 */
 proc fileReader.readLine(ref s: string,
                          maxSize=-1,
@@ -6126,8 +6233,8 @@ proc fileReader.readLine(ref s: string,
                               reading.
   :throws SystemError: Thrown if data could not be read from the fileReader.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the input marker at the beginning of the offending
-                          line.
+                          the fileReader position at the beginning of the
+                          offending line.
 */
 proc fileReader.readLine(ref b: bytes,
                          maxSize=-1,
@@ -6218,7 +6325,7 @@ proc fileReader.readLine(ref b: bytes,
                               reading.
   :throws SystemError: Thrown if data could not be read from the fileReader.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the
-                   input marker at the beginning of the offending line.
+                   fileReader position at the beginning of the offending line.
 */
 proc fileReader.readLine(type t=string, maxSize=-1,
                          stripNewline=false): t throws where t==string || t==bytes {
@@ -6226,6 +6333,365 @@ proc fileReader.readLine(type t=string, maxSize=-1,
   this.readLine(retval, maxSize, stripNewline);
   return retval;
 }
+
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  If the separator is found, the ``fileReader`` position is left immediately
+  after it. If the separator could not be found in the next ``maxSize`` bytes,
+  a ``BadFormatError`` is thrown and the ``fileReader``'s position is not
+  changed. Otherwise, if EOF is reached before finding the separator, the
+  remainder of the ``fileReader``'s contents are returned and the position is
+  left at EOF.
+
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readThrough` that accepts a
+  :type:`~Regex.regex` separator.
+
+  :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+  :arg maxSize: The maximum number of bytes to read. For the default value of
+    ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``string`` or ``bytes``. If ``true``, the returned value will not include
+    the separator.
+  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
+    up to (and possibly including) the separator.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
+  where t==string || t==bytes
+{
+  var ret: t;
+  if !this.readThrough(separator, ret, maxSize, stripSeparator)
+    then throw new EofError("Encountered EOF in readThrough(" + t:string + ")");
+  return ret;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned ``string``.
+    If ``true``, the separator will not be included in ``s``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
+    //  (this would be a single pass and would not require retroactive codepoint checking)
+
+    // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
+    const (searchErr, found, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    // handle system error
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
+
+    // compute the number of bytes to read into 's'
+    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, bytesToRead, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in readThrough(string)");
+    } else {
+      if maxSize >= 0 && s.numCodepoints > maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in readThrough(string)");
+      } else if maxSize > 0 {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+
+    // remove the separator from the returned string if necessary
+    // TODO: Do this more efficiently in 'readStringBytesData'
+    if found && stripSeparator then s = s[0..<s.numCodepoints-separator.numCodepoints];
+  }
+  return s.size > 0;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
+    If ``true``, the separator will not be included in ``b``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
+    const (searchErr, found, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
+
+    // compute the number of bytes to read into 'b'
+    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+
+    // read the given number of bytes into 'b'
+    const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
+    if err then try this._ch_ioerror(err, "in readThrough(bytes)");
+
+    // remove the separator from the returned string if necessary
+    // TODO: Do this more efficiently in 'readStringBytesData'
+    if found && stripSeparator then b = b[0..<b.numBytes-separator.numBytes];
+  }
+  return b.size > 0;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  If the separator is found, the ``fileReader`` position is left immediately
+  before it. If the separator could not be found in the next ``maxSize`` bytes,
+  a ``BadFormatError`` is thrown and the ``fileReader``'s position is not
+  changed. Otherwise, if EOF is reached before finding the separator, the
+  remainder of the ``fileReader``'s contents are returned and the position is
+  left at EOF.
+
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readTo` that accepts a
+  :type:`~Regex.regex` separator.
+
+  :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+  :arg maxSize: The maximum number of bytes to read. For the default
+    value of ``-1``, this method can read until EOF.
+  :returns: A ``string`` or ``bytes`` with the contents of the channel up to
+    the ``separator``.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
+  where t==string || t==bytes
+{
+  var ret: t;
+  if !this.readTo(separator, ret, maxSize)
+    then throw new EofError("Encountered EOF in readTo(" + t:string + ")");
+  return ret;
+}
+
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
+  var atEof = false;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
+    //  (this would be a single pass and would not require retroactive codepoint checking)
+
+    const (searchErr, _, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
+    atEof = searchErr == EEOF && bytesOffset == 0;
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, bytesOffset, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in fileReader.readTo(string)");
+    } else {
+      if maxSize >= 0 && s.numCodepoints >= maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in fileReader.readTo(string)");
+      } else if maxSize > 0  {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+  }
+  return !atEof;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
+  var atEof = false;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, _, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
+    atEof = searchErr == EEOF && bytesOffset == 0;
+
+    const err = readStringBytesData(b, this._channel_internal, bytesOffset, 0);
+    if err then try this._ch_ioerror(err, "in fileReader.readTo(bytes)");
+  }
+  return !atEof;
+}
+
+/* helper for: readTo, readThrough, advanceThrough, advanceTo
+
+  looks for a sequence of bytes matching 'separator' in the
+  next 'maxSize' bytes in the channel
+
+  does not move the channel's pointer
+
+ returns: (0, true, byte_offset) if found
+          (EFORMAT, false, maxBytes) if not found
+          (EFORMAT, false, 0) if separator is empty
+          (EEOF, false, bytes_to_eof) if EOF
+          (error_code, false, 0) system error
+*/
+private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode, bool, int)
+  where t==string || t==bytes
+{
+  if separator.isEmpty() then return (EFORMAT:errorCode, false, 0);
+
+  const maxToRead = if maxBytes < 0 then max(int) else maxBytes,
+        sepLocal = separator.localize(),
+        numSepBytes = sepLocal.numBytes,
+        firstByte = sepLocal.byte(0);
+
+  var nextByte: int,
+      err: errorCode = 0,
+      foundSeparator = false,
+      numMatched = 0;
+
+  qio_channel_mark(false, ch_internal); // A
+  while true {
+    // advance to the the first byte in the separator
+    //  (separator's first byte is intentionally not consumed here
+    //   so that reverting B puts the pointer **before** the separator)
+    err = qio_channel_advance_past_byte(false, ch_internal, firstByte, /* consume */ false);
+    if err == EEOF {
+      break;
+    } else if err {
+      qio_channel_revert_unlocked(ch_internal); // A
+      return (err, false, 0);
+    }
+
+    // try to match the entire separator
+    qio_channel_mark(false, ch_internal); // B
+    numMatched = 0;
+    for i in 0..<numSepBytes {
+      // read a byte to match with
+      nextByte = qio_channel_read_byte(false, ch_internal);
+
+      // check for errors
+      if nextByte < 0 {
+        err = -nextByte;
+        if err == EEOF {
+          break;
+        } else {
+          qio_channel_revert_unlocked(ch_internal); // B
+          qio_channel_revert_unlocked(ch_internal); // A
+          return (err, false, 0);
+        }
+      }
+
+      if nextByte == sepLocal.byte(i)
+        then numMatched += 1;
+        else break;
+    }
+    qio_channel_revert_unlocked(ch_internal); // B
+
+    if numMatched == numSepBytes {
+      foundSeparator = true;
+      break;
+    }
+
+    // consume an additional byte to move the search forward
+    nextByte = qio_channel_read_byte(false, ch_internal);
+    if nextByte < 0 {
+      err = -nextByte;
+      if err == EEOF {
+        break;
+      } else {
+        qio_channel_revert_unlocked(ch_internal); // A
+        return(err, false, 0);
+      }
+    }
+  }
+  // move the channel pointer back to its starting position (A)
+  // compute the number of bytes from A to the start of the separator (or to EOF/maxBytes if it wasn't found)
+  const endOffset = qio_channel_offset_unlocked(ch_internal);
+  qio_channel_revert_unlocked(ch_internal); // A
+  const numBytesRead: int = endOffset - qio_channel_offset_unlocked(ch_internal);
+
+  // should return EFORMAT if separator wasn't found before maxBytes bytes were read
+  // (if reading a string, the number of codepoints will also need to be checked later)
+  if err != EEOF && numBytesRead == maxToRead then err = EFORMAT:errorCode;
+  else if err != EEOF then err = 0;
+
+  return (err, foundSeparator, numBytesRead);
+}
+
 
 /*
   Read the remaining contents of the fileReader into an instance of the
@@ -6386,7 +6852,7 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
    :throws SystemError: Thrown if the bytes could not be read from the
                         fileReader.
  */
-deprecated "'readstring' is deprecated; please use 'readString' instead"
+@deprecated(notes="'readstring' is deprecated; please use 'readString' instead")
 proc fileReader.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, str_out, len);
 
@@ -6455,7 +6921,7 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
 
   :throws SystemError: Thrown if data could not be read from the fileReader.
  */
-deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
+@deprecated(notes="'readbytes' is deprecated; please use 'readBytes' instead")
 proc fileReader.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, bytes_out, len);
 
@@ -6577,7 +7043,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-deprecated "fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+@deprecated(notes="fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead")
 proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
     return this.readBits(v, nbits:int);
 }
@@ -6633,7 +7099,7 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
 }
 
 
-deprecated "fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
+@deprecated(notes="fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead")
 proc fileWriter.writebits(v:integral, nbits:integral) throws {
   this.writeBits(v, nbits:int);
 }
@@ -7263,7 +7729,7 @@ config param ReadBinaryArrayReturnInt = false;
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
-deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
+@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
@@ -7375,7 +7841,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    :throws SystemError: Thrown if an error occurred while reading the from fileReader.
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read.
 */
-deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
+@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
@@ -7521,7 +7987,7 @@ proc fileReader.readln(ref args ...?k):bool throws {
   return try this.read((...args), nl);
 }
 
-@unstable "readln with a style argument is unstable"
+@unstable("readln with a style argument is unstable")
 proc fileReader.readln(ref args ...?k,
                        style:iostyle):bool throws {
   return this.readlnHelper((...args), style: iostyleInternal);
@@ -7659,7 +8125,7 @@ inline proc fileWriter.write(const args ...?k) throws {
   }
 }
 
-@unstable "write with a style argument is unstable"
+@unstable("write with a style argument is unstable")
 proc fileWriter.write(const args ...?k, style:iostyle) throws {
   this.writeHelper((...args), style: iostyleInternal);
 }
@@ -7714,7 +8180,7 @@ proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
 }
 
-@unstable "writeln with a style argument is unstable"
+@unstable("writeln with a style argument is unstable")
 proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
@@ -7915,7 +8381,7 @@ proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-deprecated "readline is deprecated. Use :proc:`readLine` instead"
+@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
               amount = arg.domain.highBound - start + 1) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
@@ -7923,7 +8389,7 @@ proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
-deprecated "readline is deprecated. Use :proc:`readLine` instead"
+@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
 }
@@ -7961,7 +8427,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
-deprecated "unicodeSupported is deprecated due to always returning true"
+@deprecated(notes="unicodeSupported is deprecated due to always returning true")
 proc unicodeSupported():bool {
   return true;
 }
@@ -7996,7 +8462,7 @@ proc file.fstype():int throws {
    :returns: a set of locales that are best for working with this region
    :rtype: domain(locale)
  */
- deprecated "file.localesForRegion is deprecated"
+ @deprecated(notes="file.localesForRegion is deprecated")
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_string), end:int) {

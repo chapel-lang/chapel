@@ -1,4 +1,2 @@
-at_operator.chpl:6: syntax error: invalid token: @
-at_operator.chpl:6: syntax error: near 'n'
-at_operator.chpl:8: syntax error: invalid token: @
-at_operator.chpl:8: syntax error: near 'n'
+at_operator.chpl:6: syntax error: near '@'
+at_operator.chpl:8: syntax error: near '@'

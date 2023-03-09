@@ -67,7 +67,9 @@ static void testBorrowIds() {
 
   {
     // check one id with no filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
+    assert(ids.numIds() == 1);
     auto foundIds = ids.borrow(0, 0);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -83,7 +85,8 @@ static void testBorrowIds() {
 
   {
     // check one id with filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = pub;
     IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
@@ -91,7 +94,8 @@ static void testBorrowIds() {
   }
   {
     // check one id with filtering
-    OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     IdAndFlags::Flags e = not_method;
     auto foundIds = ids.borrow(f, e);
@@ -100,8 +104,11 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out the 1st
-    OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    ids.appendIdAndFlags(y, Decl::PUBLIC, /* method */ true);
+    OwnedIdsWithName ids(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
+    ids.appendIdAndFlags(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
     IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
@@ -119,8 +126,10 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out the 2nd
-    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    ids.appendIdAndFlags(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
@@ -138,8 +147,10 @@ static void testBorrowIds() {
 
   {
     // check two ids with filtering out neither
-    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    ids.appendIdAndFlags(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
@@ -157,8 +168,10 @@ static void testBorrowIds() {
 
   {
     // check two excluding one of them
-    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    OwnedIdsWithName ids(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    ids.appendIdAndFlags(x, Decl::PRIVATE,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     IdAndFlags::Flags e = pub | method;
     auto foundIds = ids.borrow(f, e);
@@ -176,8 +189,10 @@ static void testBorrowIds() {
 
   {
     // check two different ones excluding one of them
-    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
+    OwnedIdsWithName ids(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    ids.appendIdAndFlags(x, Decl::PUBLIC,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     IdAndFlags::Flags e = pub | method;
     auto foundIds = ids.borrow(f, e);
@@ -195,8 +210,10 @@ static void testBorrowIds() {
 
   {
     // check two excluding both
-    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
+    OwnedIdsWithName ids(y, Decl::PUBLIC,
+                         /* method */ true, /* parenful */ false);
+    ids.appendIdAndFlags(x, Decl::PUBLIC,
+                         /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
     IdAndFlags::Flags e = pub;
     auto foundIds = ids.borrow(f, e);

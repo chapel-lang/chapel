@@ -266,6 +266,7 @@ _chpl ()
 --no-warn-int-uint \
 --no-warn-special \
 --no-warn-tuple-iteration \
+--no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
 --optimize \
@@ -347,6 +348,7 @@ _chpl ()
 --tuple-copy-opt \
 --use-color-terminal \
 --use-io-formatters \
+--using-attribute-toolname \
 --vectorize \
 --verify \
 --version \
@@ -356,6 +358,7 @@ _chpl ()
 --warn-int-uint \
 --warn-special \
 --warn-tuple-iteration \
+--warn-unknown-attribute-toolname \
 --warn-unstable \
 --warnings \
 -I \
@@ -491,6 +494,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-vectorize \
+--no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
 --optimize \
@@ -532,8 +536,10 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--using-attribute-toolname \
 --vectorize \
 --version \
+--warn-unknown-attribute-toolname \
 --warn-unstable \
 --warnings \
 -I \

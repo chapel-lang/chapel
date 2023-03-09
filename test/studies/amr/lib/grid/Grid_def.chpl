@@ -361,7 +361,7 @@ proc setOutputTimes (file_name: string) {
 
 
 
-// proc main {
+// private proc main {
 // 
 //   var x_low = (0.0,1.0);
 //   var x_high = (2.0,3.0);

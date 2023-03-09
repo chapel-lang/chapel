@@ -461,7 +461,7 @@ class BadRegexError : Error {
                           Refer to https://github.com/google/re2/blob/master/re2/re2.h
                           for more details about error codes.
  */
-deprecated "'Regex.compile' is deprecated. Please use 'new regex()' instead."
+@deprecated(notes="'Regex.compile' is deprecated. Please use 'new regex()' instead.")
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
@@ -1006,7 +1006,7 @@ record regex {
   }
 
   pragma "last resort"
-  deprecated "regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead."
+  @deprecated(notes="regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.")
   iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
   {
     for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
@@ -1027,7 +1027,7 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
-  deprecated "regex.subn is deprecated. Please use string.replaceAndCount."
+  @deprecated(notes="regex.subn is deprecated. Please use string.replaceAndCount.")
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
     if global then
@@ -1051,7 +1051,7 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: the new string or bytes
    */
-  deprecated "regex.sub is deprecated. Please use string.replace."
+  @deprecated(notes="regex.sub is deprecated. Please use string.replace.")
   proc sub(repl: exprType, text: exprType, global = true )
   {
     if global then
@@ -1162,14 +1162,14 @@ inline operator :(x: regex(bytes), type t: bytes) {
 
 // Cast string to regex
 pragma "no doc"
-deprecated "Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead."
+@deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
 inline operator :(x: string, type t: regex(string)) throws {
   return new regex(x);
 }
 
 // Cast bytes to regex
 pragma "no doc"
-deprecated "Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead."
+@deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
 inline operator :(x: bytes, type t: regex(bytes)) throws {
   return new regex(x);
 }
@@ -1425,5 +1425,308 @@ iter bytes.split(sep: regex(bytes), maxsplit: int = 0)
     yield v;
   }
 }
+
+/*
+  Read until a match with the given separator is found, returning the contents of
+  the ``fileReader`` through that point.
+
+  If a match is found, the ``fileReader`` position is left immediately
+  after it. If the separator could not be found in the next ``maxSize``
+  codepoints/bytes, a ``BadFormatError`` is thrown and the ``fileReader``'s
+  position is not changed. If EOF is reached before finding the separator, the
+  remainder of the ``fileReader``'s contents are returned and the position is
+  left at EOF.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg maxSize: The maximum number of codepoints/bytes to read. For the default
+    value of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``string`` or ``bytes``.  If ``true``, the returned value will not
+    include the captured separator.
+  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
+    up to (and possibly including) the match.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+    bytes. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=false): t throws
+  where t==string || t==bytes
+{
+  var s: t;
+  if !this.readThrough(separator, s, maxSize, stripSeparator) then
+    throw new EofError("reached EOF in readThrough(" + t:string + ")");
+  return s;
+}
+
+/*
+  Read until a match with the given separator is found, returning the contents of
+  the ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``string``.  If ``true``, the captured separator will be removed from ``s``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+    bytes. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, 4*maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(regex(string))");
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, relByteOffset, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in readThrough(regex(string))");
+    } else {
+      if maxSize >= 0 && (s.numCodepoints - if stripSeparator then match.numCodepoints else 0) > maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in readThrough(regex(string))");
+      } else if maxSize > 0  {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+
+    if found && stripSeparator then s = s[0..<(s.size-match.numCodepoints)];
+  }
+  return s.size > 0;
+}
+
+/*
+  Read until a match with the given separator is found, returning the contents of
+  the ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value of
+    ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``bytes``.  If ``true``, the captured separator will be removed from ``b``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+    bytes. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(regex(bytes))");
+
+    const err = IO.readStringBytesData(b, this._channel_internal, relByteOffset, 0);
+    if err then try this._ch_ioerror(err, "in readThrough(regex(bytes))");
+
+    if found && stripSeparator then b = b[0..<(b.size-match.numBytes)];
+  }
+  return b.size > 0;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  If a match is found, the ``fileReader`` position is left immediately
+  before it. If the separator could not be found in the next ``maxSize``
+  codepoints/bytes, a ``BadFormatError`` is thrown and the ``fileReader``'s
+  position is not changed. If EOF is reached before finding the separator,
+  the remainder of the ``fileReader``'s contents are returned and the
+  position is left at EOF.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg maxSize: The maximum number of bytes to read. For the default
+    value of ``-1``, this method can read until EOF.
+  :returns: A ``string`` or ``bytes`` with the contents of the channel up to
+    the ``separator``.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
+  where t == string || t == bytes
+{
+  var s: t;
+  if !this.readTo(separator, s, maxSize) then
+    throw new EofError("reached EOF in readTo(" + t:string + ")");
+  return s;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` codepoints. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, 4*maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readTo(regex(string))");
+    const numBytesToRead = relByteOffset - if found then match.numBytes else 0;
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, numBytesToRead, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in readTo(regex(string))");
+    } else {
+      if maxSize >= 0 && (s.numCodepoints - if found then match.numCodepoints else 0) >= maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in readTo(regex(string))");
+      } else if maxSize > 0 {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+  }
+  return s.size > 0;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The ``fileReader`` position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readTo(regex(bytes))");
+    const numBytesToRead = relByteOffset - if found then match.numBytes else 0;
+
+    const err = IO.readStringBytesData(b, this._channel_internal, numBytesToRead, 0);
+    if err then try this._ch_ioerror(err, "in readTo(regex(bytes))");
+  }
+  return b.size > 0;
+}
+
+/* helper for: readThrough(regex), readTo(regex) (and eventually andvanceTo, advanceThrough)
+
+  looks for a regex match in the next 'maxBytes' bytes in the channel
+
+ returns: (0, true, bytes_to_end_of_match, match) if found
+          (EFORMAT, false, bytes_to_maxBytes, "") if not found
+          (EEOF, false, bytes_to_eof, "") if EOF
+          (error_code, _, _, _) system error
+*/
+private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode, bool, int, t) throws {
+  // look for a match with the provided regex
+  ch._mark();
+  const maxNumBytes = if maxBytes < 0 then max(int) else maxBytes,
+        nm = 1;
+
+  var matches = _ddata_allocate(qio_regex_string_piece_t, nm),
+      err: errorCode = 0,
+      separatorMatch: t;
+
+  err = qio_regex_channel_match(separator._regex,
+                                false, ch._channel_internal, maxNumBytes,
+                                QIO_REGEX_ANCHOR_UNANCHORED,
+                                /* can_discard */ false,
+                                /* keep_unmatched */ false,
+                                /* keep_whole_pattern */ true,
+                                matches, nm);
+
+  // return if there was an error other than a no-match error
+  if err != 0 && err != EEOF && err != EFORMAT {
+    ch._revert();
+    return (err, false, 0, separatorMatch);
+  }
+
+  // otherwise, get a match object from the match
+  const m: regexMatch = _to_regexMatch(matches[0]);
+
+  // extract a string from the match
+  ch._extractMatch(m, separatorMatch, err);
+  if err != 0 && err != EEOF && err != EFORMAT {
+    ch._revert();
+    return (err, false, 0, separatorMatch);
+  }
+
+  // move back to the starting offset and compute the total number of bytes read
+  const endOffset = ch._offset();
+  ch._revert(); // A
+  const numBytesRead: int = endOffset - ch._offset();
+
+  _ddata_free(matches, nm);
+
+  if err == EFORMAT && numBytesRead < maxNumBytes then err = 0;
+  return (err, m.matched, numBytesRead, separatorMatch);
+}
+
+// ----- Private IO functions needed for readThrough Implementation -----
+
+private extern proc chpl_macro_int_EFORMAT():c_int;
+/* An error code indicating a format error; for example when reading a quoted
+   string literal, this would be returned if we never encountered the
+   opening quote. (Chapel specific)
+  */
+pragma "no doc"
+private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
+
+private extern proc chpl_macro_int_EEOF():c_int;
+/* An error code indicating the end of file has been reached (Chapel specific)
+ */
+pragma "no doc"
+private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+
+private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
+
+private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
+private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
+private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
 
 } /* end of module */

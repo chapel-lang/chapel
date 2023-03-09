@@ -790,6 +790,12 @@ moreVisible(const DisambiguationContext& dctx,
   ID fn1Id = candidate1.fn->id();
   ID fn2Id = candidate2.fn->id();
 
+  // ignore more-visible for methods
+  if (candidate1.fn->untyped()->isMethod() &&
+      candidate2.fn->untyped()->isMethod()) {
+    return FOUND_BOTH;
+  }
+
   return moreVisibleQuery(dctx.context, callName,
                           dctx.callInScope, dctx.callInPoiScope,
                           fn1Id, fn2Id);

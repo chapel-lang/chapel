@@ -5173,23 +5173,24 @@ DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallExpr("chpl_gpu_getGridDimZ"); }
 
 DEFINE_PRIM(GPU_ALLOC_SHARED) {
 #ifdef HAVE_LLVM
-  int bytesToAlloc =
-    toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
-
   GenInfo* info = gGenInfo;
-  llvm::ArrayType* arrayTy = llvm::ArrayType::get(
-    llvm::IntegerType::get(gGenInfo->llvmContext, 8), bytesToAlloc);
-  // Allocate global variable in "shared memory space" (3)
-  llvm::GlobalVariable* glob = new llvm::GlobalVariable(
-    *info->module, arrayTy, false, llvm::GlobalValue::InternalLinkage,
-    llvm::Constant::getNullValue(arrayTy),
-    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false);
-  llvm::Type* pointerToArrayTy = arrayTy->getPointerTo();
-  //We want to return a void* in the "generic" address space to we need to cast
-  llvm::Value* castedValue = gGenInfo->irBuilder->CreateAddrSpaceCast(
-    glob, pointerToArrayTy, "gpuSharedMemoryCasted");
+  int bytesToAlloc = toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
 
-  ret.val = castedValue;
+  // Create a type for the shared array.
+  llvm::Type* elementType = llvm::Type::getInt8Ty(info->llvmContext);
+  auto* arrayType = llvm::ArrayType::get(elementType, bytesToAlloc);
+
+  // Allocate the shared array in GPU shared memory.
+  llvm::GlobalVariable* sharedArray = new llvm::GlobalVariable(
+      *info->module, arrayType, false, llvm::GlobalValue::InternalLinkage,
+      llvm::UndefValue::get(arrayType), "gpuSharedMemory", nullptr,
+      llvm::GlobalValue::NotThreadLocal, 3, false);
+
+  // Get a void* pointer to the shared array.
+  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
+  llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
+
+  ret.val = sharedArrayPtr;
   ret.isLVPtr = GEN_VAL;
   ret.chplType = dtCVoidPtr;
 #endif
