@@ -99,6 +99,20 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
+static chpl_bool getSlurmDebug(chpl_bool batch) {
+  chpl_bool result = false;
+  char *debugString = getenv("SLURM_DEBUG");
+  if (debugString) {
+    result = (atoi(debugString) != 0) ? true : false;
+  } else if (batch) {
+    debugString = getenv("SBATCH_DEBUG");
+    if (debugString) {
+      result = (atoi(debugString) != 0) ? true : false;
+    }
+  }
+  return result;
+}
+
 static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
                                  int32_t numLocales,
                                  int32_t numCoresPerLocale) {
@@ -271,7 +285,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     char iCom[2*FILENAME_MAX-10];
     int len = 0;
 
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+    if (!getSlurmDebug(false)) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+    }
     len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
     len += snprintf(iCom+len, sizeof(iCom)-len, "-N %d ", numLocales);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks-per-node=1 ");
