@@ -373,6 +373,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a filled record matching the C `struct tm` type for the given date */
+@unstable("'date.timetuple' is unstable")
   proc date.timetuple() {
     var timeStruct: tm;
 
@@ -459,6 +460,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `string` representing the date */
+  @unstable("'date.ctime' is unstable")
   proc date.ctime() {
     const month = strftime("%b");
     const wday = strftime("%a");
@@ -469,6 +471,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a formatted `string` matching the `format` argument and the date */
+  @unstable("'date.strftime' is unstable")
   proc date.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
@@ -778,6 +781,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `string` matching the `format` argument for this `time` */
+  @unstable("'time.strftime' is unstable")
   proc time.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
@@ -1231,6 +1235,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return a filled record matching the C `struct tm` type for the given
      `datetime` */
+@unstable("'datetime.timetuple' is unstable")
   proc datetime.timetuple() {
     var timeStruct: tm;
     timeStruct.tm_sec = second: int(32);
@@ -1256,6 +1261,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a filled record matching the C `struct tm` type for the given
      `datetime` in UTC
    */
+  @unstable("'datetime.utctimetuple' is unstable")
   proc datetime.utctimetuple() {
     if timezone.borrow() == nil {
       var ret = timetuple();
@@ -1345,6 +1351,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `format` string.  Note that this routine currently only supports
      the format strings of C's strptime().
   */
+  @unstable("'datetime.strptime' is unstable")
   proc type datetime.strptime(date_string: string, format: string) {
     extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
     var timeStruct: tm;
@@ -1358,6 +1365,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Create a `string` from a `datetime` matching the `format` string */
+  @unstable("'datetime.strftime' is unstable")
   proc datetime.strftime(fmt: string) {
     extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
     const bufLen: c_size_t = 100;
@@ -1430,6 +1438,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a `string` from a `datetime` in the form:
      Wed Dec  4 20:30:40 2002
   */
+  @unstable("'datetime.ctime' is unstable")
   proc datetime.ctime() {
     return this.strftime("%a %b %e %T %Y");
   }
