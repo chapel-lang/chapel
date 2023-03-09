@@ -1174,7 +1174,7 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):errorCode;
-private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int):errorCode;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int, consume:c_int):errorCode;
 
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
@@ -3131,14 +3131,117 @@ proc _channel.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
+@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
 proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
   }
-  if err then try this._ch_ioerror(err, "in advanceToByte");
+  if err then try this._ch_ioerror(err, "in advancePastByte");
 }
+
+/*
+   Read until a separator is found, leaving the ``fileReader`` position just
+   after it.
+
+   If the separator cannot be found, the ``fileReader`` position is left at EOF
+   and an ``UnexpectedEofError`` is thrown.
+
+   .. note::
+
+    If a single byte ``string`` or ``bytes`` is passed to the ``separator``
+    argument, a faster implementation is used.
+
+   :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+
+   :throws EofError: Thrown if the ``fileReader`` position is already at EOF.
+   :throws UnexpectedEofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, true);
+      if err then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+    } else {
+      // slow advance to multi-byte separator
+      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      // handle system errors
+      if readError != 0 && readError != EEOF
+        then try this._ch_ioerror(readError, "in advanceThrough(" + t:string + ")");
+
+      // advance past the separator
+      err = qio_channel_advance(false, this._channel_internal, byteOffset + separator.numBytes);
+      // handle system errors
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+
+      // didn't read anything
+      if err == EEOF && byteOffset == 0
+        then try this._ch_ioerror(err, "in advanceThrough(" + t:string + ")");
+      // separator not found
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceThrough(" + t:string + ")");
+    }
+  }
+}
+
+/*
+   Read until a separator is found, leaving the ``fileReader`` position just before it.
+
+   If the separator cannot be found, the ``fileReader`` position is left at EOF and an
+   ``UnexpectedEofError`` is thrown.
+
+   .. note::
+
+      If a single byte ``string`` or ``bytes`` is passed to the ``separator`` argument,
+      a faster implementation is used.
+
+   :arg separator: The separator to match with. Must be a :type:`~String.string` or
+    :type:`~Bytes.bytes`.
+
+   :throws EofError: Thrown if the ``fileReader`` position is already at EOF.
+   :throws UnexpectedEofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, false);
+      if err then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+
+    } else {
+      // slow advance to multi-byte separator or EOF
+      const (readError, found, byteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF
+        then try this._ch_ioerror(readError, "in advanceTo(" + t:string + ")");
+
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        byteOffset + if found then 0 else separator.numBytes
+      );
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+
+      // didn't read anything
+      if err == EEOF && byteOffset == 0
+        then try this._ch_ioerror(err, "in advanceTo(" + t:string + ")");
+      // didn't find separator
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceTo(" + t:string + ")");
+    }
+  }
+}
+
 
 /*
    *Mark* a channel - that is, save the current offset of the channel
@@ -5336,7 +5439,7 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading line.
   :throws SystemError: Thrown if data could not be read from the channel for another reason.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
  */
 proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
@@ -5446,7 +5549,10 @@ proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // site should do that.
 // Assumes we are already on the locale with the channel and that
 // it is already locked.
-private proc readStringBytesData(ref s /*: string or bytes*/,
+// Passing -1 to 'nCodepoints' tells this function to compute the number
+// of codepoints itself, and store the result in 'cachedNumCodepoints'.
+pragma "no doc"
+proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
                                  nCodepoints: int): errorCode {
@@ -5465,7 +5571,9 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
     s.buffLen = nBytes;
     if nBytes != 0 then s.buff[nBytes] = 0; // include null-byte
     if s.type == string {
-      s.cachedNumCodepoints = nCodepoints;
+      if nCodepoints == -1
+        then s.cachedNumCodepoints = BytesStringCommon.countNumCodepoints(s);
+        else s.cachedNumCodepoints = nCodepoints;
       s.hasEscapes = false;
     }
   } else {
@@ -5488,7 +5596,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(ref s: string,
                       maxSize=-1,
@@ -5574,7 +5682,7 @@ proc _channel.readLine(ref s: string,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(ref b: bytes,
                       maxSize=-1,
@@ -5662,13 +5770,372 @@ proc _channel.readLine(ref b: bytes,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
   this.readLine(retval, maxSize, stripNewline);
   return retval;
 }
+
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  If the separator is found, the ``fileReader`` position is left immediately
+  after it. If the separator could not be found in the next ``maxSize`` bytes,
+  a ``BadFormatError`` is thrown and the ``fileReader``'s position is not
+  changed. Otherwise, if EOF is reached before finding the separator, the
+  remainder of the ``fileReader``'s contents are returned and the position is
+  left at EOF.
+
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readThrough` that accepts a
+  :type:`~Regex.regex` separator.
+
+  :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+  :arg maxSize: The maximum number of bytes to read. For the default value of
+    ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``string`` or ``bytes``. If ``true``, the returned value will not include
+    the separator.
+  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
+    up to (and possibly including) the separator.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
+  where t==string || t==bytes
+{
+  var ret: t;
+  if !this.readThrough(separator, ret, maxSize, stripSeparator)
+    then throw new EofError("Encountered EOF in readThrough(" + t:string + ")");
+  return ret;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned ``string``.
+    If ``true``, the separator will not be included in ``s``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
+    //  (this would be a single pass and would not require retroactive codepoint checking)
+
+    // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
+    const (searchErr, found, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    // handle system error
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
+
+    // compute the number of bytes to read into 's'
+    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, bytesToRead, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in readThrough(string)");
+    } else {
+      if maxSize >= 0 && s.numCodepoints > maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in readThrough(string)");
+      } else if maxSize > 0 {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+
+    // remove the separator from the returned string if necessary
+    // TODO: Do this more efficiently in 'readStringBytesData'
+    if found && stripSeparator then s = s[0..<s.numCodepoints-separator.numCodepoints];
+  }
+  return s.size > 0;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` through that point.
+
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method can read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
+    If ``true``, the separator will not be included in ``b``.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
+    const (searchErr, found, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
+
+    // compute the number of bytes to read into 'b'
+    const bytesToRead = if found then bytesOffset + separator.numBytes else bytesOffset;
+
+    // read the given number of bytes into 'b'
+    const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
+    if err then try this._ch_ioerror(err, "in readThrough(bytes)");
+
+    // remove the separator from the returned string if necessary
+    // TODO: Do this more efficiently in 'readStringBytesData'
+    if found && stripSeparator then b = b[0..<b.numBytes-separator.numBytes];
+  }
+  return b.size > 0;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  If the separator is found, the ``fileReader`` position is left immediately
+  before it. If the separator could not be found in the next ``maxSize`` bytes,
+  a ``BadFormatError`` is thrown and the ``fileReader``'s position is not
+  changed. Otherwise, if EOF is reached before finding the separator, the
+  remainder of the ``fileReader``'s contents are returned and the position is
+  left at EOF.
+
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readTo` that accepts a
+  :type:`~Regex.regex` separator.
+
+  :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+  :arg maxSize: The maximum number of bytes to read. For the default
+    value of ``-1``, this method can read until EOF.
+  :returns: A ``string`` or ``bytes`` with the contents of the channel up to
+    the ``separator``.
+
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+    was already at EOF.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
+  where t==string || t==bytes
+{
+  var ret: t;
+  if !this.readTo(separator, ret, maxSize)
+    then throw new EofError("Encountered EOF in readTo(" + t:string + ")");
+  return ret;
+}
+
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
+  var atEof = false;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    // performance TODO: investigate using qio_channel_read_string as a fast path for single-byte separators
+    //  (this would be a single pass and would not require retroactive codepoint checking)
+
+    const (searchErr, _, bytesOffset) = _findSeparator(separator, 4*maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
+    atEof = searchErr == EEOF && bytesOffset == 0;
+
+    // read the given number of bytes into 's', advancing the pointer that many bytes
+    // then, ensure the number of codepoints does not exceed the specified maxSize
+    if maxSize >= 0 then qio_channel_mark(false, this._channel_internal);
+    const err = readStringBytesData(s, this._channel_internal, bytesOffset, -1);
+    if err {
+      if maxSize >= 0 then qio_channel_revert_unlocked(this._channel_internal);
+      try this._ch_ioerror(err, "in fileReader.readTo(string)");
+    } else {
+      if maxSize >= 0 && s.numCodepoints >= maxSize {
+        qio_channel_revert_unlocked(this._channel_internal);
+        try this._ch_ioerror(EFORMAT:errorCode, "in fileReader.readTo(string)");
+      } else if maxSize > 0  {
+        qio_channel_commit_unlocked(this._channel_internal);
+      }
+    }
+  }
+  return !atEof;
+}
+
+/*
+  Read until the given separator is found, returning the contents of the
+  ``fileReader`` up to that point.
+
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
+
+  :arg separator: The separator to match with.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The fileReader position is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
+  var atEof = false;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, _, bytesOffset) = _findSeparator(separator, maxSize, this._channel_internal);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
+    atEof = searchErr == EEOF && bytesOffset == 0;
+
+    const err = readStringBytesData(b, this._channel_internal, bytesOffset, 0);
+    if err then try this._ch_ioerror(err, "in fileReader.readTo(bytes)");
+  }
+  return !atEof;
+}
+
+/* helper for: readTo, readThrough, advanceThrough, advanceTo
+
+  looks for a sequence of bytes matching 'separator' in the
+  next 'maxSize' bytes in the channel
+
+  does not move the channel's pointer
+
+ returns: (0, true, byte_offset) if found
+          (EFORMAT, false, maxBytes) if not found
+          (EFORMAT, false, 0) if separator is empty
+          (EEOF, false, bytes_to_eof) if EOF
+          (error_code, false, 0) system error
+*/
+private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode, bool, int)
+  where t==string || t==bytes
+{
+  if separator.isEmpty() then return (EFORMAT:errorCode, false, 0);
+
+  const maxToRead = if maxBytes < 0 then max(int) else maxBytes,
+        sepLocal = separator.localize(),
+        numSepBytes = sepLocal.numBytes,
+        firstByte = sepLocal.byte(0);
+
+  var nextByte: int,
+      err: errorCode = 0,
+      foundSeparator = false,
+      numMatched = 0;
+
+  qio_channel_mark(false, ch_internal); // A
+  while true {
+    // advance to the the first byte in the separator
+    //  (separator's first byte is intentionally not consumed here
+    //   so that reverting B puts the pointer **before** the separator)
+    err = qio_channel_advance_past_byte(false, ch_internal, firstByte, /* consume */ false);
+    if err == EEOF {
+      break;
+    } else if err {
+      qio_channel_revert_unlocked(ch_internal); // A
+      return (err, false, 0);
+    }
+
+    // try to match the entire separator
+    qio_channel_mark(false, ch_internal); // B
+    numMatched = 0;
+    for i in 0..<numSepBytes {
+      // read a byte to match with
+      nextByte = qio_channel_read_byte(false, ch_internal);
+
+      // check for errors
+      if nextByte < 0 {
+        err = -nextByte;
+        if err == EEOF {
+          break;
+        } else {
+          qio_channel_revert_unlocked(ch_internal); // B
+          qio_channel_revert_unlocked(ch_internal); // A
+          return (err, false, 0);
+        }
+      }
+
+      if nextByte == sepLocal.byte(i)
+        then numMatched += 1;
+        else break;
+    }
+    qio_channel_revert_unlocked(ch_internal); // B
+
+    if numMatched == numSepBytes {
+      foundSeparator = true;
+      break;
+    }
+
+    // consume an additional byte to move the search forward
+    nextByte = qio_channel_read_byte(false, ch_internal);
+    if nextByte < 0 {
+      err = -nextByte;
+      if err == EEOF {
+        break;
+      } else {
+        qio_channel_revert_unlocked(ch_internal); // A
+        return(err, false, 0);
+      }
+    }
+  }
+  // move the channel pointer back to its starting position (A)
+  // compute the number of bytes from A to the start of the separator (or to EOF/maxBytes if it wasn't found)
+  const endOffset = qio_channel_offset_unlocked(ch_internal);
+  qio_channel_revert_unlocked(ch_internal); // A
+  const numBytesRead: int = endOffset - qio_channel_offset_unlocked(ch_internal);
+
+  // should return EFORMAT if separator wasn't found before maxBytes bytes were read
+  // (if reading a string, the number of codepoints will also need to be checked later)
+  if err != EEOF && numBytesRead == maxToRead then err = EFORMAT:errorCode;
+  else if err != EEOF then err = 0;
+
+  return (err, foundSeparator, numBytesRead);
+}
+
 
 /*
   Read the remaining contents of the channel into an instance of the specified type
