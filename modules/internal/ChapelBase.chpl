@@ -1492,59 +1492,75 @@ module ChapelBase {
   // the bit level
   //
   @unstable "This routine may change names / signatures"
-  proc param (real(64)).transmute(type t: uint) param : uint {
-    param ui: uint(64) = __primitive("real64 as uint64", this);
-    return ui;
+  proc param (real(64)).transmute(type t) param : t {
+    if t != uint {
+      compilerError("Cannot (currently) transmute from real(64) to " +
+                    t:string);
+    } else {
+      param ui: uint(64) = __primitive("real64 as uint64", this);
+      return ui;
+    }
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (real(32)).transmute(type t: uint(32)) param : uint(32)
-    where t == uint(32) {
-    param ui: uint(32) = __primitive("real32 as uint32", this);
-    return ui;
+  proc param (real(32)).transmute(type t) param : t {
+    if t != uint(32) {
+      compilerError("Cannot (currently) transmute from real(32) to " +
+                    t:string);
+    } else {
+      param ui: uint(32) = __primitive("real32 as uint32", this);
+      return ui;
+    }
   }
 
   @unstable "This routine may change names / signatures"
-  inline proc (real(?w)).transmute(type t: uint(w)): uint(w)
-    where t == uint(w) {
+  inline proc (real(?w)).transmute(type t): t {
     use CTypes;
-    var src = this, dst:uint(w);
 
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
-    return dst;
+    if t != uint(w) {
+      compilerError("Cannot (currently) transmute from real(" + w:string +
+                    ") to " + t:string);
+    } else {
+      var src = this, dst:uint(w);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
+      return dst;
+    }
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (uint(64)).transmute(type t: real(64)) param : real(64) {
-    param r: real(64) = __primitive("uint64 as real64", this);
-    return r;
+  proc param (uint(64)).transmute(type t) param : t {
+    if t != real(64) {
+      compilerError("Cannot (currently) transmute from uint(64) to " +
+                    t:string);
+    } else {
+      param r: real(64) = __primitive("uint64 as real64", this);
+      return r;
+    }
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (uint(32)).transmute(type t: real(32)) param : real(32)
-    where t == real(32) {
-    param r: real(32) = __primitive("uint32 as real32", this);
-    return r;
+  proc param (uint(32)).transmute(type t) param : t {
+    if t != real(32) {
+      compilerError("Cannot (currently) transmute from uint(32) to " +
+                    t:string);
+    } else {
+      param r: real(32) = __primitive("uint32 as real32", this);
+      return r;
+    }
   }
 
   @unstable "This routine may change names / signatures"
-  inline proc (uint(32)).transmute(type t: real(32)): real(32)
-    where t == real(32) {
+  inline proc (uint(?w)).transmute(type t): t {
     use CTypes;
-    var src = this, dst:real(32);
 
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), 4);
-    return dst;
-  }
-
-  @unstable "This routine may change names / signatures"
-  inline proc (uint(64)).transmute(type t: real(64)): real(64)
-    where t == real(64) {
-    use CTypes;
-    var src = this, dst:real(64);
-
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), 8);
-    return dst;
+    if t != real(w) {
+      compilerError("Cannot (currently) transmute from uint(" + w:string +
+                    ") to " + t:string);
+    } else {
+      var src = this, dst:real(w);
+      c_memcpy(c_ptrTo(dst), c_ptrTo(src), 4);
+      return dst;
+    }
   }
 
 
