@@ -1233,6 +1233,19 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+void setAttributeToolNames(Context* context, AttributeToolNamesList toolNames) {
+  QUERY_STORE_INPUT_RESULT(AttributeToolNames, context, toolNames);
+}
+
+const AttributeToolNamesList& AttributeToolNames(Context *context) {
+  QUERY_BEGIN_INPUT(AttributeToolNames, context);
+
+  // return empty AttributeToolNamesList if not already set
+
+  AttributeToolNamesList result;
+  return QUERY_END(result);
+}
+
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   const uast::AttributeGroup* ret = nullptr;
   if (id.isEmpty()) return ret;
@@ -1317,7 +1330,7 @@ removeSphinxMarkupFromWarningMessage(const std::string msg) {
   // hyperlinks (and having only target show up in sanitized message).
   // TODO: Prefixing content with ! (and filtering it out)
   // TODO: Prefixing content with ~ (and displaying only the last component)
-  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param)"
+  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param|enum)"
                          R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
   auto ret = std::regex_replace(msg, std::regex(re), "$2");
   return ret;
@@ -1396,6 +1409,8 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();
+
+  msg = removeSphinxMarkupFromWarningMessage(msg);
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);

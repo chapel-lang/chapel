@@ -150,17 +150,17 @@ endpoint. ofi_rxAv refers to ofi_av if AVs can be shared, otherwise it
 refers to its own AV.
 */
 
-static struct fid_av*   ofi_av = NULL;   // shared address vector
-static fi_addr_t*       ofi_addrs;       // remote endpoint addresses
-
-static struct fid_ep*   ofi_rxEp;       // receive endpoint
-static struct fid_cq*   ofi_rxCQ;       // receive endpoint CQ
-static struct fid_cntr* ofi_rxCntr;     // receive endpoint counter
-static uint64_t         ofi_rxCount;    // # messages already received.
-static void*            ofi_rxBuffer;   // receive buffer for new messages
-static void*            ofi_rxEnd;      // first byte after buffer
-static struct fid_av*   ofi_rxAv;       // address vector
-static fi_addr_t*       ofi_rxAddrs;    // table of remote endpoint addresses
+static struct fid_av*   ofi_av = NULL;      // shared address vector
+static fi_addr_t*       ofi_addrs = NULL;   // remote endpoint addresses
+static struct fid_ep*   ofi_rxEp;           // receive endpoint
+static struct fid_cq*   ofi_rxCQ;           // receive endpoint CQ
+static struct fid_cntr* ofi_rxCntr;         // receive endpoint counter
+static uint64_t         ofi_rxCount;        // # messages already received.
+static void*            ofi_rxBuffer;       // receive buffer for new messages
+static void*            ofi_rxEnd;          // first byte after buffer
+static struct fid_av*   ofi_rxAv;           // address vector
+static fi_addr_t*       ofi_rxAddrs = NULL; // table of remote endpoint
+                                            // addresses
 
 #define rxAddr(tcip, n) (tcip->addrs[n])
 
@@ -1106,23 +1106,25 @@ void chpl_comm_post_task_init(void) {
 
 static
 void init_ofi(void) {
+
+  init_ofiDoProviderChecks();
+  init_ofiEp();
+
   if (verbosity >= 2 || DBG_TEST_MASK(DBG_PROV)) {
     if ((chpl_nodeID == 0) || DBG_TEST_MASK(DBG_PROV)) {
       void* start;
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
       char buf[10];
-      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, %s fixed heap\n",
-             mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
-             ofi_info->domain_attr->name,
-             ((size == 0)
-              ? "no"
-              : chpl_snprintf_KMG_z(buf, sizeof(buf), size)));
+      printf("COMM=ofi: %s MCM mode, \"%s\" provider, \"%s\" device, "
+        "%s fixed heap, %s endpoints\n",
+        mcmModeNames[mcmMode], ofi_info->fabric_attr->prov_name,
+        ofi_info->domain_attr->name,
+        ((size == 0) ? "no": chpl_snprintf_KMG_z(buf, sizeof(buf), size)),
+        (tciTabBindTxCtxs ? "bound" : "unbound"));
     }
   }
 
-  init_ofiDoProviderChecks();
-  init_ofiEp();
   init_ofiExchangeAvInfo();
   init_ofiForMem();
   init_ofiForRma();
@@ -3263,11 +3265,6 @@ void fini_ofi(void) {
     CHPL_FREE(memTabMap);
   }
 
-  CHPL_FREE(amLZs[1]);
-  CHPL_FREE(amLZs[0]);
-
-  CHPL_FREE(ofi_rxAddrs);
-
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
@@ -3305,14 +3302,18 @@ void fini_ofi(void) {
 
   if (ofi_rxAv != ofi_av) {
     OFI_CHK(fi_close(&ofi_rxAv->fid));
+  }
+
+  if (ofi_rxAddrs != NULL) {
     CHPL_FREE(ofi_rxAddrs);
   }
 
   if (ofi_av != NULL) {
     OFI_CHK(fi_close(&ofi_av->fid));
+  }
+  if (ofi_addrs != NULL) {
     CHPL_FREE(ofi_addrs);
   }
-
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
     OFI_CHK(fi_close(&ofi_amhPollSet->fid));
@@ -3322,6 +3323,10 @@ void fini_ofi(void) {
   OFI_CHK(fi_close(&ofi_fabric->fid));
 
   fi_freeinfo(ofi_info);
+
+  CHPL_FREE(amLZs[1]);
+  CHPL_FREE(amLZs[0]);
+
 }
 
 

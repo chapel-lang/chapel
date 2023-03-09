@@ -68,7 +68,7 @@ module Collectives {
      * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
      * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
   */
-  deprecated "BarrierType is deprecated, please use the default barrier implementation"
+  @deprecated(notes="BarrierType is deprecated, please use the default barrier implementation")
   enum BarrierType {Atomic, Sync}
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
@@ -101,7 +101,7 @@ module Collectives {
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    deprecated "choosing a barrier type is deprecated, please remove the 'barrierType' argument"
+    @deprecated(notes="choosing a barrier type is deprecated, please remove the 'barrierType' argument")
     proc init(numTasks: int,
               barrierType: BarrierType,
               reusable: bool = true) {

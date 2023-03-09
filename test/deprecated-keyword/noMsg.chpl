@@ -1,4 +1,4 @@
-deprecated var x: int;
+@deprecated var x: int;
 
 proc main() {
   writeln(x);

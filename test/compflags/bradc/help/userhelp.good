@@ -15,6 +15,14 @@ Warning and Language Control Options:
       --[no-]warn-unstable            Enable [disable] warnings for uses of
                                       language features that are in flux
       --[no-]warnings                 Enable [disable] output of warnings
+      --[no-]warn-unknown-attribute-toolname
+                                      Enable [disable] warnings when an
+                                      unknown tool name is found in an
+                                      attribute
+      --using-attribute-toolname <toolname>
+                                      Specify additional tool names for
+                                      attributes that are expected in the
+                                      source
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]

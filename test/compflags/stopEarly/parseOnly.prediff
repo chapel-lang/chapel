@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# strip timing info from printed passes so we can test against pass names alone
+
+tmpfile=$2
+tmptmp=`mktemp "tmp.XXXXXX"`
+cp $tmpfile $tmptmp
+
+# extract just names of passes run
+sed '5,$ d' $tmpfile > $tmptmp
+awk '{print $1}' $tmptmp > $tmpfile
+
+rm $tmptmp

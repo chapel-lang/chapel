@@ -350,9 +350,9 @@ fieldAccessorQuery(Context* context,
     thisType = ClassType::get(context, bct, /*manager*/ nullptr, dec);
   }
 
-  // receiver is 'ref' to allow mutation
-  // TODO: indicate that its const-ness should vary with receiver const-ness
-  formalTypes.push_back(QualifiedType(QualifiedType::REF, thisType));
+  // receiver is ref-maybe-const to allow mutation
+  formalTypes.push_back(
+      QualifiedType(QualifiedType::REF_MAYBE_CONST, thisType));
 
   ID fieldId = parsing::fieldIdWithName(context, compType->id(), fieldName);
 

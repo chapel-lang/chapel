@@ -621,7 +621,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     pragma "no doc"
-    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
+    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
     proc tzinfo {
       return timezone;
     }
@@ -647,7 +647,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`, and `timezone`.  All arguments are optional
    */
-  @unstable "tz is unstable; its type may change in the future"
+  @unstable("tz is unstable; its type may change in the future")
   proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
                  in tz: shared Timezone?) {
     if hour < 0 || hour >= 24 then
@@ -709,7 +709,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Replace the `hour`, `minute`, `second`, `microsecond` and `tz` in a
      `time` to create a new `time`. All arguments are optional.
    */
-  @unstable "tz is unstable; its type may change in the future"
+  @unstable("tz is unstable; its type may change in the future")
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
                     in tz) {
     const newhour = if hour != -1 then hour else this.hour;
@@ -1042,7 +1042,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     pragma "no doc"
-    deprecated "'tzinfo' is deprecated, please use 'timezone' instead"
+    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
     proc tzinfo {
       return timezone;
     }
@@ -1058,7 +1058,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
-  @unstable "tz is unstable; its type may change in the future"
+  @unstable("tz is unstable; its type may change in the future")
   proc datetime.init(year:int, month:int, day:int,
                      hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
                      in tz) {
@@ -1125,7 +1125,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The `datetime` that is `timestamp` seconds from the epoch */
-  @unstable "tz is unstable; its type may change in the future"
+  @unstable("tz is unstable; its type may change in the future")
   proc type datetime.fromTimestamp(timestamp: real,
                                    in tz: shared Timezone?) {
     if tz.borrow() == nil {
@@ -1199,7 +1199,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the date and time converted into the timezone in the argument */
-  @unstable "tz is unstable; its type may change in the future"
+  @unstable("tz is unstable; its type may change in the future")
   proc datetime.astimezone(in tz: shared Timezone) {
     if timezone == tz {
       return this;
@@ -1290,7 +1290,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   pragma "no doc"
-  deprecated "'isoweekday' is deprecated, please use 'isoWeekday' instead"
+  @deprecated(notes="'isoweekday' is deprecated, please use 'isoWeekday' instead")
   proc datetime.isoweekday() {
     return isoWeekday();
   }
@@ -1303,7 +1303,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   pragma "no doc"
-  deprecated "'isocalendar' is deprecated, please use 'isoCalendar' instead"
+  @deprecated(notes="'isocalendar' is deprecated, please use 'isoCalendar' instead")
   proc datetime.isocalendar() {
     return getdate().isoCalendar();
   }
@@ -1891,7 +1891,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   pragma "no doc"
-  deprecated "'TZInfo' is deprecated, please use 'Timezone' instead"
+  @deprecated(notes="'TZInfo' is deprecated, please use 'Timezone' instead")
   class TZInfo: Timezone { }
 
   /* Abstract base class for time zones. This class should not be used
@@ -1934,7 +1934,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    :returns: The elapsed time since midnight, local time, in the units specified
    :rtype:   `real(64)`
  */
-deprecated "'getCurrentTime()' is deprecated please use 'timeSinceEpoch()' instead"
+@deprecated(notes="'getCurrentTime()' is deprecated please use 'timeSinceEpoch()' instead")
 proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
   return _convert_microseconds(unit, chpl_now_time());
 
@@ -2122,7 +2122,7 @@ record stopwatch {
   }
 }
 
-deprecated "'Timer' is deprecated, please use 'stopwatch' instead"
+@deprecated(notes="'Timer' is deprecated, please use 'stopwatch' instead")
 record Timer {
   pragma "no doc"
   var time:        _timevalue = chpl_null_timevalue();

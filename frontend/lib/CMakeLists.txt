@@ -28,7 +28,7 @@ if (EXISTS ${CMAKE_SOURCE_DIR}/.git AND Git_FOUND)
                           --build-version
                           --chpl-home=${CHPL_HOME}
                           )
-  message(STATUS "wrote git-version.cpp")
+  message(VERBOSE "wrote git-version.cpp")
 elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 # if we are not in a git repo, or the git binary doesn't exist on this machine,
 # write a git-version.cpp file (if one doesn't exist) as if CHPL_DONT_BUILD_SHA
@@ -39,7 +39,7 @@ elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
                           ${CMAKE_CURRENT_SOURCE_DIR}/util
                           --build-version
                           --chpl-home=${CHPL_HOME})
-  message(STATUS "wrote git-version.cpp with dummy sha")
+  message(VERBOSE "wrote git-version.cpp with dummy sha")
 endif()
 
 add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
