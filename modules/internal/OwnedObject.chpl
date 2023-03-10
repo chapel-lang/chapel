@@ -330,7 +330,10 @@ module OwnedObject {
   }
 
   pragma "no doc"
-  operator =(ref lhs:_owned, rhs:_nilType)
+  operator =(
+    pragma "leaves arg nil"
+    pragma "nil from arg"
+    ref lhs:_owned, rhs:_nilType)
   {
     delete owned.release(lhs);
   }
