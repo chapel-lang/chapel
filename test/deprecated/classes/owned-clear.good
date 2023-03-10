@@ -1,1 +1,1 @@
-owned-clear.chpl:8: warning: owned.clear is deprecated - please use owned.release instead
+owned-clear.chpl:8: warning: owned.clear is deprecated - please assign owned object to `nil` instead
