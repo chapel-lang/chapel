@@ -8805,10 +8805,10 @@ String and Bytes Conversions
  * when reading - read exactly 17 Unicode codepoints
 ``%|17s``
  * when writing - emit string but cause runtime error if length
-   does not match
- * when reading - read exactly 17 bytes (error if we read < 17 bytes)
+   does not match *(deprecated)*
+ * when reading - read exactly 17 bytes (error if we read < 17 bytes) *(deprecated)*
 ``%|*s``
-  as with %17s but the length is specified in the argument before the string.
+  as with %17s but the length is specified in the argument before the string.  *(deprecated)*
 ``%"S``
  use double-quotes to delimit string
 ``%'S``
@@ -8821,10 +8821,10 @@ String and Bytes Conversions
 ``%*S``
  quoted string, the arg before the string to specifies quote character
 ``%|0S``
- write a string null-terminated or read bytes until a null-terminator
+ write a string null-terminated or read bytes until a null-terminator *(deprecated)*
 ``%|*S``
  means read bytes until a terminator byte. The terminator byte is read
- from the argument before the string.
+ from the argument before the string. *(deprecated)*
 ``%|1S`` ``%|2S`` ``%|4S`` and ``%|8S``
   work with encoded strings storing a length
   and then the string data. The digit before ``S`` is
@@ -9109,29 +9109,30 @@ Going through each section for text conversions:
 
 For binary conversions *(deprecated)*:
 
-[optional endian flag]
+[optional endian flag] *(deprecated)*
    ``<``
-    means little-endian
+    means little-endian *(deprecated)*
    ``>``
-    means big-endian
+    means big-endian *(deprecated)*
    ``|``
-    means native-endian
+    means native-endian *(deprecated)*
 
-[optional size in bytes]
+[optional size in bytes] *(deprecated)*
    This is the number of bytes the format should read or write in this
    conversion. For integral conversions (e.g. ``%|i``) it specifies the number
    of bytes in the integer, and 1, 2, 4, and 8 are supported. For real and
    imaginary conversions, 4 and 8 are supported. For complex conversions,
    8 and 16 are supported. The size in bytes is *required* for binary
-   integral and floating-point conversions.
+   integral and floating-point conversions. *(deprecated)*
 
    The size can be ``*``, which means that the number of bytes is read
-   from the argument before the conversion.
+   from the argument before the conversion. *(deprecated)*
 
    For strings, if a terminator or length field is specified, exactly this
    number is the maximum size in bytes; if the terminator or length is not
    specified, the string must be exactly that size (and if the argument is not
    exactly that number of bytes it will cause an error even when writing).
+   *(deprecated)*
 
 [conversion type]
    ``t``
@@ -9153,16 +9154,18 @@ For binary conversions *(deprecated)*:
     conversions
    ``s``
     * means string binary I/O *(deprecated)*
-    * ``%|17s`` means exactly 17 byte string
+    * ``%|17s`` means exactly 17 byte string *(deprecated)*
    ``0S``/``1S``/``2S``/``4S``/``8S``
     * mean encoded string binary I/O *(deprecated)*:
-    * ``%|0S`` means null-terminated string
+    * ``%|0S`` means null-terminated string *(deprecated)*
     * ``%{|S*}`` means  next-argument specifies string terminator byte
-    * ``%|1S`` means a one-byte length and then the string
-    * ``%|2S`` means a two-byte length and then the string
-    * ``%|4S`` means a four-byte length and then the string
-    * ``%|8S`` means an eight-byte length and then the string
+      *(deprecated)*
+    * ``%|1S`` means a one-byte length and then the string *(deprecated)*
+    * ``%|2S`` means a two-byte length and then the string *(deprecated)*
+    * ``%|4S`` means a four-byte length and then the string *(deprecated)*
+    * ``%|8S`` means an eight-byte length and then the string *(deprecated)*
     * ``%|vS`` means a variable-byte-encoded length and then the string
+      *(deprecated)*
    ``c``
     means a Unicode character - either the first character in a string
     or an integral character code
