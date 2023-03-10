@@ -19,7 +19,7 @@ declaring owned5 storing C(5)
 owned5 = {x = 5}
 after owned5 = nil
 owned5 = nil
-after owned.adopt C(100)
+after owned1 = owned.adopt(new unmanaged C(100))
 owned1 = {x = 100}
 after owned.release(owned1)
 owned1 = nil

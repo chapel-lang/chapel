@@ -67,7 +67,7 @@ proc examples() {
   // After this line:
   //  'owned1' will contain C(100); previous object C(4) will be destroyed
   owned1 = owned.adopt(new unmanaged C(100));
-  writeln("after owned.adopt C(100)");
+  writeln("after owned1 = owned.adopt(new unmanaged C(100))");
   writeln("owned1 = ", owned1.borrow());
 
   // The release method can be used to extract the
