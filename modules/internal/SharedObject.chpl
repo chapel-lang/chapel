@@ -541,7 +541,10 @@ module SharedObject {
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    lhs.retain(owned.release(rhs));
+    lhs.retain(owned.release(rhs)!);
+    // var p = owned.release(rhs);
+    // if isNilableClass(p) then lhs.retain(p!);
+    // else lhs.retain(p);
   }
 
   pragma "no doc"
