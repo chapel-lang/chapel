@@ -131,12 +131,12 @@ struct ParserContext {
   owned<AstNode> consumeVarDeclLinkageName(void);
 
   void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
-                     bool usedParns,
+                     bool usedParens,
                      ParserExprList* toolspace,
                      MaybeNamedActualList* actuals);
 
   owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
-                                  bool usedParns,
+                                  bool usedParens,
                                   ParserExprList* toolspace,
                                   MaybeNamedActualList* actuals);
 

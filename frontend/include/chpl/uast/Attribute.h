@@ -32,25 +32,25 @@ class Attribute final: public AstNode {
 private:
   // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
   UniqueString name_;
+  bool usedParens_; // whether the attribute was written with parens -
+                    // only needed while @unstable "msg" is being deprecated
   int numActuals_; // number of child actuals
-  bool usedParens_; // whether the attribute was written with parens - only needed
-                    // while @unstable "msg" is going through deprecation from 1.30
   std::vector<UniqueString> actualNames_;
 
-  Attribute(UniqueString name, int numActuals, bool usedParens, AstList actuals,
+  Attribute(UniqueString name, bool usedParens, int numActuals, AstList actuals,
             std::vector<UniqueString> actualNames)
     : AstNode(asttags::Attribute, std::move(actuals)),
       name_(name),
-      numActuals_(numActuals),
       usedParens_(usedParens),
+      numActuals_(numActuals),
       actualNames_(std::move(actualNames)) {
   }
 
   Attribute(Deserializer& des)
     : AstNode(asttags::Attribute, des) {
       name_ = des.read<UniqueString>();
-      numActuals_ = des.read<int>();
       usedParens_ = des.read<bool>();
+      numActuals_ = des.read<int>();
       actualNames_ = des.read<std::vector<UniqueString>>();
   }
 
@@ -58,8 +58,8 @@ private:
     const Attribute* lhs = this;
     const Attribute* rhs = (const Attribute*) other;
     if (lhs->actualNames_.size() != rhs->actualNames_.size() ||
-        lhs->name_ != rhs->name_ || lhs->numActuals_ != rhs->numActuals_ ||
-        lhs->usedParens_ != rhs->usedParens_) {
+        lhs->name_ != rhs->name_ || lhs->usedParens_ != rhs->usedParens_ ||
+        lhs->numActuals_ != rhs->numActuals_) {
         return false;
     }
     int nActualNames = (int) lhs->actualNames_.size();
@@ -167,8 +167,8 @@ public:
     AstNode::serialize(ser);
 
     ser.write(name_);
-    ser.write(numActuals_);
     ser.write(usedParens_);
+    ser.write(numActuals_);
     ser.write(actualNames_);
   }
 
@@ -176,8 +176,6 @@ public:
 
   /*
     Returns whether the attribute was written with parens.
-    This is only needed while @unstable "msg" is going through deprecation
-    from 1.30 to 1.31
   */
   bool usedParens() const {
     return usedParens_;

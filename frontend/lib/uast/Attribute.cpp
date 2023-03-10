@@ -31,7 +31,7 @@ owned<Attribute> Attribute::build(Builder* builder, Location loc,
                                   std::vector<UniqueString> actualNames) {
   int numActuals = actuals.size();
 
-  Attribute* ret = new Attribute(name, numActuals, usedParens,
+  Attribute* ret = new Attribute(name, usedParens, numActuals,
                                  std::move(actuals), std::move(actualNames));
 
   builder->noteLocation(ret, loc);

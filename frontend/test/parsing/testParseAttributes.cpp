@@ -52,7 +52,8 @@ static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
     equalPragmas;
 }
 
-static void toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag, bool value) {
+static void toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag,
+                               bool value) {
   chpl::CompilerFlags flags;
   ctx->advanceToNextRevision(false);
   flags.set(flag, value);
@@ -649,7 +650,8 @@ static void test9(Parser* parser) {
   assert(en);
   auto enAttr = en->attributeGroup();
   assert(enAttr);
-  auto enumNodoc = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.nodoc"));
+  auto chpldocName = UniqueString::get(ctx, "chpldoc.nodoc");
+  auto enumNodoc = enAttr->getAttributeNamed(chpldocName);
   assert(enumNodoc);
   auto enumUnstable = enAttr->getAttributeNamed(USTR("unstable"));
   assert(enumUnstable->isNamedActual(0));
@@ -705,7 +707,7 @@ static void test10(Parser* parser) {
   )"""";
   auto ctx = parser->context();
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, true);
-  assert(chpl::isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
   auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
                                                 program.c_str());
   assert(!guard.realizeErrors());
@@ -716,9 +718,12 @@ static void test10(Parser* parser) {
   assert(en);
   auto enAttr = en->attributeGroup();
   assert(enAttr);
-  auto nodoc = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.nodoc"));
-  auto unknown = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.unknown"));
-  auto subname = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.subname.attribute"));
+  auto nodocName = UniqueString::get(ctx, "chpldoc.nodoc");
+  auto unknownName = UniqueString::get(ctx, "chpldoc.unknown");
+  auto subnameName = UniqueString::get(ctx, "chpldoc.subname.attribute");
+  auto nodoc = enAttr->getAttributeNamed(nodocName);
+  auto unknown = enAttr->getAttributeNamed(unknownName);
+  auto subname = enAttr->getAttributeNamed(subnameName);
   assert(nodoc);
   assert(unknown);
   assert(subname);
@@ -763,22 +768,30 @@ static void test12(Parser* parser) {
   auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
                                                 program.c_str());
   assert(guard.numErrors() == 6);
-  assert(guard.error(0)->message() == "unrecognized argument name 'issues'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments");
+  assert(guard.error(0)->message() == "unrecognized argument name 'issues'. "
+         "'@unstable' attribute only accepts 'category', 'issue', and 'reason' "
+         "arguments");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(1)->message() == "unstable attribute arguments must be string literals for now");
+  assert(guard.error(1)->message() == "unstable attribute arguments must be "
+         "string literals for now");
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(2)->message() == "unrecognized argument name 'sincer'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments");
+  assert(guard.error(2)->message() == "unrecognized argument name 'sincer'. "
+         "'@deprecated' attribute only accepts 'since', 'notes', and "
+         "'suggestion' arguments");
   assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(3)->message() == "deprecated attribute arguments must be string literals for now");
+  assert(guard.error(3)->message() == "deprecated attribute arguments must be "
+         "string literals for now");
   assert(guard.error(3)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(4)->message() == "unrecognized argument name 'sienc'. '@stable' attribute only accepts 'since' or unnamed argument");
+  assert(guard.error(4)->message() == "unrecognized argument name 'sienc'. "
+         "'@stable' attribute only accepts 'since' or unnamed argument");
   assert(guard.error(4)->kind() == ErrorBase::Kind::ERROR);
 
-  assert(guard.error(5)->message() == "stable attribute arguments must be string literals for now");
+  assert(guard.error(5)->message() == "stable attribute arguments must be "
+         "string literals for now");
   assert(guard.error(5)->kind() == ErrorBase::Kind::ERROR);
 
   assert(guard.realizeErrors() == 6);
@@ -793,7 +806,7 @@ static void test13(Parser* parser) {
     @linter.ignoreArgument("bar")
     proc Foo(bar) {  }
   )"""";
-  assert(!chpl::isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  assert(!isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
   auto parseResult = parseStringAndReportErrors(parser, "test13.chpl",
                                                 program.c_str());
   assert(!guard.realizeErrors());
@@ -812,7 +825,7 @@ static void test14(Parser* parser) {
   )"""";
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, true);
   std::vector<UniqueString> toolNames = {UniqueString::get(ctx,"linter")};
-  assert(chpl::isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
+  assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
   parsing::setAttributeToolNames(ctx, toolNames);
   auto parseResult = parseStringAndReportErrors(parser, "test14.chpl",
                                                 program.c_str());
@@ -896,11 +909,14 @@ static void test18(Parser* parser) {
                                                 program.c_str());
 
   assert(guard.numErrors() == 3);
-  assert(guard.error(0)->message() == "unstable attribute only accepts one unnamed argument");
+  assert(guard.error(0)->message() == "unstable attribute only accepts one "
+         "unnamed argument");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.error(1)->message() == "deprecated attribute only accepts one unnamed argument");
+  assert(guard.error(1)->message() == "deprecated attribute only accepts one "
+         "unnamed argument");
   assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.error(2)->message() == "stable attribute only accepts one argument");
+  assert(guard.error(2)->message() == "stable attribute only accepts one "
+         "argument");
   assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 3);
 }
@@ -923,12 +939,14 @@ static void test19(Parser* parser) {
 
   auto parseResult = parseStringAndReportErrors(parser, "test19.chpl",
                                                 program.c_str());
+  auto msg = "Attribute arguments without parentheses "
+         "are deprecated; please wrap the argument in parentheses '()'";
   assert(guard.numErrors() == 3);
-  assert(guard.error(0)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(0)->message() == msg);
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
-  assert(guard.error(1)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(1)->message() == msg);
   assert(guard.error(1)->kind() == ErrorBase::Kind::WARNING);
-  assert(guard.error(2)->message() == "Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'");
+  assert(guard.error(2)->message() == msg);
   assert(guard.error(2)->kind() == ErrorBase::Kind::WARNING);
   assert(guard.realizeErrors() == 3);
 }

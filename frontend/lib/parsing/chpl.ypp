@@ -883,16 +883,14 @@ attribute_decl_stmt:
  | attribute_decl_begin opt_attribute_decl_toolspace
  {
   // this allows us to distinguish between @attribute() and @attribute
-  // but should not be needed once `@unstable "msg"` goes through its deprecation
-  // cycle from 1.30 - 1.31
+  // but should not be needed once `@unstable "msg"` is deprecated and gone
   auto lst = new MaybeNamedActualList();
   context->noteAttribute(@1, $1, false, $2, lst);
  }
  | attribute_decl_begin STRINGLITERAL
  {
   // this allows us to maintain @unstable "message" without requiring parens
-  // but should not be needed once `@unstable "msg"` goes through its deprecation
-  // cycle from 1.30 - 1.31
+  // but should not be needed once `@unstable "msg"` is deprecated and gone
   auto lst = new MaybeNamedActualList();
   auto actual = makeMaybeNamedActual($2);
   lst->push_back(actual);
