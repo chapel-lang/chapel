@@ -241,7 +241,7 @@ module OwnedObject {
        Deletes the previously managed object, if any.
      */
     pragma "leaves this nil"
-    @deprecated(notes="owned.clear is deprecated - please use :proc:`owned.release` instead")
+    @deprecated(notes="owned.clear is deprecated - please assign owned object to `nil` instead")
     proc ref clear() {
       this = nil;
     }
