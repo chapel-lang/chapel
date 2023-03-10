@@ -129,7 +129,7 @@ struct Visitor {
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
-
+  void checkAttributeUsedParens(const Attribute* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -1096,6 +1096,12 @@ void Visitor::visit(const BracketLoop* node) {
   checkGenericArrayTypeUsage(node);
 }
 
+void Visitor::checkAttributeUsedParens(const Attribute* node) {
+  if (node->numActuals() > 0 && !node->usedParens()) {
+     CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
+  }
+}
+
 void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // Store attributes we recognize in "all-global-strings.h"
   // then a USTR() on the attribute name will work or not work
@@ -1108,9 +1114,6 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
     error(node, "Unknown top-level attribute '%s'", node->name().c_str());
-    // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do
-    // not yet have so by default for now we will warn about unrecognized
-    // attributes that are toolspaced
   } else {
     // Check for other possible tool name given from command line
     bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
@@ -1132,6 +1135,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
 
 void Visitor::visit(const Attribute* node) {
   checkAttributeNameRecognizedOrToolSpaced(node);
+  checkAttributeUsedParens(node);
 }
 
 void Visitor::visit(const FnCall* node) {

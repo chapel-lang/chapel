@@ -747,7 +747,8 @@ static void testAttributeOnClass(Parser* parser) {
   assert(attrGrp);
   assert(attrGrp->numAttributes() == 1);
   auto ctx = parser->context();
-  auto attr = attrGrp->getAttributeNamed(UniqueString::get(ctx, "thekitchensink.inner.attribute"));
+  auto complexName = UniqueString::get(ctx, "thekitchensink.inner.attribute");
+  auto attr = attrGrp->getAttributeNamed(complexName);
   assert(attr);
   auto attrNull = attrGrp->getAttributeNamed(UniqueString::get(ctx, "nodoc"));
   assert(attrNull==nullptr);
