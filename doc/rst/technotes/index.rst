@@ -35,6 +35,7 @@ Initializers and Generic Programming
    The ‘init=’ Method <initequals>
    Invoking Initializers with a Generic Instantiation <initTypeAlias>
    Partial Instantiations <partialInstantiations>
+   Throwing Initializers <throwingInit>
 
 Parallel Language Features
 --------------------------
