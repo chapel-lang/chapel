@@ -56,8 +56,8 @@ proc examples() {
   var owned5 = new owned C(5)?;
   writeln("owned5 = ", owned5.borrow());
 
-  // The release method can be used to delete the
-  // managed object, if any.
+  // Assigning the managed object to nil can be used to
+  // delete the managed object, if any.
   owned5 = nil; // deletes C(5)
   writeln("after owned5 = nil");
   writeln("owned5 = ", owned5.borrow());
