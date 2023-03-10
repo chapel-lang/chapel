@@ -8186,6 +8186,15 @@ proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
 
+@deprecated(notes="fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'")
+proc fileReader.flush() throws {
+  var err:errorCode = 0;
+  on this._home {
+    err = qio_channel_flush(locking, _channel_internal);
+  }
+  if err then try this._ch_ioerror(err, "in fileReader.flush");
+}
+
 /*
 
   Makes all writes to the fileWriter, if any, available to concurrent viewers of

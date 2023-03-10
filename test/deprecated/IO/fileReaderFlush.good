@@ -1,0 +1,1 @@
+fileReaderFlush.chpl:4: warning: fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'
