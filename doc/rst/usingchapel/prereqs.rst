@@ -114,6 +114,7 @@ We have used the following commands to install the above prerequisites:
 
   * Amazon Linux 2023::
 
+      # Note: CHPL_LLVM=system is not working yet on Amazon Linux 2023
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install clang clang-devel llvm-devel
@@ -168,6 +169,7 @@ We have used the following commands to install the above prerequisites:
 
   * Fedora 37, 38::
 
+      # Note: CHPL_LLVM=system is not working yet on Fedora 37, 38
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
 
