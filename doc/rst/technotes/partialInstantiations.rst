@@ -196,7 +196,7 @@ instantiated:
 
   proc printInstantiated(type T) {
     writeln("type = ", T:string);
-    for param i in 1..numFields(T) {
+    for param i in 0..<numFields(T) {
       param name : string = getFieldName(T, i);
       writeln("  field ", name, " = ", isFieldBound(T, name));
     }
