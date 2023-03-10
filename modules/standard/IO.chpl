@@ -8186,7 +8186,7 @@ proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
 
-@deprecated(notes="fileReader.flush is deprecated, it was a no-op")
+@deprecated(notes="fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'")
 proc fileReader.flush() throws {
   var err:errorCode = 0;
   on this._home {
