@@ -14,7 +14,9 @@ def gather_provision_script_cmds(path):
                 pass # ignore shebang line
             elif (line.startswith("alias unsudo") or
                   line.startswith("alias hide") or
-                  line.startswith("hide")):
+                  line.startswith("hide") or
+                  line.endswith("#hide") or
+                  line.endswith("# hide")):
                 pass # ignore these hidden details
             elif line:
                 cmds.append(line)
@@ -36,6 +38,10 @@ def title(name):
         name = '11 "Bullseye"'
     if name == "Bookworm":
         name = '12 "Bookworm"'
+    if name == "Trixie":
+        name = '13 "Trixie"'
+    if name == "Forky":
+        name = '14 "Forky"'
     # handle Ubuntu nicknames
     if name == "Bionic":
         name = '18.04 "Bionic Beaver"'
@@ -47,6 +53,8 @@ def title(name):
         name = '21.10 "Impish Indri"'
     if name == "Kinetic":
         name = '22.10 "Kinetic Kudu"'
+    if name == "Lunar":
+        name = '23.04 "Lunar Lobster"'
     return name
 
 def fixname(subdir):
@@ -63,6 +71,8 @@ def fixname(subdir):
     # remove 64 in ubuntu-impish64
     if name.endswith("64"):
         name = name[:name.find("64")]
+    if name.endswith("homebrew"):
+        name = "Homebrew"
 
     parts = name.split("-")
     adj = [ ]
@@ -127,10 +137,10 @@ for d in directories:
         subpath = os.path.join(d, subdir)
         if "nollvm" in subpath:
             continue # skip these configurations
-        if "homebrew" in subpath:
-            continue # skip these configurations
-                     # (this script would need to be improved
-                     #  for sudo vs not sudo commands)
+        #if "homebrew" in subpath:
+        #    continue # skip these configurations
+        #             # (this script would need to be improved
+        #             #  for sudo vs not sudo commands)
         if "generic-x32-debian11" in subpath:
             continue # skip this one, redudant with other debian ones
 
@@ -160,9 +170,18 @@ for subpath in subdirs:
             words = cmd.split()
             adj = [ ]
             sudo = True
+            if words[0] == "sudo":
+                words.pop(0)
             if words[0] == "unsudo":
                 sudo = False
                 words.pop(0)
+            if words[-1] == "#unsudo":
+                sudo = False
+                words.pop(-1)
+            if len(words) >= 2 and words[-2] == "#" and words[-1] == "unsudo":
+                sudo = False
+                words.pop(-1)
+                words.pop(-1)
             if words[0] == "cd":
                 sudo = False
             for word in words:
