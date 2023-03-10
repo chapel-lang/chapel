@@ -175,8 +175,8 @@ Procedures are defined with the following syntax:
      'where' expression
 
    function-body:
+     'do' statement
      block-statement
-     return-statement
 
 Functions do not require parentheses if they have no arguments. Such
 functions are described in :ref:`Functions_without_Parentheses`.
