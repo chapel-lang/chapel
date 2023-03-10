@@ -51,7 +51,6 @@ module MemMove {
     :return: ``true`` if ``t`` needs to be deinitialized
     :rtype: param bool
   */
-  pragma "no doc"
   @deprecated(notes="'needsDeinit' is deprecated; please use 'needsDestroy' instead")
   proc needsDeinit(type t) param {
     return __primitive("needs auto destroy", t);
@@ -89,7 +88,6 @@ module MemMove {
 
     :arg: A variable to deinitialize
   */
-  pragma "no doc"
   @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
   proc explicitDeinit(ref arg: ?t) {
     if needsDeinit(t) then
@@ -486,7 +484,6 @@ module MemMove {
     :arg numElements: The number of elements to move-initialize
     :type numElements: int
   */
-  pragma "no doc"
   @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
   proc moveInitializeArrayElements(ref a: [?d], dstStartIndex: a.idxType,
                                    srcStartIndex: a.idxType,
@@ -548,7 +545,6 @@ module MemMove {
     :arg numElements: The number of elements to move-initialize
     :type numElements: int
   */
-  pragma "no doc"
   @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
   proc moveInitializeArrayElements(ref dstA: [] ?t,
                                    dstStartIndex: dstA.idxType,
