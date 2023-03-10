@@ -1482,6 +1482,7 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
+  use Regex.RegexIoSupport;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -1530,6 +1531,7 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
+  use Regex.RegexIoSupport;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -1595,6 +1597,7 @@ proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
+  use Regex.RegexIoSupport;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -1640,6 +1643,7 @@ proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): boo
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool throws {
+  use Regex.RegexIoSupport;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -1663,6 +1667,8 @@ proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool 
           (error_code, _, _, _) system error
 */
 private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode, bool, int, t) throws {
+  use Regex.RegexIoSupport;
+
   // look for a match with the provided regex
   ch._mark();
   const maxNumBytes = if maxBytes < 0 then max(int) else maxBytes,
@@ -1708,25 +1714,30 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
 }
 
 // ----- Private IO functions needed for readThrough Implementation -----
+private module RegexIoSupport {
+  use CTypes;
+  use IO;
+  use Regex;
 
-private extern proc chpl_macro_int_EFORMAT():c_int;
-/* An error code indicating a format error; for example when reading a quoted
-   string literal, this would be returned if we never encountered the
-   opening quote. (Chapel specific)
+  extern proc chpl_macro_int_EFORMAT():c_int;
+  /* An error code indicating a format error; for example when reading a quoted
+     string literal, this would be returned if we never encountered the
+     opening quote. (Chapel specific)
   */
-pragma "no doc"
-private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
+  pragma "no doc"
+  inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
-private extern proc chpl_macro_int_EEOF():c_int;
-/* An error code indicating the end of file has been reached (Chapel specific)
- */
-pragma "no doc"
-private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  extern proc chpl_macro_int_EEOF():c_int;
+  /* An error code indicating the end of file has been reached (Chapel specific)
+   */
+  pragma "no doc"
+  inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
-private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
+  extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
 
-private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
-private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
-private extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
+  extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
+  extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
+  extern proc qio_channel_commit_unlocked(ch:qio_channel_ptr_t);
+}
 
 } /* end of module */

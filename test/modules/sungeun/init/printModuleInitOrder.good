@@ -21,6 +21,7 @@ Initializing Modules:
           IO
            FormattedIO
             Regex
+             RegexIoSupport
            Types
          Sort
           List

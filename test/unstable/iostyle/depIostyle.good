@@ -1,1 +1,1 @@
-depIostyle.chpl:3: warning: iostyle is unstable, a new way of controlling channel output is planned
+depIostyle.chpl:3: warning: iostyle is unstable, a new way of controlling fileReader and fileWriter output is planned
