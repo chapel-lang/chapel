@@ -263,7 +263,7 @@ module OwnedObject {
      */
     pragma "leaves this nil"
     pragma "nil from this"
-    @deprecated(notes="owned.release method is deprecated - please use :proc:`owned.release` type function instead")
+    @deprecated(notes="owned.release is deprecated - please use the :proc:`owned.release` type method instead")
     proc ref release() {
       return owned.release(this);
     }
