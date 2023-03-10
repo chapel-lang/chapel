@@ -242,7 +242,7 @@ module OwnedObject {
     pragma "leaves this nil"
     @deprecated(notes="owned.clear is deprecated - please use :proc:`owned.release` instead")
     proc ref clear() {
-      delete owned.release(this);
+      this = nil;
     }
 
 
@@ -253,7 +253,7 @@ module OwnedObject {
      */
     @deprecated(notes="owned.retain is deprecated - please use :proc:`owned.adopt` instead")
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
-      delete owned.release(this);
+      this = nil;
       this = owned.adopt(newPtr);
     }
 
@@ -322,10 +322,10 @@ module OwnedObject {
     }
 
     var tmp = owned.release(rhs);
-    if lhs.chpl_p != nil then delete owned.release(lhs);
+    if lhs.chpl_p != nil then lhs = nil;
     lhs.chpl_p = tmp;
     // NOTE: this cannot be `lhs = owned.adopt(owned.release(rhs))`
-    // this is the assignment op we are iplementing, causes infinite recursion
+    // this is the assignment op we are implementing, causes infinite recursion
   }
 
   pragma "no doc"
@@ -394,7 +394,7 @@ module OwnedObject {
       if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
-        delete owned.release(this);
+        this = nil;
     }
   }
 

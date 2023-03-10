@@ -51,7 +51,7 @@ proc bad4() {
   var x = new owned MyClass(1);
   ref y = x;
   var z = x;
-  delete owned.release(y);
+  y = nil;
   writeln(x);
   x.method();
 }
@@ -61,7 +61,7 @@ proc bad4q() {
   var x = new owned MyClass?(1);
   ref y = x;
   var z = x;
-  delete owned.release(y);
+  y = nil;
   writeln(x);
   x!.method();
 }

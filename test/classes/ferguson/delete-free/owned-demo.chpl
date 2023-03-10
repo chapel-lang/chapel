@@ -58,8 +58,8 @@ proc examples() {
 
   // The release method can be used to delete the
   // managed object, if any.
-  delete owned.release(owned5); // deletes C(5)
-  writeln("after delete owned.release(owned5)");
+  owned5 = nil; // deletes C(5)
+  writeln("after owned5 = nil");
   writeln("owned5 = ", owned5.borrow());
 
   // The adopt method can be used to provide a new value for

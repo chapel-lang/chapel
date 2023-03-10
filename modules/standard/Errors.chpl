@@ -275,7 +275,7 @@ module Errors {
     proc deinit() {
       if errorsArray {
         for i in 0..#nErrors {
-          delete owned.release(errorsArray[i]);
+          errorsArray[i] = nil;
         }
         c_free(errorsArray);
       }

@@ -17,7 +17,7 @@ owned1 = {x = 4}
 owned4 = nil
 declaring owned5 storing C(5)
 owned5 = {x = 5}
-after delete owned.release(owned5)
+after owned5 = nil
 owned5 = nil
 after owned.adopt C(100)
 owned1 = {x = 100}
