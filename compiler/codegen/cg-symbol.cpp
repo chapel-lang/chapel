@@ -1849,6 +1849,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
         b.addAttribute(llvm::Attribute::ZExt);
       }
       if (returnInfo.getInReg()) b.addAttribute(llvm::Attribute::InReg);
+      llvmAddAttr(ctx, attrs, llvm::AttributeList::ReturnIndex, b);
       returnTy = returnInfo.getCoerceToType();
     } break;
 
