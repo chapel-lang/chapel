@@ -73,7 +73,7 @@ The primitive types are summarized by the following syntax:
    primitive-type:
      'void'
      'nothing'
-     'bool' primitive-type-parameter-part[OPT]
+     'bool'
      'int' primitive-type-parameter-part[OPT]
      'uint' primitive-type-parameter-part[OPT]
      'real' primitive-type-parameter-part[OPT]
@@ -139,11 +139,8 @@ The Bool Type
 ~~~~~~~~~~~~~
 
 Chapel defines a logical data type designated by the symbol ``bool``
-with the two predefined values ``true`` and ``false``. This default
-boolean type is stored using an implementation-defined number of bits. A
-particular number of bits can be specified using a parameter value
-following the ``bool`` keyword, such as ``bool(8)`` to request an 8-bit
-boolean value. Legal sizes are 8, 16, 32, and 64 bits.
+with the two predefined values ``true`` and ``false``. The boolean
+type is stored using an implementation-defined number of bits.
 
 Some statements require expressions of ``bool`` type and Chapel supports
 a special conversion of values to ``bool`` type when used in this

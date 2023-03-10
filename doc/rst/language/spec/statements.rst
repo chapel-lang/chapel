@@ -161,10 +161,7 @@ which can be any expression.
 
 When the left-hand side is of a numerical type, there is an implicit
 conversion (:ref:`Implicit_Conversions`) of the right-hand side
-expression to the type of the left-hand side expression. Additionally,
-for simple assignment, if the left-hand side is of Boolean type, the
-right-hand side is implicitly converted to the type of the left-hand
-side (i.e. a ``bool(?w)`` with the same width ``w``).
+expression to the type of the left-hand side expression.
 
 For simple assignment, the validity and semantics of assigning between
 classes (:ref:`Class_Assignment`),
