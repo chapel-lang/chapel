@@ -6,6 +6,3 @@ var lhs = new owned MyClass();
 
 
 lhs = nil;
-
-compilerError("done");
-
