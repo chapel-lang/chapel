@@ -780,7 +780,7 @@ module DataFrames {
       this.complete();
 
       for lab in labels do
-        this.columns[lab] = owned.release(columns[lab].copy());
+        this.columns[lab] = owned.release(columns[lab].copy())!;
     }
 
     pragma "no doc"
@@ -790,7 +790,7 @@ module DataFrames {
       this.complete();
 
       for lab in labels do
-        this.columns[lab] = owned.release(columns[lab]!.copy());
+        this.columns[lab] = owned.release(columns[lab]!.copy())!;
     }
 
     proc init(columns: [?D], in idx: shared Index) {
@@ -816,7 +816,7 @@ module DataFrames {
     }
 
     proc insert(lab: string, s: borrowed Series) {
-      var sCopy = owned.release(s.copy());
+      var sCopy = owned.release(s.copy())!;
       sCopy.reindex(idx);
       labels += lab;
       columns[lab] = sCopy;

@@ -30,7 +30,7 @@ class A {
   own.x += own.y;
   writeln("unmanaged obj: ", un, " and managed obj: ", own);
 
-  var un2: unmanaged A = owned.release(own);
+  var un2: unmanaged A = owned.release(own)!;
   writeln("unmanaged obj: ", un2);
   delete un2;
 
