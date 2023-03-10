@@ -1,2 +1,2 @@
-owned-create.chpl:7: warning: owned.create is deprecated - please use owned.adopt instead
-owned-create.chpl:12: warning: owned.create is deprecated - please use owned.adopt instead
+owned-create.chpl:8: warning: owned.create is deprecated - please use owned.adopt instead
+owned-create.chpl:13: warning: owned.create is deprecated - please use owned.adopt instead

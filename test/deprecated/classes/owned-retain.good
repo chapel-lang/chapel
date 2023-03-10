@@ -1,1 +1,1 @@
-owned-retain.chpl:8: warning: owned.retain is deprecated - please use owned.adopt instead
+owned-retain.chpl:9: warning: owned.retain is deprecated - please use owned.adopt instead

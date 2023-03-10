@@ -1,3 +1,4 @@
+// deprecated for 1.30 by Jade
 class A {
   var x;
 }
