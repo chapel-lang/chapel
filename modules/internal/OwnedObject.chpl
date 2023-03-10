@@ -323,7 +323,7 @@ module OwnedObject {
     }
 
     var tmp = owned.release(rhs);
-    if lhs.chpl_p != nil then lhs = nil;
+    if lhs.chpl_p != nil then delete owned.release(lhs);
     lhs.chpl_p = tmp;
     // NOTE: this cannot be `lhs = owned.adopt(owned.release(rhs))`
     // this is the assignment op we are implementing, causes infinite recursion
@@ -331,7 +331,6 @@ module OwnedObject {
 
   pragma "no doc"
   operator =(ref lhs:_owned, rhs:_nilType)
-    where ! isNonNilableClass(lhs)
   {
     delete owned.release(lhs);
   }
