@@ -409,9 +409,9 @@ follows:
 
    .. code-block:: chapel
 
-      proc readXX(x: sync) return x.readXX();
-      proc readXX(x: single) return x.readXX();
-      proc readXX(x) return x;
+      proc readXX(x: sync) do return x.readXX();
+      proc readXX(x: single) do return x.readXX();
+      proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
    fragment is solely for the purposes of illustration. It is not
