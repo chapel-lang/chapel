@@ -20,24 +20,39 @@ Syntactic / Naming Changes
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for single-statement `return` routines that don't use `do`
+* deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
+* removed support for the deprecated `alignedBoundsByDefault` `config param`
 
 New Features
 ------------
+* added support for single-statement subroutine bodies using the `do` keyword  
+  (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
+* added a `.fullIdxType` query on arrays to get multidimensional index types  
+  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.fullIdxType)
+* added a prototype `.transmute()` for bitwise `uint` <-> `real` conversions  
+  (e.g., `r.transmute(uint)` will return a `uint` with `r`'s bit pattern)
 
 Feature Improvements
 --------------------
+* improved support for loops over unbounded ranges/domains of 'enum' or 'bool'
+  (e.g., `for i in false.. by -1` will now yield `true`, `false`)
 
 Namespace Changes
 -----------------
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* added a new 2-argument `.find()` method on arrays  
+  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
 
 Name Changes in Libraries
 -------------------------
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the old `.find()` method on arrays to update its return type  
+  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
 
 Standard Library Modules
 ------------------------
@@ -53,6 +68,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* parallelized the implementations of the new array `.find()` methods
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -65,6 +81,10 @@ Memory Improvements
 
 Documentation
 -------------
+* added a new subsection to the spec defining procedure/iterator bodies
+  (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
+* improved the spec's description of return intents' effects on `return`  
+  (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-return-statement)
 
 Syntax Highlighting
 -------------------
@@ -83,6 +103,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* added a warning for `[lo..hi]` literals to reduce the potential for confusion
 
 Compiler Flags
 --------------
@@ -98,9 +119,13 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* reworded error messages for generic class management types to avoid changes
 
 Bug Fixes
 ---------
+* fixed several bugs related to uses of labeled `break`/`continue` statements
+* fixed a bug in which variable constraints of type `domain` were ignored
+* fixed a bug in which internal modules were stacking class memory managements
 
 Bug Fixes for Build Issues
 --------------------------
