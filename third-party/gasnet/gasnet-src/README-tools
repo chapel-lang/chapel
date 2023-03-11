@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.19
+GASNet tools specification version: 1.20 // work-in-progress, not "closed".
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 

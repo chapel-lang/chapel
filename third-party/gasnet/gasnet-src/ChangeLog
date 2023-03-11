@@ -19,6 +19,71 @@ GASNet-EX ChangeLog
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
+2023-03-10: GASNet-EX 2023.2.0-snapshot
+
+* Libfabric (details in ofi-conduit README)
+  - Now requires libfabric 1.5 or newer
+  - Now enforces documented minimum libfabric versions for certain providers
+  - The --{en,dis}able-ofi-mr-scalable configure options have been deprecated
+    in favor of newer alternatives which provide finer-grained control
+  - Restore default use of the "RDMADISSEM" barrier, which had been previously
+    disabled in favor of a slower barrier implementaton due to bug 4427.
+  - New envvars GASNET_OFI_LIST_DEVICES{,_NODES} to request a list of
+    the available devices.
+  - A new opt-in work-around for bug 4461 (failure of the cxi provider under
+    certain AM traffic patterns).  This replaces a less effective workaround
+    introduced in GASNet-EX 2022.9.0.
+    See "Bug 4461" in the conduit README for details.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - The conduit-specific "IBDISSEM" barrier implementation has been removed.
+    The default barrier is now "RDMADISSEM", and "IBDISSEM" is accepted as
+    an alias for it.
+
+* GASNet tools (spec v1.20): (details in README-tools)
+  - Support specifying the complement of a desired trace or stats mask (via the
+    environment variables and library interfaces) by prefixing "^" to the string
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4157: ibv XRC deadlock under certain loads
+  - bug4170: RFE: mod and div operations in gasneti_getenv_hwloc_withdefault()
+  - bug4171: RFE: support local ranks in gasneti_getenv_hwloc_withdefault()
+  - bug4179: ofi: failures specific to verbs provider
+  - bug4427: ofi-conduit failures with RDMADISSEM barrier
+  - bug4527: Erroneous/confusing startup warning with psm2 provider
+  - bug4538: gasnet_client_attach_hook called after registering memory in ofi conduit
+  - bug4468: RFE: negative form of GASNET_TRACEMASK
+  - bug4507: ofi message too long
+  - bug4517: ofi/verbs 'no associated AM handler function' errors with libfabric 1.11 or older
+  - bug4542: ibv-conduit failures with IBDISSEM and RDMADISSEM barriers
+  - bug4561: cxi provider performance regression
+  - bug4567: broken support for psm2 provider in libfabric < 1.10
+  - bug4568: RFE: support for FI_AV_MAP
+  - bug4569: RFE: per-provider version
+  - bug4574: RFE: support per-endpoint AVs
+  - bug4579: Document tcp provider floor
+  - bug4587: Undefined behavior in testinternal
+  - bug4591: Fix confusing documentation regarding TrueScale IB hardware
+
+----------------------------------------------------------------------
+2023-01-13: GASNet-EX 2022.9.2 Release (bug fix release)
+
+This bug fix release addresses issues on HPE Cray EX platforms
+discovered since the 2022.9.0 release.
+
+* Libfabric (details in ofi-conduit README)
+  - Add support for providers (including cxi in HPE's libfabric 1.15.2.0)
+    in which the FI_MR_PROV_KEY and FI_MR_VIRT_ADDR bits of mr_mode differ.
+
+* General and Misc.
+  - Add a new GASNET_USE_HUGEPAGES environment variable to control run-time use
+    of hugepages (assuming configure-time support).
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4533: RFE: run-time disable for hugepage support
+  - bug4553: cxi provider assertion failure with libfabric/1.15.2.0
+
+----------------------------------------------------------------------
 2022-09-30: GASNet-EX 2022.9.0, 20th Anniversary Release
 
 The GASNet team is proudly celebrating **20 years** of providing

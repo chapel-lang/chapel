@@ -48,7 +48,7 @@ static amx_tick_t retryToticks[STATIC_RETRIES];
     retryToticks[(retrycnt)] :                                         \
     retryToticks[0] * intpow(AMUDP_RequestTimeoutBackoff,(retrycnt)))  \
   )
-extern void AMUDP_InitRetryCache() {
+extern void AMUDP_InitRetryCache(void) {
   AMX_assert(!retryToticks[0]);
   if (AMUDP_InitialRequestTimeout_us == AMUDP_TIMEOUT_INFINITE) return;
   amx_tick_t tickout = AMX_us2ticks(AMUDP_InitialRequestTimeout_us);

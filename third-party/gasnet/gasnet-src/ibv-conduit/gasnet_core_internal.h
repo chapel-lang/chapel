@@ -270,9 +270,13 @@ typedef union {
 #if GASNETC_ANY_PAR
   #define GASNETC_PARSEQ _PAR
   #define gasnetc_cons_atomic(_id) _CONCAT(gasneti_atomic_,_id)
+  #define gasnetc_cons_atomic32(_id) _CONCAT(gasneti_atomic32_,_id)
+  #define gasnetc_cons_atomic64(_id) _CONCAT(gasneti_atomic64_,_id)
 #else
   #define GASNETC_PARSEQ _SEQ
   #define gasnetc_cons_atomic(_id) _CONCAT(gasneti_nonatomic_,_id)
+  #define gasnetc_cons_atomic32(_id) _CONCAT(gasneti_nonatomic32_,_id)
+  #define gasnetc_cons_atomic64(_id) _CONCAT(gasneti_nonatomic64_,_id)
 #endif
 
 #define GASNETC_SEMA_INITIALIZER  GASNETI_CONS_SEMA(GASNETC_PARSEQ,INITIALIZER)
@@ -305,6 +309,19 @@ typedef gasnetc_cons_atomic(val_t)        gasnetc_atomic_val_t;
 #define gasnetc_atomic_swap               gasnetc_cons_atomic(swap)
 #define gasnetc_atomic_add                gasnetc_cons_atomic(add)
 #define gasnetc_atomic_subtract           gasnetc_cons_atomic(subtract)
+
+// Narrow subset used for pointers
+#if PLATFORM_ARCH_32
+  #define gasnetc_cons_atomic_ptr           gasnetc_cons_atomic32
+#else
+  #define gasnetc_cons_atomic_ptr           gasnetc_cons_atomic64
+#endif
+typedef gasnetc_cons_atomic_ptr(t)          gasnetc_atomic_ptr_t;
+#define gasnetc_atomic_ptr_init             gasnetc_cons_atomic_ptr(init)
+#define gasnetc_atomic_ptr_set              gasnetc_cons_atomic_ptr(set)
+#define gasnetc_atomic_ptr_read             gasnetc_cons_atomic_ptr(read)
+#define gasnetc_atomic_ptr_compare_and_swap gasnetc_cons_atomic_ptr(compare_and_swap)
+#define gasnetc_atomic_ptr_swap             gasnetc_cons_atomic_ptr(swap)
 
 /* ------------------------------------------------------------------------------------ */
 /* Wrap mmap and munmap so we can do without them if required */
@@ -962,14 +979,22 @@ extern int gasnetc_rdma_get(
 
 extern gasnetc_buffer_t *gasnetc_get_bbuf(int block GASNETI_THREAD_FARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(gasnetc_get_bbuf)
+#if GASNETC_IBV_SRQ
+  extern gasnetc_buffer_t *gasnetc_get_bbuf_srq(int block, int is_reply GASNETI_THREAD_FARG) GASNETI_MALLOC;
+  GASNETI_MALLOCP(gasnetc_get_bbuf_srq)
+  #define gasnetc_get_bbuf_am(is_reply,block_and_ti)  gasnetc_get_bbuf_srq(is_reply, block_and_ti)
+#else
+  #define gasnetc_get_bbuf_am(is_reply,block_and_ti)  gasnetc_get_bbuf(block_and_ti)
+#endif
+
 extern gasnetc_sreq_t *gasnetc_get_sreq(gasnetc_sreq_opcode_t opcode GASNETI_THREAD_FARG) GASNETI_MALLOC;
 GASNETI_MALLOCP(gasnetc_get_sreq)
 
 extern gasnetc_epid_t gasnetc_epid_select_qpi(gasnetc_cep_t *ceps, gasnetc_epid_t epid);
-#if GASNETC_DYNAMIC_CONNECT
-  extern gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq, int is_reply);
-  #define gasnetc_bind_cep(ep,id,s)       gasnetc_bind_cep_inner((ep),(id),(s),0)
-  #define gasnetc_bind_cep_am(ep,id,s,i)  gasnetc_bind_cep_inner((ep),(id),(s),(i))
+#if GASNETC_DYNAMIC_CONNECT || GASNETC_IBV_SRQ
+  extern gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq, int is_reply GASNETI_THREAD_FARG);
+  #define gasnetc_bind_cep(ep,id,s)       gasnetc_bind_cep_inner((ep),(id),(s),0 GASNETI_THREAD_PASS)
+  #define gasnetc_bind_cep_am(ep,id,s,i)  gasnetc_bind_cep_inner((ep),(id),(s),(i) GASNETI_THREAD_PASS)
 #else
   extern gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasnetc_sreq_t *sreq);
   #define gasnetc_bind_cep(ep,id,s)       gasnetc_bind_cep_inner((ep),(id),(s))

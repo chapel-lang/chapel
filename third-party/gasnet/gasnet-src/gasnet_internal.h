@@ -90,6 +90,10 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
 GASNETI_FORMAT_PRINTF(gasneti_sappendf,2,3,
 extern char *gasneti_sappendf(char *s, const char *fmt, ...));
 
+// Version of str[n]casecmp() available even w/o POSIX.1-2001
+extern int gasneti_strcasecmp(const char *s1, const char *s2);
+extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
+
 #if GASNET_DEBUGMALLOC
   extern void *_gasneti_malloc(size_t nbytes, const char *curloc) GASNETI_MALLOC;
   extern void *_gasneti_malloc_allowfail(size_t nbytes, const char *curloc) GASNETI_MALLOC;
@@ -183,6 +187,17 @@ GASNETI_MALLOCP(_gasneti_calloc)
 #endif
 #define gasneti_free_error    ERROR__GASNet_conduit_code_must_use_gasneti_free
 #define free(p)               gasneti_free_error
+
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+#define gasneti_strcasecmp_error     ERROR__GASNet_conduit_code_must_use_gasneti_strcasecmp
+#define strcasecmp(s1,s2)            gasneti_strcasecmp_error
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+#define gasneti_strncasecmp_error    ERROR__GASNet_conduit_code_must_use_gasneti_strncasecmp
+#define strncasecmp(s1,s2,n)         gasneti_strncasecmp_error
 
 #include <assert.h>
 #undef assert
@@ -441,7 +456,7 @@ GASNETI_COLD
 extern void gasneti_defaultSignalHandler(int sig);
 
 /* gasneti_max_segsize() is the user-selected limit for the max mmap size, as gleaned from several sources */
-uintptr_t gasneti_max_segsize();
+uintptr_t gasneti_max_segsize(void);
 #if defined(HAVE_MMAP) || GASNET_PSHM
   #define GASNETI_MMAP_OR_PSHM 1
   extern gasnet_seginfo_t gasneti_mmap_segment_search(uintptr_t maxsz);
@@ -451,6 +466,7 @@ uintptr_t gasneti_max_segsize();
   extern void gasneti_munmap(void *segbase, uintptr_t segsize);
  #endif
  #if defined(GASNETI_USE_HUGETLBFS)
+  extern size_t gasneti_hugepagesize(void);
   extern void *gasneti_huge_mmap(void *addr, uintptr_t size);
   extern void gasneti_huge_munmap(void *addr, uintptr_t size);
  #endif
@@ -1059,6 +1075,7 @@ typedef struct _gasneti_threaddata_t {
   // For use by conduit-independent logic desiring fire-and-forget implict ops.
   // This includes, at least, the RDMADISSEM barrier.
   gasneti_aop_t *nbi_ff_aop;
+  unsigned int nbi_ff_depth;
 
   //
   // Conduit-specific data
@@ -1072,23 +1089,48 @@ typedef struct _gasneti_threaddata_t {
 /* ------------------------------------------------------------------------------------ */
 // A "NBI fire-and-forget" facility using aops is provided for convenience of
 // conduit-independent logic with no need to test or wait for completions.
+// As long as this aop remains the current iop, nesting of gasneti_begin_nbi_ff() is
+// supported.  One can use gasneti_nbi_ff_ok() to determine if a subsequent call
+// to gasneti_begin_nbi_ff() is permitted.
 
 GASNETI_INLINE(gasneti_begin_nbi_ff)
 void gasneti_begin_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
-  gasneti_aop_t *aop = GASNETI_MYTHREAD->nbi_ff_aop;
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  if (mythread->nbi_ff_depth++) { // already active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
+  gasneti_aop_t *aop = mythread->nbi_ff_aop;
   if_pf (aop == NULL) {
     aop = gasneti_aop_create(GASNETI_THREAD_PASS_ALONE);
-    GASNETI_MYTHREAD->nbi_ff_aop = aop;
+    mythread->nbi_ff_aop = aop;
   }
   gasneti_aop_push(aop GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(gasneti_end_nbi_ff)
 void gasneti_end_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  gasneti_assert(mythread->nbi_ff_depth > 0);
+  if (--mythread->nbi_ff_depth) { // still active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
   gasneti_aop_t *aop = gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE);
-  gasneti_assert(aop == GASNETI_MYTHREAD->nbi_ff_aop);
+  gasneti_assert(aop == mythread->nbi_ff_aop);
 }
+// Non-zero if the nbi_ff aop is either
+// + not on iop stack (thus safe to push)
+// + or is at the top of the iop stack (thus safe to increment its depth)
+GASNETI_INLINE(gasneti_nbi_ff_ok)
+int gasneti_nbi_ff_ok(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  return !mythread->nbi_ff_depth ||
+         (mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+}
+
 
 // Sets the nbi_ff_aop of all threads to NULL and returns (via reference
 // arguments) an array of events and its length.  This array, contains all of

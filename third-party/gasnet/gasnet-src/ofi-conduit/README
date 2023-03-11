@@ -1,6 +1,6 @@
 GASNet ofi-conduit documentation
 Copyright 2015-2017, Intel Corporation
-Portions copyright 2018-2022, The Regents of the University of California.
+Portions copyright 2018-2023, The Regents of the University of California.
 
 User Information:
 ----------------
@@ -25,11 +25,14 @@ failure to locate the prerequisites fatal in `configure`.
 Where this conduit runs:
 -----------------------
 
+The GASNet OFI conduit requires libfabric 1.5 or newer.
+Use with some providers requires higher minimum versions (see below).
+
 The GASNet OFI conduit can run on any OFI provider that matches its
 requirements. However, at this time, it is recommended *only* for the
 following networks.
 
-  + Intel(R) Omni-Path Fabric  via the "psm2" provider
+  + Intel(R) Omni-Path Fabric, via the "psm2" provider
   + HPE Slingshot-10 (100 Gb/s ConnectX-5 NIC), via the "verbs;ofi_rxm" provider
   + HPE Slingshot-11 (200 Gb/s Cassini NIC), via the "cxi" provider
 
@@ -38,28 +41,46 @@ GASNet conduits are a more appropriate choice. Therefore we do not recommend
 use of these providers in general.
 
   + TCP, via the "sockets" provider
-  + UDP, via "udp;ofi_rxd", under libfabric 1.7 and higher
-  + Cray Aries, via the "gni" provider, under libfabric 1.14 and higher
+  + UDP, via the "udp;ofi_rxd" provider
+  + Cray Aries, via the "gni" provider
 
 The following providers have not met our expectations (with respect to
 performance or stability) when tested on the listed networks and therefore are
 not currently recommended at all.
 
-  + TCP, via "tcp;ofi_rxm"
-  + InfiniBand, via "verbs;ofi_rxm"
+  + TCP, via the "tcp;ofi_rxm" provider
+  + InfiniBand, via "verbs;ofi_rxm" provider
+
+Independent of recommendations above for or against use of any given provider,
+the following are minimum libfabric versions below which ofi-conduit will
+reject certain providers due to known correctness defects in older versions
+impacting GASNet stability:
+
+  + "udp;ofi_rxd"     1.7
+  + "verbs;ofi_rxm"   1.12  (1.11 with HPE Slingshot-10)
+  + "gni"             1.14
+  + "tcp;ofi_rxm"     1.15
+
+Providers not listed above are accepted from the higher of 1.5 or the first
+libfabric release in which they appear.
 
 The ofi-conduit is currently known to lack support for the following providers
 as of libfabric v1.14.0. If these providers are important to you, please
 contact us at gasnet-staff@lbl.gov .
 
-  + "psm1" provider for the (end-of-life) TrueScale products
+  + "psm" provider for the (end-of-life) TrueScale products
   + "opx" provider, an alternative to "psm2" for the Omni-Path fabric
 
 The fi_info command installed with libfabric can be used to query the available
 OFI providers on your system.  It is worth noting that the available providers
 on a cluster compute node may differ from those on a front-end node.
 
-Users with InfiniBand hardware should use the GASNet ibv-conduit, rather than
+Users with Mellanox InfiniBand hardware should use the GASNet ibv-conduit,
+rather than ofi-conduit with the verbs OFI provider, as the former may provide
+better performance.
+
+Users with InfiniBand hardware with an InfiniPath HCA (PathScale or Qlogic) or
+TrueScale HCA (Intel) should use the GASNet mpi-conduit, rather than
 ofi-conduit with the verbs OFI provider, as the former may provide better
 performance.
 
@@ -81,28 +102,40 @@ details.
 
 OFI provider requirements to run this conduit:
 -------------------------------------
-Endpoint type: RDM
-Capabilities: FI_RMA and FI_MSG; plus FI_HMEM if using `gex_MK_Create()`
-Secondary Capabilities: FI_MULTI_RECV
-Memory Registration Mode:
-    * API 1.4 or earlier: FI_MR_SCALABLE (preferred) or FI_MR_BASIC
-    * API 1.5 or newer: all or none (preferred) of FI_MR_{ALLOCATED,VIRT_ADDR,PROV_KEY}
-    * There is currently no support for providers that require FI_LOCAL_MR / FI_MR_LOCAL
-Other Modes:
-    * Supports providers that require FI_MR_ENDPOINT for FI_RMA endpoints
-    * Supports providers that require FI_CONTEXT for FI_MSG endpoints
-    * There are currently no operations which would require supporting FI_RX_CQ_DATA
-    * There are currently no operations which would require supporting FI_ASYNC_IOV
-    * There is currently no support for providers that require FI_CONTEXT for FI_RMA endpoints
-    * There is currently no support for providers that require FI_CONTEXT2
-    * There is currently no support for providers that require FI_MSG_PREFIX
-    * There is currently no support for providers that require FI_RESTRICTED_COMP
+The provider MUST support all of the following:
+    * API version 1.5 or newer
+    * API version 1.9 or newer if the client will use `gex_MK_Create()`
+    * endpoint type FI_EP_RDM
+    * capability FI_RMA
+    * capability FI_MSG for at least two endpoints per process
+    * capability FI_HMEM if the client will use `gex_MK_Create()`
+    * capability FI_MULTI_RECV unless GASNET_OFI_RECEIVE_BUFF_SIZE=recv
+    * threading mode FI_THREAD_SAFE and/or FI_THREAD_DOMAIN (more info below)
+The provider MUST NOT require any of the following:
+    * FI_MR_LOCAL
+    * FI_MR_ALLOCATED in GASNET_SEGMENT_EVERYTHING mode
+    * FI_CONTEXT for FI_RMA endpoints
+    * FI_CONTEXT2
+    * FI_MSG_PREFIX
+    * FI_RESTRICTED_COMP
+The provider MAY require any of the following:
+    * address vector type FI_AV_TABLE and/or FI_AV_MAP
+    * FI_MR_ENDPOINT
+    * FI_MR_VIRT_ADDR (performance may differ with or without)
+    * FI_MR_PROV_KEY (performance may differ with or without)
+    * FI_RX_CQ_DATA (no operations for which this matters)
+    * FI_ASYNC_IOV (no operations for which this matters)
+    * that at most one endpoint be associated with any given completion queue
+    * (this list is incomplete)
 Threading mode: FI_THREAD_SAFE and/or FI_THREAD_DOMAIN
-    * In GASNET_{SEQ,PARSYNC} mode, all providers use FI_THREAD_DOMAIN as only one thread makes
-      calls into the GASNet library.
-    * By default in GASNET_PAR mode, FI_THREAD_DOMAIN is used only for the psm2 provider (which
-      does not currently support FI_THREAD_SAFE) while all other providers use FI_THREAD_SAFE.
-      See the description of --{en,dis}able-ofi-thread-domain, below, for non-default behaviors.
+    * In GASNET_SEQ and GASNET_PARSYNC modes, ofi-conduit uses FI_THREAD_DOMAIN
+      since these modes ensure serialization of calls into libfabric.
+    * By default in GASNET_PAR mode, FI_THREAD_SAFE is used with most providers
+      to allow concurrent calls into libfabric.  The sole exception is the psm2
+      provider which defaults to FI_THREAD_DOMAIN due to a lack of
+      FI_THREAD_SAFE support.
+      See the description of --{en,dis}able-ofi-thread-domain, below, for
+      the means to override these defaults.
 
 Building ofi-conduit
 --------------------
@@ -167,19 +200,55 @@ recommended to be used as tuning options.
       In GASNET_SEQ and GASNET_PARSYNC modes, the two options above have no
       effect.
 
-    * --enable-ofi-mr-scalable
-      Indicates that FI_MR_SCALABLE memory registration support will be
-      compiled into the conduit, and FI_MR_BASIC support will not.
-      This is the default (and recommended) option for most providers.
-    * --disable-ofi-mr-scalable
-      Indicates that FI_MR_BASIC memory registration support will be compiled
-      into the conduit, and FI_MR_SCALABLE support will not.
-      Currently only the "verbs;ofi_rxm" provider defaults to use of
-      FI_MR_BASIC.
+    * --enable-ofi-mr-virt-addr
+      Indicates that FI_MR_VIRT_ADDR memory registration support will be
+      compiled into the conduit.
+    * --disable-ofi-mr-virt-addr
+      Indicates that FI_MR_VIRT_ADDR memory registration support not will
+      be compiled into the conduit.
 
-      For the generic provider case, both FI_MR_SCALABLE and FI_MR_BASIC
-      memory registration support are compiled and the selection is made at
-      runtime.
+      Currently only "verbs;ofi_rxm" and "gni" providers default to use of
+      FI_MR_VIRT_ADDR.
+
+      For the generic provider case, the determination is made at runtime.
+
+    * --enable-ofi-mr-prov-key
+      Indicates that FI_MR_PROV_KEY memory registration support will be
+      compiled into the conduit.
+    * --disable-ofi-mr-prov-key
+      Indicates that FI_MR_PROV_KEY memory registration support not will
+      be compiled into the conduit.
+
+      Currently only "verbs;ofi_rxm" and "gni" providers default to use of
+      FI_MR_PROV_KEY.
+
+      For the generic provider case, the determination is made at runtime.
+
+    * --enable-ofi-mr-scalable [DEPRECATED]
+      This deprecated option is an alias for
+        --disable-ofi-mr-virt-addr --disable-ofi-mr-prov-key
+      and corresponds to the legacy FI_MR_SCALABLE memory registration mode.
+    * --disable-ofi-mr-scalable [DEPRECATED]
+      This deprecated option is an alias for
+        --enable-ofi-mr-virt-addr --enable-ofi-mr-prov-key
+      and corresponds to the legacy FI_MR_BASIC memory registration mode.
+
+      These options are IGNORED in the presence of any of the following options:
+        --disable-ofi-mr-virt-addr --enable-ofi-mr-virt-addr
+        --disable-ofi-mr-prov-key  --enable-ofi-mr-prov-key
+
+      These options may be removed in a future release.
+
+    * --enable-ofi-av-map
+      Indicates that only support for address vector type FI_AV_MAP will be
+      compiled into the conduit.
+    * --disable-ofi-av-map
+      Indicates that only support for address vector type FI_AV_TABLE will
+      be compiled into the conduit.
+
+      Currently all providers default to use of FI_AV_TABLE.
+
+      For the generic provider case, the determination is made at runtime.
 
     * --enable-ofi-multi-cq
       Indicates that the provider requires the use of distinct completion
@@ -352,32 +421,20 @@ Recognized environment variables:
   libfabric as matching the specified provider and required capabilities.
   This setting can be used to specify a device to be used in place of this
   default.
+  See 'GASNET_OFI_LIST_DEVICES' and 'GASNET_OFI_LIST_DEVICES_NODES' for how
+  to enumerate available devices.
   See also 'GASNET_OFI_DEVICE_*', immediately below.
 
 * GASNET_OFI_DEVICE_*
   The environment variable 'GASNET_OFI_DEVICE', described immediately above,
   provides only a single setting and unless one uses some external means to
-  give per-process settings this cannot provide per-process control.  This
+  give per-process settings, this cannot provide per-process control.  This
   can make it difficult to get the best performance from multi-rail systems
   with multiple processes per node and architectural locality properties that
   affect PCI/adapter access efficiency.
-  However, if 'hwloc' is detected at configure time, then it is possible to
-  give ofi-conduit values for 'GASNET_OFI_DEVICE' which will vary per-process
-  based on cpu-binding and machine topology information as follows.
-   1. The variable 'GASNET_OFI_DEVICE_TYPE' names an object type using hwloc's
-      terminology, with the default being "Socket" (aka "Package").
-      If the value is "None" (case-insensitive) then the logic below is
-      disabled and the value of 'GASNET_OFI_DEVICE' is used by all processes.
-   2. GASNet queries the set of objects of the given type which intersect the
-      process's cpuset, to construct a variable name 'GASNET_OFI_DEVICE_[suff]'
-      where '[suff]' is an underscore-delimited ordered list of logical
-      object ids.  For example, with the default object type, a process bound
-      only to cores in the first socket would have a variable name of
-      'GASNET_OFI_DEVICE_0'.  Meanwhile, if the cpuset spans sockets 0 and 1
-      (such as for an unbound process on a 2-socket system) then the variable
-      'GASNET_OFI_DEVICE_0_1' is used.
-   3. If the environment variable determined in step 2 is set, then it is
-      used.  Otherwise the un-suffixed 'GASNET_OFI_DEVICE' is used.
+  See "topology-aware environment variable families" in GASNet's top-level
+  README for a description of how 'GASNET_OFI_DEVICE_TYPE' can be used to
+  establish process-specific values for 'GASNET_OFI_DEVICE'.
   As a concrete example, on OLCF's Crusher there are four NICs -- one per NUMA
   Node.  Examining the corresponding Quick Start Guide one can construct the
   following settings to ensure processes bound to cores in a single NUMA Node
@@ -393,6 +450,22 @@ Recognized environment variables:
   Of course, even on the same system, your mileage may vary.
   By default 'GASNET_OFI_DEVICE_TYPE' is "Socket" and all other variables in
   this family are unset.
+
+* GASNET_OFI_LIST_DEVICES
+  The value is a boolean: "0" to disable or "1" to enable the reporting of
+  all supportable provider/device pairs.  In this context, "supportable"
+  may be constrained by such factors as the configured provider or use of
+  environment variables which constrain provider enumeration.
+  See 'GASNET_OFI_LIST_DEVICES_NODES' for how to limit which nodes report.
+  The default is "0" (no report).
+
+* GASNET_OFI_LIST_DEVICES_NODES
+  If GASNET_OFI_LIST_DEVICES is enabled, then this setting may be used to limit
+  which nodes report providers/devices pairs.  The value is a list which may
+  contain one or more integers or ranges separated by commas, such as
+  "0,2-4,6".  If unset, empty, or equal to "*" then all nodes will report (if
+  enabled by GASNET_OFI_LIST_DEVICES).
+  The default is no limit on which nodes report.
 
 * FI_PROVIDER - set to a provider name to override the default OFI provider selection
   Note that only in the "generic provider" case (described with the configure
@@ -410,10 +483,9 @@ Recognized environment variables:
   effect on some providers (sockets), to the intended scaling effect on others
   (verbs), and even outright crashes on other providers (cxi).
 
-* FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider and only
-  is available in libfabric v1.5.0. This environment variable controls the
-  internal locking state of the provider and can be set to the following three
-  values:
+* FI_PSM2_LOCK_LEVEL - This variable only applies to the psm2 provider where
+  it controls the internal locking state of the provider and can be set to the
+  following three values:
     - FI_PSM2_LOCK_LEVEL=0: All locks inside of the provider will be disabled.
     - FI_PSM2_LOCK_LEVEL=1: Some locks inside of the provider will be disabled,
       and is suitable for programs that limit the access to each PSM2 context to
@@ -468,29 +540,6 @@ The following environment variables may be used to tune this behavior:
 Known problems:
 ---------------
 
-* Bug 4179
-  In libfabric 1.11 and earlier, the verbs;ofi_rxm provider (used, for
-  instance, on the Slingshot-10 network of some HPE Cray EX systems) has been
-  observed to experience corruption of AMs, as at least sometimes diagnosed
-  with a fatal error message like the following:
-    GASNet node [...] received an AM message from node [...] for a handler
-    index with no associated AM handler function registered
-  At the time of this writing, the best known work-around is to update
-  libfabric to version 1.12 or newer.  However, if that is not possible, then
-  an alternative is to set
-    GASNET_OFI_RECEIVE_BUFF_SIZE=single
-  in your environment.  This setting automatically uses a receive buffer size
-  that ensures only a single AM will be received per "multi-receive" buffer,
-  and the default for GASNET_OFI_NUM_RECEIVE_BUFFS is adjusted to some
-  unspecified larger value to compensate.
-  Empirical evidence shows this prevents the failures in applications which
-  exhibit them (which is *not* every application).  However, this measurably
-  increases the latency of small AM operations.  So, this should only be used
-  if it is suspected that bug 4179 is impacting your application and you cannot
-  update libfabric to 1.12 or newer.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4179
-
 * Bug 4267
   Multi-threaded applications in which one or more threads are using GASNet
   concurrent with another thread calling gasnet_exit() may experience "random
@@ -520,24 +569,15 @@ Known problems:
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4422
 
-* Bug 4427
-  The "RDMADISSEM" barrier, used as the default in an RDMA-capable conduit
-  without a conduit-specific barrier, has been observed to be incorrect when
-  used with at least the sockets and udp;ofi_rxd providers.
-  To be cautious, the less efficient "AMDISSEM" barrier is currently the default
-  in ofi-conduit, *independent* of provider.
-  The most up-to-date information on this bug is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4427
-
 * Bug 4461
   Under certain AM traffic patterns, the cxi provider (for the Slingshot-11
   network on some HPE Cray EX systems) has been observed to fail in various
   ways, including crashes and dropped messages.
   At the time of this writing, the best known work-around is to set
-    GASNET_OFI_RECEIVE_BUFF_SIZE=single
-  in your environment.  This setting automatically uses a receive buffer size
-  that ensures only a single AM will be received per "multi-receive" buffer,
-  and the default for GASNET_OFI_NUM_RECEIVE_BUFFS is adjusted to compensate.
+    GASNET_OFI_RECEIVE_BUFF_SIZE=recv
+  in your environment.  This setting disables use of the "multi-receive"
+  feature of libfabric, and the default for GASNET_OFI_NUM_RECEIVE_BUFFS is
+  adjusted to compensate.
   Empirical evidence shows this prevents the failures in applications which
   exhibit them (which is *not* every application).  However, this measurably
   increases the latency of small AM operations.  So, this should only be used
@@ -545,16 +585,62 @@ Known problems:
   The most up-to-date information on this bug is maintained at:
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4461
 
-* Bug 4507
-  Currently, ofi-conduit's implementation of RMA and AM Long do not correctly
-  honor the `max_msg_size` of the libfabric endpoint.  This can lead to fatal
-  errors for very large RMA operations or AM Long payloads.  Currently, the
-  the smallest known limit of any provider is 1GiB in a single transfer.
-  There are no known work-arounds other than for the client code to break such
-  transfers into smaller sizes.
-  The most up-to-date information on this bug, including the observed limits
-  for some providers, is maintained at:
-    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4507
+* Bug 4517
+  In libfabric 1.11 and earlier, the verbs;ofi_rxm provider used on the
+  Slingshot-10 network of some HPE Cray EX systems has been observed to
+  experience corruption of AMs, which (at least sometimes) are diagnosed
+  with a fatal error message like one of the following:
+    GASNet node [...] received an AM message from node [...] for a handler
+    index with no associated AM handler function registered
+  OR
+    *** FATAL ERROR: Assertion failure (proc 0): in gasnetc_ofi_handle_am()
+    at [...]/ofi-conduit/gasnet_ofi.c:1341: isreq == header->isreq
+       op1 :           1 (0x00000001) == isreq
+       op2 :           0 (0x00000000) == header->isreq
+  At the time of this writing, the best known work-around is to update
+  libfabric to version 1.12 or newer.  However, replacing the vendor's
+  version on a system like the HPE Cray EX is generally not advisable.
+  So, for such systems an alternative work-around is to set
+    GASNET_OFI_RECEIVE_BUFF_SIZE=recv
+  in your environment.  This setting disables ofi-conduit's use of libfabric's
+  "multi-receive" feature, and adjusts the default value for
+  GASNET_OFI_NUM_RECEIVE_BUFFS to some unspecified larger value to compensate.
+  Empirical evidence shows this prevents the failures in applications which
+  exhibit them (which is *not* every application).  However, this measurably
+  increases the latency of small AM operations.  So, this should only be used
+  if it is suspected that bug 4517 is impacting your application.
+  NOTE: On networks other than Slingshot-10, ofi-conduit enforces a minimum
+  libfabric version of 1.12 for this provider and this bug should not arise.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4517
+
+* Bug 4565
+  Use of explicit --with-ofi-provider=generic with the Cray Aries network (gni
+  provider) selects a memory registration mode for which the provider claims
+  support, but which does not work in practice.
+  There are currently two known work-arounds at configure time:
+  + The following overrides the dynamic selection of memory registration mode:
+      --with-ofi-provider=generic --enable-ofi-virt-addr --enable-ofi-mr-prov-key
+    The resulting GASNet will only work with the gni and verbs providers,
+    despite otherwise preserving use of the generic provider.
+  + The following specializes for gni, disabling dynamic feature detection:
+      --with-ofi-provider=gni
+    The resulting GASNet will only work with gni provider.
+  The most up-to-date information on this bug, including known work-arounds,
+  is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4565
+
+* Bug 4581
+  Currently, ofi-conduit's implementation of `gasnet_getMaxLocalSegmentSize()`
+  does not take into consideration any limits a given provider may impose on the
+  maximum length of a memory registration.  This may result in warnings like the
+  following (often followed by a fatal error in the client):
+      *** WARNING (proc 0): Unexpected error -12 (Cannot allocate memory) from
+          fi_mr_regattr() when binding segment [0x.., 0x...) to EP 0
+  The only known work-around at this time is to allocate a smaller segment.
+  The most up-to-date information on this bug, including known work-arounds,
+  is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4581
 
 * See docs/memory_kinds.md in the GASNet-EX sources for current information
   regarding known issues with respect to memory kinds support in ofi-conduit.
@@ -616,10 +702,6 @@ Future work:
 
 The OFI community is working on increasing the number of providers that can support GASNet.
 
-* Restore "RDMADISSEM" as the default barrier for those providers where it is
-  safe to do so (see bug 4427) or deploy a better alternative (perhaps via
-  FI_COLLECTIVE)
-
 * Implement AMLong via target-side reassembly using fi_writedata()
 
 * Implement asynchronous LC support for Long, most likely as part of the
@@ -645,4 +727,4 @@ The OFI community is working on increasing the number of providers that can supp
 
 * Implement native collectives via FI_COLLECTIVE
 
-* Implement Memory Kinds support using the FI_HMEM capability
+* Seek a better barrier than RDMADISSEM via FI_COLLECTIVE

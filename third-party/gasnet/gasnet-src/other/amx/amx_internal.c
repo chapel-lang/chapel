@@ -109,7 +109,7 @@ amx_handler_fn_t amx_unused_handler = (amx_handler_fn_t)&AMX_defaultAMHandler;
 /*------------------------------------------------------------------------------------
  * System initialization/termination
  *------------------------------------------------------------------------------------ */
-extern int AMX_Init() {
+extern int AMX_Init(void) {
   int firstcall = (amx_Initialized == 0);
   if (firstcall) {
     /* check system attributes */
@@ -130,7 +130,7 @@ extern int AMX_Init() {
   return firstcall;
 }
 /* ------------------------------------------------------------------------------------ */
-extern int AMX_Terminate() {
+extern int AMX_Terminate(void) {
   int lastcall;
   AMX_CHECKINIT();
 

@@ -144,6 +144,101 @@ char *check_suffixed(const char *keyname)
   return NULL;
 }
 
+// Simple (statically defined and not thread-safe) "set"
+// Used to sort and de-dup small integers
+typedef unsigned long suff_set_word_t;
+static struct { // NOTE: static ensure zero initialization
+  unsigned int word_count;
+  suff_set_word_t *words;
+} gasneti_hwloc_suffix_set;
+
+static void suff_set_insert(unsigned int n, unsigned int div, unsigned int mod)
+{
+  if (div) n /= div;
+  if (mod) n %= mod;
+
+  const size_t word_size = sizeof(suff_set_word_t);
+  const unsigned int bits_per_word = 8 * word_size;
+  const unsigned int word_idx = n / bits_per_word;
+  const unsigned int bit_idx  = n % bits_per_word;
+
+  if (word_idx >= gasneti_hwloc_suffix_set.word_count) {
+    unsigned int old_count = gasneti_hwloc_suffix_set.word_count;
+    unsigned int new_count = word_idx + 1;
+    suff_set_word_t *ptr = gasneti_realloc(gasneti_hwloc_suffix_set.words, word_size * new_count);
+    memset(ptr + old_count, 0, word_size * (new_count - old_count));
+    gasneti_hwloc_suffix_set.words = ptr;
+    gasneti_hwloc_suffix_set.word_count = new_count;
+  }
+
+  gasneti_hwloc_suffix_set.words[word_idx] |= ((suff_set_word_t)1) << bit_idx;
+}
+
+static char *suff_set_to_string(void)
+{
+  char *result = NULL;
+
+  const unsigned int bits_per_word = 8 * sizeof(suff_set_word_t);
+
+  unsigned int n = 0;
+  const unsigned int word_count = gasneti_hwloc_suffix_set.word_count;
+  for (unsigned int word_idx = 0; word_idx < word_count; ++word_idx) {
+    suff_set_word_t word = gasneti_hwloc_suffix_set.words[word_idx];
+    suff_set_word_t mask = 1;
+    for (unsigned int bit_idx = 0; bit_idx < bits_per_word; ++bit_idx, mask <<= 1, ++n) {
+      if (word & mask) {
+        result = gasneti_sappendf(result, "_%u", n);
+      }
+    }
+  }
+
+  return result;
+}
+
+static void suff_set_free(void) {
+  gasneti_free(gasneti_hwloc_suffix_set.words);
+  gasneti_hwloc_suffix_set.words = NULL;
+  gasneti_hwloc_suffix_set.word_count = 0;
+}
+
+// Check for the given operator and its operand in a typestring.
+// Returns 0 if the operator was not found
+// Otherwise:
+// + returns the integer operand (which cannot be zero)
+// + replace *typestring_p with a string stripped of the operator,
+//   operand and optional whitespace before the operator.
+// + does NOT free() the prior value of *typestring_p
+static int check_op(const char **typestring_p, const char operator, const char* keyname)
+{
+  const char *typestring = *typestring_p;
+  const char *p;
+  int result = 0;
+  if (NULL != (p = strchr(typestring, operator))) {
+    char *endp = NULL;
+    result = strtol(p+1, &endp, 0);
+    if (result <= 0) { // NOTE: strtol() will return 0 if no digits were seen
+       gasneti_fatalerror("Operator %c in value \"%s\" of environment variable "
+                          "%s_TYPE must be followed by a positive integer",
+                          operator, typestring, keyname);
+    }
+
+    while (isspace(*endp)) ++endp; // "be liberal in what you accept"
+    if (*endp) {
+       gasneti_fatalerror("Value \"%s\" of environment variable %s_TYPE has "
+                          "unexpected characters after operator %c and its operand",
+                          typestring, keyname, operator);
+    }
+
+    // Strip operator+operand and optional preceding whitespace
+    gasneti_assert(*p == operator);
+    while ((p>typestring) && isspace(*(p-1))) --p;
+    size_t keep = p - typestring;
+    *typestring_p = gasneti_strndup(typestring, keep);
+  }
+
+  return result;
+}
+
 // ------------------------------------------------------------------------------------
 // gasneti_getenv_hwloc_withdefault()
 //
@@ -157,19 +252,30 @@ char *check_suffixed(const char *keyname)
 //    If none, return the value of keyname from the environment.
 // 2. Check for env var "[keyname]_TYPE" equal to "None" (case insensitive).
 //    If YES, return the value of keyname from the environment.
+// 3. Strip any '/' or '%' suffixes to be applied in later steps
+// 4. Check for env var "[keyname]_TYPE" equal to "{J,H,N}Rank" (case insensitive).
+//    If YES, return the associated suffixed env var (if any) or the value of keyname from the environment.
 // With hwloc support:
-//   3. Look for a hwloc object type in env var "[keyname]_TYPE", or dflt_type if none.
-//   4. Find the intersection of this proc's cpu binding with options of the given type.
-//   5. Return the value of env var "[keyname]_[binding]", if any,
+//   5. Look for a hwloc object type in env var "[keyname]_TYPE", or dflt_type if none.
+//   6. Find the intersection of this proc's cpu binding with options of the given type.
+//   7. Return the value of env var "[keyname]_[binding]", if any,
 //      otherwise return the value of keyname from the environment
 // Without hwloc support:
-//   3. If we get this far, warn at most once about lack of hwloc support
-//   4. Return the value of keyname from the environment.
+//   8. If we get this far, warn at most once about lack of hwloc support
+//   9. Return the value of keyname from the environment.
 //
 // Detected hwloc errors result in a warning (at most once per "step")
 // and use of the unsuffixed variable.
 char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val, const char *dflt_type)
 {
+#if USE_HWLOC_LIB || USE_HWLOC_UTILS
+  // Define these early to avoid harmlss goto-bypasses-initialization warnings
+  gasneti_hwloc_obj_type_t type = (gasneti_hwloc_obj_type_t)0;
+  gasneti_hwloc_cpuset_t cpuset = NULL;
+  int topo_is_init = 0;
+#endif
+
+  char *suffix = NULL;
   char *result = NULL;
 
   // Step 1 - check for suffixed vars
@@ -182,36 +288,64 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
   // Step 2 - check env var "[keyname]_TYPE" for "None" (which disables all additional intelligence)
   char *typekey = gasneti_sappendf(NULL, "%s_TYPE", keyname);
   const char *typestring = gasneti_getenv_withdefault(typekey, dflt_type);
+  const char *orig_typestring = typestring;
   gasneti_free(typekey);
   if (typestring) {
-    const char none[] = "none";
-    int match = 1;
-    for (int i = 0; i < sizeof(none); ++i) { // includes final '\0'
-      if (tolower(typestring[i]) != none[i]) {
-        match = 0;
-        break;
-      }
-    }
-    if (match) {
+    if (! gasneti_strcasecmp("none", typestring)) {
       // short-cut w/o using hwloc if TYPE is "none"
       gasneti_free(firstkey);
       goto out_return_unsuffixed;
     }
   }
+
+  // Step 3 - strip off any "%" or "/" expressions
+  unsigned int div = check_op(&typestring, '/', keyname);
+  unsigned int mod = check_op(&typestring, '%', keyname);
+  if (div && mod) {
+    gasneti_fatalerror("Value \"%s\" of environment variable %s_TYPE includes "
+                       "multiple arithmetic operations (at most one is allowed)",
+                       orig_typestring, keyname);
+  }
+
+  // Step 4 - check env var "[keyname]_TYPE" for "?Rank" (which doesn't need hwloc)
+  if (typestring && typestring[0]) {
+    gex_Rank_t n = GEX_RANK_INVALID;
+    int match = !gasneti_strcasecmp("rank", typestring+1); // Note +1 offset into the string
+    if (match) {
+      switch (tolower(typestring[0])) {
+        case 'j': // 'J'obrank
+          n = gasneti_mynode;
+          break;
+        case 'h': // 'H'ost-relative rank
+          n = gasneti_myhost.node_rank;
+          break;
+        case 'n': // 'N'brhd-relative rank
+          n = gasneti_mysupernode.node_rank;
+          break;
+        default:
+          match = 0;
+      }
+      if (match && (n == GEX_RANK_INVALID)) {
+        gasneti_fatalerror("%s value uninitialized in gasneti_getenv_hwloc_withdefault()", typestring);
+      }
+    }
+    if (match) {
+      if (div) n /= div;
+      if (mod) n %= mod;
+      suffix = gasneti_sappendf(NULL, "_%d", n);
+      goto try_suffix;
+    }
+  }
           
 #if USE_HWLOC_LIB || USE_HWLOC_UTILS
   // The "real thing" via EITHER libhwloc OR hwloc-{bind,calc}
-  char *suffix = NULL;
-  gasneti_hwloc_obj_type_t type = (gasneti_hwloc_obj_type_t)0;
-  gasneti_hwloc_cpuset_t cpuset = NULL;
 
-  // Step 3 - hwloc object type
+  // Step 5 - hwloc object type
   // Note non-zero return indicates invalid dflt_type, not a user error
   gasneti_assert_zeroret( get_selector_type(&type, keyname, typestring, dflt_type) );
 
-  // Step 4a - query the current proc's cpu binding
+  // Step 6a - query the current proc's cpu binding
   #if USE_HWLOC_LIB
-    int topo_is_init = 0;
     hwloc_topology_t topology;
     if (hwloc_topology_init(&topology) < 0) {
       // failed to initialize hwloc
@@ -242,7 +376,7 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
     }
   #endif
 
-  // Step 4b - compute intersection between 'cpuset' and object(s) of 'type'
+  // Step 6b - compute intersection between 'cpuset' and object(s) of 'type'
   #if USE_HWLOC_LIB
   {
     int count = hwloc_get_nbobjs_by_type(topology, type);
@@ -255,9 +389,10 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
       hwloc_obj_t obj = hwloc_get_obj_by_type(topology, type, i);
       gasneti_assert(obj);
       if (hwloc_bitmap_intersects(cpuset, obj->cpuset)) {
-        suffix = gasneti_sappendf(suffix, "_%d", i);
+        suff_set_insert(i, div, mod);
       }
     }
+    suffix = suff_set_to_string();
   }
   #else
   { 
@@ -271,53 +406,26 @@ char *gasneti_getenv_hwloc_withdefault(const char *keyname, const char *dflt_val
       goto out_bad_intersect;
     }
     gasneti_assert_uint(strlen(buf) ,==, len);
-    // In one pass: copy (to prepend '_'), validate and translate ',' to '_'.
-    // Note: `--sep X` option to set the delimiter was not available in older hwloc-calc.
-    suffix = gasneti_malloc(len + 2); // +2 = leading '_' and trailing '\0'
-    suffix[0] = '_';
-    for (int i = 0; i < len; ++i) {
+    for (int i = 0; i < len; ) {
       char c = buf[i];
       if (c == ',') {
-        suffix[i+1] = '_';
+        ++i;
       } else if (isdigit(c)) {
-        suffix[i+1] = c;
+        suff_set_insert(atoi(buf+i), div, mod);
+        i += strspn(buf+i,"0123456789");
       } else {
         // invalid character (such as in an error message?)
         gasneti_free(buf);
         goto out_bad_intersect;
       }
     }
-    suffix[len+1] = '\0';
+    suffix = suff_set_to_string();
     gasneti_free(buf);
   }
  #endif
     
-  // Step 5 - query the environment with suffix
-  if (suffix && suffix[0]) {
-    char *fullkey = gasneti_sappendf(NULL, "%s%s", keyname, suffix);
-    result = gasneti_getenv(fullkey);
-    if (result) {
-      gasnett_envstr_display(fullkey, result, 0);
-    }
-    gasneti_free(fullkey);
-  }
-  gasneti_free(suffix);
-
-out:
-  gasneti_free(firstkey);
-  #if USE_HWLOC_LIB
-    if (cpuset) hwloc_bitmap_free(cpuset);
-    if (topo_is_init) hwloc_topology_destroy(topology);
-  #elif USE_HWLOC_UTILS
-    // casts below discard const qualifiers to avoid warnings
-    gasneti_free((void *)type);
-    gasneti_free((void *)cpuset);
-  #endif
-
-  // Return the suffixed variable's value if any, else use unsuffixed
-  if (result) return result;
-  else goto out_return_unsuffixed;
-
+  // Step 7 - query the environment with suffix
+  goto try_suffix;
 
 out_bad_cpuset:
   {
@@ -350,7 +458,7 @@ out_bad_intersect:
 #else // !(USE_HWLOC_LIB || USE_HWLOC_UTILS)
   // Fallback when hwloc is unavailable
 
-  // Step 3.  Warn at most once about presence of suffixed keys
+  // Step 8.  Warn at most once about presence of suffixed keys
   static int did_warn = 0;
   if (!did_warn) {
     gasneti_console_message("WARNING",
@@ -361,10 +469,38 @@ out_bad_intersect:
   }
   gasneti_free(firstkey);
 
-  // Step 4.  Return the only thing we can
+  // Step 9.  Return the only thing we can
   goto out_return_unsuffixed;
 #endif
 
+try_suffix:
+  if (suffix && suffix[0]) {
+    char *fullkey = gasneti_sappendf(NULL, "%s%s", keyname, suffix);
+    GASNETI_TRACE_PRINTF(I,("Query environment variable '%s' for type='%s'",
+                            fullkey, orig_typestring));
+    result = gasneti_getenv(fullkey);
+    if (result) {
+      gasnett_envstr_display(fullkey, result, 0);
+    }
+    gasneti_free(fullkey);
+  }
+  gasneti_free(suffix);
+
+out:
+  if (typestring != orig_typestring) gasneti_free((void*)typestring);
+  suff_set_free();
+  gasneti_free(firstkey);
+  #if USE_HWLOC_LIB
+    if (cpuset) hwloc_bitmap_free(cpuset);
+    if (topo_is_init) hwloc_topology_destroy(topology);
+  #elif USE_HWLOC_UTILS
+    // casts below discard const qualifiers to avoid warnings
+    gasneti_free((void *)type);
+    gasneti_free((void *)cpuset);
+  #endif
+
+  // Return the suffixed variable's value if any, else use unsuffixed
+  if (result) return result;
 
 out_return_unsuffixed:
   // Return the unsuffixed "keyname" value from the environment.
