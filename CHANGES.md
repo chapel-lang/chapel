@@ -301,7 +301,7 @@ Deprecated / Unstable / Removed Library Features
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
 * deprecated the 'SysBasic' module including `EEOF`, `ESHORT`, `EFORMAT`
-* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new))
+* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new)
 * marked `iostringstyle`, `iostringformat` as unstable in the 'IO' module
 * removed the deprecated 'SysError' module and some related deprecated symbols
 * removed the deprecated 'DateTime' module
@@ -402,7 +402,7 @@ GPU Computing
 * added a `gpuClock()` procedure to time kernel codes
 * added a `debugGPU` config constant rather than tying behavior to `--verbose`
 * made calls to `extern` routines ineligible for GPU execution
-* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new))
+* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new)
 
 Compiler Improvements
 ---------------------
@@ -957,7 +957,7 @@ New Features
   (e.g., `(1..10 by 2).highBound` returns `10`)  
   (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.range.lowBound)
 * added an `alignedBoundsByDefault` config to opt into new `.low`/`.high` defs  
-  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault))
+  (see https://chapel-lang.org/docs/1.27/language/spec/ranges.html#ChapelRange.alignedBoundsByDefault)
 
 Feature Improvements
 --------------------
