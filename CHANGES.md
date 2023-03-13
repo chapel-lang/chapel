@@ -125,7 +125,7 @@ Error Messages / Semantic Checks
 --------------------------------
 * improved the clarity and format of some parser error messages
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
-* reworded error messages for generic class management types to avoid changes
+* rephrased generic class management errors to reflect the current behavior
 
 Bug Fixes
 ---------
