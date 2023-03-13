@@ -19,24 +19,6 @@
  */
 
 /*
-Synchronization variables have a logical state associated with the value. The
-state of the variable is either full or empty. Normal reads of a
-synchronization variable cannot proceed until the variable's state is full.
-Normal writes of a synchronization variable cannot proceed until the variable's
-state is empty.
-
-Chapel supports two types of synchronization variables: sync and single. Both
-types behave similarly, except that a single variable may only be written once.
-Consequently, when a sync variable is read, its state transitions to empty,
-whereas when a single variable is read, its state does not change. When either
-type of synchronization variable is written, its state transitions to full.
-
-If a task attempts to read or write a synchronization variable that is not in
-the correct state, the task is suspended. When the variable transitions to the
-correct state, the task is resumed. If there are multiple tasks blocked waiting
-for the state transition, one is non-deterministically selected to proceed and
-the others continue to wait if it is a sync variable; all tasks are selected to
-proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
