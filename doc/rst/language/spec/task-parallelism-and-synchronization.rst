@@ -305,8 +305,11 @@ Predefined Single and Sync Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following methods are defined for variables of ``sync`` and
-``single`` type.
+``single`` type:
 
+.. include:: /builtins/ChapelSyncvar.rst
+
+asdf asdf asdf
 
    .. code-block:: chapel
 
