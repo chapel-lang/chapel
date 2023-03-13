@@ -170,7 +170,7 @@ static int			 fh_request_bufidx = 0;
  *
  */
 void
-firehose_fini()
+firehose_fini(void)
 {
 	int	i;
 
@@ -556,7 +556,7 @@ firehose_release(firehose_request_t const **reqs, int numreqs)
 
 /* TODO: allocate from a pool */
 fh_completion_callback_t *
-fh_alloc_completion_callback()
+fh_alloc_completion_callback(void)
 {
 	fh_completion_callback_t *cc;
 

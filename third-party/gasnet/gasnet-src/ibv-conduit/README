@@ -40,19 +40,18 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   necessary support (primarily use of "rdmacm" for connection setup) are
   encouraged to contact gasnet-devel@lbl.gov.
 
-  While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
-  recommend use of ofi-conduit on such systems.
-
   Nearly all InfiniBand cards (known as Host Channel Adapters, or HCAs)
   have support for Open Fabrics Verbs, available from www.openfabrics.org
   or from the HCA or OS vendor.  We have tested numerous InfiniBand HCAs
-  from Mellanox, InfiniPath HCAs from Pathscale/QLogic, and TrueScale HCAs
-  from Intel.
+  from Mellanox.  HCAs from other vendors have not been validated or have
+  failed validation.
 
-  In addition to the Open Fabrics Verbs, vendor-specific APIs also exist
-  and some have GASNet conduits:
-   + ofi-conduit for the PSM (version 1) API on Intel TrueScale HCAs
-   + ofi-conduit for the PSM2 API on Intel Omni-Path HCAs
+  While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
+  recommend use of ofi-conduit with the psm2 provider on such systems.
+
+  While ibv-conduit may work on InfiniPath HCAs from Pathscale/QLogic and
+  TrueScale HCAs from Intel, we instead recommend use of mpi-conduit on such
+  systems.
 
   The performance of ibv-conduit relative to others on the same hardware
   will depend on your applications' communications patterns, the number of
@@ -150,7 +149,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   time using '--disable-ibv-conn-thread'.
 
   By default, ibv-conduit uses 64KB buffers for AM Mediums, to yield
-  gasnetc_AM_LUB{Request,Reply}Medium() values tens of bytes smaller due
+  gex_AM_LUB{Request,Reply}Medium() values tens of bytes smaller due
   to message headers.  This default can be overridden by passing
   '--with-ibv-max-medium=N' for 'N' equal to any power-of-two from 1024 to
   262144, inclusive.
@@ -238,13 +237,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   of environment variables.
   See GASNet's top-level README for documentation.
 
-  + GASNET_BARRIER
-    In addition to the barrier algorithms in the top-level README, there
-    is an implementation specific to IBV:
-    IBDISSEM - like RDMADISSEM, but implemented using lower-level
-               operations for lower latency.
-    Currently IBDISSEM is the default on IBV.
-
   Spawner settings:
   ----------------
   + GASNET_IBV_SPAWNER
@@ -323,27 +315,13 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   + GASNET_IBV_PORTS_*
     The environment variable 'GASNET_IBV_PORTS', described immediately above,
     provides only a single setting and unless one uses some external means to
-    give per-process settings this cannot provide per-process control.  This
+    give per-process settings, this cannot provide per-process control.  This
     can make it difficult to get the best performance from multi-rail systems
     with multiple processes per node and architectural locality properties that
     affect PCI/adapter access efficiency.
-    However, if 'hwloc' is detected at configure time, then it is possible to
-    give ibv-conduit values for 'GASNET_IBV_PORTS' which will vary per-process
-    based on cpu-binding and machine topology information as follows.
-    1. The variable 'GASNET_IBV_PORTS_TYPE' names an object type using hwloc's
-       terminology, with the default being "Socket" (aka "Package").
-       If the value is "None" (case-insensitive) then the logic below is
-       disabled and the value of 'GASNET_IBV_PORTS' is used by all processes.
-    2. GASNet queries the set of objects of the given type which intersect the
-       process's cpuset, to construct a variable name 'GASNET_IBV_PORTS_[suff]'
-       where '[suff]' is an underscore-delimited ordered list of logical
-       object ids.  For example, with the default object type, a process bound
-       only to cores in the first socket would have a variable name of
-       'GASNET_IBV_PORTS_0'.  Meanwhile, if the cpuset spans sockets 0 and 1
-       (such as for an unbound process on a 2-socket system) then the variable
-       'GASNET_IBV_PORTS_0_1' is used.
-    3. If the environment variable determined in step 2 is set, then it is
-       used.  Otherwise the un-suffixed 'GASNET_IBV_PORTS' is used.
+    See "topology-aware environment variable families" in GASNet's top-level
+    README for a description of how 'GASNET_IBV_PORTS_TYPE' can be used to
+    establish process-specific values for 'GASNET_IBV_PORTS'.
     As a concrete example, on OLCF's Summit there are four HCAs in software,
     which represent connections from two I/O buses (one per socket) to two
     distinct InfiniBand rails.  Use of the further I/O bus introduces a latency
@@ -1420,6 +1398,15 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4009 (Solaris)
   Those bug reports provide more details, and will provide the most current
   information regarding any recommended work-around(s).
+
++ Bugs 4105
+  On systems with InfiniBand headers provided by recent versions of the
+  rdma-core-devel package, the use of `__builtin_constant_p()` may result
+  in a failure to link ibv-conduit applications.  This is believe to only
+  impact older PGI compilers, with none released in 2020 or later known to
+  have this problem.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4105
 
 + Bug 4314
   While this file documents several environment variables as permitting
