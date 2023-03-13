@@ -1544,10 +1544,10 @@ the following rules in order:
    formal with the same width is better. Each of the following bullets
    represents a different numeric width for this rule:
 
-   * All numeric types that match the default width, as well as
-     ``bool``.  This includes ``int`` ``uint`` ``real`` ``imag``
-     ``complex`` as well as their more specific names ``int(64)``
-     ``uint(64)`` ``real(64)`` ``imag(64)`` ``complex(128)``
+   * All numeric types that match the default width.  This includes
+     ``bool``, ``int``, ``uint``, ``real``, ``imag``, and ``complex``
+     as well as their more specific names ``int(64)``, ``uint(64)``,
+     ``real(64)``, ``imag(64)``, ``complex(128)``
 
    * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
      ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in

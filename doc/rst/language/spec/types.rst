@@ -139,8 +139,9 @@ The Bool Type
 ~~~~~~~~~~~~~
 
 Chapel defines a logical data type designated by the symbol ``bool``
-with the two predefined values ``true`` and ``false``. The boolean
-type is stored using an implementation-defined number of bits.
+with the two predefined values ``true`` and ``false``. Values of this
+boolean type are stored using an implementation-defined number of
+bits.
 
 Some statements require expressions of ``bool`` type and Chapel supports
 a special conversion of values to ``bool`` type when used in this
