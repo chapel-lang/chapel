@@ -2302,6 +2302,7 @@ static void applyGetterTransform(CallExpr* call) {
     SET_LINENO(call);
 
     // if there is a module token argument, pull it out
+    /*
     Expr* modToken = nullptr;
     Expr* modArg = nullptr;
     if (SymExpr* symExpr = toSymExpr(call->get(1))) {
@@ -2310,6 +2311,7 @@ static void applyGetterTransform(CallExpr* call) {
         modToken = call->get(1)->remove();
       }
     }
+    */
 
     if (SymExpr* symExpr = toSymExpr(call->get(2))) {
       symExpr->remove();
@@ -2323,15 +2325,18 @@ static void applyGetterTransform(CallExpr* call) {
           call->insertAtHead(gMethodToken);
 
         } else {
-          USR_FATAL(call, "cannot apply '.' to this expression");
+          INT_FATAL(call, "unexpected case");
         }
 
       } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
         call->baseExpr->replace(new SymExpr(type));
         call->insertAtHead(gMethodToken);
 
+      } else if (UnresolvedSymExpr* unres=toUnresolvedSymExpr(call->get(2))) {
+        USR_FATAL(call, "cannot apply '.' to the first-class function '%s'",
+                  unres->unresolved);
       } else {
-        INT_FATAL(call, "unexpected case");
+        USR_FATAL(call, "cannot apply '.' to this expression");
       }
 
     } else if (UnresolvedSymExpr* symExpr = toUnresolvedSymExpr(call->get(2))) {
@@ -2351,10 +2356,12 @@ static void applyGetterTransform(CallExpr* call) {
     }
 
     // if there was a module token, put it back in
+    /*
     if (modToken) {
       call->insertAtHead(modArg);
       call->insertAtHead(modToken);
     }
+    */
   }
 }
 
