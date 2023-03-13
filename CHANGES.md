@@ -11,6 +11,8 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* updated Dockerfiles to support the C backend in addition to LLVM  
+  (see https://hub.docker.com/r/chapel/chapel/)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -48,6 +50,8 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed `c_sizeof()`'s formal from `x` to `t` in the 'CTypes' module  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/CTypes.html#CTypes.c_sizeof)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -119,6 +123,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved the clarity and format of some parser error messages
+* removed "It's us, not you" phrasing from `chpl`'s internal error messages
 * reworded error messages for generic class management types to avoid changes
 
 Bug Fixes
@@ -156,6 +162,9 @@ Developer-oriented changes: Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* made Chapel-specific `EEOF`, `ESHORT`, and `EFORMAT` private in 'IO' module
+* made these error classes inherit from `Error` rather than `SystemError`
+
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -165,12 +174,16 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* validated that the pass provided to the `--stop-after-pass` flag exists
+* prohibited using the `--parse-only` and `--stop-after-pass` flags together
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* added the ability to resolve task/loop intents in 'dyno'
+* fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
