@@ -1,3 +1,3 @@
 issue-21289-2a.chpl:10: warning: an implicit module named 'issue-21289-2a' is being introduced to contain file-scope code
 bar_t
-proc(x: int): int
+tmodule=

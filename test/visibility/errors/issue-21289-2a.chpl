@@ -7,6 +7,7 @@ module foo {
     }
 }
 
+use foo;
 writeln(foo.bar_t:string);
 // Note this is incorrect and should be written as above;
 writeln(foo.bar.type:string);

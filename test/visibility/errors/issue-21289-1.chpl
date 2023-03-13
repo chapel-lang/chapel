@@ -7,6 +7,6 @@ module foo {
     }
 }
 
-foo.bar.t;
-// Note this is incorrect and should be;
-foo.bar_t;
+writeln(foo.bar_t:string);
+// Note this is incorrect and should be written as above;
+writeln(foo.bar.t);
