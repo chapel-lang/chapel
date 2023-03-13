@@ -728,8 +728,21 @@ module SharedObject {
 }
 
 /*
-The ``weak`` type is a special smart pointer type designed to be used in
-tandem with :record:`~SharedObject.shared` objects.
+**Usage:**
+
+.. code-block:: chapel
+
+  use WeakPointer;
+
+or
+
+.. code-block:: chapel
+
+  import WeakPointer;
+
+
+This module contains the ``weak`` type, which is a smart pointer type designed
+to be used in tandem with :record:`~SharedObject.shared` objects.
 
 A ``weak`` provides a reference to a ``shared`` class object without
 requiring it to stay allocated. Such a pattern is useful for implementing graph

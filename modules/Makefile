@@ -210,7 +210,7 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
 	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
-	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
+	# @cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
 	@echo "Updating generated module documentation in ${DOC_RST}"
 	@mkdir -p ${DOC_RST}/modules
 	@mkdir -p ${DOC_RST}/builtins
