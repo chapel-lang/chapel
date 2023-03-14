@@ -527,7 +527,7 @@ module CTypes {
   pragma "no doc"
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
-  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
   pragma "no doc"
   pragma "fn synchronization free"
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
@@ -536,7 +536,6 @@ module CTypes {
 
 
   /*
-
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
     :type:`c_ptr` has no impact on the lifetime of the array.  The
@@ -561,12 +560,16 @@ module CTypes {
 
     return c_pointer_return(arr[arr.domain.low]);
   }
-
-  inline proc c_ptrToConst(arr: []): c_ptrConst(arr.eltType) {
+  /*
+   Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+   modification of the pointee.
+   */
+  inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     return c_ptrTo(arr);
   }
 
-  /* Returns a :type:`c_ptr` to any Chapel object.
+  /*
+    Returns a :type:`c_ptr` to any Chapel object.
     Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
     could go out of scope even if this :type:`c_ptr` remains.
@@ -579,14 +582,17 @@ module CTypes {
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+    return c_ptrToConst(x);
+  }
+  /*
+   Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+   modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
     if isDomainType(t) then
       compilerError("c_ptrTo domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
     return c_pointer_return(x);
-  }
-
-  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
-    return c_ptrTo(x);
   }
 
   pragma "no doc"

@@ -1536,6 +1536,7 @@ bool canCoerceAsSubtype(Type*     actualType,
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
       formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
     // check element types match
