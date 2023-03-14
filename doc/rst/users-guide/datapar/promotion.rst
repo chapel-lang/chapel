@@ -68,7 +68,8 @@ negated ``real``:
   :language: chapel
   :lines: 199-201
 
-As before, we can call the function in a promoted manner using an array of reals, as follows:
+As before, we can call the function in a promoted manner using an array of
+reals, as follows:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
@@ -80,17 +81,19 @@ This is equivalent to:
   :language: chapel
   :lines: 206-208
 
-Calling this function with a single ``real`` and then assigning to an array of reals works similarly:
+Calling this function with a single ``real`` and then assigning to an array of
+reals works similarly:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
   :lines: 210
 
-If we print out the array we see that the single real has been negated and then duplicated across the array:
+If we print out the array we see that the single real has been negated and then
+duplicated across the array:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.good
   :language: chapel
-  :lines: 211
+  :lines: 52
 
 The execution is equivalent to:
 
@@ -98,7 +101,8 @@ The execution is equivalent to:
   :language: chapel
   :lines: 212-214
 
-Note the ``tmp`` variable, the function ``negateAndReturn`` is only called once and then the value is assigned to each element in the array.
+Note the ``tmp`` variable, the function ``negateAndReturn`` is only called once
+and then the value is assigned to each element in the array.
 
 
 Multi-Argument Promotion
