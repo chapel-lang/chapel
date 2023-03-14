@@ -19,6 +19,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Syntactic / Naming Changes
 --------------------------
+* unified `chpl`'s parsing of array types/values/queries, square bracket loops
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -202,6 +203,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* improved the compiler's internal representation of function types
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
@@ -214,6 +216,8 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
   - fixed detection of task-private variables
 * added the ability to resolve reductions in 'dyno'
 * added the ability to resolve task/loop intents in 'dyno'
+* added 'dyno' support for `@deprecated` and `@unstable` warnings
+* added 'dyno' support for computing a program's module initialization order
 * fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
 
 Developer-oriented changes: Runtime improvements
