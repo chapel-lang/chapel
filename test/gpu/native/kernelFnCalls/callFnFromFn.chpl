@@ -8,7 +8,6 @@ proc verifyLaunches() {
          "observed ", actual, " launches instead of ", expected);
 }
 
->>>>>>> 87bc8d4283 (Adjust tests that were sensitive to number of kernel launches)
 config const n = 10;
 
 proc foo(i) {
