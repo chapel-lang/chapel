@@ -351,6 +351,31 @@ VarDom = {1..n};
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
 //
+// This trick can be used to create records or classes with array fields which
+// may have different sizes in each instance of the type:
+//
+
+record R {
+  var FieldDom = {1..0};
+  var FieldArr: [FieldDom] int;
+
+  proc init(size) {
+    FieldDom = {1..size};
+  }
+}
+
+var RSmall = new R(10);
+var RLarge = new R(1000);
+
+writeln("Size of RSmall's FieldArr: ", RSmall.FieldArr.size);
+writeln("Size of RLarge's FieldArr: ", RLarge.FieldArr.size);
+
+//
+// Note: further information on records can be found in the
+// :ref:`Records Primer <primers-records>`
+//
+
+//
 // Only a domain variable or formal argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion
 // since assigning a domain using ``.domain`` query on one array can cause a number of
