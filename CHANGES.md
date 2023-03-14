@@ -52,6 +52,8 @@ Name Changes in Libraries
 -------------------------
 * renamed `c_sizeof()`'s formal from `x` to `t` in the 'CTypes' module  
   (see https://chapel-lang.org/docs/1.30/modules/standard/CTypes.html#CTypes.c_sizeof)
+* changed GPU-related features to use `Gpu` over `GPU` in identifier names
+  (e.g. `GPUDiagnostics` is now `GpuDiagnostics`)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -60,6 +62,8 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* Added new GPU-oriented utility routines
+  (see 'GPU Computing' below)
 * Updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
    https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
@@ -110,6 +114,14 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* 'GPU' module improvements:
+  - added `createSharedArray()` to support allocating block-shared memory  
+    (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.createSharedArray)
+  - added `syncThreads()` to synchronize threads within a GPU block  
+    (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.syncThreads)
+  - added `setBlockSize()` to configure the block size of GPU kernels  
+    (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.setBlockSize)
+
 
 Compiler Improvements
 ---------------------
@@ -131,6 +143,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved errors for invalid uses of `break`, `continue`, `return`, `yield`
 * improved error messages when applying multiple class memory management styles
 * improved error messages for invalid uses of `private`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
@@ -168,6 +181,7 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
+* renamed the 'parse' pass to 'parseAndConvertUast'
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -184,12 +198,21 @@ Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * validated that the pass provided to the `--stop-after-pass` flag exists
 * prohibited using the `--parse-only` and `--stop-after-pass` flags together
+* added `--gpu-ptxas-enforce-optimization` for debugging optimized GPU builds
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* made numerous improvements to the 'dyno'-based scope resolver:
+  - added warnings for attempted successive renames in `use`/`import`
+  - added errors for disallowed cases of relative `use`/`import`
+  - added errors for referencing fields of outer classes from inner ones
+  - added errors when modules are used as variables
+  - fixed internal failures with `if var` conditionals and `coforall` loops
+  - fixed detection of task-private variables
+* added the ability to resolve reductions in 'dyno'
 * added the ability to resolve task/loop intents in 'dyno'
 * fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
 
