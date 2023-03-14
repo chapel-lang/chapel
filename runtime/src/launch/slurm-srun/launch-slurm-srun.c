@@ -160,14 +160,10 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
 
 static chpl_bool getSlurmDebug(chpl_bool batch) {
   chpl_bool result = false;
-  char *debugString = getenv("SLURM_DEBUG");
+  const char *varName = (batch) ? "SBATCH_DEBUG" : "SLURM_DEBUG";
+  char *debugString = getenv(varName);
   if (debugString) {
     result = (atoi(debugString) != 0) ? true : false;
-  } else if (batch) {
-    debugString = getenv("SBATCH_DEBUG");
-    if (debugString) {
-      result = (atoi(debugString) != 0) ? true : false;
-    }
   }
   return result;
 }
