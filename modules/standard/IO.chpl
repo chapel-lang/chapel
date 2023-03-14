@@ -5526,7 +5526,7 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
 
   If the string is not matched exactly, then the fileReader's position is
   unchanged and this method will return ``false``. In other words, this
-  fileeReader will return ``false`` in the cases where
+  fileReader will return ``false`` in the cases where
   :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
