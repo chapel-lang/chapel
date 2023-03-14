@@ -99,10 +99,9 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
-static chpl_bool getSlurmDebug(chpl_bool batch) {
+static chpl_bool getSlurmDebug(void) {
   chpl_bool result = false;
-  const char *varName = (batch) ? "SBATCH_DEBUG" : "SLURM_DEBUG";
-  char *debugString = getenv(varName);
+  char *debugString = getenv("SALLOC_DEBUG");
   if (debugString) {
     result = (atoi(debugString) != 0) ? true : false;
   }
@@ -281,7 +280,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     char iCom[2*FILENAME_MAX-10];
     int len = 0;
 
-    if (!getSlurmDebug(false)) {
+    if (!getSlurmDebug()) {
       len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
     }
     len += snprintf(iCom+len, sizeof(iCom)-len, "-J %s ", jobName);
