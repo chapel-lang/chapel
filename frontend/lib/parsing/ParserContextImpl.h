@@ -269,7 +269,7 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   auto attr = buildAttribute(loc, ident, usedParens, toolspace, actuals);
   for (auto& attribute : *attrs) {
     if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
-      error(loc, "repteated attribute '%s'", attr->toAttribute()->name().c_str());
+      error(loc, "repeated attribute '%s'", attr->toAttribute()->name().c_str());
     }
   }
   attrs = appendList(attrs, attr.release());

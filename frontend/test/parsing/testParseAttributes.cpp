@@ -853,7 +853,7 @@ static void test15(Parser* parser) {
   auto parseResult = parseStringAndReportErrors(parser, "test15.chpl",
                                                 program.c_str());
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "repteated attribute 'chpldoc.nodoc'");
+  assert(guard.error(0)->message() == "repeated attribute 'chpldoc.nodoc'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
   assert(guard.realizeErrors() == 1);
 }
