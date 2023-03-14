@@ -617,14 +617,12 @@ void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
   #endif
 }
 
-void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
-                             unsigned int addrSpace) {
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   #if HAVE_LLVM_VER >= 130
-  b.addStructRetAttr(llvm::PointerType::get(returnTy, addrSpace));
+  b.addStructRetAttr(returnTy);
   #else
   b.addAttribute(llvm::Attribute::StructRet);
   std::ignore = returnTy;
-  std::ignore = addrSpace;
   #endif
 }
 
