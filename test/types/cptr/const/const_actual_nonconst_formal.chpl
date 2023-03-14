@@ -2,7 +2,7 @@ use CTypes;
 
 extern {
   static int foo(int* x) {
-    *x++;
+    (*x)++;
     return *x;
   }
 }

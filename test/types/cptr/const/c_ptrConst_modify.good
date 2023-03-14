@@ -1,1 +1,1 @@
-(some error about trying to modify a const ref)
+c_ptrConst_modify.chpl:6: error: cannot assign to const variable
