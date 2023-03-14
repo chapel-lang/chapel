@@ -138,7 +138,8 @@ Specifically:
   
 * ``--chpl-home=/dir/for/install`` copies key files and directories
   from the Chapel source tree into ``/dir/for/install``, preserving
-  Chapel's traditional directory structure.
+  Chapel's traditional directory structure.  As you might expect, the
+  meaning of ``$CHPL_HOME`` for such installs is ``/dir/for/install``.
 
 
 -----------------------------------------
