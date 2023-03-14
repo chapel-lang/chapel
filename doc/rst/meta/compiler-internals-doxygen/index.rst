@@ -13,6 +13,12 @@ new compiler.
    queries
 
 .. toctree::
+   :caption: Implementation Details
+   :maxdepth: 1
+
+   queries-impl
+
+.. toctree::
    :caption: Symbols by Namespace
    :maxdepth: 2
 
