@@ -37,8 +37,12 @@ proc main() {
     const r = 0..0;
 
     proc check(A, s) {
-      if getGpuDiagnostics()[0].kernel_launch !=1 then
-        writeln(s + " didn't result in kernel launch");
+      stopGpuDiagnostics();
+      const nLaunch = getGpuDiagnostics()[0].kernel_launch;
+
+      if nLaunch !=1 then
+        writeln(s + " didn't result in correct number of kernel launches. " +
+                nLaunch:string + " launches detected.");
       else if verbose then
         writeln(s + " resulted in kernel launch");
 
@@ -49,6 +53,7 @@ proc main() {
         writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
 
       resetGpuDiagnostics();
+      startGpuDiagnostics();
     }
 
     startGpuDiagnostics();

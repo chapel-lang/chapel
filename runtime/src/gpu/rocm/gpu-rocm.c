@@ -379,6 +379,15 @@ void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
   #endif
 }
 
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+  assert(chpl_gpu_is_device_ptr(addr));
+
+  ROCM_CALL(hipMemsetD8((hipDeviceptr_t)addr, (unsigned int)val, n));
+
+  return addr;
+}
+
+
 void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 

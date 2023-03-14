@@ -87,8 +87,20 @@ module ChapelHashtable {
           c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
+      when ArrayInit.gpuInit {
+        use ChplConfig;
+        if CHPL_LOCALE_MODEL=="gpu" {
+          extern proc chpl_gpu_memset(addr, byte, numBytes);
+          foreach slot in _allSlots(size) {
+            chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        else {
+          halt("ArrayInit.gpuInit should not have been selected");
+        }
+      }
       otherwise {
-        halt("ArrayInit.heuristicInit should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been implemented");
       }
     }
 

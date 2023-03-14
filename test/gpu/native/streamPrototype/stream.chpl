@@ -11,7 +11,17 @@ use GpuDiagnostics;
 //
 use HPCCProblemSize;
 
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 12 else 16;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
+
 config param useForeach = true;
+
+config const useGpuDiags = true;
 
 //
 // The number of vectors and element type of those vectors
@@ -60,7 +70,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  startGpuDiagnostics();
+  if useGpuDiags then startGpuDiagnostics();
   on here.gpus[0] {
     //
     // ProblemSpace describes the index set for the three vectors.  It
@@ -102,8 +112,10 @@ proc main() {
     const validAnswer = verifyResults(A, B, C);        // verify...
     printResults(validAnswer, execTime);               // ...and print the results
   }
-  stopGpuDiagnostics();
-  writeln(getGpuDiagnostics());
+  if useGpuDiags {
+    stopGpuDiagnostics();
+    verifyLaunches();
+  }
 }
 
 //

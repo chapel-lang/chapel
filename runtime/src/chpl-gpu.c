@@ -41,6 +41,23 @@ void chpl_gpu_init(void) {
 
 void chpl_gpu_on_std_modules_finished_initializing(void) {
   chpl_gpu_impl_on_std_modules_finished_initializing();
+
+  // this function is something that we're not proud of already. The following
+  // adds the function more meaning and I am not happy about it. It looks like
+  // when we call chpl_gpu_init during runtime initialization, chpl_gpu_debug
+  // isn't setup properly yet. So, even if you use --debugGpu, you don't see the
+  // output from these. On a quick look at the runtime initialization
+  // code, I can't explain why that's the case. But moving these here makes the
+  // output show up as expected.
+  CHPL_GPU_DEBUG("GPU layer initialized.\n");
+  CHPL_GPU_DEBUG("  Memory allocation strategy for ---\n");
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    CHPL_GPU_DEBUG("    array data: device memory\n");
+    CHPL_GPU_DEBUG("         other: page-locked host memory\n");
+  #else
+    CHPL_GPU_DEBUG("    array data: unified memory\n");
+    CHPL_GPU_DEBUG("         other: unified memory\n");
+  #endif
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -107,11 +124,27 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.", n, src, dst);
+  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
+  if (chpl_gpu_is_host_ptr(src)) {
+    CHPL_GPU_DEBUG("src is host ptr\n");
+  }
+  if (chpl_gpu_is_host_ptr(dst)) {
+    CHPL_GPU_DEBUG("dst is host ptr\n");
+  }
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  CHPL_GPU_DEBUG("Memmove successful\n");
+  CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
+  return ret;
+}
+
+void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
+  CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
+                 val);
+
+  void* ret = chpl_gpu_impl_memset(addr, val, n);
+
+  CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
 }
 
