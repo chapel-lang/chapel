@@ -76,6 +76,8 @@ Performance Optimizations / Improvements
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
+* added support for running a locale per socket on HPE Cray EX
+* added support for socket-aware NIC selection on HPE Cray EX
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -117,9 +119,11 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
+* enabled overriding the max # of endpoints reported by the 'ofi' provider
 
 Launchers
 ---------
+* stopped using `--quiet` with `srun`/`sbatch` if `[SLURM|SBATCH]_DEBUG` is set
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -187,6 +191,7 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added the bound/unbound status of 'ofi' endpoints when using verbose output
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
