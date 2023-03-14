@@ -60,6 +60,10 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* Updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
+   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
+   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.BadFormatError)
 
 Package Modules
 ---------------
@@ -127,7 +131,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
-* improved the clarity and format of some parser error messages
+* improved error messages when applying multiple class memory management styles
+* improved error messages for invalid uses of `private`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
 * rephrased generic class management errors to reflect the current behavior
 
@@ -167,7 +172,6 @@ Developer-oriented changes: Naming Changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * made Chapel-specific `EEOF`, `ESHORT`, and `EFORMAT` private in 'IO' module
-* made these error classes inherit from `Error` rather than `SystemError`
 
 
 Developer-oriented changes: Performance improvements
