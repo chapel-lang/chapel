@@ -79,7 +79,7 @@ This is equivalent to:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
-  :lines: 206-208
+  :lines: 206-207
 
 Calling this function with a single ``real`` and then assigning to an array of
 reals works similarly:
