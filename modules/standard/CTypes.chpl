@@ -147,6 +147,27 @@ module CTypes {
   }
 
   /*
+    Like ``c_ptr``, but for a pointer to const data.
+  */
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  class c_ptrConst {
+    type eltType;
+    inline proc this(i: integral) const ref {
+      return __primitive("array_get", this, i);
+    }
+    inline proc deref() const ref {
+      return __primitive("array_get", this, 0);
+    }
+    inline proc writeThis(ch) throws {
+      (this:c_void_ptr).writeThis(ch);
+    }
+  }
+
+  /*
   This class represents a C array with fixed size.  A variable of type c_array
   can coerce to a c_ptr with the same element type.  In that event, the
   pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
@@ -541,6 +562,10 @@ module CTypes {
     return c_pointer_return(arr[arr.domain.low]);
   }
 
+  inline proc c_ptrToConst(arr: []): c_ptrConst(arr.eltType) {
+    return c_ptrTo(arr);
+  }
+
   /* Returns a :type:`c_ptr` to any Chapel object.
     Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
@@ -558,6 +583,10 @@ module CTypes {
       compilerError("c_ptrTo domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
     return c_pointer_return(x);
+  }
+
+  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
+    return c_ptrTo(x);
   }
 
   pragma "no doc"
