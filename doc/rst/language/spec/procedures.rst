@@ -140,14 +140,12 @@ Procedures are defined with the following syntax:
 
    formal-type:
      : type-expression
-     : ? identifier[OPT]
 
    default-expression:
      = expression
 
    variable-argument-expression:
      ... expression
-     ... ? identifier[OPT]
      ...
 
    formal-intent:
