@@ -137,10 +137,13 @@ for d in directories:
         subpath = os.path.join(d, subdir)
         if "nollvm" in subpath:
             continue # skip these configurations
-        #if "homebrew" in subpath:
-        #    continue # skip these configurations
-        #             # (this script would need to be improved
-        #             #  for sudo vs not sudo commands)
+        if "homebrew" in subpath:
+            continue # skip these configurations
+                     # (not sure how useful this is)
+        if ("fedora-38" in subpath or
+            "fedora-37" in subpath or
+            "amazonlinux-2023" in subpath):
+            continue # skip due to not having working LLVM dependency right now
         if "generic-x32-debian11" in subpath:
             continue # skip this one, redudant with other debian ones
 
