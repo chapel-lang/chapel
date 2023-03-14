@@ -122,8 +122,10 @@ As a result, thrown errors will be propagated outside of the initializer.  The
 memory that would have been used to store the instance created by the
 initializer will be cleaned up prior to propagating the error.
 
-Calls to throwing functions are not currently allowed prior to
-``this.complete()``.
+.. note::
+
+   Calls to throwing functions are not currently allowed prior to
+   ``this.complete()``.
 
 When an initializer is not declared with the ``throws`` keyword, calls to
 throwing functions may be made anywhere in the body of the initializer.  Such
@@ -139,6 +141,28 @@ include:
 - being able to ``throw`` from anywhere in the body of an initializer
 - being able to write ``try`` / ``try!`` with ``catch`` blocks anywhere in the
   body of an initializer
-- being able to call functions that ``throw`` prior to ``this.complete()`` calls
+- being able to call functions that ``throw`` prior to ``this.complete()``
   (see :ref:`Limitations_on_Instance_Usage_in_Initializers` for a description)
-  - including ``super.init`` calls when the parent initializer throws
+  - including ``super.init`` calls when the parent initializer throws, e.g.,
+
+    .. code-block:: chapel
+
+       class A {
+         var x: int;
+
+         proc init(xVal: int) throws {
+           x = xVal;
+           this.complete();
+           someThrowingFunc(this);
+         }
+       }
+
+       class B : A {
+         var y: bool;
+
+         proc init(xVal: int, yVal: bool) throws {
+           super.init(xVal); // This call is not valid today
+           y = yVal;
+           this.complete();
+         }
+       }
