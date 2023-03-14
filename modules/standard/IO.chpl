@@ -4309,9 +4309,9 @@ config param useNewFileReaderRegionBounds = false;
    A fileReader will never read beyond its maximum end position. In addition,
    reading from a fileReader beyond the end of the underlying file will not
    extend that file.  Reading beyond the end of the file or beyond the end
-   offset of the fileReader will produce the error ``EEOF`` (and return `false`
-   in many cases such as :proc:`fileReader.read`) to indicate that the end was
-   reached.
+   offset of the fileReader will produce the error ``OS.EofError`` (or just
+   return `false` in many cases such as :proc:`fileReader.read`) to indicate
+   that the end was reached.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
               corresponding parameter of the :record:`fileReader` type. Defaults
