@@ -100,9 +100,14 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
 * improved the spec's description of return intents' effects on `return`  
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-return-statement)
+* clarified the split-initialization behavior of `out` arguments in the spec  
+  (see https://chapel-lang.org/docs/1.30/language/spec/variables.html#split-initialization)
+* updated the spec section on re-exporting symbols to describe current behavior  
+  (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
 
 Syntax Highlighting
 -------------------
+* improved `vim` support to simplify customization of indentation levels
 
 Example Codes
 -------------
@@ -112,6 +117,8 @@ Build System Improvements
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* improved portability for configurations using GCC 13 and clang 15
+* improved the ability to find an LLVM 14 dependency on Alpine Linux 3.17
 
 GPU Computing
 -------------
@@ -144,6 +151,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added a warning for partial instantiations that do not include `?`  
+  (see https://chapel-lang.org/docs/technotes/partialInstantiations.html#creating-partial-instantiations)
 * improved errors for invalid uses of `break`, `continue`, `return`, `yield`
 * improved error messages when applying multiple class memory management styles
 * improved error messages for invalid uses of `private`
@@ -155,12 +164,16 @@ Bug Fixes
 * fixed several bugs related to uses of labeled `break`/`continue` statements
 * fixed a bug in which variable constraints of type `domain` were ignored
 * fixed a bug in which internal modules were stacking class memory managements
+* fixed a compiler hang when reporting an error with split initialization
+* fixed a problem where passing `--target-cpu` would cause a core dump
+* fixed an internal error when initializing a list from an iterator
 
 Bug Fixes for Build Issues
 --------------------------
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a divide-by-zero error for reductions over a large list
 
 Bug Fixes for Libraries
 -----------------------
@@ -173,16 +186,19 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of LLVM to 14.0.6
 
 Developer-oriented changes: Process
 -----------------------------------
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* updated `frontend/README` to focus on code structure and best practices
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
 * renamed the 'parse' pass to 'parseAndConvertUast'
+* renamed `IntentList` to `Qualifier` in 'dyno'
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -194,6 +210,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* renamed the compiler library from `liblibdyno.so` to `libChplFrontend.so`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -208,16 +225,33 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
 * made numerous improvements to the 'dyno'-based scope resolver:
-  - added warnings for attempted successive renames in `use`/`import`
-  - added errors for disallowed cases of relative `use`/`import`
-  - added errors for referencing fields of outer classes from inner ones
-  - added errors when modules are used as variables
+  - added warnings/errors for:
+    - attempted successive renames in `use`/`import`
+    - disallowed cases of relative `use`/`import`
+    - multiply-defined symbols stemming from `public use`/`import`
+    - module symbols that hide subroutine arguments via `use`/`import`
+    - `use` or `import` referring to an ambiguous module
+    - modules used as though they were variables
+    - referencing fields of outer classes from inner ones
+    - references to `@deprecated` and `@unstable` symbols
+  - added the ability for errors to describe where a symbol came from
+  - implemented shadow scopes for `use` and `private use`
+  - significantly improved scope resolution within methods
   - fixed internal failures with `if var` conditionals and `coforall` loops
   - fixed detection of task-private variables
-* added the ability to resolve reductions in 'dyno'
-* added the ability to resolve task/loop intents in 'dyno'
-* added 'dyno' support for `@deprecated` and `@unstable` warnings
+  - fixed a number of other bugs revealed in testing
+* improved several aspects of 'dyno's resolution of types and calls:
+  - added the ability to resolve reductions
+  - added the ability to resolve task/loop intents
+  - added `const` checking
+  - added support for `forwarding` fields
+  - added support for return intent overloading
+  - added support for handling 'ref-if-modified' types, like arrays
+  - added support for default-init, copy-init, assignment, and deinit actions
 * added 'dyno' support for computing a program's module initialization order
+* significantly improved the quality of the uAST dumps
+* fixed bugs in split-initialization and copy-elisiion analyses
+* fixed bugs in return-type inference
 * fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
 
 Developer-oriented changes: Runtime improvements
@@ -229,6 +263,8 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* enabled `start_test` to infer `.good` filenames when using `COMPOPTS` files
+* adjusted the `smokeTest` script to print out lines with trailing whitespace
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
