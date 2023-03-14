@@ -2981,45 +2981,6 @@ module BigInteger {
     }
   }
 
-  /*
-  A parameter to select between the new and deprecated overloads of :proc:`bigint.invert()`
-  * `InvertReturnInt = true` causes the deprecated version of :proc:`bigint.invert()` to be called
-  * `InvertReturnInt = false` causes the new version of :proc:`bigint.invert()` to be called (this version does not return a status integer)
-  */
-  config param InvertReturnInt = true;
-
-  @deprecated(notes="The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `InvertReturnInt` to false")
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws where InvertReturnInt == true {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var b_ = b;
-
-        ret = mpz_invert(this.mpz, a_.mpz, b_.mpz);
-      }
-    }
-
-    var ret_int = ret.safeCast(int);
-
-    if (ret_int == 0) {
-      throw new owned InversionError();
-    } else {
-      return ret_int;
-    }
-  }
-
   /* Set the value of ``this`` to the inverse of ``a`` modulo ``b``
 
      .. note::
@@ -3035,7 +2996,7 @@ module BigInteger {
      :type b: :record:`bigint`
 
   */
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) throws where InvertReturnInt == false {
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) throws {
     var ret: c_int;
 
     if _local {

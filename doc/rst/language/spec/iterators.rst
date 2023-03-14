@@ -25,7 +25,7 @@ The syntax to declare an iterator is given by:
 
    iterator-declaration-statement:
      privacy-specifier[OPT] 'iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
-     iterator-body
+     function-body
 
    iterator-name:
      identifier
@@ -39,10 +39,6 @@ The syntax to declare an iterator is given by:
 
    yield-type:
      : type-expression
-
-   iterator-body:
-     block-statement
-     yield-statement
 
 The syntax of an iterator declaration is similar to a procedure
 declaration, with some key differences:

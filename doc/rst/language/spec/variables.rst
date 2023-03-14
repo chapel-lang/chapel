@@ -274,7 +274,7 @@ as follows:
 =========== =======================================
 **Type**    **Default Value**
 =========== =======================================
-bool(*)     false
+bool        false
 int(*)      0
 uint(*)     0
 real(*)     0.0
@@ -409,9 +409,9 @@ follows:
 
    .. code-block:: chapel
 
-      proc readXX(x: sync) return x.readXX();
-      proc readXX(x: single) return x.readXX();
-      proc readXX(x) return x;
+      proc readXX(x: sync) do return x.readXX();
+      proc readXX(x: single) do return x.readXX();
+      proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
    fragment is solely for the purposes of illustration. It is not

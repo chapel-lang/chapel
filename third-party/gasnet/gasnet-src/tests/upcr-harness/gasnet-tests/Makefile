@@ -7,15 +7,18 @@ all:
 PERL ?= perl
 CONDUIT_DIR=$(TOP_BUILDDIR)/gasnet/$(NETWORK)-conduit
 
-testcxx% testlegacycxx%: force
-	@if test -n "`$(UPCC) --network=udp --echo-var UPCR_LD 2>/dev/null`"; then \
-	  makename=`echo $@ | $(PERL) -pe 's/_.*-(seq|par|parsync)$$/-$$1/'`; \
-	   cmdname=`echo $@ | $(PERL) -pe 's/(_.*)?-(seq|par|parsync)$$//'`; \
-	   echo "$$makename => $$cmdname => $@" ; set -x ; \
+testcxx%:       force ; $(MAKE) do-cxx-test EXE=$@
+testlegacycxx%: force ; $(MAKE) do-cxx-test EXE=$@
+
+do-cxx-test: force
+	@if test -n "`$(UPCC) --network=udp --echo-var UPCR_LD 2>/dev/null`"; then      \
+	  makename=`echo $(EXE) | $(PERL) -pe 's/_.*-(seq|par|parsync)$$/-$$1/'`;       \
+	   cmdname=`echo $(EXE) | $(PERL) -pe 's/(_.*)?-(seq|par|parsync)$$//'`;        \
+	   echo "$$makename => $$cmdname => $(EXE)" ; set -x ;                          \
 	   $(MAKE) -C $(CONDUIT_DIR) $$makename MANUAL_CXXFLAGS="$(MANUAL_CXXFLAGS)" && \
-	   cp -f $(CONDUIT_DIR)/$$cmdname$(EXESUFFIX) $@$(EXESUFFIX);              \
-	 else                                                                    \
-	   echo '#!/bin/sh' > $@ ; chmod +x $@;                                  \
+	   cp -f $(CONDUIT_DIR)/$$cmdname$(EXESUFFIX) $(EXE)$(EXESUFFIX);               \
+	 else                                                                           \
+	   echo '#!/bin/sh' > $(EXE) ; chmod +x $(EXE);                                 \
 	 fi
 
 # One rule to rule them all

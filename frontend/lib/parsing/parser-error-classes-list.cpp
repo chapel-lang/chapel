@@ -410,6 +410,14 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorParenlessAttributeArgDeprecated::write(ErrorWriterBase& wr) const {
+  auto attr = std::get<const uast::Attribute*>(info);
+  wr.heading(kind_, type_, attr, "Attribute arguments without parentheses are "
+             "deprecated; please wrap the argument in parentheses '()'.");
+  wr.message("For this attribute:");
+  wr.code(attr, { attr->actual(0)});
+}
+
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto errorMessage = std::get<std::string>(info);

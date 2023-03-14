@@ -175,8 +175,8 @@ Procedures are defined with the following syntax:
      'where' expression
 
    function-body:
+     'do' statement
      block-statement
-     return-statement
 
 Functions do not require parentheses if they have no arguments. Such
 functions are described in :ref:`Functions_without_Parentheses`.
@@ -213,6 +213,10 @@ type.
 
 The ``where-clause`` is optional and is discussed
 in :ref:`Where_Clauses`.
+
+The ``function-body`` defines the function's behavior and is defined
+in :ref:`The_Function_Body`.  Function bodies may contain return
+statements (see :ref:`The_Return_Statement`).
 
 Function and operator overloading is supported in Chapel and is
 discussed in :ref:`Function_Overloading`. Operator overloading
@@ -1055,14 +1059,29 @@ with a conditional expression that is not a parameter.
    ``numBits`` is a param procedure defined in the standard Types
    module.
 
+
+.. _The_Function_Body:
+
+Function Bodies
+---------------
+
+The body of a procedure or iterator is made up of one or more
+statements that are executed when a call to the function is made.
+Function bodies can always be specified using a compound or _block_
+statement (:ref:`Blocks`), set off by curly brackets.  When a
+function's body is just a single statement, the `do` keyword can be
+used as a shorthand for defining the body instead, similar to other
+forms of control flow.
+
+
 .. _The_Return_Statement:
 
 The Return Statement
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
-The return statement can only appear in a function. It causes control to
-exit that function, returning it to the point at which that function was
-called.
+The return statement can only appear in a function body. It causes
+control to exit that function, returning it to the point at which that
+function was called.
 
 A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
@@ -1526,7 +1545,7 @@ the following rules in order:
    same kind is better. Each of the following bullets represents a
    different numeric kind for this rule:
 
-   * ``bool(?w)``, that is, a ``bool`` type of any width
+   * ``bool``
 
    * ``int(?w)`` or ``uint(?w)``, that is, a signed or unsigned integral
      type of any width
@@ -1544,11 +1563,10 @@ the following rules in order:
    formal with the same width is better. Each of the following bullets
    represents a different numeric width for this rule:
 
-   * All numeric types that match the default width as well as all
-     ``bool`` types. This includes ``bool``, ``bool(?w)``, ``int``
-     ``uint`` ``real`` ``imag`` ``complex`` as well as their more
-     specific names ``int(64)`` ``uint(64)`` ``real(64)`` ``imag(64)``
-     ``complex(128)``
+   * All numeric types that match the default width.  This includes
+     ``bool``, ``int``, ``uint``, ``real``, ``imag``, and ``complex``
+     as well as their more specific names ``int(64)``, ``uint(64)``,
+     ``real(64)``, ``imag(64)``, ``complex(128)``
 
    * All numeric types with 32-bit width: ``int(32)``, ``uint(32)``,
      ``real(32)``, ``imag(32)``, ``complex(64)``. ``complex(64)`` is in

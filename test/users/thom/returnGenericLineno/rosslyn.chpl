@@ -31,8 +31,8 @@ module Rosslyn
             return true;
         }
 
-        /* Time runKernel() method, return results in ms or given time unit*/
-        proc timeKernel(units = TimeUnits.milliseconds) : real
+        /* Time runKernel() method, return results in ms */
+        proc timeKernel() : real
         {
             assert(!hasBeenRun,"Benchmark instance has already been run, ",
                                "create new class instance");
@@ -46,7 +46,7 @@ module Rosslyn
 
             assert(validate(),"Benchmark run did not validate");
 
-            return timer.elapsed(units);
+            return timer.elapsed() * 1000.0;
         }
 
     }

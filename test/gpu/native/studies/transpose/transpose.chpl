@@ -17,8 +17,7 @@ pragma "always resolve function"
 export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), width: int, height: int) {
   // Allocate extra columns for the shared 2D array to avoid bank conflicts.
   param paddedBlockSize = blockSize + blockPadding;
-  var smVoidPtr = __primitive("gpu allocShared", numBytes(dataType)*paddedBlockSize*blockSize);
-  var smArrPtr = smVoidPtr : c_ptr(dataType);
+  var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
 
   const blockIdxX = __primitive("gpu blockIdx x"),
         threadIdxX = __primitive("gpu threadIdx x"),
@@ -35,7 +34,7 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 
   // synchronize the threads
-  __primitive("gpu syncThreads");
+  syncThreads();
 
   // Swap coordinates and write back out
   idxX = blockIdxY * blockSize + threadIdxX;

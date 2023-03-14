@@ -1,0 +1,9 @@
+BadFormatError: bad format: no match (in readThrough(regex(string)) with path "maxSizeStringInput.txt" offset 0)
+👉👉👉👉👉👉||||||👈👈👈👈👈👈
+
+BadFormatError: bad format (in readThrough(regex(string)) with path "maxSizeStringInput.txt" offset 0)
+👉👉👉👉👉👉||||||👈👈👈👈👈👈
+
+uncaught BadFormatError: bad format (in readThrough(regex(string)) with path "maxSizeStringInput.txt" offset 0)
+  readThroughMaxSizeString.chpl:30: thrown here
+  readThroughMaxSizeString.chpl:30: uncaught here

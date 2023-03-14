@@ -55,26 +55,26 @@ module URL {
   }
   /*
 
-  Open a channel reading from a particular URL.
+  Open a fileReader from a particular URL.
 
   :arg url: which url to open (for example, "http://example.com").
   :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`~IO.channel` type. Defaults
-              to ``iokind.dynamic``, meaning that the associated
+              corresponding parameter of the :record:`~IO.fileReader` type.
+              Defaults to ``iokind.dynamic``, meaning that the associated
               :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
-                corresponding parameter of the :record:`~IO.channel` type.
+                corresponding parameter of the :record:`~IO.fileReader` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg start: zero-based byte offset indicating where in the file the
-              channel should start reading. Defaults to 0.
+              fileReader should start reading. Defaults to 0.
   :arg end: zero-based byte offset indicating where in the file the
-            channel should no longer be allowed to read. Defaults
+            fileReader should no longer be allowed to read. Defaults
             to a ``max(int)`` - meaning no end point.
-  :returns: an open reading channel to the requested resource.
+  :returns: an open fileReader to the requested resource.
 
-  :throws SystemError: Thrown if a reading channel could not be returned.
+  :throws SystemError: Thrown if a fileReader could not be returned.
    */
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
@@ -110,26 +110,26 @@ module URL {
   }
   /*
 
-  Open a channel writing to a particular URL.
+  Open a fileWriter to a particular URL.
 
   :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
   :arg kind: :type:`~IO.iokind` compile-time argument to determine the
-             corresponding parameter of the :record:`~IO.channel` type. Defaults
-             to ``iokind.dynamic``, meaning that the associated
+             corresponding parameter of the :record:`~IO.fileWriter` type.
+             Defaults to ``iokind.dynamic``, meaning that the associated
              :record:`~IO.iostyle` controls the formatting choices.
   :arg locking: compile-time argument to determine whether or not the
-                channel should use locking; sets the
-                corresponding parameter of the :record:`~IO.channel` type.
+                fileWriter should use locking; sets the
+                corresponding parameter of the :record:`~IO.fileWriter` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg start: zero-based byte offset indicating where in the file the
-              channel should start writing. Defaults to 0.
+              fileWriter should start writing. Defaults to 0.
   :arg end: zero-based byte offset indicating where in the file the
-            channel should no longer be allowed to write. Defaults
+            fileWriter should no longer be allowed to write. Defaults
             to a ``max(int)`` - meaning no end point.
-  :returns: an open writing channel to the requested resource.
+  :returns: an open fileWriter to the requested resource.
 
-  :throws SystemError: Thrown if a writing channel could not be returned.
+  :throws SystemError: Thrown if a fileWriter could not be returned.
   */
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,

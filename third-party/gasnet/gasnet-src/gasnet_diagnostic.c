@@ -33,7 +33,6 @@ static int num_threads = 1;
 static int peer = -1;
 static void * myseg = NULL;
 static void * peerseg = NULL;
-static void * peersegmid = NULL;
 static int iters = 0;
 static int iters0 = 0;
 static int iters2 = 0;
@@ -125,7 +124,6 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
   myseg = myseg_arg;
   peer = peer_arg;
   peerseg = peerseg_arg;
-  peersegmid = (char *)peerseg + TEST_SEGSZ/2;
 
 #if !GASNET_SEGMENT_EVERYTHING
   for (gex_Rank_t rank =0; rank < nnodes; rank++) {
@@ -909,29 +907,40 @@ static void progressfn_tester(int *counter) {
   if ((gasneti_weakatomic_read(&progressfn_req_sent,0) -
        gasneti_weakatomic_read(&progressfn_rep_rcvd,0)) <= 128U)
 #endif
-  { static int tmp = 47;
-    int sz;
+  { static int tmp;
+    // The outer context in progressfns_test() is performing RMA operations
+    // which reference only the bottom halves of our segment and of the
+    // peer's segment.  So, we subdivide the upper halves of each segment
+    // into four disjoint regions for use as source and destination buffers.
+    const size_t region_len = TEST_SEGSZ/8;
+    char *loc_src = (char *)myseg   + TEST_SEGSZ/2;
+    char *loc_dst = (char *)myseg   + TEST_SEGSZ/2 +   region_len;
+    char *rem_src = (char *)peerseg + TEST_SEGSZ/2 + 2*region_len;
+    char *rem_dst = (char *)peerseg + TEST_SEGSZ/2 + 3*region_len;
+
     gex_Event_TestSome(pf_events, pf_event_cnt, 0);
     if (pf_events[0] == GEX_EVENT_INVALID) {
-      pf_events[0] = gex_RMA_PutNB(myteam, peer, peersegmid, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
+      tmp = *(int *)loc_src; // ensures same data if concurrent w/ the PutNBI below
+      pf_events[0] = gex_RMA_PutNB(myteam, peer, rem_dst, &tmp, sizeof(tmp), GEX_EVENT_NOW, 0);
     }
     if (pf_events[1] == GEX_EVENT_INVALID) {
       // Note _allowrecursion=1, since may run w/i client's access region
+      const size_t max_sz = MIN(128*1024,region_len);
       gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_GET);
-      for (sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
-        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
-        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, rem_dst, loc_src, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, loc_dst, peer, rem_src, sz, 0);
       }
       pf_events[1] = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_GET);
     }
     if (gasneti_diag_havehandlers) {
       const size_t max_sz = MIN(gex_AM_MaxRequestMedium(myteam, peer, GEX_EVENT_NOW, 0, 0),
-                                MIN(64*1024,TEST_SEGSZ/2));
-      for (sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+                                MIN(64*1024,region_len));
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
         gasneti_weakatomic_increment(&progressfn_req_sent,0);
-        gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 0, myseg, sz, GEX_EVENT_NOW, 0);
+        gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 0, loc_src, sz, GEX_EVENT_NOW, 0);
         gasneti_weakatomic_increment(&progressfn_req_sent,0);
-        gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 0, myseg, sz, peersegmid, GEX_EVENT_NOW, 0);
+        gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 0, loc_src, sz, rem_dst, GEX_EVENT_NOW, 0);
       }
     }
   }
@@ -965,13 +974,17 @@ static void progressfns_test(int id) {
     GASNETI_PROGRESSFNS_ENABLE(gasneti_pf_debug_counted,COUNTED);
     GASNETI_PROGRESSFNS_DISABLE(gasneti_pf_debug_counted,COUNTED);
 
-    /* do some work that should cause progress fns to run */
+    // do some work that should cause progress fns to run
+    // these use only the lower halves of the segments
+    gasneti_assert_always_uint(1024 ,<=, TEST_SEGSZ/4);
+    char *loc_buf = (char *)myseg;
+    char *rem_buf = (char *)peerseg + TEST_SEGSZ/4;
     for (i=0; i < 2; i++) {
       int tmp = 42;
-      gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
-      gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
-      gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
-      gex_RMA_GetBlocking(myteam, myseg, peer, peersegmid, 1024, 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, &tmp, sizeof(tmp), 0);
+      gex_RMA_GetBlocking(myteam, &tmp, peer, rem_buf, sizeof(tmp), 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, loc_buf, 1024, 0);
+      gex_RMA_GetBlocking(myteam, loc_buf, peer, rem_buf, 1024, 0);
       gasnet_AMPoll();
     }
 
@@ -991,13 +1004,14 @@ static void progressfns_test(int id) {
     cnt_c = pf_cnt_counted; cnt_b = pf_cnt_boolean;
     PTHREAD_BARRIER(num_threads);
 
-    /* do some work that might cause progress fns to run */
+    // (again) do some work that might cause progress fns to run
+    // these use only the lower halves of the segments
     for (i=0; i < 2; i++) {
       int tmp = 42;
-      gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
-      gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
-      gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
-      gex_RMA_GetBlocking(myteam, myseg, peer, peersegmid, 1024, 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, &tmp, sizeof(tmp), 0);
+      gex_RMA_GetBlocking(myteam, &tmp, peer, rem_buf, sizeof(tmp), 0);
+      gex_RMA_PutBlocking(myteam, peer, rem_buf, loc_buf, 1024, 0);
+      gex_RMA_GetBlocking(myteam, loc_buf, peer, rem_buf, 1024, 0);
       gasnet_AMPoll();
     }
 
@@ -1241,16 +1255,23 @@ static void op_test(int id) {
     }
     PTHREAD_LOCALBARRIER(num_threads);
     { // Test NBI fire-and-forget regions
+      // Divide each segment into four disjoint regions for use as sources and destinations:
+      const size_t region_len = TEST_SEGSZ/4;
+      char *loc_src = (char *)myseg;
+      char *loc_dst = (char *)myseg   +   region_len;
+      char *rem_src = (char *)peerseg + 2*region_len;
+      char *rem_dst = (char *)peerseg + 3*region_len;
       gex_NBI_Wait(GEX_EC_ALL,0);
       gasneti_begin_nbi_ff(GASNETI_THREAD_PASS_ALONE);
-      for (size_t sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
-        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
-        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+      const size_t max_sz = MIN(128*1024,region_len);
+      for (size_t sz = 1; sz <= max_sz; sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, rem_dst, loc_src, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, loc_dst, peer, rem_src, sz, 0);
         if (sz <= max_medium) {
-          gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, GEX_EVENT_GROUP, 0);
+          gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 2, loc_src, sz, GEX_EVENT_GROUP, 0);
         }
         if (sz <= max_long) {
-          gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, peersegmid, GEX_EVENT_GROUP, 0);
+          gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 2, loc_src, sz, rem_dst, GEX_EVENT_GROUP, 0);
         }
       }
       gasneti_end_nbi_ff(GASNETI_THREAD_PASS_ALONE);

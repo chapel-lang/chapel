@@ -22,7 +22,7 @@ proc main(args: [] string) {
       const descOffset = input.mark();
 
       // Scan forward until we get to '\n' (end of description)
-      input.advancePastByte("\n".toByte());
+      input.advanceThrough("\n");
       const seqOffset = input.offset();
 
       // Scan forward until we get to '>' (end of sequence) or EOF
@@ -31,7 +31,7 @@ proc main(args: [] string) {
       // look for the next description, returning '(eof, its offset)'
       proc findNextDesc() throws {
         try {
-          input.advancePastByte(">".toByte());
+          input.advanceThrough(">");
         } catch (e:EofError) {
           return (true, len-1);
         }

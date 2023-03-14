@@ -1091,16 +1091,19 @@ bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
       resolveSpecifiedReturnType(fn);
       return false;
 
+    // We are a function type with no return type, so we return void.
+    } else if (fn->hasFlag(FLAG_NO_FN_BODY)) {
+      fn->retType = dtVoid;
+
     // Only try to resolve the body if we can succeed.
     } else if (!fn->isResolved() && !fn->isGeneric()) {
-      INT_ASSERT(!fn->hasFlag(FLAG_NO_FN_BODY));
-      if (!fn->hasFlag(FLAG_NO_FN_BODY)) resolveFunction(fn);
+      resolveFunction(fn);
       INT_ASSERT(fn->isResolved());
       return true;
     }
   }
 
-  return true;
+  return false;
 }
 
 void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {

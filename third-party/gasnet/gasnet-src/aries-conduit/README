@@ -84,7 +84,7 @@ Optional compile-time settings:
 
 in aries-conduit/gasnet_aries.h:
 
-GASNETC_USE_SPINLOCK	- 0 user gasneti_mutex_t (default)
+GASNETC_USE_SPINLOCK	- 0 use gasneti_mutex_t (default)
 			  1 use gasneti_spinlock_t
 
 The _DEFAULT values for all of the GASNET_GNI_ environment variables.

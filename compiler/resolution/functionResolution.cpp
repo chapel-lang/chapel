@@ -3491,16 +3491,31 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
           USR_WARN(checkCall, "partial instantiation without '?' argument");
           USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
           USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
-         // to fully instantiate, add type constructor arguments for the following uninstantiated generic fields in '%s'", tt->symbol->name);
           // which field names are generic?
           if (AggregateType* at = toAggregateType(tt)) {
+            bool printedAnyFields = false;
             for_fields(field, at) {
               if (field->type == dtUnknown ||
                   field->type->symbol->hasFlag(FLAG_GENERIC)) {
                 const char* k = "";
-                if (field->hasFlag(FLAG_TYPE_VARIABLE)) k = " type";
-                else if (field->hasFlag(FLAG_PARAM)) k = " param";
-                USR_PRINT(field, "  generic%s field '%s'", k, field->name);
+                bool possiblyDependent = false;
+                if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+                  k = " type";
+                } else if (field->hasFlag(FLAG_PARAM)) {
+                  k = " param";
+                } else if (field->defPoint->exprType == nullptr) {
+                  // field with no type e.g. var x;
+                } else {
+                  // var x: something could be concrete or generic,
+                  // depending on what 'something' refers to,
+                  // so only report such a field if it's the first generic one.
+                  possiblyDependent = true;
+                }
+
+                if (!printedAnyFields || !possiblyDependent) {
+                  USR_PRINT(field, "  generic%s field '%s'", k, field->name);
+                  printedAnyFields = true;
+                }
               }
             }
           }

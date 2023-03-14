@@ -17,3 +17,5 @@ true
 1..4 by -1
 true
 
+slices-with-negative-strides-1.chpl:6: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -1, 1..4 by -2)
+slices-with-negative-strides-1.chpl:11: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -1, 1..4 by 2)

@@ -26,7 +26,7 @@ jobs:
         run: |      
               echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV   
               echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
-              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
+              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{github.event.pull_request.head.sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV     
   
       - name: checkout
@@ -47,7 +47,7 @@ jobs:
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
 
-              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
+              diff=$(git --no-pager diff --merge-base --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
               echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV

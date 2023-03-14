@@ -1,4 +1,5 @@
 use CTypes;
+use GPU only syncThreads, createSharedArray;
 
 config param N=16;
 config param BLOCK_SIZE;
@@ -8,17 +9,16 @@ on here.gpus[0] {
 
   forall i in 0..<N {
     // Each thread independently assigns to shared memory
-    var dst_ptr = __primitive("gpu allocShared", N * numBytes(uint));
-    var dst_ptr_casted = dst_ptr : c_ptr(uint);
+    var dst_ptr = createSharedArray(uint, N);
 
     // After the sync the array in shared memory will be:
     //   [100, 200, 300, 400, ...]
-    dst_ptr_casted[i] = ((i+1) * 100) : uint;
-    __primitive("gpu syncThreads");
+    dst_ptr[i] = ((i+1) * 100) : uint;
+    syncThreads();
 
     // Grab value in shared memory assigned by neighbor to your right and add
     // your id
-    A[i] = dst_ptr_casted[(i + 1) % N] + i : uint;
+    A[i] = dst_ptr[(i + 1) % N] + i : uint;
   }
 
   // Print array, chunked by blocks. Note that each element is assigned by a

@@ -1,4 +1,13 @@
 use GpuDiagnostics;
+
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 1 else 2;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
+
 config const n = 10;
 
 proc foo(i) {
@@ -20,7 +29,7 @@ on here.gpus[0] {
   writeln(A);
 }
 stopGpuDiagnostics();
-writeln(getGpuDiagnostics());
+verifyLaunches();
 
 var x = foo(13);
 writeln(x);

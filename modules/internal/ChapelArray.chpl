@@ -1211,6 +1211,7 @@ module ChapelArray {
 
       if boundsChecking then
         checkSlice(d, _value);
+      d.chpl_checkNegativeStride();
 
       //
       // If this is already a slice array view, we can short-circuit
@@ -1248,6 +1249,7 @@ module ChapelArray {
       // this domain is not exposed to the user in any way, so it is actually
       // constant
       d._value.definedConst = true;
+      d.chpl_checkNegativeStride();
 
       //
       // If this is already a slice array view, we can short-circuit
@@ -1285,7 +1287,7 @@ module ChapelArray {
       pragma "no copy"
       var rcdom = this.domain[(...args)];
       rcdom.definedConst = true;
-
+      rcdom.chpl_checkNegativeStride();
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what

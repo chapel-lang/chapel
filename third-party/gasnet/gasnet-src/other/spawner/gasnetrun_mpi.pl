@@ -100,7 +100,7 @@ sub gasnet_encode($) {
     my $is_crayt3e_mpi = ($uname =~ m|cray t3e|i );
     my $is_sgi_mpi = ($mpirun_help =~ m|\[-miser\]|);
     my $is_poe      = ($mpirun_help =~ m|Parallel Operating Environment|);
-    my $is_aprun    = ($mpirun_help =~ m|aprunwrapper\|aprun_version\|rchitecture type.*?xt|i);
+    my $is_aprun    = ($mpirun_help =~ m|Usage: aprun \|aprunwrapper\|aprun_version\|rchitecture type.*?xt|i);
     my $is_yod      = ($mpirun_help =~ m| yod |);
     my $is_hp_mpi  = ($mpirun_help =~ m|-universe_size|);
     my $is_elan_mpi  = ($mpirun_help =~ m|MPIRUN_ELANIDMAP_FILE|);

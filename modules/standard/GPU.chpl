@@ -170,4 +170,33 @@ module GPU
 
     chpl_gpu_comm_wait(gpuHandle);
   }
+
+  /*
+     Synchronize threads within a GPU block.
+   */
+  inline proc syncThreads() {
+    __primitive("gpu syncThreads");
+  }
+
+  /*
+    Allocate block shared memory, enough to store ``size`` elements of
+    ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
+    although every thread in a block calls this procedure, the same shared array
+    is returned to all of them.
+
+    :arg eltType: the type of elements to allocate the array for.
+
+    :arg size: the number of elements in each GPU thread block's copy of the array.
+   */
+  inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
+    const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
+    return voidPtr : c_ptr(eltType);
+  }
+
+  /*
+    Set the block size for kernels launched on the GPU.
+   */
+  inline proc setBlockSize(blockSize: int) {
+    __primitive("gpu set blockSize", blockSize);
+  }
 }

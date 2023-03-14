@@ -103,12 +103,10 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
-/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -127,7 +125,6 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
-/*
 static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
@@ -142,7 +139,6 @@ static QualifiedType
 returnInfoReal64(CallExpr* call) {
   return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
@@ -1259,6 +1255,11 @@ initPrimitive() {
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 
   prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
+
+  prim_def(PRIM_UINT32_AS_REAL32, "uint32 as real32", returnInfoReal32);
+  prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
+  prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
+  prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

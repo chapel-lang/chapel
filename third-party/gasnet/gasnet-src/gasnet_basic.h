@@ -671,7 +671,7 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
   #define GASNETI_PURE 
 #endif
 /* pragma version of GASNETI_PURE */
-#if PLATFORM_COMPILER_XLC && \
+#if PLATFORM_COMPILER_XLC && PLATFORM_ARCH_BIG_ENDIAN && \
    !(PLATFORM_OS_DARWIN && __xlC__ <= 0x0600) /* bug 1542 */
   #define GASNETI_PUREP(fnname) GASNETI_PRAGMA(isolated_call(fnname))
 #else

@@ -32,12 +32,16 @@ class Attribute final: public AstNode {
 private:
   // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
   UniqueString name_;
+  bool usedParens_; // whether the attribute was written with parens -
+                    // only needed while @unstable "msg" is being deprecated
   int numActuals_; // number of child actuals
   std::vector<UniqueString> actualNames_;
 
-  Attribute(UniqueString name, int numActuals, AstList actuals, std::vector<UniqueString> actualNames)
+  Attribute(UniqueString name, bool usedParens, int numActuals, AstList actuals,
+            std::vector<UniqueString> actualNames)
     : AstNode(asttags::Attribute, std::move(actuals)),
       name_(name),
+      usedParens_(usedParens),
       numActuals_(numActuals),
       actualNames_(std::move(actualNames)) {
   }
@@ -45,6 +49,7 @@ private:
   Attribute(Deserializer& des)
     : AstNode(asttags::Attribute, des) {
       name_ = des.read<UniqueString>();
+      usedParens_ = des.read<bool>();
       numActuals_ = des.read<int>();
       actualNames_ = des.read<std::vector<UniqueString>>();
   }
@@ -53,7 +58,8 @@ private:
     const Attribute* lhs = this;
     const Attribute* rhs = (const Attribute*) other;
     if (lhs->actualNames_.size() != rhs->actualNames_.size() ||
-        lhs->name_ != rhs->name_ || lhs->numActuals_ != rhs->numActuals_) {
+        lhs->name_ != rhs->name_ || lhs->usedParens_ != rhs->usedParens_ ||
+        lhs->numActuals_ != rhs->numActuals_) {
         return false;
     }
     int nActualNames = (int) lhs->actualNames_.size();
@@ -78,6 +84,7 @@ public:
 
   static owned<Attribute> build(Builder* builder, Location loc,
                                 UniqueString name,
+                                bool usedParens,
                                 AstList actuals,
                                 std::vector<UniqueString> actualNames);
 
@@ -160,12 +167,19 @@ public:
     AstNode::serialize(ser);
 
     ser.write(name_);
+    ser.write(usedParens_);
     ser.write(numActuals_);
     ser.write(actualNames_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Attribute);
 
+  /*
+    Returns whether the attribute was written with parens.
+  */
+  bool usedParens() const {
+    return usedParens_;
+  }
 
 }; // end Attribute
 

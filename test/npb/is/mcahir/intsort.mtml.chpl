@@ -198,9 +198,9 @@ proc main () {
   writef(" Iterations      = %{#########################}\n",maxIterations);
   if (printTime) {
       writef(" Time in seconds = %{######################.##}\n",
-        tsort.elapsed(TimeUnits.seconds));
+        tsort.elapsed());
       writef(" Mop/s total     = %{######################.##}\n",
-        (maxIterations*nkeys)/tsort.elapsed(TimeUnits.seconds)/1000000 );
+        (maxIterations*nkeys)/tsort.elapsed()/1000000 );
   }
   writeln(" Operation type  = ","              keys ranked");
   if (passedVerifications ==  (maxIterations*5+1) ) then

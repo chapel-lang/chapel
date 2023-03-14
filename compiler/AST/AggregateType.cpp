@@ -1616,13 +1616,6 @@ void AggregateType::renameInstantiation() {
   symbol->name = astr(name);
   buildFieldNames(this, cname, true);
   symbol->cname = astr(cname);
-
-  // adjust _channel naming
-  // TODO: remove this once the channel rename to fileReader/fileWriter
-  // is complete and channel is removed
-  if (0 == strncmp(symbol->name, "_channel", strlen("_channel"))) {
-    symbol->name = toString(this, false);
-  }
 }
 
 // Returns an instantiation of this AggregateType at the given index.

@@ -209,8 +209,8 @@ static int try_pin(uintptr_t size) {
 extern uintptr_t gasnetc_MaxPinMem(uintptr_t overheads)
 {
 #ifdef GASNETI_USE_HUGETLBFS
-  uintptr_t segsize_floor = gethugepagesize();
-  gasneti_assert(! (overheads % gethugepagesize()));
+  uintptr_t segsize_floor = gasneti_hugepagesize();
+  gasneti_assert(! (overheads % gasneti_hugepagesize()));
 #else
   uintptr_t segsize_floor = GASNETI_PAGESIZE;
 #endif

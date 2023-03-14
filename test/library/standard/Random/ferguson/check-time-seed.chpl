@@ -105,7 +105,7 @@ proc waitForNextSeed() {
   var curSeed = SeedGenerator.oddCurrentTime;
   var newSeed = curSeed;
   do {
-    sleep(2, TimeUnits.milliseconds);
+    sleep(2.0 / 1_000);
     newSeed = SeedGenerator.oddCurrentTime;
   } while (newSeed == curSeed);
 }

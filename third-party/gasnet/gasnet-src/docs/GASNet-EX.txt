@@ -30,10 +30,11 @@
 // Release version tuple
 //
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
+// (where YY, MM and PP below represent the appropriate digits)
 // providing a clear distinction from GASNet-1 with MAJOR==1.
-#define GASNET_RELEASE_VERSION_MAJOR 2022
-#define GASNET_RELEASE_VERSION_MINOR 9
-#define GASNET_RELEASE_VERSION_PATCH 0
+#define GASNET_RELEASE_VERSION_MAJOR 20YY
+#define GASNET_RELEASE_VERSION_MINOR MM
+#define GASNET_RELEASE_VERSION_PATCH PP
 
 // Major and Minor versions of the GASNet-EX specification.
 //
@@ -53,7 +54,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 19
+#define GASNETT_SPEC_VERSION_MINOR 20
 
 //
 // Relationship to GASNet-1 APIs:
@@ -3305,7 +3306,7 @@ void gex_VIS_SetPeerCompletionHandler(gex_AM_Index_t handler,
 // End of section describing APIs provided by gasnet_vis.h
 //----------------------------------------------------------------------
 //
-// Collectives (Coll) [EXPERIMENTAL]
+// Collectives (Coll)
 //
 // With the exception of gex_Coll_BarrierNB(), APIs in this section are provided
 // by gasnet_coll.h

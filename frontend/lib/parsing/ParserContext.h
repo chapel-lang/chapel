@@ -131,11 +131,14 @@ struct ParserContext {
   owned<AstNode> consumeVarDeclLinkageName(void);
 
   void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
-                                  ParserExprList* toolspace,
-                                   MaybeNamedActualList* actuals);
+                     bool usedParens,
+                     ParserExprList* toolspace,
+                     MaybeNamedActualList* actuals);
+
   owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  bool usedParens,
                                   ParserExprList* toolspace,
-                                   MaybeNamedActualList* actuals);
+                                  MaybeNamedActualList* actuals);
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);

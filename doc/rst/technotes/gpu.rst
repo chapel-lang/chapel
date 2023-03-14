@@ -167,8 +167,6 @@ section; many of them will be addressed in upcoming editions.
   passing ``--gpu-block-size=size`` to the compiler or setting it with the
   ``CHPL_GPU_BLOCK_SIZE`` environment variable.
 
-* There is no user-level feature to allocate or access block shared memory.
-
 * The use of most ``extern`` functions within a GPU eligible loop is not supported
   (a limited set of functions used by Chapel's runtime library are supported). 
 
@@ -180,6 +178,9 @@ section; many of them will be addressed in upcoming editions.
 
 * For loops to be considered eligible for execution on a GPU they
   must fulfill the requirements discussed in the `Overview`_ section.
+
+* Associative arrays cannot be used on GPU sublocales with
+  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
 
 GPU Support Features
 --------------------

@@ -20,7 +20,7 @@ if printTime then
 timer.clear();
 
 timer.start();
-sleep(100, TimeUnits.microseconds);
+sleep(100.0 / 1_000_000);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());
@@ -29,7 +29,7 @@ if lt(timer.elapsed(), 1e-6*100) then
 timer.clear();
 
 timer.start();
-sleep(100, TimeUnits.milliseconds);
+sleep(100.0 / 1_000);
 timer.stop();
 if printTime then
   stderr.writeln(timer.elapsed());

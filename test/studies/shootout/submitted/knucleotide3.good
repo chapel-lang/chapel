@@ -1,9 +1,9 @@
 knucleotide3.chpl:14: In function 'main':
 knucleotide3.chpl:16: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
-knucleotide3.chpl:25: warning: channel.readline is deprecated. Use channel.readLine instead
-knucleotide3.chpl:25: warning: channel.readline is deprecated. Use channel.readLine instead
-knucleotide3.chpl:33: warning: channel.readline is deprecated. Use channel.readLine instead
-knucleotide3.chpl:33: warning: channel.readline is deprecated. Use channel.readLine instead
+knucleotide3.chpl:25: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
+knucleotide3.chpl:25: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
+knucleotide3.chpl:33: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
+knucleotide3.chpl:33: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 knucleotide3.chpl:76: In function 'calculate':
 knucleotide3.chpl:88: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
   knucleotide3.chpl:54: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 1) from function 'writeFreqs'
