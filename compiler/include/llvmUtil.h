@@ -78,8 +78,7 @@ void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
                  size_t idx,
                  llvm::AttrBuilder& b);
 
-void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
-                             unsigned int addrSpace);
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy);
 
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H

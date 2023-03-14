@@ -1886,7 +1886,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
 
     // Adjust attributes for sret argument
     auto b = llvmPrepareAttrBuilder(ctx);
-    llvmAttachStructRetAttr(b, chapelReturnTy, stackSpace);
+    llvmAttachStructRetAttr(b, chapelReturnTy);
     b.addAttribute(llvm::Attribute::NoAlias);
     if (returnInfo.getInReg()) b.addAttribute(llvm::Attribute::InReg);
     b.addAlignmentAttr(returnInfo.getIndirectAlign().getQuantity());
