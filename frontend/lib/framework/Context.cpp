@@ -150,6 +150,25 @@ bool Context::RunResultBase::ranWithoutErrors() const {
   return true;
 }
 
+Context::ErrorCollectionEntry
+Context::ErrorCollectionEntry::createForTrackingQuery(
+    std::vector<owned<ErrorBase>>* storeInto,
+    const QueryMapResultBase* trackingQuery) {
+  return Context::ErrorCollectionEntry(storeInto, trackingQuery);
+}
+
+Context::ErrorCollectionEntry
+Context::ErrorCollectionEntry::createForRecomputing(
+    const querydetail::QueryMapResultBase* trackingQuery) {
+  return Context::ErrorCollectionEntry(nullptr, trackingQuery);
+}
+
+void Context::ErrorCollectionEntry::storeError(owned<ErrorBase> toStore) const {
+  if (storeInto_) {
+    storeInto_->push_back(std::move(toStore));
+  }
+}
+
 void Context::reportError(Context* context, const ErrorBase* err) {
   handler_->report(context, err);
 }
@@ -753,13 +772,13 @@ void Context::report(owned<ErrorBase> error) {
   // error collection).
 
   if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
-    errorCollectionStack.back().first->push_back(error->clone());
+    errorCollectionStack.back().storeError(error->clone());
     queryStack.back()->errors.push_back(std::move(error));
   } else if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
     reportError(this, queryStack.back()->errors.back().get());
   } else if (errorCollectionStack.size() > 0) {
-    errorCollectionStack.back().first->push_back(std::move(error));
+    errorCollectionStack.back().storeError(std::move(error));
   } else {
     reportError(this, error.get());
   }
@@ -856,7 +875,15 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     } else if (this->currentRevisionNumber == dependencyQuery->lastChecked) {
       // No need to check the dependency again; already did, and it was OK
     } else {
+      if (dependency.errorCollectionRoot) {
+        errorCollectionStack.push_back(
+            ErrorCollectionEntry::createForRecomputing(resultEntry));
+      }
       recomputeIfNeeded(dependencyQuery);
+      if (dependency.errorCollectionRoot) {
+        errorCollectionStack.pop_back();
+      }
+
       // we might have recomputed the dependency, so check its lastChanged
       if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
         useSaved = false;
@@ -895,10 +922,14 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
     // and also mark unique strings in the errors
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
+  resultEntry->emittedErrors = errorCollectionStack.empty();
 
   // Update error locations if needed and re-report the error
-  for (auto& err: resultEntry->errors) {
-    reportError(this, err.get());
+  // Only re-report errors if they are not being silenced.
+  if (errorCollectionStack.empty()) {
+    for (auto& err: resultEntry->errors) {
+      reportError(this, err.get());
+    }
   }
 }
 
@@ -923,7 +954,16 @@ bool Context::queryCanUseSavedResult(
     useSaved = true;
     for (auto& dependency: resultEntry->dependencies) {
       const QueryMapResultBase* dependencyQuery = dependency.query;
+
+      if (dependency.errorCollectionRoot) {
+        errorCollectionStack.push_back(
+            ErrorCollectionEntry::createForRecomputing(resultEntry));
+      }
       recomputeIfNeeded(dependencyQuery);
+      if (dependency.errorCollectionRoot) {
+        errorCollectionStack.pop_back();
+      }
+
       CHPL_ASSERT(dependencyQuery->lastChecked == this->currentRevisionNumber);
       if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
         useSaved = false;
@@ -988,12 +1028,12 @@ static void findDependenciesForStoringErrors(const querydetail::QueryMapResultBa
 
 void Context::storeErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!errorCollectionStack.empty());
-  auto& errorList = *errorCollectionStack.back().first;
+  auto& trackingEntry = errorCollectionStack.back();
   std::unordered_set<const querydetail::QueryMapResultBase*> dependencies;
   findDependenciesForStoringErrors(result, dependencies);
   for (auto dependency : dependencies) {
     for (auto& error : dependency->errors) {
-      errorList.push_back(error->clone());
+      trackingEntry.storeError(error->clone());
     }
   }
 }
@@ -1007,7 +1047,7 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     auto parentQuery = queryStack.back();
     CHPL_ASSERT(parentQuery != resultEntry); // should be parent query
     bool errorCollectionRoot = !errorCollectionStack.empty() &&
-                               errorCollectionStack.back().second == parentQuery;
+                               errorCollectionStack.back().collectingQuery() == parentQuery;
     parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
   }
 

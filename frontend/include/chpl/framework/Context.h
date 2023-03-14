@@ -138,6 +138,40 @@ class Context {
     T& result() { return result_; }
   };
 
+  class ErrorCollectionEntry {
+   private:
+    std::vector<owned<ErrorBase>>* storeInto_;
+    const querydetail::QueryMapResultBase* collectingQuery_;
+
+    ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         const querydetail::QueryMapResultBase* collectingQuery) :
+      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+
+   public:
+    /**
+      When a parent query starts tracking errors, the tracking entry contains
+      this parent query and the vector. Errors occurring within child
+      queries are stored into the vector, and not reporter to the user.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(std::vector<owned<ErrorBase>>*,
+                           const querydetail::QueryMapResultBase*);
+
+    /**
+      When recomputing queries (to determine if a cached result should be used),
+      a parent query may not be running that expects to receive an error
+      list back, because computations are done bottom-up. Thus, simply
+      track the query that enabled error collection, but do not store the
+      errors anywhere. They will be added to a vector, if necessary, when
+      the saved query result is used when the parent query is re-run.
+     */
+    static ErrorCollectionEntry
+    createForRecomputing(const querydetail::QueryMapResultBase*);
+
+    const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+    void storeError(owned<ErrorBase> toStore) const;
+  };
+
  private:
 
   // The implementation of the default error handler.
@@ -208,7 +242,6 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
 
-  using ErrorCollectionEntry = std::pair<std::vector<owned<ErrorBase>>*, const querydetail::QueryMapResultBase*>;
   // If this vector is non-empty, the top element is a collection into
   // which to store emitted errors, instead of reporting them to the
   // error handler. Errors reported to the collection stack are
@@ -451,8 +484,8 @@ class Context {
   auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
     RunResult<decltype(f(this))> result;
     auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
-    errorCollectionStack.push_back(std::make_pair(&result.errors(),
-                                                  collectionRoot));
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
     result.result() = f(this);
     errorCollectionStack.pop_back();
     return result;

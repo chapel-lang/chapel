@@ -215,9 +215,102 @@ static void test4() {
   guard.realizeErrors();
 }
 
+
+static void test5() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // ================
+  //   Generation 1
+  // ================
+  // First, an error is immediately logged (nothing is hiding it)
+  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(guard.errors().size() == 1);
+
+  // Not logged again, we cache etc.
+  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(guard.errors().size() == 1);
+
+  // Okay, now run a query that tracks errors from here. It should detect errors ("errors on the second go"),
+  // and also it reports an error of its own, so the error count goes to two.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 2);
+
+  // One more time.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 2);
+
+  // Errors aren't safe to store between generations.
+  assert(guard.realizeErrors() == 2);
+  context->advanceToNextRevision(false);
+
+  // ================
+  //   Generation 2
+  // ================
+  // Now, run the query that tracks errors. It should capture the inner error, and report one itself.
+  // This tests marking a query that emitted its errors in the previous generation
+  // as needing to report them this time.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // One more time.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // Now run the error that had already reported an error last time, but hasn't this time.
+  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(guard.errors().size() == 2);
+
+  // One more time.
+  assert(queryThatErrors(context) == "I returned a value but I also reported an error");
+  assert(guard.realizeErrors() == 2);
+}
+
+static void test6() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // ================
+  //   Generation 1
+  // ================
+  // Run a query that tracks errors. It should detect errors ("errors on the second go"),
+  // and also it reports an error of its own, so the error count goes to one.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // One more time.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // Errors aren't safe to store between generations.
+  assert(guard.realizeErrors() == 1);
+  context->advanceToNextRevision(false);
+
+  // ================
+  //   Generation 2
+  // ================
+  // Just runthe previous code again, make sure a single error is re-reported.
+  // Run a query that tracks errors. It should detect errors ("errors on the second go"),
+  // and also it reports an error of its own, so the error count goes to one.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // One more time.
+  assert(queryThatCapturesErrors(context) == "no errors on the first go; errors on the second go");
+  assert(guard.errors().size() == 1);
+
+  // Errors aren't safe to store between generations.
+  assert(guard.realizeErrors() == 1);
+  context->advanceToNextRevision(false);
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
+  test6();
 }
