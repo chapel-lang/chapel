@@ -220,6 +220,10 @@ void queryArgsPrint(const std::tuple<Ts...>& tuple) {
 static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
+// Performance: this struct only contains a pointer and an additional bit
+// field. We could probably get away with storing `errorCollectionRoot`
+// in the last bit of the result pointer, and and thus reduce the overhead
+// of this struct.
 struct QueryDependency {
   const QueryMapResultBase* query;
   bool errorCollectionRoot;

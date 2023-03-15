@@ -284,7 +284,7 @@ class Context {
 
   bool isRecomputing = false;
 
-  // If this vector is non-empty, the top element is a collection into
+  // If this vector is non-empty, the back element is a collection into
   // which to store emitted errors, instead of reporting them to the
   // error handler. Errors reported to the collection stack are
   // re-reported to the error handler if they are encountered again, even

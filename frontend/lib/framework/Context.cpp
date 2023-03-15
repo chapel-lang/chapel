@@ -766,7 +766,7 @@ void Context::report(owned<ErrorBase> error) {
   gdbShouldBreakHere();
 
   // If errorCollectionStack is not empty, errors are being collected, and
-  // thus not reported to the handler. Stash the error in the top of the
+  // thus not reported to the handler. Stash the error in the top (back) of the
   // stack, but do not call `reportError`. Still store it into query
   // results (errors will be re-emitted if the cached query is invoked without
   // error collection).
@@ -1017,13 +1017,17 @@ void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result)
   }
 }
 
-static void findDependenciesForStoringErrors(const querydetail::QueryMapResultBase* result,
-                                             std::unordered_set<const querydetail::QueryMapResultBase*>& into) {
-  auto insertResult = into.insert(result);
+static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
+                               std::unordered_set<const querydetail::QueryMapResultBase*>& visited,
+                               Context::ErrorCollectionEntry& into) {
+  auto insertResult = visited.insert(result);
   if (!insertResult.second) return;
+  for (auto& error : result->errors) {
+    into.storeError(error->clone());
+  }
   for (auto& dependency : result->dependencies) {
     if (!dependency.errorCollectionRoot) {
-      findDependenciesForStoringErrors(dependency.query, into);
+      storeErrorsForHelp(dependency.query, visited, into);
     }
   }
 }
@@ -1031,19 +1035,14 @@ static void findDependenciesForStoringErrors(const querydetail::QueryMapResultBa
 void Context::storeErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!errorCollectionStack.empty());
   auto& trackingEntry = errorCollectionStack.back();
-  std::unordered_set<const querydetail::QueryMapResultBase*> dependencies;
-  findDependenciesForStoringErrors(result, dependencies);
-  for (auto dependency : dependencies) {
-    for (auto& error : dependency->errors) {
-      trackingEntry.storeError(error->clone());
-    }
-  }
+  std::unordered_set<const querydetail::QueryMapResultBase*> visited;
+  storeErrorsForHelp(result, visited, trackingEntry);
 }
 
 void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   // Record that the parent query depends upon this one.
   //
-  // We haven't pushed the query beginning yet; on already popped it.
+  // We haven't pushed the query beginning yet; or already popped it.
   // So, the parent query is at queryDeps.back().
   if (isRecomputing) {
     // Do nothing; do not modify dependency graph if we're just checking
