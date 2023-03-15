@@ -1,0 +1,20 @@
+11110000
+11555
+432 4321
+55550000
+11666
+11777
+432 4321
+77770000
+432 4321987 9876
+
+================================================= Memory Leaks ==================================================
+Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
+=================================================================================================================
+yield-by-value-4.chpl:28         1        128      128      [domain(1,int(64),false)] int(64)0xxx  
+yield-by-value-4.chpl:33         1        128      128      [domain(1,int(64),false)] int(64)0xxx  
+yield-by-value-4.chpl:28         2        8        16       array elements                   0xxx  
+yield-by-value-4.chpl:33         2        8        16       array elements                   0xxx  
+yield-by-value-4.chpl:11         1        72       72       domain(1,int(64),false)          0xxx  
+=================================================================================================================
+
