@@ -1519,7 +1519,9 @@ bool canCoerceAsSubtype(Type*     actualType,
 
   // coerce c_ptr to c_ptrConst
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+      strstr(actualType->name(), "c_ptr") == actualType->name() &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      strstr(formalType->name(), "c_ptrConst") == formalType->name()) {
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
