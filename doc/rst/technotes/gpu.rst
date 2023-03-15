@@ -41,7 +41,8 @@ strategies).
 Chapel will launch kernels for all eligible loops that are encountered by tasks
 executing on a GPU sublocale.  Loops are eligible when:
 
-* They are order-independent (e.g., ``forall`` or ``foreach``).
+* They are order-independent (e.g., ``forall`` or ``foreach`` over iterators
+  that are also order-independent).
 * They only make use of known compiler primitives that are fast and local. Here
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
@@ -126,19 +127,12 @@ runtime path is not automatically detected (or you would like to use a
 different installation) you may set ``CHPL_CUDA_PATH`` and/or
 ``CHPL_ROCM_PATH``.
 
-You may also have to set the ``CHPL_GPU_ARCH`` environment variable.  When
-``CHPL_GPU_CODEGEN`` is set to ``cuda`` by default we target compute capability
-6.0 (``--cuda-gpu-arch=sm_60`` in clang).  When ``CHPL_GPU_CODEGEN`` is set to
-``rocm`` we assign ``CHPL_GPU_ARCH`` to ``gfx906`` by default.  You may modify
-this by changing  ``CHPL_GPU_ARCH`` or by passing it to ``chpl`` via
-``--gpu-arch``.
+``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
+architecture to compile for.  The default value is ``sm_60`` for
+``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
+also use the ``--gpu-arch`` compliler flag to set GPU architecture.
 
-We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
-if using CUDA 10).
-
-To compile a program simply execute ``chpl`` as normal.  To ensure that a loop
-is executing on the GPU you can use the operations in the :mod:`GpuDiagnostics`
-module or use the :proc:`~GPU.assertOnGpu()` proc from the  :mod:`GPU` module.
+To compile a program simply execute ``chpl`` as normal.
 
 Requirements and Limitations
 ----------------------------
@@ -153,13 +147,13 @@ section; many of them will be addressed in upcoming editions.
   ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
   about these settings see :ref:`Optional Settings <readme-chplenv>`.
 
-* If using a ``system`` LLVM it must have been built with support for the
-  relevant target of GPU you wish to generate code for (e.g.  NVPTX to target
-  NVIDIA GPUs and AMDGPU to target AMD GPUs).
+  * If using a ``system`` LLVM it must have been built with support for the
+    relevant target of GPU you wish to generate code for (e.g.  NVPTX to target
+    NVIDIA GPUs and AMDGPU to target AMD GPUs).
 
-* If using a system install of ``LLVM`` we expect this to be the same
-  version as the bundled version (currently 14). Older versions may
-  work; however, we only make efforts to test GPU support with this version.
+  * If using a system install of ``LLVM`` we expect this to be the same
+    version as the bundled version (currently 14). Older versions may
+    work; however, we only make efforts to test GPU support with this version.
 
 * ``CHPL_TASKS=qthreads`` is required for GPU support.
 
@@ -167,19 +161,12 @@ section; many of them will be addressed in upcoming editions.
   reading from or writing to a variable that is stored on a different locale
   from inside a GPU eligible loop (when executing on a GPU) is not supported.
 
-* There is no user-level feature to specify GPU block size on a
-  per-kernel basis. This can be set on a program wide basis at compile-time by
-  passing ``--gpu-block-size=size`` to the compiler or setting it with the
-  ``CHPL_GPU_BLOCK_SIZE`` environment variable.
-
 * The use of most ``extern`` functions within a GPU eligible loop is not supported
   (a limited set of functions used by Chapel's runtime library are supported). 
 
-   * Various functions within Chapel's standard modules call unsupported
-     ``extern`` functions and thus are not supported in GPU eligible loops.
-
 * Runtime checks such as bounds checks and nil-dereference checks are
-  automatically disabled for CHPL_LOCALE_MODEL=gpu.
+  automatically disabled for CHPL_LOCALE_MODEL=gpu. i.e., ``--no-checks`` is
+  implied when compiling.
 
 * For AMD GPUs:
 
@@ -190,11 +177,13 @@ section; many of them will be addressed in upcoming editions.
       <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
       and note which operations are executed when `excludeForRocm == true`.
 
-* For loops to be considered eligible for execution on a GPU they
-  must fulfill the requirements discussed in the `Overview`_ section.
+* Distributed arrays cannot be used within GPU kernels.
 
 * Associative arrays cannot be used on GPU sublocales with
   ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
+
+* If using CUDA 10, single thread per locale can be used. i.e., you have to set
+  ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
 
 GPU Support Features
 --------------------
@@ -229,6 +218,13 @@ an error if one of the aforementioned requirements is not met.  This check
 might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
 depending on the presence of control flow.
 
+Utilities in :mod:`Memory.Diagnostics` module can be used to monitor GPU memory
+allocations and detect memory leaks. For example,
+:proc:`Memory.Diagnostics.startVerboseMem()` and
+:proc:`Memory.Diagnostics.stopVerboseMem()` can be used to enable and disable
+output from memory allocations and deallocations. GPU-based operations will be
+marked in the generated output.
+
 Multi-Locale Support
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -246,7 +242,7 @@ An idiomatic way to use all GPUs available across locales is with nested
 
   coforall loc in Locales do on loc {
     coforall gpu in here.gpus do on gpu {
-      forall {
+      foreach {
         // ...
       }
     }
@@ -261,34 +257,23 @@ For more examples see the tests under |multi_locale_dir|_ available from our `pu
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
 
-Currently by default Chapel uses unified memory feature to store data that is
-allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified memory the
-CUDA driver implicitly manages the migration of data to and from the GPU as
-necessary.
+The ``CHPL_GPU_MEM_STRATEGY`` environment variable can be used to choose between
+two different memory strategies.
 
-We provide an alternate memory allocation strategy that stores array data
-directly on the device and store other data on the host.  There are multiple
-benefits to using this strategy including that it enables users to have more
-explicit control over memory management, may be required for Chapel to
-interoperate with various third-party communication libraries, and may be
-necessary to achieve good performance. As such it may become the default memory
-strategy we use in the future. Be aware though that because this strategy is
-relatively new addition it hasn't been as thoroughly tested as our
-unified-memory based approach.
+The current default strategy is ``unified_memory``. This strategy stores data
+that is allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified
+memory the underlying GPU implementation implicitly manages the migration of
+data to and from the GPU as necessary.
 
-To use this new strategy set the environment variable ``CHPL_GPU_MEM_STRATEGY``
-to ``array_on_device``.  For more examples that work with this strategy see the
-tests under |page_lock_mem_dir|_  available from our `public Github repository
-<https://github.com/chapel-lang/chapel>`_.
-
-.. |page_lock_mem_dir| replace:: ``test/gpu/native/page-locked-mem/``
-.. _page_lock_mem_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/page-locked-mem
+The alternative is to set the environment variable explicitly to
+``array_on_device``. This strategy stores array data directly on the device and
+store other data on the host.  There are multiple benefits to using this
+strategy including that it enables users to have more explicit control over
+memory management, may be required for Chapel to interoperate with various
+third-party communication libraries, and may be necessary to achieve good
+performance. As such it may become the default memory strategy we use in the
+future. Be aware though that because this strategy is relatively new addition it
+hasn't been as thoroughly tested as our unified memory based approach.
 
 Note that host data can be accessed from within a GPU eligible loop running on
 the device via a direct-memory transfer.
-
-One limitation with memory access in this mode is that we do not support direct
-reads or writes from the host into individual elements of array data allocated
-on the GPU (e.g.  ``use(A[i])`` or ``A[i] = ...``). Array data accessed "as a
-whole" (e.g. ``writeln(A)``) will work, however.
-
