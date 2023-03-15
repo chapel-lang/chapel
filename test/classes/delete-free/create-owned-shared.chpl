@@ -16,12 +16,12 @@ proc main {
   // os/od: owned source/owned destination
 
   var os1 = new owned CC(101)?;
-  var od1 = owned.adopt(os1);
+  var od1 = os1;
   compilerWarning(od1.type:string, 0);
   writeln(od1!.x);
 
   var os2 = new owned CC(102);
-  var od2 = owned.adopt(os2); // OK because 'os2' is expiring
+  var od2 = os2; // OK because 'os2' is expiring
   compilerWarning(od2.type:string, 0);
   writeln(od2.x);
 
