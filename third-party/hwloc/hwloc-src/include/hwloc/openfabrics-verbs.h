@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2021 Inria.  All rights reserved.
  * Copyright © 2009-2010 Université Bordeaux
  * Copyright © 2009-2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -19,10 +19,10 @@
 #ifndef HWLOC_OPENFABRICS_VERBS_H
 #define HWLOC_OPENFABRICS_VERBS_H
 
-#include <hwloc.h>
-#include <hwloc/autogen/config.h>
+#include "hwloc.h"
+#include "hwloc/autogen/config.h"
 #ifdef HWLOC_LINUX_SYS
-#include <hwloc/linux.h>
+#include "hwloc/linux.h"
 #endif
 
 #include <infiniband/verbs.h>
@@ -41,10 +41,10 @@ extern "C" {
  * @{
  */
 
-/** \brief Get the CPU set of logical processors that are physically
+/** \brief Get the CPU set of processors that are physically
  * close to device \p ibdev.
  *
- * Return the CPU set describing the locality of the OpenFabrics
+ * Store in \p set the CPU-set describing the locality of the OpenFabrics
  * device \p ibdev (InfiniBand, etc).
  *
  * Topology \p topology and device \p ibdev must match the local machine.
@@ -67,7 +67,6 @@ hwloc_ibv_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
      get the local cpus */
 #define HWLOC_OPENFABRICS_VERBS_SYSFS_PATH_MAX 128
   char path[HWLOC_OPENFABRICS_VERBS_SYSFS_PATH_MAX];
-  FILE *sysfile = NULL;
 
   if (!hwloc_topology_is_thissystem(topology)) {
     errno = EINVAL;
@@ -76,15 +75,9 @@ hwloc_ibv_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
 
   sprintf(path, "/sys/class/infiniband/%s/device/local_cpus",
 	  ibv_get_device_name(ibdev));
-  sysfile = fopen(path, "r");
-  if (!sysfile)
-    return -1;
-
-  if (hwloc_linux_parse_cpumap_file(sysfile, set) < 0
+  if (hwloc_linux_read_path_as_cpumask(path, set) < 0
       || hwloc_bitmap_iszero(set))
     hwloc_bitmap_copy(set, hwloc_topology_get_complete_cpuset(topology));
-
-  fclose(sysfile);
 #else
   /* Non-Linux systems simply get a full cpuset */
   hwloc_bitmap_copy(set, hwloc_topology_get_complete_cpuset(topology));
@@ -95,10 +88,11 @@ hwloc_ibv_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
 /** \brief Get the hwloc OS device object corresponding to the OpenFabrics
  * device named \p ibname.
  *
- * Return the OS device object describing the OpenFabrics device
+ * \return The hwloc OS device object describing the OpenFabrics device
  * (InfiniBand, Omni-Path, usNIC, etc) whose name is \p ibname
  * (mlx5_0, hfi1_0, usnic_0, qib0, etc).
- * Returns NULL if there is none.
+ * \return \c NULL if none could be found.
+ *
  * The name \p ibname is usually obtained from ibv_get_device_name().
  *
  * The topology \p topology does not necessarily have to match the current
@@ -124,8 +118,9 @@ hwloc_ibv_get_device_osdev_by_name(hwloc_topology_t topology,
 /** \brief Get the hwloc OS device object corresponding to the OpenFabrics
  * device \p ibdev.
  *
- * Return the OS device object describing the OpenFabrics device \p ibdev
- * (InfiniBand, etc). Returns NULL if there is none.
+ * \return The hwloc OS device object describing the OpenFabrics
+ * device \p ibdev (InfiniBand, etc).
+ * \return \c NULL if none could be found.
  *
  * Topology \p topology and device \p ibdev must match the local machine.
  * I/O devices detection must be enabled in the topology.

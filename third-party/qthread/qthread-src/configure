@@ -26068,7 +26068,7 @@ return ${with_hwloc_symbol_prefix}topology_init ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' hwloc "hwloc -lnuma" "hwloc -lnuma -lpciaccess" "hwloc -lpciaccess"; do
+for ac_lib in '' hwloc "hwloc -framework CoreFoundation -framework IOKit" "hwloc -lnuma" "hwloc -lnuma -lpciaccess" "hwloc -lpciaccess"; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else

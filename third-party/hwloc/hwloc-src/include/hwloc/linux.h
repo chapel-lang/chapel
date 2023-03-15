@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2016 Inria.  All rights reserved.
+ * Copyright © 2009-2021 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * See COPYING in top-level directory.
  */
@@ -15,7 +15,8 @@
 #ifndef HWLOC_LINUX_H
 #define HWLOC_LINUX_H
 
-#include <hwloc.h>
+#include "hwloc.h"
+
 #include <stdio.h>
 
 
@@ -32,13 +33,6 @@ extern "C" {
  * @{
  */
 
-/** \brief Convert a linux kernel cpumap file \p file into hwloc CPU set.
- *
- * Might be used when reading CPU set from sysfs attributes such as topology
- * and caches for processors, or local_cpus for devices.
- */
-HWLOC_DECLSPEC int hwloc_linux_parse_cpumap_file(FILE *file, hwloc_cpuset_t set);
-
 /** \brief Bind a thread \p tid on cpus given in cpuset \p set
  *
  * The behavior is exactly the same as the Linux sched_setaffinity system call,
@@ -51,6 +45,10 @@ HWLOC_DECLSPEC int hwloc_linux_set_tid_cpubind(hwloc_topology_t topology, pid_t 
 
 /** \brief Get the current binding of thread \p tid
  *
+ * The CPU-set \p set (previously allocated by the caller)
+ * is filled with the list of PUs which the thread
+ * was last bound to.
+ *
  * The behavior is exactly the same as the Linux sched_getaffinity system call,
  * but uses a hwloc cpuset.
  *
@@ -61,10 +59,22 @@ HWLOC_DECLSPEC int hwloc_linux_get_tid_cpubind(hwloc_topology_t topology, pid_t 
 
 /** \brief Get the last physical CPU where thread \p tid ran.
  *
+ * The CPU-set \p set (previously allocated by the caller)
+ * is filled with the PU which the thread last ran on.
+ *
  * \note This is equivalent to calling hwloc_get_proc_last_cpu_location() with
  * ::HWLOC_CPUBIND_THREAD as flags.
  */
 HWLOC_DECLSPEC int hwloc_linux_get_tid_last_cpu_location(hwloc_topology_t topology, pid_t tid, hwloc_bitmap_t set);
+
+/** \brief Convert a linux kernel cpumask file \p path into a hwloc bitmap \p set.
+ *
+ * Might be used when reading CPU set from sysfs attributes such as topology
+ * and caches for processors, or local_cpus for devices.
+ *
+ * \note This function ignores the HWLOC_FSROOT environment variable.
+ */
+HWLOC_DECLSPEC int hwloc_linux_read_path_as_cpumask(const char *path, hwloc_bitmap_t set);
 
 /** @} */
 

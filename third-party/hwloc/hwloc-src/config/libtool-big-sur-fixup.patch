@@ -1,0 +1,32 @@
+Updated from libtool.m4 patch:
+
+[PATCH] Improve macOS version detection to support macOS 11 and simplify legacy logic
+
+Signed-off-by: Jeremy Huddleston Sequoia <jeremyhu@apple.com>
+
+--- hwloc/configure.old	2020-11-25 16:03:04.225097149 +0100
++++ hwloc/configure	2020-11-25 16:02:29.368995613 +0100
+@@ -8846,16 +8846,13 @@
+       _lt_dar_allow_undefined='$wl-undefined ${wl}suppress' ;;
+     darwin1.*)
+       _lt_dar_allow_undefined='$wl-flat_namespace $wl-undefined ${wl}suppress' ;;
+-    darwin*) # darwin 5.x on
+-      # if running on 10.5 or later, the deployment target defaults
+-      # to the OS version, if on x86, and 10.4, the deployment
+-      # target defaults to 10.4. Don't you love it?
+-      case ${MACOSX_DEPLOYMENT_TARGET-10.0},$host in
+-	10.0,*86*-darwin8*|10.0,*-darwin[91]*)
+-	  _lt_dar_allow_undefined='$wl-undefined ${wl}dynamic_lookup' ;;
+-	10.[012][,.]*)
+-	  _lt_dar_allow_undefined='$wl-flat_namespace $wl-undefined ${wl}suppress' ;;
+-	10.*)
++    darwin*)
++      # Open MPI patched for Darwin / MacOS Big Sur.  See
++      # http://lists.gnu.org/archive/html/bug-libtool/2015-07/msg00001.html
++      case ${MACOSX_DEPLOYMENT_TARGET},$host in
++	10.[012],*|,*powerpc*)
++	  _lt_dar_allow_undefined='${wl}-flat_namespace ${wl}-undefined ${wl}suppress' ;;
++	*)
+ 	  _lt_dar_allow_undefined='$wl-undefined ${wl}dynamic_lookup' ;;
+       esac
+     ;;

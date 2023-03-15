@@ -1,14 +1,17 @@
-.TH "hwlocality_helper_find_misc" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_find_misc" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_helper_find_misc
+hwlocality_helper_find_misc \- Finding objects, miscellaneous helpers
 .SH SYNOPSIS
 .br
 .PP
 .SS "Functions"
 
 .in +1c
+.ti -1c
+.RI "int \fBhwloc_bitmap_singlify_per_core\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_bitmap_t\fP cpuset, unsigned which)"
+.br
 .ti -1c
 .RI "static \fBhwloc_obj_t\fP \fBhwloc_get_pu_obj_by_os_index\fP (\fBhwloc_topology_t\fP topology, unsigned os_index)"
 .br
@@ -24,25 +27,43 @@ hwlocality_helper_find_misc
 .ti -1c
 .RI "static \fBhwloc_obj_t\fP \fBhwloc_get_obj_below_array_by_type\fP (\fBhwloc_topology_t\fP topology, int nr, \fBhwloc_obj_type_t\fP *typev, unsigned *idxv)"
 .br
+.ti -1c
+.RI "\fBhwloc_obj_t\fP \fBhwloc_get_obj_with_same_locality\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP src, \fBhwloc_obj_type_t\fP type, const char *subtype, const char *nameprefix, unsigned long flags)"
+.br
 .in -1c
 .SH "Detailed Description"
 .PP 
 Be sure to see the figure in \fBTerms and Definitions\fP that shows a complete topology tree, including depths, child/sibling/cousin relationships, and an example of an asymmetric topology where one package has fewer caches than its peers\&. 
 .SH "Function Documentation"
 .PP 
+.SS "int hwloc_bitmap_singlify_per_core (\fBhwloc_topology_t\fP topology, \fBhwloc_bitmap_t\fP cpuset, unsigned which)"
+
+.PP
+Remove simultaneous multithreading PUs from a CPU set\&. For each core in \fCtopology\fP, if \fCcpuset\fP contains some PUs of that core, modify \fCcpuset\fP to only keep a single PU for that core\&.
+.PP
+\fCwhich\fP specifies which PU will be kept\&. PU are considered in physical index order\&. If 0, for each core, the function keeps the first PU that was originally set in \fCcpuset\fP\&.
+.PP
+If \fCwhich\fP is larger than the number of PUs in a core there were originally set in \fCcpuset\fP, no PU is kept for that core\&.
+.PP
+\fBNote\fP
+.RS 4
+PUs that are not below a Core object are ignored (for instance if the topology does not contain any Core object)\&. None of them is removed from \fCcpuset\fP\&. 
+.RE
+.PP
+
 .SS "unsigned hwloc_get_closest_objs (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP src, \fBhwloc_obj_t\fP *restrict objs, unsigned max)"
 
 .PP
 Do a depth-first traversal of the topology to find and sort\&. all objects that are at the same depth than \fCsrc\fP\&. Report in \fCobjs\fP up to \fCmax\fP physically closest ones to \fCsrc\fP\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 the number of objects returned in \fCobjs\fP\&.
 .PP
 0 if \fCsrc\fP is an I/O object\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This function requires the \fCsrc\fP object to have a CPU set\&. 
 .RE
@@ -51,7 +72,7 @@ This function requires the \fCsrc\fP object to have a CPU set\&.
 .SS "static \fBhwloc_obj_t\fP hwloc_get_numanode_obj_by_os_index (\fBhwloc_topology_t\fP topology, unsigned os_index)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
-Returns the object of type \fBHWLOC_OBJ_NUMANODE\fP with \fCos_index\fP\&. This function is useful for converting a nodeset into the NUMA node objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_membind_nodeset()\fP), one may iterate over the bits of the resulting nodeset with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding NUMA nodes with this function\&. 
+Returns the object of type \fBHWLOC_OBJ_NUMANODE\fP with \fCos_index\fP\&. This function is useful for converting a nodeset into the NUMA node objects it contains\&. When retrieving the current binding (e\&.g\&. with \fBhwloc_get_membind()\fP with HWLOC_MEMBIND_BYNODESET), one may iterate over the bits of the resulting nodeset with \fBhwloc_bitmap_foreach_begin()\fP, and find the corresponding NUMA nodes with this function\&. 
 .SS "static \fBhwloc_obj_t\fP hwloc_get_obj_below_array_by_type (\fBhwloc_topology_t\fP topology, int nr, \fBhwloc_obj_type_t\fP * typev, unsigned * idxv)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
@@ -63,7 +84,7 @@ Start from the top system object and walk the arrays \fCtypev\fP and \fCidxv\fP\
 .PP
 For instance, if nr is 3, typev contains NODE, PACKAGE and CORE, and idxv contains 0, 1 and 2, return the third core object below the second package below the first NUMA node\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This function requires all these objects and the root object to have a CPU set\&. 
 .RE
@@ -76,9 +97,34 @@ Find an object below another object, both specified by types and indexes\&. Star
 .PP
 For instance, if type1 is PACKAGE, idx1 is 2, type2 is CORE and idx2 is 3, return the fourth core object below the third package\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This function requires these objects to have a CPU set\&. 
+.RE
+.PP
+
+.SS "\fBhwloc_obj_t\fP hwloc_get_obj_with_same_locality (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP src, \fBhwloc_obj_type_t\fP type, const char * subtype, const char * nameprefix, unsigned long flags)"
+
+.PP
+Return an object of a different type with same locality\&. If the source object \fCsrc\fP is a normal or memory type, this function returns an object of type \fCtype\fP with same CPU and node sets, either below or above in the hierarchy\&.
+.PP
+If the source object \fCsrc\fP is a PCI or an OS device within a PCI device, the function may either return that PCI device, or another OS device in the same PCI parent\&. This may for instance be useful for converting between OS devices such as 'nvml0' or 'rsmi1' used in distance structures into the the PCI device, or the CUDA or OpenCL OS device that correspond to the same physical card\&.
+.PP
+If not \fCNULL\fP, parameter \fCsubtype\fP only select objects whose subtype attribute exists and is \fCsubtype\fP (case-insensitively), for instance 'OpenCL' or 'CUDA'\&.
+.PP
+If not \fCNULL\fP, parameter \fCnameprefix\fP only selects objects whose name attribute exists and starts with \fCnameprefix\fP (case-insensitively), for instance 'rsmi' for matching 'rsmi0'\&.
+.PP
+If multiple objects match, the first one is returned\&.
+.PP
+This function will not walk the hierarchy across bridges since the PCI locality may become different\&. This function cannot also convert between normal/memory objects and I/O or Misc objects\&.
+.PP
+\fCflags\fP must be \fC0\fP for now\&.
+.PP
+\fBReturns\fP
+.RS 4
+An object with identical locality, matching \fCsubtype\fP and \fCnameprefix\fP if any\&.
+.PP
+\fCNULL\fP if no matching object could be found, or if the source object and target type are incompatible, for instance if converting between CPU and I/O objects\&. 
 .RE
 .PP
 

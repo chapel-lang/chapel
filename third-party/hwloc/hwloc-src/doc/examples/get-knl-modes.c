@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <hwloc.h>
+#include "hwloc.h"
 
 int main(void)
 {

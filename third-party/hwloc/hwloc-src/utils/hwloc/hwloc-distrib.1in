@@ -1,5 +1,5 @@
 .\" -*- nroff -*-
-.\" Copyright © 2010-2018 Inria.  All rights reserved.
+.\" Copyright © 2010-2022 Inria.  All rights reserved.
 .\" Copyright © 2009-2010 Cisco Systems, Inc.  All rights reserved.
 .\" See COPYING in top-level directory.
 .TH HWLOC-DISTRIB "1" "%HWLOC_DATE%" "%PACKAGE_VERSION%" "%PACKAGE_NAME%"
@@ -28,17 +28,21 @@ program instead of hwloc-specific CPU set string format.
 \fB\-v\fR \fB\-\-verbose\fR
 Verbose messages.
 .TP
-\fB\-i\fR <file>, \fB\-\-input\fR <file>
-Read topology from XML file <file> (instead of discovering the
-topology on the local machine).  If <file> is "\-", the standard input
-is used.  XML support must have been compiled in to hwloc for this
-option to be usable.
-.TP
-\fB\-i\fR <directory>, \fB\-\-input\fR <directory>
-Read topology from the chroot specified by <directory> (instead of
-discovering the topology on the local machine).  This option is
-generally only available on Linux.  The chroot was usually created
-by gathering another machine topology with hwloc-gather-topology.
+\fB\-i\fR <path>, \fB\-\-input\fR <path>
+Read the topology from <path> instead of discovering the topology of the local machine.
+
+If <path> is a file and XML support has been compiled in hwloc,
+it may be a XML file exported by a previous hwloc program.
+If <path> is "\-", the standard input may be used as a XML file.
+
+On Linux, <path> may be a directory containing the topology files
+gathered from another machine topology with hwloc-gather-topology.
+
+On x86, <path> may be a directory containing a cpuid dump gathered
+with hwloc-gather-cpuid.
+
+When the archivemount program is available, <path> may also be a tarball
+containing such Linux or x86 topology files.
 .TP
 \fB\-i\fR <specification>, \fB\-\-input\fR <specification>
 Simulate a fake hierarchy (instead of discovering the topology on the
@@ -47,8 +51,8 @@ contain two NUMA nodes with 3 processing units in each of them.
 The <specification> string must end with a number of PUs.
 .TP
 \fB\-\-if\fR <format>, \fB\-\-input\-format\fR <format>
-Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR
-and \fBsynthetic\fR.
+Enforce the input in the given format, among \fBxml\fR, \fBfsroot\fR,
+\fBcpuid\fR and \fBsynthetic\fR.
 .TP
 \fB\-\-ignore\fR <type>
 Ignore all objects of type <type> in the topology.
@@ -57,6 +61,8 @@ Ignore all objects of type <type> in the topology.
 Distribute starting from objects of the given type instead of from
 the top of the topology hierarchy, i.e. ignoring the structure given by objects
 above.
+
+<type> cannot be among NUMANode, I/O or Misc types.
 .TP
 \fB\-\-to\fR <type>
 Distribute down to objects of the given type instead of down to the bottom of
@@ -64,6 +70,8 @@ the topology hierarchy, i.e. ignoring the structure given by objects below.
 This may be useful if some latitude is desired for the binding, e.g. just bind
 several processes to each package without specifying a single core for each
 of them.
+
+<type> cannot be among NUMANode, I/O or Misc types.
 .TP
 \fB\-\-at\fR <type>
 Distribute among objects of the given type.  This is equivalent to specifying
@@ -76,11 +84,25 @@ and singlify CPU sets by keeping the last bit (instead of the first bit).
 \fB\-\-restrict\fR <cpuset>
 Restrict the topology to the given cpuset.
 .TP
-\fB\-\-whole\-system\fR
-Do not consider administration limitations.
+\fB\-\-restrict\fR nodeset=<nodeset>
+Restrict the topology to the given nodeset, unless \fB\-\-restrict\-flags\fR specifies something different.
+.TP
+\fB\-\-restrict\-flags\fR <flags>
+Enforce flags when restricting the topology.
+Flags may be given as numeric values or as a comma-separated list of flag names
+that are passed to \fIhwloc_topology_restrict()\fR.
+Those names may be substrings of actual flag names as long as a single one matches,
+for instance \fBbynodeset,memless\fR.
+The default is \fB0\fR (or \fBnone\fR).
+.TP
+\fB\-\-disallowed\fR
+Include objects disallowed by administrative limitations.
 .TP
 \fB\-\-version\fR
 Report version and exit.
+.TP
+\fB\-h\fR \fB\-\-help\fR
+Display help message and exit.
 .
 .\" **************************
 .\"    Description Section
@@ -172,5 +194,5 @@ hwloc-distrib will return nonzero if any kind of error occurs, such as
 .SH SEE ALSO
 .
 .ft R
-hwloc(7), hwloc-gather-topology(1)
+hwloc(7)
 .sp

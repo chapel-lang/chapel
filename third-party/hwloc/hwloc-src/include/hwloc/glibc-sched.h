@@ -1,6 +1,6 @@
 /*
  * Copyright © 2009 CNRS
- * Copyright © 2009-2013 inria.  All rights reserved.
+ * Copyright © 2009-2020 Inria.  All rights reserved.
  * Copyright © 2009-2011 Université Bordeaux
  * Copyright © 2011 Cisco Systems, Inc.  All rights reserved.
  * See COPYING in top-level directory.
@@ -17,11 +17,12 @@
 #ifndef HWLOC_GLIBC_SCHED_H
 #define HWLOC_GLIBC_SCHED_H
 
-#include <hwloc.h>
-#include <hwloc/helper.h>
+#include "hwloc.h"
+#include "hwloc/helper.h"
+
 #include <assert.h>
 
-#if !defined _GNU_SOURCE || !defined _SCHED_H || (!defined CPU_SETSIZE && !defined sched_priority)
+#if !defined _GNU_SOURCE || (!defined _SCHED_H && !defined _SCHED_H_) || (!defined CPU_SETSIZE && !defined sched_priority)
 #error Please make sure to include sched.h before including glibc-sched.h, and define _GNU_SOURCE before any inclusion of sched.h
 #endif
 

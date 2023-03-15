@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 Inria.  All rights reserved.
+ * Copyright © 2012-2021 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
@@ -13,11 +13,11 @@
 #ifndef HWLOC_NVML_H
 #define HWLOC_NVML_H
 
-#include <hwloc.h>
-#include <hwloc/autogen/config.h>
-#include <hwloc/helper.h>
+#include "hwloc.h"
+#include "hwloc/autogen/config.h"
+#include "hwloc/helper.h"
 #ifdef HWLOC_LINUX_SYS
-#include <hwloc/linux.h>
+#include "hwloc/linux.h"
 #endif
 
 #include <nvml.h>
@@ -36,10 +36,10 @@ extern "C" {
  * @{
  */
 
-/** \brief Get the CPU set of logical processors that are physically
+/** \brief Get the CPU set of processors that are physically
  * close to NVML device \p device.
  *
- * Return the CPU set describing the locality of the NVML device \p device.
+ * Store in \p set the CPU-set describing the locality of the NVML device \p device.
  *
  * Topology \p topology and device \p device must match the local machine.
  * I/O devices detection and the NVML component are not needed in the topology.
@@ -60,7 +60,6 @@ hwloc_nvml_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
   /* If we're on Linux, use the sysfs mechanism to get the local cpus */
 #define HWLOC_NVML_DEVICE_SYSFS_PATH_MAX 128
   char path[HWLOC_NVML_DEVICE_SYSFS_PATH_MAX];
-  FILE *sysfile = NULL;
   nvmlReturn_t nvres;
   nvmlPciInfo_t pci;
 
@@ -76,15 +75,9 @@ hwloc_nvml_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
   }
 
   sprintf(path, "/sys/bus/pci/devices/%04x:%02x:%02x.0/local_cpus", pci.domain, pci.bus, pci.device);
-  sysfile = fopen(path, "r");
-  if (!sysfile)
-    return -1;
-
-  if (hwloc_linux_parse_cpumap_file(sysfile, set) < 0
+  if (hwloc_linux_read_path_as_cpumask(path, set) < 0
       || hwloc_bitmap_iszero(set))
     hwloc_bitmap_copy(set, hwloc_topology_get_complete_cpuset(topology));
-
-  fclose(sysfile);
 #else
   /* Non-Linux systems simply get a full cpuset */
   hwloc_bitmap_copy(set, hwloc_topology_get_complete_cpuset(topology));
@@ -95,15 +88,15 @@ hwloc_nvml_get_device_cpuset(hwloc_topology_t topology __hwloc_attribute_unused,
 /** \brief Get the hwloc OS device object corresponding to the
  * NVML device whose index is \p idx.
  *
- * Return the OS device object describing the NVML device whose
- * index is \p idx. Returns NULL if there is none.
+ * \return The hwloc OS device object describing the NVML device whose index is \p idx.
+ * \return \c NULL if none could be found.
  *
  * The topology \p topology does not necessarily have to match the current
  * machine. For instance the topology may be an XML import of a remote host.
  * I/O devices detection and the NVML component must be enabled in the topology.
  *
  * \note The corresponding PCI device object can be obtained by looking
- * at the OS device parent object.
+ * at the OS device parent object (unless PCI devices are filtered out).
  */
 static __hwloc_inline hwloc_obj_t
 hwloc_nvml_get_device_osdev_by_index(hwloc_topology_t topology, unsigned idx)
@@ -121,8 +114,8 @@ hwloc_nvml_get_device_osdev_by_index(hwloc_topology_t topology, unsigned idx)
 
 /** \brief Get the hwloc OS device object corresponding to NVML device \p device.
  *
- * Return the hwloc OS device object that describes the given
- * NVML device \p device. Return NULL if there is none.
+ * \return The hwloc OS device object that describes the given NVML device \p device.
+ * \return \c NULL if none could be found.
  *
  * Topology \p topology and device \p device must match the local machine.
  * I/O devices detection and the NVML component must be enabled in the topology.
@@ -130,7 +123,7 @@ hwloc_nvml_get_device_osdev_by_index(hwloc_topology_t topology, unsigned idx)
  * hwloc_nvml_get_device_cpuset().
  *
  * \note The corresponding hwloc PCI device may be found by looking
- * at the result parent pointer.
+ * at the result parent pointer (unless PCI devices are filtered out).
  */
 static __hwloc_inline hwloc_obj_t
 hwloc_nvml_get_device_osdev(hwloc_topology_t topology, nvmlDevice_t device)
@@ -138,6 +131,7 @@ hwloc_nvml_get_device_osdev(hwloc_topology_t topology, nvmlDevice_t device)
 	hwloc_obj_t osdev;
 	nvmlReturn_t nvres;
 	nvmlPciInfo_t pci;
+	char uuid[64];
 
 	if (!hwloc_topology_is_thissystem(topology)) {
 		errno = EINVAL;
@@ -148,17 +142,28 @@ hwloc_nvml_get_device_osdev(hwloc_topology_t topology, nvmlDevice_t device)
 	if (NVML_SUCCESS != nvres)
 		return NULL;
 
+	nvres = nvmlDeviceGetUUID(device, uuid, sizeof(uuid));
+	if (NVML_SUCCESS != nvres)
+		uuid[0] = '\0';
+
 	osdev = NULL;
 	while ((osdev = hwloc_get_next_osdev(topology, osdev)) != NULL) {
 		hwloc_obj_t pcidev = osdev->parent;
+		const char *info;
+
 		if (strncmp(osdev->name, "nvml", 4))
 			continue;
+
 		if (pcidev
 		    && pcidev->type == HWLOC_OBJ_PCI_DEVICE
 		    && pcidev->attr->pcidev.domain == pci.domain
 		    && pcidev->attr->pcidev.bus == pci.bus
 		    && pcidev->attr->pcidev.dev == pci.device
 		    && pcidev->attr->pcidev.func == 0)
+			return osdev;
+
+		info = hwloc_obj_get_info_by_name(osdev, "NVIDIAUUID");
+		if (info && !strcmp(info, uuid))
 			return osdev;
 	}
 

@@ -8,3 +8,4 @@ Terminal=false
 Type=Application
 Categories=System;
 Keywords=System;Utility;
+Icon=hwloc

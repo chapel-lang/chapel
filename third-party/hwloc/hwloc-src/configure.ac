@@ -1,9 +1,9 @@
 # -*- shell-script -*-
 #
 # Copyright © 2009      CNRS
-# Copyright © 2009-2018 Inria.  All rights reserved.
+# Copyright © 2009-2022 Inria.  All rights reserved.
 # Copyright © 2009, 2011-2012      Université Bordeaux
-# Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
+# Copyright © 2009-2020 Cisco Systems, Inc.  All rights reserved.
 #
 # See COPYING in top-level directory.
 #
@@ -17,8 +17,8 @@
 ####################################################################
 
 AC_INIT([hwloc],
-        [m4_normalize(esyscmd([config/hwloc_get_version.sh VERSION --version]))],
-        [http://github.com/open-mpi/hwloc/issues], [hwloc])
+        [m4_normalize(esyscmd([sh config/hwloc_get_version.sh VERSION --version]))],
+        [https://github.com/open-mpi/hwloc/issues], [hwloc])
 AC_PREREQ(2.63)
 AC_CONFIG_AUX_DIR(./config)
 # Note that this directory must *exactly* match what was specified via
@@ -40,11 +40,6 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.11 dist-bzip2 subdir-objects foreign tar-ustar parallel-tests -Wall -Werror])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
-# We want new Libtool.  None of that old stuff.  Pfft.
-m4_ifdef([LT_PREREQ], [],
-	 [m4_fatal([libtool version 2.2.6 or higher is required], [63])])
-LT_PREREQ([2.2.6])
-
 AC_LANG([C])
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -55,7 +50,8 @@ AC_USE_SYSTEM_EXTENSIONS
 AH_TOP([/* -*- c -*-
  *
  * Copyright © 2009, 2011, 2012 CNRS, inria., Université Bordeaux  All rights reserved.
- * Copyright © 2009 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2009-2014 Cisco Systems, Inc.  All rights reserved.
+ * Copyright © 2022 IBM Corporation.  All rights reserved.
  * $COPYRIGHT$
  *
  * Additional copyrights may follow
@@ -74,22 +70,37 @@ AH_BOTTOM([
 ])
 
 ####################################################################
-# Setup C compiler
+# Setup Libtool
 ####################################################################
 
-CFLAGS_save="$CFLAGS"
-AC_PROG_CC
-AC_PROG_CXX
-AM_PROG_CC_C_O
-CFLAGS="$CFLAGS_save"
+# We want new Libtool.  None of that old stuff.  Pfft.
+m4_ifdef([LT_PREREQ], [],
+         [m4_fatal([libtool version 2.2.6 or higher is required], [63])])
+LT_PREREQ([2.2.6])
+
+# Setup libtool, but disable F77, Java and Windows Resource
+# Compiler support -- we don't need that stuff.
+AC_ENABLE_SHARED
+AC_DISABLE_STATIC
+
 # This did not exist pre AM 1.11.x (where x is somewhere >0 and <3),
 # but it is necessary in AM 1.12.x.
 m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
-AC_ARG_VAR(CC_FOR_BUILD,[build system C compiler])
-AS_IF([test -z "$CC_FOR_BUILD"],[
-    AC_SUBST([CC_FOR_BUILD], [$CC])
-])
+LT_INIT([dlopen win32-dll])
+LT_LANG([C])
+LT_LANG([C++])
+
+####################################################################
+# Setup C, C++ compilers
+####################################################################
+
+CFLAGS_save=$CFLAGS
+AC_PROG_CC
+AM_PROG_CC_C_O
+# AC_PROG_CC_C99 obsolete, detected inside AC_PROG_CC, since autoconf 2.70
+m4_version_prereq([2.70], [], [AC_PROG_CC_C99])
+CFLAGS=$CFLAGS_save
 
 ####################################################################
 # CLI arguments
@@ -116,24 +127,30 @@ AS_IF([test "$enable_embedded_mode" != "yes"],
 # Setup for the hwloc API
 ####################################################################
 
+AC_SUBST([libhwloc_so_version])
+AC_SUBST([libhwloc_so_name])
+
 # Setup the hwloc core
 HWLOC_SETUP_CORE([], [], [AC_MSG_ERROR([Cannot build hwloc core])], [1])
 
-# Setup hwloc's docs, utils, and tests
-AS_IF([test "$hwloc_mode" = "standalone"],
-      [HWLOC_SETUP_DOCS
-       HWLOC_SETUP_UTILS
-       HWLOC_SETUP_TESTS])
+####################################################################
+# Setup the netloc API
+####################################################################
 
-cat <<EOF
+AC_SUBST([libnetloc_so_version])
 
-###
-### Performing final hwloc configuration
-###
-EOF
+AC_ARG_ENABLE([netloc],
+              [AS_HELP_STRING([--enable-netloc],
+                              [The Netloc functionality is disabled by default. Using --enable-netloc will cause configure to abort if Netloc cannot be build (e.g., not supported on your platform).])
+              ])
 
-# Run the AM_CONDITIONALs
-HWLOC_DO_AM_CONDITIONALS
+AS_IF([test "$enable_netloc" = "yes" -a "$hwloc_mode" = "standalone"],
+      [NETLOC_SETUP_CORE([], [],
+           [AS_IF([test "$enable_netloc" = "yes"],
+                  [AC_MSG_ERROR([Cannot build netloc core])])
+           ],
+           [1])
+      ])
 
 ####################################################################
 # Version information
@@ -150,7 +167,6 @@ AC_SUBST([CONFIGURE_DEPENDENCIES], ['$(top_srcdir)/VERSION'])
 # for the version set in AC_INIT.  This will always match reality
 # because we add the VERSION file (the only way to change the
 # major.minor.release{greek}) into the configure dependencies.
-
 PACKAGE_VERSION="$HWLOC_VERSION"
 PACKAGE_STRING="${PACKAGE_NAME} ${PACKAGE_VERSION}"
 VERSION="${PACKAGE_VERSION}"
@@ -158,7 +174,31 @@ VERSION="${PACKAGE_VERSION}"
 # For standalone configurations, we also include a .so version number.
 
 . $srcdir/VERSION
-AC_SUBST([libhwloc_so_version])
+
+libhwloc_so_version_current=`echo $libhwloc_so_version | cut -d: -f1`
+libhwloc_so_version_age=`echo $libhwloc_so_version | cut -d: -f3`
+libhwloc_so_name=`expr $libhwloc_so_version_current - $libhwloc_so_version_age`
+
+####################################################################
+# Setup the rest of the infrastructure
+####################################################################
+
+# Setup hwloc's docs, utils, and tests
+AS_IF([test "$hwloc_mode" = "standalone"],
+      [HWLOC_SETUP_DOCS
+       HWLOC_SETUP_UTILS
+       HWLOC_SETUP_TESTS])
+
+cat <<EOF
+
+###
+### Performing final hwloc configuration
+###
+EOF
+
+# Run the AM_CONDITIONALs
+HWLOC_DO_AM_CONDITIONALS
+NETLOC_DO_AM_CONDITIONALS
 
 ####################################################################
 # Final output
@@ -168,13 +208,6 @@ AC_SUBST([libhwloc_so_version])
 CFLAGS="$HWLOC_EMBEDDED_CFLAGS $CFLAGS"
 CPPFLAGS="$HWLOC_EMBEDDED_CPPFLAGS $CPPFLAGS"
 LIBS="$HWLOC_EMBEDDED_LIBS $LIBS"
-
-# Setup libtool, but disable C++, F77, Java and Windows Resource
-# Compiler support -- we don't need that stuff.
-AM_ENABLE_SHARED
-AM_DISABLE_STATIC
-AM_PROG_LIBTOOL([dlopen win32-dll])
-LT_LANG([C])
 
 # Party on
 AC_OUTPUT
@@ -193,26 +226,93 @@ fi
 # Show which optional support we'll be building
 hwloc_xml_status=basic
 AS_IF([test "$hwloc_libxml2_happy" = "yes"], [hwloc_xml_status=full])
-hwloc_cairo_status=$hwloc_cairo_happy
-AS_IF([test "$enable_embedded_mode" = "yes"], [hwloc_cairo_status="no (disabled in embedded mode)"])
+netloc_status=no
+AS_IF([test "$netloc_happy" = "yes"], [
+  netlocscotch_status=without
+  AS_IF([test "$scotch_found_headers" = "yes"], [netlocscotch_status=with])
+  netloc_status="yes ($netlocscotch_status scotch)"
+])
+
+AS_IF([test "$enable_embedded_mode" = "yes"],
+      [hwloc_graphical_lstopo_status="no (disabled in embedded mode)"],
+      [AS_IF([test "$hwloc_windows" = "yes"],
+             [hwloc_graphical_lstopo_status="yes (Windows)"],
+             [AS_IF([test "$hwloc_cairo_happy" = "yes"],
+                    [AS_IF([test "$lstopo_have_x11" = "yes"],
+                           [hwloc_graphical_lstopo_status="yes (Cairo)"],
+                           [hwloc_graphical_lstopo_status="partial (Cairo, without X11)"])],
+                    [hwloc_graphical_lstopo_status="no"])
+             ])
+      ])
 
 # Prepare the I/O summary
 hwloc_probeio_list=
-if test "x$hwloc_pci_happy" = "xyes" -o "x$hwloc_linuxpci_happy" = "xyes"; then
-  test "x$hwloc_pci_happy" = "xyes" && hwloc_probepci_list="$hwloc_pci_lib"
-  test "x$hwloc_pci_happy$hwloc_linuxpci_happy" = "xyesyes" && hwloc_probepci_list="${hwloc_probepci_list}+"
-  test "x$hwloc_linuxpci_happy" = "xyes" && hwloc_probepci_list="${hwloc_probepci_list}linux"
+if test "x$hwloc_pciaccess_happy" = "xyes" -o "x$hwloc_linuxpci_happy" = "xyes"; then
+  test "x$hwloc_pciaccess_happy" = "xyes" && hwloc_probepci_list=pciaccess
+  test "x$hwloc_pciaccess_happy$hwloc_linuxpci_happy" = "xyesyes" && hwloc_probepci_list="${hwloc_probepci_list}+"
+  test "x$hwloc_linuxio_happy" = "xyes" && hwloc_probepci_list="${hwloc_probepci_list}linux"
   hwloc_probeio_list="$hwloc_probeio_list PCI($hwloc_probepci_list)"
 fi
+test "x$hwloc_linuxio_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list LinuxIO"
 test "x$hwloc_opencl_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list OpenCL"
 test "x$hwloc_have_cudart" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list CUDA"
-test "x$hwloc_nvml_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list NVML"
+if test "x$hwloc_nvml_happy" = "xyes" ; then
+    hwloc_probeio_list="$hwloc_probeio_list NVML"
+fi
+test "x$hwloc_rsmi_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list RSMI"
+test "x$hwloc_levelzero_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list LevelZero"
 test "x$hwloc_gl_happy" = "xyes" && hwloc_probeio_list="$hwloc_probeio_list GL"
-# if anything but PCI, that anything will be useless
-test "x$hwloc_pci_happy" != "xyes" && test "x$hwloc_linuxpci_happy" != "xyes" \
- && test "x$hwloc_probeio_list" != "x" && hwloc_probeio_list="$hwloc_probeio_list (cannot work without PCI)"
 # if nothing, say "no"
 test "x$hwloc_probeio_list" = "x" && hwloc_probeio_list=" no"
+
+if test "x$hwloc_nvml_happy" = "xyes" -a "x$hwloc_nvml_warning" = "xyes"; then
+    hwloc_nvml_status="yes, but not functional on this machine (see warning above)"
+    cat <<EOF
+
+************************************************************************
+WARNING: NVIDIA Management Library (NVML) was detected, but programs
+linked against it cannot run on this machine. This situation often
+indicates that this machine does not have the hardware necessary to run
+the library.
+
+Sometimes, the machine building hwloc differs from the machine where
+hwloc will be running. As such, this warning can be ignored if you know
+that the library is functional where you intend to run hwloc.
+However, if that is not the situation, you may want to disable NVML
+support in hwloc with the --disable-nvml option in configure.
+************************************************************************
+EOF
+fi
+
+if test "x$hwloc_have_cudart" = xyes -a "x$hwloc_cuda_warning" = xyes; then
+    hwloc_cuda_status="yes, but not in LD_LIBRARY_PATH or ld.so.conf (see warning above)"
+    cat <<EOF
+
+************************************************************************
+WARNING: The NVIDIA CUDA library was detected with link options
+$HWLOC_CUDART_LIBS $HWLOC_CUDART_LDFLAGS
+but programs linked against it cannot run.
+This often indicates that the CUDA RT lib path is missing in
+ld.so.conf and LD_LIBRARY_PATH. If unneeded, this dependency may
+be removed from hwloc by passing --disable-cuda to configure.
+************************************************************************
+EOF
+fi
+
+if test "x$hwloc_rsmi_happy" = xyes -a "x$hwloc_rsmi_warning" = xyes; then
+    hwloc_rsmi_status="yes, but not in LD_LIBRARY_PATH or ld.so.conf (see warning above)"
+    cat <<EOF
+
+************************************************************************
+WARNING: The AMD ROCm SMI library was detected with link options
+$HWLOC_RSMI_LIBS $HWLOC_RSMI_LDFLAGS
+but programs linked against it cannot run.
+This often indicates that the ROCm SMI lib path is missing in
+ld.so.conf and LD_LIBRARY_PATH. If unneeded, this dependency may
+be removed from hwloc by passing --disable-rsmi to configure.
+************************************************************************
+EOF
+fi
 
 # Beginning of generic support
 cat <<EOF
@@ -221,18 +321,31 @@ cat <<EOF
 Hwloc optional build support status (more details can be found above):
 
 Probe / display I/O devices:$hwloc_probeio_list
-Graphical output (Cairo):    $hwloc_cairo_status
-XML input / output:          $hwloc_xml_status
 EOF
-
-# Linux specific support
-AS_IF([test "$hwloc_linux" = "yes"], [cat <<EOF
-libnuma memory support:      $hwloc_linux_libnuma_happy
-EOF])
+if test "x$hwloc_cuda_status" != x; then
+  cat <<EOF
+CUDA status:                 $hwloc_cuda_status
+EOF
+fi
+if test "x$hwloc_nvml_status" != x; then
+  cat <<EOF
+NVML status:                 $hwloc_nvml_status
+EOF
+fi
+if test "x$hwloc_rsmi_status" != x; then
+  cat <<EOF
+ROCm SMI status:             $hwloc_rsmi_status
+EOF
+fi
+cat <<EOF
+Graphical output:            $hwloc_graphical_lstopo_status
+XML input / output:          $hwloc_xml_status
+Netloc functionality:        $netloc_status
+EOF
 
 # Plugin support
 hwloc_plugin_summary=$hwloc_have_plugins
-test "x$hwloc_plugin_components" != "x" && hwloc_plugin_summary="yes ("`echo $hwloc_plugin_components`")" # echo removes the starting space
+test "x$hwloc_plugin_components" != "x" && hwloc_plugin_summary="$hwloc_plugins_load ("`echo $hwloc_plugin_components`")" # echo removes the starting space
 cat <<EOF
 Plugin support:              $hwloc_plugin_summary
 EOF

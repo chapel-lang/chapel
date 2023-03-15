@@ -1,0 +1,25 @@
+This CMake support for Windows builds is inspired from
+  https://github.com/microsoft/vcpkg/blob/7e495c0773353de69f24f3af8aea0ae9a129508c/ports/hwloc/CMakeLists.txt
+(before vcpkg switched from CMake to autotools).
+
+May be used with:
+$ cmake [options] -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\path\to\install .
+$ cmake --build .
+$ cmake --build . --target INSTALL
+
+The "Debug" build type is also available, it enables lots of
+verbose debug messages and assertions.
+
+Options:
+-DHWLOC_SKIP_LSTOPO=1 to ignore lstopo
+-DHWLOC_SKIP_TOOLS=1 to ignore other hwloc command-line tools
+-DHWLOC_SKIP_INCLUDES=1 to ignore header installation
+
+See contrib/ci.inria.fr/job-1-wincmake.bat for an example.
+
+
+hwloc-compress-dir not built because it needs work.
+
+hwloc-gather-topology is Linux specific.
+
+hwloc-ps is not built because it does nothing on Windows anyway (see #367).

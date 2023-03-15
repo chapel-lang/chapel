@@ -1,10 +1,11 @@
 /*
  * Copyright © 2015 Intel, Inc.  All rights reserved.
- * Copyright © 2015-2018 Inria.  All rights reserved.
+ * Copyright © 2015-2021 Inria.  All rights reserved.
  * See COPYING in top-level directory.
  */
 
-#include <private/autogen/config.h>
+#include "private/autogen/config.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -26,20 +27,31 @@ static void usage(const char *name, FILE *where)
     fprintf (where, "Usage: %s [ options ] ...\n", name);
     fprintf (where, "Options:\n");
     fprintf (where, "  -o <dir>      Output files to directory <dir> instead of " DEFAULT_DUMP_DIR "\n");
+    fprintf (where, "  --version     Report version and exit\n");
+    fprintf (where, "  -h --help     Show this usage\n");
 }
 
 int main(int argc, char *argv[])
 {
-    const char *callname = argv[0];
+    const char *callname;
     char *dirname = (char *) DEFAULT_DUMP_DIR;
-    char *input_fsroot;
+    const char *input_fsroot;
     char *filename;
     int err;
+
+    callname = strrchr(argv[0], '/');
+    if (!callname)
+      callname = argv[0];
+    else
+      callname++;
 
     argv++; argc--;
     while (argc) {
       if (!strcmp(argv[0], "-h") || !strcmp(argv[0], "--help")) {
         usage(callname, stdout);
+        exit(EXIT_SUCCESS);
+      } else if (!strcmp (argv[0], "--version")) {
+        printf("%s %s\n", callname, HWLOC_VERSION);
         exit(EXIT_SUCCESS);
       } else if (!strcmp(argv[0], "-o")) {
         if (argc == 1) {
@@ -72,7 +84,7 @@ int main(int argc, char *argv[])
 
     input_fsroot = getenv("HWLOC_FSROOT");
     if (!input_fsroot)
-      input_fsroot = (char *) "/";
+      input_fsroot = "/";
 
     err = asprintf(&filename, "%s/knl_memoryside_cache", dirname);
     assert(err >= 0);

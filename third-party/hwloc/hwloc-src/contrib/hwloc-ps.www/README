@@ -1,0 +1,61 @@
+This tool displays process and thread binding in an interative web page.
+
+
+1) Basic Usage
+
+Run the hwloc-ps tool in JSON server mode:
+
+    $ hwloc-ps --json-server
+    server running on port 8888...
+
+Export the topology as a SVG file using the native backend:
+
+    $ lstopo filename.svg --of nativesvg
+
+Now run the client side for displaying the binding:
+
+    $ cd /path/to/hwloc-ps.www/
+    $ node client.js /path/to/filename.svg
+
+This should open a webpage in your browser.
+Otherwise add -u to see the URL that you should open (usually http://localhost:3000).
+
+
+2) Installing node.js and JS dependencies
+
+The "node" command is available in the "nodejs" package in most Linux distributions,
+but you should rather install the "npm" package to get additional utilities:
+
+    # apt instal npm
+    # yum install npm
+
+Then install the dependencies needed by client.js:
+
+    $ cd /path/to/hwloc-ps.www/
+    $ npm install
+
+If you don't have write-access to the hwloc-ps.www/ directory,
+copy it somewhere else, run "npm install" from there,
+and then run the client from there:
+
+   $ cp -a /path/to/hwloc-ps.www/ $HOME/myhwloc-ps.www/
+   $ cd $HOME/myhwloc-ps.www/
+   $ npm install
+   $ node client.js /path/to/filename.svg
+
+
+3) Running on a remote server
+
+This tool is often useful for debugging process placement on remote servers, hence:
+
+* hwloc-ps and lstopo should run on that remote server
+  (this requires a recent hwloc on the remote side).
+
+* you must copy the SVG file back to your machine:
+
+    $ scp target:/path/to/filename.svg .
+
+* if the target machine port 8888 is not directly accessible, you may
+  have to forward its 8888 port:
+
+    $ ssh target -L 8888:localhost:8888 -Nf

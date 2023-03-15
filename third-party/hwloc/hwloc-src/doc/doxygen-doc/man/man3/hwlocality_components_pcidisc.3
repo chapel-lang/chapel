@@ -1,0 +1,71 @@
+.TH "hwlocality_components_pcidisc" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_components_pcidisc \- Components and Plugins: helpers for PCI discovery
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "unsigned \fBhwloc_pcidisc_find_cap\fP (const unsigned char *config, unsigned cap)"
+.br
+.ti -1c
+.RI "int \fBhwloc_pcidisc_find_linkspeed\fP (const unsigned char *config, unsigned offset, float *linkspeed)"
+.br
+.ti -1c
+.RI "\fBhwloc_obj_type_t\fP \fBhwloc_pcidisc_check_bridge_type\fP (unsigned device_class, const unsigned char *config)"
+.br
+.ti -1c
+.RI "int \fBhwloc_pcidisc_find_bridge_buses\fP (unsigned domain, unsigned bus, unsigned dev, unsigned func, unsigned *secondary_busp, unsigned *subordinate_busp, const unsigned char *config)"
+.br
+.ti -1c
+.RI "void \fBhwloc_pcidisc_tree_insert_by_busid\fP (struct \fBhwloc_obj\fP **treep, struct \fBhwloc_obj\fP *obj)"
+.br
+.ti -1c
+.RI "int \fBhwloc_pcidisc_tree_attach\fP (struct hwloc_topology *topology, struct \fBhwloc_obj\fP *tree)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.PP
+\fBNote\fP
+.RS 4
+These structures and functions may change when \fBHWLOC_COMPONENT_ABI\fP is modified\&. 
+.RE
+.PP
+
+.SH "Function Documentation"
+.PP 
+.SS "\fBhwloc_obj_type_t\fP hwloc_pcidisc_check_bridge_type (unsigned device_class, const unsigned char * config)"
+
+.PP
+Return the hwloc object type (PCI device or Bridge) for the given class and configuration space\&. This function requires 16 bytes of common configuration header at the beginning of config\&. 
+.SS "int hwloc_pcidisc_find_bridge_buses (unsigned domain, unsigned bus, unsigned dev, unsigned func, unsigned * secondary_busp, unsigned * subordinate_busp, const unsigned char * config)"
+
+.PP
+Fills the attributes of the given PCI bridge using the given PCI config space\&. This function requires 32 bytes of common configuration header at the beginning of config\&.
+.PP
+Returns -1 and destroys /p obj if bridge fields are invalid\&. 
+.SS "unsigned hwloc_pcidisc_find_cap (const unsigned char * config, unsigned cap)"
+
+.PP
+Return the offset of the given capability in the PCI config space buffer\&. This function requires a 256-bytes config space\&. Unknown/unavailable bytes should be set to 0xff\&. 
+.SS "int hwloc_pcidisc_find_linkspeed (const unsigned char * config, unsigned offset, float * linkspeed)"
+
+.PP
+Fill linkspeed by reading the PCI config space where PCI_CAP_ID_EXP is at position offset\&. Needs 20 bytes of EXP capability block starting at offset in the config space for registers up to link status\&. 
+.SS "int hwloc_pcidisc_tree_attach (struct hwloc_topology * topology, struct \fBhwloc_obj\fP * tree)"
+
+.PP
+Add some hostbridges on top of the given tree of PCI objects and attach them to the topology\&. Other backends may lookup PCI objects or localities (for instance to attach OS devices) by using hwloc_pcidisc_find_by_busid() or hwloc_pcidisc_find_busid_parent()\&. 
+.SS "void hwloc_pcidisc_tree_insert_by_busid (struct \fBhwloc_obj\fP ** treep, struct \fBhwloc_obj\fP * obj)"
+
+.PP
+Insert a PCI object in the given PCI tree by looking at PCI bus IDs\&. If \fCtreep\fP points to \fCNULL\fP, the new object is inserted there\&. 
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

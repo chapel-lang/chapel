@@ -76,7 +76,7 @@ static __hwloc_inline void hwloc_x86_cpuid(unsigned *eax, unsigned *ebx, unsigne
   "mov %%ebx,%1\n\t"
   "cpuid\n\t"
   "xchg %%ebx,%1\n\t"
-  : "+a" (*eax), "=SD" (*ebx), "+c" (*ecx), "=d" (*edx));
+  : "+a" (*eax), "=&SD" (*ebx), "+c" (*ecx), "=&d" (*edx));
 #else
 #error unknown architecture
 #endif

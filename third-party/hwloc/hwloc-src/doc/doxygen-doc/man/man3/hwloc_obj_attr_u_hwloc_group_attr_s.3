@@ -1,4 +1,4 @@
-.TH "hwloc_obj_attr_u::hwloc_group_attr_s" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_obj_attr_u::hwloc_group_attr_s" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -15,6 +15,12 @@ hwloc_obj_attr_u::hwloc_group_attr_s
 .RI "unsigned \fBdepth\fP"
 .br
 .ti -1c
+.RI "unsigned \fBkind\fP"
+.br
+.ti -1c
+.RI "unsigned \fBsubkind\fP"
+.br
+.ti -1c
 .RI "unsigned char \fBdont_merge\fP"
 .br
 .in -1c
@@ -26,11 +32,19 @@ Group-specific Object Attributes\&.
 .SS "unsigned hwloc_obj_attr_u::hwloc_group_attr_s::depth"
 
 .PP
-Depth of group object\&. 
+Depth of group object\&. It may change if intermediate Group objects are added\&. 
 .SS "unsigned char hwloc_obj_attr_u::hwloc_group_attr_s::dont_merge"
 
 .PP
 Flag preventing groups from being automatically merged with identical parent or children\&. 
+.SS "unsigned hwloc_obj_attr_u::hwloc_group_attr_s::kind"
+
+.PP
+Internally-used kind of group\&. 
+.SS "unsigned hwloc_obj_attr_u::hwloc_group_attr_s::subkind"
+
+.PP
+Internally-used subkind to distinguish different levels of groups with same kind\&. 
 
 .SH "Author"
 .PP 

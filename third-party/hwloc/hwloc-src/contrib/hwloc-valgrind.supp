@@ -132,7 +132,7 @@
    Memcheck:Leak
    ...
    fun:pci_device_get_device_name
-   fun:hwloc_look_pci*
+   fun:hwloc_look_pci
 }
 {
    libpciaccess_leak
@@ -140,7 +140,7 @@
    ...
    obj:*libpciaccess*
    ...
-   fun:hwloc_look_pci*
+   fun:hwloc_look_pci
 }
 
 # libudev global hashes

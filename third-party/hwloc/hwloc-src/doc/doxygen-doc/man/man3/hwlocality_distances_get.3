@@ -1,0 +1,175 @@
+.TH "hwlocality_distances_get" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_distances_get \- Retrieve distances between objects
+.SH SYNOPSIS
+.br
+.PP
+.SS "Data Structures"
+
+.in +1c
+.ti -1c
+.RI "struct \fBhwloc_distances_s\fP"
+.br
+.in -1c
+.SS "Enumerations"
+
+.in +1c
+.ti -1c
+.RI "enum \fBhwloc_distances_kind_e\fP { \fBHWLOC_DISTANCES_KIND_FROM_OS\fP, \fBHWLOC_DISTANCES_KIND_FROM_USER\fP, \fBHWLOC_DISTANCES_KIND_MEANS_LATENCY\fP, \fBHWLOC_DISTANCES_KIND_MEANS_BANDWIDTH\fP, \fBHWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES\fP }"
+.br
+.ti -1c
+.RI "enum \fBhwloc_distances_transform_e\fP { \fBHWLOC_DISTANCES_TRANSFORM_REMOVE_NULL\fP, \fBHWLOC_DISTANCES_TRANSFORM_LINKS\fP, \fBHWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS\fP, \fBHWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE\fP }"
+.br
+.in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBhwloc_distances_get\fP (\fBhwloc_topology_t\fP topology, unsigned *nr, struct \fBhwloc_distances_s\fP **distances, unsigned long kind, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_distances_get_by_depth\fP (\fBhwloc_topology_t\fP topology, int depth, unsigned *nr, struct \fBhwloc_distances_s\fP **distances, unsigned long kind, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_distances_get_by_type\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned *nr, struct \fBhwloc_distances_s\fP **distances, unsigned long kind, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_distances_get_by_name\fP (\fBhwloc_topology_t\fP topology, const char *name, unsigned *nr, struct \fBhwloc_distances_s\fP **distances, unsigned long flags)"
+.br
+.ti -1c
+.RI "const char * \fBhwloc_distances_get_name\fP (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP *distances)"
+.br
+.ti -1c
+.RI "void \fBhwloc_distances_release\fP (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP *distances)"
+.br
+.ti -1c
+.RI "int \fBhwloc_distances_transform\fP (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP *distances, enum \fBhwloc_distances_transform_e\fP transform, void *transform_attr, unsigned long flags)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+
+.SH "Enumeration Type Documentation"
+.PP 
+.SS "enum \fBhwloc_distances_kind_e\fP"
+
+.PP
+Kinds of distance matrices\&. The \fCkind\fP attribute of struct \fBhwloc_distances_s\fP is a OR'ed set of kinds\&.
+.PP
+A kind of format HWLOC_DISTANCES_KIND_FROM_* specifies where the distance information comes from, if known\&.
+.PP
+A kind of format HWLOC_DISTANCES_KIND_MEANS_* specifies whether values are latencies or bandwidths, if applicable\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIHWLOC_DISTANCES_KIND_FROM_OS \fP\fP
+These distances were obtained from the operating system or hardware\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_KIND_FROM_USER \fP\fP
+These distances were provided by the user\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_KIND_MEANS_LATENCY \fP\fP
+Distance values are similar to latencies between objects\&. Values are smaller for closer objects, hence minimal on the diagonal of the matrix (distance between an object and itself)\&. It could also be the number of network hops between objects, etc\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_KIND_MEANS_BANDWIDTH \fP\fP
+Distance values are similar to bandwidths between objects\&. Values are higher for closer objects, hence maximal on the diagonal of the matrix (distance between an object and itself)\&. Such values are currently ignored for distance-based grouping\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES \fP\fP
+This distances structure covers objects of different types\&. This may apply to the 'NVLinkBandwidth' structure in presence of a NVSwitch or POWER processor NVLink port\&. 
+.SS "enum \fBhwloc_distances_transform_e\fP"
+
+.PP
+Transformations of distances structures\&. 
+.PP
+\fBEnumerator\fP
+.in +1c
+.TP
+\fB\fIHWLOC_DISTANCES_TRANSFORM_REMOVE_NULL \fP\fP
+Remove \fCNULL\fP objects from the distances structure\&. Every object that was replaced with \fCNULL\fP in the \fCobjs\fP array is removed and the \fCvalues\fP array is updated accordingly\&.
+.PP
+At least \fC2\fP objects must remain, otherwise \fBhwloc_distances_transform()\fP will return \fC-1\fP with \fCerrno\fP set to \fCEINVAL\fP\&.
+.PP
+\fCkind\fP will be updated with or without \fBHWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES\fP according to the remaining objects\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_TRANSFORM_LINKS \fP\fP
+Replace bandwidth values with a number of links\&. Usually all values will be either \fC0\fP (no link) or \fC1\fP (one link)\&. However some matrices could get larger values if some pairs of peers are connected by different numbers of links\&.
+.PP
+Values on the diagonal are set to \fC0\fP\&.
+.PP
+This transformation only applies to bandwidth matrices\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS \fP\fP
+Merge switches with multiple ports into a single object\&. This currently only applies to NVSwitches where GPUs seem connected to different separate switch ports in the NVLinkBandwidth matrix\&. This transformation will replace all of them with the same port connected to all GPUs\&. Other ports are removed by applying \fBHWLOC_DISTANCES_TRANSFORM_REMOVE_NULL\fP internally\&. 
+.TP
+\fB\fIHWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE \fP\fP
+Apply a transitive closure to the matrix to connect objects across switches\&. This currently only applies to GPUs and NVSwitches in the NVLinkBandwidth matrix\&. All pairs of GPUs will be reported as directly connected\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_distances_get (\fBhwloc_topology_t\fP topology, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
+
+.PP
+Retrieve distance matrices\&. Retrieve distance matrices from the topology into the \fCdistances\fP array\&.
+.PP
+\fCflags\fP is currently unused, should be \fC0\fP\&.
+.PP
+\fCkind\fP serves as a filter\&. If \fC0\fP, all distance matrices are returned\&. If it contains some HWLOC_DISTANCES_KIND_FROM_*, only distance matrices whose kind matches one of these are returned\&. If it contains some HWLOC_DISTANCES_KIND_MEANS_*, only distance matrices whose kind matches one of these are returned\&.
+.PP
+On input, \fCnr\fP points to the number of distance matrices that may be stored in \fCdistances\fP\&. On output, \fCnr\fP points to the number of distance matrices that were actually found, even if some of them couldn't be stored in \fCdistances\fP\&. Distance matrices that couldn't be stored are ignored, but the function still returns success (\fC0\fP)\&. The caller may find out by comparing the value pointed by \fCnr\fP before and after the function call\&.
+.PP
+Each distance matrix returned in the \fCdistances\fP array should be released by the caller using \fBhwloc_distances_release()\fP\&. 
+.SS "int hwloc_distances_get_by_depth (\fBhwloc_topology_t\fP topology, int depth, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
+
+.PP
+Retrieve distance matrices for object at a specific depth in the topology\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCdepth\fP filter\&. 
+.SS "int hwloc_distances_get_by_name (\fBhwloc_topology_t\fP topology, const char * name, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long flags)"
+
+.PP
+Retrieve a distance matrix with the given name\&. Usually only one distances structure may match a given name\&.
+.PP
+The name of the most common structure is 'NUMALatency'\&. Others include 'XGMIBandwidth', 'XGMIHops', 'XeLinkBandwidth', and 'NVLinkBandwidth'\&. 
+.SS "int hwloc_distances_get_by_type (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_type_t\fP type, unsigned * nr, struct \fBhwloc_distances_s\fP ** distances, unsigned long kind, unsigned long flags)"
+
+.PP
+Retrieve distance matrices for object of a specific type\&. Identical to \fBhwloc_distances_get()\fP with the additional \fCtype\fP filter\&. 
+.SS "const char* hwloc_distances_get_name (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
+
+.PP
+Get a description of what a distances structure contains\&. For instance 'NUMALatency' for hardware-provided NUMA distances (ACPI SLIT), or NULL if unknown\&. 
+.SS "void hwloc_distances_release (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances)"
+
+.PP
+Release a distance matrix structure previously returned by \fBhwloc_distances_get()\fP\&. 
+.PP
+\fBNote\fP
+.RS 4
+This function is not required if the structure is removed with \fBhwloc_distances_release_remove()\fP\&. 
+.RE
+.PP
+
+.SS "int hwloc_distances_transform (\fBhwloc_topology_t\fP topology, struct \fBhwloc_distances_s\fP * distances, enum \fBhwloc_distances_transform_e\fP transform, void * transform_attr, unsigned long flags)"
+
+.PP
+Apply a transformation to a distances structure\&. Modify a distances structure that was previously obtained with \fBhwloc_distances_get()\fP or one of its variants\&.
+.PP
+This modifies the local copy of the distances structures but does not modify the distances information stored inside the topology (retrieved by another call to \fBhwloc_distances_get()\fP or exported to XML)\&. To do so, one should add a new distances structure with same name, kind, objects and values (see \fBAdd distances between objects\fP) and then remove this old one with \fBhwloc_distances_release_remove()\fP\&.
+.PP
+\fCtransform\fP must be one of the transformations listed in \fBhwloc_distances_transform_e\fP\&.
+.PP
+These transformations may modify the contents of the \fCobjs\fP or \fCvalues\fP arrays\&.
+.PP
+\fCtransform_attr\fP must be \fCNULL\fP for now\&.
+.PP
+\fCflags\fP must be \fC0\fP for now\&.
+.PP
+\fBNote\fP
+.RS 4
+Objects in distances array \fCobjs\fP may be directly modified in place without using \fBhwloc_distances_transform()\fP\&. One may use \fBhwloc_get_obj_with_same_locality()\fP to easily convert between similar objects of different types\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

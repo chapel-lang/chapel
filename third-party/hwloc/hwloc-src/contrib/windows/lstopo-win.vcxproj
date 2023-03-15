@@ -4,6 +4,7 @@
     <ProjectGuid>{9DE76C6D-4773-4766-9F93-69C56166CB99}</ProjectGuid>
     <RootNamespace>lstopo-no-graphics</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|x64">
@@ -17,7 +18,7 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -29,9 +30,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
     <EmbedManifest>true</EmbedManifest>
-    <TargetName>$(ProjectName)-5</TargetName>
-    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>$(ProjectName)-12</TargetName>
+    <IntDir>$(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
     <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IntDir>$(Platform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -64,16 +68,21 @@
       <AdditionalDependencies>libhwloc.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <Manifest>
+      <AdditionalManifestFiles>app.manifest</AdditionalManifestFiles>
+    </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\utils\lstopo\lstopo.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-ascii.c" />
-    <ClCompile Include="..\..\utils\lstopo\lstopo-color.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-draw.c" />
+    <ClCompile Include="..\..\utils\lstopo\lstopo-tikz.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-fig.c" />
+    <ClCompile Include="..\..\utils\lstopo\lstopo-svg.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-text.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-xml.c" />
     <ClCompile Include="..\..\utils\lstopo\lstopo-windows.c" />
+    <ClCompile Include="..\..\utils\hwloc\common-ps.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\hwloc\autogen\config.h" />
@@ -81,8 +90,8 @@
     <ClInclude Include="..\..\include\hwloc.h" />
     <ClInclude Include="..\..\include\hwloc\bitmap.h" />
     <ClInclude Include="..\..\include\hwloc\helper.h" />
-    <ClInclude Include="..\..\include\hwloc\myriexpress.h" />
     <ClInclude Include="..\..\include\hwloc\openfabrics-verbs.h" />
+    <ClInclude Include="..\..\include\hwloc\windows.h" />
     <ClInclude Include="..\..\include\hwloc\plugins.h" />
     <ClInclude Include="..\..\include\hwloc\rename.h" />
     <ClInclude Include="..\..\include\private\components.h" />
@@ -91,7 +100,14 @@
     <ClInclude Include="..\..\include\private\private.h" />
     <ClInclude Include="..\..\include\private\xml.h" />
     <ClInclude Include="..\..\utils\hwloc\misc.h" />
+    <ClInclude Include="..\..\utils\hwloc\common-ps.h" />
     <ClInclude Include="..\..\utils\lstopo\lstopo.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="libhwloc.vcxproj">
+      <Project>{9DE76C6D-4773-4766-9F93-69C56166CB8D}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

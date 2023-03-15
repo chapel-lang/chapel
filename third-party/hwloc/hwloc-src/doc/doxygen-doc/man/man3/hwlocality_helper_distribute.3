@@ -1,8 +1,8 @@
-.TH "hwlocality_helper_distribute" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_helper_distribute" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_helper_distribute
+hwlocality_helper_distribute \- Distributing items over a topology
 .SH SYNOPSIS
 .br
 .PP
@@ -17,7 +17,7 @@ hwlocality_helper_distribute
 
 .in +1c
 .ti -1c
-.RI "static int \fBhwloc_distrib\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP *roots, unsigned n_roots, \fBhwloc_cpuset_t\fP *set, unsigned n, unsigned until, unsigned long flags)"
+.RI "static int \fBhwloc_distrib\fP (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP *roots, unsigned n_roots, \fBhwloc_cpuset_t\fP *set, unsigned n, int until, unsigned long flags)"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -37,7 +37,7 @@ Flags to be given to \fBhwloc_distrib()\fP\&.
 Distrib in reverse order, starting from the last objects\&. 
 .SH "Function Documentation"
 .PP 
-.SS "static int hwloc_distrib (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP * roots, unsigned n_roots, \fBhwloc_cpuset_t\fP * set, unsigned n, unsigned until, unsigned long flags)\fC [inline]\fP, \fC [static]\fP"
+.SS "static int hwloc_distrib (\fBhwloc_topology_t\fP topology, \fBhwloc_obj_t\fP * roots, unsigned n_roots, \fBhwloc_cpuset_t\fP * set, unsigned n, int until, unsigned long flags)\fC [inline]\fP, \fC [static]\fP"
 
 .PP
 Distribute \fCn\fP items over the topology under \fCroots\fP\&. Array \fCset\fP will be filled with \fCn\fP cpusets recursively distributed linearly over the topology under objects \fCroots\fP, down to depth \fCuntil\fP (which can be INT_MAX to distribute down to the finest level)\&.
@@ -50,11 +50,9 @@ The caller may typically want to also call \fBhwloc_bitmap_singlify()\fP before 
 .PP
 \fCflags\fP should be 0 or a OR'ed set of \fBhwloc_distrib_flags_e\fP\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
-This function requires the \fCroots\fP objects to have a CPU set\&.
-.PP
-This function replaces the now deprecated hwloc_distribute() and hwloc_distributev() functions\&. 
+This function requires the \fCroots\fP objects to have a CPU set\&. 
 .RE
 .PP
 
