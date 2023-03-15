@@ -310,7 +310,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the job name
     fprintf(slurmFile, "#SBATCH --job-name=%s\n", jobName);
 
-    if (!getSlurmDebug(true)) {
+    if (!getSlurmDebug(/*batch=*/true)) {
       // suppress informational messages, will still display errors
       fprintf(slurmFile, "#SBATCH --quiet\n");
     }
@@ -436,7 +436,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // set the job name
     len += snprintf(iCom+len, sizeof(iCom)-len, "--job-name=%s ", jobName);
-    if(!getSlurmDebug(false)) {
+    if (!getSlurmDebug(/*batch=*/false)) {
       // suppress informational messages, will still display errors
       len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
     }
