@@ -104,6 +104,11 @@ prototype module DistributedFFT {
       plannerLock.unlock();
     }
 
+    proc init=(other) {
+      // to enable copying, we need to duplicate or borrow `other.plan`
+      compilerError("copying of a FFTWplan is not supported");
+    }
+
     proc deinit() {
       plannerLock.lock();
       destroy_plan(plan);
@@ -387,6 +392,11 @@ prototype module DistributedFFT {
       halt("Serial iterator not implemented");
     }
 
+    /* This pragma makes the iterator yield `planSm` and `planLg` by reference,
+       as they do not support copying. Alternatively, to yield by value,
+       we could implement FFTWplan.init=() to either duplicate or borrow
+       the fftw_plan object that FFTWplan points at. */
+    pragma "do not unref for yields"
     iter batch(param tag : iterKind) where (tag==iterKind.standalone) {
       coforall chunk in chunks(parRange, numTasks) {
         if chunk.size == batchSizeSm then yield (planSm, chunk);
