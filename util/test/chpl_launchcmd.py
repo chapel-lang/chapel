@@ -213,15 +213,6 @@ class AbstractJob(object):
         """
         return ''
 
-    @property
-    def knl(self):
-        """Returns True when testing KNL (Xeon Phi).
-
-        :rtype: bool
-        :returns: True when testing KNL
-        """
-        return chpl_cpu.get('target').cpu == 'mic-knl'
-
     def _qsub_command_base(self, output_file, error_file):
         """Returns base qsub command, without any resource listing.
 
@@ -915,8 +906,7 @@ class PbsProJob(AbstractJob):
         elif num_locales > 0:
             select_stmt = select_pattern.format(num_locales)
 
-            # Do not set ncpus for knl.
-            if self.num_cpus_resource is not None and not self.knl:
+            if self.num_cpus_resource is not None
                 select_stmt += ':{0}={1}'.format(
                     self.num_cpus_resource, self.num_cpus)
 
