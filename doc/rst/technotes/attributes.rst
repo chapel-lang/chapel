@@ -1,0 +1,187 @@
+.. _readme-attributes:
+
+.. default-domain:: chpl
+
+
+====================
+Attributes in Chapel
+====================
+
+Overview
+--------
+
+Attributes are a mechanism to mark symbols with additional information. This
+information can then be used when processing the abstract syntax tree (AST)
+representation of the source code.
+
+Generally, an attribute in Chapel is specified above a symbol declaration with
+an ``@`` followed by an identifier that specifies the attribute name. A list of
+arguments can be enclosed in parentheses ``()``. Arguments can be named or
+specified in order, but mixing the use of named and unnamed arguments in the
+same attribute is not supported.
+
+Attributes in Chapel are currently used to indicate feature stability and to
+exclude features from documentation when using :ref:`chpldoc <readme-chpldoc>`.
+The syntax of attributes in Chapel is inspired by Rust's, and includes the
+ability to specify a tool name for an attribute.
+
+Here are examples of what an attribute might look like:
+
+.. code-block:: text
+
+    // example of an attribute without a tool name
+    @attributeName(arg1="value", arg2=1, arg3=1.0, arg4=true, arg5=1..10)
+    proc foo() { }
+
+    // example of an attribute with a tool name
+    @toolName.attributeName(arg1="value", arg2=1, arg3=true)
+    proc foo() { }
+
+
+Limitations
+~~~~~~~~~~~
+
+* Multiple attributes can be applied to the same symbol, however an individual
+  attribute can only be applied once to a symbol.
+* When both attributes and pragmas apply to a symbol, the attribute must be
+  placed `after` any pragmas.
+
+Top-level Attributes
+~~~~~~~~~~~~~~~~~~~~
+
+An attribute without any specified tool name is called `top-level`. Top-level
+attributes are assumed to be language features and are reserved for use by the
+Chapel development team. Any unrecognized attributes will be reported to the
+user as an error. Attribute arguments can be string, bool, int, real, or
+range literals.
+
+Tool names
+~~~~~~~~~~
+
+Tool names allow the Chapel compiler to distinguish between attributes that it
+should process and attributes that should be passed to other tools. By default,
+all tool names other than ``chpldoc`` will be reported to the user as a warning.
+
+Developers of other tools, such as formatters or linters, are free to design
+their own attributes so long as they prefix them with a tool name. It is
+recommended but not required that the tool name aligns with the tool binary
+name. As an example, see the :ref:`@chpldoc.nodoc attribute <attributes-tools>`,
+which is used by the ``chpldoc`` tool to suppress documentation for a symbol.
+The tool name ``chpldoc`` precedes the attribute name ``nodoc``, which takes no
+arguments.
+
+Tool names other than ``chpldoc`` are not recognized by the ``chpl`` compiler
+and it will issue a warning to the user when it encounters a name it doesn't
+recognize. This warning is on by default as a conservative approach to catching
+misspellings of tool names, like `@chplldoc`, or misplaced dots '.' in attribute
+names as in `@un.stable`. To suppress warnings for a particular tool name,
+compile with the flag ``--using-attribute-toolname=<toolname>``. To suppress
+warnings for all unknown tool names, compile with the flag
+``--no-warn-unknown-attribute-toolname``.
+
+The tool name ``chpldoc`` is recognized without additional flags because the
+tool is developed and distributed with the Chapel language. The list of known
+tool names may be expanded in the future. The tool name ``chpl`` is reserved
+for future use by the Chapel development team.
+
+
+Implemented Attributes
+----------------------
+
+Attributes are currently implemented in the following areas:
+
+* :ref:`Stability Attributes <attributes-stability>`
+* :ref:`Tooling Attributes <attributes-tools>`
+
+
+.. _attributes-stability:
+
+Stability Attributes
+~~~~~~~~~~~~~~~~~~~~
+
+.. note::
+
+    The API for stability attributes is still under development and may change
+    in a future release.
+
+
+.. code-block:: text
+
+    // ways to use @deprecated
+    @deprecated
+    proc foo() {}
+
+    @deprecated("foo is deprecated, please use bar")
+    proc foo() {}
+
+    @deprecated(since="1.30", notes="foo is deprecated", suggestion="use bar")
+    proc foo() {}
+
+    // ways to use @unstable
+    @unstable
+    proc foo() {}
+
+    @unstable("foo is unstable")
+    proc foo() {}
+
+    @unstable(category="experimental", issue="1234", reason="testing a new feature")
+    proc foo() {}
+
+    // ways to use @stable
+    @stable(since="1.30")
+    proc foo() {}
+
+    @stable("1.30")
+    proc bar() {}
+
+
+.. note::
+
+    The ``@stable`` attribute is currently not implemented. The compiler will
+    parse it, but it will not have any effect.
+
+
+.. _attributes-tools:
+
+Other Attributes
+~~~~~~~~~~~~~~~~
+
+The only other attribute currently implemented is ``@chpldoc.nodoc``, which is
+used to prevent a symbol from being included in documentation generated by
+:ref:`chpldoc <readme-chpldoc>`. This attribute replaces the previous method of
+using ``pragma "no doc"`` to suppress documentation for a symbol.
+When converting existing code, note that ``@chpldoc.nodoc`` must be placed `after`
+any remaining pragmas assigned to the symbol.
+
+.. code-block:: text
+
+    // prevent the entire module from being documented
+    @chpldoc.nodoc
+    module M { }
+
+    // valid placement of @chpldoc.nodoc
+    pragma "always RVF"
+    @chpldoc.nodoc
+    proc foo() { }
+
+    // invalid placement of @chpldoc.nodoc
+    @chpldoc.nodoc
+    pragma "always RVF"
+    proc foo() { }
+
+
+
+Future Work and Design Discussions
+----------------------------------
+
+Planned work for attributes includes:
+
+* deprecate and replace the use of ``pragma "no doc"`` with ``@chpldoc.nodoc``
+  as the primary means to omit documentation for a symbol
+
+* convert ``pragma "always RVF"`` into an attribute, possibly ``@chpl.alwaysRvf``
+
+* allow any order of pragmas and attributes
+
+* lock in the argument names and types for stability attributes and use them
+  to improve the compiler's messages regarding symbol stability

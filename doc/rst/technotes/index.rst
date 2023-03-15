@@ -23,7 +23,7 @@ Base Language Features
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
-
+   Attributes <attributes>
 
 Initializers and Generic Programming
 ------------------------------------
