@@ -156,6 +156,19 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   }
   return numCores / localesPerNode;
 }
+
+
+static chpl_bool getSlurmDebug(chpl_bool batch) {
+  chpl_bool result = false;
+  const char *varName = (batch) ? "SBATCH_DEBUG" : "SLURM_DEBUG";
+  char *debugString = getenv(varName);
+  if (debugString) {
+    result = (atoi(debugString) != 0) ? true : false;
+  }
+  return result;
+}
+
+
 #define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and
 // create any files needed for the launch like the batch script
@@ -297,8 +310,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the job name
     fprintf(slurmFile, "#SBATCH --job-name=%s\n", jobName);
 
-    // suppress informational messages, will still display errors
-    fprintf(slurmFile, "#SBATCH --quiet\n");
+    if (!getSlurmDebug(/*batch=*/true)) {
+      // suppress informational messages, will still display errors
+      fprintf(slurmFile, "#SBATCH --quiet\n");
+    }
 
     int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
 
@@ -421,8 +436,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // set the job name
     len += snprintf(iCom+len, sizeof(iCom)-len, "--job-name=%s ", jobName);
-    // suppress informational messages, will still display errors
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+    if (!getSlurmDebug(/*batch=*/false)) {
+      // suppress informational messages, will still display errors
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
+    }
 
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
