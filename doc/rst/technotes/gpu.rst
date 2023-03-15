@@ -113,35 +113,11 @@ Examples with multiple GPUs:
 * `onAllGpusOnAllLocales <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiLocale/onAllGpusOnAllLocales.chpl>`_ -- simple example using all GPUs and locales
 * `copyToLocaleThenToGpu <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiLocale/copyToLocaleThenToGpu.chpl>`_ -- stream-like example (with data initialized on Locale 0 then transferred to other locales and GPUs)
 
-Setup and Compilation
----------------------
+Setup
+-----
 
-To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. 
-
-Chapel's build system will automatically try and deduce what type of GPU you
-have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
-If the type of GPU is not detected you may set ``CHPL_GPU_CODEGEN`` manually to
-either ``cuda`` (for NVIDIA GPUs) or ``rocm`` (for AMD GPUs). If the relevant
-runtime path is not automatically detected (or you would like to use a
-different installation) you may set ``CHPL_CUDA_PATH`` and/or
-``CHPL_ROCM_PATH``.
-
-``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
-architecture to compile for.  The default value is ``sm_60`` for
-``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
-also use the ``--gpu-arch`` compliler flag to set GPU architecture.
-
-To compile a program simply execute ``chpl`` as normal.
-
-Requirements and Limitations
-----------------------------
-
-Because of the early nature of the GPU support project there are a number of
-limitations. We provide a (non exhaustive) list of these limitations in this
-section; many of them will be addressed in upcoming editions.
-
-* We currently support NVIDIA and AMD GPUs
+Requirements
+~~~~~~~~~~~~
 
 * ``LLVM`` must be used as Chapel's backend compiler (i.e.
   ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
@@ -157,33 +133,26 @@ section; many of them will be addressed in upcoming editions.
 
 * ``CHPL_TASKS=qthreads`` is required for GPU support.
 
-* PGAS style communication is not available within GPU kernels; that is:
-  reading from or writing to a variable that is stored on a different locale
-  from inside a GPU eligible loop (when executing on a GPU) is not supported.
+* ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available.
 
-* The use of most ``extern`` functions within a GPU eligible loop is not supported
-  (a limited set of functions used by Chapel's runtime library are supported). 
+GPU-Related Environment Variables
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-* Runtime checks such as bounds checks and nil-dereference checks are
-  automatically disabled for CHPL_LOCALE_MODEL=gpu. i.e., ``--no-checks`` is
-  implied when compiling.
+To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
+before building Chapel.
 
-* For AMD GPUs:
+Chapel's build system will automatically try and deduce what type of GPU you
+have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
+If the type of GPU is not detected you may set ``CHPL_GPU_CODEGEN`` manually to
+either ``cuda`` (for NVIDIA GPUs) or ``rocm`` (for AMD GPUs). If the relevant
+runtime path is not automatically detected (or you would like to use a
+different installation) you may set ``CHPL_CUDA_PATH`` and/or
+``CHPL_ROCM_PATH``.
 
-    * Can only be used with local builds (i.e., CHPL_COMM=none)
-
-    * Certain 64-bit math functions are unsupported. To see what does
-      and doesn't work see `this test
-      <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
-      and note which operations are executed when `excludeForRocm == true`.
-
-* Distributed arrays cannot be used within GPU kernels.
-
-* Associative arrays cannot be used on GPU sublocales with
-  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
-
-* If using CUDA 10, single thread per locale can be used. i.e., you have to set
-  ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
+``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
+architecture to compile for.  The default value is ``sm_60`` for
+``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
+also use the ``--gpu-arch`` compliler flag to set GPU architecture.
 
 GPU Support Features
 --------------------
@@ -295,3 +264,39 @@ can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
 
+Known Limitations
+-----------------
+
+We are aware of the following limitations and plan to work on them among other
+improvements in the future.
+
+* Intel GPUs are not supported, yet.
+
+* For AMD GPUs:
+
+    * Can only be used with local builds (i.e., CHPL_COMM=none)
+
+    * Certain 64-bit math functions are unsupported. To see what does
+      and doesn't work see `this test
+      <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
+      and note which operations are executed when `excludeForRocm == true`.
+
+* Distributed arrays cannot be used within GPU kernels.
+
+* PGAS style communication is not available within GPU kernels; that is:
+  reading from or writing to a variable that is stored on a different locale
+  from inside a GPU eligible loop (when executing on a GPU) is not supported.
+
+* Runtime checks such as bounds checks and nil-dereference checks are
+  automatically disabled for CHPL_LOCALE_MODEL=gpu. i.e., ``--no-checks`` is
+  implied when compiling.
+
+* The use of most ``extern`` functions within a GPU eligible loop is not
+  supported (a limited set of functions used by Chapel's runtime library are
+  supported).
+
+* Associative arrays cannot be used on GPU sublocales with
+  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
+
+* If using CUDA 10, single thread per locale can be used. i.e., you have to set
+  ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
