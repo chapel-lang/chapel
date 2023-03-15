@@ -44,6 +44,8 @@ Feature Improvements
   (e.g., `proc foo(r: range(?it, ?bd, ?sb)) { ... }` is now supported)
 * improved support for loops over unbounded ranges/domains of 'enum' or 'bool'
   (e.g., `for i in false.. by -1` will now yield `true`, `false`)
+* enabled classes to have methods that share the class's name
+  (e.g., `class C { proc C() { ... } }` is now legal)
 
 Namespace Changes
 -----------------
@@ -52,9 +54,21 @@ Changes / Feature Improvements in Libraries
 -------------------------------------------
 * added a new 2-argument `.find()` method on arrays  
   (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
+* added a `permissions` argument to `FileSystem.copy()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.copy)
+* added a `metadata` argument to `FileSystem.copyTree()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.copyTree)
+* added explicit `int` type constraints to date/time/datetime initializers  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.date.init,  
+   https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.time.init, and  
+   https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.datetime.init)
 
 Name Changes in Libraries
 -------------------------
+* renamed the 'Barriers' module to 'Collectives'  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html)
+* renamed the `Barrier` type to `barrier`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html#Collectives.barrier)
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
@@ -85,12 +99,26 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
 * deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
+* deprecated the `TimeUnits` enum and routines that made use of it
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.TimeUnits)
+* deprecated `FileSystem.copyFile()` in favor of `FileSystem.copy()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.copyFile)
+* deprecated the `FileSystem.sameFile()` overload accepting `file` arguments
+  (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.sameFile)
+* deprecated the option to choose between barrier types for `barrier`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html#Collectives.BarrierType)
 * deprecated `moveInitializeArrayElements()` from the 'MemMove' module  
   (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveInitializeArrayElements)
 * added unstable function `moveArrayElements()` to the 'MemMove' module  
   (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveArrayElements)
+* marked 'Time' routines that wrap C functions as unstable  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.date.ctime)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
+* removed the deprecated 'Spawn' module
+* removed the deprecated pipe style constants from the 'Subprocess' module
+* removed deprecated POSIX signal name constants from the 'Subprocess' module
+* removed the deprecated `subprocess.send_signal()` method
 * removed the integer-returning version of `bigint.invert()`
 
 Standard Library Modules
@@ -180,10 +208,11 @@ GPU Computing
     (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.syncThreads)
   - added `setBlockSize()` to configure the block size of GPU kernels  
     (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.setBlockSize)
-
+* enabled calling routines that access `nil` from within GPU kernels
 
 Compiler Improvements
 ---------------------
+* improved parsing of first-class function types that return arrays
 * added a warning for `[lo..hi]` literals to reduce the potential for confusion
 
 Compiler Flags
@@ -209,6 +238,7 @@ Error Messages / Semantic Checks
 * improved error messages when applying multiple class memory management styles
 * improved error messages for invalid uses of `private`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
+* improved an error message for indexing into a `map` of non-nilable values
 * rephrased generic class management errors to reflect the current behavior
 
 Bug Fixes
@@ -226,10 +256,11 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
-* fixed a divide-by-zero error for reductions over a large list
+* fixed a bug with how errors are handled in GPU codegen
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a divide-by-zero error for reductions over a large list
 
 Bug Fixes for Tools
 -------------------
