@@ -858,6 +858,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     // For an input query, compute it once per revision, ignoring
     // dependencies (e.g. if it is reading a file, we need to check that the
     // file has not changed.)
+    auto marker = markRecomputing(true);
     resultEntry->recompute(this);
     CHPL_ASSERT(resultEntry->lastChecked == this->currentRevisionNumber);
     return;
@@ -893,6 +894,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   }
 
   if (useSaved == false) {
+    auto marker = markRecomputing(true);
     resultEntry->recompute(this);
     CHPL_ASSERT(resultEntry->lastChecked == this->currentRevisionNumber);
     if (enableDebugTrace) {
@@ -1043,7 +1045,10 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   //
   // We haven't pushed the query beginning yet; on already popped it.
   // So, the parent query is at queryDeps.back().
-  if (queryStack.size() > 0) {
+  if (isRecomputing) {
+    // Do nothing; do not modify dependency graph if we're just checking
+    // canUsedSavedResult or recomputeIfNeeded.
+  } else if (queryStack.size() > 0) {
     auto parentQuery = queryStack.back();
     CHPL_ASSERT(parentQuery != resultEntry); // should be parent query
     bool errorCollectionRoot = !errorCollectionStack.empty() &&

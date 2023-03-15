@@ -172,6 +172,46 @@ class Context {
     void storeError(owned<ErrorBase> toStore) const;
   };
 
+  class RecomputeMarker {
+   friend class Context;
+
+   private:
+    Context* context_;
+    bool oldValue_;
+
+    RecomputeMarker(Context* context, bool isRecomputing) :
+      context_(context), oldValue_(isRecomputing) {
+        std::swap(context_->isRecomputing, oldValue_);
+    }
+
+   public:
+    RecomputeMarker(RecomputeMarker&& other) {
+      *this = std::move(other);
+    }
+
+    RecomputeMarker& operator=(RecomputeMarker&& other) {
+      this->context_ = other.context_;
+      this->oldValue_ = other.oldValue_;
+      other.context_ = nullptr;
+      return *this;
+    }
+
+    void restore() {
+      if (context_) {
+        std::swap(context_->isRecomputing, oldValue_);
+      }
+      context_ = nullptr;
+    }
+
+    ~RecomputeMarker() {
+      restore();
+    }
+  };
+
+  RecomputeMarker markRecomputing(bool isRecomputing) {
+    return RecomputeMarker(this, isRecomputing);
+  }
+
  private:
 
   // The implementation of the default error handler.
@@ -241,6 +281,8 @@ class Context {
   int numQueriesRunThisRevision_ = 0;
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
+
+  bool isRecomputing = false;
 
   // If this vector is non-empty, the top element is a collection into
   // which to store emitted errors, instead of reporting them to the
