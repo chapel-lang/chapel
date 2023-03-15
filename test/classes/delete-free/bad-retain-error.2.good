@@ -1,2 +1,2 @@
 bad-retain-error.chpl:13: In function 'main':
-bad-retain-error.chpl:15: error: cannot adopt 'unmanaged B' (expected 'unmanaged A')
+bad-retain-error.chpl:19: error: cannot assign to 'owned A' from 'owned B'
