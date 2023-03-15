@@ -1,0 +1,8 @@
+assign-op-nil:8: warning: owned A
+assign-op-nil:15: warning: owned A?
+assign-op-nil.chpl:9: error: Illegal use of dead value
+assign-op-nil.chpl:7: note: 'owned_nonil' is dead due to ownership transfer here
+assign-op-nil.chpl:16: error: applying postfix-! to nil
+assign-op-nil.chpl:14: note: 'owned_nil' is set to nil here
+assign-op-nil.chpl:8: error: mention of non-nilable variable after ownership is transferred out of it
+assign-op-nil.chpl:7: note: ownership transfer occurred here
