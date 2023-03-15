@@ -604,23 +604,15 @@ def runSkipIf(skipifName):
 # Translate some known failures into more easily understood forms
 def translateOutput(output_in):
     xlates = (('slurmstepd: Munge decode failed: Expired credential',
-               'Jira 18 -- Expired slurm credential for'),
+               'private issue #4552 -- Expired slurm credential for'),
               ('output file from job .* does not exist',
                'private issue #906 -- Missing output file for'),
-              ('aprun: Unexpected close of the apsys control connection',
-               'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
                'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
               ('qstat: cannot connect to server sdb',
                'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
-               'Jira 260 -- Failed to recv data from background qsub for'),
-              (r'\d+ Killed /var/spool/PBS/mom_priv/jobs',
-               'Jira 324 -- PBS job killed for'),
-              ('Fatal MPP reservation error on confirm',
-               'Jira 329 -- Fatal MPP reservation error for'),
-              ('Fatal MPP reservation error on create',
-               'Jira 329 -- Fatal MPP reservation error for'),
+               'private issue #4553 -- Failed to recv data from background qsub for'),
               ('Text file busy',
                'private issue #474 -- Text file busy for'),
               ('Socket timed out on send/recv operation',
@@ -668,9 +660,6 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     """Identify common errors that occur in runtime or compiler warnings.
     Return message to emit when error found."""
 
-    # If the output contains messages consistent with JIRA 154, add a
-    # hint to the error summary and force a text base diff since
-    # sometimes the output contains a null character
     extra_msg = ''
     err_strings = ['got exn while reading exit code: connection closed',
                    'slave got an unknown command on coord socket:',
@@ -684,14 +673,8 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
 
     for s in err_strings:
         if re.search(s, output, re.IGNORECASE) != None:
-            extra_msg = '(possible JIRA 154) '
+            extra_msg = '(private issue #634) '
             DiffBinaryFiles(execgoodfile, execlog)
-            break
-
-    err_strings = ['Master got an xSocket: error in sendAll']
-    for s in err_strings:
-        if re.search(s, output, re.IGNORECASE) != None:
-            extra_msg = '(possible JIRA 274) '
             break
 
     err_strings = ['Clock skew detected']
