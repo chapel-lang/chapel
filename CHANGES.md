@@ -19,7 +19,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Syntactic / Naming Changes
 --------------------------
-* unified `chpl`'s parsing of array types/values/queries, square bracket loops
+* unified `chpl`'s parsing of array types/values and square bracket loops
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -38,6 +38,8 @@ New Features
 
 Feature Improvements
 --------------------
+* enabled the ability to query type/param values within formal types  
+  (e.g., `proc foo(r: range(?it, ?bd, ?sb)) { ... }` is now supported)
 * improved support for loops over unbounded ranges/domains of 'enum' or 'bool'
   (e.g., `for i in false.. by -1` will now yield `true`, `false`)
 
@@ -143,7 +145,8 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
-* enabled overriding the max # of endpoints reported by the 'ofi' provider
+* enabled overriding the max # of endpoints reported by the 'ofi' provider  
+  (see https://chapel-lang.org/docs/1.30/platforms/libfabric.html#bound-endpoints)
 
 Launchers
 ---------
