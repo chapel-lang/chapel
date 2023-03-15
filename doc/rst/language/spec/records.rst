@@ -185,10 +185,11 @@ types directly contain the primitive values.  Unlike class variables, the
 field data of one record variable is not shared with data of another
 record variable.
 
-Note that for records with fields that are arrays or other complex types, the
-storage for the record variable will contain the `descriptor`` for the data
-type, but not the data itself. The data will be managed by the type descriptor
-according to the type definition.
+Note that the storage for a record's field does not necessarily directly contain
+all of the data stored in a type. In particular, a record with a field of array
+type actually stores a kind of array descriptor that points to memory for the
+elements elsewhere (see
+:ref:`Runtime Representation of Array Values <Array_Runtime_Representation>`).
 
 Record storage is reclaimed automatically. See :ref:`Variable_Lifetimes`
 for details on when a record becomes dead.
