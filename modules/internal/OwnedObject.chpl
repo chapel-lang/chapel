@@ -353,8 +353,8 @@ module OwnedObject {
     type lhs_type = lhs.chpl_t;
 
     if !isCoercible(rhs_type, lhs_type) then
-        compilerError("cannot assign to '" + lhs_type:string + "' " +
-                      "(expected '" + _to_unmanaged(rhs_type):string + "')");
+        compilerError("cannot assign to '" + lhs.type:string + "' " +
+                      "from '" + rhs.type:string + "'");
 
     var rhs_ptr = owned.release(rhs);
     if lhs.chpl_p != nil then delete owned.release(lhs);
