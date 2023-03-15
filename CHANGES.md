@@ -19,6 +19,8 @@ Semantic Changes / Changes to the Chapel Language
 
 Syntactic / Naming Changes
 --------------------------
+* renamed the new `weakPointer(C)` type to `weak(C)`  
+  (see https://chapel-lang.org/docs/main/builtins/WeakPointer.html#WeakPointer.weak)
 * unified `chpl`'s parsing of array types/values and square bracket loops
 
 Deprecated / Unstable / Removed Language Features
@@ -53,6 +55,13 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
+* renamed `IllegalArgumentError`'s initializer formal from `info` to `msg`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.IllegalArgumentError)
+* unified formatting of 'Errors' varargs procedure signatures  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.compilerError)
 * renamed `c_sizeof()`'s formal from `x` to `t` in the 'CTypes' module  
   (see https://chapel-lang.org/docs/1.30/modules/standard/CTypes.html#CTypes.c_sizeof)
 * changed GPU-related features to use `Gpu` over `GPU` in identifier names
@@ -62,9 +71,33 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated the old `.find()` method on arrays to update its return type  
   (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
+* deprecated `file.lines()` in favor of `file.reader().lines()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.lines)
+* deprecated `readBinary()` on arrays to update its return type to `int`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ReadBinaryArrayReturnInt)
+* deprecated the `fileWriter.writeBytes()` version that took generic arguments  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
+* deprecated `advancePastByte()` in favor of the new `advanceThrough()` method  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
+* marked `TaskErrors.first()` unstable, expecting a potential name change  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
+* removed the integer-returning version of `bigint.invert()`
 
 Standard Library Modules
 ------------------------
+* added `.write[String|Bytes]()` methods to write out `string`/`bytes` values  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeString  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
+* added `.read[To|Through]()` methods to read up to/through a given separator  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
+   https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readTo,  
+   https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readThrough,  
+   and https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readThrough)
+* added `.advance[To|Through]()` methods to advance to/through a separator  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceTo  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
 * Added new GPU-oriented utility routines
   (see 'GPU Computing' below)
 * Updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
@@ -98,6 +131,11 @@ Memory Improvements
 
 Documentation
 -------------
+* merged the `sync` & `single` API docs into the language specification  
+  (see https://chapel-lang.org/docs/1.30/language/spec/task-parallelism-and-synchronization.html#predefined-single-and-sync-methods)
+* moved the `weak(C)` documentation into the standard modules section  
+  (see https://chapel-lang.org/docs/1.30/builtins/WeakPointer.html)
+* removed the now-empty "Built-in Types and Functions" section from the docs
 * added a new subsection to the spec defining procedure/iterator bodies
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
 * improved the spec's description of return intents' effects on `return`  
@@ -170,6 +208,7 @@ Bug Fixes
 * fixed a compiler hang when reporting an error with split initialization
 * fixed a problem where passing `--target-cpu` would cause a core dump
 * fixed an internal error when initializing a list from an iterator
+* fixed support for casts from `weak(C)` to non-nilable `shared` classes
 
 Bug Fixes for Build Issues
 --------------------------
@@ -266,6 +305,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added a `--respect-notests` flag to the `start_test` script
 * enabled `start_test` to infer `.good` filenames when using `COMPOPTS` files
 * adjusted the `smokeTest` script to print out lines with trailing whitespace
 
