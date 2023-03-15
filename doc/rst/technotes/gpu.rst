@@ -136,10 +136,9 @@ this by changing  ``CHPL_GPU_ARCH`` or by passing it to ``chpl`` via
 We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
 if using CUDA 10).
 
-To compile a program simply execute ``chpl`` as normal.  To ensure that
-a loop is executing on the GPU you can use the operations in 
-the :mod:`GPUDiagnostics` module or use the :proc:`~GPU.assertOnGpu()`
-proc from the  :mod:`GPU` module.
+To compile a program simply execute ``chpl`` as normal.  To ensure that a loop
+is executing on the GPU you can use the operations in the :mod:`GpuDiagnostics`
+module or use the :proc:`~GPU.assertOnGpu()` proc from the  :mod:`GPU` module.
 
 Requirements and Limitations
 ----------------------------
