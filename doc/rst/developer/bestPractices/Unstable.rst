@@ -12,7 +12,7 @@ Unstable features have no explicit timeline for stabilization.
 
 There are two ways to mark a feature as unstable:
 
-1. Use the ``@unstable`` keyword and optionally a string literal message.  This
+1. Use the ``@unstable`` attribute and optionally a string literal message.  This
    strategy is best for symbols, as it can be applied to any symbol in a uniform
    way.  Look in the test/unstable and test/unstable-keyword directories for
    many examples.
@@ -33,7 +33,7 @@ There are two ways to mark a feature as unstable:
 
 2. Add a check against ``chpl__warnUnstable`` and use ``compilerWarning()`` to
    generate the message.  This strategy is best for features that can't be
-   represented by a symbol with the ``@unstable`` keyword.
+   represented by a symbol with the ``@unstable`` attribute.
 
 All unstable features should have a test added to ``test/unstable`` to:
 
