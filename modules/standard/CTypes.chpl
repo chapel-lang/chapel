@@ -535,7 +535,11 @@ module CTypes {
   pragma "no doc"
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
-  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  pragma "no doc"
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc c_pointer_return_const(const ref x:?t):c_ptrConst(t);
   pragma "no doc"
   pragma "fn synchronization free"
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
@@ -590,29 +594,21 @@ module CTypes {
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
-    return c_ptrTo_internal(x);
+    if isDomainType(t) then
+      compilerError("c_ptrTo domain type not supported", 2);
+    // Other cases should be avoided, e.g. sync vars
+    return c_pointer_return(x);
   }
+
   /*
    Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
    modification of the pointee.
    */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
-    return c_ptrTo_internal(x);
-  }
-
-  /*
-   Internal implementation for both const and non-const c_ptrTo.
-
-   Uses const ref x as the "lowest common denominator" that can be called
-   by both, and similarly returns a non-const c_ptr which can be coerced into
-   const.
-  */
-  pragma "no doc"
-  inline proc c_ptrTo_internal(const ref x:?t):c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_ptrTo domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
-    return c_pointer_return(x);
+    return c_pointer_return_const(x);
   }
 
   pragma "no doc"
