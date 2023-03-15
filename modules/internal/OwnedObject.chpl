@@ -92,7 +92,7 @@ module OwnedObject {
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
         compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
-      this.chpl_p = src.release();
+      this.chpl_p = owned.release(src);
       this.complete();
 
       if isNonNilableClass(this.type) && isNilableClass(src) then
@@ -139,7 +139,7 @@ module OwnedObject {
     pragma "no doc"
     proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
-      this.chpl_p = src.release();
+      this.chpl_p = owned.release(src);
     }
 
 
@@ -150,24 +150,6 @@ module OwnedObject {
       compilerError("cannot adopt a ", source.type:string);
     }
 
-
-    /*
-      Creates a new `owned` class reference, taking over the ownership
-      of the argument. The result has the same type as the argument.
-      If the argument is non-nilable, it must be recognized by the compiler
-      as an expiring value.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`owned.create`
-         and :proc:`owned.retain`. However, `adopt` is not as widely used as
-         `create` and `retain` yet, so there may be some bugs we have not
-         found yet. If you discover any bugs with `adopt`, please report them
-         to us and fall back on `create` and `retain`.
-    */
-    inline proc type adopt(pragma "nil from arg" in obj : owned) {
-      return obj;
-    }
-
     /*
       Starts managing the argument class instance `obj`
       using the `owned` memory management strategy.
@@ -175,13 +157,6 @@ module OwnedObject {
 
       It is an error to directly delete the class instance
       after passing it to `owned.adopt()`.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`owned.create`
-         and :proc:`owned.retain`. However, `adopt` is not as widely used as
-         `create` and `retain` yet, so there may be some bugs we have not
-         found yet. If you discover any bugs with `adopt`, please report them
-         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
       // 'result' may have a non-nilable type
@@ -190,27 +165,43 @@ module OwnedObject {
       return result;
     }
 
+    pragma "no doc"
+    proc type release(source) {
+      compilerError("cannot adopt a ", source.type:string);
+    }
+
     /*
       Empty `obj` so that it manages `nil` and
       return the instance previously managed by this owned object.
 
       If the argument is `nil` it returns `nil`.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`owned.clear`.
-         However, `release` is not as widely used as `clear` yet, so there may
-         be some bugs we have not found yet. If you discover any bugs with
-         `release`, please report them to us and fall back on `clear`.
     */
-    inline proc type release(pragma "nil from arg" ref obj: owned) {
+    inline proc type release(
+      pragma "leaves arg nil"
+      ref obj: owned) where _to_nilable(obj.chpl_t) == obj.chpl_t {
+      // obj ptr is nilable
+      if obj == nil || obj.chpl_p == nil then return nil;
+
       var oldPtr = obj.chpl_p;
       type t = obj.chpl_t;
-
       obj.chpl_p = nil;
+      return _to_unmanaged(oldPtr) : _to_nilable(_to_unmanaged(t));
+    }
 
-      return if _to_nilable(t) == t
-                then _to_unmanaged(oldPtr)
-                else _to_unmanaged(oldPtr!);
+
+    /*
+      Empty `obj` so that it manages `nil` and
+      return the instance previously managed by this owned object.
+
+      If the argument is `nil` it returns `nil`.
+    */
+    inline proc type release(
+      pragma "leaves arg nil"
+      ref obj: owned) where _to_nilable(obj.chpl_t) != obj.chpl_t {
+      var oldPtr = obj.chpl_p;
+      type t = obj.chpl_t;
+      obj.chpl_p = nil;
+      return _to_unmanaged(oldPtr!) : _to_nonnil(_to_unmanaged(t));
     }
 
 
@@ -225,6 +216,7 @@ module OwnedObject {
        of the argument. The result has the same type as the argument.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
+    @deprecated(notes="owned.create from an owned is deprecated - please use assignment instead")
     inline proc type create(pragma "nil from arg" in take: owned) {
       return take;
     }
@@ -236,6 +228,7 @@ module OwnedObject {
        It is an error to directly delete the class instance
        after passing it to `owned.create()`. */
     pragma "unsafe"
+    @deprecated(notes="owned.create from an unmanaged is deprecated - please use :proc:`owned.adopt` instead")
     inline proc type create(pragma "nil from arg" p : unmanaged) {
       // 'result' may have a non-nilable type
       var result: (p.type : owned);
@@ -259,6 +252,7 @@ module OwnedObject {
        Deletes the previously managed object, if any.
      */
     pragma "leaves this nil"
+    @deprecated(notes="owned.clear is deprecated - please assign owned object to `nil` instead")
     proc ref clear() {
       if chpl_p != nil {
         delete _to_unmanaged(chpl_p);
@@ -272,6 +266,7 @@ module OwnedObject {
        If this record was already managing a non-nil instance,
        that instance will be deleted.
      */
+    @deprecated(notes="owned.retain is deprecated - please use :proc:`owned.adopt` instead")
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
       if !isCoercible(newPtr.type, chpl_t) then
         compilerError("cannot retain '" + newPtr.type:string + "' " +
@@ -289,6 +284,7 @@ module OwnedObject {
      */
     pragma "leaves this nil"
     pragma "nil from this"
+    @deprecated(notes="owned.release is deprecated - please use the :proc:`owned.release` type method instead")
     proc ref release() {
       var oldPtr = chpl_p;
       chpl_p = nil;
@@ -353,14 +349,28 @@ module OwnedObject {
       }
     }
 
-    lhs.retain(rhs.release());
+    type rhs_type = rhs.chpl_t;
+    type lhs_type = lhs.chpl_t;
+
+    if !isCoercible(rhs_type, lhs_type) then
+        compilerError("cannot assign to '" + lhs_type:string + "' " +
+                      "(expected '" + _to_unmanaged(rhs_type):string + "')");
+
+    var rhs_ptr = owned.release(rhs);
+    if lhs.chpl_p != nil then delete owned.release(lhs);
+
+    // if the lhs is not nilable, make sure rhs_ptr (which is a nilable ptr) is non nil
+    if _to_nilable(lhs_type) != lhs_type
+    then lhs.chpl_p = rhs_ptr : _to_nonnil(rhs_type);
+    else lhs.chpl_p = rhs_ptr;
   }
 
   pragma "no doc"
-  operator =(ref lhs:_owned, rhs:_nilType)
-    where ! isNonNilableClass(lhs)
+  operator =(
+    pragma "leaves arg nil"
+    ref lhs:_owned, rhs:_nilType)
   {
-    lhs.clear();
+    delete owned.release(lhs);
   }
   /*
     Swap two :record:`owned` objects.
@@ -422,7 +432,7 @@ module OwnedObject {
       if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
-        this.clear();
+        this = nil;
     }
   }
 
