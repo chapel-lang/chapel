@@ -377,6 +377,14 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
+  inline operator :(x:c_ptrConst, type t:c_void_ptr) {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline operator :(x:c_void_ptr, type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
   inline operator c_void_ptr.:(x:c_void_ptr, type t:string) {
     try! {
       return createStringWithOwnedBuffer(__primitive("ref to string", x));
