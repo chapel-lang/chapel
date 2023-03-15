@@ -107,10 +107,8 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.sameFile)
 * deprecated the option to choose between barrier types for `barrier`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html#Collectives.BarrierType)
-* deprecated `moveInitializeArrayElements()` from the 'MemMove' module  
+* deprecated `moveInitializeArrayElements()` for new `moveArrayElements()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveInitializeArrayElements)
-* added unstable function `moveArrayElements()` to the 'MemMove' module  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveArrayElements)
 * marked 'Time' routines that wrap C functions as unstable  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.date.ctime)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
