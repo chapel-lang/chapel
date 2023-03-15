@@ -14,16 +14,10 @@ The current implementation will generate GPU kernels for certain ``forall`` and
 ``foreach`` loops and launch these onto a GPU when the current locale (e.g.
 ``here``) is assigned to a special (sub)locale representing a GPU.
 
-For more information about what loops are eligible for GPU execution see the
-`Overview`_ section.  For more information about what is supported see the
-requirements and `Requirements and Limitations`_ section.  To see an example
-program written in Chapel that will execute on a GPU see the code listing in
-the `Examples`_ section.  For more information about specific features related
-to GPU support see the subsections under `GPU Support Features`_.  Additional
-information about GPU Support can be found in the "Ongoing Efforts" slide decks
-of our `release notes <https://chapel-lang.org/releaseNotes.html>`_; however,
-be aware that information presented in release notes for prior releases may be
-out-of-date.
+Additional information about GPU Support can be found in the "Ongoing Efforts"
+slide decks of our `release notes <https://chapel-lang.org/releaseNotes.html>`_;
+however, be aware that information presented in release notes for prior releases
+may be out-of-date.
 
 .. contents::
 
@@ -187,12 +181,12 @@ an error if one of the aforementioned requirements is not met.  This check
 might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
 depending on the presence of control flow.
 
-Utilities in :mod:`Memory.Diagnostics` module can be used to monitor GPU memory
-allocations and detect memory leaks. For example,
-:proc:`Memory.Diagnostics.startVerboseMem()` and
-:proc:`Memory.Diagnostics.stopVerboseMem()` can be used to enable and disable
-output from memory allocations and deallocations. GPU-based operations will be
-marked in the generated output.
+Utilities in :mod:`Memory.Diagnostics <Diagnostics>` module can be used to
+monitor GPU memory allocations and detect memory leaks. For example,
+:proc:`startVerboseMem() <Diagnostics.startVerboseMem()>` and
+:proc:`stopVerboseMem() <Diagnostics.stopVerboseMem()>` can be used to enable
+and disable output from memory allocations and deallocations. GPU-based
+operations will be marked in the generated output.
 
 Multi-Locale Support
 ~~~~~~~~~~~~~~~~~~~~
@@ -251,7 +245,7 @@ Debugger and Profiler Support for NVIDIA
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 As of Chapel 1.30.0 ``cuda-gdb`` and `NVIDIA NSight Compute
-<https://developer.nvidia.com/nsight-compute>` can be used to debug and profile
+<https://developer.nvidia.com/nsight-compute>`_ can be used to debug and profile
 GPU kernels. We have limited experience with both of these tools.  However,
 compiling with ``-g`` and running the application in ``cuda-gdb`` help uncover
 segmentation faults coming from GPU kernels.
