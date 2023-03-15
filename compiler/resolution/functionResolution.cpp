@@ -10080,12 +10080,6 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
     gdbShouldBreakHere();
   }
 
-  if (fcfs::useLegacyBehavior()) {
-    USR_FATAL(def, "syntax for constructing procedure types is not "
-                   "supported in legacy mode");
-    return def;
-  }
-
   bool isBodyResolved = fcfs::checkAndResolveSignature(fn, def);
 
   // Signature only, so no body to resolve.
