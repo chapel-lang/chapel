@@ -97,8 +97,9 @@ def get_runtime_link_args(runtime_subdir):
             system.append("-lcuda")
             system.append("-lcudart")
         elif gpu_type == "rocm":
-            system.append("-L" + os.path.join(sdk_path, "hip", "lib"))
-            system.append("-L" + os.path.join(sdk_path, "hsa", "lib"))
+            lib_path = os.path.join(sdk_path, "lib")
+            system.append("-L" + lib_path)
+            system.append("-Wl,-rpath," + lib_path)
             system.append("-lamdhip64")
             system.append("-lhsa-runtime64")
 
