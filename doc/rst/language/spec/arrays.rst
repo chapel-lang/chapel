@@ -35,11 +35,16 @@ by the following syntax:
 .. code-block:: syntax
 
    array-type:
-     [ domain-expression ] type-expression
+     [ domain-expression[OPT] ] type-expression[OPT]
 
-The ``domain-expression`` must specify a domain that the array can be
+The ``domain-expression`` may specify a domain that the array can be
 declared over. If the ``domain-expression`` is a rectangular domain
 literal, the curly braces around the literal may be omitted.
+
+The ``domain-expression`` and ``type-expression`` are optional, but
+can currently only be omitted when the array type is specified as
+one of: a formal type expression, a procedure return type, or an
+iterator yield type.
 
    *Example (decls.chpl)*.
 

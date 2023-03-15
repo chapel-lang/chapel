@@ -28,6 +28,7 @@ The syntax of a type is as follows:
      if-expression
      unary-expression
      binary-expression
+     expression
 
 Many expressions are syntactically allowed as a type; however not all
 expressions produce a type. For example, a call to a function is
