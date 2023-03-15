@@ -193,23 +193,21 @@ A = 0.0;
 maybeCopy(A, forall i in 1..3 do 2*i + 0.5, true);
 writeln(A);
 
-// scalar promotion
-A = [1.2, 3.4, 5.6];
+// evaluating a call only once in multi-argument promotion
+
 writeln();
-proc negateAndReturn(x: real) {
-  return -x;
+proc computeMask() {
+  writeln("computing mask...");
+  return true;
 }
 
-A = negateAndReturn(A);
-writeln(A);
-negate(A);
-forall a in A do
-  a = negateAndReturn(a);
+A = 0.0;
+B = [1.2, 3.4, 5.6];
+maybeCopy(A, B, computeMask());
 writeln(A, "\n");
 
-A = negateAndReturn(7.8);
-writeln(A);
-var tmp = negateAndReturn(7.8);
-forall a in A do
-  a = tmp;
+A = 0.0;
+var tmp = computeMask();
+forall (a, b) in zip(A, B) do
+  maybeCopy(a, b, tmp);
 writeln(A);
