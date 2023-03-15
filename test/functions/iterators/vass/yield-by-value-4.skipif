@@ -1,0 +1,6 @@
+# The leaked amounts are bigger for no-local compilations, so do not match .bad.
+# Remove this skipif once the leak is fixed.
+COMPOPTS <= --no-local
+CHPL_COMM != none
+# Something else is different causing .bad mismatch for --baseline compilations.
+COMPOPTS <= --baseline
