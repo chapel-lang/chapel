@@ -14,7 +14,7 @@ proc main(){
     var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
     var triadDB = new ResultDatabase("Triad Time", "sec");
     var kernelDB = new ResultDatabase("Kernel Time", "sec");
-    startGpuDiagnostics();
+    if !perftest then startGpuDiagnostics();
     on here.gpus[0] {
         var timer: stopwatch;
         var kernelTimer: stopwatch;
@@ -118,8 +118,6 @@ proc main(){
             }
         }
     }
-    stopGpuDiagnostics();
-    writeln(getGpuDiagnostics());
     if(output) {
       flopsDB.printDatabaseStats();
       bdwthDB.printDatabaseStats();
@@ -128,5 +126,9 @@ proc main(){
     if(perftest){
       bdwthDB.printPerfStats();
       triadDB.printPerfStats();
+    }
+    else {
+      stopGpuDiagnostics();
+      writeln(getGpuDiagnostics());
     }
 }

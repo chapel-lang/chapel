@@ -26,7 +26,7 @@ proc main() {
 
     var hos: [0..#numMaxFloats] real(32);
     //startVerboseMem();
-    startGpuDiagnostics();
+    if !perftest then startGpuDiagnostics();
 
     var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
     var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
@@ -203,7 +203,8 @@ proc main() {
       writeln("BW block size 64 = ", bwBlockSize64, " GB/s");
       writeln("BW block size 16384 = ", bwBlockSize16384, " GB/s");
     }
-
-    stopGpuDiagnostics();
-    writeln(getGpuDiagnostics());
+    else {
+      stopGpuDiagnostics();
+      writeln(getGpuDiagnostics());
+    }
 }
