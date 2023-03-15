@@ -29,7 +29,7 @@ proc main(){
     var kernelDB = new ResultDatabase("Kernel Time", "sec");
 
     //startVerboseMem();
-    startGpuDiagnostics();
+    if !perftest then startGpuDiagnostics();
     on here.gpus[0] {
         var kernelLaunches = 0;
 
@@ -217,6 +217,8 @@ proc main(){
       triadDB.printPerfStats();
       kernelDB.printPerfStats();
     }
-    stopGpuDiagnostics();
-    writeln(getGpuDiagnostics());
+    else {
+      stopGpuDiagnostics();
+      writeln(getGpuDiagnostics());
+    }
 }

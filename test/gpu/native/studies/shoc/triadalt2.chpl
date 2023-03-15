@@ -37,7 +37,7 @@ proc main(){
     var kernelDB = new ResultDatabase("Kernel Time", "sec");
 
     var hos: [0..#numMaxFloats] real(32);
-    startGpuDiagnostics();
+    if !perftest then startGpuDiagnostics();
     on here.gpus[0] {
         var kernelLaunches = 0;
         for pass in 0..#passes{
@@ -158,8 +158,6 @@ proc main(){
             }
         }
     }
-    stopGpuDiagnostics();
-    verifyLaunches();
     if(output) {
       flopsDB.printDatabaseStats();
       bdwthDB.printDatabaseStats();
@@ -171,4 +169,9 @@ proc main(){
       triadDB.printPerfStats();
       kernelDB.printPerfStats();
     }
+    else {
+      stopGpuDiagnostics();
+      verifyLaunches();
+    }
 }
+
