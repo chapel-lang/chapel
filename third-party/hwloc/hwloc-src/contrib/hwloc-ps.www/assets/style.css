@@ -1,0 +1,142 @@
+/* Copyright © 2019 Inria.  All rights reserved. */
+
+.navul {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #5d5e60;
+}
+
+.navli {
+  float: left;
+}
+
+li a{
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.draggable {
+  display: inline;
+}
+
+/* Change the link color to #111 (black) on hover */
+li a:hover{
+  background-color: #111;
+}
+
+label {
+  display: inline-block;
+  padding-left: 15px;
+  text-indent: -15px;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  }
+
+.checkbox {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin:0;
+  vertical-align: bottom;
+  position: relative;
+  top: -2px;
+  *overflow: hidden;
+  margin-left: 14px;
+}
+
+#mainCheck{
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  margin:0;
+  vertical-align: bottom;
+  position: relative;
+  top: -2px;
+  *overflow: hidden;
+}
+
+input{
+  margin-top:7px;
+}
+
+.button {
+  position:fixed;
+  right: 10px;
+  background-color: #7f8082;
+  border: none;
+  color: white;
+  padding: 7px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  border-radius: 4px;
+  -webkit-transition-duration: 0.4s; /* Safari */
+  transition-duration: 0.4s;
+}
+
+#searchId{
+  position: fixed;
+  right: 150px;
+}
+
+.button:hover {
+  background-color: #111; /* Green */
+  color: white;
+}
+
+#info{
+  padding-top : 5px;
+  color: black;
+  border-radius: 5px;
+  background-color: white;
+  width:300px;
+  min-height:200px;
+  box-shadow: 5px 10px #888888;
+  text-align: left;
+}
+
+#info-not-found{
+  padding-top : 5px;
+  color: black;
+  border: 2x solid black;
+  border-radius: 5px;
+  background-color: white;
+  width:300px;
+  min-height:200px;
+  box-shadow: 5px 10px #888888;
+  text-align: left;
+}
+
+.hidden{
+  display:none;
+}
+
+@media only screen and (max-width: 1175px) {
+  .show-mobile {
+    display: block;
+  }
+  .hide-mobile {
+    display: none;
+  }
+}
+
+@media only screen and (min-width: 1176px)  {
+  .show-mobile {
+    display: none;
+  }
+  .hide-mobile {
+    display: block;
+  }
+}

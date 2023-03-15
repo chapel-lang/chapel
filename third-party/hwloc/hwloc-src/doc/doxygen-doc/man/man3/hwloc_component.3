@@ -1,4 +1,4 @@
-.TH "hwloc_component" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwloc_component" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -52,7 +52,7 @@ Process-wide component termination callback\&. This optional callback is called 
 .PP
 \fCflags\fP is always 0 for now\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 If the component uses ltdl for loading its own plugins, it should load/unload them only in \fBinit()\fP and \fBfinalize()\fP, to avoid race conditions with hwloc's use of ltdl\&. 
 .RE
@@ -71,12 +71,12 @@ When the component is built as a plugin, this callback should call hwloc_check_p
 .PP
 \fCflags\fP is always 0 for now\&.
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 0 on success, or a negative code on error\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 If the component uses ltdl for loading its own plugins, it should load/unload them only in \fBinit()\fP and \fBfinalize()\fP, to avoid race conditions with hwloc's use of ltdl\&. 
 .RE

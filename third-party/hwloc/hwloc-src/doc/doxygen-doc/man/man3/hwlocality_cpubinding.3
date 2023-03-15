@@ -1,8 +1,8 @@
-.TH "hwlocality_cpubinding" 3 "Mon Jun 3 2019" "Version 1.11.13" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.TH "hwlocality_cpubinding" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
-hwlocality_cpubinding
+hwlocality_cpubinding \- CPU binding
 .SH SYNOPSIS
 .br
 .PP
@@ -43,7 +43,7 @@ hwlocality_cpubinding
 .in -1c
 .SH "Detailed Description"
 .PP 
-Some operating systems only support binding threads or processes to a single PU\&. Others allow binding to larger sets such as entire Cores or Packages or even random sets of invididual PUs\&. In such operating system, the scheduler is free to run the task on one of these PU, then migrate it to another PU, etc\&. It is often useful to call \fBhwloc_bitmap_singlify()\fP on the target CPU set before passing it to the binding function to avoid these expensive migrations\&. See the documentation of \fBhwloc_bitmap_singlify()\fP for details\&.
+Some operating systems only support binding threads or processes to a single PU\&. Others allow binding to larger sets such as entire Cores or Packages or even random sets of individual PUs\&. In such operating system, the scheduler is free to run the task on one of these PU, then migrate it to another PU, etc\&. It is often useful to call \fBhwloc_bitmap_singlify()\fP on the target CPU set before passing it to the binding function to avoid these expensive migrations\&. See the documentation of \fBhwloc_bitmap_singlify()\fP for details\&.
 .PP
 Some operating systems do not provide all hwloc-supported mechanisms to bind processes, threads, etc\&. \fBhwloc_topology_get_support()\fP may be used to query about the actual CPU binding support in the currently used operating system\&.
 .PP
@@ -67,12 +67,12 @@ hwloc_set_cpubind(topology, set, HWLOC_CPUBIND_THREAD),
 .fi
 .PP
 .PP
-\fBSee also:\fP
+\fBSee also\fP
 .RS 4
 Some example codes are available under doc/examples/ in the source tree\&.
 .RE
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 To unbind, just call the binding function with either a full cpuset or a cpuset equal to the system cpuset\&.
 .PP
@@ -91,7 +91,7 @@ Process/Thread binding flags\&. These bit flags can be used to refine the bindin
 .PP
 The default (0) is to bind the current process, assumed to be single-threaded, in a non-strict way\&. This is the most portable way to bind as all operating systems usually provide it\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 Not all systems support all kinds of binding\&. See the 'Detailed Description' section of \fBCPU binding\fP for a description of errors that can occur\&. 
 .RE
@@ -108,16 +108,16 @@ Bind all threads of the current (possibly) multithreaded process\&.
 Bind current thread of current process\&. 
 .TP
 \fB\fIHWLOC_CPUBIND_STRICT \fP\fP
-Request for strict binding from the OS\&. By default, when the designated CPUs are all busy while other CPUs are idle, operating systems may execute the thread/process on those other CPUs instead of the designated CPUs, to let them progress anyway\&. Strict binding means that the thread/process will _never_ execute on other cpus than the designated CPUs, even when those are busy with other tasks and other CPUs are idle\&.
+Request for strict binding from the OS\&. By default, when the designated CPUs are all busy while other CPUs are idle, operating systems may execute the thread/process on those other CPUs instead of the designated CPUs, to let them progress anyway\&. Strict binding means that the thread/process will _never_ execute on other CPUs than the designated CPUs, even when those are busy with other tasks and other CPUs are idle\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 Depending on the operating system, strict binding may not be possible (e\&.g\&., the OS does not implement it) or not allowed (e\&.g\&., for an administrative reasons), and the function will fail in that case\&.
 .RE
 .PP
 When retrieving the binding of a process, this flag checks whether all its threads actually have the same binding\&. If the flag is not given, the binding of each thread will be accumulated\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 This flag is meaningless when retrieving the binding of a thread\&. 
 .RE
@@ -133,34 +133,38 @@ This flag is only meaningful when used with functions that set the CPU binding\&
 .SS "int hwloc_get_cpubind (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
-Get current process or thread binding\&. Writes into \fCset\fP the physical cpuset which the process or thread (according to \fIflags\fP) was last bound to\&. 
+Get current process or thread binding\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the list of PUs which the process or thread (according to \fIflags\fP) was last bound to\&. 
 .SS "int hwloc_get_last_cpu_location (\fBhwloc_topology_t\fP topology, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
-Get the last physical CPU where the current process or thread ran\&. The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
+Get the last physical CPU where the current process or thread ran\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the list of PUs which the process or thread (according to \fIflags\fP) last ran on\&.
+.PP
+The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
 .PP
 \fCflags\fP can include either \fBHWLOC_CPUBIND_PROCESS\fP or \fBHWLOC_CPUBIND_THREAD\fP to specify whether the query should be for the whole process (union of all CPUs on which all threads are running), or only the current thread\&. If the process is single-threaded, flags can be set to zero to let hwloc use whichever method is available on the underlying OS\&. 
 .SS "int hwloc_get_proc_cpubind (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
-Get the current physical binding of process \fCpid\fP\&. 
+Get the current physical binding of process \fCpid\fP\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the list of PUs which the process was last bound to\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 \fChwloc_pid_t\fP is \fCpid_t\fP on Unix platforms, and \fCHANDLE\fP on native Windows platforms\&.
 .PP
-As a special case on Linux, if a tid (thread ID) is supplied instead of a pid (process ID) and \fBHWLOC_CPUBIND_THREAD\fP is passed in flags, the binding for that specific thread is returned\&.
+As a special case on Linux, if a tid (thread ID) is supplied instead of a pid (process ID) and HWLOC_CPUBIND_THREAD is passed in flags, the binding for that specific thread is returned\&.
 .PP
-On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\&. 
+On non-Linux systems, HWLOC_CPUBIND_THREAD can not be used in \fCflags\fP\&. 
 .RE
 .PP
 
 .SS "int hwloc_get_proc_last_cpu_location (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
-Get the last physical CPU where a process ran\&. The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
+Get the last physical CPU where a process ran\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the list of PUs which the process last ran on\&.
 .PP
-\fBNote:\fP
+The operating system may move some tasks from one processor to another at any time according to their binding, so this function may return something that is already outdated\&.
+.PP
+\fBNote\fP
 .RS 4
 \fChwloc_pid_t\fP is \fCpid_t\fP on Unix platforms, and \fCHANDLE\fP on native Windows platforms\&.
 .PP
@@ -173,9 +177,9 @@ On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\
 .SS "int hwloc_get_thread_cpubind (\fBhwloc_topology_t\fP topology, hwloc_thread_t thread, \fBhwloc_cpuset_t\fP set, int flags)"
 
 .PP
-Get the current physical binding of thread \fCtid\fP\&. 
+Get the current physical binding of thread \fCtid\fP\&. The CPU-set \fCset\fP (previously allocated by the caller) is filled with the list of PUs which the thread was last bound to\&.
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 \fChwloc_thread_t\fP is \fCpthread_t\fP on Unix platforms, and \fCHANDLE\fP on native Windows platforms\&.
 .PP
@@ -186,9 +190,9 @@ Get the current physical binding of thread \fCtid\fP\&.
 .SS "int hwloc_set_cpubind (\fBhwloc_topology_t\fP topology, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
-Bind current process or thread on cpus given in physical bitmap \fCset\fP\&. 
+Bind current process or thread on CPUs given in physical bitmap \fCset\fP\&. 
 .PP
-\fBReturns:\fP
+\fBReturns\fP
 .RS 4
 -1 with errno set to ENOSYS if the action is not supported 
 .PP
@@ -199,9 +203,9 @@ Bind current process or thread on cpus given in physical bitmap \fCset\fP\&.
 .SS "int hwloc_set_proc_cpubind (\fBhwloc_topology_t\fP topology, hwloc_pid_t pid, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
-Bind a process \fCpid\fP on cpus given in physical bitmap \fCset\fP\&. 
+Bind a process \fCpid\fP on CPUs given in physical bitmap \fCset\fP\&. 
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 \fChwloc_pid_t\fP is \fCpid_t\fP on Unix platforms, and \fCHANDLE\fP on native Windows platforms\&.
 .PP
@@ -214,9 +218,9 @@ On non-Linux systems, \fBHWLOC_CPUBIND_THREAD\fP can not be used in \fCflags\fP\
 .SS "int hwloc_set_thread_cpubind (\fBhwloc_topology_t\fP topology, hwloc_thread_t thread, \fBhwloc_const_cpuset_t\fP set, int flags)"
 
 .PP
-Bind a thread \fCthread\fP on cpus given in physical bitmap \fCset\fP\&. 
+Bind a thread \fCthread\fP on CPUs given in physical bitmap \fCset\fP\&. 
 .PP
-\fBNote:\fP
+\fBNote\fP
 .RS 4
 \fChwloc_thread_t\fP is \fCpthread_t\fP on Unix platforms, and \fCHANDLE\fP on native Windows platforms\&.
 .PP

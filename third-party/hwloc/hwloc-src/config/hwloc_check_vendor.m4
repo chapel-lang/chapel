@@ -11,6 +11,8 @@ dnl                         University of Stuttgart.  All rights reserved.
 dnl Copyright © 2004-2005 The Regents of the University of California.
 dnl                         All rights reserved.
 dnl Copyright © 2011      Cisco Systems, Inc.  All rights reserved.
+dnl Copyright © 2015-2021 Inria.  All rights reserved.
+dnl Copyright © 2020      IBM Corporation.  All rights reserved.
 dnl $COPYRIGHT$
 dnl
 dnl Additional copyrights may follow
@@ -99,10 +101,10 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
           [HWLOC_IF_IFELSE([defined(__INTEL_COMPILER) || defined(__ICC)],
                [hwloc_check_compiler_vendor_result="intel"])])
 
-    # GNU
+    # Portland Group
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
-          [HWLOC_IFDEF_IFELSE([__GNUC__],
-               [hwloc_check_compiler_vendor_result="gnu"])])
+          [HWLOC_IFDEF_IFELSE([__PGI],
+               [hwloc_check_compiler_vendor_result="portland group"])])
 
     # Borland Turbo C
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
@@ -120,6 +122,7 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
                [hwloc_check_compiler_vendor_result="comeau"])])
 
     # Compaq C/C++
+    # OSF part actually not needed anymore but doesn't hurt
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
           [HWLOC_IF_IFELSE([defined(__DECC) || defined(VAXC) || defined(__VAXC)],
                [hwloc_check_compiler_vendor_result="compaq"],
@@ -150,7 +153,7 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
 
     # IBM XL C/C++
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
-          [HWLOC_IF_IFELSE([defined(__xlC__) || defined(__IBMC__) || defined(__IBMCPP__)],
+          [HWLOC_IF_IFELSE([defined(__xlC__) || defined(__IBMC__) || defined(__IBMCPP__) || defined(__ibmxl__)],
                [hwloc_check_compiler_vendor_result="ibm"],
                [HWLOC_IF_IFELSE([defined(_AIX) && !defined(__GNUC__)],
                     [hwloc_check_compiler_vendor_result="ibm"])])])
@@ -204,11 +207,6 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
           [HWLOC_IFDEF_IFELSE([__POCC__],
                [hwloc_check_compiler_vendor_result="pelles"])])
 
-    # Portland Group
-    AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
-          [HWLOC_IFDEF_IFELSE([__PGI],
-               [hwloc_check_compiler_vendor_result="portland group"])])
-
     # SAS/C
     AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
           [HWLOC_IF_IFELSE([defined(SASC) || defined(__SASC) || defined(__SASC__)],
@@ -239,6 +237,26 @@ AC_DEFUN([_HWLOC_CHECK_COMPILER_VENDOR], [
           [HWLOC_IFDEF_IFELSE([__WATCOMC__],
                [hwloc_check_compiler_vendor_result="watcom"])])
 
+    # GNU
+    AS_IF([test "$hwloc_check_compiler_vendor_result" = "unknown"],
+          [HWLOC_IFDEF_IFELSE([__GNUC__],
+               [hwloc_check_compiler_vendor_result="gnu"])])
+
     $1="$hwloc_check_compiler_vendor_result"
     unset hwloc_check_compiler_vendor_result
+])
+
+# _HWLOC_CHECK_CC_OPTION([option], [variable to append the option to], [action if supported])
+# ----------------------------------------------
+# Run gcc to determine if option is supported.
+AC_DEFUN([_HWLOC_CHECK_CC_OPTION], [
+    tmp_save_CFLAGS="$CFLAGS"
+    CFLAGS="$1 -Werror"
+    AC_MSG_CHECKING([if gcc supports $1])
+    AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[int i;]])],
+		      [AC_MSG_RESULT(yes)
+		       $2="$$2 $1"
+		       $3],
+		      [AC_MSG_RESULT(no)])
+    CFLAGS="$tmp_save_CFLAGS"
 ])

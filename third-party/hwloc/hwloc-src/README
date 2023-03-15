@@ -1,73 +1,84 @@
 Introduction
 
-hwloc provides command line tools and a C API to obtain the hierarchical map of
-key computing elements, such as: NUMA memory nodes, shared caches, processor
-packages, processor cores, processing units (logical processors or "threads")
-and even I/O devices. hwloc also gathers various attributes such as cache and
-memory information, and is portable across a variety of different operating
-systems and platforms. Additionally it may assemble the topologies of multiple
-machines into a single one so as to let applications consult the topology of an
-entire fabric or cluster at once.
+The Hardware Locality (hwloc) software project aims at easing the process of
+discovering hardware resources in parallel architectures. It offers
+command-line tools and a C API for consulting these resources, their locality,
+attributes, and interconnection. hwloc primarily aims at helping
+high-performance computing (HPC) applications, but is also applicable to any
+project seeking to exploit code and/or data locality on modern computing
+platforms.
 
-hwloc primarily aims at helping high-performance computing (HPC) applications,
-but is also applicable to any project seeking to exploit code and/or data
-locality on modern computing platforms.
+hwloc is actually made of two subprojects distributed together:
 
-hwloc supports the following operating systems:
+  * The original hwloc project for describing the internals of computing nodes.
+ It is described in details starting at section Hardware Locality (hwloc)
+ Introduction.
+  * The network-oriented companion called netloc (Network Locality), described
+ in details starting with section Network Locality (netloc).
 
-  * Linux (including old kernels not having sysfs topology information, with
- knowledge of cpusets, ScaleMP vSMP and Kerrighed support, etc.) on all
- supported hardware, including Intel Xeon Phi and NumaScale NumaConnect.
-  * Solaris (with support for processor sets and logical domains)
-  * AIX
-  * Darwin / OS X
-  * FreeBSD and its variants (such as kFreeBSD/GNU)
-  * NetBSD
-  * OSF/1 (a.k.a., Tru64)
-  * HP-UX
-  * Microsoft Windows
-  * IBM BlueGene/Q Compute Node Kernel (CNK)
+See also the Related pages tab above for links to other sections.
 
-Since it uses standard Operating System information, hwloc's support is mostly
-independant from the processor type (x86, powerpc, ...) and just relies on the
-Operating System support. The main exception is BSD operating systems (NetBSD,
-FreeBSD, etc.) because they do not provide support topology information, hence
-hwloc uses an x86-only CPUID-based backend (which can be used for other OSes
-too, see the Components and plugins section).
+Netloc may be disabled, but the original hwloc cannot. Both hwloc and netloc
+APIs are documented after these sections.
 
-To check whether hwloc works on a particular machine, just try to build it and
-run lstopo or lstopo-no-graphics. If some things do not look right (e.g. bogus
-or missing cache information), see Questions and Bugs below.
+Installation
 
-hwloc only reports the number of processors on unsupported operating systems;
-no topology information is available.
+hwloc (https://www.open-mpi.org/projects/hwloc/) is available under the BSD
+license. It is hosted as a sub-project of the overall Open MPI project (https:/
+/www.open-mpi.org/). Note that hwloc does not require any functionality from
+Open MPI -- it is a wholly separate (and much smaller!) project and code base.
+It just happens to be hosted as part of the overall Open MPI project.
 
-For development and debugging purposes, hwloc also offers the ability to work
-on "fake" topologies:
+Basic Installation
 
-  * Symmetrical tree of resources generated from a list of level arities, see
- Synthetic topologies.
-  * Remote machine simulation through the gathering of topology as XML files,
- see Importing and exporting topologies from/to XML files.
+Installation is the fairly common GNU-based process:
 
-hwloc can display the topology in a human-readable format, either in graphical
-mode (X11), or by exporting in one of several different formats, including:
-plain text, PDF, PNG, and FIG (see Command-line Examples below). Note that some
-of the export formats require additional support libraries.
+shell$ ./configure --prefix=...
+shell$ make
+shell$ make install
 
-hwloc offers a programming interface for manipulating topologies and objects.
-It also brings a powerful CPU bitmap API that is used to describe topology
-objects location on physical/logical processors. See the Programming Interface
-below. It may also be used to binding applications onto certain cores or memory
-nodes. Several utility programs are also provided to ease command-line
-manipulation of topology objects, binding of processes, and so on.
+hwloc- and netloc-specific configure options and requirements are documented in
+sections hwloc Installation and Netloc Installation respectively.
 
-Perl bindings are available from Bernd Kallies on CPAN.
+Also note that if you install supplemental libraries in non-standard locations,
+hwloc's configure script may not be able to find them without some help. You
+may need to specify additional CPPFLAGS, LDFLAGS, or PKG_CONFIG_PATH values on
+the configure command line.
 
-Python bindings are available from Guy Streeter:
+For example, if libpciaccess was installed into /opt/pciaccess, hwloc's
+configure script may not find it be default. Try adding PKG_CONFIG_PATH to the
+./configure command line, like this:
 
-  * Fedora RPM and tarball.
-  * git tree (html).
+./configure PKG_CONFIG_PATH=/opt/pciaccess/lib/pkgconfig ...
+
+Running the "lstopo" tool is a good way to check as a graphical output whether
+hwloc properly detected the architecture of your node. Netloc command-line
+tools can be used to display the network topology interconnecting your nodes.
+
+Installing from a Git clone
+
+Additionally, the code can be directly cloned from Git:
+
+shell$ git clone https://github.com/open-mpi/hwloc.git
+shell$ cd hwloc
+shell$ ./autogen.sh
+
+Note that GNU Autoconf >=2.63, Automake >=1.11 and Libtool >=2.2.6 are required
+when building from a Git clone.
+
+Nightly development snapshots are available on the web site, they can be
+configured and built without any need for Git or GNU Autotools.
+
+Questions and Bugs
+
+Bugs should be reported in the tracker (https://github.com/open-mpi/hwloc/
+issues). Opening a new issue automatically displays lots of hints about how to
+debug and report issues.
+
+Questions may be sent to the users or developers mailing lists (https://
+www.open-mpi.org/community/lists/hwloc.php).
+
+There is also a #hwloc IRC channel on Libera Chat (irc.libera.chat).
 
 
 
