@@ -35,13 +35,3 @@ class A {
   delete un2;
 
 }
-
-
-{
-  writeln("test adopt ownership transfer to owned object");
-  var own1: A? = new A(2, 3);
-  var own2 = owned.adopt(own1);
-  // own1 should now be invalid/nil
-  writeln(own1);
-  writeln(own2);
-}

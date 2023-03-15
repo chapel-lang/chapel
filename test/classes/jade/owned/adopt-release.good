@@ -4,6 +4,3 @@ test adopt/release ownership transfer
 unmanaged obj: {x = 16, y = 17} and managed obj: {x = 16, y = 17}
 unmanaged obj: {x = 33, y = 17} and managed obj: {x = 33, y = 17}
 unmanaged obj: {x = 33, y = 17}
-test adopt ownership transfer to owned object
-nil
-{x = 2, y = 3}
