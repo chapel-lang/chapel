@@ -136,11 +136,10 @@ this by changing  ``CHPL_GPU_ARCH`` or by passing it to ``chpl`` via
 We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
 if using CUDA 10).
 
-To compile a program simply execute ``chpl`` as normal.  If you would like to
-view debugging information you can pass ``--verbose`` to your generated
-executable. This output will show the invocation of CUDA kernel calls along
-with various other interactions with the GPU such as memory operations.  You
-may also use the :mod:`GPUDiagnostics` module to gather similar information.
+To compile a program simply execute ``chpl`` as normal.  To ensure that
+a loop is executing on the GPU you can use the operations in 
+the :mod:`GPUDiagnostics` module or use the :proc:`~GPU.assertOnGpu()`
+proc from the  :mod:`GPU` module.
 
 Requirements and Limitations
 ----------------------------
@@ -185,9 +184,12 @@ section; many of them will be addressed in upcoming editions.
 
 * For AMD GPUs:
 
-    * Multiple locales are not supported
+    * Can only be used with local builds (i.e., CHPL_COMM=none)
 
-    * Certain 64-bit math functions are unsupported
+    * Certain 64-bit math functions are unsupported. To see what does
+      and doesn't work see `this test
+      <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
+      and note which operations are executed when `excludeForRocm == true`.
 
 * For loops to be considered eligible for execution on a GPU they
   must fulfill the requirements discussed in the `Overview`_ section.
