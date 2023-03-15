@@ -58,6 +58,10 @@ Name Changes in Libraries
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
+* renamed `MemMove.needsDeinit()` to `MemMove.needsDestroy()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.needsDestroy)
+* renamed `MemMove.explicitDeinit()` to `MemMove.destroy()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.destroy)
 * renamed `IllegalArgumentError`'s initializer formal from `info` to `msg`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.IllegalArgumentError)
 * unified formatting of 'Errors' varargs procedure signatures  
@@ -81,6 +85,10 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
 * deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
+* deprecated `moveInitializeArrayElements()` from the 'MemMove' module  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveInitializeArrayElements)
+* added unstable function `moveArrayElements()` to the 'MemMove' module  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.moveArrayElements)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
 * removed the integer-returning version of `bigint.invert()`
@@ -128,6 +136,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
+* closed memory leaks in `fileReader.mark()` and `fileWriter.mark()`
 
 Documentation
 -------------
@@ -144,6 +153,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/variables.html#split-initialization)
 * updated the spec section on re-exporting symbols to describe current behavior  
   (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
+* updated the `init=` technote w.r.t. compiler-generated copy initializers  
+  (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
 
 Syntax Highlighting
 -------------------
@@ -256,6 +267,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--use-io-formatters` to enable experimental IO format customization
 * validated that the pass provided to the `--stop-after-pass` flag exists
 * prohibited using the `--parse-only` and `--stop-after-pass` flags together
 * added `--gpu-ptxas-enforce-optimization` for debugging optimized GPU builds
@@ -266,6 +278,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* added support for experimental `.dyno` library files
 * made numerous improvements to the 'dyno'-based scope resolver:
   - added warnings/errors for:
     - attempted successive renames in `use`/`import`
@@ -290,9 +303,11 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
   - added support for return intent overloading
   - added support for handling 'ref-if-modified' types, like arrays
   - added support for default-init, copy-init, assignment, and deinit actions
+* improved semantic checks for conditionals within initializers
 * added 'dyno' support for computing a program's module initialization order
+* added support for serializing and deserializing the dyno uAST
 * significantly improved the quality of the uAST dumps
-* fixed bugs in split-initialization and copy-elisiion analyses
+* fixed bugs in split-initialization and copy-elision analyses
 * fixed bugs in return-type inference
 * fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
 
