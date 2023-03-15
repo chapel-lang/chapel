@@ -188,6 +188,7 @@ private:
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
   bool callsInBodyAreGpuizable();
+  bool hasIllegalGotos();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
@@ -263,6 +264,7 @@ bool GpuizableLoop::evaluateLoop() {
 
   return parentFnAllowsGpuization() &&
          callsInBodyAreGpuizable() &&
+         !hasIllegalGotos() &&
          attemptToExtractLoopInformation();
 }
 
@@ -291,6 +293,26 @@ bool GpuizableLoop::callsInBodyAreGpuizable() {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
   return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
+}
+
+bool GpuizableLoop::hasIllegalGotos() {
+  std::vector<GotoStmt*> gotoStmts;
+  collectGotoStmts(this->loop_, gotoStmts);
+
+  for_vector (GotoStmt, gotoStmt, gotoStmts) {
+    if (!isDefinedInTheLoop(gotoStmt->gotoTarget(), this->loop_)) {
+      Expr* cur = gotoStmt->gotoTarget()->defPoint;
+      while (cur) {
+        if (!isDefExpr(cur)) return true;
+        if (cur == this->loop_) return false;
+
+        cur = cur->prev;
+      }
+      return true;
+    }
+  }
+
+  return false;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
