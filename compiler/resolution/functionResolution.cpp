@@ -12151,6 +12151,8 @@ static void insertReturnTemps() {
             if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+            tmp->addFlag(FLAG_DEAD_LAST_MENTION);
+
             contextCallOrCall->insertBefore(def);
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
@@ -12180,10 +12182,6 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_MAYBE_TYPE);
               tmp->addFlag(FLAG_MAYBE_PARAM);
             }
-
-            // Mark the variable as last-mention or end-of-block
-            // (because this runs after fixPrimInitsAndAddCasts).
-            markTempDeadLastMention(tmp);
           }
         }
       }

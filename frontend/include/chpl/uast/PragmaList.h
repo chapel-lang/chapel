@@ -361,6 +361,7 @@ PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early 
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
 PRAGMA(MAYBE_REF, npr, "maybe ref", "symbol can resolve to a ref")
 PRAGMA(SPLIT_INITED, npr, "split inited", "variable was initialized with split init")
+PRAGMA(USED_IN_TYPE, npr, "used in type", "call-expr temporary used in creating a type")
 PRAGMA(MAYBE_TYPE, npr, "maybe type", "symbol can resolve to a type")
 PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memory order (normally called memoryOrder)")
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
