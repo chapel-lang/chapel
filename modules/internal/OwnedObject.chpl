@@ -301,7 +301,7 @@ module OwnedObject {
        impacting its lifetime at all. It is an error to use the
        value returned by this function after the :record:`owned`
        goes out of scope or deletes the contained class instance
-       for another reason, such as with `=` or ``owned.retain``.
+       for another reason, such as with `=` or ``owned.adopt``.
        In some cases such errors are caught at compile-time.
      */
     pragma "nil from this"
