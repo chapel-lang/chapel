@@ -87,7 +87,7 @@ For more in-depth information about GASNet or multilocale execution with Chapel,
 refer to the `GASNet documentation`_ and :ref:`readme-multilocale` page,
 respectively.
 
-Ensure that the Chapel compiler is built on each node in your cluster, each node is running the same version of Chapel, and that all nodes in the cluster have SSH access to each other. 
+Ensure that the Chapel tree is installed in the shared filesystem (or that the Chapel tree is built on each node in your cluster), each node is running the same version of Chapel, and that all nodes in the cluster have SSH access to each other. 
 
 Complete these steps on the master node of your cluster.
 
@@ -137,3 +137,6 @@ Run the program as you would any other multilocale program:
 .. code-block:: bash
 
     /clusterfs/hello -nl 2
+
+
+.. _GASNet documentation: https://gasnet.lbl.gov/dist/udp-conduit/README
