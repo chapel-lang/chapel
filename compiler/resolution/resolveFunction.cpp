@@ -1524,8 +1524,14 @@ void MarkTempsVisitor::handleStmtGroup() {
   for_vector(VarSymbol, v, vars) {
     // initializing a user-level ref / const ref variable
     // so make all of the temporaries end-of-block
-    if (v->isRef() && !v->hasFlag(FLAG_TEMP)) {
-      allEndOfBlock = true;
+    // Also temps in 'manage' statements
+    if (v->isRef()) {
+      if (!v->hasFlag(FLAG_TEMP)) {
+        allEndOfBlock = true;
+      }
+      if (v->hasFlag(FLAG_MANAGER_HANDLE)) {
+        allEndOfBlock = true;
+      }
     }
     if (v->hasFlag(FLAG_INDEX_VAR) ||
         v->hasFlag(FLAG_CHPL__ITER) ||
