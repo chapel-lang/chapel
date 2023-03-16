@@ -131,9 +131,15 @@ Specifically:
   ``/usr/local/`` or ``~/``.  Note that elevated privileges are likely
   to be required for any system-wide installation locations.
 
+  Please note that for any prefix-installed version of Chapel, the
+  meaning of ``$CHPL_HOME`` (e.g., as printed by compiler messages)
+  typically refers to ``/dir/for/install/share/chapel/x.yz`` where
+  ``x.yz`` is the Chapel version that was installed.
+  
 * ``--chpl-home=/dir/for/install`` copies key files and directories
   from the Chapel source tree into ``/dir/for/install``, preserving
-  Chapel's traditional directory structure.
+  Chapel's traditional directory structure.  As you might expect, the
+  meaning of ``$CHPL_HOME`` for such installs is ``/dir/for/install``.
 
 
 -----------------------------------------
