@@ -14,11 +14,6 @@ The current implementation will generate GPU kernels for certain ``forall`` and
 ``foreach`` loops and launch these onto a GPU when the current locale (e.g.
 ``here``) is assigned to a special (sub)locale representing a GPU.
 
-Additional information about GPU Support can be found in the "Ongoing Efforts"
-slide decks of our `release notes <https://chapel-lang.org/releaseNotes.html>`_;
-however, be aware that information presented in release notes for prior releases
-may be out-of-date.
-
 .. contents::
 
 Overview
@@ -307,4 +302,19 @@ improvements in the future.
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+Further Information
+-------------------
+* Please refer to issues with `GPU Support label
+  <https://github.com/chapel-lang/chapel/labels/area%3A%20GPU%20Support>`_ for
+  other known limitations and issues.
+
+* Alternatively, you can add the `bug label
+  <https://github.com/chapel-lang/chapel/issues?q=is%3Aopen+label%3A%22area%3A+GPU+Support%22+label%3A%22type%3A+Bug%22>`_
+  for known bugs only.
+
+* Additional information about GPU Support can be found in the "Ongoing Efforts"
+  slide decks of our `release notes
+  <https://chapel-lang.org/releaseNotes.html>`_; however, be aware that
+  information presented in release notes for prior releases may be out-of-date.
 
