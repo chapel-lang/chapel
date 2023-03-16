@@ -12,7 +12,8 @@ class C {
 
 }
 
-var myC = (new owned C(x = 2)).borrow();
+var ownMyC = new owned C(x = 2);
+var myC = ownMyC.borrow();
 writeln("myC is: ", myC);
 
 myC.x = 3;

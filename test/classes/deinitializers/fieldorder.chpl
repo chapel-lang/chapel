@@ -22,7 +22,8 @@ record RR { var f1: F1; var f2: F2; }
 class CC { var f1: F1; var f2: F2; }
 {
   writeln("checking field order in CC");
-  var cc = (new owned CC()).borrow();
+  var ownCC = new owned CC();
+  var cc = ownCC.borrow();
 }
 
 class DD: CC { var f3: F3; var f4: F4; }

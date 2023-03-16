@@ -4,6 +4,7 @@ class addition {
   }
 }
 
-var a : borrowed addition = (new owned addition()).borrow();
+var aOwn = new owned addition();
+var a : borrowed addition = aOwn.borrow();
 
 writeln(a.identity(2));

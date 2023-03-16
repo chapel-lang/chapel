@@ -11,7 +11,8 @@ module TestInfiniteLifetime {
   }
 
   proc test() {
-    var x = (new owned MyClass(1)).borrow();
+    var ownX = new owned MyClass(1);
+    var x = ownX.borrow();
     var y = f(x);
   }
   test();

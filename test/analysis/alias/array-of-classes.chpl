@@ -9,7 +9,8 @@ module mymodule {
   }
 
   proc main() {
-    var instance = (new owned MyClass(0)).borrow();
+    var ownInstance = new owned MyClass(0);
+    var instance = ownInstance.borrow();
     var A = [instance, instance];
     var B = [instance, instance];
 

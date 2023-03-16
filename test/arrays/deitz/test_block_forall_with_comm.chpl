@@ -6,7 +6,8 @@ class C {
   var i: int;
 }
 
-var c = (new owned C()).borrow();
+var cOwn = new owned C();
+var c = cOwn.borrow();
 
 forall i in D {
   writeln(c.i);

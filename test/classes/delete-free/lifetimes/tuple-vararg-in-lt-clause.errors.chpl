@@ -39,10 +39,10 @@ class Test {
 }
 
 proc main {
-  const ttt = (new owned Test()).borrow();
-  const jbo = (new owned object()).borrow();
+  const ownedTtt = new owned Test();     const ttt = ownedTtt.borrow();
+  const ownedJbo = new owned object();   const jbo = ownedJbo.borrow();
   {
-    const obj = (new owned object()).borrow();
+    const ownedObj = new owned object(); const obj = ownedObj.borrow();
 
     /* dependsOnN1 */
     ttt.dependsOnN1(obj);

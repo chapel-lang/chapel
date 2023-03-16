@@ -4,7 +4,8 @@ class C {
 }
 
 proc main {
-  var c = (new owned C(int, 1, 2)).borrow();
+  var cOwn = new owned C(int, 1, 2);
+  var c = cOwn.borrow();
   var o: object = c;
   writeln((o:c.type).a);
 }

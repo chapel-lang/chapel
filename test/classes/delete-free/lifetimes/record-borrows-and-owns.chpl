@@ -77,8 +77,8 @@ proc badF8() {
 
 
 proc test() {
-  var myborrow = (new owned MyClass(1)).borrow();
-  
+  var myOwn = new owned MyClass(1);
+  var myborrow = myOwn.borrow();
   var a = makeR(myborrow);
   var b:R;
   badMyFun(b, a);
