@@ -582,7 +582,7 @@ module CTypes {
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if (arr._value.locale != here) then
-      halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+      halt("c_ptrToConst() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
     if boundsChecking {
       if (arr.size == 0) then
@@ -618,7 +618,7 @@ module CTypes {
    */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
     if isDomainType(t) then
-      compilerError("c_ptrTo domain type not supported", 2);
+      compilerError("c_ptrToConst domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
     return c_pointer_return_const(x);
   }
