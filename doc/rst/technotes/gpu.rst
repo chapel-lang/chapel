@@ -35,8 +35,9 @@ strategies).
 Chapel will launch kernels for all eligible loops that are encountered by tasks
 executing on a GPU sublocale.  Loops are eligible when:
 
-* They are order-independent (e.g., ``forall`` or ``foreach`` over iterators
-  that are also order-independent).
+* They are order-independent. i.e., `forall
+  <../users-guide/datapar/forall.html>`_ or `foreach <foreach.html>`_ loops over
+  iterators that are also order-independent.
 * They only make use of known compiler primitives that are fast and local. Here
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
