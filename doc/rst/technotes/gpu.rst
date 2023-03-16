@@ -126,7 +126,12 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available.
+* Either ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available; Chapel
+  uses libraries included in these packages and will automatically deduce the
+  path to these libraries based on the location of the ``nvcc``/``hipcc``
+  executable. Note that the automatically deduced paths may be overwritten by
+  manually setting the ``CHPL_CUDA_PATH`` or ``CHPL_ROCM_PATH`` environment
+  variables.
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,7 +150,11 @@ different installation) you may set ``CHPL_CUDA_PATH`` and/or
 ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
 architecture to compile for.  The default value is ``sm_60`` for
 ``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
-also use the ``--gpu-arch`` compliler flag to set GPU architecture.
+also use the ``--gpu-arch`` compliler flag to set GPU architecture. For a list
+of possible values please refer to `CUDA Programming Guide
+<https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
+for NVIDIA or "processor" values in `this table in the LLVM documentation
+<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD.
 
 GPU Support Features
 --------------------
