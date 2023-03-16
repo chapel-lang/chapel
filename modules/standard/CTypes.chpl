@@ -574,11 +574,22 @@ module CTypes {
     return c_pointer_return(arr[arr.domain.low]);
   }
   /*
-   Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
-   modification of the pointee.
+   Like c_ptrTo for arrays, but returns a :type:`c_ptrConst` which disallows
+   direct modification of the pointee.
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
-    return c_ptrTo(arr);
+    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
+
+    if (arr._value.locale != here) then
+      halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+
+    if boundsChecking {
+      if (arr.size == 0) then
+        halt("Can't create a C pointer for an array with 0 elements.");
+    }
+
+    return c_pointer_return_const(arr[arr.domain.low]);
   }
 
   /*
