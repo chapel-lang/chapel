@@ -235,6 +235,11 @@ static PyObject* NamedDeclObject_name(PyObject *self, PyObject *Py_UNUSED(ignore
   return Py_BuildValue("s", namedDecl->name().c_str());
 }
 
+static PyObject* CommentObject_text(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto namedDecl = ((CommentObject*) self)->parent.astNode->toComment();
+  return Py_BuildValue("s", namedDecl->c_str());
+}
+
 template <chpl::uast::asttags::AstTag tag>
 struct PerNodeInfo {
   static constexpr PyMethodDef methods[] = {
@@ -246,6 +251,14 @@ template <>
 struct PerNodeInfo<chpl::uast::asttags::START_NamedDecl> {
   static constexpr PyMethodDef methods[] = {
     {"name", NamedDeclObject_name, METH_NOARGS, "Get the name of this NamedDecl node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::Comment> {
+  static constexpr PyMethodDef methods[] = {
+    {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
