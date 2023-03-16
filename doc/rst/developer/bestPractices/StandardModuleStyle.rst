@@ -114,7 +114,23 @@ could have:
  * ``createStringWithBorrowedBuffer`` or
  * ``string.createWithBorrowedBuffer``.
 
+Accessors
++++++++++
+
+Accessor methods are methods intended to return a distinct piece of information
+about the type on which they are defined.  This piece of information could be
+reasonably implemented as a field.  Typically, such methods are defined without
+parentheses, allowing them to appear similar to a field access.  However, there
+is no requirement that the contents of the accessor be similarly simple -
+whether the information returned is calculated based on the internal fields of
+the type or whether it is actually a field is an implementation detail.
+
+Accessor methods will avoid using "get" in their name.  E.g., instead of
+``array.getIdxType``, the accessor is named ``array.idxType``.
+
+Methods that are not accessors are still allowed to use "get" in their name.
+
 Other Identifiers
 -----------------
 
-Variables, fields, and argument names should be camelCase or CamelCase.
+Variables, fields, and argument names should be camelCase or PascalCase.
