@@ -48,7 +48,7 @@ call site. The formal argument has the semantics of a type alias.
    The following code defines a function that takes two types at the
    call site and returns a 2-tuple where the types of the components of
    the tuple are defined by the two type arguments and the values are
-   specified by the types default values. 
+   specified by the types default values.
 
    .. code-block:: chapel
 
@@ -59,20 +59,20 @@ call site. The formal argument has the semantics of a type alias.
       }
 
    This function is instantiated with “normal” function call syntax
-   where the arguments are types: 
+   where the arguments are types:
 
    .. code-block:: chapel
 
       var t2 = build2Tuple(int, string);
       t2 = (1, "hello");
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(t2);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -85,7 +85,7 @@ accepting type arguments that only apply to a specific group of types.
    *Example (typeColonArgument.chpl)*.
 
    Suppose that we’d like to define a function that accepts a type
-   argument and returns 1 represented in that type. 
+   argument and returns 1 represented in that type.
 
    .. code-block:: chapel
 
@@ -94,21 +94,21 @@ accepting type arguments that only apply to a specific group of types.
       }
 
    Now calls to this function will resolve to the appropriate version
-   based upon the argument type supplied. 
+   based upon the argument type supplied.
 
    .. code-block:: chapel
 
       var anInt8 = getOne(int(8));
       var aReal = getOne(real);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(anInt8.type:string, " ", anInt8);
       writeln(aReal.type:string, " ", aReal);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -131,7 +131,7 @@ this function at a call site. The formal argument is a parameter.
    ``p`` at the call site as well as a regular actual argument of
    integer type ``x``. The function returns a homogeneous tuple of size
    ``p`` where each component in the tuple has the value of ``x``.
-   
+
 
    .. code-block:: chapel
 
@@ -142,13 +142,13 @@ this function at a call site. The formal argument is a parameter.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(fillTuple(3,3));
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -176,7 +176,7 @@ each unique actual type.
    parameter argument can allow any type be passed. The following code
    defines a function that returns a homogeneous tuple of size ``p``
    where each component in the tuple is initialized to ``x``:
-   
+
 
    .. code-block:: chapel
 
@@ -187,7 +187,7 @@ each unique actual type.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -195,7 +195,7 @@ each unique actual type.
       writeln(x);
       writeln(x.type:string);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -221,7 +221,7 @@ semantics of a type alias.
    *Example (fillTuple3.chpl)*.
 
    The example from the previous section can be rewritten to use a
-   queried type for clarity: 
+   queried type for clarity:
 
    .. code-block:: chapel
 
@@ -232,7 +232,7 @@ semantics of a type alias.
         return result;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -240,7 +240,7 @@ semantics of a type alias.
       writeln(x);
       writeln(x.type:string);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -256,7 +256,7 @@ semantics of a type alias.
    query on the first argument establishes type constraints on the other
    arguments and also determines the return type.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -270,7 +270,7 @@ semantics of a type alias.
          return sum;
       }
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -295,7 +295,7 @@ type.
    actual argument that is a generic stack
    (see :ref:`Example_Generic_Stack`) and outputs the top element
    of the stack. The function is generic on the type of its argument.
-   
+
 
    .. code-block:: chapel
 
@@ -319,7 +319,7 @@ identifier may be omitted.
    default value. Function ``f`` is defined to take an argument of this
    class type where the type field is instantiated to the default.
    Function ``g``, on the other hand, is generic on its argument because
-   of the use of the question mark. 
+   of the use of the question mark.
 
    .. code-block:: chapel
 
@@ -346,7 +346,7 @@ concrete* for the purpose of function resolution.
 
    *Example (nested-type-queries.chpl)*.
 
-   Given the code: 
+   Given the code:
 
    .. code-block:: chapel
 
@@ -368,7 +368,7 @@ concrete* for the purpose of function resolution.
    following function, ``g``, can only apply when ``c.containerType`` is
    an instance of ``Container``:
 
-   
+
 
    .. code-block:: chapel
 
@@ -376,7 +376,7 @@ concrete* for the purpose of function resolution.
         // ...
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -390,7 +390,7 @@ concrete* argument.
 
    *Example*.
 
-   The function definition 
+   The function definition
 
    .. code-block:: chapel
 
@@ -404,7 +404,7 @@ Homogeneous tuple arguments of generic type are also supported:
 
    *Example (partially-concrete-star-tuple.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -414,7 +414,7 @@ Homogeneous tuple arguments of generic type are also supported:
       proc f(tuple: 2*Number) {
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -430,7 +430,7 @@ constrained.
 
    *Example (partially-concrete-tuple-ambiguity.chpl)*.
 
-   The following program results in an ambiguity error: 
+   The following program results in an ambiguity error:
 
    .. code-block:: chapel
 
@@ -441,7 +441,7 @@ constrained.
       f( (1.0, 2.0) );
 
    since the ``tuple`` arguments in both versions of ``f`` are
-   *partially concrete*. 
+   *partially concrete*.
 
    .. BLOCK-test-chapelprediff
 
@@ -453,7 +453,7 @@ constrained.
       head -n 1 $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -504,7 +504,7 @@ the compiler issues a "call cannot be resolved" error.
    *Example (point-of-instantiation.chpl)*.
 
    Consider the following code:
-   
+
 
    .. code-block:: chapel
 
@@ -694,7 +694,7 @@ instead.
 
    The following code defines a class called ``Node`` that implements a
    linked list data structure. It is generic over the type of the
-   element contained in the linked list. 
+   element contained in the linked list.
 
    .. code-block:: chapel
 
@@ -704,7 +704,7 @@ instead.
         var next: unmanaged Node(eltType)?;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -714,7 +714,7 @@ instead.
       writeln(n.next.type:string);
       delete n;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -761,7 +761,7 @@ instead.
 
    The following code defines a class called ``IntegerTuple`` that is
    generic over an integer parameter which defines the number of
-   components in the class. 
+   components in the class.
 
    .. code-block:: chapel
 
@@ -770,7 +770,7 @@ instead.
         var data: size*int;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -778,7 +778,7 @@ instead.
       writeln(x.data);
       delete x;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -789,6 +789,34 @@ instead.
    field ``data`` becomes a 3-tuple of integers. The type of this class
    instance is ``IntegerTuple(3)``. The type specified by
    ``IntegerTuple`` is a generic type.
+
+
+   *Example (MemberWidth.chpl)*.
+
+   The following code defines a record called ``R`` that is generic over an
+   integer parameter ``width`` that describes the width of the integers
+   contained in the record's array field ``A``.
+
+   .. code-block:: chapel
+
+      record R {
+         param width: int;
+         var D = {1..10};
+         var A: [D] int(width);
+      }
+
+      config const big : bool;
+
+      if (big) {
+         var r = new R(64);
+         writeln(r.type:string);
+      } else {
+         var r = new R(32);
+         writeln(r.type:string);
+      }
+
+   Running this example with ``--sbig=true`` will print out ``R(64)``, and with
+   ``--sbig=false`` or no argument it will print out ``R(32)``.
 
 .. _Fields_without_Types:
 
@@ -822,7 +850,7 @@ argument.
    implements a linked list data structure. It is generic over the type
    of the element contained in the linked list. This code does not
    specify the element type directly in the class as a type alias but
-   rather omits the type from the ``data`` field. 
+   rather omits the type from the ``data`` field.
 
    .. code-block:: chapel
 
@@ -833,14 +861,14 @@ argument.
 
    A node with integer element type can be defined in the call to the
    initializer. The call ``new Node(1)`` defines a node with the value
-   ``1``. The code 
+   ``1``. The code
 
    .. code-block:: chapel
 
       var list = new unmanaged Node(1);
       list.next = new unmanaged Node(2);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -849,7 +877,7 @@ argument.
       delete list.next;
       delete list;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -949,7 +977,7 @@ type.
 
    *Example (initializersForGenericFields.chpl)*.
 
-   In the following code: 
+   In the following code:
 
    .. code-block:: chapel
 
@@ -992,7 +1020,7 @@ type.
       var g2 = new MyGenericClass(int, "this is g2", 3.3, 333, 3333,
                                   real, 2, 222, 222.2, 22);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1003,13 +1031,13 @@ type.
       writeln(g2.p5);
       writeln(g2);
 
-   
+
 
    .. BLOCK-test-chapelcompopts
 
       --no-warnings
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1044,7 +1072,7 @@ continue after encountering a ``compilerWarning``.
    *Example (compilerDiagnostics.chpl)*.
 
    The following code shows an example of using user-defined compiler
-   diagnostics to generate warnings and errors: 
+   diagnostics to generate warnings and errors:
 
    .. code-block:: chapel
 
@@ -1069,7 +1097,7 @@ continue after encountering a ``compilerWarning``.
 
    Thus, if the program foo.chpl contained the following calls:
 
-   
+
 
    .. code-block:: chapel
       :linenos:
@@ -1084,7 +1112,7 @@ continue after encountering a ``compilerWarning``.
 
    compiling the program would generate output like:
 
-   
+
 
    .. code-block:: bash
 
@@ -1092,7 +1120,7 @@ continue after encountering a ``compilerWarning``.
       foo.chpl:2: warning: 1-argument version of foo called with type: string
       foo.chpl:6: error: foo() called with non-matching types: int(64) != real(64)
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1120,7 +1148,7 @@ matches its type:
 
    *Example (specializeGenericFunction.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1138,7 +1166,7 @@ matches its type:
       var myInt8: int(8);
       foo(myInt8); // outputs "in generic foo(x)"
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -1159,7 +1187,7 @@ concrete method to be selected when applicable. For example:
 
    *Example (specializeGenericMethod.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1198,7 +1226,7 @@ Example: A Generic Stack
 
    *Example (genericStack.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -1229,7 +1257,7 @@ Example: A Generic Stack
         proc isEmpty do return top == nil;
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1240,7 +1268,7 @@ Example: A Generic Stack
       while !s.isEmpty do
         writeln(s.pop());
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
