@@ -36,7 +36,7 @@ types are discussed in detail in :ref:`Generic_Types`.
 Record Declarations
 -------------------
 
-A record type is defined with the following syntax: 
+A record type is defined with the following syntax:
 
 .. code-block:: syntax
 
@@ -89,7 +89,7 @@ Record Types
 ~~~~~~~~~~~~
 
 A record type specifier simply names a record type, using the following
-syntax: 
+syntax:
 
 .. code-block:: syntax
 
@@ -117,7 +117,7 @@ storage associated with a record.
 
    *Example (defineActorRecord.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -185,6 +185,12 @@ types directly contain the primitive values.  Unlike class variables, the
 field data of one record variable is not shared with data of another
 record variable.
 
+Note that the storage for a record's field does not necessarily directly contain
+all of the data stored in a type. In particular, a record with a field of array
+type actually stores a kind of array descriptor that points to memory for the
+elements elsewhere (see
+:ref:`Runtime Representation of Array Values <Array_Runtime_Representation>`).
+
 Record storage is reclaimed automatically. See :ref:`Variable_Lifetimes`
 for details on when a record becomes dead.
 
@@ -216,7 +222,7 @@ initializers.
 
    *Example (recordCreation.chpl)*.
 
-   The program 
+   The program
 
    .. code-block:: chapel
 
@@ -240,7 +246,7 @@ initializers.
       writeln(new UniqueID());  // create and use a record value without a variable
       writeln(new UniqueID());
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -276,7 +282,7 @@ out of scope and before its memory is reclaimed.
 
    *Example (recordDeinitializer.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -327,7 +333,7 @@ by the record assignment function (:ref:`Record_Assignment`).
 
    *Example (paramPassing.chpl)*.
 
-   The program 
+   The program
 
    .. code-block:: chapel
 
@@ -350,7 +356,7 @@ by the record assignment function (:ref:`Record_Assignment`).
       modifyMyColor(mc2, 7);   // mc2 is affected because of the 'inout' intent
       printMyColor(mc2);
 
-   produces 
+   produces
 
    .. code-block:: printoutput
 
@@ -573,7 +579,7 @@ The following example demonstrates record assignment.
 
    *Example (assignment.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -593,7 +599,7 @@ The following example demonstrates record assignment.
       C.x = 3.14;
       A.print();	// "i = 0, x = 0.0"
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
