@@ -815,8 +815,18 @@ instead.
          writeln(r.type:string);
       }
 
-   Running this example with ``--sbig=true`` will print out ``R(64)``, and with
-   ``--sbig=false`` or no argument it will print out ``R(32)``.
+
+   .. BLOCK-test-chapelexecopts
+      -sbig=true
+
+
+   .. BLOCK-test-chapeloutput
+      R(64)
+
+
+
+   Running this example with ``-sbig=true`` will print out ``R(64)``, and with
+   ``-sbig=false`` or no argument it will print out ``R(32)``.
 
 .. _Fields_without_Types:
 
