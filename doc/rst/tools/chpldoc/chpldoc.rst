@@ -222,11 +222,11 @@ Stifling documentation
 ~~~~~~~~~~~~~~~~~~~~~~
 
 To mark a particular symbol to not be output as part of the documentation,
-preface the symbol with the pragma "no doc". For example:
+preface the symbol with the attribute ``@chpldoc.nodoc``. For example:
 
-.. code-block:: chapel
+.. code-block:: text
 
-   pragma "no doc"
+   @chpldoc.nodoc
    proc foo() { ... }
 
 Private symbols are not documented by default.
