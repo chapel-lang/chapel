@@ -126,8 +126,6 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* ``CHPL_TASKS=qthreads`` is required for GPU support.
-
 * ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available.
 
 GPU-Related Environment Variables
@@ -295,3 +293,8 @@ improvements in the future.
 
 * If using CUDA 10, single thread per locale can be used. i.e., you have to set
   ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
+
+* ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
+  <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
+  default in only Cygwin and NetBSD.
+
