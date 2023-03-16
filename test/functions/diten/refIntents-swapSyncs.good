@@ -1,6 +1,6 @@
 refIntents-swapSyncs.chpl:1: In function 'swap':
 refIntents-swapSyncs.chpl:2: warning: Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods
-  refIntents-swapSyncs.chpl:112: called as swap(l: sync int(64), r: sync int(64))
+  refIntents-swapSyncs.chpl:115: called as swap(l: sync int(64), r: sync int(64))
 Class fields
 {a = 1, b = 2}
 End of swap(int(64))

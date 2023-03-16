@@ -3,9 +3,12 @@ class C {
   param p2: int;
 }
 
-var c1 = (new owned C(2,1)).borrow();
-var c2 = (new owned C(6,2)).borrow();
-var c3 = (new owned C(6,3)).borrow();
+var ownC1 = new owned C(2,1);
+var c1 = ownC1.borrow();
+var ownC2 = new owned C(6,2);
+var c2 = ownC2.borrow();
+var ownC3 = new owned C(6,3);
+var c3 = ownC3.borrow();
 
 proc f(c: borrowed C(1+1,?p)...) {
   writeln("p1=2 p2=", p, ": ({p1 = ", c(0).p1, ", p2 = ", c(0).p2, "})");

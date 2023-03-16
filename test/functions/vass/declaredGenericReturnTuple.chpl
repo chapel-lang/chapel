@@ -2,8 +2,8 @@
 // Issues #10172, #11461.
 
 class VectorListElement {  var x;  }
-
-const VLE = (new owned VectorListElement(7)).borrow();
+const ownVLE = new owned VectorListElement(7);
+const VLE = ownVLE.borrow();
 
 proc p1(): VectorListElement { return VLE; }
 writeln(p1());

@@ -31,7 +31,8 @@ writeln("Random number seed  = ", seed);
 // accesses to this object, set parSafe to false to avoid locking
 // overhead.
 //
-var rs = (new owned NPBRandomStream(real, seed, parSafe=false)).borrow();
+var ownRs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = ownRs.borrow();
 
 //
 // Run the Monte Carlo simulation until the approximation of PI is

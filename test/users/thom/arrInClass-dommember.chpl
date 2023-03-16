@@ -9,6 +9,7 @@ class StoreSomeInts {
 }
 
 var powers_arr: [1..3] int = (1, 2, 3);
-var powers                 = (new owned StoreSomeInts(powers_arr)).borrow();
+var ownPowers = new owned StoreSomeInts(powers_arr);
+var powers                 = ownPowers.borrow();
 
 writeln("powers = ", powers);
