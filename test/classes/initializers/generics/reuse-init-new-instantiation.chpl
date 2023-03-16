@@ -10,8 +10,10 @@ class Foo {
   }
 }
 
-var foo1 = (new owned Foo(int)).borrow();
-var foo2 = (new owned Foo(bool)).borrow();
+var ownFoo1 = new owned Foo(int);
+var foo1 = ownFoo1.borrow();
+var ownFoo2 = new owned Foo(bool);
+var foo2 = ownFoo2.borrow();
 
 writeln(foo1.type == foo2.type);
 writeln(foo1);

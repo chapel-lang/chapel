@@ -22,12 +22,14 @@ class Child : Parent {
 }
 
 writeln("Parent(int)");
-var p = (new owned Parent(int, 1)).borrow();
+var ownP = new owned Parent(int, 1);
+var p = ownP.borrow();
 p.parent_method();
 p.overridden_method();
 
 writeln("Child(int,real)");
-var c = (new owned Child(int, 1, real, 2.0)).borrow();
+var ownC = new owned Child(int, 1, real, 2.0);
+var c = ownC.borrow();
 c.parent_method();
 c.overridden_method();
 c.child_method();

@@ -84,7 +84,8 @@ module Impl {
     writeln(aa);
 
     var a = new unmanaged Child(rank=1, idxType=int, strides=strideKind.one, eltType=int);
-    var d = (new owned ListerParent(rank=1, idxType=int, strides=strideKind.one)).borrow();
+    var ownD = new owned ListerParent(rank=1, idxType=int, strides=strideKind.one);
+    var d = ownD.borrow();
     d.lst.append(a);
 
     test(d);

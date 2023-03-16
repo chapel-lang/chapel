@@ -88,15 +88,3 @@ warn-misleading-new.chpl:122: note: if you meant to refer to another variable st
 warn-misleading-new.chpl:123: warning: here, 'z' is set to the result of borrowing from a 'new'
 warn-misleading-new.chpl:123: note: if you meant to save the result of new, change the type of 'z' to not be 'borrowed'
 warn-misleading-new.chpl:123: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
-warn-misleading-new.chpl:87: In function 'test4':
-warn-misleading-new.chpl:95: error: Scoped variable x would outlive the value it is set to
-warn-misleading-new.chpl:96: error: Scoped variable y would outlive the value it is set to
-warn-misleading-new.chpl:97: error: Scoped variable z would outlive the value it is set to
-warn-misleading-new.chpl:100: In function 'test4n':
-warn-misleading-new.chpl:108: error: Scoped variable x would outlive the value it is set to
-warn-misleading-new.chpl:109: error: Scoped variable y would outlive the value it is set to
-warn-misleading-new.chpl:110: error: Scoped variable z would outlive the value it is set to
-warn-misleading-new.chpl:113: In function 'test4nn':
-warn-misleading-new.chpl:121: error: Scoped variable x would outlive the value it is set to
-warn-misleading-new.chpl:122: error: Scoped variable y would outlive the value it is set to
-warn-misleading-new.chpl:123: error: Scoped variable z would outlive the value it is set to
