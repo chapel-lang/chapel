@@ -231,20 +231,21 @@ Memory Strategies
 The ``CHPL_GPU_MEM_STRATEGY`` environment variable can be used to choose between
 two different memory strategies.
 
-The current default strategy is ``unified_memory``. This strategy stores data
-that is allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified
-memory the underlying GPU implementation implicitly manages the migration of
-data to and from the GPU as necessary.
+The current default strategy is ``unified_memory``. The strategy applies to all
+data allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified memory
+the underlying GPU implementation implicitly manages the migration of data to
+and from the GPU as necessary.
 
 The alternative is to set the environment variable explicitly to
 ``array_on_device``. This strategy stores array data directly on the device and
-store other data on the host.  There are multiple benefits to using this
-strategy including that it enables users to have more explicit control over
-memory management, may be required for Chapel to interoperate with various
-third-party communication libraries, and may be necessary to achieve good
-performance. As such it may become the default memory strategy we use in the
-future. Be aware though that because this strategy is relatively new addition it
-hasn't been as thoroughly tested as our unified memory based approach.
+store other data on the host in a page-locked manner.  There are multiple
+benefits to using this strategy including that it enables users to have more
+explicit control over memory management, may be required for Chapel to
+interoperate with various third-party communication libraries, and may be
+necessary to achieve good performance. As such it may become the default memory
+strategy we use in the future. Be aware though that because this strategy is
+relatively new addition it hasn't been as thoroughly tested as our unified
+memory based approach.
 
 Note that host data can be accessed from within a GPU eligible loop running on
 the device via a direct-memory transfer.
