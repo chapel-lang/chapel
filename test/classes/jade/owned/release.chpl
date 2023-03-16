@@ -12,12 +12,14 @@ class A {
   write(o.type:string, " releases to ");
   var r = owned.release(o);
   writeln(r.type:string);
+  delete r;
 }
 {
   var o: owned A? = new A();
   write(o.type:string, " releases to ");
   var r = owned.release(o);
   writeln(r.type:string);
+  delete r;
 }
 
 // start_test test/deprecated/classes/owned-clear.chpl \
