@@ -208,9 +208,9 @@ deinit
 end outer
 t33
 in makeR
+deinit
+deinit
 end outer
-deinit
-deinit
 deinit
 t33a
 in makeR
@@ -219,9 +219,9 @@ end outer
 deinit
 t34
 in makeR
+deinit
+deinit
 end outer
-deinit
-deinit
 deinit
 t35
 in makeR
@@ -236,6 +236,11 @@ deinit
 end t36
 t37
 in makeR
+deinit
 end t37
+t38
+in makeR
+end t38
+deinit
 deinit
 deinit

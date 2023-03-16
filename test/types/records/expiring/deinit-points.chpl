@@ -565,3 +565,7 @@ writeln("end t36");
 writeln("t37");
 var t37glob = g(makeR());
 writeln("end t37");
+
+writeln("t38");
+const ref t38glob = g(makeR());
+writeln("end t38");

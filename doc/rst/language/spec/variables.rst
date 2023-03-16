@@ -762,8 +762,9 @@ are deinitialized at the end of the containing statement.
 
       proc temporaryInDeclaration() {
         const x = f(makeRecord());
+        // the temporary result of 'makeRecord()' is deinited here
         writeln("block ending");
-        // 'x' and the temporary result of 'makeRecord()' are deinited here
+        // 'x' is deinited here
       }
 
       proc temporaryInConstRefDeclaration() {
@@ -783,8 +784,8 @@ are deinitialized at the end of the containing statement.
 
       init (default)
       init (default)
-      block ending
       deinit 0
+      block ending
       deinit 0
       init (default)
       init (default)
