@@ -147,7 +147,8 @@ module CTypes {
   }
 
   /*
-    Like ``c_ptr``, but for a pointer to const data.
+    Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
+    the type `const eltType*`.
   */
   pragma "data class"
   pragma "no object"
