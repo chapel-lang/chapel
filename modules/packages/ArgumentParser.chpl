@@ -978,7 +978,8 @@ module ArgumentParser {
 
       var _helpHandler = new shared HelpHandler();
       if !isNothingType(h) then
-        _helpHandler = helpHandler: shared h.chpl_t;
+        // convert it to a shared
+        _helpHandler = helpHandler: (h:shared);
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then
