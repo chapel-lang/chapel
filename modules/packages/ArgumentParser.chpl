@@ -859,6 +859,8 @@ module ArgumentParser {
     }
   }
 
+  private param globalLifetime = 0;
+
   /*
   A parser that performs the following functions:
 
@@ -963,7 +965,9 @@ module ArgumentParser {
                         Cannot be used in conjunction with `helpHandler`.
     */
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
-              in helpHandler:?h=none, helpMessage:?t=none) {
+              in helpHandler:?h=none, helpMessage:?t=none)
+      lifetime return globalLifetime /* indicate result has global lifetime */
+    {
 
       if (!isNothingType(h) && !isNothingType(t)) then
         compilerError("Cannot set help message and help handler, choose one.");
