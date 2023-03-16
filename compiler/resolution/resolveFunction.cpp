@@ -1039,6 +1039,9 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   Symbol* ret = fn->getReturnSymbol();
 
   // surely returning neither tuple nor array, so return
+  // TODO: the addition of this early return resulted in a subtantial reduction
+  // of compilation time in some cases. We should investigate how to speed up
+  // the remainder of this function.
   if (ret->type != dtUnknown                   &&
       ! ret->type->symbol->hasFlag(FLAG_TUPLE) &&
       ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
