@@ -19,7 +19,8 @@ class D : C {
   }
 }
 
-var d:borrowed C = (new owned D(4)).borrow();
+var ownD = new owned D(4);
+var d:borrowed C = ownD.borrow();
 
 writeln(d.bbox(1));
 writeln(d.bbox(2));

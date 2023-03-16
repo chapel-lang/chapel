@@ -8,8 +8,10 @@ class C {
 }
 
 proc main() {
-  var c = (new owned C()).borrow();
-  var d = (new owned C()).borrow();
+  var cOwn = new owned C();
+  var c = cOwn.borrow();
+  var dOwn = new owned C();
+  var d = dOwn.borrow();
 
   if makesame {
     d = c;

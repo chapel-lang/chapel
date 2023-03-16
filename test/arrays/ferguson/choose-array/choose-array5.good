@@ -1,4 +1,2 @@
-1 1 1 1 1 1 1 1 1 1
-2 2 2 2 2 2 2 2 2 2
-8 2 2 2 2 2 2 2 2 2
-9 1 1 1 1 1 1 1 1 1
+choose-array5.chpl:16: error: Reference to scoped variable C reachable after lifetime ends
+choose-array5.chpl:19: error: Reference to scoped variable D reachable after lifetime ends
