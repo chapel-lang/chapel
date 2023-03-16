@@ -51,7 +51,8 @@ proc testLevel1() {
   writeln('Are the types the same? ', c11.type == c12.type);
   writeln();
 
-  var tmp = (new owned Child1(int, 10)).borrow();
+  var ownTmp = new owned Child1(int, 10);
+  var tmp = ownTmp.borrow();
   c11 = tmp;
 
   writeln(c11);
@@ -69,7 +70,8 @@ proc testLevel2() {
   writeln('Are the types the same? ', c21.type == c22.type);
   writeln();
 
-  var tmp = (new owned Child2(real, 20, int)).borrow();
+  var ownTmp = new owned Child2(real, 20, int);
+  var tmp = ownTmp.borrow();
   c21 = tmp;
 
   writeln(c21);

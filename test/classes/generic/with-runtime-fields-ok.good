@@ -29,27 +29,27 @@ with-runtime-fields-ok.chpl:32: warning: shared?
 with-runtime-fields-ok.chpl:32: warning: shared?
 with-runtime-fields-ok.chpl:32: warning: int(64)
 with-runtime-fields-ok.chpl:32: warning: int(64)
-with-runtime-fields-ok.chpl:33: warning: ==== borrowed CC("borrowed",int(64),[domain(1,int(64),false)] int(64))
-with-runtime-fields-ok.chpl:33: warning: borrowed
-with-runtime-fields-ok.chpl:33: warning: borrowed
-with-runtime-fields-ok.chpl:33: warning: int(64)
-with-runtime-fields-ok.chpl:33: warning: int(64)
-with-runtime-fields-ok.chpl:34: warning: ==== borrowed CC("borrowed?",int(64),[domain(1,int(64),false)] int(64))?
-with-runtime-fields-ok.chpl:34: warning: borrowed?
-with-runtime-fields-ok.chpl:34: warning: borrowed?
+with-runtime-fields-ok.chpl:34: warning: ==== borrowed CC("borrowed",int(64),[domain(1,int(64),false)] int(64))
+with-runtime-fields-ok.chpl:34: warning: borrowed
+with-runtime-fields-ok.chpl:34: warning: borrowed
 with-runtime-fields-ok.chpl:34: warning: int(64)
 with-runtime-fields-ok.chpl:34: warning: int(64)
-with-runtime-fields-ok.chpl:35: warning: ==== unmanaged CC("unmanaged",int(64),[domain(1,int(64),false)] int(64))
-with-runtime-fields-ok.chpl:35: warning: unmanaged
-with-runtime-fields-ok.chpl:35: warning: unmanaged
-with-runtime-fields-ok.chpl:35: warning: int(64)
-with-runtime-fields-ok.chpl:35: warning: int(64)
-with-runtime-fields-ok.chpl:36: warning: ==== unmanaged CC("unmanaged?",int(64),[domain(1,int(64),false)] int(64))?
-with-runtime-fields-ok.chpl:36: warning: unmanaged?
-with-runtime-fields-ok.chpl:36: warning: unmanaged?
+with-runtime-fields-ok.chpl:36: warning: ==== borrowed CC("borrowed?",int(64),[domain(1,int(64),false)] int(64))?
+with-runtime-fields-ok.chpl:36: warning: borrowed?
+with-runtime-fields-ok.chpl:36: warning: borrowed?
 with-runtime-fields-ok.chpl:36: warning: int(64)
 with-runtime-fields-ok.chpl:36: warning: int(64)
-with-runtime-fields-ok.chpl:38: warning: === done
+with-runtime-fields-ok.chpl:37: warning: ==== unmanaged CC("unmanaged",int(64),[domain(1,int(64),false)] int(64))
+with-runtime-fields-ok.chpl:37: warning: unmanaged
+with-runtime-fields-ok.chpl:37: warning: unmanaged
+with-runtime-fields-ok.chpl:37: warning: int(64)
+with-runtime-fields-ok.chpl:37: warning: int(64)
+with-runtime-fields-ok.chpl:38: warning: ==== unmanaged CC("unmanaged?",int(64),[domain(1,int(64),false)] int(64))?
+with-runtime-fields-ok.chpl:38: warning: unmanaged?
+with-runtime-fields-ok.chpl:38: warning: unmanaged?
+with-runtime-fields-ok.chpl:38: warning: int(64)
+with-runtime-fields-ok.chpl:38: warning: int(64)
+with-runtime-fields-ok.chpl:40: warning: === done
 true
 true
 true

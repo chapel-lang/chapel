@@ -18,5 +18,6 @@ class Bar : Foo {
   }
 }
 
-var bar = (new owned Bar(4)).borrow();
+var ownBar = new owned Bar(4);
+var bar = ownBar.borrow();
 writeln(bar);

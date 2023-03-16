@@ -9,7 +9,9 @@ class Foo {
   }
 }
 
-var f1 = (new owned Foo(true)).borrow();
-var f2 = (new owned Foo(false)).borrow();
+var ownF1 = new owned Foo(true);
+var f1 = ownF1.borrow();
+var ownF2 = new owned Foo(false);
+var f2 = ownF2.borrow();
 writeln(f1.type:string);
 writeln(f2.type:string);

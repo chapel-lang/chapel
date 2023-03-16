@@ -7,9 +7,12 @@ class GenericClass {
 
 
 proc test() {
-  var x = (new owned GenericClass(1)).borrow();
-  var y:borrowed GenericClass = (new owned GenericClass(2)).borrow();
-  var z:borrowed GenericClass(int) = (new owned GenericClass(2)).borrow();
+  var ownX = new owned GenericClass(1);
+  var x = ownX.borrow();
+  var ownY = new owned GenericClass(2);
+  var y:borrowed GenericClass = ownY.borrow();
+  var ownZ = new owned GenericClass(2);
+  var z:borrowed GenericClass(int) = ownZ.borrow();
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);

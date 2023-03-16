@@ -12,7 +12,8 @@ class Foo {
   }
 }
 
-var foo3 = (new owned Foo()).borrow();
+var ownFoo3 = new owned Foo();
+var foo3 = ownFoo3.borrow();
 var foo: borrowed Foo(4)?; // We can create an instantiation with p = 4
 var foo2: borrowed Foo(4)?;
 writeln(foo.type == foo2.type);

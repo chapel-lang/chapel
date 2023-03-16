@@ -18,6 +18,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var c: borrowed Child = (new owned Child(1.25)).borrow();
+  var ownC = new owned Child(1.25);
+  var c: borrowed Child = ownC.borrow();
   writeln(c);
 }

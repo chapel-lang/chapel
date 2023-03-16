@@ -11,7 +11,8 @@ class MyClass {
 }
 
 proc main() {
-  var cls : borrowed MyClass = (new owned MyClass()).borrow();
+  var ownCls = new owned MyClass();
+  var cls : borrowed MyClass = ownCls.borrow();
 
   writeln('cls: ', cls);
 }

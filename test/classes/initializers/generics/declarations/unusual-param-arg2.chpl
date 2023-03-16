@@ -20,7 +20,8 @@ class Foo {
 
 var foo: borrowed Foo(10)?;
 var foo2: borrowed Foo(14)?;
-var foo3 = (new owned Foo(7)).borrow();
+var ownFoo3 = new owned Foo(7);
+var foo3 = ownFoo3.borrow();
 writeln(foo3.type? == foo.type);
 writeln(foo.type:string);
 writeln(foo2.type:string);

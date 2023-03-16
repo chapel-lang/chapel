@@ -12,7 +12,8 @@ module test {
   proc aub(arg:unmanaged class) { writeln("aub ", arg.type:string); }
 
   proc main() {
-    var c = (new owned Child(1, 2)).borrow();
+    var ownC = new owned Child(1, 2);
+    var c = ownC.borrow();
 
     var cu = c:unmanaged;
     var cuq = c:unmanaged class?;

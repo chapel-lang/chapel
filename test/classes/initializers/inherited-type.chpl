@@ -29,7 +29,8 @@ class Base {
 
 
 proc main() {
-  var c = (new owned Derived(10, 20, 30)).borrow();
+  var ownC = new owned Derived(10, 20, 30);
+  var c = ownC.borrow();
 
   writeln(c);
 }

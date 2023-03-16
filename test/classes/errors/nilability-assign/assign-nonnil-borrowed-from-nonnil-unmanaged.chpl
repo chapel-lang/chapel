@@ -2,7 +2,8 @@
 
 class MyClass {  var x: int;  }
 
-var lhs = (new owned MyClass()).borrow();
+var ownLhs = new owned MyClass();
+var lhs = ownLhs.borrow();
 var rhs = new unmanaged MyClass();
 
 lhs = rhs;

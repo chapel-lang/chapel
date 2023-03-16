@@ -9,7 +9,8 @@ module test {
   proc acceptsChildQ(arg:borrowed Child?) { }
 
   proc main() {
-    var c = (new owned Child(1, 2)).borrow();
+    var ownC = new owned Child(1, 2);
+    var c = ownC.borrow();
 
     // Check some coercions
     var cu = c:unmanaged;
@@ -109,5 +110,3 @@ module test {
     }
   }
 }
-
-

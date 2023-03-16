@@ -24,7 +24,8 @@ proc C.h1(): int do return f1;
 proc C.h2(): int do return f2;
 proc C.h3(): int do return f3();
 
-var c = (new owned C(1)).borrow();
+var ownC = new owned C(1);
+var c = ownC.borrow();
 
 writeln((
          c.g1,

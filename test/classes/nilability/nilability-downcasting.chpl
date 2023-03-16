@@ -4,12 +4,14 @@ module test {
   class Child : Parent { var c:int; }
 
   proc main() {
-    var cb:borrowed Parent = (new owned Child(1, 2)).borrow();
+    var ownCb = new owned Child(1, 2);
+    var cb:borrowed Parent = ownCb.borrow();
     var cbq = cb:borrowed Parent?;
     var cu = cb:unmanaged Parent;
     var cuq = cb:unmanaged Parent?;
 
-    var pb:borrowed Parent  = (new owned Parent(3)).borrow();
+    var ownPb = new owned Parent(3);
+    var pb:borrowed Parent  = ownPb.borrow();
     var pbq = pb:borrowed Parent?;
     var pu = pb:unmanaged Parent;
     var puq = pb:unmanaged Parent?;

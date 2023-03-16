@@ -10,5 +10,6 @@ class Foo {
   }
 }
 
-var foo = (new owned Foo(3)).borrow();
+var ownFoo = new owned Foo(3);
+var foo = ownFoo.borrow();
 writeln(foo);

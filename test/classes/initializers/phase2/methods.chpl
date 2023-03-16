@@ -13,5 +13,6 @@ class ThisPhase2 {
 }
 
 proc main() {
-  var c: borrowed ThisPhase2 = (new owned ThisPhase2(2.5 + 1.3i)).borrow();
+  var ownC = new owned ThisPhase2(2.5 + 1.3i);
+  var c: borrowed ThisPhase2 = ownC.borrow();
 }
