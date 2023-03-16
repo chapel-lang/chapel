@@ -9,10 +9,16 @@ released March 23, 2023
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
-Packaging / Configuration Changes
----------------------------------
-* updated Dockerfiles to support the C backend in addition to LLVM  
+Configuration / Build / Packaging Changes
+-----------------------------------------
+* updated Chapel's Dockerfiles to support the C backend in addition to LLVM  
   (see https://hub.docker.com/r/chapel/chapel/)
+* switched to using CMake behind the scenes to build `chpl` and `chlpdoc`
+* added new 'QUIET' and 'VERBOSE' build modes by setting these vars to `1`
+  (e.g., `make QUIET=1` or `export VERBOSE=1 && make`)
+  (TODO: or... see TODO)
+* for `./configure --chpl-home`, installs now require CMake 3.16 or later  
+  (see https://chapel-lang.org/docs/1.30/usingchapel/prereqs.html#chapel-prerequisites)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -21,6 +27,7 @@ Syntactic / Naming Changes
 --------------------------
 * renamed the new `weakPointer(C)` type to `weak(C)`  
   (see https://chapel-lang.org/docs/main/builtins/WeakPointer.html#WeakPointer.weak)
+* changed the syntax of `@unstable "msg"` to `@unstable("msg", ...)`
 * unified `chpl`'s parsing of array types/values and square bracket loops
 
 Deprecated / Unstable / Removed Language Features
@@ -29,8 +36,12 @@ Deprecated / Unstable / Removed Language Features
 * deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
 * removed support for the deprecated `alignedBoundsByDefault` `config param`
 
-New Features
-------------
+New Language Features
+---------------------
+* added support for a generalized attribute syntax  
+  (see https://chapel-lang.org/docs/1.30/technotes/attributes.html)
+* added new `@deprecated` and `@stable` attributes for indicating stability  
+  (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
 * added support for single-statement subroutine bodies using the `do` keyword  
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
 * added a `.fullIdxType` query on arrays to get multidimensional index types  
@@ -46,6 +57,8 @@ Feature Improvements
   (e.g., `for i in false.. by -1` will now yield `true`, `false`)
 * enabled classes to have methods that share the class's name
   (e.g., `class C { proc C() { ... } }` is now legal)
+* added new optional arguments to the `@unstable` annotation  
+  (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
 
 Namespace Changes
 -----------------
@@ -147,6 +160,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* added `@chpldoc.nodoc` as a means of stifling `chpldoc` documentation  
+  (see https://chapel-lang.org/docs/1.30/tools/chpldoc/chpldoc.html#stifling-documentation)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -181,6 +196,9 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
   (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
+* fixed formatting of 'try!' in error handling documentation  
+  (see https://chapel-lang.org/docs/1.30/technotes/errorHandling.html)
+
 
 Syntax Highlighting
 -------------------
@@ -277,8 +295,11 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * updated `frontend/README` to focus on code structure and best practices
 
-Developer-oriented changes: Naming Changes
-------------------------------------------
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+* removed the `deprecated` keyword in favor of a new `@deprecated` attribute  
+  (see https://chapel-lang.org/docs/1.30/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* replaced `pragma "no doc"` with `@chpldoc.nodoc`
 * renamed the 'parse' pass to 'parseAndConvertUast'
 * renamed `IntentList` to `Qualifier` in 'dyno'
 
@@ -297,6 +318,8 @@ Developer-oriented changes: Makefile / Build-time changes
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added `--use-io-formatters` to enable experimental IO format customization
+* added flags to support processing attributes belonging to different tools  
+  (e.g., `--warn-unknown-attribute-toolname`, `--using-attribute-toolname`)
 * validated that the pass provided to the `--stop-after-pass` flag exists
 * prohibited using the `--parse-only` and `--stop-after-pass` flags together
 * added `--gpu-ptxas-enforce-optimization` for debugging optimized GPU builds
@@ -332,13 +355,16 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
   - added support for return intent overloading
   - added support for handling 'ref-if-modified' types, like arrays
   - added support for default-init, copy-init, assignment, and deinit actions
+  - started resolving error types in `catch` statements
 * improved semantic checks for conditionals within initializers
 * added 'dyno' support for computing a program's module initialization order
 * added support for serializing and deserializing the dyno uAST
 * significantly improved the quality of the uAST dumps
+* fixed dyno traces writing terminal color commands when piping to a file
 * fixed bugs in split-initialization and copy-elision analyses
 * fixed bugs in return-type inference
 * fixed the `DUMP_WHEN_CONVERTING_UAST_TO_AST` macro
+* refactored uAST node `Attributes` into `AttributeGroup` and added `Attribute`
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
