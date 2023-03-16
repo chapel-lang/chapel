@@ -11,6 +11,22 @@ proc testList(type t) where isTuple(t) {
   assert(l.size == 0);
 }
 
+proc testList(type t) where isBorrowedClass(t) {
+  var l = new list(t);
+
+  // create values with 'owned' if t is a borrowed class type
+  // (the list will still store borrowed)
+  type useT = (t:owned);
+
+  var x: useT = new useT(1);
+
+  l.append(x.borrow());
+  assert(l.size == 1);
+
+  var value = l.pop();
+  assert(l.size == 0);
+}
+
 proc testList(type t) {
   var l = new list(t);
 
