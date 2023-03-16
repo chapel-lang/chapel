@@ -71,10 +71,10 @@ For example, the following program opens a file and writes an integer to it:
     // 17
 
   } catch e: Error {
-    // These functions will throw errors under specific circumstances.  The
-    // possible errors vary depending on arguments used and the current state of
-    // the file system.  See the documentation for the individual functions and
-    // the spec chapter on Error Handling for more information.
+    // Generally speaking, the I/O functions throw errors.  Handling these
+    // errors is application-dependent and is left out of this example for
+    // brevity.  Please see the documentation for individual functions for more
+    // details about errors that they can throw.
   }
 
 Then, the following program can be used to read the integer:
@@ -103,10 +103,10 @@ Then, the following program can be used to read the integer:
     // Read integer 17
 
   } catch e: Error {
-    // These functions will throw errors under specific circumstances.  The
-    // possible errors vary depending on arguments used and the current state of
-    // the file system.  See the documentation for the individual functions and
-    // the spec chapter on Error Handling for more information.
+    // Generally speaking, the I/O functions throw errors.  Handling these
+    // errors is application-dependent and is left out of this example for
+    // brevity.  Please see the documentation for individual functions for more
+    // details about errors that they can throw.
   }
 
 The :proc:`~IO.read` functions allow one to read values into variables as
