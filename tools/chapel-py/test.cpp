@@ -123,14 +123,14 @@ static PyObject* AstIterObject_next(AstIterObject *self) {
 PyTypeObject AstIterType = {
   PyVarObject_HEAD_INIT(NULL, 0)
   .tp_name = "chapel.AstIter",
-  .tp_doc = PyDoc_STR("An iterator over Chapel AST nodes"),
   .tp_basicsize = sizeof(AstIterObject),
   .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyType_GenericNew,
-  .tp_init = (initproc) AstIterObject_init,
   .tp_dealloc = (destructor) AstIterObject_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("An iterator over Chapel AST nodes"),
   .tp_iternext = (iternextfunc) AstIterObject_next,
+  .tp_init = (initproc) AstIterObject_init,
+  .tp_new = PyType_GenericNew,
 };
 
 static int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
@@ -158,20 +158,20 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
 
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
-  {NULL}  /* Sentinel */
+  {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
 PyTypeObject ContextType = {
   PyVarObject_HEAD_INIT(NULL, 0)
   .tp_name = "chapel.Context",
-  .tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state"),
   .tp_basicsize = sizeof(ContextObject),
   .tp_itemsize = 0,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_new = PyType_GenericNew,
-  .tp_init = (initproc) ContextObject_init,
   .tp_dealloc = (destructor) ContextObject_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state"),
   .tp_methods = ContextObject_methods,
+  .tp_init = (initproc) ContextObject_init,
+  .tp_new = PyType_GenericNew,
 };
 
 static int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) { \
@@ -229,7 +229,28 @@ PyTypeObject AstNodeType = {
   .tp_new = PyType_GenericNew,
 };
 
-#define DEFINE_PY_TYPE_FOR(NAME, BASE_CLASS, FLAGS)\
+
+static PyObject* NamedDeclObject_name(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto namedDecl = ((NamedDeclObject*) self)->parent.astNode->toNamedDecl();
+  return Py_BuildValue("s", namedDecl->name().c_str());
+}
+
+template <chpl::uast::asttags::AstTag tag>
+struct PerNodeInfo {
+  static constexpr PyMethodDef methods[] = {
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::START_NamedDecl> {
+  static constexpr PyMethodDef methods[] = {
+    {"name", NamedDeclObject_name, METH_NOARGS, "Get the name of this NamedDecl node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+#define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
   static PyMethodDef NAME##Object_methods[] = { \
     {NULL}  /* Sentinel */ \
   }; \
@@ -241,14 +262,15 @@ PyTypeObject AstNodeType = {
     .tp_itemsize = 0, \
     .tp_flags = FLAGS, \
     .tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"), \
-    .tp_methods = NAME##Object_methods, \
-    .tp_base = BASE_CLASS, \
+    .tp_methods = (PyMethodDef*) PerNodeInfo<TAG>::methods, \
+    .tp_base = parentTypeFor(TAG), \
+    .tp_init = (initproc) NAME##Object_init, \
     .tp_new = PyType_GenericNew, \
   }; \
 
-#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::START_##NAME), Py_TPFLAGS_BASETYPE)
+#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE

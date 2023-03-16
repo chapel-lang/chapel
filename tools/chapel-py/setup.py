@@ -5,6 +5,7 @@ import os
 import sys
 
 CXXFLAGS = []
+CXXFLAGS += ["-Wno-c99-designator"]
 CXXFLAGS += subprocess.check_output(["llvm-config", "--cxxflags"]).decode(sys.stdout.encoding).strip().split(" ")
 CXXFLAGS += ["-std=c++17", "-I/Users/daniel.fedorin/Documents/software/chapel/frontend/include"]
 
