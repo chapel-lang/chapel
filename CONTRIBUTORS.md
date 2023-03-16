@@ -28,6 +28,7 @@ Contributors to the Chapel 1.30.0 release
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Karlon West, [HPE]
+* Vanessa Zambrano, [HPE]
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
