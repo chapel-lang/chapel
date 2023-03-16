@@ -28,7 +28,8 @@ class mything {
 }
 
 {
-  var a = (new owned mything(1)).borrow();
+  var ownA = new owned mything(1);
+  var a = ownA.borrow();
 
   writeln("Writing ", a);
 
@@ -40,7 +41,8 @@ class mything {
 
   var r = f.reader();
 
-  var b = (new owned mything(2)).borrow();
+  var ownB = new owned mything(2);
+  var b = ownB.borrow();
 
   r.read(b);
   r.close();
@@ -49,4 +51,3 @@ class mything {
 
   assert(a.x == b.x);
 }
-

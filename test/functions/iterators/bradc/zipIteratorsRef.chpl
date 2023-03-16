@@ -21,7 +21,8 @@ writeln("myC is: ");
 for c in myC do
   writeln(c, " ");
 
-var otherC = (new owned C()).borrow();
+var ownOtherC = new owned C();
+var otherC = ownOtherC.borrow();
 
 writeln("otherC is: ");
 for c in otherC do

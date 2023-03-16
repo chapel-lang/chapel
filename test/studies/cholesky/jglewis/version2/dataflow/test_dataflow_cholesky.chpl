@@ -84,7 +84,8 @@ module test_dataflow_cholesky {
 
   proc main {
 
-    var Rand = (new owned RandomStream ( real, seed = 314159) ).borrow();
+    var ownRand = new owned RandomStream ( real, seed = 314159);
+    var Rand = ownRand.borrow();
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 

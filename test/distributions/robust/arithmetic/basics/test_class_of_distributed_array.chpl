@@ -5,7 +5,8 @@ class C {
   var arr: [dom] int;
 }
 
-var c = (new owned C()).borrow();
+var ownC = new owned C();
+var c = ownC.borrow();
 
 for i in c.dom do
   c.arr(i) = next();

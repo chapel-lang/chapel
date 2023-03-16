@@ -40,7 +40,8 @@ assert(hasField(R, "z") == false);
 
 
 {
-  var r = (new owned R(10,20)).borrow();
+  var ownR = new owned R(10,20);
+  var r = ownR.borrow();
 
   assert(getField(r, 0) == 10);
   assert(getField(r, 1) == 20);

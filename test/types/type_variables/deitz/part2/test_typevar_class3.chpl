@@ -7,8 +7,10 @@ class foo {
   }
 }
 
-var f1 : borrowed foo(t=int) = (new owned foo(t=int)).borrow();
-var f2 : borrowed foo(t=string) = (new owned foo(t=string)).borrow();
+var ownF1 = new owned foo(t=int);
+var f1 : borrowed foo(t=int) = ownF1.borrow();
+var ownF2 = new owned foo(t=string);
+var f2 : borrowed foo(t=string) = ownF2.borrow();
 
 f1.x = 2;
 f2.x = "hello world";

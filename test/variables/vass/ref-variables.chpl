@@ -37,7 +37,8 @@ writeln("myArr[2] = ", myArr[2]);
 ////// alias of a class field //////
 
 class C { var cField = 51; }
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 ref refClassField = myC.cField;
 myC.cField = 62;
 writeln("refClassField = ", refClassField);

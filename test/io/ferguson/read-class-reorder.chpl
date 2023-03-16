@@ -15,7 +15,8 @@ class Child /*: Parent*/ {
   var z: int;
 }
 
-var a: borrowed Child = (new owned Child(x = 1, y = 2, z = 3)).borrow();
+var ownA = new owned Child(x = 1, y = 2, z = 3);
+var a: borrowed Child = ownA.borrow();
 
 writeln("a is ", a);
 

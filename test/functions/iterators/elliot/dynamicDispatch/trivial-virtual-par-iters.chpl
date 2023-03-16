@@ -11,8 +11,8 @@ class Child: Parent {
   override iter these(param tag: iterKind): int where tag == iterKind.leader { yield 3; }
   override iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield 4; }
 }
-
-var child: borrowed Parent = (new owned Child()).borrow();
+var ownChild = new owned Child();
+var child: borrowed Parent = ownChild.borrow();
 
 for c in child do writeln(c);
 forall c in child do writeln(c);

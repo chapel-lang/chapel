@@ -16,7 +16,8 @@ class C {
   }
 }
 
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 myC.foo;
 myC.bar();

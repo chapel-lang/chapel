@@ -17,11 +17,15 @@ class foo {
   }
 }
 
-var f1 : borrowed foo(t=int)    = (new owned foo(t = int)).borrow();
-var b1 : borrowed bar(t=int)    = (new owned bar(t = int)).borrow();
+var ownF1 = new owned foo(t = int);
+var f1 : borrowed foo(t=int)    = ownF1.borrow();
+var ownB1 = new owned bar(t = int);
+var b1 : borrowed bar(t=int)    = ownB1.borrow();
 
-var f2 : borrowed foo(t=string) = (new owned foo(t = string)).borrow();
-var b2 : borrowed bar(t=string) = (new owned bar(t = string)).borrow();
+var ownF2 = new owned foo(t = string);
+var f2 : borrowed foo(t=string) = ownF2.borrow();
+var ownB2 = new owned bar(t = string);
+var b2 : borrowed bar(t=string) = ownB2.borrow();
 
 f1.x = 12;
 f2.x = "hello";

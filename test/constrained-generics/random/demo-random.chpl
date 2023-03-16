@@ -25,8 +25,10 @@ proc testGetNth(rs1: ?Q, rs2: Q) where Q implements RandomStream {
   writeln("testGetNth() done");
 }
 
-const rs1 = createRandomStream(int, 123).borrow(),
-      rs2 = createRandomStream(int, 123).borrow();
+var ownRs1 = createRandomStream(int, 123);
+var ownRs2 = createRandomStream(int, 123);
+const rs1 = ownRs1.borrow(),
+      rs2 = ownRs2.borrow();
 testGetNth(rs1, rs2);
 
 /////////////////////////////////

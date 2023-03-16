@@ -37,7 +37,8 @@ var counts: [LocaleSpace] [1..tasks] int;
 coforall loc in Locales do on loc {
   var myN = (loc.id+1)*n/numLocales - (loc.id)*n/numLocales;
   coforall task in 1..tasks {
-    var rs = (new owned NPBRandomStream(real, seed + loc.id*tasks*2 + task*2, parSafe=false)).borrow();
+    var ownRs = new owned NPBRandomStream(real, seed + loc.id*tasks*2 + task*2, parSafe=false);
+    var rs = ownRs.borrow();
     var count = 0;
     for i in (task-1)*myN/tasks+1..task*myN/tasks do
       count += rs.getNext()**2 + rs.getNext()**2 <= 1.0;

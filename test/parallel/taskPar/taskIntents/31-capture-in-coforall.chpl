@@ -17,7 +17,8 @@ const rLarge = new RecordLarge(yy01=30001, yy07=30007, yy20=30020);
 class ClassType {
   var zzz: int;
 }
-const cInstance = (new owned ClassType(44444444)).borrow();
+const ownCInstance = new owned ClassType(44444444);
+const cInstance = ownCInstance.borrow();
 union UnionType {
   var ufield111, ufield222: int;
 }

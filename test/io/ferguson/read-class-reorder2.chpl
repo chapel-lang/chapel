@@ -13,7 +13,8 @@ class Child : Parent {
   var y: int;
 }
 
-var a: borrowed Child = (new owned Child(a = 1, b = 2, x = 3, y = 4)).borrow();
+var ownA = new owned Child(a = 1, b = 2, x = 3, y = 4);
+var a: borrowed Child = ownA.borrow();
 
 writeln("a is ", a);
 

@@ -6,7 +6,8 @@ class Foo {
 }
 
 proc main() {
-  var f : borrowed Foo = (new owned Foo()).borrow();
+  var ownF = new owned Foo();
+  var f : borrowed Foo = ownF.borrow();
 
   f.x = 1;
   f.y = 2;

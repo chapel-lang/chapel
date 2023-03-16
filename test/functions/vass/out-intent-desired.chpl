@@ -8,7 +8,8 @@ class D:C { var y = 666; }
 
 proc testClasses(out i: borrowed D) { i = new D(); }
 
-var c: borrowed C = (new owned C()).borrow();
+var ownC = new owned C();
+var c: borrowed C = ownC.borrow();
 testClasses(c);
 writeln(c);
 

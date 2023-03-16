@@ -34,8 +34,10 @@ class Grandchild: Child {
   }
 }
 
-var p1: borrowed Parent = (new owned Child()).borrow();
-var p2: borrowed Parent = (new owned Grandchild()).borrow();
+var ownP1 = new owned Child();
+var p1: borrowed Parent = ownP1.borrow();
+var ownP2 = new owned Grandchild();
+var p2: borrowed Parent = ownP2.borrow();
 
 for i in p1.myit() {
   writeln(i);

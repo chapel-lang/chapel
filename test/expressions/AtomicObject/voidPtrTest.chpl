@@ -5,8 +5,10 @@ proc fn(f : c_void_ptr) {
 }
 
 
-var obj = (new owned Obj(1,2,3)).borrow();
+var ownObj = new owned Obj(1,2,3);
+var obj = ownObj.borrow();
 fn(obj : c_void_ptr);
 
-var obj2 : borrowed Obj = (new owned Obj(4,5,6)).borrow();
+var ownObj2 = new owned Obj(4,5,6);
+var obj2 : borrowed Obj = ownObj2.borrow();
 fn(obj2 : c_void_ptr);

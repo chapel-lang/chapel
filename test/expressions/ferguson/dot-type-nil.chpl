@@ -3,8 +3,10 @@ class C {
   var x: t;
 }
 
-var c1: C(int) = (new owned C(int)).borrow();
-var c2: C(real) = (new owned C(real)).borrow();
+var ownC1 = new owned C(int);
+var c1: C(int) = ownC1.borrow();
+var ownC2 = new owned C(real);
+var c2: C(real) = ownC2.borrow();
 
 writeln(c1.x.type: string);
 writeln(c2.x.type: string);

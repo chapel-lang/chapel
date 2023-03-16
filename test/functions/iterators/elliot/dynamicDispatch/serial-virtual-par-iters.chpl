@@ -13,8 +13,8 @@ class Child: Parent {
 }
 
 var A: [1..10] int;
-
-var child: borrowed Parent = (new owned Child()).borrow();
+var ownChild = new owned Child();
+var child: borrowed Parent = ownChild.borrow();
 
 for c in child do A[c] = c; writeln(A); A = 0;
 forall c in child do A[c] = c; writeln(A); A = 0;
