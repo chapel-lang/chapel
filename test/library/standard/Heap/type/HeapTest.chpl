@@ -33,6 +33,24 @@ proc testHeap(type t) where isTuple(t) {
   assert(l.size == 0);
 }
 
+proc testHeap(type t) where isBorrowedClass(t) {
+  var l = new heap(t);
+
+  // create values with 'owned' if t is a borrowed class type
+  // (the set will still store borrowed)
+  type useT = (t:owned);
+
+  var x: useT = new useT(1);
+
+  l.push(x.borrow());
+  assert(l.size == 1);
+
+  var value = l.top();
+  l.pop();
+  assert(l.size == 0);
+}
+
+
 proc testHeap(type t) {
   var l = new heap(t);
 
@@ -41,29 +59,13 @@ proc testHeap(type t) {
   l.push(x);
   assert(l.size == 1);
 
-  var value = l.top();
+  if !isOwnedClass(t) {
+    var value = l.top();
+  }
   l.pop();
   assert(l.size == 0);
 
   if isUnmanagedClass(t) {
     delete x;
   }
-
-}
-
-proc testHeapOwned(type t) {
-  var l = new heap(t);
-
-  var x: t = new t(1);
-
-  l.push(x);
-  assert(l.size == 1);
-
-  var value = l.pop();
-  assert(l.size == 0);
-
-  if isUnmanagedClass(t) {
-    delete x;
-  }
-
 }
