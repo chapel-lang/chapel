@@ -1550,6 +1550,25 @@ void MarkTempsVisitor::handleStmtGroup() {
     }
   }
 
+  // also, when initializing a module-scope reference,
+  // the DefExpr is already hoisted to module scope, so look for that
+  // in the stmtsForUserStmt.
+  if (inModInitForMod) {
+    for_vector(Expr, e, stmtsForUserStmt) {
+      if (CallExpr* call = toCallExpr(e)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhsSe = toSymExpr(call->get(1));
+          if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
+            if (lhs->isRef() && !lhs->hasFlag(FLAG_TEMP) &&
+                lhs->defPoint->parentExpr == inModInitForMod->block) {
+              allEndOfBlock = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
   // set the lifetime for variables
   for_vector(VarSymbol, v, vars) {
     if (v->hasFlag(FLAG_TEMP)) {
