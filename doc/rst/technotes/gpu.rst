@@ -145,7 +145,7 @@ different installation) you may set ``CHPL_CUDA_PATH`` and/or
 ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
 architecture to compile for.  The default value is ``sm_60`` for
 ``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
-also use the ``--gpu-arch`` compliler flag to set GPU architecture. For a list
+also use the ``--gpu-arch`` compiler flag to set GPU architecture. For a list
 of possible values please refer to `CUDA Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
 for NVIDIA or "processor" values in `this table in the LLVM documentation
