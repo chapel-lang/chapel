@@ -96,6 +96,23 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
   return toReturn;
 }
 
+static PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag) {
+#define AST_NODE(NAME)
+#define AST_LEAF(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME)
+#define AST_END_SUBCLASSES(NAME) \
+  if (tag > chpl::uast::asttags::START_##NAME && tag < chpl::uast::asttags::END_##NAME) { \
+    return &NAME##Type; \
+  }
+#include "chpl/uast/uast-classes-list.h"
+#include "chpl/uast/uast-classes-list.h"
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+  return &AstNodeType;
+}
+
 static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs) {
   PyObject* astObjectPy;
   if (!PyArg_ParseTuple(args, "O", &astObjectPy))
@@ -187,7 +204,7 @@ PyTypeObject ContextType = {
   .tp_methods = ContextObject_methods,
 };
 
-#define DEFINE_PY_TYPE_FOR(NAME)\
+#define DEFINE_PY_TYPE_FOR(NAME, BASE_CLASS, FLAGS)\
   static PyMethodDef NAME##Object_methods[] = { \
     {"dump", (PyCFunction) NAME##Object_dump, METH_NOARGS, "Dump the internal representation of the given AST node"}, \
     {"tag", (PyCFunction) NAME##Object_tag, METH_NOARGS, "Get a string representation of the AST node's type"}, \
@@ -197,22 +214,23 @@ PyTypeObject ContextType = {
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
     .tp_name = "chapel." #NAME, \
-    .tp_doc = PyDoc_STR("An opaque reference to a Chapel " #NAME " node"), \
     .tp_basicsize = sizeof(NAME##Object), \
     .tp_itemsize = 0, \
-    .tp_flags = Py_TPFLAGS_DEFAULT, \
-    .tp_new = PyType_GenericNew, \
-    .tp_init = (initproc) NAME##Object_init, \
     .tp_dealloc = (destructor) NAME##Object_dealloc, \
-    .tp_methods = NAME##Object_methods, \
+    .tp_flags = FLAGS, \
+    .tp_doc = PyDoc_STR("An opaque reference to a Chapel " #NAME " node"), \
     .tp_iter = (getiterfunc) NAME##Object_iter, \
+    .tp_methods = NAME##Object_methods, \
+    .tp_base = BASE_CLASS, \
+    .tp_init = (initproc) NAME##Object_init, \
+    .tp_new = PyType_GenericNew, \
   }; \
 
 // TODO: here too, need to re-create the class hierarchy
-DEFINE_PY_TYPE_FOR(AstNode);
-#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME)
-#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME)
+DEFINE_PY_TYPE_FOR(AstNode, nullptr, Py_TPFLAGS_BASETYPE);
+#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
+#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
+#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::START_##NAME), Py_TPFLAGS_BASETYPE)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
