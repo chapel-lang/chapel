@@ -3,6 +3,8 @@
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 
+static PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
+
 typedef struct {
   PyObject_HEAD
   chpl::uast::AstListIterator<chpl::uast::AstNode> current;
@@ -18,53 +20,26 @@ typedef struct {
 } ContextObject;
 extern PyTypeObject ContextType;
 
-#define DEFINE_PY_CLASS_FOR(NAME)\
+typedef struct {
+  PyObject_HEAD
+  PyObject* contextObject;
+  const chpl::uast::AstNode* astNode;
+} AstNodeObject;
+extern PyTypeObject AstNodeType;
+
+#define DEFINE_PY_CLASS_FOR(NAME, TAG)\
   typedef struct { \
-    PyObject_HEAD \
-    PyObject* contextObject; \
-    const chpl::uast::NAME* node##NAME; \
+    AstNodeObject parent; \
   } NAME##Object; \
   \
   extern PyTypeObject NAME##Type; \
   static int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    PyObject* contextObjectPy; \
-    if (!PyArg_ParseTuple(args, "O", &contextObjectPy)) \
-        return -1; \
-    auto contextObject = (ContextObject*) contextObjectPy; \
-    auto context = &contextObject->context; \
-  \
-    Py_INCREF(contextObjectPy); \
-    self->node##NAME = nullptr; \
-    self->contextObject = contextObjectPy; \
-  \
-    return 0; \
+    return parentTypeFor(chpl::uast::asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
-  static void NAME##Object_dealloc(NAME##Object* self) { \
-    Py_XDECREF(self->contextObject); \
-    Py_TYPE(self)->tp_free((PyObject *) self); \
-  } \
-  static PyObject* NAME##Object_dump(NAME##Object *self, PyObject *Py_UNUSED(ignored)) { \
-    self->node##NAME->dump(); \
-    Py_RETURN_NONE; \
-  } \
-  \
-  static PyObject* NAME##Object_tag(NAME##Object *self, PyObject *Py_UNUSED(ignored)) { \
-    const char* nodeType = chpl::uast::asttags::tagToString(self->node##NAME->tag()); \
-    return Py_BuildValue("s", nodeType); \
-  } \
-  \
-  static PyObject* NAME##Object_iter(NAME##Object *self) { \
-    auto argList = Py_BuildValue("(O)", (PyObject*) self); \
-    auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList); \
-    Py_XDECREF(argList); \
-    return astIterObjectPy; \
-  }
 
-/* TODO: recreate the type hierarchy to avoid generating common methods etc. */
-DEFINE_PY_CLASS_FOR(AstNode)
-#define AST_NODE(NAME) DEFINE_PY_CLASS_FOR(NAME)
-#define AST_LEAF(NAME) DEFINE_PY_CLASS_FOR(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_CLASS_FOR(NAME)
+#define AST_NODE(NAME) DEFINE_PY_CLASS_FOR(NAME, NAME)
+#define AST_LEAF(NAME) DEFINE_PY_CLASS_FOR(NAME, NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_CLASS_FOR(NAME, START_##NAME)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
@@ -79,7 +54,7 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
 #define CAST_TO(NAME) \
     case chpl::uast::asttags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->node##NAME = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.astNode = node->to##NAME(); \
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
@@ -121,7 +96,7 @@ static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwa
   auto astObject = (AstNodeObject*) astObjectPy;
   auto contextObject = (ContextObject*) astObject->contextObject;
 
-  auto iterPair = astObject->nodeAstNode->children();
+  auto iterPair = astObject->astNode->children();
   Py_INCREF(astObject->contextObject);
   new (&self->current) chpl::uast::AstListIterator<chpl::uast::AstNode>(iterPair.begin());
   new (&self->end) chpl::uast::AstListIterator<chpl::uast::AstNode>(iterPair.end());
@@ -181,11 +156,6 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   return wrapAstNode(self, builderResult.topLevelExpression(0));
 }
 
-static PyMethodDef ChapelMethods[] = {
-  { NULL, NULL, 0, NULL } /* Sentinel */
-};
-
-
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   {NULL}  /* Sentinel */
@@ -204,10 +174,63 @@ PyTypeObject ContextType = {
   .tp_methods = ContextObject_methods,
 };
 
+static int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) { \
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+  auto contextObject = (ContextObject*) contextObjectPy;
+  auto context = &contextObject->context;
+
+  Py_INCREF(contextObjectPy);
+  self->astNode = nullptr;
+  self->contextObject = contextObjectPy;
+  return 0;
+}
+
+static void AstNodeObject_dealloc(AstNodeObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  self->astNode->dump();
+  Py_RETURN_NONE;
+}
+
+static PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  const char* nodeType = chpl::uast::asttags::tagToString(self->astNode->tag());
+  return Py_BuildValue("s", nodeType);
+}
+
+static PyObject* AstNodeObject_iter(AstNodeObject *self) {
+  auto argList = Py_BuildValue("(O)", (PyObject*) self);
+  auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
+  Py_XDECREF(argList);
+  return astIterObjectPy;
+}
+
+static PyMethodDef AstNodeObject_methods[] = {
+  {"dump", (PyCFunction) AstNodeObject_dump, METH_NOARGS, "Dump the internal representation of the given AST node"},
+  {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
+  {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+PyTypeObject AstNodeType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  .tp_name = "chapel.AstNode",
+  .tp_basicsize = sizeof(AstNodeObject),
+  .tp_itemsize = 0,
+  .tp_dealloc = (destructor) AstNodeObject_dealloc,
+  .tp_flags = Py_TPFLAGS_BASETYPE,
+  .tp_doc = PyDoc_STR("The base type of Chapel AST nodes"),
+  .tp_iter = (getiterfunc) AstNodeObject_iter,
+  .tp_methods = AstNodeObject_methods,
+  .tp_init = (initproc) AstNodeObject_init,
+  .tp_new = PyType_GenericNew,
+};
+
 #define DEFINE_PY_TYPE_FOR(NAME, BASE_CLASS, FLAGS)\
   static PyMethodDef NAME##Object_methods[] = { \
-    {"dump", (PyCFunction) NAME##Object_dump, METH_NOARGS, "Dump the internal representation of the given AST node"}, \
-    {"tag", (PyCFunction) NAME##Object_tag, METH_NOARGS, "Get a string representation of the AST node's type"}, \
     {NULL}  /* Sentinel */ \
   }; \
   \
@@ -216,18 +239,13 @@ PyTypeObject ContextType = {
     .tp_name = "chapel." #NAME, \
     .tp_basicsize = sizeof(NAME##Object), \
     .tp_itemsize = 0, \
-    .tp_dealloc = (destructor) NAME##Object_dealloc, \
     .tp_flags = FLAGS, \
-    .tp_doc = PyDoc_STR("An opaque reference to a Chapel " #NAME " node"), \
-    .tp_iter = (getiterfunc) NAME##Object_iter, \
+    .tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"), \
     .tp_methods = NAME##Object_methods, \
     .tp_base = BASE_CLASS, \
-    .tp_init = (initproc) NAME##Object_init, \
     .tp_new = PyType_GenericNew, \
   }; \
 
-// TODO: here too, need to re-create the class hierarchy
-DEFINE_PY_TYPE_FOR(AstNode, nullptr, Py_TPFLAGS_BASETYPE);
 #define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
 #define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::NAME), Py_TPFLAGS_DEFAULT)
 #define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, parentTypeFor(chpl::uast::asttags::START_##NAME), Py_TPFLAGS_BASETYPE)
@@ -237,6 +255,10 @@ DEFINE_PY_TYPE_FOR(AstNode, nullptr, Py_TPFLAGS_BASETYPE);
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
+
+static PyMethodDef ChapelMethods[] = {
+  { NULL, NULL, 0, NULL } /* Sentinel */
+};
 
 static PyModuleDef ChapelModule {
   PyModuleDef_HEAD_INIT,
@@ -253,6 +275,7 @@ PyMODINIT_FUNC PyInit_chapel() {
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
+  if (PyType_Ready(&AstNodeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
 #define AST_NODE(NAME) READY_TYPE(NAME)
 #define AST_LEAF(NAME) READY_TYPE(NAME)
@@ -269,12 +292,6 @@ PyMODINIT_FUNC PyInit_chapel() {
 
   if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
     Py_DECREF(&ContextType);
-    Py_DECREF(chapelModule);
-    return NULL;
-  }
-  if (PyModule_AddObject(chapelModule, "AstIter", (PyObject *) &AstIterType) < 0) {
-    Py_DECREF(&ContextType);
-    Py_DECREF(&AstIterType);
     Py_DECREF(chapelModule);
     return NULL;
   }
