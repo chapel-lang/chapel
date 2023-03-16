@@ -21,15 +21,23 @@ proc testSet(type t) where isTuple(t) {
 proc testSet(type t) {
   var s = new sortedSet(t, false, defaultComparator);
 
-  var x = new t(1);
+  // create values with 'owned' if t is a borrowed class type
+  // (the set will still store borrowed)
+  type useT = if isBorrowedClass(t) then (t:owned) else t;
+
+  var x = new useT(1);
 
   s.add(x);
   assert(s.size == 1);
 
-  s.remove(x);
+  if isBorrowedClass(t) {
+    s.remove(x.borrow());
+  } else {
+    s.remove(x);
+  }
   assert(s.size == 0);
 
-  if isUnmanagedClass(t) {
+  if isUnmanagedClass(useT) {
     delete x;
   }
 }
