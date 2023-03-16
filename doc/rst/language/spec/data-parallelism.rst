@@ -659,6 +659,24 @@ is equivalent to
 The usual constraints of zippered iteration apply to zippered promotion, so
 the promoted actuals must have the same shape.
 
+Formal arguments that are not promoted are evaluated once and stored in a
+temporary variable. If formal ``a1`` is an expression, then the call 
+
+.. code-block:: chapel
+
+   f(s1, s2, ..., a1, a2, ...)
+
+is equivalent to 
+
+.. code-block:: chapel
+
+   var tmp = a1;
+   [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., tmp, a2, ...)
+
+
+In this instance, if formal ``a1`` is an expression that has side effects
+(such as printing), those side effects will only occur once.
+
 A zippered promotion can be captured in a variable, such as
 ``var X = f(s1, s2, ..., a1, a2, ...);`` using the above example. If so,
 the domain of the resulting array is defined by the first argument that
