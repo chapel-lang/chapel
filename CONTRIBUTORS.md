@@ -1,12 +1,11 @@
 Chapel Contributors
 ===================
 
-The following people have contributed to the implementation of the
-most recent Chapel release:
+The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 1.29.0 release
+Contributors to the Chapel 1.30.0 release
 -----------------------------------------
-* Gabriel Brown, individual contributor
+* Jade Abraham, [HPE]
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
@@ -25,10 +24,11 @@ Contributors to the Chapel 1.29.0 release
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Elliot Ronaghan, [HPE]
+* Erik Schierboom, individual contributor
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
-* Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
 * Karlon West, [HPE]
+* Vanessa Zambrano, [HPE]
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -50,6 +50,7 @@ Contributors to previous releases
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
 * Kyle Brady, [Cray Inc.]
+o Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
@@ -191,6 +192,7 @@ Contributors to previous releases
 * Branch Vincent, individual contributor
 * Chris Wailes, [Indiana University]
 * Tony Wallace, [Cray Inc.]
+o Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 * Wayne Wong, [Cray Inc.]
 * Tong Xu, individual contributor
