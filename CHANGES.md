@@ -9,14 +9,14 @@ released March 23, 2023
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * significantly increased GPU performance and added support for AMD GPUs
-* added support for running a locale per socket / NIC on HPE Cray EX
 * added a generalized attribute syntax and used it to support stability notes
 * made many improvements to the capabilities and interfaces of 'IO' routines
 * improved the correctness, performance, and compilation time of `bigint`s
 * added a prototype `weak(C)` type for weak references to `shared` classes
 * improved the behavior of passing and yielding tuples
 * significantly improved compilation speeds for certain large applications
-* switched to a Cmake-based build of `chpl` and `chpldoc`
+* switched to a CMake-based build of `chpl` and `chpldoc`
+* added initial support for running a locale per socket / NIC on HPE Cray EX
 * added a best practices document for using Chapel on Raspberry Pi
 * made numerous renamings, deprecations, and improvements to standard modules
 * addressed a number of user-reported bugs and documentation requests
@@ -224,11 +224,6 @@ Performance Optimizations / Improvements
 * parallelized array deinitialization
 * parallelized the new array `.find()` methods
 * eliminated an unnecessary and non-trivial zero-initialization in `bigint`
-
-Platform-specific Performance Optimizations / Improvements
-----------------------------------------------------------
-* added support for running a locale per socket on HPE Cray EX
-* added support for socket-aware NIC selection on HPE Cray EX
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -456,6 +451,8 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added support for running a locale per socket on HPE Cray EX
+* added support for socket-aware NIC selection on HPE Cray EX
 * added the bound/unbound status of 'ofi' endpoints when using verbose output
 
 Developer-oriented changes: Testing System
