@@ -18,25 +18,5 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
-               InitResolver.cpp
-               Resolver.cpp
-               VarScopeVisitor.cpp
-               call-init-deinit.cpp
-               can-pass.cpp
-               copy-elision.cpp
-               default-functions.cpp
-               disambiguation.cpp
-               extern-blocks.cpp
-               intents.cpp
-               maybe-const.cpp
-               prims.cpp
-               resolution-error-classes-list.cpp
-               resolution-queries.cpp
-               resolution-types.cpp
-               return-type-inference.cpp
-               scope-queries.cpp
-               scope-types.cpp
-               signature-checks.cpp
-               split-init.cpp
-
+               clang-integration.cpp
               )
