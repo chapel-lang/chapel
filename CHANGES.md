@@ -3,12 +3,7 @@ Release Changes List
 
 TODO:
 * spellcheck
-* check for 'functions' (-> procedures, routines, methods?)
-* example codes
 * compiler flags
-* spellcheck
-* move renamings in deprecation section to name changes section
-* TODOs
 * man page
 
 version 1.30.0
@@ -18,10 +13,22 @@ released March 23, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* significantly increased GPU performance and added support for AMD GPUs
+* added support for running a locale per socket / NIC on HPE Cray EX
+* added a generalized attribute syntax and used it to support stability notes
+* made many improvements to the capabilities and interfaces of 'IO' routines
+* improved the correctness, performance, and compilation time of `bigint`s
+* added a prototype `weak(C)` type for weak references to `shared` classes
+* improved the behavior of passing and yielding tuples
+* significantly improved compilation speeds for certain large applications
+* switched to a Cmake-based build of `chpl` and `chpldoc`
+* added a best practices document for using Chapel on Raspberry Pi
+* made numerous renamings, deprecations, and improvements to standard modules
+* addressed a number of user-reported bugs and documentation requests
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
-* switched to using CMake behind the scenes to build `chpl` and `chlpdoc`
+* switched to using CMake behind the scenes to build `chpl` and `chpldoc`
 * added new `QUIET` and `VERBOSE` build modes by setting these vars to `1`  
   (see https://chapel-lang.org/docs/1.30/usingchapel/building.html#controlling-build-output)
 * for `./configure --chpl-home`, installs now require CMake 3.16 or later  
@@ -29,29 +36,14 @@ Configuration / Build / Packaging Changes
 * updated Chapel's Dockerfiles to support the C back-end in addition to LLVM  
   (see https://hub.docker.com/r/chapel/chapel/)
 
-Syntactic / Naming Changes
---------------------------
-* renamed the new `weakPointer(C)` type to `weak(C)`  
-  (see https://chapel-lang.org/docs/1.30/builtins/WeakPointer.html#WeakPointer.weak)
-* changed the syntax of `@unstable "msg"` to `@unstable("msg", ...)`
-* unified `chpl`'s parsing of array types/values and square bracket loops
-
-Deprecated / Unstable / Removed Language Features
--------------------------------------------------
-* deprecated the old `.find()` method on arrays to update its return type  
-  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
-* marked arrays and slices with negatively strided dimensions as unstable
-* deprecated support for single-statement `return` routines that don't use `do`
-* deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
-* removed deprecated `isFloat*()` query routines
-* removed support for the deprecated `alignedBoundsByDefault` `config param`
-
 New Language Features
 ---------------------
 * added support for a generalized attribute syntax  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html)
 * added new `@deprecated` and `@stable` attributes for indicating stability  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
+* added a new 2-argument `.find()` method on arrays  
+  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
 * added new `.adopt()` methods to the `owned` and `shared` classes  
   (see https://chapel-lang.org/docs/1.30/language/spec/classes.html#OwnedObject.owned.adopt  
    and https://chapel-lang.org/docs/1.30/language/spec/classes.html#SharedObject.shared.adopt)
@@ -79,10 +71,51 @@ Feature Improvements
 * enabled classes to have methods that share the class's name  
   (e.g., `class C { proc C() { ... } }` is now legal)
 
+Syntactic / Naming Changes
+--------------------------
+* renamed the new `weakPointer(C)` type to `weak(C)`  
+  (see https://chapel-lang.org/docs/1.30/builtins/WeakPointer.html#WeakPointer.weak)
+* changed the syntax of `@unstable "msg"` to `@unstable("msg", ...)`
+* unified `chpl`'s parsing of array types/values and square bracket loops
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+* deprecated the old `.find()` method on arrays to update its return type  
+  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
+* marked arrays and slices with negatively strided dimensions as unstable
+* deprecated support for single-statement `return` routines that don't use `do`
+* deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
+* removed deprecated `isFloat*()` query routines
+* removed support for the deprecated `alignedBoundsByDefault` `config param`
+
+Standard Library Modules
+------------------------
+* added new GPU-oriented utility routines  
+  (see 'GPU Computing' below)
+* added `.read[To|Through]()` methods to read up to/through a given separator  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
+   https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readTo,  
+   https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readThrough,  
+   and https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readThrough)
+* added `.advance[To|Through]()` methods to advance to/through a separator  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceTo  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
+* added `.write[String|Bytes]()` methods to write out `string`/`bytes` values  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeString  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
+* added new `[read|write]Codepoint()` methods to read/write UTF-8 codepoints  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readCodepoint  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeCodepoint)
+* added `readByte()` and `writeByte()` routines to read/write a single byte  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readByte  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeByte)
+* updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
+   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
+   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.BadFormatError)
+
 Changes / Feature Improvements in Libraries
 -------------------------------------------
-* added a new 2-argument `.find()` method on arrays  
-  (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
 * made `bigint` initializers that halted/returned error codes `throw` instead  
   (see https://chapel-lang.org/docs/1.30/modules/standard/BigInteger.html#BigInteger.bigint.init,  
   https://chapel-lang.org/docs/1.30/modules/standard/BigInteger.html#BigInteger.bigintInitThrows)
@@ -185,32 +218,6 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `subprocess.send_signal()` method
 * removed the integer-returning version of `bigint.invert()`
 
-Standard Library Modules
-------------------------
-* added new GPU-oriented utility routines  
-  (see 'GPU Computing' below)
-* added `.read[To|Through]()` methods to read up to/through a given separator  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
-   https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readTo,  
-   https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readThrough,  
-   and https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readThrough)
-* added `.advance[To|Through]()` methods to advance to/through a separator  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceTo  
-   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
-* added `.write[String|Bytes]()` methods to write out `string`/`bytes` values  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeString  
-   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
-* added new `[read|write]Codepoint()` methods to read/write UTF-8 codepoints  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readCodepoint  
-   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeCodepoint)
-* added `readByte()` and `writeByte()` routines to read/write a single byte  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readByte  
-   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeByte)
-* updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
-   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
-   https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.BadFormatError)
-
 Tool Improvements
 -----------------
 * added `@chpldoc.nodoc` as a means of stifling `chpldoc` documentation  
@@ -258,8 +265,8 @@ Language Specification Improvements
 * added an additional example of using `param`s with generic types  
   (see https://chapel-lang.org/docs/1.30/language/spec/generics.html#parameters-in-generic-types)
 
-Other Documentation
--------------------
+Other Documentation Improvements
+--------------------------------
 * refreshed the GPU technical note with respect to current capabilities  
   (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
 * added a new document with best practices for building on a Raspberry Pi  
@@ -278,6 +285,10 @@ Other Documentation
 * fixed the 'IO' example codes to work with strict or relaxed error handling  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * fixed other bugs, typos, and formatting issues in the documentation
+
+Example Codes
+-------------
+* updated examples to reflect language and library changes
 
 Syntax Highlighting
 -------------------
@@ -389,9 +400,6 @@ Developer-oriented changes: Module changes
 * added prototype asynchronous communication capabilities to the GPU module
 * made Chapel-specific `EEOF`, `ESHORT`, and `EFORMAT` private in 'IO' module
 * refactored `bigint` routines w.r.t. how localization is implemented
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
