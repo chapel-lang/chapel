@@ -443,9 +443,8 @@ The In Intent
 ^^^^^^^^^^^^^
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is initialized from the value of the actual argument.
-This initialization will be copy-initialization and may be changed to
-move-initialization according to :ref:`Copy_Elision`.
+variable that is copy-initialized from the value of the actual argument,
+see :ref:`Copy_and_Move_Initialization`.
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -844,9 +843,8 @@ The Default Return Intent
 
 When no ``return-intent`` is specified explicitly, the function returns
 a value that cannot be used as an lvalue. This value is obtained
-by copy-initialization from the returned expression.
-This copy-initialization may be changed to move-initialization
-according to :ref:`Copy_Elision`.
+by copy-initialization from the returned expression,
+see :ref:`Copy_and_Move_Initialization`.
 
 .. _Const_Return_Intent:
 

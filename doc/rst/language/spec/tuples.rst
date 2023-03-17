@@ -726,9 +726,9 @@ Value Tuples and Referential Tuples
 -----------------------------------
 
 The terms referential tuple and value tuple describe two different ways
-that tuples capture their elements.
+that tuples capture their components.
 
-A *value tuple* stores all its elements by value and may store elements
+A *value tuple* stores all its components by value and may store components
 copy-initialized from another tuple. A value tuple is analogous to
 a group of formal arguments that each have the ``in`` intent.
 Value tuples include:
@@ -737,15 +737,11 @@ Value tuples include:
 - formal arguments with ``in`` intent that have a tuple type
 - tuples returned from functions with the default or ``const`` return intent
 
-A *referential tuple* stores its elements by value or by reference,
-as determined by the default argument intent of the element's type:
-
--  If the default intent is ``const ref`` or ``ref``,
-   the referential tuple's component is a reference.
-
--  Otherwise, the tuple's component stores a value of the component's type.
-
-Referential tuples are analogous to a group of function arguments
+A *referential tuple* stores its components by value or by reference,
+as determined by the default argument intent of the component's type:
+if it is ``const ref`` or ``ref``, the component is a reference,
+otherwise the component is stored by value, as though it had the ``in``
+intent. A referential tuple is analogous to a group of formal arguments
 that each have the default argument intent.
 Referential tuples include:
 
@@ -770,7 +766,7 @@ Referential tuples include:
    capture the value by reference in order to avoid a potentially
    expensive copy operation.
 
-In short, some or all of the elements of a referential tuple may be
+In short, some or all of the components of a referential tuple may be
 references, while a value tuple will never contain a reference.
 
    *Example (tuple-expression-behavior.chpl)*.
@@ -834,12 +830,11 @@ references, while a value tuple will never contain a reference.
 
       (0, 0, (x = 0))
 
-   Initialization of the tuple variable ``tup`` will make a copy of the
-   array ``a``, the record ``r``, and the integer ``i``. Because ``tup`` stores
-   a copy of these three variables, changes made to them are not visible
-   in ``tup`` when it is written to standard output.
-   Copy-initialization of the tuple's record component would be changed
-   to move-initialization if the record ``r`` were not used later.
+   Initialization of the tuple variable ``tup`` will copy-initialize
+   its components from the array ``a``, the record ``r``, and
+   the integer ``i``, see :ref:`Copy_and_Move_Initialization`.
+   Because ``tup`` stores a copy of these three variables, changes made
+   to them are not visible in ``tup`` when it is written to standard output.
 
 .. _Tuple_Argument_Intents:
 
@@ -850,7 +845,7 @@ A formal argument of a tuple type may be either a referential tuple or a value
 tuple depending on its argument intent.
 
 - If the tuple argument has the default argument intent, then it is a 
-  referential tuple and some of its elements may be captured by ``ref``
+  referential tuple and some of its components may be captured by ``ref``
   depending on their default argument intent.
   If a value tuple (such as a tuple variable) is passed to it, the value tuple
   will be implicitly converted into a referential tuple. The resulting
@@ -864,11 +859,12 @@ tuple depending on its argument intent.
 
 ..
 
-- If the tuple argument has the ``in`` or ``const in`` intent, then it is a
-  value tuple. Each of its components is copy-initialized or move-initialized
-  from the corresponding component of the actual argument as if it is passed
-  to an ``in`` intent argument, including the case where the actual argument
-  is a referential tuple.
+- If the tuple argument has the ``in`` or ``const in`` intent, then
+  it is a value tuple. Each of its components is copy-initialized
+  from the corresponding component of the actual argument as if it is
+  passed to an ``in`` intent formal argument. When the actual argument is
+  a referential tuple and the component is a reference,
+  the source of copy initialization is the variable being referenced.
   All components of a ``const in`` argument are considered to be ``const``
   and cannot be modified.
 
