@@ -99,6 +99,8 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
 * replaced `IO.openfd()` with a file initializer taking a `fileDescriptor` arg  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
+* replaced `map.set()` with `map.replace()`
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Map.html#Map.map.replace)
 * renamed `MemMove.needsDeinit()` to `MemMove.needsDestroy()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.needsDestroy)
 * renamed `MemMove.explicitDeinit()` to `MemMove.destroy()`  
@@ -130,6 +132,11 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.init)
 * deprecated `regex.sub[n]()` in favor of `replace[AndCount]()` methods  
   (see https://chapel-lang.org/docs/master/modules/standard/Regex.html#Regex.string.replace)
+* deprecated `map.getBorrowed()`, `.getReference()`, and `.getValue()`
+  (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.getBorrowed)
+* deprecated `map.items()` and `map.these()`  
+  (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.items)
+* marked `map.parSafe` as being unstable
 * deprecated the `TimeUnits` enum and routines that made use of it
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.TimeUnits)
 * deprecated `FileSystem.copyFile()` in favor of `FileSystem.copy()`  
@@ -186,6 +193,7 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * parallelized array deinitialization
 * parallelized the implementations of the new array `.find()` methods
+* eliminated an unnecessary and non-trivial zero-initialization in `bigint`
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -194,6 +202,8 @@ Platform-specific Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* accelerated compiler performance for `bigint`-heavy multi-locale codes
+* improved compile times for codes with declared, fairly trivial return types
 
 Memory Improvements
 -------------------
@@ -224,6 +234,7 @@ Documentation
   (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
 * fixed formatting of 'try!' in error handling documentation  
   (see https://chapel-lang.org/docs/1.30/technotes/errorHandling.html)
+* fixed a typo in the `mason init` documentation
 
 
 Syntax Highlighting
@@ -286,6 +297,7 @@ Error Messages / Semantic Checks
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
 * improved an error message for indexing into a `map` of non-nilable values
 * rephrased generic class management errors to reflect the current behavior
+* added an error when passing empty arrays to `c_ptrTo()`
 
 Bug Fixes
 ---------
@@ -312,6 +324,10 @@ Bug Fixes for GPU Computing
 Bug Fixes for Libraries
 -----------------------
 * fixed a divide-by-zero error for reductions over a large list
+* fixed a bug in which `bigint.**` would always return 0
+* fixed a bug in which `>>` on `bigint` gave incorrect results
+* fixed a bug when subtracting `bigint` values from `int`
+* fixed a bug in which `%` would crash for remote `bigint` values
 
 Bug Fixes for Tools
 -------------------
@@ -344,7 +360,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 Developer-oriented changes: Module changes
 ------------------------------------------
 * made Chapel-specific `EEOF`, `ESHORT`, and `EFORMAT` private in 'IO' module
-
+* refactored `bigint` routines w.r.t. how localization is implemented
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
