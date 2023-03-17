@@ -66,7 +66,7 @@ int _gnix_trigger_queue_req(struct gnix_fab_req *req)
 		  "Queueing triggered op: %p\n",
 		  req);
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_spin_lock(&cntr->trigger_lock);
 	if (dlist_empty(&cntr->trigger_list)) {
 		dlist_init(&req->dlist);
 		dlist_insert_head(&req->dlist, &cntr->trigger_list);
@@ -88,7 +88,7 @@ int _gnix_trigger_queue_req(struct gnix_fab_req *req)
 		dlist_init(&req->dlist);
 		dlist_insert_before(&req->dlist, &r->dlist);
 	}
-	fastlock_release(&cntr->trigger_lock);
+	ofi_spin_unlock(&cntr->trigger_lock);
 
 	return FI_SUCCESS;
 }
@@ -106,7 +106,7 @@ void _gnix_trigger_check_cntr(struct gnix_fid_cntr *cntr)
 
 	 count = ofi_atomic_get32(&cntr->cnt);
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_spin_lock(&cntr->trigger_lock);
 	dlist_for_each_safe(&cntr->trigger_list, req, req2, dlist) {
 		trigger_context = (struct fi_triggered_context *)
 					req->user_context;
@@ -124,5 +124,5 @@ void _gnix_trigger_check_cntr(struct gnix_fid_cntr *cntr)
 			break;
 		}
 	}
-	fastlock_release(&cntr->trigger_lock);
+	ofi_spin_unlock(&cntr->trigger_lock);
 }

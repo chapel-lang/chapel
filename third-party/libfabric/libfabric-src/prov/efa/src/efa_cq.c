@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2017-2019 Amazon.com, Inc. or its affiliates. All rights reserved.
+ * Copyright (c) 2017-2022 Amazon.com, Inc. or its affiliates. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -31,15 +31,16 @@
  * SOFTWARE.
  */
 
+#include <errno.h>
+#include <string.h>
 #include "config.h"
-
 #include <ofi_mem.h>
-
 #include "efa.h"
+#include "efa_cq.h"
+#include <infiniband/verbs.h>
 
-static uint64_t efa_cq_wc_to_fi_flags(struct efa_wc *wc)
-{
-	switch (wc->ibv_wc.opcode) {
+static inline uint64_t efa_cq_opcode_to_fi_flags(enum ibv_wc_opcode	opcode) {
+	switch (opcode) {
 	case IBV_WC_SEND:
 		return FI_SEND | FI_MSG;
 	case IBV_WC_RECV:
@@ -50,136 +51,140 @@ static uint64_t efa_cq_wc_to_fi_flags(struct efa_wc *wc)
 	}
 }
 
+static inline uint32_t efa_cq_api_version(struct efa_cq *cq) {
+	return cq->domain->fabric->util_fabric.fabric_fid.api_version;
+}
+
 ssize_t efa_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry,
 		       uint64_t flags)
 {
 	struct efa_cq *cq;
-	struct efa_wce *wce;
-	struct slist_entry *slist_entry;
 	uint32_t api_version;
 
 	cq = container_of(cq_fid, struct efa_cq, util_cq.cq_fid);
 
-	fastlock_acquire(&cq->lock);
-	if (slist_empty(&cq->wcq))
+	ofi_spin_lock(&cq->lock);
+
+	if (!cq->ibv_cq_ex->status)
 		goto err;
 
-	wce = container_of(cq->wcq.head, struct efa_wce, entry);
-	if (!wce->wc.ibv_wc.status)
-		goto err;
+	api_version = efa_cq_api_version(cq);
 
-	api_version = cq->domain->fab->util_fabric.fabric_fid.api_version;
+	entry->op_context = (void *)(uintptr_t)cq->ibv_cq_ex->wr_id;
+	entry->flags = efa_cq_opcode_to_fi_flags(ibv_wc_read_opcode(cq->ibv_cq_ex));
+	entry->err = FI_EIO;
+	entry->prov_errno = ibv_wc_read_vendor_err(cq->ibv_cq_ex);
+	EFA_WARN(FI_LOG_CQ, "Work completion status: %s\n", efa_strerror(entry->prov_errno));
 
-	slist_entry = slist_remove_head(&cq->wcq);
-	fastlock_release(&cq->lock);
-
-	wce = container_of(slist_entry, struct efa_wce, entry);
-
-	entry->op_context = (void *)(uintptr_t)wce->wc.ibv_wc.wr_id;
-	entry->flags = efa_cq_wc_to_fi_flags(&wce->wc);
-	entry->err = EIO;
-	entry->prov_errno = wce->wc.ibv_wc.status;
-	EFA_WARN(FI_LOG_CQ, "Work completion status: %s\n", ibv_wc_status_str(wce->wc.ibv_wc.status));
+	ofi_spin_unlock(&cq->lock);
 
 	/* We currently don't have err_data to give back to the user. */
 	if (FI_VERSION_GE(api_version, FI_VERSION(1, 5)))
 		entry->err_data_size = 0;
 
-	ofi_buf_free(wce);
 	return sizeof(*entry);
 err:
-	fastlock_release(&cq->lock);
+	ofi_spin_unlock(&cq->lock);
 	return -FI_EAGAIN;
 }
 
-static void efa_cq_read_context_entry(struct efa_wc *wc, int i, void *buf)
+static void efa_cq_read_context_entry(struct ibv_cq_ex *ibv_cqx, int i, void *buf)
 {
 	struct fi_cq_entry *entry = buf;
 
-	entry[i].op_context = (void *)(uintptr_t)wc->ibv_wc.wr_id;
+	entry[i].op_context = (void *)ibv_cqx->wr_id;
 }
 
-static void efa_cq_read_msg_entry(struct efa_wc *wc, int i, void *buf)
+static void efa_cq_read_msg_entry(struct ibv_cq_ex *ibv_cqx, int i, void *buf)
 {
 	struct fi_cq_msg_entry *entry = buf;
 
-	entry[i].op_context = (void *)(uintptr_t)wc->ibv_wc.wr_id;
-	entry[i].flags = efa_cq_wc_to_fi_flags(wc);
-	entry[i].len = (uint64_t)wc->ibv_wc.byte_len;
+	entry[i].op_context = (void *)(uintptr_t)ibv_cqx->wr_id;
+	entry[i].flags = efa_cq_opcode_to_fi_flags(ibv_wc_read_opcode(ibv_cqx));
+	entry[i].len = ibv_wc_read_byte_len(ibv_cqx);
 }
 
-static void efa_cq_read_data_entry(struct efa_wc *wc, int i, void *buf)
+static void efa_cq_read_data_entry(struct ibv_cq_ex *ibv_cqx, int i, void *buf)
 {
 	struct fi_cq_data_entry *entry = buf;
 
-	entry[i].op_context = (void *)(uintptr_t)wc->ibv_wc.wr_id;
-	entry[i].flags = efa_cq_wc_to_fi_flags(wc);
+	entry[i].op_context = (void *)ibv_cqx->wr_id;
+	entry[i].flags = efa_cq_opcode_to_fi_flags(ibv_wc_read_opcode(ibv_cqx));
 	entry[i].data = 0;
-	entry[i].len = (uint64_t)wc->ibv_wc.byte_len;
+	entry[i].len = ibv_wc_read_byte_len(ibv_cqx);
+}
+
+/**
+ * @brief Convert an error code from CQ poll API, e.g. `ibv_start_poll`, `ibv_end_poll`.
+ * The returned error code must be 0 (success) or negative (error).
+ * As a special case, if input error code is ENOENT (there was no item on CQ), we should return -FI_EAGAIN.
+ * @param[in] err	Return value from `ibv_start_poll` or `ibv_end_poll`
+ * @returns	Converted error code
+ */
+static inline ssize_t efa_cq_ibv_poll_error_to_fi_error(ssize_t err) {
+	if (err == ENOENT) {
+		return -FI_EAGAIN;
+	}
+
+	if (err > 0) {
+		return -err;
+	}
+
+	return err;
 }
 
 ssize_t efa_cq_readfrom(struct fid_cq *cq_fid, void *buf, size_t count,
 			fi_addr_t *src_addr)
 {
+	bool should_end_poll = false;
 	struct efa_cq *cq;
-	struct efa_wce *wce;
-	struct slist_entry *entry;
 	struct efa_av *av;
-	struct efa_wc wc;
-	ssize_t ret = 0, i;
+	ssize_t err = 0;
+	size_t num_cqe = 0; /* Count of read entries */
+	uint32_t qp_num, src_qp, slid;
+
+	/* Initialize an empty ibv_poll_cq_attr struct for ibv_start_poll.
+	 * EFA expects .comp_mask = 0, or otherwise returns EINVAL.
+	 */
+	struct ibv_poll_cq_attr poll_cq_attr = {.comp_mask = 0};
 
 	cq = container_of(cq_fid, struct efa_cq, util_cq.cq_fid);
 
-	fastlock_acquire(&cq->lock);
+	ofi_spin_lock(&cq->lock);
 
-	for (i = 0; i < count; i++) {
-		if (!slist_empty(&cq->wcq)) {
-			wce = container_of(cq->wcq.head, struct efa_wce, entry);
-			if (wce->wc.ibv_wc.status) {
-				ret = -FI_EAVAIL;
-				break;
-			}
-			entry = slist_remove_head(&cq->wcq);
-			wce = container_of(entry, struct efa_wce, entry);
-			cq->read_entry(&wce->wc, i, buf);
-			ofi_buf_free(wce);
-			continue;
-		}
+	/* Call ibv_start_poll only once regardless of count == 0 */
+	err = ibv_start_poll(cq->ibv_cq_ex, &poll_cq_attr);
+	should_end_poll = !err;
 
-		ret = ibv_poll_cq(cq->ibv_cq, 1, &wc.ibv_wc);
-		if (ret != 1) {
-			if (!ret)
-				ret = -FI_EAGAIN;
-			break;
-		}
-
-		/* Insert error entry into wcq */
-		if (wc.ibv_wc.status) {
-			wce = ofi_buf_alloc(cq->wce_pool);
-			if (!wce) {
-				fastlock_release(&cq->lock);
-				return -FI_ENOMEM;
-			}
-			memset(wce, 0, sizeof(*wce));
-			memcpy(&wce->wc, &wc, sizeof(wc));
-			slist_insert_tail(&wce->entry, &cq->wcq);
-			ret = -FI_EAVAIL;
+	while (!err && num_cqe < count) {
+		if (cq->ibv_cq_ex->status) {
+			err = -FI_EAVAIL;
 			break;
 		}
 
 		if (src_addr) {
-			av = cq->domain->qp_table[wc.ibv_wc.qp_num &
-			     cq->domain->qp_table_sz_m1]->ep->av;
+			qp_num = ibv_wc_read_qp_num(cq->ibv_cq_ex);
+			src_qp = ibv_wc_read_src_qp(cq->ibv_cq_ex);
+			slid = ibv_wc_read_slid(cq->ibv_cq_ex);
+			av = cq->domain->qp_table[qp_num & cq->domain->qp_table_sz_m1]->ep->av;
 
-			src_addr[i] = efa_ahn_qpn_to_addr(av,
-							  wc.ibv_wc.slid,
-							  wc.ibv_wc.src_qp);
+			src_addr[num_cqe] = efa_av_reverse_lookup_dgram(av, slid, src_qp);
 		}
-		cq->read_entry(&wc, i, buf);
+
+		cq->read_entry(cq->ibv_cq_ex, num_cqe, buf);
+		num_cqe++;
+
+		err = ibv_next_poll(cq->ibv_cq_ex);
 	}
 
-	fastlock_release(&cq->lock);
-	return i ? i : ret;
+	err = efa_cq_ibv_poll_error_to_fi_error(err);
+
+	if (should_end_poll)
+		ibv_end_poll(cq->ibv_cq_ex);
+
+	ofi_spin_unlock(&cq->lock);
+
+	return num_cqe ? num_cqe : err;
 }
 
 static const char *efa_cq_strerror(struct fid_cq *cq_fid,
@@ -187,8 +192,7 @@ static const char *efa_cq_strerror(struct fid_cq *cq_fid,
 				   const void *err_data,
 				   char *buf, size_t len)
 {
-	/* XXX use vendor_error */
-	return "unknown error";
+	return efa_strerror(prov_errno);
 }
 
 static struct fi_ops_cq efa_cq_ops = {
@@ -218,25 +222,15 @@ static int efa_cq_control(fid_t fid, int command, void *arg)
 static int efa_cq_close(fid_t fid)
 {
 	struct efa_cq *cq;
-	struct efa_wce *wce;
-	struct slist_entry *entry;
 	int ret;
 
 	cq = container_of(fid, struct efa_cq, util_cq.cq_fid.fid);
 
-	fastlock_acquire(&cq->lock);
-	while (!slist_empty(&cq->wcq)) {
-		entry = slist_remove_head(&cq->wcq);
-		wce = container_of(entry, struct efa_wce, entry);
-		ofi_buf_free(wce);
-	}
-	fastlock_release(&cq->lock);
-
 	ofi_bufpool_destroy(cq->wce_pool);
 
-	fastlock_destroy(&cq->lock);
+	ofi_spin_destroy(&cq->lock);
 
-	ret = -ibv_destroy_cq(cq->ibv_cq);
+	ret = -ibv_destroy_cq(ibv_cq_ex_to_cq(cq->ibv_cq_ex));
 	if (ret)
 		return ret;
 
@@ -257,12 +251,31 @@ static struct fi_ops efa_cq_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
+/**
+ * @brief Create and set cq->ibv_cq_ex
+ *
+ * @param[in] cq Pointer to the efa_cq. cq->ibv_cq_ex must be NULL.
+ * @param[in] attr Pointer to fi_cq_attr.
+ * @param[out] Return code = 0 if successful, or negative otherwise.
+ */
+static inline int efa_cq_set_ibv_cq_ex(struct efa_cq *cq, struct fi_cq_attr *attr)
+{
+	enum ibv_cq_ex_type ibv_cq_ex_type;
+
+	if (cq->ibv_cq_ex) {
+		EFA_WARN(FI_LOG_CQ, "CQ already has attached ibv_cq_ex\n");
+		return -FI_EALREADY;
+	}
+
+	return efa_cq_ibv_cq_ex_open(attr, cq->domain->device->ibv_ctx,
+				    &cq->ibv_cq_ex, &ibv_cq_ex_type);
+}
+
 int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		struct fid_cq **cq_fid, void *context)
 {
 	struct efa_cq *cq;
-	size_t size;
-	int ret;
+	int err;
 
 	if (attr->wait_obj != FI_WAIT_NONE)
 		return -FI_ENOSYS;
@@ -271,9 +284,9 @@ int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	if (!cq)
 		return -FI_ENOMEM;
 
-	ret = ofi_cq_init(&efa_prov, domain_fid, attr, &cq->util_cq,
+	err = ofi_cq_init(&efa_prov, domain_fid, attr, &cq->util_cq,
 			  &ofi_cq_progress, context);
-	if (ret) {
+	if (err) {
 		EFA_WARN(FI_LOG_CQ, "Unable to create UTIL_CQ\n");
 		goto err_free_cq;
 	}
@@ -281,17 +294,16 @@ int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	cq->domain = container_of(domain_fid, struct efa_domain,
 				  util_domain.domain_fid);
 
-	size = attr->size ? attr->size : EFA_DEF_CQ_SIZE;
-	cq->ibv_cq = ibv_create_cq(cq->domain->ctx->ibv_ctx, size, NULL, NULL, 0);
-	if (!cq->ibv_cq) {
-		EFA_WARN(FI_LOG_CQ, "Unable to create CQ\n");
-		ret = -FI_EINVAL;
+	err = efa_cq_set_ibv_cq_ex(cq, attr);
+	if (err) {
+		EFA_WARN(FI_LOG_CQ, "Unable to create extended CQ\n");
+		err = -FI_EINVAL;
 		goto err_free_util_cq;
 	}
 
-	ret = ofi_bufpool_create(&cq->wce_pool, sizeof(struct efa_wce), 16, 0,
+	err = ofi_bufpool_create(&cq->wce_pool, sizeof(struct efa_wce), 16, 0,
 				 EFA_WCE_CNT, 0);
-	if (ret) {
+	if (err) {
 		EFA_WARN(FI_LOG_CQ, "Failed to create wce_pool\n");
 		goto err_destroy_cq;
 	}
@@ -312,13 +324,11 @@ int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		break;
 	case FI_CQ_FORMAT_TAGGED:
 	default:
-		ret = -FI_ENOSYS;
+		err = -FI_ENOSYS;
 		goto err_destroy_pool;
 	}
 
-	fastlock_init(&cq->lock);
-
-	slist_init(&cq->wcq);
+	ofi_spin_init(&cq->lock);
 
 	*cq_fid = &cq->util_cq.cq_fid;
 	(*cq_fid)->fid.fclass = FI_CLASS_CQ;
@@ -331,11 +341,10 @@ int efa_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 err_destroy_pool:
 	ofi_bufpool_destroy(cq->wce_pool);
 err_destroy_cq:
-	ibv_destroy_cq(cq->ibv_cq);
+	ibv_destroy_cq(ibv_cq_ex_to_cq(cq->ibv_cq_ex));
 err_free_util_cq:
 	ofi_cq_cleanup(&cq->util_cq);
 err_free_cq:
 	free(cq);
-	return ret;
+	return err;
 }
-

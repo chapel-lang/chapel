@@ -37,6 +37,7 @@
 #include <unistd.h>
 
 #include <ofi_mr.h>
+#include <ofi_mem.h>
 #include <ofi_hmem.h>
 #include <ofi_enosys.h>
 #include <rdma/fi_ext.h>
@@ -166,9 +167,12 @@ void ofi_monitor_cleanup(struct ofi_mem_monitor *monitor)
  */
 void ofi_monitors_init(void)
 {
+	pthread_mutex_init(&mm_state_lock, NULL);
+
 	uffd_monitor->init(uffd_monitor);
 	memhooks_monitor->init(memhooks_monitor);
 	cuda_monitor->init(cuda_monitor);
+	cuda_ipc_monitor->init(cuda_ipc_monitor);
 	rocr_monitor->init(rocr_monitor);
 	ze_monitor->init(ze_monitor);
 	import_monitor->init(import_monitor);
@@ -196,13 +200,13 @@ void ofi_monitors_init(void)
 			" memory caching.");
 	fi_param_define(NULL, "mr_cuda_cache_monitor_enabled", FI_PARAM_BOOL,
 			"Enable or disable the CUDA cache memory monitor."
-			"Monitor is enabled by default.");
+			"Enabled by default.");
 	fi_param_define(NULL, "mr_rocr_cache_monitor_enabled", FI_PARAM_BOOL,
 			"Enable or disable the ROCR cache memory monitor. "
-			"Monitor is enabled by default.");
+			"Enabled by default.");
 	fi_param_define(NULL, "mr_ze_cache_monitor_enabled", FI_PARAM_BOOL,
-			"Enable or disable the ZE cache memory monitor. "
-			"Monitor is enabled by default.");
+			"Enable or disable the oneAPI Level Zero cache memory "
+			"monitor.  Enabled by default.");
 
 	fi_param_get_size_t(NULL, "mr_cache_max_size", &cache_params.max_size);
 	fi_param_get_size_t(NULL, "mr_cache_max_count", &cache_params.max_cnt);
@@ -307,7 +311,7 @@ int ofi_monitors_add_cache(struct ofi_mem_monitor **monitors,
 	for (iface = FI_HMEM_SYSTEM; iface < OFI_HMEM_MAX; iface++) {
 		cache->monitors[iface] = NULL;
 		start_list[iface] = NULL;
-		if (!hmem_ops[iface].initialized)
+		if (!ofi_hmem_is_initialized(iface))
 			continue;
 
 		monitor = monitors[iface];
@@ -458,6 +462,28 @@ void ofi_monitor_unsubscribe(struct ofi_mem_monitor *monitor,
 	monitor->unsubscribe(monitor, addr, len, hmem_info);
 }
 
+int ofi_monitor_start_no_op(struct ofi_mem_monitor *monitor)
+{
+	return FI_SUCCESS;
+}
+
+void ofi_monitor_stop_no_op(struct ofi_mem_monitor *monitor)
+{
+}
+
+int ofi_monitor_subscribe_no_op(struct ofi_mem_monitor *notifier,
+			 const void *addr, size_t len,
+			 union ofi_mr_hmem_info *hmem_info)
+{
+	return FI_SUCCESS;
+}
+
+void ofi_monitor_unsubscribe_no_op(struct ofi_mem_monitor *notifier,
+			    const void *addr, size_t len,
+			    union ofi_mr_hmem_info *hmem_info)
+{
+}
+
 #if HAVE_UFFD_MONITOR
 
 #include <poll.h>
@@ -540,7 +566,7 @@ static int ofi_uffd_register(const void *addr, size_t len, size_t page_size)
 	if (ret < 0) {
 		if (errno != EINVAL) {
 			FI_WARN(&core_prov, FI_LOG_MR,
-				"ioctl/uffd_unreg: %s\n", strerror(errno));
+				"ioctl/uffd_reg: %s\n", strerror(errno));
 		}
 		return -errno;
 	}
@@ -594,8 +620,9 @@ static void ofi_uffd_unsubscribe(struct ofi_mem_monitor *monitor,
 	}
 }
 
-static bool ofi_uffd_valid(struct ofi_mem_monitor *monitor, const void *addr,
-			   size_t len, union ofi_mr_hmem_info *hmem_info)
+static bool ofi_uffd_valid(struct ofi_mem_monitor *monitor,
+			   const struct ofi_mr_info *info,
+			   struct ofi_mr_entry *entry)
 {
 	/* no-op */
 	return true;
@@ -683,8 +710,8 @@ static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
 					   const void *addr, size_t len,
 					   union ofi_mr_hmem_info *hmem_info);
 static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const void *addr, size_t len,
-				     union ofi_mr_hmem_info *hmem_info);
+				     const struct ofi_mr_info *info,
+				     struct ofi_mr_entry *entry);
 
 struct ofi_import_monitor {
 	struct ofi_mem_monitor monitor;
@@ -742,15 +769,17 @@ static void ofi_import_monitor_unsubscribe(struct ofi_mem_monitor *notifier,
 					   union ofi_mr_hmem_info *hmem_info)
 {
 	assert(impmon.impfid);
-	return impmon.impfid->export_ops->unsubscribe(impmon.impfid, addr, len);
+	impmon.impfid->export_ops->unsubscribe(impmon.impfid, addr, len);
 }
 
 static bool ofi_import_monitor_valid(struct ofi_mem_monitor *notifier,
-				     const void *addr, size_t len,
-				     union ofi_mr_hmem_info *hmem_info)
+				     const struct ofi_mr_info *info,
+				     struct ofi_mr_entry *entry)
 {
 	assert(impmon.impfid);
-	return impmon.impfid->export_ops->valid(impmon.impfid, addr, len);
+	return impmon.impfid->export_ops->valid(impmon.impfid,
+						entry->info.iov.iov_base,
+						entry->info.iov.iov_len);
 }
 
 static void ofi_import_monitor_notify(struct fid_mem_monitor *monitor,

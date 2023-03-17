@@ -73,7 +73,7 @@ enum gdrcopy_dir {
 static gdr_t global_gdr;
 static pthread_spinlock_t global_gdr_lock;
 
-#ifdef ENABLE_GDRCOPY_DLOPEN
+#if ENABLE_GDRCOPY_DLOPEN
 
 #include <dlfcn.h>
 
@@ -184,7 +184,7 @@ static int cuda_gdrcopy_dl_hmem_cleanup(void)
 
 int cuda_gdrcopy_hmem_init(void)
 {
-	int err, ret = 0;
+	int err;
 
 	err = cuda_gdrcopy_dl_hmem_init();
 	if (err) {
@@ -199,20 +199,23 @@ int cuda_gdrcopy_hmem_init(void)
 	if (!global_gdr) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
 			"gdr_open failed!\n");
-		ret = -FI_ENOMEM;
-		goto exit;
+		err = -FI_ENOMEM;
+		goto error_exit;
 	}
 
 	err = pthread_spin_init(&global_gdr_lock, 0);
 	if (err) {
 		assert(global_gdrcopy_ops.gdr_close);
 		global_gdrcopy_ops.gdr_close(global_gdr);
-		ret = -err;
+		err = -err;
+		goto error_exit;
 	}
 
-exit:
+	return 0;
+
+error_exit:
 	cuda_gdrcopy_dl_hmem_cleanup();
-	return ret;
+	return err;
 }
 
 int cuda_gdrcopy_hmem_cleanup(void)
@@ -269,8 +272,9 @@ void cuda_gdrcopy_impl(uint64_t handle, void *devptr,
 	} else {
 		assert(dir == GDRCOPY_FROM_DEVICE);
 		global_gdrcopy_ops.gdr_copy_from_mapping(gdrcopy->mh,
+							 hostptr,
 							 gdrcopy_user_ptr,
-							 hostptr, len);
+							 len);
 	}
 }
 
@@ -299,11 +303,9 @@ int cuda_gdrcopy_dev_register(struct fi_mr_attr *mr_attr, uint64_t *handle)
 	assert(global_gdrcopy_ops.gdr_pin_buffer);
 	assert(global_gdrcopy_ops.gdr_map);
 
-	regbgn = (uintptr_t)mr_attr->mr_iov->iov_base;
+	regbgn = (uintptr_t)ofi_get_page_start(mr_attr->mr_iov->iov_base, GPU_PAGE_SIZE);
 	regend = (uintptr_t)mr_attr->mr_iov->iov_base + mr_attr->mr_iov->iov_len;
-	regbgn = regbgn & GPU_PAGE_MASK;
-	regend = (regend & GPU_PAGE_MASK) + GPU_PAGE_SIZE;
-	reglen = regend - regbgn;
+	reglen = ofi_get_aligned_size(regend - regbgn, GPU_PAGE_SIZE);
 
 	gdrcopy = malloc(sizeof(struct gdrcopy_handle));
 	if (!gdrcopy)
@@ -315,8 +317,8 @@ int cuda_gdrcopy_dev_register(struct fi_mr_attr *mr_attr, uint64_t *handle)
 					 reglen, 0, 0, &gdrcopy->mh);
 	if (err) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
-			"gdr_pin_buffer failed! error: %s",
-			strerror(err));
+			"gdr_pin_buffer failed! error: %s ptr: %p len: %ld\n",
+			strerror(err), mr_attr->mr_iov->iov_base, mr_attr->mr_iov->iov_len);
 		free(gdrcopy);
 		goto exit;
 	}

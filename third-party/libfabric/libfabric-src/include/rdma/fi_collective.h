@@ -92,8 +92,7 @@ struct fi_msg_collective {
 struct fi_ops_collective {
 	size_t	size;
 
-	ssize_t	(*barrier)(struct fid_ep *ep, fi_addr_t coll_addr,
-			void *context);
+	ssize_t	(*barrier)(struct fid_ep *ep, fi_addr_t coll_addr, void *context);
 	ssize_t	(*broadcast)(struct fid_ep *ep,
 			void *buf, size_t count, void *desc,
 			fi_addr_t coll_addr, fi_addr_t root_addr,
@@ -135,6 +134,8 @@ struct fi_ops_collective {
 			const struct fi_msg_collective *msg,
 			struct fi_ioc *resultv, void **result_desc,
 			size_t result_count, uint64_t flags);
+	ssize_t	(*barrier2)(struct fid_ep *ep, fi_addr_t coll_addr, uint64_t flags,
+			void *context);
 };
 
 
@@ -204,6 +205,17 @@ static inline ssize_t
 fi_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context)
 {
 	return ep->collective->barrier(ep, coll_addr, context);
+}
+
+static inline ssize_t
+fi_barrier2(struct fid_ep *ep, fi_addr_t coll_addr, uint64_t flags, void *context)
+{
+	if (!flags)
+		return fi_barrier(ep, coll_addr, context);
+
+	return FI_CHECK_OP(ep->collective, struct fi_ops_collective, barrier2) ?
+		ep->collective->barrier2(ep, coll_addr, flags, context) :
+		-FI_ENOSYS;
 }
 
 static inline ssize_t

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2013-2021 Intel Corporation, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -62,7 +62,7 @@ static int vrb_msg_ep_setname(fid_t ep_fid, void *addr, size_t addrlen)
 		container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
 
 	if (addrlen != ep->info_attr.src_addrlen) {
-		VERBS_INFO(FI_LOG_EP_CTRL,"addrlen expected: %zu, got: %zu.\n",
+		VRB_INFO(FI_LOG_EP_CTRL,"addrlen expected: %zu, got: %zu.\n",
 			   ep->info_attr.src_addrlen, addrlen);
 		return -FI_EINVAL;
 	}
@@ -71,7 +71,7 @@ static int vrb_msg_ep_setname(fid_t ep_fid, void *addr, size_t addrlen)
 
 	ep->info_attr.src_addr = malloc(ep->info_attr.src_addrlen);
 	if (!ep->info_attr.src_addr) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "memory allocation failure\n");
+		VRB_WARN(FI_LOG_EP_CTRL, "memory allocation failure\n");
 		ret = -FI_ENOMEM;
 		goto err1;
 	}
@@ -168,8 +168,10 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 
 	if (!ep->id->qp) {
 		ret = fi_control(&ep_fid->fid, FI_ENABLE, NULL);
-		if (ret)
+		if (ret) {
+			VRB_WARN_ERR(FI_LOG_EP_CTRL, "fi_control", ret);
 			return ret;
+		}
 	}
 
 	if (ep->id->route.addr.src_addr.sa_family == AF_IB)
@@ -194,9 +196,7 @@ vrb_msg_ep_connect(struct fid_ep *ep_fid, const void *addr,
 
 	if (rdma_resolve_route(ep->id, VERBS_RESOLVE_TIMEOUT)) {
 		ret = -errno;
-		FI_WARN(&vrb_prov, FI_LOG_EP_CTRL,
-			"rdma_resolve_route failed: %s (%d)\n",
-			strerror(-ret), -ret);
+		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "rdma_resolve_route");
 		free(ep->cm_priv_data);
 		ep->cm_priv_data = NULL;
 		return ret;
@@ -219,8 +219,10 @@ vrb_msg_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 
 	if (!_ep->id->qp) {
 		ret = fi_control(&ep->fid, FI_ENABLE, NULL);
-		if (ret)
+		if (ret) {
+			VRB_WARN_ERR(FI_LOG_EP_CTRL, "fi_control", ret);
 			return ret;
+		}
 	}
 
 	cm_hdr = alloca(sizeof(*cm_hdr) + paramlen);
@@ -232,8 +234,10 @@ vrb_msg_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 		conn_param.srq = 1;
 
 	ret = rdma_accept(_ep->id, &conn_param);
-	if (ret)
+	if (ret) {
+		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "rdma_accept");
 		return -errno;
+	}
 
 	connreq = container_of(_ep->info_attr.handle, struct vrb_connreq, handle);
 	free(connreq);
@@ -250,14 +254,14 @@ static int vrb_msg_alloc_xrc_params(void **adjusted_param,
 	*adjusted_param = NULL;
 
 	if (cm_datalen > VRB_CM_DATA_SIZE) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "XRC CM data overflow %zu\n",
+		VRB_WARN(FI_LOG_EP_CTRL, "XRC CM data overflow %zu\n",
 			   cm_datalen);
 		return -FI_EINVAL;
 	}
 
 	cm_data = malloc(cm_datalen);
 	if (!cm_data) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "Unable to allocate XRC CM data\n");
+		VRB_WARN(FI_LOG_EP_CTRL, "Unable to allocate XRC CM data\n");
 		return -FI_ENOMEM;
 	}
 
@@ -305,7 +309,7 @@ vrb_msg_ep_reject(struct fid_pep *pep, fid_t handle,
 	cm_hdr = alloca(sizeof(*cm_hdr) + paramlen);
 	vrb_msg_ep_prepare_cm_data(param, paramlen, cm_hdr);
 
-	fastlock_acquire(&_pep->eq->lock);
+	ofi_mutex_lock(&_pep->eq->lock);
 	if (connreq->is_xrc) {
 		ret = vrb_msg_xrc_ep_reject(connreq, cm_hdr,
 				(uint8_t)(sizeof(*cm_hdr) + paramlen));
@@ -315,7 +319,10 @@ vrb_msg_ep_reject(struct fid_pep *pep, fid_t handle,
 	} else {
 		ret = -FI_EBUSY;
 	}
-	fastlock_release(&_pep->eq->lock);
+	ofi_mutex_unlock(&_pep->eq->lock);
+
+	if (ret)
+		VRB_WARN_ERR(FI_LOG_EP_CTRL, "rdma_reject", ret);
 
 	free(connreq);
 	return ret;
@@ -349,7 +356,7 @@ vrb_msg_xrc_cm_common_verify(struct vrb_xrc_ep *ep, size_t paramlen)
 	int ret;
 
 	if (!vrb_is_xrc_ep(&ep->base_ep)) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "EP is not using XRC\n");
+		VRB_WARN(FI_LOG_EP_CTRL, "EP is not using XRC\n");
 		return -FI_EINVAL;
 	}
 
@@ -398,7 +405,7 @@ vrb_msg_xrc_ep_connect(struct fid_ep *ep, const void *addr,
 
 	xrc_ep->conn_setup = calloc(1, sizeof(*xrc_ep->conn_setup));
 	if (!xrc_ep->conn_setup) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "Unable to allocate connection setup memory\n");
 		free(adjusted_param);
 		free(cm_hdr);
@@ -406,9 +413,9 @@ vrb_msg_xrc_ep_connect(struct fid_ep *ep, const void *addr,
 	}
 	xrc_ep->conn_setup->conn_tag = VERBS_CONN_TAG_INVALID;
 
-	fastlock_acquire(&xrc_ep->base_ep.eq->lock);
+	ofi_mutex_lock(&xrc_ep->base_ep.eq->lock);
 	ret = vrb_connect_xrc(xrc_ep, NULL, 0, adjusted_param, paramlen);
-	fastlock_release(&xrc_ep->base_ep.eq->lock);
+	ofi_mutex_unlock(&xrc_ep->base_ep.eq->lock);
 
 	free(adjusted_param);
 	free(cm_hdr);
@@ -438,9 +445,9 @@ vrb_msg_xrc_ep_accept(struct fid_ep *ep, const void *param, size_t paramlen)
 	if (ret)
 		return ret;
 
-	fastlock_acquire(&xrc_ep->base_ep.eq->lock);
+	ofi_mutex_lock(&xrc_ep->base_ep.eq->lock);
 	ret = vrb_accept_xrc(xrc_ep, 0, adjusted_param, paramlen);
-	fastlock_release(&xrc_ep->base_ep.eq->lock);
+	ofi_mutex_unlock(&xrc_ep->base_ep.eq->lock);
 
 	free(adjusted_param);
 	return ret;
@@ -467,7 +474,7 @@ static int vrb_pep_setname(fid_t pep_fid, void *addr, size_t addrlen)
 	pep = container_of(pep_fid, struct vrb_pep, pep_fid);
 
 	if (pep->src_addrlen && (addrlen != pep->src_addrlen)) {
-		VERBS_INFO(FI_LOG_FABRIC, "addrlen expected: %zu, got: %zu.\n",
+		VRB_INFO(FI_LOG_FABRIC, "addrlen expected: %zu, got: %zu.\n",
 			   pep->src_addrlen, addrlen);
 		return -FI_EINVAL;
 	}
@@ -476,22 +483,19 @@ static int vrb_pep_setname(fid_t pep_fid, void *addr, size_t addrlen)
 	if (pep->bound) {
 		ret = rdma_destroy_id(pep->id);
 		if (ret) {
-			VERBS_INFO(FI_LOG_FABRIC,
-				   "Unable to destroy previous rdma_cm_id\n");
+			VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_destroy_id");
 			return -errno;
 		}
 		ret = rdma_create_id(NULL, &pep->id, &pep->pep_fid.fid, RDMA_PS_TCP);
 		if (ret) {
-			VERBS_INFO(FI_LOG_FABRIC,
-				   "Unable to create rdma_cm_id\n");
+			VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_cm_id\n");
 			return -errno;
 		}
 	}
 
 	ret = rdma_bind_addr(pep->id, (struct sockaddr *)addr);
 	if (ret) {
-		VERBS_INFO(FI_LOG_FABRIC,
-			   "Unable to bind address to rdma_cm_id\n");
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_bind_addr");
 		return -errno;
 	}
 

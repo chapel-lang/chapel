@@ -1,15 +1,16 @@
 if HAVE_RXM
 _rxm_files = \
-       prov/rxm/src/rxm_attr.c		\
-       prov/rxm/src/rxm_init.c		\
+       prov/rxm/src/rxm_attr.c	\
+       prov/rxm/src/rxm_init.c	\
        prov/rxm/src/rxm_fabric.c	\
        prov/rxm/src/rxm_domain.c	\
-       prov/rxm/src/rxm_conn.c		\
-       prov/rxm/src/rxm_ep.c		\
-       prov/rxm/src/rxm_cq.c		\
-       prov/rxm/src/rxm_av.c		\
-       prov/rxm/src/rxm_rma.c		\
-       prov/rxm/src/rxm_atomic.c		\
+       prov/rxm/src/rxm_conn.c	\
+       prov/rxm/src/rxm_ep.c	\
+       prov/rxm/src/rxm_msg.c	\
+       prov/rxm/src/rxm_tagged.c	\
+       prov/rxm/src/rxm_cq.c	\
+       prov/rxm/src/rxm_rma.c	\
+       prov/rxm/src/rxm_atomic.c	\
        prov/rxm/src/rxm.h
 
 if HAVE_RXM_DL

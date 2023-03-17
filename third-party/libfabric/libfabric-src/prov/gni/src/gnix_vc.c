@@ -1026,9 +1026,9 @@ static int __gnix_vc_hndl_conn_req(struct gnix_cm_nic *cm_nic,
 		 * cm_nic's work queue, progress the cm_nic.
 		 */
 
-		fastlock_acquire(&cm_nic->wq_lock);
+		ofi_spin_lock(&cm_nic->wq_lock);
 		dlist_insert_before(&work_req->list, &cm_nic->cm_nic_wq);
-		fastlock_release(&cm_nic->wq_lock);
+		ofi_spin_unlock(&cm_nic->wq_lock);
 	} else {
 
 		/*
@@ -1718,9 +1718,9 @@ int _gnix_vc_connect(struct gnix_vc *vc)
 	 * cm_nic's work queue, progress the cm_nic.
 	 */
 
-	fastlock_acquire(&cm_nic->wq_lock);
+	ofi_spin_lock(&cm_nic->wq_lock);
 	dlist_insert_before(&work_req->list, &cm_nic->cm_nic_wq);
-	fastlock_release(&cm_nic->wq_lock);
+	ofi_spin_unlock(&cm_nic->wq_lock);
 
 	return ret;
 }

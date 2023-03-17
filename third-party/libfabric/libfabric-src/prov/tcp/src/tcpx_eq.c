@@ -58,7 +58,7 @@ static int tcpx_eq_close(struct fid *fid)
 
 	eq = container_of(fid, struct tcpx_eq, util_eq.eq_fid.fid);
 
-	fastlock_destroy(&eq->close_lock);
+	ofi_mutex_destroy(&eq->close_lock);
 	free(eq);
 	return 0;
 }
@@ -99,7 +99,7 @@ int tcpx_eq_create(struct fid_fabric *fabric_fid, struct fi_eq_attr *attr,
 		goto err1;
 	}
 
-	ret = fastlock_init(&eq->close_lock);
+	ret = ofi_mutex_init(&eq->close_lock);
 	if (ret)
 		goto err2;
 
@@ -122,7 +122,7 @@ int tcpx_eq_create(struct fid_fabric *fabric_fid, struct fi_eq_attr *attr,
 	*eq_fid = &eq->util_eq.eq_fid;
 	return 0;
 err3:
-	fastlock_destroy(&eq->close_lock);
+	ofi_mutex_destroy(&eq->close_lock);
 err2:
 	ofi_eq_cleanup(&eq->util_eq.eq_fid.fid);
 err1:
