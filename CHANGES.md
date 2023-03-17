@@ -180,6 +180,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* parallelized array deinitialization
 * parallelized the implementations of the new array `.find()` methods
 
 Platform-specific Performance Optimizations / Improvements
@@ -233,6 +234,7 @@ Build System Improvements
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* fixed `CHPL_GMP=bundled on recent ARM-based Macs
 * improved portability for configurations using GCC 13 and clang 15
 * improved the ability to find an LLVM 14 dependency on Alpine Linux 3.17
 
@@ -291,6 +293,8 @@ Bug Fixes
 * fixed a problem where passing `--target-cpu` would cause a core dump
 * fixed an internal error when initializing a list from an iterator
 * fixed support for casts from `weak(C)` to non-nilable `shared` classes
+* fixed a bug with `--memTrack` when using 'qthreads'
+* re-enabled the ability to use `CHPL_HOST_MEM=jemalloc` on Macs
 
 Bug Fixes for Build Issues
 --------------------------
@@ -312,6 +316,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of LLVM to 14.0.6
+* updated GASNet-EX to the 2023.2.0 version snapshot
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -402,6 +407,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* improved the speed of parallel testing via the `paratest.*` scripts
 * added a `--respect-notests` flag to the `start_test` script
 * enabled `start_test` to infer `.good` filenames when using `COMPOPTS` files
 * adjusted the `smokeTest` script to print out lines with trailing whitespace
