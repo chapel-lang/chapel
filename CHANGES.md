@@ -33,6 +33,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated support for single-statement `return` routines that don't use `do`
 * deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
+* marked arrays and slices with negatively strided dimensions as unstable
 * removed support for the deprecated `alignedBoundsByDefault` `config param`
 
 New Language Features
@@ -52,6 +53,8 @@ New Language Features
 
 Feature Improvements
 --------------------
+* improved the semantics of slicing ranges, domains, and arrays  
+  (see https://chapel-lang.org/docs/1.30/language/spec/ranges.html#range-slicing)
 * enabled the ability to query type/param values within formal types  
   (e.g., `proc foo(r: range(?it, ?bd, ?sb)) { ... }` is now supported)
 * improved support for loops over unbounded ranges/domains of 'enum' or 'bool'
@@ -270,6 +273,7 @@ Error Messages / Semantic Checks
   (see https://chapel-lang.org/docs/technotes/partialInstantiations.html#creating-partial-instantiations)
 * improved errors for invalid uses of `break`, `continue`, `return`, `yield`
 * improved error messages when applying multiple class memory management styles
+* added errors for iterators that yield `const`/non-lvalue expressions by `ref`
 * added a compile-time error for `postinit()` routines that `throw`
 * improved error messages for invalid uses of `private`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
@@ -280,6 +284,8 @@ Bug Fixes
 ---------
 * fixed several bugs related to uses of labeled `break`/`continue` statements
 * fixed a bug in which variable constraints of type `domain` were ignored
+* fixed a bug in which tuple arguments were incorrectly passed by `ref`
+* fixed a bug in which records in tuples were yielded by `ref` by default
 * fixed a bug in which internal modules were stacking class memory managements
 * fixed a compiler hang when reporting an error with split initialization
 * fixed a problem where passing `--target-cpu` would cause a core dump
@@ -402,6 +408,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* fixed a bug in which using `--gdb` resulted in an infinite loop
 
 Developer-oriented changes: Utilities
 -------------------------------------
