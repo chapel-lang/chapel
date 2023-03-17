@@ -234,7 +234,8 @@ Documentation
   (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
 * fixed formatting of 'try!' in error handling documentation  
   (see https://chapel-lang.org/docs/1.30/technotes/errorHandling.html)
-* fixed a typo in the `mason init` documentation
+* fixed a typo in the `mason init` documentation  
+  (see https://chapel-lang.org/docs/1.30/tools/mason/guide/basicusage.html)
 
 
 Syntax Highlighting
