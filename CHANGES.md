@@ -3,9 +3,6 @@ Release Changes List
 
 TODO:
 * spellcheck
-* remove empty sections
-* quote 'dyno' or not?
-* check for init capital bullets
 * check for 'functions' (-> procedures, routines, methods?)
 * example codes
 * spellcheck
@@ -32,9 +29,6 @@ Configuration / Build / Packaging Changes
   (see https://chapel-lang.org/docs/1.30/usingchapel/prereqs.html#chapel-prerequisites)
 * updated Chapel's Dockerfiles to support the C back-end in addition to LLVM  
   (see https://hub.docker.com/r/chapel/chapel/)
-
-Semantic Changes / Changes to the Chapel Language
--------------------------------------------------
 
 Syntactic / Naming Changes
 --------------------------
@@ -85,9 +79,6 @@ Feature Improvements
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
 * enabled classes to have methods that share the class's name  
   (e.g., `class C { proc C() { ... } }` is now legal)
-
-Namespace Changes
------------------
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -197,7 +188,7 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* Added new GPU-oriented utility routines  
+* added new GPU-oriented utility routines  
   (see 'GPU Computing' below)
 * added `.read[To|Through]()` methods to read up to/through a given separator  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
@@ -216,16 +207,10 @@ Standard Library Modules
 * added `readByte()` and `writeByte()` routines to read/write a single byte  
   (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader.readByte  
    and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeByte)
-* Updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
+* updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
    https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
    https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.BadFormatError)
-
-Package Modules
----------------
-
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
 
 Tool Improvements
 -----------------
@@ -299,12 +284,6 @@ Syntax Highlighting
 -------------------
 * improved `vim` support to simplify customization of indentation levels
 
-Example Codes
--------------
-
-Build System Improvements
--------------------------
-
 Portability / Platform-specific Improvements
 --------------------------------------------
 * fixed `CHPL_GMP=bundled` on recent ARM-based Macs
@@ -333,12 +312,6 @@ Compiler Improvements
 ---------------------
 * improved parsing of first-class function types that return arrays
 * added a warning for `[lo..hi]` literals to reduce the potential for confusion
-
-Compiler Flags
---------------
-
-Generated Executable Flags
---------------------------
 
 Runtime Library Changes
 -----------------------
@@ -379,9 +352,6 @@ Bug Fixes
 * fixed a mishandling of certain `export` procedures with optimization
 * fixed missing LLVM sign/zero extension attributes for certain `export` procs
 
-Bug Fixes for Build Issues
---------------------------
-
 Bug Fixes for GPU Computing
 ---------------------------
 * fixed a bug causing segfaults with `CHPL_GPU_MEM_STRATEGY=array_on_device`
@@ -396,19 +366,10 @@ Bug Fixes for Libraries
 * fixed a bug when subtracting `bigint` values from `int`
 * fixed a bug in which `%` would crash for remote `bigint` values
 
-Bug Fixes for Tools
--------------------
-
-Platform-specific Bug Fixes
----------------------------
-
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of LLVM to 14.0.6
 * updated GASNet-EX to the version 2023.2.0 snapshot
-
-Developer-oriented changes: Process
------------------------------------
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -492,9 +453,6 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added the bound/unbound status of 'ofi' endpoints when using verbose output
 
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * improved the speed of parallel testing via the `paratest.*` scripts
@@ -505,9 +463,6 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * fixed a bug in which using `--gdb` resulted in an infinite loop
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 1.29.0
