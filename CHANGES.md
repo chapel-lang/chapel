@@ -1,11 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* spellcheck
-* compiler flags
-* man page
-
 version 1.30.0
 ==============
 
@@ -323,6 +318,11 @@ Compiler Improvements
 * improved parsing of first-class function types that return arrays
 * added a warning for `[lo..hi]` literals to reduce the potential for confusion
 
+Compiler Flags
+--------------
+* added flags to support processing attributes belonging to different tools  
+  (e.g., `--warn-unknown-attribute-toolname`, `--using-attribute-toolname`)
+
 Runtime Library Changes
 -----------------------
 * enabled overriding the max # of endpoints reported by the 'ofi' provider  
@@ -408,8 +408,6 @@ Developer-oriented changes: Makefile / Build-time changes
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added `--use-io-formatters` to enable experimental IO format customization
-* added flags to support processing attributes belonging to different tools  
-  (e.g., `--warn-unknown-attribute-toolname`, `--using-attribute-toolname`)
 * validated that the pass provided to the `--stop-after-pass` flag exists
 * prohibited using the `--parse-only` and `--stop-after-pass` flags together
 * added `--gpu-ptxas-enforce-optimization` for debugging optimized GPU builds
