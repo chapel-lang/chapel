@@ -276,6 +276,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/technotes/errorHandling.html)
 * fixed a typo in the `mason init` documentation  
   (see https://chapel-lang.org/docs/1.30/tools/mason/guide/basicusage.html)
+* clarified the location of CHPL_HOME in `make install` builds  
+  (see https://chapel-lang.org/docs/1.30/usingchapel/building.html#installing-chapel))
 
 
 Syntax Highlighting
