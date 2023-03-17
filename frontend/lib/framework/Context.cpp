@@ -26,6 +26,7 @@
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/filesystem.h"
 
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Config/llvm-config.h"
@@ -80,6 +81,21 @@ const std::string& Context::chplHome() const {
   return chplHome_;
 }
 
+const std::string& Context::tmpDir() {
+  if (tmpDir_.empty()) {
+    std::string dir;
+    auto err = makeTempDir("chpl", dir);
+
+    if (err) {
+      this->error(Location(), "Could not create temp directory");
+    } else {
+      tmpDir_ = dir;
+    }
+  }
+
+  return tmpDir_;
+}
+
 void Context::setDetailedErrorOutput(bool detailedErrors) {
   this->detailedErrors = detailedErrors;
 }
@@ -125,6 +141,11 @@ Context::~Context() {
     if (this == &detail::rootContext || !doNotCollect) {
       free(buf);
     }
+  }
+
+  // delete the tmp dir
+  if (!tmpDir_.empty()) {
+    deleteDir(tmpDir_);
   }
 }
 

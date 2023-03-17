@@ -21,6 +21,8 @@
 
 #include "chpl/framework/query-impl.h"
 
+#include "../util/filesystem_help.h"
+
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
@@ -96,7 +98,7 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
     argsCstrs.push_back(arg.c_str());
   }
 
-  
+
   // TODO: use a different triple when cross compiling
   // TODO: look at CHPL_TARGET_ARCH
   std::string triple = llvm::sys::getDefaultTargetTriple();
@@ -151,6 +153,87 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   }
 
 #endif
+
+  return QUERY_END(result);
+}
+
+/* returns the precompiled header file data
+   args are the clang driver arguments
+   code is the C code to precompile */
+const std::string& createClangPrecompiledHeader(Context* context,
+                                                std::vector<std::string> args,
+                                                std::string code) {
+  QUERY_BEGIN(createClangPrecompiledHeader, context, args, code);
+
+  std::string result;
+
+  bool ok = true;
+
+  std::string clangExe = getClangExe(context);
+  std::string tmpInput = context->tmpDir() + "/extern-code.h";
+  std::string tmpOutput = context->tmpDir() + "/extern-code.ast";
+
+  // write the code to the file
+  std::string openError;
+  FILE* fp = openfile(tmpInput.c_str(), "w", openError);
+  if (fp == nullptr) {
+    context->error(Location(), "Could not open file %s: %s",
+                   tmpInput.c_str(), openError.c_str());
+    ok = false;
+  }
+
+  if (ok) {
+    size_t written = fwrite(code.data(), 1, code.size(), fp);
+
+    if (written != code.size()) {
+      context->error(Location(), "Could not write to file %s",
+                     tmpInput.c_str());
+      ok = false;
+    }
+  }
+
+  if (fp != nullptr) {
+    std::string closeError;
+    bool closedOk = closefile(fp, tmpInput.c_str(), closeError);
+    if (!closedOk) {
+      context->error(Location(), "Could not close file %s: %s",
+                     tmpInput.c_str(), closeError.c_str());
+      ok = false;
+    }
+  }
+
+  if (ok) {
+    // run clang
+    std::vector<std::string> command;
+
+    command.push_back(clangExe);
+    command.push_back("-x");
+    command.push_back("c-header");
+    command.push_back(tmpInput);
+    command.push_back("-o");
+    command.push_back(tmpOutput);
+    const char* desc = "create clang precompiled header for extern block";
+    int code = executeAndWait(command, desc);
+
+    if (code != 0) {
+      std::string cmd;
+      for (auto& arg : command) {
+        cmd.append(arg);
+        cmd.append(" ");
+      }
+      context->error(Location(), "Could not run clang command %s", cmd.c_str());
+      ok = false;
+    }
+  }
+
+  if (ok) {
+    std::string readError;
+    bool readOk = readfile(tmpOutput.c_str(), result, readError);
+    if (!readOk) {
+      context->error(Location(), "Could not read file %s: %s",
+                     tmpOutput.c_str(), readError.c_str());
+    }
+  }
 
   return QUERY_END(result);
 }

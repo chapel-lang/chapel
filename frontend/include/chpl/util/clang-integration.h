@@ -37,6 +37,13 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
                                                 std::vector<std::string> args,
                                                 bool forGpuCodegen);
 
+/** Given arguments to 'clang' and some code (normally, the contents of an
+    extern block), create a precompiled header with clang and return
+    its contents. */
+const std::string& createClangPrecompiledHeader(Context* context,
+                                                std::vector<std::string> args,
+                                                std::string code);
+
 
 } // end namespace util
 } // end namespace chpl

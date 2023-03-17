@@ -16,3 +16,4 @@
 # limitations under the License.
 
 comp_unit_test(testClangCC1Args)
+comp_unit_test(testShaFile)

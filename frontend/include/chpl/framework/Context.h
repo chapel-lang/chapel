@@ -167,6 +167,8 @@ class Context {
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
+  std::string tmpDir_;
+
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
     auto color = queryDepthColor[depth % queryDepthColor.size()];
@@ -306,6 +308,11 @@ class Context {
   ~Context();
 
   const std::string& chplHome() const;
+
+  /** Return a temporary directory that can be used by this process.
+      If it does not exist yet, create it.
+   */
+  const std::string& tmpDir();
 
   void setDetailedErrorOutput(bool useDetailed);
 
