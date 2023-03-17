@@ -14,9 +14,8 @@ Configuration / Build / Packaging Changes
 * updated Chapel's Dockerfiles to support the C backend in addition to LLVM  
   (see https://hub.docker.com/r/chapel/chapel/)
 * switched to using CMake behind the scenes to build `chpl` and `chlpdoc`
-* added new 'QUIET' and 'VERBOSE' build modes by setting these vars to `1`
-  (e.g., `make QUIET=1` or `export VERBOSE=1 && make`)
-  (TODO: or... see TODO)
+* added new 'QUIET' and 'VERBOSE' build modes by setting these vars to `1`  
+  (see https://chapel-lang.org/docs/1.30/usingchapel/building.html#controlling-build-output)
 * for `./configure --chpl-home`, installs now require CMake 3.16 or later  
   (see https://chapel-lang.org/docs/1.30/usingchapel/prereqs.html#chapel-prerequisites)
 
@@ -42,6 +41,8 @@ New Language Features
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html)
 * added new `@deprecated` and `@stable` attributes for indicating stability  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
+* added initial support for initializers that can `throw` errors  
+  (see https://chapel-lang.org/docs/1.30/technotes/throwingInit.html))
 * added support for single-statement subroutine bodies using the `do` keyword  
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
 * added a `.fullIdxType` query on arrays to get multidimensional index types  
@@ -67,6 +68,10 @@ Changes / Feature Improvements in Libraries
 -------------------------------------------
 * added a new 2-argument `.find()` method on arrays  
   (see https://chapel-lang.org/docs/1.30/language/spec/arrays.html#ChapelArray.find)
+* made `bigint` initializers that halted/returned error codes `throw` instead  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/BigInteger.html#BigInteger.bigint.init,  
+  https://chapel-lang.org/docs/1.30/modules/standard/BigInteger.html#BigInteger.bigintInitThrows)
+* updated the `bigint` cast from `string` so it `throw`s for illegal values
 * added a `permissions` argument to `FileSystem.copy()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.copy)
 * added a `metadata` argument to `FileSystem.copyTree()`  
@@ -85,6 +90,12 @@ Name Changes in Libraries
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
+* renamed `file.check()` to `file.isOpen()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.isOpen)
+* replaced `IO.openfp()` with a file initializer taking a `c_FILE` argument
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
+* replaced `IO.openfd()` with a file initializer taking a `fileDescriptor` arg  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
 * renamed `MemMove.needsDeinit()` to `MemMove.needsDestroy()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/MemMove.html#MemMove.needsDestroy)
 * renamed `MemMove.explicitDeinit()` to `MemMove.destroy()`  
@@ -126,6 +137,7 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.date.ctime)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
+* removed the deprecated `channel` type
 * removed the deprecated 'Spawn' module
 * removed the deprecated pipe style constants from the 'Subprocess' module
 * removed deprecated POSIX signal name constants from the 'Subprocess' module
@@ -194,6 +206,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/variables.html#split-initialization)
 * updated the spec section on re-exporting symbols to describe current behavior  
   (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
+* fixed the 'IO' example codes to work with strict or relaxed error handling
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
   (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
 * fixed formatting of 'try!' in error handling documentation  
@@ -252,6 +266,7 @@ Error Messages / Semantic Checks
   (see https://chapel-lang.org/docs/technotes/partialInstantiations.html#creating-partial-instantiations)
 * improved errors for invalid uses of `break`, `continue`, `return`, `yield`
 * improved error messages when applying multiple class memory management styles
+* added a compile-time error for `postinit()` routines that `throw`
 * improved error messages for invalid uses of `private`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
 * improved an error message for indexing into a `map` of non-nilable values
@@ -293,6 +308,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added a section on naming accessors to the Standard Module Style Guide  
+  (see https://chapel-lang.org/docs/1.30/developer/bestPractices/StandardModuleStyle.html#accessors)
 * updated `frontend/README` to focus on code structure and best practices
 
 Developer-oriented changes: Syntactic / Naming Changes
