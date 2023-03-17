@@ -26,7 +26,7 @@ Highlights (see subsequent sections for further details)
 Configuration / Build / Packaging Changes
 -----------------------------------------
 * switched to using CMake behind the scenes to build `chpl` and `chlpdoc`
-* added new 'QUIET' and 'VERBOSE' build modes by setting these vars to `1`  
+* added new `QUIET` and `VERBOSE` build modes by setting these vars to `1`  
   (see https://chapel-lang.org/docs/1.30/usingchapel/building.html#controlling-build-output)
 * for `./configure --chpl-home`, installs now require CMake 3.16 or later  
   (see https://chapel-lang.org/docs/1.30/usingchapel/prereqs.html#chapel-prerequisites)
@@ -79,7 +79,7 @@ Feature Improvements
   (see https://chapel-lang.org/docs/1.30/language/spec/ranges.html#range-slicing)
 * enabled the ability to query `type`/`param` values within formal types  
   (e.g., `proc foo(r: range(?it, ?bd, ?sb)) { ... }` is now supported)
-* improved support for loops over unbounded ranges/domains of 'enum'/'bool'  
+* improved support for loops over unbounded ranges/domains of `enum`/`bool`  
   (e.g., `for i in false.. by -1` will now yield `true`, `false`)
 * added new optional arguments to the `@unstable` annotation  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
@@ -307,7 +307,7 @@ Build System Improvements
 
 Portability / Platform-specific Improvements
 --------------------------------------------
-* fixed `CHPL_GMP=bundled on recent ARM-based Macs
+* fixed `CHPL_GMP=bundled` on recent ARM-based Macs
 * improved portability for configurations using GCC 13 and clang 15
 * improved the ability to find an LLVM 14 dependency on Alpine Linux 3.17
 
@@ -316,7 +316,7 @@ GPU Computing
 * added support for generating single-locale code for one or more AMD GPUs  
   (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
 * significantly improved GPU launch times by only loading the kernel once  
-* improved performance by page-locking host arrays for `array-on-device' mode
+* improved performance by page-locking host arrays for 'array-on-device' mode
 * improved performance via a loop optimization before extracting GPU kernels
 * added heuristic defaults for `CHPL_GPU_CODEGEN` based on user's environment  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html#gpu-related-environment-variables)
