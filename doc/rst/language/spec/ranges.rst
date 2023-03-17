@@ -885,8 +885,10 @@ Ranges can be *sliced* using other ranges to create new sub-ranges. The
 resulting range represents the intersection between the two ranges’
 represented sequences. The stride, alignment, and bounds of the
 resulting range are adjusted as needed to make this true. ``idxType``
-of the result is determined by the first operand. The sign of the stride
-of the result is the product of the operand strides' signs.
+of the result is determined by the first operand.
+The stride of the result is of the same sign as the stride
+of the first operand if the second operand's stride is positive,
+and of the opposite sign otherwise.
 
 Range slicing is specified by the syntax: 
 
