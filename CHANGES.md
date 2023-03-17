@@ -135,7 +135,7 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
 * renamed `[read|write]bits()` to `[read|write]Bits()`  
-  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader,readBits  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBits  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBits)
 * renamed `open[reader|writer]()` to `open[Reader|Writer()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.openReader  
