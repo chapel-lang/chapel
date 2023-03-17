@@ -5,12 +5,11 @@ TODO:
 * spellcheck
 * check for 'functions' (-> procedures, routines, methods?)
 * example codes
+* compiler flags
 * spellcheck
 * move renamings in deprecation section to name changes section
 * TODOs
-* docs/1.30
 * man page
-* no accidental changes prior to 1.30.0
 
 version 1.30.0
 ==============
@@ -33,7 +32,7 @@ Configuration / Build / Packaging Changes
 Syntactic / Naming Changes
 --------------------------
 * renamed the new `weakPointer(C)` type to `weak(C)`  
-  (see https://chapel-lang.org/docs/main/builtins/WeakPointer.html#WeakPointer.weak)
+  (see https://chapel-lang.org/docs/1.30/builtins/WeakPointer.html#WeakPointer.weak)
 * changed the syntax of `@unstable "msg"` to `@unstable("msg", ...)`
 * unified `chpl`'s parsing of array types/values and square bracket loops
 
@@ -54,10 +53,10 @@ New Language Features
 * added new `@deprecated` and `@stable` attributes for indicating stability  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
 * added new `.adopt()` methods to the `owned` and `shared` classes  
-  (see https://chapel-lang.org/docs/language/spec/classes.html#OwnedObject.owned.adopt  
-   and https://chapel-lang.org/docs/language/spec/classes.html#SharedObject.shared.adopt)
+  (see https://chapel-lang.org/docs/1.30/language/spec/classes.html#OwnedObject.owned.adopt  
+   and https://chapel-lang.org/docs/1.30/language/spec/classes.html#SharedObject.shared.adopt)
 * added a new `.release()` method for `owned` classes  
-  (see https://chapel-lang.org/docs/language/spec/classes.html#OwnedObject.owned.release)
+  (see https://chapel-lang.org/docs/1.30/language/spec/classes.html#OwnedObject.owned.release)
 * added initial support for initializers that can `throw` errors  
   (see https://chapel-lang.org/docs/1.30/technotes/throwingInit.html)
 * added a prototype `.transmute()` for bitwise `uint` <-> `real` conversions  
@@ -100,25 +99,25 @@ Changes / Feature Improvements in Libraries
 Name Changes in Libraries
 -------------------------
 * renamed `new[Block|Cyclic][Dom|Arr]` to `[Block|Cyclic].new[Domain|Array]`  
-  (see https://chapel-lang.org/docs/main/modules/dists/BlockDist.html  
-   and https://chapel-lang.org/docs/main/modules/dists/CyclicDist.html)
+  (see https://chapel-lang.org/docs/1.30/modules/dists/BlockDist.html  
+   and https://chapel-lang.org/docs/1.30/modules/dists/CyclicDist.html)
 * changed GPU-related features to use `Gpu` over `GPU` in identifier names  
   (e.g. `GPUDiagnostics` is now `GpuDiagnostics`)
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
 * renamed `[read|write]bits()` to `[read|write]Bits()`  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader,readBits  
-   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeBits)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader,readBits  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBits)
 * renamed `open[reader|writer]()` to `open[Reader|Writer()`  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openReader  
-  and https://chapel-lang.org/docs/modules/standard/IO.html#IO.openWriter)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.openReader  
+  and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.openWriter)
 * renamed `iomode` to `ioMode`  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.ioMode)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioMode)
 * renamed `file.check()` to `file.isOpen()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.isOpen)
 * renamed `openmem()` to `openMemFile()`  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openMemFile)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.openMemFile)
 * replaced `IO.openfp()` with a file initializer taking a `c_FILE` argument  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
 * replaced `IO.openfd()` with a file initializer taking a `fileDescriptor` arg  
@@ -157,14 +156,14 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
 * deprecated `regex.compile()` in favor of `new regex()`  
-  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.init)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.regex.init)
 * deprecated `regex.sub[n]()` in favor of `replace[AndCount]()` methods  
-  (see https://chapel-lang.org/docs/master/modules/standard/Regex.html#Regex.string.replace)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.string.replace)
 * deprecated `map.items()` and `map.these()`  
-  (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.items)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Map.html#Map.map.items)
 * marked `map.parSafe` as being unstable
 * deprecated `map.getBorrowed()`, `.getReference()`, and `.getValue()`  
-  (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.getBorrowed)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/Map.html#Map.map.getBorrowed)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
 * deprecated the `TimeUnits` enum and routines that made use of it  
@@ -202,11 +201,11 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
 * added new `[read|write]Codepoint()` methods to read/write UTF-8 codepoints  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader.readCodepoint  
-   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeCodepoint)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readCodepoint  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeCodepoint)
 * added `readByte()` and `writeByte()` routines to read/write a single byte  
-  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader.readByte  
-   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeByte)
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readByte  
+   and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeByte)
 * updated I/O errors in 'OS' to inherit from `Error` instead of `SystemError`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.EofError,  
    https://chapel-lang.org/docs/1.30/modules/standard/OS.html#OS.UnexpectedEofError, and  
@@ -271,11 +270,11 @@ Other Documentation
 * clarified the location of CHPL_HOME in `make install` builds  
   (see https://chapel-lang.org/docs/1.30/usingchapel/building.html#installing-chapel)
 * added a new technical note about debugging Chapel programs  
-  (see https://chapel-lang.org/docs/main/technotes/debuggingChapel.html)
+  (see https://chapel-lang.org/docs/1.30/technotes/debuggingChapel.html)
 * updated the debugging documentation to mention the ability to use `lldb`  
-  (see https://chapel-lang.org/docs/main/usingchapel/debugging.html#running-in-gdb)
+  (see https://chapel-lang.org/docs/1.30/usingchapel/debugging.html#running-in-gdb)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
-  (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
+  (see https://chapel-lang.org/docs/1.30/technotes/initequals.html#the-init-method-for-non-generic-types)
 * fixed the 'IO' example codes to work with strict or relaxed error handling  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * fixed other bugs, typos, and formatting issues in the documentation
@@ -298,7 +297,7 @@ GPU Computing
 * improved performance by page-locking host arrays for 'array-on-device' mode
 * improved performance via a loop optimization before extracting GPU kernels
 * added heuristic defaults for `CHPL_GPU_CODEGEN` based on user's environment  
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html#gpu-related-environment-variables)
+  (see https://chapel-lang.org/docs/1.30/technotes/gpu.html#gpu-related-environment-variables)
 * enabled calling routines that access `nil` from within GPU kernels
 * 'GPU' module improvements:
   - added `createSharedArray()` to support allocating block-shared memory  
@@ -325,7 +324,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added a warning for partial instantiations that do not include `?`  
-  (see https://chapel-lang.org/docs/technotes/partialInstantiations.html#creating-partial-instantiations)
+  (see https://chapel-lang.org/docs/1.30/technotes/partialInstantiations.html#creating-partial-instantiations)
 * improved errors for invalid uses of `break`, `continue`, `return`, `yield`
 * removed "It's us, not you" phrasing from `chpl`'s internal error messages
 * improved error messages when applying multiple class memory management styles
@@ -1303,7 +1302,7 @@ Standard Library Modules
 * added a new 'GPUDiagnostics' module for tracking GPU kernel launches  
   (see https://chapel-lang.org/docs/1.27/modules/standard/GPUDiagnostics.html)
 * added new `fillRandom()` routines to 'Random' that accept min/max bounds  
-  (see https://chapel-lang.org/docs/main/modules/standard/Random.html#Random.fillRandom  
+  (see https://chapel-lang.org/docs/1.27/modules/standard/Random.html#Random.fillRandom  
    and https://chapel-lang.org/docs/1.27/modules/standard/Random/PCGRandom.html#PCGRandom.PCGRandomStream.fillRandom)
 * ensured all types have separate `isXType`, `isXValue`, and `isX` routines  
   (see https://chapel-lang.org/docs/1.27/modules/standard/Types.html)
