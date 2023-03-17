@@ -34,6 +34,7 @@ Deprecated / Unstable / Removed Language Features
 * deprecated support for single-statement `return` routines that don't use `do`
 * deprecated support for `bool` types with specified widths (e.g., `bool(8)`)
 * marked arrays and slices with negatively strided dimensions as unstable
+* removed deprecated `isFloat*()` query routines
 * removed support for the deprecated `alignedBoundsByDefault` `config param`
 
 New Language Features
@@ -86,6 +87,9 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed `new[Block|Cyclic][Dom|Arr]` to `[Block|Cyclic].new[Domain|Array]`  
+  (see https://chapel-lang.org/docs/main/modules/dists/BlockDist.html
+   and https://chapel-lang.org/docs/main/modules/dists/CyclicDist.html)
 * renamed the 'Barriers' module to 'Collectives'  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html)
 * renamed the `Barrier` type to `barrier`  
@@ -228,6 +232,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/records.html#storage-allocation)
 * added an additional example of using `param`s with generic types  
   (see https://chapel-lang.org/docs/1.30/language/spec/generics.html#parameters-in-generic-types)
+* refreshed the GPU technical note with respect to current capabilities  
+  (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
 * fixed the 'IO' example codes to work with strict or relaxed error handling
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
@@ -256,7 +262,13 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* added support for generating code for AMD GPUs
+  (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
 * significantly improved GPU launch times by only loading the kernel once  
+* improved performance by page-locking host arrays for `array-on-device' mode
+* improved performance via a loop optimization before extracting GPU kernels
+* added heuristic defaults for `CHPL_GPU_CODEGEN` based on user's environment  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html#gpu-related-environment-variables)
 * 'GPU' module improvements:
   - added `createSharedArray()` to support allocating block-shared memory  
     (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.createSharedArray)
@@ -321,6 +333,7 @@ Bug Fixes for GPU Computing
 ---------------------------
 * fixed a bug causing segfaults with `CHPL_GPU_MEM_STRATEGY=array_on_device`
 * fixed a bug with how errors are handled in GPU codegen
+* fixed a bug involving thread-block barrier syncs
 
 Bug Fixes for Libraries
 -----------------------
@@ -360,6 +373,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* added prototype asynchronous communication capabilities to the GPU module
 * made Chapel-specific `EEOF`, `ESHORT`, and `EFORMAT` private in 'IO' module
 * refactored `bigint` routines w.r.t. how localization is implemented
 
