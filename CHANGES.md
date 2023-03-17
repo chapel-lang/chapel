@@ -43,6 +43,11 @@ New Language Features
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html)
 * added new `@deprecated` and `@stable` attributes for indicating stability  
   (see https://chapel-lang.org/docs/1.30/technotes/attributes.html#stability-attributes)
+* added new `.adopt()` methods to `owned` and `shared` classes  
+  (see https://chapel-lang.org/docs/language/spec/classes.html#OwnedObject.owned.adopt  
+   and https://chapel-lang.org/docs/language/spec/classes.html#SharedObject.shared.adopt)
+* added a new `.release()` method for `owned` classes  
+  (see https://chapel-lang.org/docs/language/spec/classes.html#OwnedObject.owned.release)
 * added initial support for initializers that can `throw` errors  
   (see https://chapel-lang.org/docs/1.30/technotes/throwingInit.html))
 * added support for single-statement subroutine bodies using the `do` keyword  
@@ -97,6 +102,16 @@ Name Changes in Libraries
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readBytes)
+* renamed `openmem()` to `openMemFile()`  
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openMemFile)
+* renamed `iomode` to `ioMode`
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.ioMode)
+* renamed `[read|write]bits()` to `[read|write]Bits()`  
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader,readBits  
+   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeBits)
+* renamed `open[reader|writer]()` to `open[Reader|Writer()`  
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openReader  
+  and https://chapel-lang.org/docs/modules/standard/IO.html#IO.openWriter)
 * renamed `file.check()` to `file.isOpen()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.isOpen)
 * replaced `IO.openfp()` with a file initializer taking a `c_FILE` argument
@@ -126,6 +141,10 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.lines)
 * deprecated `readBinary()` on arrays to update its return type to `int`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ReadBinaryArrayReturnInt)
+* deprecated `ioBits` in favor of `readBits()`/`writeBits()`  
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioBits)
+* deprecated `ioChar` in favor of `readCodepoint()`/`writeCodepoint()`
+  (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioChar)
 * deprecated the `fileWriter.writeBytes()` version that took generic arguments  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
 * deprecated `advancePastByte()` in favor of the new `advanceThrough()` method  
@@ -167,6 +186,12 @@ Standard Library Modules
 * added `.write[String|Bytes]()` methods to write out `string`/`bytes` values  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeString  
    and https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
+* added new `[read|write]Codepoint()` routines to read/write UTF-8 codepoints  
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader.readCodepoint  
+   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeCodepoint)
+* added `readByte()` and `writeByte()` routines to read/write a single byte  
+  (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileReader.readByte  
+   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.fileWriter.writeByte)
 * added `.read[To|Through]()` methods to read up to/through a given separator  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
    https://chapel-lang.org/docs/1.30/modules/standard/Regex.html#Regex.fileReader.readTo,  
@@ -192,6 +217,7 @@ Tool Improvements
 -----------------
 * added `@chpldoc.nodoc` as a means of stifling `chpldoc` documentation  
   (see https://chapel-lang.org/docs/1.30/tools/chpldoc/chpldoc.html#stifling-documentation)
+* added a filter to strip the `:enum:` tag in `chpldoc` output
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -232,10 +258,16 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
 * clarified that records don't store array data in fields  
   (see https://chapel-lang.org/docs/1.30/language/spec/records.html#storage-allocation)
+* clarified the behavior of non-promoted arguments in promoted expressions  
+  (see https://chapel-lang.org/docs/1.30/language/spec/data-parallelism.html#zippered-promotion)
 * added an additional example of using `param`s with generic types  
   (see https://chapel-lang.org/docs/1.30/language/spec/generics.html#parameters-in-generic-types)
 * refreshed the GPU technical note with respect to current capabilities  
   (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
+* added a new technical note about debugging Chapel programs  
+  (see https://chapel-lang.org/docs/main/technotes/debuggingChapel.html)
+* updated the debugging technical note to mention the ability to use `lldb`  
+  (see https://chapel-lang.org/docs/main/usingchapel/debugging.html#running-in-gdb)
 * fixed the 'IO' example codes to work with strict or relaxed error handling
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
