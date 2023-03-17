@@ -176,8 +176,6 @@ The type of a range is characterized by three properties:
 
 ``boundedType`` is one of the constants of the following enumeration:
 
-
-
 .. enum::   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
 
 The value of ``boundedType`` determines which bounds of the range are
@@ -219,8 +217,6 @@ That is, a range type is obtained as if by invoking the range type
 constructor (:ref:`Type_Constructors`) that has the following
 header:
 
-
-
 .. code-block:: chapel
 
      proc range(type idxType = int,
@@ -236,13 +232,10 @@ its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
    The following declaration declares a variable ``r`` that can
    represent ranges of 32-bit integers, with both low and high bounds
    specified, and the ability to have a stride other than 1.
-   
 
    .. code-block:: chapel
 
       var r: range(int(32), BoundedRangeType.bounded, stridable=true);
-
-   
 
    .. BLOCK-test-chapelpost
 
@@ -250,8 +243,6 @@ its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
       var i32: int(32) = 3;
       r = i32..13 by 3 align 1;
       writeln(r);
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -273,8 +264,6 @@ Range Literals
 ~~~~~~~~~~~~~~
 
 Range literals are specified with the following syntax.
-
-
 
 .. code-block:: syntax
 
@@ -425,8 +414,6 @@ Range Comparisons
 
 Ranges can be compared using equality and inequality.
 
-
-
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 
    Returns ``true`` if the two ranges have the same represented sequence or
@@ -436,7 +423,7 @@ Ranges can be compared using equality and inequality.
 
    Returns ``false`` if the two ranges have the same represented sequence or
    the same four primary properties, and ``true`` otherwise.
-   
+
 .. _Iterating_over_Ranges:
 
 Iterating over Ranges
@@ -498,8 +485,6 @@ many indices as are needed to match its leader iterand.
       for i in zip(1..5, 3..) do
         write(i, "; ");
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln();
@@ -531,8 +516,6 @@ scalar function as described in :ref:`Promotion`.
    its actual argument, which will result in the function being
    invoked for each value in the range in a data-parallel manner.
 
-   
-
    .. code-block:: chapel
 
       proc addOne(x: int) {
@@ -541,13 +524,9 @@ scalar function as described in :ref:`Promotion`.
       var A: [1..10] int;
       A = addOne(1..10);
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln(A);
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -570,8 +549,6 @@ described in this section: stride (``by``), alignment (``align``), count
 (``#``) and slicing (``()`` or ``[]``). Chapel also defines a set
 of functions that operate on ranges. They are described in
 :ref:`Predefined_Range_Functions`.
-
-
 
 .. code-block:: syntax
 
@@ -649,14 +626,10 @@ following primary properties:
       var r1 = 1..20 by 2;
       var r2 = r1 by 2;
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln(r1);
       writeln(r2);
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -700,7 +673,6 @@ operand and therefore is not ambiguous.
 
    *Example (alignedStride.chpl)*.
 
-   
    .. BLOCK-test-chapelnoprint
       write("|");
 
@@ -730,7 +702,6 @@ When the stride is negative, the same indices are printed in reverse:
 
    *Example (alignedNegStride.chpl)*.
 
-   
    .. BLOCK-test-chapelnoprint
       write("|");
 
@@ -840,14 +811,10 @@ It is an error if the count is greater than the ``size`` of the range.
       var r3 = -6..6 by -2 # 3;
       var r4 = 1..#6 by -2;
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln(r1 == r2 && r2 == r3 && r3 == r4);
       writeln((r1, r2, r3, r4));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -901,13 +868,9 @@ resulting range is also ambiguously aligned.
       var r = 0..3;
       var r2 = r + 1;    // 1..4
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln((r, r2));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -920,9 +883,10 @@ Range Slicing
 
 Ranges can be *sliced* using other ranges to create new sub-ranges. The
 resulting range represents the intersection between the two ranges’
-represented sequences. The stride and alignment of the resulting range
-are adjusted as needed to make this true. ``idxType`` and the sign of
-the stride of the result are determined by the first operand.
+represented sequences. The stride, alignment, and bounds of the
+resulting range are adjusted as needed to make this true. ``idxType``
+of the result is determined by the first operand. The sign of the stride
+of the result is the product of the operand strides' signs.
 
 Range slicing is specified by the syntax: 
 
@@ -932,30 +896,7 @@ Range slicing is specified by the syntax:
      range-expression ( range-expression )
      range-expression [ range-expression ]
 
-If either of the operand ranges is ambiguously aligned, then the
-resulting range is also ambiguously aligned. In this case, the result is
-valid only if the strides of the operand ranges are relatively prime.
-Otherwise, an error is generated at run time.
-
-   *Rationale*.
-
-   If the strides of the two operand ranges are relatively prime, then
-   they are guaranteed to have some elements in their intersection,
-   regardless whether their relative alignment can be determined. In
-   that case, the bounds and stride in the resulting range are valid
-   with respect to the given inputs. The alignment can be supplied later
-   to create a valid range.
-
-   If the strides are not relatively prime, then the result of the
-   slicing operation would be completely ambiguous. The only reasonable
-   action for the implementation is to generate an error.
-
-If the resulting sequence cannot be expressed as a range of the original
-type, the slice expression evaluates to the empty range ``1..0``. This
-can happen, for example, when the operands represent all odd and all
-even numbers, or when the first operand is an unbounded range with
-unsigned ``idxType`` and the second operand represents only negative
-numbers.
+..
 
    *Example (rangeSlicing.chpl)*.
 
@@ -972,17 +913,33 @@ numbers.
       var r3 = r[1.. by 2];
       var r4 = r3[0.. by 3];
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln((r, r2, r3, r4));
 
-   
-
    .. BLOCK-test-chapeloutput
 
       (1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
+
+It is an error for the first operand to be ambiguously aligned.
+If the second operand is ambiguously aligned, it is replaced
+with a range that is identical except it is given an alignment
+in such a way that that the intersection of the two ranges'
+represented sequences is non-empty, if possible.
+How this substitute alignment is chosen when multiple possibilities
+are availble is implementation-dependent.
+
+If the resulting sequence cannot be expressed as a range with the
+original ``idxType``, the slice expression evaluates to the empty
+range. This can happen, for example, when the first operand is an
+unbounded range with unsigned ``idxType`` and the second operand
+represents only negative numbers.
+
+If the resulting sequence is empty, the bounds, stride, and alignment
+of the resulting range are implementation-dependent.
+If the resulting sequence is empty and both operands are unbounded
+in the same direction, it is an error.
+
 
 .. _Predefined_Range_Functions:
 

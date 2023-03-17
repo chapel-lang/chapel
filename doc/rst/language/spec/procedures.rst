@@ -444,8 +444,8 @@ The In Intent
 
 When ``in`` is specified as the intent, the formal argument represents a
 variable that is initialized from the value of the actual argument.
-This initialization will be copy-initialization or move-initialization
-according to :ref:`Copy_and_Move_Initialization`.
+This initialization will be copy-initialization and may be changed to
+move-initialization according to :ref:`Copy_Elision`.
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -546,8 +546,8 @@ The Const Ref Intent
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
 modifications to the formal argument are prohibited within the dynamic
-scope of the function. Note that concurrent tasks may modify the actual
-argument while the function is executing and that these modifications
+scope of the function. Note that the same or concurrent tasks may modify the
+actual argument while the function is executing and that these modifications
 may be visible to reads of the formal argument within the function’s
 dynamic scope (subject to the memory consistency model).
 
@@ -607,8 +607,8 @@ by default.  Exceptions are made for types where modification is
 considered part of their nature, such as types used for synchronization
 (like ``atomic``) and arrays.
 
-Default argument passing for tuples generally matches the default
-argument passing strategy that would be applied if each tuple element
+Default argument passing for tuples applies the default
+argument passing strategy to each tuple component as if it
 was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
 
 The :ref:`Abstract_Intents_Table` that follows defines the default
@@ -833,10 +833,27 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 Return Intents
 --------------
 
-The ``return-intent`` specifies how the value is returned from a
-function, and in what contexts that function is allowed to be used. By
-default, or if the ``return-intent`` is ``const``, the function returns
-a value that cannot be used as an lvalue.
+The ``return-intent`` determines how the value is returned from a
+function and in what contexts that function is allowed to be used.
+The rules for returning tuples are specified in :ref:`Tuple_Return_Behavior`.
+
+.. _Default_Return_Intent:
+
+The Default Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When no ``return-intent`` is specified explicitly, the function returns
+a value that cannot be used as an lvalue. This value is obtained
+by copy-initialization from the returned expression.
+This copy-initialization may be changed to move-initialization
+according to :ref:`Copy_Elision`.
+
+.. _Const_Return_Intent:
+
+The Const Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``const`` return intent is identical to the default return intent.
 
 .. _Ref_Return_Intent:
 
@@ -848,7 +865,8 @@ When using a ``ref`` return intent, the function call is an lvalue
 variable for an iterator).
 
 The ``ref`` return intent is specified by following the argument list
-with the ``ref`` keyword. The function must return or yield an lvalue.
+with the ``ref`` keyword. The function must return an lvalue that
+exists outside of the function's scope.
 
    *Example (ref-return-intent.chpl)*.
 

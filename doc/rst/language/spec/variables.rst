@@ -815,14 +815,15 @@ for records. In is also relevant for non-nilable ``owned`` class types
 since copies of those types will not be allowed by the compiler.
 
 After a *copy*, both the new variable and the initial variable exist
-separately. Generally speaking, they can both be modified.  However, they
-should generally refer to different storage. In particular, changing a
+separately. Generally speaking, they refer to different storage and
+can be modified independently.  For example, changing a
 field in the new record variable should not change the corresponding
 field in the initial record variable.
 
-A *move* is when a variable changes storage location. It is similar to a
+A *move* is when the value changes its storage location from the initial
+to the new variable. It is similar to a
 *copy initialization* but it represents a transfer rather than
-duplication. In particular, the initial record is no longer available
+duplication. In particular, the initial record variable is no longer available
 after the *move*.  A *move* can be thought of as an optimized form a
 *copy* followed by destruction of the initial record.  After a *move*,
 there is only one record variable - where after a *copy* there are two.
