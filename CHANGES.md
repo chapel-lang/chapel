@@ -126,6 +126,10 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.advanceThrough)
 * deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
+* deprecated `regex.compile()` in favor of `new regex()`
+  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.init)
+* deprecated `regex.sub[n]()` in favor of `replace[AndCount]()` methods  
+  (see https://chapel-lang.org/docs/master/modules/standard/Regex.html#Regex.string.replace)
 * deprecated the `TimeUnits` enum and routines that made use of it
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.TimeUnits)
 * deprecated `FileSystem.copyFile()` in favor of `FileSystem.copy()`  
@@ -240,6 +244,7 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* significantly improved GPU launch times by only loading the kernel once  
 * 'GPU' module improvements:
   - added `createSharedArray()` to support allocating block-shared memory  
     (see https://chapel-lang.org/docs/1.30/modules/standard/GPU.html#GPU.createSharedArray)
@@ -301,6 +306,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug causing segfaults with `CHPL_GPU_MEM_STRATEGY=array_on_device`
 * fixed a bug with how errors are handled in GPU codegen
 
 Bug Fixes for Libraries
