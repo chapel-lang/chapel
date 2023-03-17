@@ -111,7 +111,7 @@ Name Changes in Libraries
 * renamed `new[Block|Cyclic][Dom|Arr]` to `[Block|Cyclic].new[Domain|Array]`  
   (see https://chapel-lang.org/docs/main/modules/dists/BlockDist.html  
    and https://chapel-lang.org/docs/main/modules/dists/CyclicDist.html)
-* changed GPU-related features to use `Gpu` over `GPU` in identifier names
+* changed GPU-related features to use `Gpu` over `GPU` in identifier names  
   (e.g. `GPUDiagnostics` is now `GpuDiagnostics`)
 * renamed the `.read[string|bytes]()` methods to `.read[String|Bytes]()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readString  
@@ -122,17 +122,17 @@ Name Changes in Libraries
 * renamed `open[reader|writer]()` to `open[Reader|Writer()`  
   (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openReader  
   and https://chapel-lang.org/docs/modules/standard/IO.html#IO.openWriter)
-* renamed `iomode` to `ioMode`
+* renamed `iomode` to `ioMode`  
   (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.ioMode)
 * renamed `file.check()` to `file.isOpen()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.isOpen)
 * renamed `openmem()` to `openMemFile()`  
   (see https://chapel-lang.org/docs/modules/standard/IO.html#IO.openMemFile)
-* replaced `IO.openfp()` with a file initializer taking a `c_FILE` argument
+* replaced `IO.openfp()` with a file initializer taking a `c_FILE` argument  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
 * replaced `IO.openfd()` with a file initializer taking a `fileDescriptor` arg  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.file.init)
-* replaced `map.set()` with `map.replace()`
+* replaced `map.set()` with `map.replace()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Map.html#Map.map.replace)
 * unified formatting of 'Errors' varargs procedure signatures  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.compilerError)
@@ -161,28 +161,28 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileWriter.writeBytes)
 * deprecated `ioBits` in favor of `readBits()`/`writeBits()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioBits)
-* deprecated `ioChar` in favor of `readCodepoint()`/`writeCodepoint()`
+* deprecated `ioChar` in favor of `readCodepoint()`/`writeCodepoint()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioChar)
-* deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`
+* deprecated `ioHintSet.noMmap` in favor of `ioHintSet.mmap(false)`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.ioHintSet.mmap)
-* deprecated `regex.compile()` in favor of `new regex()`
+* deprecated `regex.compile()` in favor of `new regex()`  
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.init)
 * deprecated `regex.sub[n]()` in favor of `replace[AndCount]()` methods  
   (see https://chapel-lang.org/docs/master/modules/standard/Regex.html#Regex.string.replace)
 * deprecated `map.items()` and `map.these()`  
   (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.items)
 * marked `map.parSafe` as being unstable
-* deprecated `map.getBorrowed()`, `.getReference()`, and `.getValue()`
+* deprecated `map.getBorrowed()`, `.getReference()`, and `.getValue()`  
   (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.getBorrowed)
 * marked `TaskErrors.first()` unstable, expecting a potential name change  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Errors.html#Errors.TaskErrors.first)
-* deprecated the `TimeUnits` enum and routines that made use of it
+* deprecated the `TimeUnits` enum and routines that made use of it  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.TimeUnits)
 * marked 'Time' routines that wrap C functions as unstable  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Time.html#Time.date.ctime)
 * deprecated `FileSystem.copyFile()` in favor of `FileSystem.copy()`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.copyFile)
-* deprecated the `FileSystem.sameFile()` overload accepting `file` arguments
+* deprecated the `FileSystem.sameFile()` overload accepting `file` arguments  
   (see https://chapel-lang.org/docs/1.30/modules/standard/FileSystem.html#FileSystem.sameFile)
 * deprecated the option to choose between barrier types for `barrier`  
   (see https://chapel-lang.org/docs/1.30/modules/standard/Collectives.html#Collectives.BarrierType)
@@ -197,7 +197,7 @@ Deprecated / Unstable / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* Added new GPU-oriented utility routines
+* Added new GPU-oriented utility routines  
   (see 'GPU Computing' below)
 * added `.read[To|Through]()` methods to read up to/through a given separator  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#IO.fileReader.readTo,  
@@ -291,7 +291,7 @@ Other Documentation
   (see https://chapel-lang.org/docs/main/usingchapel/debugging.html#running-in-gdb)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
   (see https://chapel-lang.org/docs/main/technotes/initequals.html#the-init-method-for-non-generic-types)
-* fixed the 'IO' example codes to work with strict or relaxed error handling
+* fixed the 'IO' example codes to work with strict or relaxed error handling  
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * fixed other bugs, typos, and formatting issues in the documentation
 
