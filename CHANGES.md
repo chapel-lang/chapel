@@ -222,6 +222,8 @@ Documentation
 * removed the now-empty "Built-in Types and Functions" section from the docs
 * added a new subsection to the spec defining procedure/iterator bodies
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-function-body)
+* improved the spec's discussion of `yield` semantics  
+  (see https://chapel-lang.org/docs/1.30/language/spec/iterators.html#the-yield-statement)
 * improved the spec's description of return intents' effects on `return`  
   (see https://chapel-lang.org/docs/1.30/language/spec/procedures.html#the-return-statement)
 * clarified the split-initialization behavior of `out` arguments in the spec  
