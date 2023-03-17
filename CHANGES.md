@@ -264,6 +264,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/generics.html#parameters-in-generic-types)
 * refreshed the GPU technical note with respect to current capabilities  
   (see https://chapel-lang.org/docs/1.30/technotes/gpu.html)
+* added a new document with best practices for building on a Raspberry Pi  
+  (see https://chapel-lang.org/docs/1.30/platforms/raspberrypi.html))
 * added a new technical note about debugging Chapel programs  
   (see https://chapel-lang.org/docs/main/technotes/debuggingChapel.html)
 * updated the debugging technical note to mention the ability to use `lldb`  
