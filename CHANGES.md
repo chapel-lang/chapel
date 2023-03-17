@@ -359,6 +359,8 @@ Bug Fixes
 * fixed support for casts from `weak(C)` to non-nilable `shared` classes
 * fixed a bug with `--memTrack` when using 'qthreads'
 * re-enabled the ability to use `CHPL_HOST_MEM=jemalloc` on Macs
+* fixed a mishandling of certain `export` procedures with optimization
+* fixed missing LLVM sign/zero extension attributes for certain `export` procs
 
 Bug Fixes for Build Issues
 --------------------------
