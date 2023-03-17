@@ -206,6 +206,10 @@ Documentation
   (see https://chapel-lang.org/docs/1.30/language/spec/variables.html#split-initialization)
 * updated the spec section on re-exporting symbols to describe current behavior  
   (see https://chapel-lang.org/docs/1.30/language/spec/modules.html#re-exporting)
+* clarified that records don't store array data in fields  
+  (see https://chapel-lang.org/docs/1.30/language/spec/records.html#storage-allocation)
+* added an additional example of using `param`s with generic types  
+  (see https://chapel-lang.org/docs/1.30/language/spec/generics.html#parameters-in-generic-types)
 * fixed the 'IO' example codes to work with strict or relaxed error handling
   (see https://chapel-lang.org/docs/1.30/modules/standard/IO.html#i-o-overview)
 * updated the `init=` technote w.r.t. compiler-generated copy initializers  
