@@ -135,7 +135,7 @@ Specifically:
   meaning of ``$CHPL_HOME`` (e.g., as printed by compiler messages)
   typically refers to ``/dir/for/install/share/chapel/x.yz`` where
   ``x.yz`` is the Chapel version that was installed.
-  
+
 * ``--chpl-home=/dir/for/install`` copies key files and directories
   from the Chapel source tree into ``/dir/for/install``, preserving
   Chapel's traditional directory structure.  As you might expect, the
@@ -199,7 +199,7 @@ Each target processes all subdirectories, then the current directory.
 Makefile Options
 ----------------
 
-The Chapel makefiles have a few options that enable or disable
+The Chapel Makefiles have a few options that enable or disable
 optimization, debugging support, profiling, and back-end C compiler
 warnings. The variables are described below. Set the value to 1 to
 enable the feature or 0 to disable it (e.g., ``make DEBUG=1 OPTIMIZE=1
@@ -216,4 +216,19 @@ WARNINGS=0``).
   ========  ================================================================
 
 
+------------------------
+Controlling Build Output
+------------------------
 
+Aside from the default build output, the Chapel compiler Makefile also supports
+two options to increase or decrease the verbosity of the build. These options
+can be set either on the command-line as arguments to ``make``, or through the
+environment. To enable either option, set the variable to 1
+(e.g., ``make VERBOSE=1`` or ``export VERBOSE=1``).
+
+  ========  ================================================================
+  Option    Effect
+  ========  ================================================================
+  VERBOSE   Print verbose CMake output and all commands executed by the Makefiles
+  QUIET     Print the minimum output from CMake (e.g., only errors, warnings)
+  ========  ================================================================
