@@ -118,13 +118,13 @@ __device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __builtin_am
 __device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __builtin_amdgcn_workitem_id_y(); }
 __device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __builtin_amdgcn_workitem_id_z(); }
 
-__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __builtin_amdgcn_workgroup_size_x(); }
-__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __builtin_amdgcn_workgroup_size_y(); }
-__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __builtin_amdgcn_workgroup_size_z(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __builtin_amdgcn_workgroup_id_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __builtin_amdgcn_workgroup_id_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __builtin_amdgcn_workgroup_id_z(); }
 
-__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __builtin_amdgcn_workgroup_id_x(); }
-__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __builtin_amdgcn_workgroup_id_y(); }
-__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __builtin_amdgcn_workgroup_id_z(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __builtin_amdgcn_workgroup_size_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __builtin_amdgcn_workgroup_size_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __builtin_amdgcn_workgroup_size_z(); }
 
 __device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __builtin_amdgcn_grid_size_x(); }
 __device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __builtin_amdgcn_grid_size_y(); }
