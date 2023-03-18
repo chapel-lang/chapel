@@ -180,4 +180,6 @@ Compiler Information Options:
       --help-env                      Environment variable help
       --help-settings                 Current flag settings
       --license                       Show license
+      --print-chpl-home               Print CHPL_HOME and exit
+      --print-chpl-loc                Print this executable's path and exit
       --version                       Show version

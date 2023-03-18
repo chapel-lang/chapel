@@ -757,6 +757,14 @@ OPTIONS
 
     Print the compiler's license information.
 
+**\--print-chpl-home**
+
+    Prints the compiler's notion of $CHPL\_HOME.
+
+**\--print-chpl-loc**
+
+    Prints the compiler's notion of the path where it lives.
+
 **\--version**
 
     Print the version number of the compiler.

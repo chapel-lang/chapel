@@ -289,7 +289,6 @@ _chpl ()
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
---print-chpl-home \
 --print-chpl-settings \
 --print-code-size \
 --print-commands \
@@ -372,7 +371,7 @@ _chpl ()
 -o \
 -s"
 
-      # non-developer options
+      # non-developer/user options
       local nodevel_opts="\
 --atomics \
 --auto-aggregation \
@@ -508,6 +507,8 @@ _chpl ()
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
+--print-chpl-home \
+--print-chpl-loc \
 --print-code-size \
 --print-commands \
 --print-module-files \

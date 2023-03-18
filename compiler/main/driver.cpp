@@ -307,6 +307,8 @@ std::string llvmFlags;
 bool fPrintAdditionalErrors;
 
 static
+bool fPrintChplLoc = false;
+static
 bool fPrintChplSettings = false;
 
 bool fDetailedErrors = false;
@@ -1142,6 +1144,8 @@ static ArgumentDescription arg_desc[] = {
  DRIVER_ARG_HELP_ENV,
  DRIVER_ARG_HELP_SETTINGS,
  DRIVER_ARG_LICENSE,
+ DRIVER_ARG_PRINT_CHPL_HOME,
+ {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
  DRIVER_ARG_VERSION,
 
  // NOTE: Developer flags should not have 1-character equivalents
@@ -1268,7 +1272,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
 
- DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
 
@@ -1315,12 +1318,13 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
   if( fPrintChplHome ) {
+    printf("%s\n", CHPL_HOME);
+    printedSomething = true;
+  }
+  if ( fPrintChplLoc ) {
     char* guess = findProgramPath(argv0);
 
-    printf("%s\t%s\n", CHPL_HOME, guess);
-    const char* prefix = get_configured_prefix();
-    if (prefix != NULL && prefix[0] != '\0' )
-      printf("# configured prefix  %s\n", prefix);
+    printf("%s\n", guess);
 
     free(guess);
 

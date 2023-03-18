@@ -70,7 +70,7 @@ void setHome(const ArgumentDescription* desc, const char* arg);
   {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome}
 
 #define DRIVER_ARG_PRINT_CHPL_HOME \
-  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL}
+  {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and exit", "F", &fPrintChplHome, NULL,NULL}
 
 #define DRIVER_ARG_VERSION \
   {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL}
