@@ -101,6 +101,7 @@ void Context::swap(Context& other) {
   std::swap(queryTimingTraceOutput, other.queryTimingTraceOutput);
   std::swap(tmpDir_, other.tmpDir_);
   std::swap(keepTmpDir_, other.keepTmpDir_);
+  std::swap(toolName_, other.toolName_);
   std::swap(lastPrepareToGCRevisionNumber, other.lastPrepareToGCRevisionNumber);
   std::swap(gcCounter, other.gcCounter);
 }
@@ -114,6 +115,7 @@ Context::Context(Configuration config) {
   std::swap(chplEnvOverrides, config.chplEnvOverrides);
   std::swap(tmpDir_, config.tmpDir);
   std::swap(keepTmpDir_, config.keepTmpDir);
+  std::swap(toolName_, config.toolName);
 
   setupGlobalStrings();
 }
@@ -126,6 +128,7 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   std::swap(chplEnvOverrides, newConfig.chplEnvOverrides);
   std::swap(tmpDir_, newConfig.tmpDir);
   std::swap(keepTmpDir_, newConfig.keepTmpDir);
+  std::swap(toolName_, newConfig.toolName);
 }
 
 void Context::reportError(Context* context, const ErrorBase* err) {
@@ -139,7 +142,7 @@ const std::string& Context::chplHome() const {
 const std::string& Context::tmpDir() {
   if (tmpDir_.empty()) {
     std::string dir;
-    auto err = makeTempDir("chpl", dir);
+    auto err = makeTempDir(toolName_ + "-", dir);
 
     if (err) {
       this->error(Location(), "Could not create temp directory");
@@ -149,6 +152,13 @@ const std::string& Context::tmpDir() {
   }
 
   return tmpDir_;
+}
+
+void Context::cleanupTmpDirIfNeeded() {
+  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !keepTmpDir_) {
+    // delete the tmp dir
+    deleteDir(tmpDir_);
+  }
 }
 
 void Context::setDetailedErrorOutput(bool detailedErrors) {
@@ -199,9 +209,7 @@ Context::~Context() {
   }
 
   // delete the tmp dir
-  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !keepTmpDir_) {
-    deleteDir(tmpDir_);
-  }
+  cleanupTmpDirIfNeeded();
 }
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))

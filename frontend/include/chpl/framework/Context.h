@@ -99,6 +99,9 @@ class Context {
 
     /** If 'true', the tmpDir will not be deleted. */
     bool keepTmpDir = false;
+
+    /** Tool name (for use when creating the tmpDir in /tmp if needed) */
+    std::string toolName = "chpl";
   };
 
  private:
@@ -185,6 +188,7 @@ class Context {
 
   std::string tmpDir_;
   bool keepTmpDir_ = false;
+  std::string toolName_;
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
@@ -354,6 +358,10 @@ class Context {
       If it does not exist yet, create it.
    */
   const std::string& tmpDir();
+
+  /** Delete the temporary directory if needed. This function
+      can be called during program exit. */
+  void cleanupTmpDirIfNeeded();
 
   void setDetailedErrorOutput(bool useDetailed);
 

@@ -142,7 +142,8 @@ std::error_code deleteDir(std::string dirname) {
   return llvm::sys::fs::remove_directories(dirname, false);
 }
 
-std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
+std::error_code makeTempDir(const std::string& dirPrefix,
+                            std::string& tmpDirPathOut) {
   std::string tmpdirprefix = std::string(getTempDir()) + "/" + dirPrefix;
   std::string tmpdirsuffix = ".deleteme-XXXXXX";
 

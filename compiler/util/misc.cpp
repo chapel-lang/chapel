@@ -188,7 +188,10 @@ static void cleanup_for_exit() {
   // later read by the main process, so we want the main process
   // to clean up the temp dir and not the forked process.
   if (!gCodegenGPU) {
-    deleteTmpDir();
+    if (gContext) {
+      gContext->cleanupTmpDirIfNeeded();
+    }
+    //deleteTmpDir();
   }
   stopCatchingSignals();
 }

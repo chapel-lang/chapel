@@ -54,7 +54,8 @@ std::error_code ensureDirExists(std::string dirname);
  * tmpDirPathOut reference to an empty string that will hold the path of the created directory
  * returns std::error_code
  */
-std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut);
+std::error_code makeTempDir(const std::string& dirPrefix,
+                            std::string& tmpDirPathOut);
 
 /**
  * forwards to llvm::sys::fs::remove_directories

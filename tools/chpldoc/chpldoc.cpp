@@ -528,7 +528,7 @@ static char* checkProjectVersion(char* projectVersion) {
   } else {
     std::cerr << "error: Invalid version format: "
               << projectVersion << " due to: " << error << std::endl;
-    exit(1);
+    clean_exit(1);
   }
   return NULL;
 }
@@ -2141,7 +2141,7 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
       Context::defaultReportError(context, e.get());
     }
     if (fatal) {
-      exit(1);
+      clean_exit(1);
     }
     reportedErrors.clear();
   }
@@ -2179,7 +2179,10 @@ int main(int argc, char** argv) {
   processUsedModules_ = args.processUsedModules;
 
 
-  Context context(CHPL_HOME);
+  Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  config.toolName = "chpldoc";
+  Context context(config);
   gContext = &context;
   auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
   gContext->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
@@ -2210,8 +2213,7 @@ int main(int argc, char** argv) {
   if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
-    makeTempDir("chpldoc-", doctmpdirname);
-    docsSphinxDir = doctmpdirname;
+    docsSphinxDir = gContext->tmpDir();
   }
 
   // Make the intermediate dir and output dir.
