@@ -35,6 +35,7 @@
 #include <chrono>
 #include <fstream>
 #include <iomanip>
+#include <utility>
 
 #include <cstdarg>
 #include <cstddef>
@@ -55,23 +56,74 @@ namespace chpl {
     }
   } // namespace detail
 
-  Context::Context(std::string chplHome,
-                   std::unordered_map<std::string, std::string> chplEnvOverrides)
-    : chplHome_(std::move(chplHome)),
-      chplEnvOverrides(std::move(chplEnvOverrides)) {
-    if (this == &detail::rootContext) {
-      detail::initGlobalStrings();
-      for (auto& v : uniqueStringsTable) {
-        doNotCollectUniqueCString(v.str);
-      }
-    } else {
-      for (const auto& v : detail::rootContext.uniqueStringsTable) {
-        uniqueStringsTable.insert(v);
-      }
-    }
-  }
 
 using namespace chpl::querydetail;
+
+
+void Context::setupGlobalStrings() {
+  if (this == &detail::rootContext) {
+    detail::initGlobalStrings();
+    for (auto& v : uniqueStringsTable) {
+      doNotCollectUniqueCString(v.str);
+    }
+  } else {
+    for (const auto& v : detail::rootContext.uniqueStringsTable) {
+      uniqueStringsTable.insert(v);
+    }
+  }
+}
+
+void Context::swap(Context& other) {
+  std::swap(handler_, other.handler_);
+  std::swap(chplHome_, other.chplHome_);
+  std::swap(chplEnvOverrides, other.chplEnvOverrides);
+  std::swap(computedChplEnv, other.computedChplEnv);
+  std::swap(chplEnv, other.chplEnv);
+  std::swap(detailedErrors, other.detailedErrors);
+  std::swap(uniqueStringsTable, other.uniqueStringsTable);
+  std::swap(queryDB, other.queryDB);
+  std::swap(modNameToFilepath, other.modNameToFilepath);
+  std::swap(queryStack, other.queryStack);
+  std::swap(ptrsMarkedThisRevision, other.ptrsMarkedThisRevision);
+  std::swap(ownedPtrsForThisRevision, other.ownedPtrsForThisRevision);
+  std::swap(currentRevisionNumber, other.currentRevisionNumber);
+  std::swap(checkStringsAlreadyMarked, other.checkStringsAlreadyMarked);
+  std::swap(enableDebugTrace, other.enableDebugTrace);
+  std::swap(enableQueryTiming, other.enableQueryTiming);
+  std::swap(enableQueryTimingTrace, other.enableQueryTimingTrace);
+  std::swap(currentTerminalSupportsColor_, other.currentTerminalSupportsColor_);
+  std::swap(breakSet, other.breakSet);
+  std::swap(breakOnHash, other.breakOnHash);
+  std::swap(numQueriesRunThisRevision_, other.numQueriesRunThisRevision_);
+  std::swap(queryTraceDepth, other.queryTraceDepth);
+  std::swap(queryTraceIgnoreQueries, other.queryTraceIgnoreQueries);
+  std::swap(queryDepthColor, other.queryDepthColor);
+  std::swap(queryTimingTraceOutput, other.queryTimingTraceOutput);
+  std::swap(tmpDir_, other.tmpDir_);
+  std::swap(lastPrepareToGCRevisionNumber, other.lastPrepareToGCRevisionNumber);
+  std::swap(gcCounter, other.gcCounter);
+}
+
+Context::Context() {
+  setupGlobalStrings();
+}
+Context::Context(Configuration config) {
+  // swap the configuration settings in to place
+  std::swap(chplHome_, config.chplHome);
+  std::swap(chplEnvOverrides, config.chplEnvOverrides);
+  std::swap(tmpDir_, config.tmpDir);
+
+  setupGlobalStrings();
+}
+Context::Context(Context& consumeContext, Configuration newConfig) {
+  // swap all fields in to place from consumeContext
+  this->swap(consumeContext);
+
+  // now set the new configuration information
+  std::swap(chplHome_, newConfig.chplHome);
+  std::swap(chplEnvOverrides, newConfig.chplEnvOverrides);
+  std::swap(tmpDir_, newConfig.tmpDir);
+}
 
 void Context::reportError(Context* context, const ErrorBase* err) {
   handler_->report(context, err);
@@ -145,7 +197,9 @@ Context::~Context() {
 
   // delete the tmp dir
   if (!tmpDir_.empty()) {
-    deleteDir(tmpDir_);
+    if (fileExists(tmpDir_.c_str())) {
+      deleteDir(tmpDir_);
+    }
   }
 }
 

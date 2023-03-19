@@ -102,7 +102,9 @@ int main(int argc, char** argv) {
     exit(1);
   }
 
-  Context context(chpl_home);
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context context(config);
   Context* ctx = &context;
   context.setDetailedErrorOutput(!brief);
 

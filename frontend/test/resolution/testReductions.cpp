@@ -123,7 +123,10 @@ static void test4(Context* context) {
 }
 
 int main() {
-  Context context(getenv("CHPL_HOME"));
+  Context::Configuration config;
+  config.chplHome = getenv("CHPL_HOME");
+  Context context(config);
+
   test1(&context);
   test2(&context);
   test3(&context);

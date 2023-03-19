@@ -162,7 +162,9 @@ int main() {
   // first test runs without environment and stdlib.
   test1();
 
-  Context context(getenv("CHPL_HOME"));
+  Context::Configuration config;
+  config.chplHome = getenv("CHPL_HOME");
+  Context context(config);
   auto ctx = &context;
   test2(ctx);
   test3(ctx);

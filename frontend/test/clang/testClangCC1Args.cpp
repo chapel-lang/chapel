@@ -39,7 +39,9 @@ int main(int argc, char** argv) {
     printf("CHPL_HOME was not set\n");
   }
 
-  Context context(chpl_home);
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context context(config);
   Context* ctx = &context;
 
   printf("Computing CC1 args\n");

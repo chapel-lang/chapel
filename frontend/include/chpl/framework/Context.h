@@ -83,6 +83,21 @@ class Context {
     virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
+  /** This struct stores configuration information to use when
+      constructing a Context. */
+  struct Configuration {
+    /** Used for determining Chapel environment variables */
+    std::string chplHome;
+
+    std::unordered_map<std::string, std::string> chplEnvOverrides;
+
+    /** Temporary directory in which to store files.
+        If it is "", it will be set to something like /tmp/chpl-1234/.
+        It will be deleted when the context is deleted.
+     */
+    std::string tmpDir;
+  };
+
  private:
 
   // The implementation of the default error handler.
@@ -95,18 +110,17 @@ class Context {
     }
   };
 
+  // --------- begin all Context fields ---------
+
   // The current error handler.
   owned<ErrorHandler> handler_
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
-  // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err);
-
   // The CHPL_HOME variable
-  const std::string chplHome_;
+  std::string chplHome_;
 
   // Variables to explicitly set before getting chplenv
-  const std::unordered_map<std::string, std::string> chplEnvOverrides;
+  std::unordered_map<std::string, std::string> chplEnvOverrides;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -158,16 +172,28 @@ class Context {
   int queryTraceDepth = 0;
 
   // list of query names to ignore when tracing
-  const std::vector<std::string>
+  std::vector<std::string>
   queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
 
   // list of colors to use for open/close braces depending on query depth
-  const std::vector<TermColorName>
-  queryDepthColor  = {BLUE, BRIGHT_YELLOW, MAGENTA};
+  std::vector<TermColorName> queryDepthColor = {BLUE, BRIGHT_YELLOW, MAGENTA};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   std::string tmpDir_;
+
+  // The following are only used for UniqueString garbage collection
+  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
+  querydetail::RevisionNumber gcCounter = 1;
+
+  // --------- end all Context fields ---------
+
+  void setupGlobalStrings();
+
+  void swap(Context& other);
+
+  // Report an error to the current handler.
+  void reportError(Context* context, const ErrorBase* err);
 
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
@@ -187,11 +213,6 @@ class Context {
     }
   }
 
-
-
-  // The following are only used for UniqueString garbage collection
-  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
-  querydetail::RevisionNumber gcCounter = 1;
 
   char* setupStringMetadata(char* buf, size_t len);
   const char* getOrCreateUniqueStringWithAllocation(char* buf,
@@ -275,6 +296,7 @@ class Context {
 
   void doNotCollectUniqueCString(const char *s);
 
+
   // Future Work: make the context thread-safe
 
   // Future Work: allow moving some AST to a different context
@@ -299,12 +321,25 @@ class Context {
   static void defaultReportError(Context* context, const ErrorBase* err);
 
   /**
-    Create a new AST Context. Optionally, specify the value of the
-    CHPL_HOME environment variable, which is used for determining
-    chapel environment variables.
+    Create a new Context without specifying chplHome or any
+    other Configuration settings.
    */
-  Context(std::string chplHome = "",
-          std::unordered_map<std::string, std::string> chplEnvOverrides = {});
+  Context();
+
+  /**
+    Create a new Context while specifying a Configuration.
+    */
+  Context(Configuration config);
+
+  /**
+    Create a new Context by consuming the contents of another Context
+    context while changing Configuration. The passed Context will no
+    longer be usable. Assumes that any queries that have run so far
+    do not depend on the Configuration settings that have changed.
+
+    This function is useful during compiler start up. */
+  Context(Context& consumeContext, Configuration newConfig);
+
   ~Context();
 
   const std::string& chplHome() const;
