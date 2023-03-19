@@ -96,6 +96,9 @@ class Context {
         It will be deleted when the context is deleted.
      */
     std::string tmpDir;
+
+    /** If 'true', the tmpDir will not be deleted. */
+    bool keepTmpDir = false;
   };
 
  private:
@@ -181,6 +184,7 @@ class Context {
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   std::string tmpDir_;
+  bool keepTmpDir_ = false;
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
@@ -345,6 +349,8 @@ class Context {
   const std::string& chplHome() const;
 
   /** Return a temporary directory that can be used by this process.
+      It is typically a subdirectory of '/tmp' that will be removed
+      when the Context is destroyed.
       If it does not exist yet, create it.
    */
   const std::string& tmpDir();

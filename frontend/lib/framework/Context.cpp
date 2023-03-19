@@ -100,6 +100,7 @@ void Context::swap(Context& other) {
   std::swap(queryDepthColor, other.queryDepthColor);
   std::swap(queryTimingTraceOutput, other.queryTimingTraceOutput);
   std::swap(tmpDir_, other.tmpDir_);
+  std::swap(keepTmpDir_, other.keepTmpDir_);
   std::swap(lastPrepareToGCRevisionNumber, other.lastPrepareToGCRevisionNumber);
   std::swap(gcCounter, other.gcCounter);
 }
@@ -112,6 +113,7 @@ Context::Context(Configuration config) {
   std::swap(chplHome_, config.chplHome);
   std::swap(chplEnvOverrides, config.chplEnvOverrides);
   std::swap(tmpDir_, config.tmpDir);
+  std::swap(keepTmpDir_, config.keepTmpDir);
 
   setupGlobalStrings();
 }
@@ -123,6 +125,7 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   std::swap(chplHome_, newConfig.chplHome);
   std::swap(chplEnvOverrides, newConfig.chplEnvOverrides);
   std::swap(tmpDir_, newConfig.tmpDir);
+  std::swap(keepTmpDir_, newConfig.keepTmpDir);
 }
 
 void Context::reportError(Context* context, const ErrorBase* err) {
@@ -196,10 +199,8 @@ Context::~Context() {
   }
 
   // delete the tmp dir
-  if (!tmpDir_.empty()) {
-    if (fileExists(tmpDir_.c_str())) {
-      deleteDir(tmpDir_);
-    }
+  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !keepTmpDir_) {
+    deleteDir(tmpDir_);
   }
 }
 

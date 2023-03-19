@@ -118,10 +118,9 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 const char* makeTempDir(const char* dirPrefix) {
- std::string tmpDirPath;
- if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
-  USR_FATAL(NULL, "%s", err.message().c_str());
- }
+ std::string tmpDirPath = gContext->tmpDir();
+ ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
+
  return astr(tmpDirPath.c_str());
 }
 

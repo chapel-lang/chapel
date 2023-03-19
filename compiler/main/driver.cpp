@@ -57,7 +57,11 @@
 #include "llvm/Config/llvm-config.h"
 #endif
 
+
 std::map<std::string, const char*> envMap;
+
+// envMap used as input to getChplEnv
+static std::map<std::string, const char*> envMapChplEnvInput;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
@@ -1445,6 +1449,8 @@ static void populateEnvMap() {
   // populates global envMap if the key has not been already set from
   // argument processing
 
+  envMapChplEnvInput = envMap;
+
   // Call printchplenv and collect output into a map
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
   if (auto err = chplEnvResult.getError()) {
@@ -1866,6 +1872,21 @@ static void validateSettings() {
 
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
+
+  // Compute a new configuration for the Context
+  chpl::Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  for (const auto& pair : envMapChplEnvInput) {
+    config.chplEnvOverrides.insert(pair);
+  }
+  if (saveCDir[0]) {
+    ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    config.tmpDir = saveCDir;
+    config.keepTmpDir = true;
+  }
+
+  // Replace the current gContext with one using the new configuration.
+  gContext = new chpl::Context(*gContext, std::move(config));
 
   // Set the config names/values we processed earlier and clear them.
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
