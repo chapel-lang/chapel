@@ -1,0 +1,2 @@
+unstableGMP.chpl:1: warning: The 'GMP' module is unstable
+$CHPL_HOME/modules/standard/BigInteger.chpl:151: warning: The 'GMP' module is unstable

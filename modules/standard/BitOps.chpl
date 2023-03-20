@@ -21,6 +21,7 @@
 /*
   Bitwise operations implemented using C intrinsics when possible.
  */
+@unstable("The 'BitOps' module is unstable")
 module BitOps {
   import BitOps_internal;
 

@@ -37,6 +37,7 @@
   ``top`` will return the minimal element.
 
 */
+@unstable("The 'Heap' module is unstable")
 module Heap {
   import ChapelLocks;
   private use HaltWrappers;
