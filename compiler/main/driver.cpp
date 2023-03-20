@@ -26,7 +26,6 @@
 
 #include "arg.h"
 #include "chpl.h"
-#include "commonFlags.h"
 #include "config.h"
 #include "files.h"
 #include "library.h"
@@ -122,10 +121,14 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
+// Flags that were in commonFlags.h/cpp for awhile
+
 // TODO: Should --library automatically generate all supported
 // interfaces (C, Fortran, Python)? Then there'd be no need to
 // specify each one separately.
 //
+static bool fRungdb = false;
+static bool fRunlldb = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -136,6 +139,7 @@ bool fMultiLocaleLibraryDebug = false;
 
 bool no_codegen = false;
 int  debugParserLevel = 0;
+bool developer = false;
 bool fVerify = false;
 bool ignore_errors = false;
 bool ignore_user_errors = false;
@@ -301,6 +305,14 @@ char stopAfterPass[128] = "";
 
 const char* compileCommand = NULL;
 char compileVersion[64];
+
+static bool fPrintCopyright = false;
+static bool fPrintEnvHelp = false;
+static bool fPrintHelp = false;
+static bool fPrintLicense = false;
+static bool fPrintSettingsHelp = false;
+static bool fPrintVersion = false;
+static bool fPrintChplHome = false;
 
 std::string llvmFlags;
 
@@ -982,6 +994,20 @@ static void turnIncrementalOn(const ArgumentDescription* desc,
   fIncrementalCompilation = true;
 }
 
+void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
+  fPrintHelp = true;
+}
+
+void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused) {
+  // have to handle both cases since this will be called with --devel
+  // and --no-devel
+  if (developer) {
+    ccwarnings = true;
+  } else {
+    ccwarnings = false;
+  }
+}
+
 /*
 Flag types:
 
@@ -1102,7 +1128,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
- DRIVER_ARG_DEVELOPER,
+ {"devel", ' ', NULL, "Compile as a developer [user]", "N", &developer, "CHPL_DEVELOPER", driverSetDevelSettings},
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
  {"explain-verbose", ' ', NULL, "Enable [disable] tracing of disambiguation with 'explain' options", "N", &fExplainVerbose, "CHPL_EXPLAIN_VERBOSE", NULL},
@@ -1115,7 +1141,7 @@ static ArgumentDescription arg_desc[] = {
  {"task-tracking", ' ', NULL, "Enable [disable] runtime task tracking", "N", &fEnableTaskTracking, "CHPL_TASK_TRACKING", NULL},
 
  {"", ' ', NULL, "Compiler Configuration Options", NULL, NULL, NULL, NULL},
- DRIVER_ARG_HOME,
+ {"home", ' ', "<path>", "Path to Chapel's home directory", "S", NULL, "_CHPL_HOME", setHome},
  {"atomics", ' ', "<atomics-impl>", "Specify atomics implementation", "S", NULL, "_CHPL_ATOMICS", setEnv},
  {"network-atomics", ' ', "<network>", "Specify network atomics implementation", "S", NULL, "_CHPL_NETWORK_ATOMICS", setEnv},
  {"aux-filesys", ' ', "<aio-system>", "Specify auxiliary I/O system", "S", NULL, "_CHPL_AUX_FILESYS", setEnv},
@@ -1137,12 +1163,12 @@ static ArgumentDescription arg_desc[] = {
  {"timers", ' ', "<timer-impl>", "Specify timer implementation", "S", NULL, "_CHPL_TIMERS", setEnv},
 
  {"", ' ', NULL, "Compiler Information Options", NULL, NULL, NULL, NULL},
- DRIVER_ARG_COPYRIGHT,
- DRIVER_ARG_HELP,
- DRIVER_ARG_HELP_ENV,
- DRIVER_ARG_HELP_SETTINGS,
- DRIVER_ARG_LICENSE,
- DRIVER_ARG_VERSION,
+ {"copyright", ' ', NULL, "Show copyright", "F", &fPrintCopyright, NULL, NULL},
+ {"help", 'h', NULL, "Help (show this list)", "F", &fPrintHelp, NULL, NULL},
+ {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue},
+ {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue},
+ {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL},
+ {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL},
 
  // NOTE: Developer flags should not have 1-character equivalents
  //       (so that they are available for user flags)
@@ -1190,16 +1216,18 @@ static ArgumentDescription arg_desc[] = {
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
- DRIVER_ARG_BREAKFLAGS_COMMON,
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"break-on-codegen-id", ' ', NULL, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", NULL},
+ {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL},
+ {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL},
  {"default-dist", ' ', "<distribution>", "Change the default distribution", "S256", defaultDist, "CHPL_DEFAULT_DIST", NULL},
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
- DRIVER_ARG_DEBUGGERS,
+ {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
+ {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
  {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
@@ -1268,8 +1296,8 @@ static ArgumentDescription arg_desc[] = {
 
  {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
 
- DRIVER_ARG_PRINT_CHPL_HOME,
- DRIVER_ARG_LAST
+ {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL},
+  {0}
 };
 
 
