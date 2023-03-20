@@ -124,6 +124,18 @@ proc printArr(X: [?D] real) {
 }
 
 //
+// Note that querying an array's domain via the ``.domain`` method or
+// the function argument query syntax does not result in a domain
+// expression that can be reassigned.  In particular, we cannot do:
+//
+//   ``B.domain = {1..2*n, 1..2*n};``
+//
+// nor:
+//
+//   ``proc foo(X: [?D]) {  D = {1..2*n};  }``
+//
+
+//
 // Arrays are passed to functions by reference by default, so the
 // modifications to X in function printArr are reflected on B as
 // well:
@@ -339,20 +351,35 @@ VarDom = {1..n};
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
 //
-// Note that querying an array's domain via the ``.domain`` method or
-// the function argument query syntax does not result in a domain
-// expression that can be reassigned.  In particular, we cannot do:
+// This trick can be used to create records or classes with array fields which
+// may have different sizes in each instance of the type:
 //
-//   ``VarArr.domain = {1..2*n};``
+
+record R {
+  var FieldDom = {1..0};
+  var FieldArr: [FieldDom] int;
+
+  proc init(size) {
+    FieldDom = {1..size};
+  }
+}
+
+var RSmall = new R(10);
+var RLarge = new R(1000);
+
+writeln("Size of RSmall's FieldArr: ", RSmall.FieldArr.size);
+writeln("Size of RLarge's FieldArr: ", RLarge.FieldArr.size);
+
 //
-// nor:
+// Note: further information on records can be found in the
+// :ref:`Records Primer <primers-records>`
 //
-//   ``proc foo(X: [?D]) {  D = {1..2*n};  }``
+
 //
 // Only a domain variable or formal argument can be
 // reassigned to reallocate arrays.  This is to avoid confusion
-// since assigning one domain variable can cause a number of
-// arrays to be reallocated.  It also implies that arrays declared
+// since assigning a domain using ``.domain`` query on one array can cause a number of
+// other arrays to be reallocated.  It also implies that arrays declared
 // using an anonymous domain cannot be reallocated.  So for our
 // original array declarations ``A`` and ``B``, we have no way of reallocating
 // them.  Arrays with constant domains provide the compiler with
