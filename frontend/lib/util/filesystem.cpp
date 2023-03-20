@@ -24,7 +24,9 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/SHA256.h"
 
 #include <cerrno>
 
@@ -136,15 +138,14 @@ bool fileExists(const char* path) {
   return err == 0;
 }
 
-
-std::error_code deleteDir(std::string dirname) {
+std::error_code deleteDir(const llvm::Twine& dirname) {
   // LLVM 5 added remove_directories
   return llvm::sys::fs::remove_directories(dirname, false);
 }
 
-std::error_code makeTempDir(const std::string& dirPrefix,
+std::error_code makeTempDir(llvm::StringRef prefix,
                             std::string& tmpDirPathOut) {
-  std::string tmpdirprefix = std::string(getTempDir()) + "/" + dirPrefix;
+  std::string tmpdirprefix = std::string(getTempDir()) + "/" + prefix.str();
   std::string tmpdirsuffix = ".deleteme-XXXXXX";
 
   struct passwd* passwdinfo = getpwuid(geteuid());
@@ -178,7 +179,7 @@ std::error_code makeTempDir(const std::string& dirPrefix,
   return std::error_code();
 }
 
-std::error_code ensureDirExists(std::string dirname) {
+std::error_code ensureDirExists(const llvm::Twine& dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
@@ -196,7 +197,7 @@ std::error_code currentWorkingDir(std::string& path_out) {
   }
 }
 
-std::error_code makeDir(std::string dirpath, bool makeParents) {
+std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents) {
   using namespace llvm::sys::fs;
   if (makeParents) {
     return create_directories(dirpath, true, perms::all_all);
@@ -210,8 +211,52 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-bool isSameFile(const char* path1, const char* path2) {
+bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
   return llvm::sys::fs::equivalent(path1, path2);
+}
+
+static std::error_code errorCodeFromCError(int err) {
+  return std::error_code(err, std::generic_category());
+}
+
+llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
+  FILE* fp = fopen(path.str().c_str(), "r");
+  if (!fp) {
+    return errorCodeFromCError(errno);
+  }
+
+  llvm::SHA256 hasher;
+
+  uint8_t buf[256];
+  while (true) {
+    size_t got = fread(buf, 1, sizeof(buf), fp);
+    if (got > 0) {
+      hasher.update(llvm::ArrayRef<uint8_t>(buf, got));
+    } else {
+      int err = ferror(fp);
+      if (err != 0) {
+        fclose(fp);
+        return errorCodeFromCError(err);
+      }
+      // otherwise, end of file reached
+      break;
+    }
+  }
+
+  fclose(fp);
+
+  // In LLVM 15, SHA256::final returns a std::array.
+  // In LLVM 14 an earlier, it returns a StringRef.
+#if LLVM_VERSION_MAJOR >= 15
+  return hasher.final();
+#else
+  HashFileResult result;
+  llvm::StringRef s = hasher.final();
+  CHPL_ASSERT(s.size() == sizeof(HashFileResult));
+  memcpy(&result, s.data(), sizeof(HashFileResult));
+  return result;
+#endif
+
 }
 
 

@@ -20,6 +20,11 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
+#include "llvm/Support/ErrorOr.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/Twine.h"
+
+#include <array>
 #include <string>
 #include <system_error>
 
@@ -43,19 +48,19 @@ bool fileExists(const char* path);
  * dirname the path of the directory to create
  * returns std::error_code
  */
-std::error_code ensureDirExists(std::string dirname);
+std::error_code ensureDirExists(const llvm::Twine& dirname);
 
 
 /**
  * creates a directory in the temp location for the system
- * with the pattern "dirPrefix-username.deleteme-XXXXXX/"
+ * with the pattern "<TMP>/<dirPrefix>-<username>.deleteme-XXXXXX/"
+ * (where <TMP> is typically /tmp)
  *
- * dirPrefix a prefix to place in the directory name
- * tmpDirPathOut reference to an empty string that will hold the path of the created directory
+ * prefix a prefix to put at the start of the directory name
+ * tmpDirPathOut ref to a string that be set to the path of  the created dir
  * returns std::error_code
  */
-std::error_code makeTempDir(const std::string& dirPrefix,
-                            std::string& tmpDirPathOut);
+std::error_code makeTempDir(llvm::StringRef prefix, std::string& tmpDirPathOut);
 
 /**
  * forwards to llvm::sys::fs::remove_directories
@@ -63,7 +68,7 @@ std::error_code makeTempDir(const std::string& dirPrefix,
  * dirname the path of the directory to remove
  * returns std::error_code
  */
-std::error_code deleteDir(std::string dirname);
+std::error_code deleteDir(const llvm::Twine& dirname);
 
 /*
  * Gets the current working directory
@@ -81,7 +86,7 @@ std::error_code currentWorkingDir(std::string& path_out);
  * makeParents - if true, creates parent directories if they don't exist
  * returns - std::error_code
  */
-std::error_code makeDir(std::string dirpath, bool makeParents=false);
+std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents=false);
 
 
 /*
@@ -92,11 +97,23 @@ std::error_code makeDir(std::string dirpath, bool makeParents=false);
 std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 
 
-/*
+/**
   Compare two paths to see if they point to the same filesystem object.
   Utilizes llvm::sys::fs:equivalent to do the comparison.
 */
-bool isSameFile(const char* path1, const char* path2);
+bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
+
+/**
+ Non-error result type for hashFile.
+ */
+using HashFileResult = std::array<uint8_t, 32>;
+
+/**
+  Returns a cryptographic hash of the file contents at the passed path.
+  Currently uses SHA256 but exactly which hash is used should be
+  considered an implementation detail.
+ */
+llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path);
 
 
 } // end namespace chpl
