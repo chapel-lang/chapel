@@ -19,7 +19,12 @@
 
 #include "chpl/util/clang-integration.h"
 
+// TODO: move this file to util to match the header
+
+#include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/ExternBlock.h"
 
 #include "../util/filesystem_help.h"
 
@@ -38,6 +43,16 @@ namespace chpl {
 namespace util {
 
 
+const std::vector<std::string>& clangFlags(Context* context) {
+  QUERY_BEGIN_INPUT(clangFlags, context);
+  std::vector<std::string> ret;
+  return QUERY_END(ret);
+}
+
+void setClangFlags(Context* context, std::vector<std::string> flags) {
+  QUERY_STORE_INPUT_RESULT(clangFlags, context, flags);
+}
+#if 0
 void initializeLlvmTargets() {
 #ifdef HAVE_LLVM
   static bool targetsInited = false;
@@ -51,6 +66,7 @@ void initializeLlvmTargets() {
   }
 #endif
 }
+#endif
 
 // Get the current clang executable path from printchplenv
 static std::string getClangExe(Context* context) {
@@ -65,6 +81,7 @@ static std::string getClangExe(Context* context) {
   return clangExe;
 }
 
+#if 0
 static std::string getChplLocaleModel(Context* context) {
   std::string result = "flat";
   auto chplEnv = context->getChplEnv();
@@ -101,6 +118,7 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
   // TODO: use a different triple when cross compiling
   // TODO: look at CHPL_TARGET_ARCH
+  initializeLlvmTargets();
   std::string triple = llvm::sys::getDefaultTargetTriple();
 
   // Create a compiler instance to handle the actual work.
@@ -156,16 +174,16 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
   return QUERY_END(result);
 }
+#endif
 
 /* returns the precompiled header file data
    args are the clang driver arguments
-   code is the C code to precompile */
-const std::string& createClangPrecompiledHeader(Context* context,
-                                                std::vector<std::string> args,
-                                                std::string code) {
-  QUERY_BEGIN(createClangPrecompiledHeader, context, args, code);
+   externBlockId is the ID of the extern block containing code to precompile */
+const owned<TemporaryFileResult>&
+createClangPrecompiledHeader(Context* context, ID externBlockId) {
+  QUERY_BEGIN(createClangPrecompiledHeader, context, externBlockId);
 
-  std::string result;
+  owned<TemporaryFileResult> result;
 
   bool ok = true;
 
@@ -173,16 +191,27 @@ const std::string& createClangPrecompiledHeader(Context* context,
   std::string tmpInput = context->tmpDir() + "/extern-code.h";
   std::string tmpOutput = context->tmpDir() + "/extern-code.ast";
 
-  // write the code to the file
-  std::string openError;
-  FILE* fp = openfile(tmpInput.c_str(), "w", openError);
-  if (fp == nullptr) {
-    context->error(Location(), "Could not open file %s: %s",
-                   tmpInput.c_str(), openError.c_str());
+  const uast::AstNode* ast = parsing::idToAst(context, externBlockId);
+  const uast::ExternBlock* eb = ast ? ast->toExternBlock() : nullptr;
+  if (eb == nullptr) {
     ok = false;
   }
 
+  // open the file to write the code to
+  FILE* fp = nullptr;
   if (ok) {
+    std::string openError;
+    openfile(tmpInput.c_str(), "w", openError);
+    if (fp == nullptr) {
+      context->error(Location(), "Could not open file %s: %s",
+                     tmpInput.c_str(), openError.c_str());
+      ok = false;
+    }
+  }
+
+  // write the code to that file
+  if (ok) {
+    const std::string& code = eb->code();
     size_t written = fwrite(code.data(), 1, code.size(), fp);
 
     if (written != code.size()) {
@@ -192,6 +221,7 @@ const std::string& createClangPrecompiledHeader(Context* context,
     }
   }
 
+  // close the file if it was opened
   if (fp != nullptr) {
     std::string closeError;
     bool closedOk = closefile(fp, tmpInput.c_str(), closeError);
@@ -202,11 +232,20 @@ const std::string& createClangPrecompiledHeader(Context* context,
     }
   }
 
+  // TODO: use llvm::sys::fs::setLastAccessAndModificationTime to make the file
+  // match the modification time of the original Chapel code
+
+  // run clang to generate a precompiled header
   if (ok) {
+    // gather args to clang
+    const std::vector<std::string>& args = clangFlags(context);
+
     // run clang
     std::vector<std::string> command;
 
     command.push_back(clangExe);
+    // append args to the command vector
+    command.insert(command.end(), args.begin(), args.end());
     command.push_back("-x");
     command.push_back("c-header");
     command.push_back(tmpInput);
@@ -226,17 +265,26 @@ const std::string& createClangPrecompiledHeader(Context* context,
     }
   }
 
+  // rename the generated file to the TemporaryFileResult path
   if (ok) {
-    std::string readError;
-    bool readOk = readfile(tmpOutput.c_str(), result, readError);
-    if (!readOk) {
-      context->error(Location(), "Could not read file %s: %s",
-                     tmpOutput.c_str(), readError.c_str());
+    result = TemporaryFileResult::create(context,
+                                         externBlockId.str(),
+                                         ".ast");
+    std::error_code err = llvm::sys::fs::rename(tmpOutput, result->path());
+    if (err) {
+      context->error(Location(), "Could not rename %s to %s",
+                     tmpOutput.c_str(), result->path().c_str());
+      ok = false;
+      result = nullptr; // remove the incomplete result
     }
   }
 
   return QUERY_END(result);
 }
+
+#if 0
+const bool& precompiledHeaderContainsNameQuery(Context* context, ...)
+#endif
 
 
 } // namespace util

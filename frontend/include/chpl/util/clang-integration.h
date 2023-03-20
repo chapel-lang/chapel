@@ -20,15 +20,26 @@
 #ifndef CHPL_UTIL_CLANG_INTEGRATION_H
 #define CHPL_UTIL_CLANG_INTEGRATION_H
 
+#include "chpl/framework/ID.h"
+#include "chpl/util/memory.h"
+
 #include <string>
 #include <vector>
 
 namespace chpl {
 class Context;
+class TemporaryFileResult;
 
 namespace util {
 
 
+/** Return the currently set clang flags */
+const std::vector<std::string>& clangFlags(Context* context);
+
+/** Set the clang flags for this revision if they have not been set already */
+void setClangFlags(Context* context, std::vector<std::string> clangFlags);
+
+#if 0
 /** Initialize all LLVM targets */
 void initializeLlvmTargets();
 
@@ -36,13 +47,13 @@ void initializeLlvmTargets();
 const std::vector<std::string>& getCC1Arguments(Context* context,
                                                 std::vector<std::string> args,
                                                 bool forGpuCodegen);
+#endif
 
 /** Given arguments to 'clang' and some code (normally, the contents of an
     extern block), create a precompiled header with clang and return
     its contents. */
-const std::string& createClangPrecompiledHeader(Context* context,
-                                                std::vector<std::string> args,
-                                                std::string code);
+const owned<TemporaryFileResult>&
+createClangPrecompiledHeader(Context* context, ID externBlockId);
 
 
 } // end namespace util
