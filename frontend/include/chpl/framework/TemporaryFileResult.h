@@ -70,7 +70,7 @@ class TemporaryFileResult final {
   ~TemporaryFileResult();
 
   /** Returns the path to the file. */
-  std::string path() { return path_; }
+  std::string path() const { return path_; }
 
   /** Updates information about the file stored here, which can include
       the file length and hash, after the file has been created.

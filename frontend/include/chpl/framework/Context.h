@@ -188,7 +188,7 @@ class Context {
 
   std::string tmpDir_;
   bool keepTmpDir_ = false;
-  std::string toolName_;
+  std::string toolName_ = "chpl";
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
