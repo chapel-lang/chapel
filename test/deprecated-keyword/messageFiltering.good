@@ -73,8 +73,8 @@ messageFiltering.chpl:n: warning: Lorem ipsum abc$def$ dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum abc$def$ghi dolor sit amet
 messageFiltering.chpl:n: warning: --- Identifier is led with ! (should filter) ---
 messageFiltering.chpl:n: warning: Lorem ipsum !abc dolor sit amet
-messageFiltering.chpl:n: warning: --- Currently filters, but ideally wouldn't (see #18549) ---
-messageFiltering.chpl:n: warning: Lorem ipsum :proc:`~abc.def` dolor sit amet
+messageFiltering.chpl:n: warning: --- Prefixed with ~, should filter to just last component ---
+messageFiltering.chpl:n: warning: Lorem ipsum def dolor sit amet
 1000
 1001
 1002

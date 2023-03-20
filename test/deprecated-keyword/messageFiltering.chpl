@@ -171,8 +171,8 @@ var x1101 = 1101;
 @deprecated(notes="Lorem ipsum :proc:`!abc` dolor sit amet")
 var x1102 = 1102;
 
-// Currently filters, but ideally wouldn't (see #18549):
-@deprecated(notes="--- Currently filters, but ideally wouldn't (see #18549) ---")
+// Prefixed with ~, should filter to just last component
+@deprecated(notes="--- Prefixed with ~, should filter to just last component ---")
 var x1200 = 1200;
 @deprecated(notes="Lorem ipsum :proc:`~abc.def` dolor sit amet")
 var x1201 = 1201;

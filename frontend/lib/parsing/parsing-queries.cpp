@@ -1329,9 +1329,9 @@ removeSphinxMarkupFromWarningMessage(const std::string msg) {
   // TODO: Support explicit title and reference targets like in reST direct
   // hyperlinks (and having only target show up in sanitized message).
   // TODO: Prefixing content with ! (and filtering it out)
-  // TODO: Prefixing content with ~ (and displaying only the last component)
   static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param|enum)"
-                         R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+                         R"(|type|class|record|attr)\:"
+                         R"`((?:[!$\w\$\.]+)|(?:~[$\w\$]+\.?))+`\B)";
   auto ret = std::regex_replace(msg, std::regex(re), "$2");
   return ret;
 }
