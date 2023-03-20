@@ -301,9 +301,9 @@ module CTypes {
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:c_ptr) {
     if (x.eltType != t.eltType) {
-      compilerWarning(
-          "Casting c_ptr to a different element type can cause undefined " +
-          "behavior.");
+      compilerWarning("Casting c_ptr to a different element type ('"
+                      + x.eltType:string + "' vs '" + t.eltType:string +
+                      "')  can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
