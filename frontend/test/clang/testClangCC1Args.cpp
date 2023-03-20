@@ -25,7 +25,6 @@
 using namespace chpl;
 
 int main(int argc, char** argv) {
-#if 0
   std::string chpl_home;
   std::vector<std::string> clangArgs;
 
@@ -52,6 +51,6 @@ int main(int argc, char** argv) {
   for (auto& arg : cc1args) {
     printf(" %s\n", arg.c_str());
   }
-#endif
+
   return 0;
 }

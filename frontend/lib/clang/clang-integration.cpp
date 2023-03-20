@@ -28,10 +28,14 @@
 
 #include "../util/filesystem_help.h"
 
+#include "clang/Basic/TargetInfo.h"
+#include "clang/Frontend/CompilerInvocation.h"
+#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
+#include "clang/Serialization/ASTReader.h"
 
 #include "llvm/Support/Host.h"
 // TODO: in future LLVM it is llvm/TargetParser/Host.h
@@ -52,7 +56,7 @@ const std::vector<std::string>& clangFlags(Context* context) {
 void setClangFlags(Context* context, std::vector<std::string> flags) {
   QUERY_STORE_INPUT_RESULT(clangFlags, context, flags);
 }
-#if 0
+
 void initializeLlvmTargets() {
 #ifdef HAVE_LLVM
   static bool targetsInited = false;
@@ -66,7 +70,6 @@ void initializeLlvmTargets() {
   }
 #endif
 }
-#endif
 
 // Get the current clang executable path from printchplenv
 static std::string getClangExe(Context* context) {
@@ -81,7 +84,6 @@ static std::string getClangExe(Context* context) {
   return clangExe;
 }
 
-#if 0
 static std::string getChplLocaleModel(Context* context) {
   std::string result = "flat";
   auto chplEnv = context->getChplEnv();
@@ -116,11 +118,47 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   }
 
 
+
   // TODO: use a different triple when cross compiling
   // TODO: look at CHPL_TARGET_ARCH
   initializeLlvmTargets();
-  std::string triple = llvm::sys::getDefaultTargetTriple();
 
+#if 0
+  // Here is how it could work with ci.generateCC1CommandLine /
+  // ci.getCC1CommandLine.
+  // This does not include all of the arguments that the later
+  // version includes.
+
+  // TODO: Should this call CompilerInvocation::generateCC1CommandLine ?
+  auto diagOptions = new clang::DiagnosticOptions();
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+  auto diagID = new clang::DiagnosticIDs();
+  auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
+
+  clang::CompilerInvocation ci;
+  clang::CompilerInvocation::CreateFromArgs(ci, argsCstrs, *diags);
+
+  // result = ci.getCC1CommandLine();
+
+  {
+    // Set up string allocator.
+    llvm::BumpPtrAllocator Alloc;
+    llvm::StringSaver Strings(Alloc);
+    auto SA = [&Strings](const llvm::Twine &Arg) { return Strings.save(Arg).data(); };
+
+    // Synthesize full command line from the CompilerInvocation, including "-cc1".
+    llvm::SmallVector<const char *, 32> Args{"-cc1"};
+    ci.generateCC1CommandLine(Args, SA);
+
+    // Convert arguments to the return type.
+    result = std::vector<std::string>{Args.begin(), Args.end()};
+  }
+
+  delete diags;
+#endif
+
+  std::string triple = llvm::sys::getDefaultTargetTriple();
   // Create a compiler instance to handle the actual work.
   auto diagOptions = new clang::DiagnosticOptions();
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
@@ -172,9 +210,13 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
 #endif
 
+  printf("getCC1Arguments returning\n");
+  for (auto arg : result) {
+    printf("  %s\n", arg.c_str());
+  }
+
   return QUERY_END(result);
 }
-#endif
 
 /* returns the precompiled header file data
    args are the clang driver arguments
@@ -201,7 +243,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   FILE* fp = nullptr;
   if (ok) {
     std::string openError;
-    openfile(tmpInput.c_str(), "w", openError);
+    fp = openfile(tmpInput.c_str(), "w", openError);
     if (fp == nullptr) {
       context->error(Location(), "Could not open file %s: %s",
                      tmpInput.c_str(), openError.c_str());
@@ -219,6 +261,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
                      tmpInput.c_str());
       ok = false;
     }
+    // add a trailing newline
+    fputc('\n', fp);
   }
 
   // close the file if it was opened
@@ -251,6 +295,11 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     command.push_back(tmpInput);
     command.push_back("-o");
     command.push_back(tmpOutput);
+
+    printf("Running clang:\n");
+    for (auto arg: command) {
+      printf("  %s\n", arg.c_str());
+    }
     const char* desc = "create clang precompiled header for extern block";
     int code = executeAndWait(command, desc);
 
@@ -282,9 +331,99 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   return QUERY_END(result);
 }
 
+static const bool&
+precompiledHeaderContainsNameQuery(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  QUERY_BEGIN(precompiledHeaderContainsNameQuery, context, pch, name);
+
+  bool result = false;
+
+  std::vector<std::string> clFlags = clangFlags(context);
+
+  printf("CHPL_HOME is %s\n", context->chplHome().c_str());
+
+  std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
+  clFlags.push_back(dummyFile);
+
+  const std::vector<std::string>& cc1args =
+    getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+
+  std::vector<const char*> cc1argsCstrs;
+  cc1argsCstrs.push_back("clang-cc1");
+  for (const auto& arg : cc1args) {
+    if (arg != dummyFile) {
+      cc1argsCstrs.push_back(arg.c_str());
+    }
+  }
+
+  clang::CompilerInstance* Clang = new clang::CompilerInstance();
+
+  auto diagOptions = new clang::DiagnosticOptions();
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+  auto diagID = new clang::DiagnosticIDs();
+  auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
+
+  Clang->setDiagnostics(diags);
+
+  printf("Creating CompilerInvocation from\n");
+  for (auto arg : cc1argsCstrs) {
+    printf("  %s\n", arg);
+  }
+
+  bool success =
+    clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
+                                              cc1argsCstrs, *diags);
+  CHPL_ASSERT(success);
+
+  Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+  Clang->createFileManager();
+  Clang->createSourceManager(Clang->getFileManager());
+  Clang->createPreprocessor(clang::TU_Complete);
+
+  Clang->createASTReader();
+
+  clang::ASTReader* astr = Clang->getASTReader().get();
+  CHPL_ASSERT(astr);
+
+  auto readResult = astr->ReadAST(pch->path(),
+                                  clang::serialization::MK_PCH,
+                                  clang::SourceLocation(),
+                                  clang::ASTReader::ARR_None);
+  if (readResult == clang::ASTReader::Success) {
+
+    printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
+    printf("Total macros %i\n", (int) astr->getTotalNumMacros());
+    printf("Total types %i\n", (int) astr->getTotalNumTypes());
+    /*{
+      printf("Looking up identifiers in %s\n", pch->path().c_str());
+      clang::IdentifierIterator* it = astr->getIdentifiers();
+      for (llvm::StringRef found = it->Next();
+           !found.empty();
+           found = it->Next()) {
+        printf("  found ident %s\n", found.str().c_str());
+      }
+    }*/
+
+    clang::IdentifierInfo* iid = astr->get(name.c_str());
+    result = (iid != nullptr);
+  }
 #if 0
-const bool& precompiledHeaderContainsNameQuery(Context* context, ...)
+  auto astr = clang::ASTReader(Clang->getPreprocessor(),
+                               Clang->getModuleCache(),
+                               /* ASTContext */ nullptr
+      Clang->getASTContext(),
 #endif
+
+  return QUERY_END(result);
+}
+
+bool precompiledHeaderContainsName(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name) {
+  return precompiledHeaderContainsNameQuery(context, pch, name);
+}
 
 
 } // namespace util

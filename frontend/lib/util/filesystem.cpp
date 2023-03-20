@@ -215,6 +215,22 @@ bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
   return llvm::sys::fs::equivalent(path1, path2);
 }
 
+std::string fileHashToHex(const HashFileResult& hash) {
+  static const char* table = "0123456789abcdef";
+  size_t len = hash.size();
+  std::string ret;
+
+  ret.reserve(2*len);
+  for (size_t i = 0; i < len; i++) {
+    unsigned char c = hash[i];
+    // push the character for the first (high) nibble
+    ret.push_back(table[(c >> 4) & 0xf]);
+    // push the character for the second nibble
+    ret.push_back(table[c & 0xf]);
+  }
+  return ret;
+}
+
 static std::error_code errorCodeFromCError(int err) {
   return std::error_code(err, std::generic_category());
 }

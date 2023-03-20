@@ -39,7 +39,6 @@ const std::vector<std::string>& clangFlags(Context* context);
 /** Set the clang flags for this revision if they have not been set already */
 void setClangFlags(Context* context, std::vector<std::string> clangFlags);
 
-#if 0
 /** Initialize all LLVM targets */
 void initializeLlvmTargets();
 
@@ -47,7 +46,6 @@ void initializeLlvmTargets();
 const std::vector<std::string>& getCC1Arguments(Context* context,
                                                 std::vector<std::string> args,
                                                 bool forGpuCodegen);
-#endif
 
 /** Given arguments to 'clang' and some code (normally, the contents of an
     extern block), create a precompiled header with clang and return
@@ -55,7 +53,13 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 const owned<TemporaryFileResult>&
 createClangPrecompiledHeader(Context* context, ID externBlockId);
 
-
+/** Given a TemporaryFileResult created from createClangPrecompiledHeader,
+    returns 'true' if the passed name is present as a defined macro
+    or declaration name and 'false' otherwise.
+ */
+bool precompiledHeaderContainsName(Context* context,
+                                   const TemporaryFileResult* pch,
+                                   UniqueString name);
 } // end namespace util
 } // end namespace chpl
 

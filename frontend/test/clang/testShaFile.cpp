@@ -17,57 +17,25 @@
  * limitations under the License.
  */
 
+// TODO: move this file to the util tests
 #include "chpl/framework/Context.h"
-#include "chpl/util/clang-integration.h"
-
-#include "llvm/Support/SHA1.h"
-#include "llvm/Support/SHA256.h"
-#include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallString.h"
-#include "llvm/Support/VirtualFileSystem.h"
+#include "chpl/util/filesystem.h"
 
 #include <cstring>
 
 using namespace chpl;
 
-/*static std::string toHex(llvm::ArrayRef<uint8_t> Input) {
-  static const char *const LUT = "0123456789abcdef";
-  size_t Length = Input.size();
-
-  std::string Output;
-  Output.reserve(2 * Length);
-  for (size_t i = 0; i < Length; ++i) {
-    const unsigned char c = Input[i];
-    Output.push_back(LUT[c >> 4]);
-    Output.push_back(LUT[c & 15]);
-  }
-  return Output;
-}*/
-
-
-static void TestSHA256Sum(llvm::StringRef Input) {
-  llvm::SHA256 Hash;
-  //llvm::SHA1 Hash;
-  Hash.update(Input);
-  auto hash = Hash.final();
-  auto hashStr = toHex(hash);
-  printf("hash was %s\n", hashStr.c_str());
-}
-
 int main(int argc, char** argv) {
-  std::string chpl_home;
-
-  auto fs = llvm::vfs::createPhysicalFileSystem();
 
   for (int i = 1; i < argc; i++) {
     printf("hashing %s\n", argv[i]);
     char* fname = argv[i];
 
-    auto maybeBuf = fs->getBufferForFile(fname);
-    if (maybeBuf) {
-      llvm::MemoryBuffer* buf = maybeBuf->get();
-      TestSHA256Sum(buf->getBuffer());
-      //TestSHA256Sum(buf->getBuffer());
+    llvm::ErrorOr<HashFileResult> hashOrErr = hashFile(fname);
+    if (hashOrErr) {
+      printf("%s\n", fileHashToHex(hashOrErr.get()).c_str());
+    } else {
+      printf("error\n");
     }
   }
 

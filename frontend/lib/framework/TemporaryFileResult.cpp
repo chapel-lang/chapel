@@ -95,25 +95,10 @@ bool TemporaryFileResult::operator==(const TemporaryFileResult& other) const {
   return (length_ == other.length_ && hash_ == other.hash_);
 }
 
-static std::string hashToHex(HashFileResult hash) {
-  static const char* table = "0123456789abcdef";
-  size_t len = hash.size();
-  std::string ret;
-
-  ret.reserve(2*len);
-  for (size_t i = 0; i < len; i++) {
-    unsigned char c = hash[i];
-    // push the character for the first (high) nibble
-    ret.push_back(table[(c >> 4) & 0xf]);
-    // push the character for the second nibble
-    ret.push_back(table[c & 0xf]);
-  }
-  return ret;
-}
-
 void TemporaryFileResult::stringify(std::ostream& ss,
                                     StringifyKind stringKind) const {
-  ss << "TemporaryFileResult(" << hashToHex(hash_) << ")";
+  ss << "TemporaryFileResult(path=" << path_ << ", "
+     << "hash=" << fileHashToHex(hash_) << ")";
 }
 
 

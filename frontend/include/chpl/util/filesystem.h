@@ -109,6 +109,11 @@ bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 using HashFileResult = std::array<uint8_t, 32>;
 
 /**
+  Convert a HashFileResult to a string storing its hex value
+  */
+std::string fileHashToHex(const HashFileResult& hash);
+
+/**
   Returns a cryptographic hash of the file contents at the passed path.
   Currently uses SHA256 but exactly which hash is used should be
   considered an implementation detail.
