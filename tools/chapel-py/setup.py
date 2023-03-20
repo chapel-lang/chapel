@@ -14,5 +14,5 @@ LDFLAGS += ["-L/Users/daniel.fedorin/Documents/software/chapel/lib/compiler/darw
 
 setup(name = "chapel",
       version = "0.1",
-      ext_modules = [Extension("chapel", ["test.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
+      ext_modules = [Extension("chapel", ["chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       );
