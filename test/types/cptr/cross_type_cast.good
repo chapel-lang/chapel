@@ -1,0 +1,2 @@
+cross_type_cast.chpl:5: warning: Casting c_ptr to a different element type can cause undefined behavior.
+1
