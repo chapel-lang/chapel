@@ -56,6 +56,7 @@ class Context;
  * CHPL_SYNTAX - the chapel syntax necessary to generate the object,
  *                or DEBUG_DETAIL if unable
 */
+// TODO: move this into its own header
 enum StringifyKind {
   DEBUG_SUMMARY,
   DEBUG_DETAIL,

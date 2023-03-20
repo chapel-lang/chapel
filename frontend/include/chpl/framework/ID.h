@@ -197,9 +197,9 @@ class ID final {
     this->symbolPath_.mark(context);
   }
 
-  static bool update(chpl::ID& keep, chpl::ID& addin);
+  static bool update(ID& keep, ID& addin);
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
