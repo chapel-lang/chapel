@@ -8,8 +8,8 @@ Depths of the Query System
 Vocabulary
 ----------
 
--  **Dependency**: a query executed as part of another query. The
-   “outer” query is said to depend on the “inner” query.
+-  **Dependency**: a query executed as part of another query. If query A
+   executes query B, then A is said to depend on B.
 -  **Preamble**: the code that happens before the main query body is
    run; the contents of ``QUERY_BEGIN``.
 
@@ -32,12 +32,11 @@ recomputation needs to happen, anywhere. However, there are cases even
 when input queries *do* change, but recomputation can be avoided for
 most functions. In particular, this can happen if a dependency’s inputs
 do change, but its outputs don’t. However, since queries are implemented
-using plain and unrestricted C++, determining whether or not a change to
-inputs would result in a change to outputs would require a solution to
-the halting problem, which is not possible. Therefore, to detect such
-cases of unchanged output, queries whose inputs changed *must* be
-re-run. See `the example section <#example-of-avoiding-recomputation>`__
-for some code that demonstrates avoiding recomputation.
+using plain and unrestricted C++, there isn't a general way of knowing
+how a change of inputs will affect the output without running the query.
+Therefore, to detect such cases of unchanged output, queries whose inputs
+changed *must* be re-run. See `Example of Avoiding Recomputation` for some code
+that demonstrates avoiding recomputation.
 
 The depth-first traversal, combined with the need to recompute queries
 to check if their output has changed, means that dependencies are
@@ -45,12 +44,13 @@ re-computed before the function that called them is re-computed. In
 other words, rather being recomputed *top-down* (from the top-level
 query down to its dependencies), dependencies are recomputed
 *bottom-up*. This has several implications for the way that context
-state should be managed (see the section on `state
-implications <#state-implications>`__).
+state should be managed (see `State Implications`_).
 
 Once any of a query’s dependencies’ outputs is determined to have
 changed, there’s no use checking its other dependencies – any dependency
 changing is sufficient to need to recompute the whole dependent query.
+Moreover, whether or not other dependencies ought to be run may depend on the
+result of the changed query (see `Changing Dependency Graph Example`_).
 Thus, bottom-up recomputation suspends, and the dependent query is
 called. At this point, the query’s function runs as normal, its
 dependency queries are called as they are encountered in the C++ source
@@ -60,14 +60,21 @@ to a top-down mode of execution. However, at any point during this
 top-down execution, if the query needs to determine if a dependency
 needs to be recomputed, another bottom-up traversal will be needed.
 Thus, the execution of a query is a layering of top-down and bottom-up
-(re)computation.
+(re)computations.
 
 The recomputation-to-check-output requirement has one more practical
 effect. If a dependency is determined to have changed, this has occurred
 by re-running it. That means that when the parent query is called to in
 turn determine its new value, once it reaches the call to the changed
 dependency, the result will already be known, and the saved value will
-be used.
+be used. More concretely, suppose a particular query depends on queries
+A, B, and C. Suppose also that all three of these queries would produce a
+new output in new revision. In this case, when the parent query is invoked,
+the output of `A` would already have been recomputed, whereas `B` and `C`
+would still be awaiting recomputation; the use of `A` would result in returning
+a cached result, whereas the uses of `B` and `C` would result in invoking
+these queries' functions. In short, you cannot expect all query dependencies
+to be computed in the same manner (bottom up or top down).
 
 The Preamble is Always Called
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -96,13 +103,15 @@ that somehow solely depends on the length.
 .. code:: c++
 
    SomeDataStructure& expensiveQuery(Context* context) {
-       QUERY_BEGIN(context, strLen);
+       QUERY_BEGIN(expensiveQuery, context);
+       auto strLen = lengthQuery(context);
        auto result = doSomeExpensiveComputation(strLen);
        return QUERY_END(result);
    }
 
-   size_t lengthQuery(Context* context, std::string str) {
-       QUERY_BEGIN(context, str);
+   size_t lengthQuery(Context* context) {
+       QUERY_BEGIN(lengthQuery, context);
+       auto str = inputQuery(context);
        auto result = str.size();
        return QUERY_END(result);
    }
@@ -145,10 +154,69 @@ won’t be re-run. However, it will be marked as “requiring recompute” and
 recomputation check for ``expensiveQuery`` will find that none of its
 dependencies have changed, and skip running it.
 
-A more Dyno-oriented example is that of typechecking an expression. A
+A more compilation-oriented example is that of typechecking an expression. A
 user might add a space somewhere in the middle of a function call, but
 the resulting AST would be the same, and thus, typechecking would not
 need to occur.
+
+Changing Dependency Graph Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once one of a query's dependencies is known to have changed, we stop
+executing the dependencies, and execute the query itself. One of the reasons
+for this is that queries that `were` run in the previous execution may not need
+to be run at all. Consider the following example.
+
+.. code:: c++
+
+   bool queryWithConditional(Context* context) {
+       QUERY_BEGIN(queryWithConditional, context);
+       int result = queryA(context);
+       if (result == 0) {
+           result = queryB(context);
+       }
+       return QUERY_END(result);
+   }
+
+Suppose query A returns ``0`` initially. In that case, both query A
+and query B would be dependencies of ``queryWithConditional``. However,
+if the result of query A changes to something nonzero, re-running
+query B would be unnecessary: it would never be called in the parent
+query's body. Not only that, but re-running query B could be incorrect:
+if it issued errors, these errors would be shown to the user, even
+though there's no reason why they should be.
+
+A slightly more complicated case is as follows.
+
+.. code:: c++
+
+   bool queryWithConditional(Context* context) {
+       QUERY_BEGIN(queryWithConditional, context);
+       bool queryAResult = queryA(context);
+       int result;
+       if (queryAResult) {
+           result = queryB(context);
+       } else {
+           result = queryC(context);
+       }
+       return QUERY_END(result);
+   }
+
+Suppose that in the above example, query A returns ``true`` in the first
+generation, and ``false`` in the second generation. When it's initially
+computed, ``queryWithConditional`` would have queries A and B as its
+dependencies. However, once the result of query A changes, it would be
+incorrect to re-run query B (for the same reason as before). Additionally,
+query C, though not listed as a dependency, will need to be executed,
+possibly for the first time. This will happen when ``queryWithConditional``
+is itself recomputed. In the end, ``queryWithConditional`` will have queries
+A and C as its dependencies.
+
+From a correctness perspective, an important consequence of these examples
+is that dependencies should be checked in the order that they were originally
+called. Otherwise, we might end up recomputing a query that would no longer
+need to be called. Because of this, the query system stores an `ordered` list
+of dependencies, and traverses it first-to-last.
 
 State Implications
 ~~~~~~~~~~~~~~~~~~
