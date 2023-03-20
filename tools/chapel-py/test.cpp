@@ -27,7 +27,13 @@ typedef struct {
 } AstNodeObject;
 extern PyTypeObject AstNodeType;
 
-#define DEFINE_PY_CLASS_FOR(NAME, TAG)\
+/**
+  Declare a Python PyTypeObject that corresponds to an AST node with the given
+  name and tag. The tag is not the same as the name because abstract base
+  classes like NamedDecl have corresponding tags called START_NamedDecl
+  and END_NamedDecl, but not NamedDecl.
+ */
+#define DEFINE_PY_OBJECT_FOR(NAME, TAG)\
   typedef struct { \
     AstNodeObject parent; \
   } NAME##Object; \
@@ -37,9 +43,10 @@ extern PyTypeObject AstNodeType;
     return parentTypeFor(chpl::uast::asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
 
-#define AST_NODE(NAME) DEFINE_PY_CLASS_FOR(NAME, NAME)
-#define AST_LEAF(NAME) DEFINE_PY_CLASS_FOR(NAME, NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_CLASS_FOR(NAME, START_##NAME)
+/* Generate a Python object for reach AST node type. */
+#define AST_NODE(NAME) DEFINE_PY_OBJECT_FOR(NAME, NAME)
+#define AST_LEAF(NAME) DEFINE_PY_OBJECT_FOR(NAME, NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_OBJECT_FOR(NAME, START_##NAME)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
@@ -47,6 +54,10 @@ extern PyTypeObject AstNodeType;
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 
+/**
+  Create a Python object of the class corresponding to the given AST node's
+  type. For example, an Identifier node will be wrapped in a a chapel.Identifier.
+ */
 static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node) {
   PyObject* toReturn = nullptr;
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
@@ -58,7 +69,7 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) /* No need to handle abstract parent classes. */
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
