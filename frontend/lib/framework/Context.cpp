@@ -148,10 +148,38 @@ const std::string& Context::tmpDir() {
       this->error(Location(), "Could not create temp directory");
     } else {
       tmpDir_ = dir;
+      tmpDirExists_ = true;
+    }
+  }
+
+  if (!tmpDirExists_) {
+    auto err = llvm::sys::fs::create_directories(tmpDir_);
+    if (err) {
+      this->error(Location(), "Could not create temp directory %s",
+                  tmpDir_.c_str());
+    } else {
+      tmpDirExists_ = true;
     }
   }
 
   return tmpDir_;
+}
+
+std::string Context::tmpDirAnchorFile() {
+  std::string path = tmpDir();
+  if (!path.empty() && !tmpDirAnchorCreated_) {
+    path += "/anchor";
+
+    std::string data = "anchor\n";
+    std::error_code err = writeFile(path.c_str(), data);
+    if (err) {
+      this->error(Location(), "Could not update anchor file %s: %s",
+                  path.c_str(), err.message().c_str());
+    } else {
+      tmpDirAnchorCreated_ = true;
+    }
+  }
+  return path;
 }
 
 void Context::cleanupTmpDirIfNeeded() {

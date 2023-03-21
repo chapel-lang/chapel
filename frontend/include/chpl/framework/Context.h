@@ -93,7 +93,8 @@ class Context {
 
     /** Temporary directory in which to store files.
         If it is "", it will be set to something like /tmp/chpl-1234/.
-        It will be deleted when the context is deleted.
+        It will be deleted when the context is deleted, unless
+        keepTmpDir is true.
      */
     std::string tmpDir;
 
@@ -187,6 +188,8 @@ class Context {
   owned<std::ostream> queryTimingTraceOutput = nullptr;
 
   std::string tmpDir_;
+  bool tmpDirExists_ = false;
+  bool tmpDirAnchorCreated_ = false;
   bool keepTmpDir_ = false;
   std::string toolName_ = "chpl";
 
@@ -304,7 +307,6 @@ class Context {
 
   void doNotCollectUniqueCString(const char *s);
 
-
   // Future Work: make the context thread-safe
 
   // Future Work: allow moving some AST to a different context
@@ -358,6 +360,10 @@ class Context {
       If it does not exist yet, create it.
    */
   const std::string& tmpDir();
+
+  /** Return a path to a file within tmpDir that is not modified after
+      it is created, to serve as a source for normalizing modification times */
+  std::string tmpDirAnchorFile();
 
   /** Delete the temporary directory if needed. This function
       can be called during program exit. */
@@ -524,7 +530,7 @@ class Context {
      called for this ID).
 
     Returns the path by setting 'pathOut'.
-    Returns the parent symbol path (relevant for 'module include'
+    Returns the parent symbol path (relevant for 'module include')
     by setting 'parentSymbolPathOut'.
    */
   bool filePathForId(ID id,

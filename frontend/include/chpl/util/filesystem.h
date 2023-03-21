@@ -38,6 +38,12 @@ namespace chpl {
 bool readfile(const char* path, std::string& strOut, std::string& errorOut);
 
 /**
+  Writes a string to a file, replacing its contents.
+  Returns a std::error_code of 0 if everything worked OK.
+ */
+std::error_code writeFile(const char* path, const std::string& data);
+
+/**
   Checks to see if a file exists at path. Returns 'true' if it does.
  */
 bool fileExists(const char* path);
@@ -119,6 +125,13 @@ std::string fileHashToHex(const HashFileResult& hash);
   considered an implementation detail.
  */
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path);
+
+/**
+  Sets the modification and access time of one file to the
+  modification of another file.
+ */
+std::error_code copyModificationTime(const llvm::Twine& srcPath,
+                                     const llvm::Twine& dstPath);
 
 
 } // end namespace chpl

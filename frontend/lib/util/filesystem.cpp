@@ -26,6 +26,7 @@
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Process.h"
 #include "llvm/Support/SHA256.h"
 
 #include <cerrno>
@@ -59,6 +60,10 @@ static std::string my_strerror(int errno_) {
   if (rc != 0)
     strncpy(errbuf, "<unknown error>", sizeof(errbuf));
   return std::string(errbuf);
+}
+
+static std::error_code errorCodeFromCError(int err) {
+  return std::error_code(err, std::generic_category());
 }
 
 /*
@@ -100,6 +105,7 @@ bool closefile(FILE* fp, const char* path, std::string& errorOut) {
 }
 
 // TODO: Should this produce an llvm::MemoryBuffer?
+// TODO: Should this return std::error_code?
 bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
   FILE* fp = openfile(path, "r", errorOut);
   if (!fp) {
@@ -131,6 +137,29 @@ bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
 
   return closefile(fp, path, errorOut);
 }
+
+std::error_code writeFile(const char* path, const std::string& data) {
+  FILE* fp = fopen(path, "w");
+  if (fp == nullptr) {
+    return errorCodeFromCError(errno);
+  }
+
+  size_t got = fwrite(data.data(), 1, data.size(), fp);
+  if (got != data.size()) {
+    int err = ferror(fp);
+    if (err == 0) err = EIO;
+    fclose(fp);
+    return errorCodeFromCError(errno);
+  }
+
+  int closeval = fclose(fp);
+  if (closeval != 0) {
+    return errorCodeFromCError(errno);
+  }
+
+  return std::error_code();
+}
+
 
 bool fileExists(const char* path) {
   struct stat s;
@@ -231,10 +260,6 @@ std::string fileHashToHex(const HashFileResult& hash) {
   return ret;
 }
 
-static std::error_code errorCodeFromCError(int err) {
-  return std::error_code(err, std::generic_category());
-}
-
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
   FILE* fp = fopen(path.str().c_str(), "r");
   if (!fp) {
@@ -273,6 +298,26 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
   return result;
 #endif
 
+}
+
+std::error_code copyModificationTime(const llvm::Twine& srcPath,
+                                     const llvm::Twine& dstPath) {
+  std::error_code err;
+  llvm::sys::fs::file_status status;
+  err = llvm::sys::fs::status(srcPath, status);
+  if (err) {
+    return err;
+  }
+  auto time = status.getLastModificationTime();
+  //std::cout << "Copying time from " << time.time_since_epoch().count() << "\n";
+  int fd = 0;
+  err = llvm::sys::fs::openFileForWrite(dstPath, fd,
+                                        llvm::sys::fs::CD_OpenExisting);
+  if (!err) {
+    err = llvm::sys::fs::setLastAccessAndModificationTime(fd, time);
+    llvm::sys::Process::SafelyCloseFileDescriptor(fd);
+  }
+  return err;
 }
 
 

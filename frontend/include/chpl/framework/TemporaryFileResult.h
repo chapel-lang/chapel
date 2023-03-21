@@ -90,6 +90,9 @@ class TemporaryFileResult final {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 

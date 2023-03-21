@@ -31,6 +31,7 @@ namespace chpl {
 static int globalTemporaryResultCounter = 1;
 
 TemporaryFileResult::TemporaryFileResult() {
+  hash_.fill(0);
 }
 
 owned<TemporaryFileResult>
@@ -50,6 +51,13 @@ TemporaryFileResult::create(Context* context,
 }
 
 TemporaryFileResult::~TemporaryFileResult() {
+#ifndef NDEBUG
+  if (!path_.empty()) {
+    HashFileResult zero;
+    zero.fill(0);
+    CHPL_ASSERT(hash_ != zero && "did you forget to call .complete() ?");
+  }
+#endif
   if (!path_.empty()) {
     std::error_code err = llvm::sys::fs::remove(path_,
                                                 /* IgnoreNonExisting */ true);
@@ -91,15 +99,21 @@ bool TemporaryFileResult::operator==(const TemporaryFileResult& other) const {
   if (path_.empty() || other.path_.empty()) {
     return false; // one of them is empty but not the other
   }
+  // Note: the path itself is not compared here,
+  // so that the comparison is about the file contents, instead.
 
   return (length_ == other.length_ && hash_ == other.hash_);
 }
 
 void TemporaryFileResult::stringify(std::ostream& ss,
                                     StringifyKind stringKind) const {
-  ss << "TemporaryFileResult(path=" << path_ << ", "
+  ss << "TemporaryFileResult("
+     << "path=" << path_ << ", "
+     << "length=" << length_ << ", "
      << "hash=" << fileHashToHex(hash_) << ")";
 }
+
+IMPLEMENT_DUMP(TemporaryFileResult);
 
 
 } // end namespace chpl
