@@ -60,6 +60,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId);
 bool precompiledHeaderContainsName(Context* context,
                                    const TemporaryFileResult* pch,
                                    UniqueString name);
+
+
 } // end namespace util
 } // end namespace chpl
 

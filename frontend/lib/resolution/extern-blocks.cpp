@@ -19,12 +19,26 @@
 
 #include "extern-blocks.h"
 
+#include "chpl/util/clang-integration.h"
+
 namespace chpl {
 namespace resolution {
 
 
-using namespace uast;
-using namespace types;
+using namespace util;
+
+bool externBlockContainsName(Context* context,
+                             ID externBlockId,
+                             UniqueString name) {
+  const owned<TemporaryFileResult>& tfs =
+    createClangPrecompiledHeader(context, externBlockId);
+  const TemporaryFileResult* ptr = tfs.get();
+  if (ptr != nullptr && precompiledHeaderContainsName(context, ptr, name)) {
+    return true;
+  }
+
+  return false;
+}
 
 
 } // end namespace resolution

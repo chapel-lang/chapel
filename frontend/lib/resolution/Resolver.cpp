@@ -1806,6 +1806,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
+  if (asttags::isExternBlock(tag)) {
+    // TODO: resolve types for extern block
+    // (will need the Identifier name for that)
+    auto unknownType = UnknownType::get(context);
+    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+  }
+
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
@@ -2106,17 +2113,6 @@ Resolver::lookupIdentifier(const Identifier* ident,
         CHPL_REPORT(context, AmbiguousIdentifier,
                     ident, printFirstMention, vec, traceResult);
       }
-    }
-  }
-
-  // If there is one result and it's an extern block, forget about it for now.
-  // TODO: type resolution for symbols in extern blocks
-  if (notFound == false && ambiguous == false) {
-    // there is just one result. Is it an extern block?
-    const ID& id = vec[0].firstId();
-    auto tag = parsing::idToTag(context, id);
-    if (isExternBlock(tag)) {
-      vec.clear();
     }
   }
 

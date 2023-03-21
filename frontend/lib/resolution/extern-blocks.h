@@ -20,20 +20,20 @@
 #ifndef EXTERN_BLOCKS_H
 #define EXTERN_BLOCKS_H
 
-#include "chpl/resolution/scope-types.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/UniqueString.h"
 
 namespace chpl {
-namespace uast {
-  class AstNode;
-}
 namespace resolution {
 
-/*
-void gatherDeclsWithin(const uast::AstNode* ast,
-                       DeclMap& declared,
-                       bool& containsUseImport,
-                       bool& containsFunctionDecls,
-                       bool& containsExternBlock);*/
+
+/** Given an extern block ID and a name, returns 'true' if that
+    extern block defines or declares something with that name.
+ */
+bool externBlockContainsName(Context* context,
+                             ID externBlockId,
+                             UniqueString name);
 
 
 } // end namespace resolution

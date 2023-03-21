@@ -23,6 +23,8 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/clang-integration.h"
 
+#include <unistd.h>
+
 // helper functions
 
 bool gSaveTemp = false;
@@ -68,6 +70,10 @@ static void testIt(const char* testName,
       auto index = contents.find(find);
       if (index != std::string::npos) {
         contents.replace(index, find.length(), replace);
+        if (revision != 1) {
+          // make sure there is no modification time issue
+          sleep(1);
+        }
       }
     }
     printf("Input %s\n", contents.c_str());

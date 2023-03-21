@@ -27,6 +27,7 @@
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "scope-help.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -787,24 +788,37 @@ bool LookupHelper::doLookupInReceiverScopes(
   return got;
 }
 
-bool LookupHelper::doLookupInExternBlock(const Scope* scope,
-                                         UniqueString name) {
-  // Return the ID of the extern block(s) that matched.
+// returns IDs of all extern blocks directly contained within scope
+static const std::vector<ID>& gatherExternBlocks(Context* context, ID scopeID) {
+  QUERY_BEGIN(gatherExternBlocks, context, scopeID);
 
-  // TODO: need to check if the name is present in the C code for
-  // extern blocks contained in this scope. Consider using clang
-  // precompiled headers and FindExternalVisibleDeclsByName.
+  std::vector<ID> result;
 
-  // TODO: implement this in a more incremental-friendly manner
-  auto ast = parsing::idToAst(context, scope->id());
+  auto ast = parsing::idToAst(context, scopeID);
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
+      result.push_back(child->id());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool LookupHelper::doLookupInExternBlock(const Scope* scope,
+                                         UniqueString name) {
+  // Which are the IDs of the contained extern block(s)?
+  const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
+
+  // Consider each extern block in turn. Does it have a symbol with that name?
+  for (const auto& id : exbIds) {
+    if (externBlockContainsName(context, id, name)) {
+      // note that this extern block can match 'name'
       bool isMethodOrField = false; // not possible in an extern block
-      bool isParenfulFunction = false; // TODO -- it could be a regular fn
+      bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
       auto foundIds =
-        BorrowedIdsWithName::createWithSingleId(child->id(),
+        BorrowedIdsWithName::createWithSingleId(id,
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
                                                 isParenfulFunction,
