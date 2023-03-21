@@ -140,6 +140,7 @@ struct Converter {
   bool inTupleDecl = false;
   bool inTupleAssign = false;
   bool inImportOrUse = false;
+  bool inForwardingDecl = false;
   bool canScopeResolve = false;
   bool trace = false;
   int delegateCounter = 0;
@@ -395,6 +396,12 @@ struct Converter {
     // Don't try to resolve identifiers in use/import yet
     // (it messes up the current use/import build routines)
     if (inImportOrUse) {
+      return nullptr;
+    }
+
+    // In forwarding declarations, don't convert things in "except" clauses
+    // into SymExprs.
+    if (inForwardingDecl) {
       return nullptr;
     }
 
@@ -2414,10 +2421,13 @@ struct Converter {
       }
       // convert the AstList of renames
       visNames = new std::vector<PotentialRename*>;
+      auto oldInForwardingDecl = inForwardingDecl;
+      inForwardingDecl = true;
       for (auto lim : vis->limitations()) {
         PotentialRename* rename = convertRename(lim);
         visNames->push_back(rename);
       }
+      inForwardingDecl = oldInForwardingDecl;
       // compute the forwarded-to expression
       expr = convertExprOrNull(vis->symbol());
     } else {
