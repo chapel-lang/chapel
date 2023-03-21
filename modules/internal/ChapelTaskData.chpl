@@ -44,7 +44,7 @@ module ChapelTaskData {
   // These functions get/set parts of the Chapel managed
   // task local storage starting from a pointer to the tls region.
   proc chpl_task_data_setDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t), end: _remoteEndCountType) {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i:c_size_t;
 
     // Get the wide pointer components
@@ -61,7 +61,7 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_getDynamicEndCount(tls:c_ptr(chpl_task_infoChapel_t)) {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i:c_size_t;
 
     var loc:chpl_localeID_t;
@@ -82,7 +82,7 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_setSerial(tls:c_ptr(chpl_task_infoChapel_t), makeSerial: bool) : void {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
     if makeSerial then
@@ -91,7 +91,7 @@ module ChapelTaskData {
     c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
   }
   proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
     // Using memcpy to avoid pointer type punning
@@ -105,7 +105,7 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_setNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t), makeSerial: bool) : void {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_nextCoStmtSerial;
     var v:uint(8) = 0;
     if makeSerial then
@@ -114,7 +114,7 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_getNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_nextCoStmtSerial;
     var v:uint(8) = 0;
     c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
@@ -125,7 +125,7 @@ module ChapelTaskData {
 
   proc chpl_task_data_setCommDiagsTemporarilyDisabled(tls:c_ptr(chpl_task_infoChapel_t), disabled: bool) : bool {
     var ret = chpl_task_data_getCommDiagsTemporarilyDisabled(tls);
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_commDiagsTemporarilyDisabled;
     var v:uint(8) = 0;
     if disabled then
@@ -135,7 +135,7 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_getCommDiagsTemporarilyDisabled(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
-    var prv = (tls:c_void_ptr):c_ptr(c_uchar);
+    var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_commDiagsTemporarilyDisabled;
     var v:uint(8) = 0;
     c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));

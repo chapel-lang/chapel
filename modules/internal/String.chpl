@@ -73,11 +73,6 @@ module String {
   pragma "no doc"
   config param useCachedNumCodepoints = true;
 
-  pragma "no doc"
-  private inline proc castPtrToBufferType(ptr:c_ptr(?)) : bufferType {
-    return ptr : c_void_ptr : bufferType;
-  }
-
   pragma "plain old data"
   pragma "no doc"
   record byteIndex {
@@ -479,8 +474,8 @@ module String {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(castPtrToBufferType(x), length);
-    initWithBorrowedBuffer(ret, castPtrToBufferType(x), length, size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
 
@@ -536,8 +531,8 @@ module String {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(castPtrToBufferType(x), length);
-    initWithOwnedBuffer(ret, castPtrToBufferType(x), length, size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithOwnedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
 
@@ -618,7 +613,7 @@ module String {
     // size argument is not used, because we're allocating our own buffer
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
-    return decodeByteBuffer(castPtrToBufferType(x), length, policy);
+    return decodeByteBuffer(x:bufferType, length, policy);
   }
 
   // non-validating string factory functions are in this submodule. This
