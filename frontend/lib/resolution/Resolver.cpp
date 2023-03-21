@@ -2317,6 +2317,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       }
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+      ResolvedExpression& r = byPostorder.byAst(ident);
       if (!scopeResolveOnly) {
         // resolve a parenless call
         std::vector<CallInfoActual> actuals;
@@ -2332,20 +2333,30 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                                                 inScope, poiScope,
                                                 methodReceiverType());
           // save the most specific candidates in the resolution result
-          ResolvedExpression& r = byPostorder.byAst(ident);
           handleResolvedCall(r, ident, ci, c);
         } else {
           // as above, but don't consider method scopes
           auto c = resolveGeneratedCall(context, ident, ci,
                                         inScope, poiScope);
           // save the most specific candidates in the resolution result
-          ResolvedExpression& r = byPostorder.byAst(ident);
           handleResolvedCall(r, ident, ci, c);
         }
+      } else {
+        // Possibly a "compatibility hack" with production: we haven't checked
+        // whether the call is valid, but the production scope resolver doesn't
+        // care and assumes `ident` points to this parenless function.
+        r.setToId(id);
       }
       return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
+      if (scopeResolveOnly) {
+        // Possibly a "compatibility hack" with production: we haven't checked
+        // whether the call is valid, but the production scope resolver doesn't
+        // care and assumes `ident` points to this function.
+        ResolvedExpression& r = byPostorder.byAst(ident);
+        r.setToId(id);
+      }
       return;
     }
 
