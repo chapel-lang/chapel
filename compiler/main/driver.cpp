@@ -603,7 +603,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
   get_version(compileVersion, sizeof(compileVersion));
 }
 
-void setHome(const ArgumentDescription* desc, const char* arg) {
+static void setHome(const ArgumentDescription* desc, const char* arg) {
   // Wipe previous CHPL_HOME when comp flag is given
   CHPL_HOME[0] = '\0';
 
@@ -994,11 +994,11 @@ static void turnIncrementalOn(const ArgumentDescription* desc,
   fIncrementalCompilation = true;
 }
 
-void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
+static void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
   fPrintHelp = true;
 }
 
-void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused) {
+static void driverSetDevelSettings(const ArgumentDescription* desc, const char* arg_unused) {
   // have to handle both cases since this will be called with --devel
   // and --no-devel
   if (developer) {
