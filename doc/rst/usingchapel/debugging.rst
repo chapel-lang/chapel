@@ -111,7 +111,7 @@ debugging.
 Notes on munging
 ''''''''''''''''
 
-The utility of this a debugger with Chapel depends greatly on your familiarity
+The utility of using a debugger with Chapel depends greatly on your familiarity
 with the Chapel generated code.  However, if your program is crashing or running
 into a runtime error, you can often determine where that is taking place by
 looking at a stack trace within ``gdb``.
