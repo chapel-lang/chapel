@@ -210,10 +210,11 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
 #endif
 
+  /*
   printf("getCC1Arguments returning\n");
   for (auto arg : result) {
     printf("  %s\n", arg.c_str());
-  }
+  }*/
 
   return QUERY_END(result);
 }
@@ -341,7 +342,7 @@ precompiledHeaderContainsNameQuery(Context* context,
 
   std::vector<std::string> clFlags = clangFlags(context);
 
-  printf("CHPL_HOME is %s\n", context->chplHome().c_str());
+  //printf("CHPL_HOME is %s\n", context->chplHome().c_str());
 
   std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
   clFlags.push_back(dummyFile);
@@ -367,10 +368,10 @@ precompiledHeaderContainsNameQuery(Context* context,
 
   Clang->setDiagnostics(diags);
 
-  printf("Creating CompilerInvocation from\n");
+  /*printf("Creating CompilerInvocation from\n");
   for (auto arg : cc1argsCstrs) {
     printf("  %s\n", arg);
-  }
+  }*/
 
   bool success =
     clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
@@ -392,10 +393,9 @@ precompiledHeaderContainsNameQuery(Context* context,
                                   clang::SourceLocation(),
                                   clang::ASTReader::ARR_None);
   if (readResult == clang::ASTReader::Success) {
-
-    printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
+    /*printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
     printf("Total macros %i\n", (int) astr->getTotalNumMacros());
-    printf("Total types %i\n", (int) astr->getTotalNumTypes());
+    printf("Total types %i\n", (int) astr->getTotalNumTypes());*/
     /*{
       printf("Looking up identifiers in %s\n", pch->path().c_str());
       clang::IdentifierIterator* it = astr->getIdentifiers();

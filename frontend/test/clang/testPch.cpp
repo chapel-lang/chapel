@@ -42,6 +42,9 @@ static void testIt(const char* testName,
   config.chplHome = chpl_home;
   Context ctx(config);
   Context* context = &ctx;
+
+  context->setQueryTimingFlag(true);
+
   ErrorGuard guard(context);
   auto path = UniqueString::get(context, testName);
   std::string contents = program;
@@ -65,15 +68,19 @@ static void testIt(const char* testName,
   for (auto name : expectedNames) {
     auto uname = UniqueString::get(context, name);
     bool got = util::precompiledHeaderContainsName(context, tpch, uname);
+    if (got) printf("found expected %s\n", uname.c_str());
+    else     printf("MISSING expected %s\n", uname.c_str());
     assert(got == true);
-    printf("found expected %s\n", uname.c_str());
   }
   for (auto name : unexpectedNames) {
     auto uname = UniqueString::get(context, name);
     bool got = util::precompiledHeaderContainsName(context, tpch, uname);
+    if (got) printf("found UNEXPECTED %s\n", uname.c_str());
+    else     printf("did not find, as expected %s\n", uname.c_str());
     assert(got == false);
-    printf("did not find not expected %s\n", uname.c_str());
   }
+
+  context->queryTimingReport(std::cout);
 }
 
 
@@ -101,11 +108,36 @@ static void test2() {
          {"FOO", "bar"},
          {"missing"});
 }
+static void test3() {
+  testIt("test3.chpl",
+         R""""(
+            module M {
+              extern {
+                #include <stdio.h>
+                static void bar(void);
+                static void bar(void) { }
+              }
+            }
+         )"""",
+         {"bar", // directly defined
+          // functions defined in stdio.h
+          "printf", "fprintf", "sprintf", "snprintf",
+          "sscanf", "fscanf",
+          "fgetc", "getc", "getchar", "ungetc",
+          "fread", "fwrite",
+          // types defined in stdio.h
+          "FILE",
+          // macros defined in stdio.h
+          "stdin", "stdout", "stderr",
+          "BUFSIZ", "EOF", "FILENAME_MAX"},
+         {"missing1", "missing2", "missing3", "missing4"});
+}
 
 
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }
