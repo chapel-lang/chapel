@@ -2882,10 +2882,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
 
-  // handle channel position beyond end.
-  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
-  if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
-
   // if possible make a direct system call instead of buffering
   if (
     len >= qio_write_unbuffered_threshold && // the write is large enough
@@ -2894,7 +2890,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    // printf("Unbuffered Write ------------------------\n");
+    // printf("Unbuffered Write -----\n");
 
     // only write up to EOF
     if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
@@ -2910,11 +2906,10 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     //                      qbuffer_start_offset(&ch->buf);
     // qbuffer_trim_back(&ch->buf, trim_bytes);
 
-    int64_t new_start = qbuffer_end_offset(&ch->buf) + len;
-    qbuffer_reposition(&ch->buf, new_start);
-
     // write with a direct system call (may require multiple iterations for write/pwrite)
     while ( remaining > 0 ) {
+      // printf("remaining: %lld \n", remaining);
+      fflush(stdout);
       num_written = 0;
       switch (method) {
         case QIO_METHOD_READWRITE:
@@ -2926,7 +2921,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
         case QIO_METHOD_FREADFWRITE:
           if( ch->file->fp ) {
             num_written_u = fwrite(ptr, 1, remaining, ch->file->fp);
-            err = 0;
             if( num_written_u == 0 ) {
               err = qio_int_to_err(ferror(ch->file->fp));
             }
@@ -2951,16 +2945,22 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
       remaining -= num_written;
     }
 
-    // shift the buffer position 'len' bytes to the right
+    // printf("wrote: %zd \n", num_written);
+    fflush(stdout);
+    *amt_written = num_written;
 
+    // shift the buffer position 'len' bytes to the right
+    int64_t new_start = _right_mark_start(ch) + num_written;
     ch->av_end = new_start;
+    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + num_written);
+
+    // printf("repositioned...");
 
     // re-setup the buffer for any future buffered writes
     _qio_buffered_setup_cached(ch);
 
   } else {
-    // printf("Buffered Write ------------------------\n");
-
+    // printf("Buffered Write ------\n");
 
     // otherwise, do a buffered write
     while ((remaining > 0) && !eof) {
