@@ -32,7 +32,7 @@ endif()
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 30)
+set(CHPL_MINOR_VERSION 31)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
