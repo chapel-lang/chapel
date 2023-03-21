@@ -19,11 +19,13 @@
 
 #include "test-resolution.h"
 
+#include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/clang-integration.h"
 
 // helper functions
 
+bool gSaveTemp = false;
 
 static void testIt(const char* testName,
                    const char* program,
@@ -40,49 +42,75 @@ static void testIt(const char* testName,
   }
   Context::Configuration config;
   config.chplHome = chpl_home;
+  if (gSaveTemp) {
+    config.tmpDir = "tmp";
+    config.keepTmpDir = true;
+  }
   Context ctx(config);
   Context* context = &ctx;
-
   context->setQueryTimingFlag(true);
 
-  ErrorGuard guard(context);
-  auto path = UniqueString::get(context, testName);
-  std::string contents = program;
-  setFileText(context, path, contents);
-  // parse it so that Context knows about the IDs
-  const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* M = vec[0];
+  const TemporaryFileResult* lastResult = nullptr;
 
-  const ExternBlock* externBlock = nullptr;
-
-  for (auto stmt : M->stmts()) {
-    if (auto eb = stmt->toExternBlock()) {
-      externBlock = eb;
+  for (int revision = 1; revision <= 2; revision++) {
+    ErrorGuard guard(context);
+    printf("revision %i\n", revision);
+    context->advanceToNextRevision(false);
+    auto path = UniqueString::get(context, testName);
+    std::string contents = program;
+    // replace REVISION with some different code
+    {
+      std::string find = "REVISION";
+      std::string replace;
+      if (revision == 2) {
+        replace = "var x: int; var y: int;";
+      }
+      auto index = contents.find(find);
+      if (index != std::string::npos) {
+        contents.replace(index, find.length(), replace);
+      }
     }
-  }
-  assert(externBlock);
+    printf("Input %s\n", contents.c_str());
+    setFileText(context, path, contents);
+    // parse it so that Context knows about the IDs
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* M = vec[0];
+    const ExternBlock* externBlock = nullptr;
 
-  auto tpch =
-    util::createClangPrecompiledHeader(context, externBlock->id()).get();
-  for (auto name : expectedNames) {
-    auto uname = UniqueString::get(context, name);
-    bool got = util::precompiledHeaderContainsName(context, tpch, uname);
-    if (got) printf("found expected %s\n", uname.c_str());
-    else     printf("MISSING expected %s\n", uname.c_str());
-    assert(got == true);
-  }
-  for (auto name : unexpectedNames) {
-    auto uname = UniqueString::get(context, name);
-    bool got = util::precompiledHeaderContainsName(context, tpch, uname);
-    if (got) printf("found UNEXPECTED %s\n", uname.c_str());
-    else     printf("did not find, as expected %s\n", uname.c_str());
-    assert(got == false);
+    for (auto stmt : M->stmts()) {
+      if (auto eb = stmt->toExternBlock()) {
+        externBlock = eb;
+      }
+    }
+    assert(externBlock);
+
+    auto tpch =
+      util::createClangPrecompiledHeader(context, externBlock->id()).get();
+    if (lastResult != nullptr) {
+      assert(tpch == lastResult && "or else .ast hash changed unexpectedly");
+    }
+    lastResult = tpch;
+
+    for (auto name : expectedNames) {
+      auto uname = UniqueString::get(context, name);
+      bool got = util::precompiledHeaderContainsName(context, tpch, uname);
+      if (got) printf("found expected %s\n", uname.c_str());
+      else     printf("MISSING expected %s\n", uname.c_str());
+      assert(got == true);
+    }
+    for (auto name : unexpectedNames) {
+      auto uname = UniqueString::get(context, name);
+      bool got = util::precompiledHeaderContainsName(context, tpch, uname);
+      if (got) printf("found UNEXPECTED %s\n", uname.c_str());
+      else     printf("did not find, as expected %s\n", uname.c_str());
+      assert(got == false);
+    }
+    guard.printErrors();
   }
 
   context->queryTimingReport(std::cout);
 }
-
 
 static void test1() {
   testIt("test1.chpl",
@@ -94,6 +122,7 @@ static void test1() {
          {"x"},
          {"y"});
 }
+
 static void test2() {
   testIt("test2.chpl",
          R""""(
@@ -108,10 +137,12 @@ static void test2() {
          {"FOO", "bar"},
          {"missing"});
 }
+
 static void test3() {
   testIt("test3.chpl",
          R""""(
             module M {
+              REVISION // replaced with some different code in revision 2
               extern {
                 #include <stdio.h>
                 static void bar(void);
@@ -134,7 +165,11 @@ static void test3() {
 }
 
 
-int main() {
+int main(int argc, char** argv) {
+  if (argc != 1) {
+    gSaveTemp = true;
+  }
+
   test1();
   test2();
   test3();

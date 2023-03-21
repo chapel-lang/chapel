@@ -29,19 +29,30 @@
 #include "../util/filesystem_help.h"
 
 #include "clang/Basic/TargetInfo.h"
-#include "clang/Frontend/CompilerInvocation.h"
-#include "clang/Frontend/CompilerInstance.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+#include "clang/Frontend/CompilerInstance.h"
+#include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Serialization/ASTReader.h"
 
-#include "llvm/Support/Host.h"
-// TODO: in future LLVM it is llvm/TargetParser/Host.h
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/TargetSelect.h"
-#include "llvm/Support/VirtualFileSystem.h"
+//#include "llvm/Support/VirtualFileSystem.h"
 
+#if LLVM_VERSION_MAJOR >= 16
+#include "llvm/TargetParser/Host.h"
+#else
+#include "llvm/Support/Host.h"
+#endif
+
+/*
+#include <unistd.h> // TODO: remove
+#include <iostream> // TODO: remove
+#include <chrono> // TODO: remove
+#include <ctime> // TODO: remove
+*/
 
 namespace chpl {
 namespace util {
@@ -228,6 +239,10 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
   owned<TemporaryFileResult> result;
 
+  /*printf("Running createClangPrecompiledHeader tmpdir is %s\n",
+         context->tmpDir().c_str());*/
+  //sleep(1);
+
   bool ok = true;
 
   std::string clangExe = getClangExe(context);
@@ -240,45 +255,37 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     ok = false;
   }
 
-  // open the file to write the code to
-  FILE* fp = nullptr;
-  if (ok) {
-    std::string openError;
-    fp = openfile(tmpInput.c_str(), "w", openError);
-    if (fp == nullptr) {
-      context->error(Location(), "Could not open file %s: %s",
-                     tmpInput.c_str(), openError.c_str());
-      ok = false;
-    }
+  std::error_code err = writeFile(tmpInput.c_str(), eb->code());
+  if (err) {
+    context->error(Location(), "Could not write to file %s: %s",
+                   tmpInput.c_str(), err.message().c_str());
+    ok = false;
   }
 
-  // write the code to that file
-  if (ok) {
-    const std::string& code = eb->code();
-    size_t written = fwrite(code.data(), 1, code.size(), fp);
-
-    if (written != code.size()) {
-      context->error(Location(), "Could not write to file %s",
-                     tmpInput.c_str());
-      ok = false;
-    }
-    // add a trailing newline
-    fputc('\n', fp);
+  // set the input file to match the modification of the revision file.
+  // This avoids differences in the precompiled header file
+  // that only reflect timestamps stored in the file, so that
+  // the precompiled header file can be reused in more cases.
+  err = copyModificationTime(context->tmpDirAnchorFile(), tmpInput);
+  // can ignore err; failure here will just cause recomputation
+#ifndef NDEBUG
+  if (err) {
+    fprintf(stderr, "Warning: could not set modification time for %s\n",
+            tmpInput.c_str());
   }
+#endif
 
-  // close the file if it was opened
-  if (fp != nullptr) {
-    std::string closeError;
-    bool closedOk = closefile(fp, tmpInput.c_str(), closeError);
-    if (!closedOk) {
-      context->error(Location(), "Could not close file %s: %s",
-                     tmpInput.c_str(), closeError.c_str());
-      ok = false;
-    }
-  }
+  /*{
+    llvm::sys::fs::file_status status;
+    llvm::sys::fs::status(tmpInput, status);
+    auto time = status.getLastModificationTime();
+    auto e = time.time_since_epoch();
+    //std::cout << "Modification time: " << std::ctime(&e) << "\n";
+    std::cout << "Modification time: " << e.count() << "\n";
+  }*/
 
-  // TODO: use llvm::sys::fs::setLastAccessAndModificationTime to make the file
-  // match the modification time of the original Chapel code
+  // TODO: this could use the clang linked with instead of spawning it
+  // (although doing so is more complex to implement).
 
   // run clang to generate a precompiled header
   if (ok) {
@@ -297,10 +304,11 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     command.push_back("-o");
     command.push_back(tmpOutput);
 
+    /*
     printf("Running clang:\n");
     for (auto arg: command) {
       printf("  %s\n", arg.c_str());
-    }
+    }*/
     const char* desc = "create clang precompiled header for extern block";
     int code = executeAndWait(command, desc);
 
@@ -326,8 +334,16 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
                      tmpOutput.c_str(), result->path().c_str());
       ok = false;
       result = nullptr; // remove the incomplete result
+    } else {
+      // tell TemporaryFileResult we are done creating the file
+      result->complete();
     }
   }
+
+  /*printf("createClangPrecompiledHeader returning\n");
+  if (result.get() != nullptr) {
+    result->dump();
+  }*/
 
   return QUERY_END(result);
 }
@@ -340,81 +356,85 @@ precompiledHeaderContainsNameQuery(Context* context,
 
   bool result = false;
 
-  std::vector<std::string> clFlags = clangFlags(context);
 
+  //printf("Running precompiledHeaderContainsNameQuery %s\n", name.c_str());
   //printf("CHPL_HOME is %s\n", context->chplHome().c_str());
 
-  std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
-  clFlags.push_back(dummyFile);
+  if (pch != nullptr) {
+    std::vector<std::string> clFlags = clangFlags(context);
 
-  const std::vector<std::string>& cc1args =
-    getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+    std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
+    clFlags.push_back(dummyFile);
 
-  std::vector<const char*> cc1argsCstrs;
-  cc1argsCstrs.push_back("clang-cc1");
-  for (const auto& arg : cc1args) {
-    if (arg != dummyFile) {
-      cc1argsCstrs.push_back(arg.c_str());
-    }
-  }
+    const std::vector<std::string>& cc1args =
+      getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
 
-  clang::CompilerInstance* Clang = new clang::CompilerInstance();
-
-  auto diagOptions = new clang::DiagnosticOptions();
-  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
-  auto diagID = new clang::DiagnosticIDs();
-  auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-
-  Clang->setDiagnostics(diags);
-
-  /*printf("Creating CompilerInvocation from\n");
-  for (auto arg : cc1argsCstrs) {
-    printf("  %s\n", arg);
-  }*/
-
-  bool success =
-    clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
-                                              cc1argsCstrs, *diags);
-  CHPL_ASSERT(success);
-
-  Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
-  Clang->createFileManager();
-  Clang->createSourceManager(Clang->getFileManager());
-  Clang->createPreprocessor(clang::TU_Complete);
-
-  Clang->createASTReader();
-
-  clang::ASTReader* astr = Clang->getASTReader().get();
-  CHPL_ASSERT(astr);
-
-  auto readResult = astr->ReadAST(pch->path(),
-                                  clang::serialization::MK_PCH,
-                                  clang::SourceLocation(),
-                                  clang::ASTReader::ARR_None);
-  if (readResult == clang::ASTReader::Success) {
-    /*printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
-    printf("Total macros %i\n", (int) astr->getTotalNumMacros());
-    printf("Total types %i\n", (int) astr->getTotalNumTypes());*/
-    /*{
-      printf("Looking up identifiers in %s\n", pch->path().c_str());
-      clang::IdentifierIterator* it = astr->getIdentifiers();
-      for (llvm::StringRef found = it->Next();
-           !found.empty();
-           found = it->Next()) {
-        printf("  found ident %s\n", found.str().c_str());
+    std::vector<const char*> cc1argsCstrs;
+    cc1argsCstrs.push_back("clang-cc1");
+    for (const auto& arg : cc1args) {
+      if (arg != dummyFile) {
+        cc1argsCstrs.push_back(arg.c_str());
       }
+    }
+
+    clang::CompilerInstance* Clang = new clang::CompilerInstance();
+
+    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                       &*diagOptions);
+    auto diagID = new clang::DiagnosticIDs();
+    auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
+
+    Clang->setDiagnostics(diags);
+
+    /*printf("Creating CompilerInvocation from\n");
+    for (auto arg : cc1argsCstrs) {
+      printf("  %s\n", arg);
     }*/
 
-    clang::IdentifierInfo* iid = astr->get(name.c_str());
-    result = (iid != nullptr);
-  }
+    bool success =
+      clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
+                                                cc1argsCstrs, *diags);
+    CHPL_ASSERT(success);
+
+    Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+    Clang->createFileManager();
+    Clang->createSourceManager(Clang->getFileManager());
+    Clang->createPreprocessor(clang::TU_Complete);
+
+    Clang->createASTReader();
+
+    clang::ASTReader* astr = Clang->getASTReader().get();
+    CHPL_ASSERT(astr);
+
+    auto readResult = astr->ReadAST(pch->path(),
+                                    clang::serialization::MK_PCH,
+                                    clang::SourceLocation(),
+                                    clang::ASTReader::ARR_None);
+    if (readResult == clang::ASTReader::Success) {
+      /*printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
+      printf("Total macros %i\n", (int) astr->getTotalNumMacros());
+      printf("Total types %i\n", (int) astr->getTotalNumTypes());*/
+      /*{
+        printf("Looking up identifiers in %s\n", pch->path().c_str());
+        clang::IdentifierIterator* it = astr->getIdentifiers();
+        for (llvm::StringRef found = it->Next();
+             !found.empty();
+             found = it->Next()) {
+          printf("  found ident %s\n", found.str().c_str());
+        }
+      }*/
+
+      clang::IdentifierInfo* iid = astr->get(name.c_str());
+      result = (iid != nullptr);
+    }
 #if 0
-  auto astr = clang::ASTReader(Clang->getPreprocessor(),
-                               Clang->getModuleCache(),
-                               /* ASTContext */ nullptr
-      Clang->getASTContext(),
+    auto astr = clang::ASTReader(Clang->getPreprocessor(),
+                                 Clang->getModuleCache(),
+                                 /* ASTContext */ nullptr
+        Clang->getASTContext(),
 #endif
+  }
 
   return QUERY_END(result);
 }
