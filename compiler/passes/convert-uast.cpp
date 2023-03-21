@@ -47,6 +47,7 @@
 #include "optimizations.h"
 #include "parser.h"
 #include "resolution.h"
+#include "ResolveScope.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -414,20 +415,24 @@ struct Converter {
           // TODO: compute the appropriate 'extern proc' etc and return that
           CHPL_ASSERT(id.fabricatedIdKind() == ID::ExternBlockElement);
           return nullptr;
-        } else if (id.isEmpty()) {
-          // super could be a formal or variable; in that case, it shouldn't
-          // be turned into a this.super call. Here the ID is empty, so
-          // it doesn't refer to a variable -- fall back to trying this.super.
-          if (node->name() == USTR("super")) {
-            if (methodThisStack.empty()) {
-              // TODO: probably too strict; what about field initializers?
-              USR_FATAL(node->id(), "super cannot occur outside of a method");
-            }
-            Symbol* parentMethodConvertedThis = methodThisStack.back();
-            auto thisExpr = new SymExpr(parentMethodConvertedThis);
-            auto nameExpr = new_CStringSymbol(node->name().c_str());
-            CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
-            return ret;
+        } else if (id.isEmpty() && node->name() == USTR("super")) {
+          // The identifier is 'super' and doesn't refer to any variable
+          // of that name, so it's a this.super call. Translate it as such.
+          if (methodThisStack.empty()) {
+            // TODO: probably too strict; what about field initializers?
+            USR_FATAL(node->id(), "super cannot occur outside of a method");
+          }
+          Symbol* parentMethodConvertedThis = methodThisStack.back();
+          auto thisExpr = new SymExpr(parentMethodConvertedThis);
+          auto nameExpr = new_CStringSymbol(node->name().c_str());
+          CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
+          return ret;
+        } else if (rr->isPrimitive()) {
+          auto scope = ResolveScope::getScopeFor(theProgram->block);
+          if (!scope) scope = ResolveScope::getRootModule();
+
+          if (auto symbol = scope->lookupNameLocally(astr(node->name().c_str()), /* isUse */ false)) {
+            return new SymExpr(symbol);
           }
         } else if (!id.isEmpty()) {
           // If we're referring to an associated type in an interface,

@@ -2289,6 +2289,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       return;
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
+      result.setIsPrimitive(true);
       result.setToId(id);
       result.setType(type);
       return;
