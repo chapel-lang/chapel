@@ -314,7 +314,19 @@ module CTypes {
   }
 
   pragma "no doc"
+  inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:c_ptrConst) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_ptrConst assignment");
+    __primitive("=", lhs, rhs);
+  }
+
+  pragma "no doc"
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:_nilType) {
+    __primitive("=", lhs, nil);
+  }
+
+  pragma "no doc"
+  inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
@@ -362,8 +374,17 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
   inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
+  }
+  pragma "no doc"
+  inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
+      where x.eltType == e {
+    return c_ptrTo(x[0]):c_ptrConst(e);
   }
   pragma "no doc"
   inline operator :(ref x:c_array, type t:c_void_ptr) {
@@ -374,11 +395,11 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:c_ptr) {
+  inline operator :(x:c_ptrConst, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
-  inline operator :(x:c_ptrConst, type t:c_void_ptr) {
+  inline operator :(x:c_void_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
   pragma "no doc"
@@ -393,6 +414,12 @@ module CTypes {
   }
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:string) {
+    try! {
+      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+    }
+  }
+  pragma "no doc"
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
       return createStringWithOwnedBuffer(__primitive("ref to string", x));
     }
@@ -454,6 +481,12 @@ module CTypes {
   pragma "no doc"
   inline operator :(x:c_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator :(x:c_ptrConst, type t:c_intptr) do
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator :(x:c_ptrConst, type t:c_uintptr) do
+    return __primitive("cast", t, x);
 
 
   // casts from c pointer to int / uint
@@ -470,6 +503,12 @@ module CTypes {
     return __primitive("cast", t, x);
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint do
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:int) where c_intptr != int do
+    return __primitive("cast", t, x);
+  pragma "no doc"
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   // casts from c_intptr / c_uintptr to c_void_ptr
@@ -494,6 +533,11 @@ module CTypes {
   inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
+  pragma "no doc"
+  inline operator c_ptrConst.==(a: c_ptrConst, b: c_ptrConst)
+      where a.eltType == b.eltType {
+    return __primitive("ptr_eq", a, b);
+  }
 
   pragma "no doc"
   inline operator ==(a: c_ptr, b: c_void_ptr) {
@@ -503,11 +547,24 @@ module CTypes {
   inline operator ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
+  pragma "no doc"
+  inline operator ==(a: c_ptrConst, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  pragma "no doc"
+  inline operator ==(a: c_void_ptr, b: c_ptrConst) {
+    return __primitive("ptr_eq", a, b);
+  }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
   pragma "no doc"
   inline operator c_ptr.!=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+    return __primitive("ptr_neq", a, b);
+  }
+  pragma "no doc"
+  inline operator c_ptrConst.!=(a: c_ptrConst, b: c_ptrConst)
+      where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
@@ -529,7 +586,23 @@ module CTypes {
   inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
   pragma "no doc"
+  inline operator c_ptrConst.!(x: c_ptrConst) do return x == c_nil;
+
+  pragma "no doc"
+  inline operator c_ptrConst.+(a: c_ptrConst, b: integral) do
+    return __primitive("+", a, b);
+
+  pragma "no doc"
+  inline operator c_ptrConst.-(a: c_ptrConst, b: integral) do
+    return __primitive("-", a, b);
+
+  pragma "no doc"
   inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
+    return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
+  }
+
+  pragma "no doc"
+  inline operator c_ptrConst.-(a: c_ptrConst(?t), b: c_ptrConst(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
@@ -579,7 +652,7 @@ module CTypes {
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
-      compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
+      compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
     if (arr._value.locale != here) then
       halt("c_ptrToConst() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
