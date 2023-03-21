@@ -657,7 +657,9 @@ class Context {
   */
   void setBreakOnHash(const size_t hashVal);
 
-  /** Enables/disables timing each query execution */
+  /** Enables/disables timing each query execution.
+      This does not output anything to stdout / a file / etc.
+      To see the results, call queryTimingReport. */
   void setQueryTimingFlag(bool enable) {
     enableQueryTiming = enable;
   }
