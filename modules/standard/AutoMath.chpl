@@ -496,8 +496,18 @@ module AutoMath {
     return z;
   }
 
-  /* Returns the projection of `z` on a Riemann sphere. */
+  // When removing this deprecated function, be sure to remove chpl_carg and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="cproj will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc cproj(z: complex(?w)): complex(w) {
+    return chpl_cproj(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cproj(z: complex(?w)): complex(w) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cprojf(z: complex(64)): complex(64);

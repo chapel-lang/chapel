@@ -58,6 +58,11 @@ module Math {
     return chpl_carg(z);
   }
 
+  /* Returns the projection of `z` on a Riemann sphere. */
+  inline proc cproj(z: complex(?w)): complex(w) {
+    return chpl_cproj(z);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
