@@ -1520,6 +1520,10 @@ void MarkTempsVisitor::handleStmtGroup() {
               if (CallExpr* subCall = toCallExpr(rhsExpr)) {
                 if (subCall->isPrimitive(PRIM_ADDR_OF)) {
                   rhsSe = toSymExpr(subCall->get(1));
+                } else if (subCall->isPrimitive(PRIM_GET_MEMBER)) {
+                  // this case helps with implicit conversion
+                  // from a value tuple to a referential tuple
+                  rhsSe = toSymExpr(subCall->get(1));
                 }
               }
               if (rhsSe != nullptr) {
