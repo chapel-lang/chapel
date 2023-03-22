@@ -1023,6 +1023,23 @@ static GenRet codegenRlocale(GenRet wide)
   return ret;
 }
 
+static GenRet codegenRsubloc(GenRet wide){
+  GenRet ret;
+  Type* type = SUBLOC_ID_TYPE;
+
+  if( !fLLVMWideOpt ) {
+    ret = codegenCallExpr("chpl_sublocFromLocaleID",
+                          codegenValue(
+                              codegenWideThingField(wide, WIDE_GEP_LOC)),
+                          /*ln*/codegenZero(), /*fn*/codegenZero32());
+  } else {
+    USR_FATAL("--llvm-wide-opt can't be used with the GPU locale model");
+  }
+
+  ret.chplType = type;
+  return ret;
+}
+
 static GenRet codegenRnode(GenRet wide){
   GenRet ret;
   Type* type = NODE_ID_TYPE;
@@ -3173,7 +3190,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }
 
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -3191,26 +3208,26 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a9);
   codegenCallWithArgs(fnName, args);
 }
-*/
 
-/*static
-void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
-                 GenRet a9, GenRet a10)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  args.push_back(a5);
-  args.push_back(a6);
-  args.push_back(a7);
-  args.push_back(a8);
-  args.push_back(a9);
-  args.push_back(a10);
-  codegenCallWithArgs(fnName, args);
-}*/
+
+//static
+//void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 //GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 //GenRet a9, GenRet a10)
+//{
+  //std::vector<GenRet> args;
+  //args.push_back(a1);
+  //args.push_back(a2);
+  //args.push_back(a3);
+  //args.push_back(a4);
+  //args.push_back(a5);
+  //args.push_back(a6);
+  //args.push_back(a7);
+  //args.push_back(a8);
+  //args.push_back(a9);
+  //args.push_back(a10);
+  //codegenCallWithArgs(fnName, args);
+//}
 
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
@@ -3232,28 +3249,28 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }
 
-/*
-static
-void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
-                 GenRet a9, GenRet a10, GenRet a11, GenRet a12)
-{
-  std::vector<GenRet> args;
-  args.push_back(a1);
-  args.push_back(a2);
-  args.push_back(a3);
-  args.push_back(a4);
-  args.push_back(a5);
-  args.push_back(a6);
-  args.push_back(a7);
-  args.push_back(a8);
-  args.push_back(a9);
-  args.push_back(a10);
-  args.push_back(a11);
-  args.push_back(a12);
-  codegenCallWithArgs(fnName, args);
-}
-*/
+
+//static
+//void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 //GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 //GenRet a9, GenRet a10, GenRet a11, GenRet a12)
+//{
+  //std::vector<GenRet> args;
+  //args.push_back(a1);
+  //args.push_back(a2);
+  //args.push_back(a3);
+  //args.push_back(a4);
+  //args.push_back(a5);
+  //args.push_back(a6);
+  //args.push_back(a7);
+  //args.push_back(a8);
+  //args.push_back(a9);
+  //args.push_back(a10);
+  //args.push_back(a11);
+  //args.push_back(a12);
+  //codegenCallWithArgs(fnName, args);
+//}
+
 
 static
 GenRet codegenZero()
@@ -3809,13 +3826,26 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          codegenCall("chpl_gen_comm_get",
-                      codegenCastToVoidStar(to_ptr),
-                      codegenRnode(from),
-                      codegenRaddr(from),
-                      codegenSizeof(type),
-                      genCommID(info),
-                      info->lineno, gFilenameLookupCache[info->filename]);
+          if (usingGpuLocaleModel()) {
+            codegenCall("chpl_gen_comm_get_gpu",
+                        codegenRsubloc(to_ptr),
+                        codegenCastToVoidStar(to_ptr),
+                        codegenRnode(from),
+                        codegenRsubloc(from),
+                        codegenRaddr(from),
+                        codegenSizeof(type),
+                        genCommID(info),
+                        info->lineno, gFilenameLookupCache[info->filename]);
+          }
+          else {
+            codegenCall("chpl_gen_comm_get",
+                        codegenCastToVoidStar(to_ptr),
+                        codegenRnode(from),
+                        codegenRaddr(from),
+                        codegenSizeof(type),
+                        genCommID(info),
+                        info->lineno, gFilenameLookupCache[info->filename]);
+          }
         }
       }
     } else { // PUT
@@ -3831,13 +3861,26 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          codegenCall("chpl_gen_comm_put",
-                      codegenCastToVoidStar(codegenValuePtr(from)),
-                      codegenRnode(to_ptr),
-                      codegenRaddr(to_ptr),
-                      codegenSizeof(type),
-                      genCommID(info),
-                      info->lineno, gFilenameLookupCache[info->filename]);
+          if (usingGpuLocaleModel()) {
+            codegenCall("chpl_gen_comm_put_gpu",
+                        codegenRsubloc(from),
+                        codegenCastToVoidStar(codegenValuePtr(from)),
+                        codegenRnode(to_ptr),
+                        codegenRsubloc(to_ptr),
+                        codegenRaddr(to_ptr),
+                        codegenSizeof(type),
+                        genCommID(info),
+                        info->lineno, gFilenameLookupCache[info->filename]);
+          }
+          else {
+            codegenCall("chpl_gen_comm_put",
+                        codegenCastToVoidStar(codegenValuePtr(from)),
+                        codegenRnode(to_ptr),
+                        codegenRaddr(to_ptr),
+                        codegenSizeof(type),
+                        genCommID(info),
+                        info->lineno, gFilenameLookupCache[info->filename]);
+          }
         }
       }
     }

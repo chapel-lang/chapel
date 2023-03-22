@@ -63,6 +63,15 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 static inline
+void chpl_gen_comm_get_gpu(c_sublocid_t to_subloc, void *addr,
+                           c_nodeid_t from_node, c_sublocid_t from_subloc,
+                           void* raddr, size_t size, int32_t commID, int ln,
+                           int32_t fn)
+{
+  printf("get between sublocs %d %d\n", to_subloc, from_subloc);
+}
+
+static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
                             size_t size, int32_t commID, int ln, int32_t fn)
 {
@@ -101,6 +110,15 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
   } else {
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   }
+}
+
+static inline
+void chpl_gen_comm_put_gpu(c_sublocid_t from_subloc, void* addr,
+                           c_nodeid_t to_node, c_sublocid_t to_subloc,
+                           void* raddr, size_t size, int32_t commID, int ln,
+                           int32_t fn)
+{
+  printf("put between sublocs %d %d\n", to_subloc, from_subloc);
 }
 
 static inline
