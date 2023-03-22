@@ -1484,6 +1484,57 @@ void MarkTempsVisitor::handleStmtGroup() {
       }
     }
 
+    // consider the statements implementing this user-level statement.
+    // what user-level impact are they having?
+    for_vector(VarSymbol, v, vars) {
+      // temps in 'manage' statements
+      if (v->isRef()) {
+        if (v->hasFlag(FLAG_MANAGER_HANDLE)) {
+          allEndOfBlock = true;
+        }
+      }
+      if (v->hasFlag(FLAG_INDEX_VAR) ||
+          v->hasFlag(FLAG_CHPL__ITER) ||
+          v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
+          v->hasFlag(FLAG_FORMAL_TEMP) ||
+          v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+        // index vars, iterator records are always end-of-block
+        // but shouldn't be global variables.
+        allEndOfBlock = true;
+        allCanBeGlobal = false;
+      }
+    }
+
+    // Look for a user ref initialized by a temp.
+    // Be sure to find this pattern also when the user ref is hoisted
+    // to module scope.
+    for_vector(Expr, e, stmtsForUserStmt) {
+      if (CallExpr* call = toCallExpr(e)) {
+        if (call->isPrimitive(PRIM_MOVE)) {
+          SymExpr* lhsSe = toSymExpr(call->get(1));
+          if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
+            if (lhs->isRef() && !lhs->hasFlag(FLAG_TEMP)) {
+              // Consider the RHS of the PRIM_MOVE
+              Expr* rhsExpr = call->get(2);
+              SymExpr* rhsSe = toSymExpr(rhsExpr);
+              if (CallExpr* subCall = toCallExpr(rhsExpr)) {
+                if (subCall->isPrimitive(PRIM_ADDR_OF)) {
+                  rhsSe = toSymExpr(subCall->get(1));
+                }
+              }
+              if (rhsSe != nullptr) {
+                if (VarSymbol* rhs = toVarSymbol(rhsSe->symbol())) {
+                  if (rhs->hasFlag(FLAG_TEMP)) {
+                    endOfBlockSet.insert(rhs);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
     // add any variables that are just PRIM_MOVE/PRIM_ASSIGN to/from
     // things in endOfBlockSet
     bool changed = false;
@@ -1519,32 +1570,6 @@ void MarkTempsVisitor::handleStmtGroup() {
     } while (changed);
   }
 
-  // consider the statements implementing this user-level statement.
-  // what user-level impact are they having?
-  for_vector(VarSymbol, v, vars) {
-    // initializing a user-level ref / const ref variable
-    // so make all of the temporaries end-of-block
-    // Also temps in 'manage' statements
-    if (v->isRef()) {
-      if (!v->hasFlag(FLAG_TEMP)) {
-        allEndOfBlock = true;
-      }
-      if (v->hasFlag(FLAG_MANAGER_HANDLE)) {
-        allEndOfBlock = true;
-      }
-    }
-    if (v->hasFlag(FLAG_INDEX_VAR) ||
-        v->hasFlag(FLAG_CHPL__ITER) ||
-        v->hasFlag(FLAG_CHPL__ITER_NEWSTYLE) ||
-        v->hasFlag(FLAG_FORMAL_TEMP) ||
-        v->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-      // index vars, iterator records are always end-of-block
-      // but shouldn't be global variables.
-      allEndOfBlock = true;
-      allCanBeGlobal = false;
-    }
-  }
-
   // are we in a module init function?
   ModuleSymbol* inModInitForMod = nullptr;
   if (!vars.empty()) {
@@ -1553,25 +1578,6 @@ void MarkTempsVisitor::handleStmtGroup() {
     if (inFn && inFn->hasFlag(FLAG_MODULE_INIT)) {
       inModInitForMod = v->defPoint->getModule();
       INT_ASSERT(inModInitForMod->initFn == inFn);
-    }
-  }
-
-  // also, when initializing a module-scope reference,
-  // the DefExpr is already hoisted to module scope, so look for that
-  // in the stmtsForUserStmt.
-  if (inModInitForMod) {
-    for_vector(Expr, e, stmtsForUserStmt) {
-      if (CallExpr* call = toCallExpr(e)) {
-        if (call->isPrimitive(PRIM_MOVE)) {
-          SymExpr* lhsSe = toSymExpr(call->get(1));
-          if (VarSymbol* lhs = toVarSymbol(lhsSe->symbol())) {
-            if (lhs->isRef() && !lhs->hasFlag(FLAG_TEMP) &&
-                lhs->defPoint->parentExpr == inModInitForMod->block) {
-              allEndOfBlock = true;
-            }
-          }
-        }
-      }
     }
   }
 

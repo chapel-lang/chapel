@@ -1,21 +1,31 @@
 starting notSplitInit
 R.deinit()
 ending notSplitInit
+R.deinit()
 
 starting splitInit
 R.deinit()
 ending splitInit
+R.deinit()
 
 starting assign
 R.deinit()
+R.deinit()
 ending assign
+R.deinit()
 
 starting notInit
+R.deinit()
 R.deinit()
 ending notInit
 
 starting refInit
 ending refInit
+R.deinit()
+
+starting refInit2
+R.deinit()
+ending refInit2
 R.deinit()
 
 starting inArrayType
@@ -31,11 +41,13 @@ R.deinit()
 ending inArrayElt2
 
 starting refInitNested
-ending refInitNested
 R.deinit()
+R.deinit()
+ending refInitNested
 R.deinit()
 
 starting notInitNested
+R.deinit()
 R.deinit()
 R.deinit()
 ending notInitNested
