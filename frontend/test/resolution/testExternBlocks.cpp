@@ -25,6 +25,8 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
+#ifdef HAVE_LLVM
+
 // expects program has 1 module and last statement in it is an
 // Identifier to check
 static void testIt(const char* testName,
@@ -137,3 +139,11 @@ int main() {
 
   return 0;
 }
+#else // doesn't HAVE_LLVM
+
+int main() {
+  printf("Skipping this test since LLVM/clang support is not enabled\n");
+  return 0;
+}
+
+#endif // end if HAVE_LLVM

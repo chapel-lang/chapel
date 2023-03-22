@@ -27,6 +27,7 @@
 
 // helper functions
 
+#ifdef HAVE_LLVM
 bool gSaveTemp = false;
 
 static void testIt(const char* testName,
@@ -182,3 +183,12 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+
+#else // doesn't HAVE_LLVM
+
+int main() {
+  printf("Skipping this test since LLVM/clang support is not enabled\n");
+  return 0;
+}
+
+#endif // end if HAVE_LLVM

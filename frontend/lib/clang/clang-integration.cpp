@@ -82,6 +82,7 @@ void initializeLlvmTargets() {
 #endif
 }
 
+#ifdef HAVE_LLVM
 // Get the current clang executable path from printchplenv
 static std::string getClangExe(Context* context) {
   std::string clangExe = "clang";
@@ -111,6 +112,7 @@ static std::string getChplLocaleModel(Context* context) {
 static bool usingGpuLocaleModel(Context* context) {
   return getChplLocaleModel(context) == "gpu";
 }
+#endif
 
 const std::vector<std::string>& getCC1Arguments(Context* context,
                                                 std::vector<std::string> args,
@@ -243,8 +245,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
          context->tmpDir().c_str());*/
   //sleep(1);
 
+#ifdef HAVE_LLVM
   bool ok = true;
-
   std::string clangExe = getClangExe(context);
   std::string tmpInput = context->tmpDir() + "/extern-code.h";
   std::string tmpOutput = context->tmpDir() + "/extern-code.ast";
@@ -344,6 +346,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   if (result.get() != nullptr) {
     result->dump();
   }*/
+#endif
 
   return QUERY_END(result);
 }
@@ -356,6 +359,7 @@ precompiledHeaderContainsNameQuery(Context* context,
 
   bool result = false;
 
+#ifdef HAVE_LLVM
 
   //printf("Running precompiledHeaderContainsNameQuery %s\n", name.c_str());
   //printf("CHPL_HOME is %s\n", context->chplHome().c_str());
@@ -435,6 +439,7 @@ precompiledHeaderContainsNameQuery(Context* context,
         Clang->getASTContext(),
 #endif
   }
+#endif
 
   return QUERY_END(result);
 }
