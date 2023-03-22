@@ -174,9 +174,18 @@ module AutoMath {
       return cabs(z);
   }
 
-
-  /* Returns the real phase angle of complex argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_carg and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="carg will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc carg(z: complex(?w)): real(w/2) {
+    return chpl_carg(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_carg(z: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cargf(z: complex(64)): real(32);

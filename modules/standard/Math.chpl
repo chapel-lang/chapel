@@ -46,6 +46,11 @@ module Math {
   private use CTypes;
   private use AutoMath;
 
+  /* Returns the real phase angle of complex argument `z`. */
+  inline proc carg(z: complex(?w)): real(w/2) {
+    return chpl_carg(z);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
