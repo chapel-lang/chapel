@@ -64,6 +64,7 @@ struct Resolver {
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
+  ResolvedFunction::OuterVariableList outerVariableList;
 
   // results of the resolution process
 
@@ -220,12 +221,12 @@ struct Resolver {
   gatherReceiverAndParentScopesForType(Context* context,
                                        const types::Type* thisType);
 
-
   /* Determine the method receiver,  which is a type under
      full resolution, but only an ID under scope resolution.
     */
   bool getMethodReceiver(types::QualifiedType* outType = nullptr,
                          ID* outId = nullptr);
+
   /* Compute the receiver scopes (when resolving a method)
      and return an empty vector if it is not applicable.
    */
@@ -559,6 +560,9 @@ struct Resolver {
 
   bool enter(const uast::Import* node);
   void exit(const uast::Import* node);
+
+  bool enter(const uast::FunctionSignature* node);
+  void exit(const uast::FunctionSignature* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

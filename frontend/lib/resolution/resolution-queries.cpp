@@ -37,6 +37,7 @@
 #include "default-functions.h"
 #include "maybe-const.h"
 #include "prims.h"
+#include "resolution-help.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
 #include "try-catch-analysis.h"
@@ -337,41 +338,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static bool
-anyFormalNeedsInstantiation(Context* context,
-                            const std::vector<types::QualifiedType>& formalTs,
-                            const UntypedFnSignature* untypedSig,
-                            SubstitutionsMap* substitutions) {
-  bool genericOrUnknown = false;
-  int i = 0;
-  for (const auto& qt : formalTs) {
-    if (qt.isUnknown()) {
-      genericOrUnknown = true;
-      break;
-    }
-
-    bool considerGenericity = true;
-    if (substitutions != nullptr) {
-      auto formalDecl = untypedSig->formalDecl(i);
-      if (substitutions->count(formalDecl->id())) {
-        // don't consider it needing a substitution - e.g. when passing
-        // a generic type into a type argument.
-        considerGenericity = false;
-      }
-    }
-
-    if (considerGenericity) {
-      auto g = getTypeGenericity(context, qt);
-      if (g != Type::CONCRETE) {
-        genericOrUnknown = true;
-        break;
-      }
-    }
-
-    i++;
-  }
-  return genericOrUnknown;
-}
 
 static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      Context* context,
@@ -1865,7 +1831,8 @@ resolveFunctionByInfoQuery(Context* context,
                                   fn->returnIntent(),
                                   std::move(resolutionByIdCopy),
                                   resolvedPoiInfo,
-                                  visitor.returnType));
+                                  visitor.returnType,
+                                  visitor.outerVariableList));
       QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
                          context,
                          resolvedInit,
@@ -1892,7 +1859,8 @@ resolveFunctionByInfoQuery(Context* context,
         = toOwned(new ResolvedFunction(finalTfs, fn->returnIntent(),
                   std::move(resolutionById),
                   resolvedPoiInfo,
-                  visitor.returnType));
+                  visitor.returnType,
+                  visitor.outerVariableList));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1936,7 +1904,8 @@ resolveFunctionByInfoQuery(Context* context,
         = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                   std::move(resolutionById),
                   resolvedPoiInfo,
-                  visitor.returnType));
+                  visitor.returnType,
+                  visitor.outerVariableList));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -2088,6 +2057,7 @@ scopeResolveFunctionQuery(Context* context, ID id) {
   ResolutionResultByPostorderID resolutionById;
   const TypedFnSignature* sig = nullptr;
   owned<ResolvedFunction> result;
+  ResolvedFunction::OuterVariableList outerVariableList;
 
   if (fn) {
     auto visitor =
@@ -2108,14 +2078,15 @@ scopeResolveFunctionQuery(Context* context, ID id) {
     }
 
     checkForParenlessMethodFieldRedefinition(context, fn, visitor);
-
+    outerVariableList = std::move(visitor.outerVariableList);
     sig = visitor.typedSignature;
   }
 
   result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                                         std::move(resolutionById),
                                         PoiInfo(),
-                                        QualifiedType()));
+                                        QualifiedType(),
+                                        std::move(outerVariableList)));
 
   return QUERY_END(result);
 }

@@ -30,6 +30,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
+#include "resolution-help.h"
 #include "VarScopeVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -2153,9 +2154,14 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     parentTag = parsing::idToTag(context, parentId);
   }
 
+  // If the id is contained within a module, use typeForModuleLevelSymbol.
   if (asttags::isModule(parentTag)) {
-    // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
+  }
+
+  // If the ID is a variable, then it's an outer variable reference.
+  if (asttags::isFunction(parentTag)) {
+    CHPL_ASSERT(false && "Not handled yet!");
   }
 
   // If the id is contained within a class/record/union that we are resolving,
@@ -2695,6 +2701,19 @@ QualifiedType Resolver::getSuperType(Context* context,
   return QualifiedType();
 }
 
+static bool isOuterVariable(Resolver* rv, ID target) {
+  if (target.isEmpty()) return false;
+  auto ast = parsing::idToAst(rv->context, target);
+  auto p = parsing::parentAst(rv->context, ast);
+  for (; p; p = parsing::parentAst(rv->context, p)) {
+    if (p->isModule() || p->isFunction() || p->isAggregateDecl()) {
+      if (p != rv->symbol) return true;
+      break;
+    }
+  }
+  return false;
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -2759,6 +2778,13 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     type = typeForId(id, /*localGenericToUnknown*/ true);
 
     maybeEmitWarningsForId(this, type, ident, id);
+
+    // Record uses of outer variables (even those at module-scope).
+    if (isOuterVariable(this, id)) {
+      if (!signatureOnly) {
+        outerVariableList.push_back(std::make_pair(id, ident->id()));
+      }
+    }
 
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
@@ -4262,6 +4288,38 @@ bool Resolver::enter(const Import* node) {
 }
 
 void Resolver::exit(const Import* node) {}
+
+bool Resolver::enter(const FunctionSignature* node) {
+  return true;
+}
+
+void Resolver::exit(const FunctionSignature* node) {
+  auto ufs = UntypedFnSignature::get(context, node);
+  std::vector<types::QualifiedType> formalTypes;
+  bool needsInstantiation = false;
+  Bitmap formalsInstantiated;
+
+  for (auto ast : node->formals()) {
+    auto& re = byPostorder.byAst(ast);
+    formalTypes.push_back(re.type());
+  }
+
+  if (anyFormalNeedsInstantiation(context, formalTypes, ufs, nullptr)) {
+    needsInstantiation = true;
+  }
+
+  auto tfs = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /*instantiatedFrom*/ nullptr,
+                                   /*parentFn*/ nullptr,
+                                   std::move(formalsInstantiated));
+
+  auto t = FunctionType::get(context, tfs);
+
+  auto& re = byPostorder.byAst(node);
+  re.setType(QualifiedType(QualifiedType::TYPE, t));
+}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);

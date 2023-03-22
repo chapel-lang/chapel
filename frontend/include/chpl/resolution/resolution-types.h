@@ -142,11 +142,12 @@ class UntypedFnSignature {
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
-    CHPL_ASSERT(idTag == uast::asttags::Function ||
-           idTag == uast::asttags::Class    ||
-           idTag == uast::asttags::Record   ||
-           idTag == uast::asttags::Union    ||
-           idTag == uast::asttags::Variable);
+    CHPL_ASSERT(idTag == uast::asttags::Function      ||
+           idTag == uast::asttags::Class              ||
+           idTag == uast::asttags::Record             ||
+           idTag == uast::asttags::Union              ||
+           idTag == uast::asttags::Variable           ||
+           idTag == uast::asttags::FunctionSignature);
   }
 
   static const owned<UntypedFnSignature>&
@@ -179,9 +180,12 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context,
                                        const uast::Function* function);
 
+  static const UntypedFnSignature* get(Context* context,
+                                       const uast::FunctionSignature* sig);
+
   /** Get the unique UntypedFnSignature representing a Function's
-      signature from a Function ID. */
-  static const UntypedFnSignature* get(Context* context, ID functionId);
+      signature from a Function or FunctionSignature ID. */
+  static const UntypedFnSignature* get(Context* context, ID id);
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
@@ -258,6 +262,8 @@ class UntypedFnSignature {
   bool idIsField() const {
     return idTag_ == uast::asttags::Variable;
   }
+
+  inline uast::asttags::AstTag idTag() const { return idTag_; }
 
   /** Returns true if this is a type constructor */
   bool isTypeConstructor() const {
@@ -1664,6 +1670,9 @@ class ResolutionResultByPostorderID {
   This type represents a resolved function.
 */
 class ResolvedFunction {
+ public:
+  using OuterVariableList = std::vector<std::pair<ID, ID>>;
+
  private:
   const TypedFnSignature* signature_ = nullptr;
 
@@ -1679,16 +1688,22 @@ class ResolvedFunction {
   // the return type computed for this function
   types::QualifiedType returnType_;
 
+  // outer variables used by this function in lexical order
+  OuterVariableList outerVariableList_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo,
-                   types::QualifiedType returnType)
-      : signature_(signature), returnIntent_(returnIntent),
+                   types::QualifiedType returnType,
+                   OuterVariableList outerVariableList)
+      : signature_(signature),
+        returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
         poiInfo_(std::move(poiInfo)),
-        returnType_(std::move(returnType)) {}
+        returnType_(std::move(returnType)),
+        outerVariableList_(std::move(outerVariableList)) {}
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }
@@ -1714,7 +1729,8 @@ class ResolvedFunction {
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
            PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
-           returnType_ == other.returnType_;
+           returnType_ == other.returnType_ &&
+           outerVariableList_ == other.outerVariableList_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -1725,16 +1741,23 @@ class ResolvedFunction {
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
     returnType_.swap(other.returnType_);
+    std::swap(outerVariableList_, other.outerVariableList_);
   }
+
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
+
   void mark(Context* context) const {
     context->markPointer(signature_);
     resolutionById_.mark(context);
     poiInfo_.mark(context);
     returnType_.mark(context);
+    for (auto& p : outerVariableList_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
   }
 
   const ResolvedExpression& byId(const ID& id) const {
@@ -1749,6 +1772,10 @@ class ResolvedFunction {
 
   const ID& id() const {
     return signature_->id();
+  }
+
+  const OuterVariableList& outerVariableList() const {
+    return outerVariableList_;
   }
 };
 

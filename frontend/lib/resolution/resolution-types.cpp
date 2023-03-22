@@ -25,6 +25,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -81,8 +82,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                std::move(formals), whereClause).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, const Function* fn) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -122,36 +123,70 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
   return result;
 }
 
-const UntypedFnSignature* UntypedFnSignature::get(Context* context,
-                                                  const Function* function) {
-  if (function == nullptr) {
-    return nullptr;
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, const FunctionSignature* sig) {
+  if (sig == nullptr) return nullptr;
+
+  const UntypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+
+  for (auto ast : sig->formals()) {
+    auto decl = ast->toDecl();
+    CHPL_ASSERT(ast);
+
+    UniqueString name;
+    bool hasDefault = false;
+    if (auto formal = decl->toFormal()) {
+      name = formal->name();
+      hasDefault = formal->initExpression() != nullptr;
+    } else if (auto varargs = decl->toVarArgFormal()) {
+      name = varargs->name();
+
+      // This should not be possible. Currently varargs with a default value
+      // will be considered a syntax error.
+      hasDefault = false;
+      CHPL_ASSERT(varargs->initExpression() == nullptr);
+    }
+
+    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, decl,
+                                               decl->isVarArgFormal());
+    formals.push_back(std::move(fd));
   }
 
-  return getUntypedFnSignatureForFn(context, function);
+  // find the unique-ified untyped signature
+  result = UntypedFnSignature::get(context, sig->id(), UniqueString(),
+                                   sig->isMethod(),
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ false,
+                                   /* throws */ sig->throws(),
+                                   /* idTag */ asttags::FunctionSignature,
+                                   sig->kind(),
+                                   std::move(formals),
+                                   /* whereClause */ nullptr);
+  return result;
 }
 
 static const UntypedFnSignature* const&
-getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
-  QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
+getUntypedFnSignatureForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, id);
 
   const UntypedFnSignature* result = nullptr;
-  const AstNode* ast = parsing::idToAst(context, functionId);
 
-  if (ast != nullptr && ast->isFunction()) {
-    result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  if (!id.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, id)) {
+      if (auto fn = ast->toFunction()) {
+        result = UntypedFnSignature::get(context, fn);
+      } else if (auto sig = ast->toFunctionSignature()) {
+        result = UntypedFnSignature::get(context, sig);
+      }
+    }
   }
 
   return QUERY_END(result);
 }
 
-const UntypedFnSignature* UntypedFnSignature::get(Context* context,
-                                                  ID functionId) {
-  if (functionId.isEmpty()) {
-    return nullptr;
-  }
-
-  return getUntypedFnSignatureForIdQuery(context, functionId);
+const UntypedFnSignature* UntypedFnSignature::get(Context* context, ID id) {
+  return getUntypedFnSignatureForIdQuery(context, id);
 }
 
 CallInfo CallInfo::createSimple(const uast::FnCall* call) {
