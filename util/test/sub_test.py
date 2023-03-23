@@ -645,7 +645,7 @@ def filter_compiler_errors(compiler_output):
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            error_msg = '(private issue #398) '
+            error_msg = '(private issue #398)'
             break
 
     return error_msg
@@ -691,7 +691,7 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
-            extra_msg = '(private issue #398) '
+            extra_msg = '(private issue #398)'
             break
 
     err_strings = ['=* Memory Leaks =*']
