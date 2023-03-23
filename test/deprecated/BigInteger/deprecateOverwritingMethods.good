@@ -1,0 +1,161 @@
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
+deprecateOverwritingMethods.chpl:n: warning: bigint.divexact method is deprecated - please use the standalone function divexact
+deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
+deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
+deprecateOverwritingMethods.chpl:n: warning: bigint.powMod method is deprecated - please use the standalone function powMod
+deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
+deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
+deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
+deprecateOverwritingMethods.chpl:n: warning: bigint.pow method is deprecated - please use the standalone function pow
+deprecateOverwritingMethods.chpl:n: warning: bigint.root method is deprecated - please use the standalone function root
+deprecateOverwritingMethods.chpl:n: warning: bigint.rootrem method is deprecated - please use the standalone function rootrem
+deprecateOverwritingMethods.chpl:n: warning: bigint.sqrt method is deprecated - please use the standalone function sqrt
+deprecateOverwritingMethods.chpl:n: warning: bigint.sqrtrem method is deprecated - please use the standalone function sqrtrem
+deprecateOverwritingMethods.chpl:n: warning: bigint.nextprime method is deprecated - please use the standalone function nextprime
+deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
+deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
+deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
+deprecateOverwritingMethods.chpl:n: warning: bigint.gcd method is deprecated - please use the standalone function gcd
+deprecateOverwritingMethods.chpl:n: warning: bigint.lcm method is deprecated - please use the standalone function lcm
+deprecateOverwritingMethods.chpl:n: warning: bigint.lcm method is deprecated - please use the standalone function lcm
+deprecateOverwritingMethods.chpl:n: warning: bigint.lcm method is deprecated - please use the standalone function lcm
+deprecateOverwritingMethods.chpl:n: warning: bigint.invert method is deprecated - please use the standalone function invert
+deprecateOverwritingMethods.chpl:n: warning: bigint.removeFactor method is deprecated - please use the standalone function removeFactor
+deprecateOverwritingMethods.chpl:n: warning: bigint.fac method is deprecated - please use the standalone function fac
+deprecateOverwritingMethods.chpl:n: warning: bigint.bin method is deprecated - please use the standalone function bin
+deprecateOverwritingMethods.chpl:n: warning: bigint.bin method is deprecated - please use the standalone function bin
+deprecateOverwritingMethods.chpl:n: warning: bigint.fib method is deprecated - please use the standalone function fib
+deprecateOverwritingMethods.chpl:n: warning: bigint.fib2 method is deprecated - please use the standalone function fib2
+deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum method is deprecated - please use the standalone function lucnum
+deprecateOverwritingMethods.chpl:n: warning: bigint.lucnum2 method is deprecated - please use the standalone function lucnum2
+deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
+deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
+deprecateOverwritingMethods.chpl:n: warning: bigint.add method is deprecated - please use the standalone function add
+deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - please use the standalone function sub
+deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - please use the standalone function sub
+deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - please use the standalone function sub
+deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - please use the standalone function sub
+deprecateOverwritingMethods.chpl:n: warning: bigint.sub method is deprecated - please use the standalone function sub
+deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
+deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
+deprecateOverwritingMethods.chpl:n: warning: bigint.mul method is deprecated - please use the standalone function mul
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
+deprecateOverwritingMethods.chpl:n: warning: bigint.addmul method is deprecated - please use the standalone function addmul
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
+deprecateOverwritingMethods.chpl:n: warning: bigint.submul method is deprecated - please use the standalone function submul
+deprecateOverwritingMethods.chpl:n: warning: bigint.mul_2exp method is deprecated - please use the standalone function mul_2exp
+deprecateOverwritingMethods.chpl:n: warning: bigint.neg method is deprecated - please use the standalone function neg
+deprecateOverwritingMethods.chpl:n: warning: bigint.abs method is deprecated - please use the standalone function abs
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function divQ
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ method is deprecated - please use the standalone function divQ
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function divR
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR method is deprecated - please use the standalone function divR
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divQR
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQR method is deprecated - please use the standalone function divQR
+deprecateOverwritingMethods.chpl:n: warning: bigint.divQ2Exp method is deprecated - please use the standalone function divQ2Exp
+deprecateOverwritingMethods.chpl:n: warning: bigint.divR2Exp method is deprecated - please use the standalone function divR2Exp
+deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
+deprecateOverwritingMethods.chpl:n: warning: bigint.mod method is deprecated - please use the standalone function mod
+deprecateOverwritingMethods.chpl:n: warning: bigint.and method is deprecated - please use the standalone function and
+deprecateOverwritingMethods.chpl:n: warning: bigint.ior method is deprecated - please use the standalone function ior
+deprecateOverwritingMethods.chpl:n: warning: bigint.xor method is deprecated - please use the standalone function xor
+deprecateOverwritingMethods.chpl:n: warning: bigint.com method is deprecated - please use the standalone function com
+
+20 / 10 = 2
+20 / 10 = 2
+
+(13 ^ 5) % 2 = 1
+(13 ^ -17) % 2 = 1
+(13 ^ 17) % 2 = 1
+
+13 ^ -17 = 0
+13 ^ 17 = 8650415919381337933
+-17 ^ -17 = 0
+17 ^ 17 = 827240261886336764177
+
+root(13, 3) = 2
+
+rootrem(13, 3) = 2, 5
+
+sqrt(13) = 3
+
+sqrtrem(13) = 3, 4
+
+nextprime(13) = 17
+
+gcd(5, 13) = 1
+gcd(5, -17) = 1
+gcd(5, 17) = 1
+gcd(5, 13) = 1, s=-5, t=2
+
+lcm(5, 13) = 65
+lcm(5, -17) = 85
+lcm(5, 17) = 85
+
+invert(5, 13) = 8
+
+removeFactor(5, 13) = 5
+
+fac(17) = 355687428096000
+
+bin(5, 17) = 0
+bin(17, 17) = 1
+
+fib(17) = 1597
+fib2(17) = 1597, 987
+
+lucnum(17) = 3571
+lucnum2(17) = 3571, 2207
+
+5 + 13 = 18
+5 + -17 = -12
+5 + 17 = 22
+
+5 - 13 = -8
+5 - -17 = 22
+5 - 17 = -12
+-17 - 13 = -30
+17 - 13 = 4
+
+5 * 13 = 65
+5 * -17 = -85
+5 * 17 = 85
+
+addmul(5, 13) = 65
+addmul(5, -17) = -85
+addmul(5, 17) = 85
+
+submul(5, 13) = -65
+submul(5, -17) = 85
+submul(5, 17) = -85
+
+mul_2exp(5, 17) = 655360
+
+neg(5) = -5
+
+abs(5) = 5
+
+divQ(5, 13) = 0
+divQ(5, 17) = 0
+
+divR(5, 13) = 5
+divR(5, 17) = 5
+
+divQR(5, 13) = 0, 5
+divQR(5, 17) = 0, 5
+
+divQ2Exp(5, 17) = 0
+divR2Exp(5, 17) = 5
+
+5 % 13 = 5
+5 % 17 = 5
+
+5 & 13 = 5
+
+5 | 13 = 13
+
+5 ^ 13 = 8
+
+~5 = -6
