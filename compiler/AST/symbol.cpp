@@ -37,6 +37,7 @@
 #include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
 
@@ -469,19 +470,7 @@ const char* Symbol::getUnstableMsg() const {
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
-  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
-  //       show up in sanitized message).
-  static const auto reStr = R"#(\B\:(?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`(?:([$\w\$\.]+)|(?:~([$\w\$]+\.?)+)|(?:!([$\w\$\.]+)))`\B)#";
-  std::smatch match;
-  while(std::regex_search(msg, match, std::regex(reStr))) {
-    for(auto i = 1; i < match.size(); i++) {
-      if(match[i].matched) {
-        msg = astr(match.prefix().str() + match[i].str() + match.suffix().str());
-        break;
-      }
-    }
-  }
-  return astr(msg);
+  return astr(chpl::removeSphinxMarkup(msg));
 }
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
