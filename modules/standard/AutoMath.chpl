@@ -496,7 +496,7 @@ module AutoMath {
     return z;
   }
 
-  // When removing this deprecated function, be sure to remove chpl_carg and
+  // When removing this deprecated function, be sure to remove chpl_cproj and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
