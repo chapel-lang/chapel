@@ -471,10 +471,17 @@ const char* Symbol::getUnstableMsg() const {
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
   //       show up in sanitized message).
-  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`((?:[!$\w\$\.]+)|(?:~[$\w\$]+\.?))+`\B)";
-  msg = std::regex_replace(msg, std::regex(reStr), "$2");
-  return astr(msg.c_str());
+  static const auto reStr = R"#(\B\:(?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`(?:([$\w\$\.]+)|(?:~([$\w\$]+\.?)+)|(?:!([$\w\$\.]+)))`\B)#";
+  std::smatch match;
+  while(std::regex_search(msg, match, std::regex(reStr))) {
+    for(auto i = 1; i < match.size(); i++) {
+      if(match[i].matched) {
+        msg = astr(match.prefix().str() + match[i].str() + match.suffix().str());
+        break;
+      }
+    }
+  }
+  return astr(msg);
 }
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;

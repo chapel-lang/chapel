@@ -166,16 +166,20 @@ var x9003 = 9003;
 var x9004 = 9004;
 
 // Proc lead with ! (should filter)
-@deprecated(notes="--- Identifier is led with ! (should filter) ---")
+@deprecated(notes="--- Identifier is led with ! (should filter if well formed) ---")
 var x1101 = 1101;
 @deprecated(notes="Lorem ipsum :proc:`!abc` dolor sit amet")
 var x1102 = 1102;
+@deprecated(notes="Lorem ipsum :proc:`a!bc` dolor sit amet")
+var x1103 = 1103;
 
 // Prefixed with ~, should filter to just last component
-@deprecated(notes="--- Prefixed with ~, should filter to just last component ---")
+@deprecated(notes="--- Prefixed with ~, should filter to just last component if well formed ---")
 var x1200 = 1200;
 @deprecated(notes="Lorem ipsum :proc:`~abc.def` dolor sit amet")
 var x1201 = 1201;
+@deprecated(notes="Lorem ipsum :proc:`a~bc.def` dolor sit amet")
+var x1202 = 1202;
 
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
@@ -264,6 +268,8 @@ writeln(x9004);
 
 writeln(x1101);
 writeln(x1102);
+writeln(x1103);
 
 writeln(x1200);
 writeln(x1201);
+writeln(x1202);

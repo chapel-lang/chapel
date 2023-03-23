@@ -1325,15 +1325,19 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 static std::string
 removeSphinxMarkupFromWarningMessage(const std::string msg) {
-
-  // TODO: Support explicit title and reference targets like in reST direct
-  // hyperlinks (and having only target show up in sanitized message).
-  // TODO: Prefixing content with ! (and filtering it out)
-  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param|enum)"
-                         R"(|type|class|record|attr)\:"
-                         R"`((?:[!$\w\$\.]+)|(?:~[$\w\$]+\.?))+`\B)";
-  auto ret = std::regex_replace(msg, std::regex(re), "$2");
-  return ret;
+  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
+  //       show up in sanitized message).
+  static const auto reStr = R"#(\B\:(?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`(?:([$\w\$\.]+)|(?:~([$\w\$]+\.?)+)|(?:!([$\w\$\.]+)))`\B)#";
+  std::smatch match;
+  while(std::regex_search(msg, match, std::regex(reStr))) {
+    for(auto i = 1; i < match.size(); i++) {
+      if(match[i].matched) {
+        msg = astr(match.prefix().str() + match[i].str() + match.suffix().str());
+        break;
+      }
+    }
+  }
+  return astr(msg);
 }
 
 static std::string
