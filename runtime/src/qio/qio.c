@@ -2890,8 +2890,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    // printf("Unbuffered Write -----\n");
-
     // only write up to EOF
     if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
       remaining = ch->end_pos - _right_mark_start(ch);
@@ -2903,8 +2901,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
 
     // write with a direct system call (may require multiple iterations for write/pwrite)
     while ( remaining > 0 ) {
-      // printf("remaining: %lld \n", remaining);
-      fflush(stdout);
       num_written = 0;
       switch (method) {
         case QIO_METHOD_READWRITE:
@@ -2950,8 +2946,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     _qio_buffered_setup_cached(ch);
 
   } else {
-    // printf("Buffered Write ------\n");
-
     // otherwise, do a buffered write
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
