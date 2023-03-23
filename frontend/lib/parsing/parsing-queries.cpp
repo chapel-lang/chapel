@@ -1328,16 +1328,17 @@ removeSphinxMarkupFromWarningMessage(const std::string msg) {
   // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
   //       show up in sanitized message).
   static const auto reStr = R"#(\B\:(?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`(?:([$\w\$\.]+)|(?:~([$\w\$]+\.?)+)|(?:!([$\w\$\.]+)))`\B)#";
+  std::string filteredMsg = msg;
   std::smatch match;
-  while(std::regex_search(msg, match, std::regex(reStr))) {
+  while(std::regex_search(filteredMsg, match, std::regex(reStr))) {
     for(auto i = 1; i < match.size(); i++) {
       if(match[i].matched) {
-        msg = astr(match.prefix().str() + match[i].str() + match.suffix().str());
+        filteredMsg = match.prefix().str() + match[i].str() + match.suffix().str();
         break;
       }
     }
   }
-  return astr(msg);
+  return filteredMsg;
 }
 
 static std::string
