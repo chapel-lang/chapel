@@ -2901,11 +2901,6 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     err = _qio_channel_flush_qio_unlocked(ch);
     if( err ) goto error;
 
-    // // trim any excess bytes from the current buffer part
-    // int64_t trim_bytes = qbuffer_end_offset(&ch->buf) -
-    //                      qbuffer_start_offset(&ch->buf);
-    // qbuffer_trim_back(&ch->buf, trim_bytes);
-
     // write with a direct system call (may require multiple iterations for write/pwrite)
     while ( remaining > 0 ) {
       // printf("remaining: %lld \n", remaining);
@@ -2945,16 +2940,11 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
       remaining -= num_written;
     }
 
-    // printf("wrote: %zd \n", num_written);
-    fflush(stdout);
     *amt_written = num_written;
 
-    // shift the buffer position 'len' bytes to the right
-    int64_t new_start = _right_mark_start(ch) + num_written;
-    ch->av_end = new_start;
+    // reposition the existing buffer 'num_written' bytes to the right
     qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + num_written);
-
-    // printf("repositioned...");
+    ch->av_end += num_written;
 
     // re-setup the buffer for any future buffered writes
     _qio_buffered_setup_cached(ch);
