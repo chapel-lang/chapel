@@ -178,15 +178,15 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(123:bigint | 234:bigint == 251);
 
   var ret:bigint;
-  ret.gcd(48:bigint, 180:bigint);
+  gcd(ret, 48:bigint, 180:bigint);
   assert(ret == 12);
-  ret.lcm(48:bigint, 180:bigint);
+  lcm(ret, 48:bigint, 180:bigint);
   assert(ret == 720);
 
-  ret.fac(40);
+  fac(ret, 40);
   assert(ret == "815915283247897734345611269596115894272000000000":bigint);
 
-  ret.xor(la,lb);
+  xor(ret, la,lb);
   assert(ret == 327299);
   assert(la & lb == 124);
   assert(la | lb == 327423);
@@ -194,9 +194,9 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((90:bigint).sizeInBase(10) == 3);
   assert((99:bigint).sizeInBase(10) == 3);
 
-  ret.sqrt(4:bigint);
+  sqrt(ret, 4:bigint);
   assert(ret == 2);
-  ret.sqrt(5:bigint);
+  sqrt(ret, 5:bigint);
   assert(ret == 2);
 
   assert((6:bigint)%(5:bigint) == 6%5);

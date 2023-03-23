@@ -1,5 +1,5 @@
 use BigInteger;
-import BigInteger.round; // avoid conflict with Math.round
+import round; // avoid conflict with Math.round
 
 // Tests the division functions
 var a = new bigint(  8);
@@ -7,85 +7,85 @@ var b = new bigint( 10);
 var c = new bigint(-27);
 var d = new bigint();
 
-d.divQ(c, a, round.up);
-b.divR(c, a, round.up);
+divQ(d, c, a, round.up);
+divR(b, c, a, round.up);
 writeln(d, " ", b);
 
-d.divQ(c, a, round.down);
-b.divR(c, a, round.down);
+divQ(d, c, a, round.down);
+divR(b, c, a, round.down);
 writeln(d, " ", b);
 
-d.divQ(c, a, round.zero); // same as up   for negative integers
-b.divR(c, a, round.zero); // same as down for positive integers
+divQ(d, c, a, round.zero); // same as up   for negative integers
+divR(b, c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
-d.divQR(b, c, a, round.up);
+neg(c, c);
+divQR(d, b, c, a, round.up);
 writeln(d, " ", b);
 
-d.divQR(b, c, a, round.down);
+divQR(d, b, c, a, round.down);
 writeln(d, " ", b);
 
-d.divQR(b, c, a, round.zero); // same as down for positive integers
+divQR(d, b, c, a, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
 writeln();
 
-c.neg(c);
-d.divQ(c, 8, round.up);
-b.divR(c, 8, round.up);
+neg(c, c);
+divQ(d, c, 8, round.up);
+divR(b, c, 8, round.up);
 writeln(d, " ", b);
 
-d.divQ(c, 8, round.down);
-b.divR(c, 8, round.down);
+divQ(d, c, 8, round.down);
+divR(b, c, 8, round.down);
 writeln(d, " ", b);
 
-d.divQ(c, 8, round.zero); // same as down for positive integers
-b.divR(c, 8, round.zero); // same as down for positive integers
+divQ(d, c, 8, round.zero); // same as down for positive integers
+divR(b, c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
-d.divQR(b, c, 8, round.up);
+neg(c, c);
+divQR(d, b, c, 8, round.up);
 writeln(d, " ", b);
 
-d.divQR(b, c, 8, round.down);
+divQR(d, b, c, 8, round.down);
 writeln(d, " ", b);
 
-d.divQR(b, c, 8, round.zero); // same as down for positive integers
+divQR(d, b, c, 8, round.zero); // same as down for positive integers
 writeln(d, " ", b);
 
-c.neg(c);
+neg(c, c);
 writeln();
 
 
 // q = (n / 2^d)
-d.divQ2Exp(c, 3, round.up);
-b.divR2Exp(c, 3, round.up);
+divQ2Exp(d, c, 3, round.up);
+divR2Exp(b, c, 3, round.up);
 writeln(d, " ", b);
 
-d.divQ2Exp(c, 3, round.down);
-b.divR2Exp(c, 3, round.down);
+divQ2Exp(d, c, 3, round.down);
+divR2Exp(b, c, 3, round.down);
 writeln(d, " ", b);
 
-d.divQ2Exp(c, 3, round.zero);
-b.divR2Exp(c, 3, round.zero);
+divQ2Exp(, c, 3, round.zero);
+divR2Exp(, c, 3, round.zero);
 writeln(d, " ", b);
 
 writeln();
 
-d.mod(c, a);
+mod(d, c, a);
 writeln(d);
 
 var d2 : int = 0;
 
-d2 = d.mod(c, 8);
+d2 = mod(d, c, 8);
 writeln(d2);
 
 b.set(16);
-d.divexact(b, a);
+divexact(d, b, a);
 writeln(d);
 
-d.divexact(b, 4);
+divexact(d, b, 4);
 writeln(d);
 
 var d3 : bool = b.isDivisible(a);

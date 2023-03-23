@@ -8,7 +8,7 @@ use GMP;
 config const debug = false;
 
 var x:bigint;
-x.fac(100);
+fac(x, 100);
 
 const n = x.numLimbs;
 if debug then writeln("numLimbs is ", n);

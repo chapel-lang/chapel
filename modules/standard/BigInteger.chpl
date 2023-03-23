@@ -50,7 +50,7 @@ a number of methods that wrap GMP functions in a natural way:
 
  writeln(a * b);
 
- c.fac(100);
+ BigInteger.fac(c, 00);
  writeln(c);
 
 Casting and declarations can be used to create ``bigint`` records as
@@ -920,7 +920,7 @@ module BigInteger {
   // Documented in (bigint, integral) version
   operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    c.divQ(a, b, round.zero);
+    BigInteger.divQ(c, b, round.zero);
 
     return c;
   }
@@ -946,12 +946,12 @@ module BigInteger {
 
     if exp >= 0 {
       if exp.fitsInto(c_ulong) then
-        c.pow(base, exp: c_ulong);
+        BigInteger.pow(c, base, exp: c_ulong);
       else
         halt("Exponent too large to compute result.");
     } else {
       if exp.fitsInto(int) then
-        c.pow(base, exp: int);
+        BigInteger.pow(c, base, exp: int);
       else
         halt("Exponent too large to compute result.");
     }
@@ -963,9 +963,9 @@ module BigInteger {
     var c = new bigint();
 
     if exp >= 0 {
-      c.pow(base, exp: c_ulong);
+      BigInteger.pow(c, base, exp: c_ulong);
     } else {
-      c.pow(base, exp: int);
+      BigInteger.pow(c, base, exp: int);
     }
 
     return c;
@@ -975,7 +975,7 @@ module BigInteger {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
-    c.pow(base, exp_);
+    BigInteger.pow(c, base, exp_);
 
     return c;
   }
@@ -1547,7 +1547,7 @@ module BigInteger {
   // /=
   // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    a.divQ(a, b, round.zero);
+    BigInteger.divQ(a, b, round.zero);
   }
 
   /* Divide ``a`` by ``b``, storing the result in ``a``.
@@ -1570,11 +1570,11 @@ module BigInteger {
   }
 
   operator bigint.**=(ref base: bigint, exp: int) {
-    base.pow(base, exp);
+    BigInteger.pow(base, base, exp);
   }
 
   operator bigint.**=(ref base: bigint, exp: uint) {
-    base.pow(base, exp);
+    BigInteger.pow(base, base, exp);
   }
 
 
@@ -1946,7 +1946,7 @@ module BigInteger {
   @deprecated
   ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
-    this.divexact(numer=n, denom=d);
+    BigInteger.divexact(this, numer=n, denom=d);
   }
   /*
     .. warning::
@@ -1957,7 +1957,7 @@ module BigInteger {
   @deprecated
   ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, d: integral) {
-    this.divexact(numer=n,denom=new bigint(d));
+    BigInteger.divexact(this, numer=n,denom=new bigint(d));
   }
 
   // documented in bigint, integral version
@@ -2284,7 +2284,7 @@ module BigInteger {
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   /*
@@ -2297,7 +2297,7 @@ module BigInteger {
   proc bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   /*
@@ -2310,7 +2310,7 @@ module BigInteger {
   proc bigint.powm(const ref base: bigint,
                              exp:  uint,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   // Exponentiation Functions
@@ -3088,7 +3088,7 @@ module BigInteger {
   @deprecated
   ("bigint.remove is deprecated, use bigint.removeFactor instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
-    return this.removeFactor(a,f);
+    return BigInteger.removeFactor(this, a,f);
   }
 
   // This helper is intended for use only when the factor is 0
@@ -4042,11 +4042,11 @@ module BigInteger {
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ(n, d, round.up);
+      BigInteger.divQ(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQ(n, d, round.zero);
+      BigInteger.divQ(this, n, d, round.zero);
     } else {
-      this.divQ(n, d, round.down);
+      BigInteger.divQ(this, n, d, round.down);
     }
   }
 
@@ -4063,11 +4063,11 @@ module BigInteger {
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ(n, d, round.up);
+      BigInteger.divQ(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQ(n, d, round.zero);
+      BigInteger.divQ(this, n, d, round.zero);
     } else {
-      this.divQ(n, d, round.down);
+      BigInteger.divQ(this, n, d, round.down);
     }
   }
 
@@ -4178,11 +4178,11 @@ module BigInteger {
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR(n, d, round.up);
+      BigInteger.divR(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divR(n, d, round.zero);
+      BigInteger.divR(this, n, d, round.zero);
     } else {
-      this.divR(n, d, round.down);
+      BigInteger.divR(this, n, d, round.down);
     }
 
   }
@@ -4200,11 +4200,11 @@ module BigInteger {
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR(n, d, round.up);
+      BigInteger.divR(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divR(n, d, round.zero);
+      BigInteger.divR(this, n, d, round.zero);
     } else {
-      this.divR(n, d, round.down);
+      BigInteger.divR(this, n, d, round.down);
     }
   }
 
@@ -4315,11 +4315,11 @@ module BigInteger {
                      param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQR(r, n, d, round.up);
+      BigInteger.divQR(this, r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQR(r, n, d, round.zero);
+      BigInteger.divQR(this, r, n, d, round.zero);
     } else {
-      this.divQR(r, n, d, round.down);
+      BigInteger.divQR(this, r, n, d, round.down);
     }
   }
 
@@ -4337,11 +4337,11 @@ module BigInteger {
                      param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQR(r, n, d, round.up);
+      BigInteger.divQR(this, r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQR(r, n, d, round.zero);
+      BigInteger.divQR(this, r, n, d, round.zero);
     } else {
-      this.divQR(r, n, d, round.down);
+      BigInteger.divQR(this, r, n, d, round.down);
     }
   }
 
@@ -4478,11 +4478,11 @@ module BigInteger {
                          param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ2Exp(n, b, round.up);
+      BigInteger.divQ2Exp(this, n, b, round.up);
     } else if (rounding == ZERO) {
-      this.divQ2Exp(n, b, round.zero);
+      BigInteger.divQ2Exp(this, n, b, round.zero);
     } else {
-      this.divQ2Exp(n, b, round.down);
+      BigInteger.divQ2Exp(this, n, b, round.down);
     }
   }
 
@@ -4567,11 +4567,11 @@ module BigInteger {
                          param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR2Exp(n, b, round.up);
+      BigInteger.divR2Exp(this, n, b, round.up);
     } else if (rounding == ZERO) {
-      this.divR2Exp(n, b, round.zero);
+      BigInteger.divR2Exp(this, n, b, round.zero);
     } else {
-      this.divR2Exp(n, b, round.down);
+      BigInteger.divR2Exp(this, n, b, round.down);
     }
   }
 

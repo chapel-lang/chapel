@@ -4,9 +4,9 @@ config const neg = true;
 
 var a = new bigint();
 
-a.fac(100);
+fac(a, 100);
 if neg then
-  a.neg(a);
+  neg(a, a);
 
 writeln("a=    ", a);
 
@@ -17,9 +17,9 @@ writeln("x=    ", x);
 var b = new bigint();
 
 if neg then
-  b.sub(b, 1);
+  sub(b, b, 1);
 else
-  b.add(b, 1);
+  add(b, b, 1);
 
 writeln("b=    ", b);
 
@@ -36,7 +36,7 @@ on Locales[numLocales - 1] {
 
   // check GET of 'a' and 'b' in add
   var e = new bigint();
-  e.add(a, b);
+  add(e, a, b);
   writeln("e=a+b ", e);
 
   // check setting b (which requires resize)

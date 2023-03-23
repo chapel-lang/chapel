@@ -48,22 +48,22 @@ iter genDigits(numDigits) {
   proc nextTerm(k) {
     const k2 = 2 * k + 1;
 
-    accum.addmul(numer, 2);
+    addmul(accum, numer, 2);
     accum *= k2;
     denom *= k2;
     numer *= k;
   }
 
   proc extractDigit(nth) {
-    tmp1.mul(numer, nth);
-    tmp2.add(tmp1,accum);
+    mul(tmp1, numer, nth);
+    add(tmp2, tmp1, accum);
     tmp1.div_q(tmp2, denom);
 
     return tmp1: int;
   }
 
   proc eliminateDigit(d) {
-    accum.submul(denom, d);
+    submul(accum, denom, d);
     accum *= 10;
     numer *= 10;
   }

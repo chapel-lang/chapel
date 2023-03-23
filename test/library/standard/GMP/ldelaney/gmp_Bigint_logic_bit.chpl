@@ -5,19 +5,19 @@ use BigInteger;
 var a = new bigint( 8);
 var b = new bigint(40);
 
-a.and(a, b); // 8 & 40 = 8
+and(a, a, b); // 8 & 40 = 8
 writeln(a);
 
 b.set(2);
-b.ior(a, b);  // 8 | 2 = 10
+ior(a, a, b);  // 8 | 2 = 10
 writeln(b);
 
 a.set(6);
-a.xor(a, b); // 6 XOR 10 = 12
+xor(a, a, b); // 6 XOR 10 = 12
 writeln(a);
 
 a.set(129);
-a.com(a); // one's complement of 129, aka bitwise negation
+com(a, a); // one's complement of 129, aka bitwise negation
 writeln(a);
 
 a.set(13);
