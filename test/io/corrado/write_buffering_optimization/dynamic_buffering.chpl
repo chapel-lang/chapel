@@ -11,7 +11,7 @@ qio_write_unbuffered_threshold = unbuffThreshold:c_ssize_t;
 qbytes_iobuf_size = iobuffSize:c_size_t;
 
 proc testDB(s: int): bool {
-  const w = openWriter("./db.bin", locking=false, hints = ioHintSet.noMmap);
+  const w = openWriter("./db.bin", locking=false, hints = ioHintSet.mmap(false));
 
   // put something small in the buffer to start with
   if smallWriteSize > 0 {
