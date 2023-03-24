@@ -40,12 +40,12 @@ namespace {
 
     // There are three "kinds" of content we consider, so we OR these together
     // Capture a normal Chapel identifier
-    std::string reCntType1 = R"#(([$\w\$\.]+))#";
+    std::string reCntType1 = R"#(([\w$.]+))#";
     // If it starts with ~, capture last identifier to the right of a '.'
     // Note in a repeated capture group (e.g. `(\w\.?)+` only the last iteration is captured
-    std::string reCntType2 = R"#(~([$\w\$]+\.?)+)#";
+    std::string reCntType2 = R"#(~([\w$]+\.?)+)#";
     // Starts with !, capture identifier to right of ! without capturing ! itself
-    std::string reCntType3 = R"#(!([$\w\$\.]+))#";
+    std::string reCntType3 = R"#(!([\w$.]+))#";
 
     // OR all the content types together, wrapping each in a non capturing group
     std::string reContent = "(?:(?:" + reCntType1 + ")|(?:" + reCntType2 + ")|(?:" + reCntType3 + "))";
