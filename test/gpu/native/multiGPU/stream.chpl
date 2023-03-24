@@ -8,6 +8,7 @@ config const alpha = 1.4;
 config const iters = 10;
 config const validate = false;
 config const printOutput = false;
+config const reportOverall = false;
 
 config const perGpuVecSize = 100;
 const numGpus = here.gpus.size;
@@ -17,9 +18,12 @@ const numElems = numGpus*perGpuVecSize;
 
 const ProblemSpace = {0..#numGpus*perGpuVecSize};
 
-var A, B, C: [ProblemSpace] real;
-B = 1;
-C = 2;
+// noinit and local for faster initialization
+var A, B, C: [ProblemSpace] real = noinit;
+local {
+  B = 1;
+  C = 2;
+}
 
 record times {
   var hostToDev: real;
@@ -27,8 +31,10 @@ record times {
   var kernel: real;
 }
 
+var overallTimer: stopwatch;
 
 var gpuTimes: [here.gpus.domain] times;
+overallTimer.start();
 coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
   const GpuSpace = {id*perGpuVecSize..#perGpuVecSize};
   var GpuA: [GpuSpace] elemType;
@@ -53,7 +59,7 @@ coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
     }
   }
   gpuTimer.stop();
-  gpuTimes[id].kernel = gpuTimer.elapsed();
+  gpuTimes[id].kernel = gpuTimer.elapsed()/iters;
   gpuTimer.clear();
 
   gpuTimer.start();
@@ -62,6 +68,7 @@ coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
   gpuTimes[id].devToHost = gpuTimer.elapsed();
   gpuTimer.clear();
 }
+overallTimer.stop();
 
 if printOutput then writeln(A);
 
@@ -72,6 +79,19 @@ if validate {
 }
 
 for gpuId in here.gpus.domain {
-  writeln("GPU ", gpuId);
-  writeln("\t", gpuTimes[gpuId]);
+  write("GPU ", gpuId);
+
+  const ref t = gpuTimes[gpuId];
+  writeln("\t", t);
+
+  const perVectorNumBytes = perGpuVecSize*numBytes(elemType);
+  writeln("\tHost to Dev BW (GB/s): ", ((perVectorNumBytes*2)/t.hostToDev)*1e-9);
+  writeln("\tDev to Host BW (GB/s): ", (perVectorNumBytes/t.devToHost)*1e-9);
+  writeln("\tKernel throughput (GB/s): ", (3*perVectorNumBytes/t.kernel)*1e-9);
+}
+
+if reportOverall {
+  if iters != 1 then writeln("Warning: We ran stream multiple times!");
+  writeln("Overall throughput (GB/s): ",
+          numElems*3*numBytes(elemType)/overallTimer.elapsed()*1e-9);
 }
