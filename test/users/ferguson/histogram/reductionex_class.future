@@ -1,7 +1,3 @@
-bug: nested type specifier does not work for reduction
+language: do we want support for referring to enclosing types' fields?
 
-I expect to be able to use a nested type specifier to
-give the reduction.
-
-reductionex_class.chpl:43: error: invalid use of 'new'
-reductionex_class.chpl:43: error: invalid use of 'new'
+https://github.com/chapel-lang/chapel/issues/21963
