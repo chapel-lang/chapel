@@ -7575,11 +7575,10 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    const tSize = c_sizeof(t) : c_ssize_t,
-          dlocal = data;
+    const tSize = c_sizeof(t) : c_ssize_t;
 
-    if endian == ioendian.native {
-      e = try qio_channel_write_amt(false, this._channel_internal, dlocal[0], data.size:c_ssize_t * tSize);
+    if endian == ioendian.native && data.locale == this._home {
+      e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
 
       if e == EEOF {
         throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
@@ -7587,9 +7586,11 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
         throw createSystemOrChplError(e);
       }
     } else {
-      for b in dlocal {
+      for b in data {
         select (endian) {
-          when ioendian.native { }
+          when ioendian.native {
+            e = try _write_binary_internal(this._channel_internal, iokind.native, b);
+          }
           when ioendian.big {
             e = try _write_binary_internal(this._channel_internal, iokind.big, b);
           }
