@@ -12,7 +12,7 @@ var bufSize = 128,
     bufDom = {0..<bufSize},
     buf : [bufDom] uint(8);
 
-const fw = openWriter("gb.bin", locking=false, hints=ioHintSet.noMmap);
+const fw = openWriter("gb.bin", locking=false, hints=ioHintSet.mmap(false));
 
 var i : uint(8) = 1;
 while bufSize < maxBufSize {

@@ -2,7 +2,7 @@ use IO, CTypes, FileSystem;
 
 config const size = 1024: int(64);
 
-const w = openWriter("./x.bin", locking=false, hints=ioHintSet.noMmap);
+const w = openWriter("./x.bin", locking=false, hints=ioHintSet.mmap(false));
 var a = [i in 0..<size] i;
 w.writeBinary(c_ptrTo(a), size*8);
 w.write("yep");
