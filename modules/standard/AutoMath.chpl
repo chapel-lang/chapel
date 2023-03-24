@@ -157,9 +157,12 @@ module AutoMath {
     return fabsf(_i2r(im));
   }
 
-  /* Returns the real magnitude of the complex argument `z`.
+  /* Returns the magnitude (often called modulus) of complex `z`.
 
-     :rtype: The type of the real component of the argument (== `w`/2).
+     In concert with the related :proc:`~Math.carg`, the phase (a.k.a. argument)
+     of `z`, it can be used to recompute `z`.
+
+     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
   */
   inline proc abs(z : complex(?w)): real(w/2) {
     pragma "fn synchronization free"

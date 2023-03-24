@@ -46,7 +46,14 @@ module Math {
   private use CTypes;
   private use AutoMath;
 
-  /* Returns the real phase angle of complex argument `z`. */
+  /* Returns the phase (often called `argument`) of complex `z`, an angle (in
+     radians).
+
+     In concert with the related :proc:`~AutoMath.abs`, the magnitude (a.k.a.
+     modulus) of `z`, it can be used to recompute `z`.
+
+     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
+  */
   inline proc carg(z: complex(?w)): real(w/2) {
     return chpl_carg(z);
   }
