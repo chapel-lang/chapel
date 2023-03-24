@@ -1,0 +1,3 @@
+If there's any patch to keep ChOp testing up and running, add them here. Please
+also file a PR against upstream in order to remove the patch as soon as you can
+to avoid maintanance burden.

@@ -411,7 +411,13 @@ print "\$chplhomedir = $chplhomedir\n";
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+    if ($hostplatform =~ "darwin") {
+     print "[ For Mac systems use the default Mail. Defaulting to 'mail'.]\n";
+     $mailer = "mail";
+    }
+    else {
+     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
         $header = "";
@@ -423,6 +429,7 @@ if ($mailer eq "") {
     } else {
         print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";
+    }
     }
 }
 print "\$mailer = $mailer\n";

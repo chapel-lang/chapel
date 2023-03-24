@@ -530,7 +530,10 @@ all:
     - text: Fix topo/comm initialization sequence (#21427)
       config: 16-node-xc, 16-node-cs-hdr
   02/24/23:
-    - text:  Fix default and const argument intents on tuples (#21665)
+    - text: Fix default and const argument intents on tuples (#21665)
+      config: chapcs, 1-node-xc
+  03/07/23:
+    - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
 # End all
 
@@ -750,6 +753,8 @@ dist-performance.cc:
     - Revert changes to `list._commonInitFromIterable` (#15943)
   12/16/20:
     - Distributed sort improvements (#16871)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
 
 dist-performance.ml-perf:
   07/01/20:
@@ -1795,6 +1800,9 @@ revcomp: &revcomp-base
     - Improve const/ref this decorators (and update revcomp) (#14809)
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
+  03/07/23:
+    - Parallelize array.find() (#21750)
+
 revcomp-submitted:
   06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
@@ -2168,6 +2176,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Use LLVM ADTs to improve compile times (#19561)
   10/12/22:
     - Default to jemalloc for host allocator on most platforms (#20774)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2314,6 +2324,8 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.27.0 to 1.29.0 (#21257)
   01/23/23:
     - 2060 add pdarray data type and size to metric (Bears-R-Us/arkouda#2067)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 
 arkouda-string:
@@ -2345,6 +2357,10 @@ arkouda-comp:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
   03/14/22:
     - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)
+  10/12/22:
+    - Default to jemalloc for host allocator on most platforms (#20774)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
 
 shoc-triad-bw-lg:
   11/10/22:
