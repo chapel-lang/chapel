@@ -1170,7 +1170,7 @@ static ArgumentDescription arg_desc[] = {
  {"help-env", ' ', NULL, "Environment variable help", "F", &fPrintEnvHelp, "", driverSetHelpTrue},
  {"help-settings", ' ', NULL, "Current flag settings", "F", &fPrintSettingsHelp, "", driverSetHelpTrue},
  {"license", ' ', NULL, "Show license", "F", &fPrintLicense, NULL, NULL},
- {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and path to this executable and exit", "F", &fPrintChplHome, NULL,NULL},
+ {"print-chpl-home", ' ', NULL, "Print CHPL_HOME and exit", "F", &fPrintChplHome, NULL,NULL},
  {"version", ' ', NULL, "Show version", "F", &fPrintVersion, NULL, NULL},
 
  // NOTE: Developer flags should not have 1-character equivalents
