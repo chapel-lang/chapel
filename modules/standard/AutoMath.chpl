@@ -53,54 +53,67 @@ module AutoMath {
   // Constants (included in chpldocs)
   //
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param e = 2.7182818284590452354;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'log2_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param log2_e = 1.4426950408889634074;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'log10_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param log10_e = 0.43429448190325182765;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'ln_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param ln_2 = 0.69314718055994530942;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'ln_10' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param ln_10 = 2.30258509299404568402;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param pi = 3.14159265358979323846;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'half_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param half_pi = 1.57079632679489661923;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'quarter_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param quarter_pi = 0.78539816339744830962;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param recipr_pi = 0.31830988618379067154;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'twice_recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param twice_recipr_pi = 0.63661977236758134308;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'twice_recipr_sqrt_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param twice_recipr_sqrt_pi = 1.12837916709551257390;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param sqrt_2 = 1.41421356237309504880;
 
+  pragma "last resort"
   @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'recipr_sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param recipr_sqrt_2 = 0.70710678118654752440;
