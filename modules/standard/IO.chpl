@@ -5831,7 +5831,8 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
   Iterate over all of the lines ending in ``\n`` in a fileReader - the
   fileReader lock will be held while iterating over the lines.
 
-  Only serial iteration is supported.
+  Only serial iteration is supported. This iterator will halt on internal
+  system errors.
 
   .. warning::
 
@@ -5841,10 +5842,8 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
 
   :yields: lines ending in ``\n``
 
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``
-                       for :ref:`another reason<io-general-sys-error>`.
  */
-iter fileReader.lines() throws {
+inline iter fileReader.lines() {
 
   try! this.lock();
 
@@ -8492,11 +8491,11 @@ record itemReaderInternal {
   }
 
   /* iterate through all items of that type read from the fileReader */
-  iter these() throws {
+  iter these() {
     while true {
       var x:ItemType;
       var gotany:bool;
-      try {
+      try! {
         gotany = ch.read(x);
       }
       if ! gotany then break;
