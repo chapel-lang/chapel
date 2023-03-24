@@ -2315,15 +2315,15 @@ module BigInteger {
 
   // Exponentiation Functions
   // Note: Documentation on `exp: uint` version
-  proc powMod(ref result: bigint, 
+  proc powMod(ref result: bigint,
               const ref base: bigint,
               const ref exp: bigint,
               const ref mod: bigint)  {
     if _local {
       mpz_powm(result.mpz, base.mpz, exp.mpz, mod.mpz);
-    } else if result.localeId == chpl_nodeID && 
-              base.localeId == chpl_nodeID && 
-              exp.localeId == chpl_nodeID && 
+    } else if result.localeId == chpl_nodeID &&
+              base.localeId == chpl_nodeID &&
+              exp.localeId == chpl_nodeID &&
               mod.localeId == chpl_nodeID {
       mpz_powm(result.mpz, base.mpz, exp.mpz, mod.mpz);
     } else {
@@ -2345,7 +2345,7 @@ module BigInteger {
     BigInteger.powMod(this, base, exp, mod);
   }
 
-  proc powMod(ref result: bigint, 
+  proc powMod(ref result: bigint,
               const ref base: bigint,
               exp: int,
               const ref mod: bigint)  {
@@ -2384,9 +2384,9 @@ module BigInteger {
         The program behavior is undefined if ``exp`` is negative and the inverse
         (1/``base``) modulo ``mod`` does not exist.
    */
-  proc powMod(ref result: bigint, 
-              const ref base: bigint, 
-              exp: uint, 
+  proc powMod(ref result: bigint,
+              const ref base: bigint,
+              exp: uint,
               const ref mod: bigint)  {
     const exp_ = exp.safeCast(c_ulong);
 
@@ -3634,7 +3634,7 @@ module BigInteger {
   proc bigint.add(const ref a: bigint, const ref b: bigint) {
     BigInteger.add(this, a, b);
   }
-  
+
   proc add(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
       BigInteger.add(result, a, b:uint);
@@ -4073,7 +4073,7 @@ module BigInteger {
 
   // 5.6 Division Functions
   // Note: Documentation on `denom: integral` version
-  proc divQ(ref result: bigint, 
+  proc divQ(ref result: bigint,
             const ref numer: bigint,
             const ref denom: bigint,
             param rounding = round.zero) {
@@ -4133,7 +4133,7 @@ module BigInteger {
      .. warning::
         If the denominator is zero, the program behavior is undefined.
   */
-  proc divQ(ref result: bigint, 
+  proc divQ(ref result: bigint,
             const ref numer: bigint,
             denom: integral,
             param rounding = round.zero) {
@@ -4593,7 +4593,7 @@ module BigInteger {
                     ``zero`` if unspecified
      :type rounding: ``round``
    */
-  proc divR2Exp(ref result: bigint, 
+  proc divR2Exp(ref result: bigint,
                 const ref numer: bigint,
                 exp: integral,
                 param     rounding = round.zero) {
