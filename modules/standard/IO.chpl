@@ -425,6 +425,10 @@ the I/O implementation. These are:
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
 
+.. _io-general-sys-error:
+
+yep
+
 .. _about-io-ensuring-successful-io:
 
 Ensuring Successful I/O
@@ -5813,7 +5817,7 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
 
   :yields: lines ending in ``\n`` in fileReader
  */
-iter fileReader.lines() {
+iter fileReader.lines() throws {
 
   try! this.lock();
 
@@ -5916,18 +5920,17 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
 }
 
 /*
+   Read one or more values from a ``fileReader``.
 
-   Read values from a fileReader. The input will be consumed atomically - the
-   fileReader lock will be held while reading all of the passed values.
-
-   :arg args: a list of arguments to read. Basic types are handled
+   :arg args: a series of variables to read into. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
-   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the fileReader could not be read.
+   :throws UnexpectedEofError: Thrown if an EOF occured while reading an item.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        for :ref:`another reason<io-general-sys-error>`.
  */
 inline proc fileReader.read(ref args ...?k):bool throws {
   try {
@@ -6023,33 +6026,39 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
 }
 
 /*
-  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  This function always does a binary read (i.e. it is not aware of UTF-8 etc)
-  and is similar in some ways to `readLine(bytes)` but works with an array
-  directly.  However, it does not resize the array but rather stores up to first
-  'size' bytes in to it. The exact number of bytes in the array set will depend
-  on the line length (and on stripNewline since the newline will be counted if
-  it is stored in the array).
+  Read a line into an array of bytes.
 
-  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8)
-          which must have at least 1 element.
+  Reads bytes from the ``fileReader`` until a ``\n`` is reached. Values are
+  read in binary format (i.e., this method is not aware of UTF-8 encoding).
+
+  The array's size not changed to accomodate bytes. If a newline is not found
+  before the array is filled, or ``maxSize`` bytes are read, a
+  :class:`~OS.BadFormatError` is thrown and the ``fileReader`` offset is
+  returned to its original position.
+
+  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8).
+          Values are overwritten.
   :arg maxSize: The maximum number of bytes to store into the ``a`` array.
                 Defaults to the size of the array.
-  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
-  :returns: Returns `0` if EOF is reached and no data is read. Otherwise,
-            returns the number of array elements that were set by this call.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. If
+                     ``true``, the newline isn't counted in the number of
+                     bytes read.
+  :returns: The number of array elements set by this call, or 0 otherwise
+            (i.e., the ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws IllegalArgumentError: Thrown if ``maxSize > a.size``
+  :throws BadFormatError: Thrown if the line is longer than ``maxSize``. File
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
-  if a.size == 0 || maxSize == 0 ||
-  ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
+      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable
+{
+  if maxSize > a.domain.size
+    then throw new IllegalArgumentError("'maxSize' argument exceeds size of array in readLine");
+  if maxSize == 0 then return 0;
 
   var err:errorCode = 0;
   var numRead:int;
@@ -6200,10 +6209,10 @@ proc readStringBytesData(ref s /*: string or bytes*/,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: ``true`` if a line was read without error, ``false`` upon EOF
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The file
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(ref s: string,
                          maxSize=-1,
@@ -6287,10 +6296,10 @@ proc fileReader.readLine(ref s: string,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: ``true`` if a line was read without error, ``false`` upon EOF
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The file
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(ref b: bytes,
                          maxSize=-1,
@@ -6376,20 +6385,20 @@ proc fileReader.readLine(ref b: bytes,
                 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to (and possibly including) the newline.
+            up to (and possibly including) the newline.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
                     was already at EOF.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The file
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(type t=string, maxSize=-1,
                          stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
-  // TODO: throw an EOF error if this call returns false
-  this.readLine(retval, maxSize, stripNewline);
+  if !this.readLine(retval, maxSize, stripNewline)
+    then throw new EofError("Encountered EOF in readLine");
   return retval;
 }
 
@@ -6410,20 +6419,21 @@ proc fileReader.readLine(type t=string, maxSize=-1,
   :type:`~Regex.regex` separator.
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
-    or :type:`~Bytes.bytes`.
+                  or :type:`~Bytes.bytes`.
   :arg maxSize: The maximum number of bytes to read. For the default value of
-    ``-1``, this method can read until EOF.
+                ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
-    ``string`` or ``bytes``. If ``true``, the returned value will not include
-    the separator.
+                        ``string`` or ``bytes``. If ``true``, the returned
+                        value will not include the separator.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to (and possibly including) the separator.
+            up to (and possibly including) the separator.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
-    was already at EOF.
+                    was already at EOF.
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -6444,15 +6454,16 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method can read until EOF.
+                of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
-    If ``true``, the separator will not be included in ``s``.
+                       If ``true``, the separator will not be included in ``s``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -6502,15 +6513,16 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   :arg separator: The separator to match with.
   :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of codepoints to read. For the default value
-    of ``-1``, this method can read until EOF.
+                of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
-    If ``true``, the separator will not be included in ``b``.
+                       If ``true``, the separator will not be included in ``b``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -6550,17 +6562,19 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   :type:`~Regex.regex` separator.
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
-    or :type:`~Bytes.bytes`.
+                  or :type:`~Bytes.bytes`.
   :arg maxSize: The maximum number of bytes to read. For the default
-    value of ``-1``, this method can read until EOF.
+                value of ``-1``, this method can read until EOF.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to the ``separator``.
+            up to the ``separator``.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
-    was already at EOF.
+                    was already at EOF.
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   where t==string || t==bytes
@@ -6582,13 +6596,15 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method will read until EOF.
+                of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
   var atEof = false;
@@ -6631,13 +6647,15 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   :arg separator: The separator to match with.
   :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method will read until EOF.
+                of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
   var atEof = false;
@@ -6760,24 +6778,26 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
           :type:`~Bytes.bytes`. Defaults to ``bytes`` if not specified.
   :returns: the contents of the ``fileReader`` as a ``t``
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+                    was already at EOF.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``
-                       for another reason.
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(type t=bytes): t throws
   where t==string || t==bytes
 {
-  var out_var : t;
+  var out_var : t,
+      num_read = 0;
 
   if t == bytes {
     out_var = b"";
-    this.readAll(out_var);
+    num_read = this.readAll(out_var);
   } else {
     out_var = "";
-    this.readAll(out_var);
+    num_read = this.readAll(out_var);
   }
 
+  if num_read == 0 then throw new EofError("EOF encountered in readAll");
   return out_var;
 }
 
@@ -6787,13 +6807,12 @@ proc fileReader.readAll(type t=bytes): t throws
   Note that any existing contents of the ``string`` are overwritten.
 
   :arg s: the :type:`~String.string` to read into
-  :returns: the number of codepoints that were stored in ``s``
+  :returns: the number of codepoints that were stored in ``s``, or 0 if
+            the ``fileReader`` is at EOF.
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref s: string): int throws {
   const (err, lenread) = readBytesOrString(this, s, -1);
@@ -6811,13 +6830,12 @@ proc fileReader.readAll(ref s: string): int throws {
   Note that any existing contents of the ``bytes`` are overwritten.
 
   :arg b: the :type:`~Bytes.bytes` to read into
-  :returns: the number of bytes that were stored in ``b``
+  :returns: the number of bytes that were stored in ``b``, or 0 if
+            the ``fileReader`` is at EOF.
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref b: bytes): int throws {
   const (err, lenread) = readBytesOrString(this, b, -1);
@@ -6833,9 +6851,12 @@ proc fileReader.readAll(ref b: bytes): int throws {
   Read the remaining contents of the ``fileReader`` into an array of bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
-  Additionally, If the remaining contents of the fileReader exceed the size of
-  ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
-  ``InsufficientCapacityError`` will be thrown.
+
+  If the remaining contents of the fileReader exceed the size of ``a``, the
+  first ``a.size`` bytes will be read into ``a``, and then an
+  :class:`OS.InsufficientCapacityError` will be thrown. In such a case, the
+  ``fileReader`` offset is advanced ``a.size`` bytes from it's original
+  position.
 
   :arg a: the array of bytes to read into
   :returns: the number of bytes that were stored in ``a``
@@ -6843,10 +6864,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
 
   :throws InsufficientCapacityError: Thrown if the fileReader's contents do not
                                      fit into ``a``.
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
@@ -6936,13 +6955,17 @@ proc fileReader.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
               from the ``fileReader``
 
-  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readString(maxSize: int): string throws {
   var ret: string = "";
-  var (e, _) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesOrString(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
+  else if e == EEOF && numRead == 0 then
+    throw EofError("EOF encountered in readString");
 
   return ret;
 }
@@ -6957,7 +6980,8 @@ proc fileReader.readString(maxSize: int): string throws {
 
   :arg s: the ``string`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
-  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+            ``fileReader`` was already at EOF).
 
   :throws SystemError: Thrown if a ``string`` could not be read from the
                        ``fileReader``.
@@ -7006,14 +7030,17 @@ proc fileReader.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
               from the ``fileReader``
 
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
   :throws SystemError: Thrown if a ``bytes`` could not be read from the
                        ``fileReader`` for another reason.
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
-  var (e, _) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesOrString(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
+  else if e == EEOF && numRead == 0 then
+    throw EofError("EOF encountered in readBytes");
 
   return ret;
 }
@@ -7028,8 +7055,8 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 
   :arg b: the ``bytes`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
-  :returns: ``false`` if nothing could be read, or ``true`` if something was
-              read.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+            ``fileReader`` was already at EOF).
 
   :throws SystemError: Thrown if a ``bytes`` could not be read from the
                        ``fileReader`` for another reason.
@@ -8442,11 +8469,11 @@ record itemReaderInternal {
   }
 
   /* iterate through all items of that type read from the fileReader */
-  iter these() { // TODO: this should be throws
+  iter these() throws {
     while true {
       var x:ItemType;
       var gotany:bool;
-      try! { // TODO: this should by try
+      try {
         gotany = ch.read(x);
       }
       if ! gotany then break;
