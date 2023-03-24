@@ -765,31 +765,31 @@ module BigInteger {
   // Addition
   operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    add(c, a, b);
+    BigInteger.add(c, a, b);
     return c;
   }
 
   operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-    add(c, a, b);
+    BigInteger.add(c, a, b);
     return c;
   }
 
   operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
-    add(c, b, a);
+    BigInteger.add(c, b, a);
     return c;
   }
 
   operator bigint.+(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
-    add(c, a, b);
+    BigInteger.add(c, a, b);
     return c;
   }
 
   operator bigint.+(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
-    add(c, b, a);
+    BigInteger.add(c, b, a);
     return c;
   }
 
@@ -2347,7 +2347,7 @@ module BigInteger {
 
   proc powMod(ref result: bigint, 
               const ref base: bigint,
-              const ref exp: int,
+              exp: int,
               const ref mod: bigint)  {
     if exp >= 0 {
       BigInteger.powMod(result, base, exp:uint, mod);
@@ -3637,7 +3637,7 @@ module BigInteger {
   
   proc add(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
-      add(result, a, b:uint);
+      BigInteger.add(result, a, b:uint);
     }
     else {
       const b_ = (0 - b).safeCast(c_ulong);

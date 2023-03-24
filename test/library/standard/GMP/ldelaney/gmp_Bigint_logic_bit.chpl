@@ -9,7 +9,7 @@ and(a, a, b); // 8 & 40 = 8
 writeln(a);
 
 b.set(2);
-ior(a, a, b);  // 8 | 2 = 10
+ior(b, a, b);  // 8 | 2 = 10
 writeln(b);
 
 a.set(6);

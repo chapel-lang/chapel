@@ -6,7 +6,7 @@ var a = new bigint();
 
 fac(a, 100);
 if neg then
-  neg(a, a);
+  BigInteger.neg(a, a);
 
 writeln("a=    ", a);
 
