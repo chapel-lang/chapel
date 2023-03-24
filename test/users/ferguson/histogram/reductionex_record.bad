@@ -1,2 +1,6 @@
-reductionex_record.chpl:25: error: Illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:22: error: Illegal use of identifier 'NBUCKETS' from enclosing type
+Note: This source location is a guess.
+reductionex_record.chpl:34: error: Illegal use of identifier 'NBUCKETS' from enclosing type
+Note: This source location is a guess.
+reductionex_record.chpl:35: error: Illegal use of identifier 'NBUCKETS' from enclosing type
 Note: This source location is a guess.
