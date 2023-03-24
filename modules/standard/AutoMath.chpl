@@ -501,7 +501,7 @@ module AutoMath {
   // module.
   pragma "last resort"
   @chpldoc.nodoc
-  @deprecated(notes="cproj will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'cproj' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc cproj(z: complex(?w)): complex(w) {
     return chpl_cproj(z);
   }

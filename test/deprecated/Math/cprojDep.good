@@ -1,4 +1,4 @@
 cprojDep.chpl:3: In function 'testType':
-cprojDep.chpl:4: warning: cproj will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+cprojDep.chpl:4: warning: In an upcoming release 'cproj' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it
 cprojDep.chpl:3: In function 'testType':
-cprojDep.chpl:4: warning: cproj will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+cprojDep.chpl:4: warning: In an upcoming release 'cproj' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it
