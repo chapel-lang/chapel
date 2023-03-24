@@ -1,2 +1,0 @@
-reductionex_record_nonest.chpl:57: error: unresolved call 'Test.myhisto'
-reductionex_record_nonest.chpl:57: note: because no functions named myhisto found in scope
