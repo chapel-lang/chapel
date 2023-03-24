@@ -50,7 +50,7 @@ a number of methods that wrap GMP functions in a natural way:
 
  writeln(a * b);
 
- BigInteger.fac(c, 00);
+ fac(c, 00);
  writeln(c);
 
 Casting and declarations can be used to create ``bigint`` records as
@@ -920,7 +920,7 @@ module BigInteger {
   // Documented in (bigint, integral) version
   operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    BigInteger.divQ(c, b, round.zero);
+    BigInteger.divQ(c, a, b, round.zero);
 
     return c;
   }
@@ -1547,7 +1547,7 @@ module BigInteger {
   // /=
   // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    BigInteger.divQ(a, b, round.zero);
+    BigInteger.divQ(a, a, b, round.zero);
   }
 
   /* Divide ``a`` by ``b``, storing the result in ``a``.
