@@ -17,7 +17,6 @@
 set(SRCS
     arg.cpp
     checks.cpp
-    commonFlags.cpp
     config.cpp
     driver.cpp
     log.cpp
