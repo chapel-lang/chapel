@@ -182,7 +182,7 @@ module AutoMath {
   // module.
   pragma "last resort"
   @chpldoc.nodoc
-  @deprecated(notes="carg will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'carg' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc carg(z: complex(?w)): real(w/2) {
     return chpl_carg(z);
   }
