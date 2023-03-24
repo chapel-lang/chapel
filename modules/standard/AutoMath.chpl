@@ -693,7 +693,7 @@ module AutoMath {
   // module.
   pragma "last resort"
   @chpldoc.nodoc
-  @deprecated(notes="erf will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
   }
@@ -714,7 +714,7 @@ module AutoMath {
   // module.
   pragma "last resort"
   @chpldoc.nodoc
-  @deprecated(notes="erf will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
   }
