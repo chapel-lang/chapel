@@ -67,8 +67,8 @@ divQ2Exp(d, c, 3, round.down);
 divR2Exp(b, c, 3, round.down);
 writeln(d, " ", b);
 
-divQ2Exp(, c, 3, round.zero);
-divR2Exp(, c, 3, round.zero);
+divQ2Exp(d, c, 3, round.zero);
+divR2Exp(b, c, 3, round.zero);
 writeln(d, " ", b);
 
 writeln();
