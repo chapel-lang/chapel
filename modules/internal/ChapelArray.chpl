@@ -1906,7 +1906,6 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    @unstable("'Array.count' is unstable")
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
