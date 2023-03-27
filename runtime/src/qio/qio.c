@@ -2867,27 +2867,36 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   qbuffer_iter_t start;
   qbuffer_iter_t end;
   int64_t gotlen = 0;
-  int64_t toWrite = 0;
-  int64_t remaining = len;
+  int64_t toWriteTotal = 0;
+  int64_t toWriteBuffer = 0;
+  int64_t remaining = 0;
   qioerr err;
   int eof = 0;
 
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
 
-  // handle channel position beyond end.
-  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
-  if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
+  // handle EOF case
+  if( qio_channel_offset_unlocked(ch) > ch->end_pos ) return QIO_EEOF;
+
+  // handle unexpected EOF case
+  if (ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos) {
+    // now amt_written != len: will result in a QIO_ESHORT in qio_channel_write_amt
+    toWriteTotal = ch->end_pos - _right_mark_start(ch);
+  } else {
+    toWriteTotal = len;
+  }
+  remaining = toWriteTotal;
 
   while ((remaining > 0) && !eof) {
     if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
-      toWrite = ch->bufIoMax;
+      toWriteBuffer = ch->bufIoMax;
     } else {
-      toWrite = remaining;
+      toWriteBuffer = remaining;
     }
 
     // make sure we have buffer space. (require calls advance_cached)
-    err = _qio_channel_require_unlocked(ch, toWrite, 1);
+    err = _qio_channel_require_unlocked(ch, toWriteBuffer, 1);
     eof = 0;
     if( qio_err_to_int(err) == EEOF ) eof = 1;
     else if( err ) goto error;
@@ -2896,11 +2905,11 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     start = _right_mark_start_iter(ch);
     end = start;
     gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
-    if( toWrite < gotlen ) gotlen = toWrite;
+    if( toWriteBuffer < gotlen ) gotlen = toWriteBuffer;
     qbuffer_iter_advance(&ch->buf, &end, gotlen);
 
     // now copy the data in to the buffer.
-    err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (len-remaining),
+    err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (toWriteTotal-remaining),
                          gotlen);
     if( err ) goto error;
 
@@ -2916,7 +2925,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   err = 0;
   if( eof ) err = QIO_EEOF;
 error:
-  *amt_written = len - remaining;
+  *amt_written = toWriteTotal - remaining;
   return err;
 }
 
