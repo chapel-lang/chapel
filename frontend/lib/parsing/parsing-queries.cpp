@@ -107,6 +107,20 @@ static Parser helpMakeParser(Context* context,
 #define LIBRARY_VERSION_MAJOR 0
 #define LIBRARY_VERSION_MINOR 1
 
+static UniqueString cleanLocalPath(Context* context, UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
+  }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(context, str);
+}
+
 //
 // The library file format (whitespace not significant):
 // <magic number, uint64_t>
@@ -167,6 +181,7 @@ void LibraryFile::generate(Context* context,
   std::stringstream ss;
   chpl::Serializer builderSer(ss);
   for (auto path : paths) {
+    path = cleanLocalPath(context, path);
     UniqueString empty;
     auto& result = parseFileToBuilderResult(context, path, empty);
     ss.str(std::string()); // clear for this iteration
@@ -685,7 +700,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       check += ".chpl";
 
       if (hasFileText(context, check) || fileExistsQuery(context, check)) {
-        auto filePath = UniqueString::get(context, check);
+        auto filePath = cleanLocalPath(context, UniqueString::get(context, check));
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
