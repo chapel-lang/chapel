@@ -24,6 +24,7 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Process.h"
@@ -245,6 +246,9 @@ bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
 }
 
 std::string fileHashToHex(const HashFileResult& hash) {
+  return llvm::toHex(hash, /* lower case */ false);
+
+  /*
   static const char* table = "0123456789abcdef";
   size_t len = hash.size();
   std::string ret;
@@ -257,7 +261,7 @@ std::string fileHashToHex(const HashFileResult& hash) {
     // push the character for the second nibble
     ret.push_back(table[c & 0xf]);
   }
-  return ret;
+  return ret;*/
 }
 
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
