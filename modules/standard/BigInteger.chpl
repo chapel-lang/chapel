@@ -765,31 +765,68 @@ module BigInteger {
   // Addition
   operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    BigInteger.add(c, a, b);
+
+    const a_ = a.localize();
+    const b_ = b.localize();
+
+    mpz_add(c.mpz, a_.mpz, b_.mpz);
+
     return c;
   }
 
   operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-    BigInteger.add(c, a, b);
+    const a_ = a.localize();
+
+    if b >= 0 {
+      const b_ = b.safeCast(c_ulong);
+
+      mpz_add_ui(c.mpz, a_.mpz,  b_);
+
+    } else {
+      const b_ = (0 - b).safeCast(c_ulong);
+
+      mpz_sub_ui(c.mpz, a_.mpz, b_);
+    }
+
     return c;
   }
 
   operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
-    BigInteger.add(c, b, a);
+    const b_ = b.localize();
+
+    if a >= 0 {
+      const a_ = a.safeCast(c_ulong);
+
+      mpz_add_ui(c.mpz, b_.mpz,  a_);
+
+    } else {
+      const a_ = (0 - a).safeCast(c_ulong);
+
+      mpz_sub_ui(c.mpz, b_.mpz, a_);
+    }
+
     return c;
   }
 
   operator bigint.+(const ref a: bigint, b: uint): bigint {
-    var c = new bigint();
-    BigInteger.add(c, a, b);
+    const a_ = a.localize();
+    const b_ = b.safeCast(c_ulong);
+    var   c  = new bigint();
+
+    mpz_add_ui(c.mpz, a_.mpz, b_);
+
     return c;
   }
 
   operator bigint.+(a: uint, const ref b: bigint): bigint {
-    var c = new bigint();
-    BigInteger.add(c, b, a);
+    const a_ = a.safeCast(c_ulong);
+    const b_ = b.localize();
+    var   c  = new bigint();
+
+    mpz_add_ui(c.mpz, b_.mpz, a_);
+
     return c;
   }
 
