@@ -1421,15 +1421,15 @@ static void errorIfNameNotInScope(Context* context,
                                   bool isRename) {
   CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> result;
-  bool foundExternBlock = false;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE;
-  auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                             foundExternBlock,
-                             /* traceCurPath */ nullptr,
-                             /* traceResult */ nullptr);
-  bool got = helper.doLookupInScope(scope, {}, name, config);
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_EXTERN_BLOCKS;
+
+  bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+                               checkedScopes, result,
+                               /* traceCurPath */ nullptr,
+                               /* traceResult */ nullptr);
 
   if (got == false || result.size() == 0) {
     CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
