@@ -287,6 +287,7 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
+extern bool fDynoResolve;
 extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
