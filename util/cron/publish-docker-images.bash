@@ -34,7 +34,7 @@ local version="$3"
 # the below buildx command will build images for amd and arm, tags with the tags specified, and pushes it to the docker repository($registry)
 docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $registry/$imageName:$version -t  $registry/$imageName:latest
 
-if [ $PUBLISHED -ne 0 ]
+if [ $? -ne 0 ]
 then
       echo "docker publish using buildx failed " 
       exit 1
