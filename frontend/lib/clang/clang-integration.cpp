@@ -309,11 +309,11 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     command.push_back("-o");
     command.push_back(tmpOutput);
 
-    /*
-    printf("Running clang:\n");
+    /*printf("Precompiling with clang:\n");
     for (auto arg: command) {
       printf("  %s\n", arg.c_str());
     }*/
+
     const char* desc = "create clang precompiled header for extern block";
     int code = executeAndWait(command, desc);
 

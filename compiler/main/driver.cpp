@@ -24,17 +24,18 @@
 
 #include "driver.h"
 
+#include "ModuleSymbol.h"
+#include "PhaseTracker.h"
 #include "arg.h"
 #include "chpl.h"
+#include "clangUtil.h"
 #include "config.h"
 #include "files.h"
 #include "library.h"
 #include "log.h"
-#include "ModuleSymbol.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "parser.h"
-#include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -43,10 +44,11 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
+#include "chpl/util/clang-integration.h"
 
 #include "chpl/util/assertions.h"
 
@@ -1884,9 +1886,19 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.tmpDir = saveCDir;
     config.keepTmpDir = true;
   }
+  config.toolName = "chpl";
 
   // Replace the current gContext with one using the new configuration.
   gContext = new chpl::Context(*gContext, std::move(config));
+
+  // set up the clang arguments
+#ifdef HAVE_LLVM
+  {
+    std::vector<std::string> clangCCArgs;
+    computeClangArgs(clangCCArgs);
+    chpl::util::setClangFlags(gContext, clangCCArgs);
+  }
+#endif
 
   // Set the config names/values we processed earlier and clear them.
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
