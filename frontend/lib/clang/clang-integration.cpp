@@ -250,8 +250,9 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 #ifdef HAVE_LLVM
   bool ok = true;
   std::string clangExe = getClangExe(context);
-  std::string tmpInput = context->tmpDir() + "/extern-code.h";
-  std::string tmpOutput = context->tmpDir() + "/extern-code.ast";
+  std::string idStr = externBlockId.str();
+  std::string tmpInput = context->tmpDir() + "/" + idStr + ".h";
+  std::string tmpOutput = context->tmpDir() + "/" + idStr + ".ast";;
 
   const uast::AstNode* ast = parsing::idToAst(context, externBlockId);
   const uast::ExternBlock* eb = ast ? ast->toExternBlock() : nullptr;
