@@ -810,15 +810,19 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
   // Consider each extern block in turn. Does it have a symbol with that name?
-  for (const auto& id : exbIds) {
-    if (externBlockContainsName(context, id, name)) {
+  for (const auto& exbId : exbIds) {
+    if (externBlockContainsName(context, exbId, name)) {
       // note that this extern block can match 'name'
       bool isMethodOrField = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
+
+      auto newId = ID::fabricateId(context, exbId, name,
+                                   ID::ExternBlockElement);
+
       auto foundIds =
-        BorrowedIdsWithName::createWithSingleId(id,
+        BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
                                                 isParenfulFunction,

@@ -65,12 +65,13 @@ static void testIt(const char* testName,
   const auto& rrbpid = scopeResolveModule(context, M->id());
   assert(rrbpid.hasAst(lastIdent));
   assert(!rrbpid.byAst(lastIdent).toId().isEmpty());
-  auto ast = parsing::idToAst(context, rrbpid.byAst(lastIdent).toId());
+  ID foundId = rrbpid.byAst(lastIdent).toId();
 
   if (identifierIsFromExternBlock) {
-    assert(ast->isExternBlock());
+    assert(foundId.isFabricatedId());
+    assert(foundId.fabricatedIdKind() == ID::ExternBlockElement);
   } else {
-    assert(!ast->isExternBlock());
+    assert(!foundId.isFabricatedId());
   }
 }
 

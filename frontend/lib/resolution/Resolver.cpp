@@ -1806,11 +1806,14 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
-  if (asttags::isExternBlock(tag)) {
-    // TODO: resolve types for extern block
-    // (will need the Identifier name for that)
-    auto unknownType = UnknownType::get(context);
-    return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+  if (id.isFabricatedId()) {
+    switch (id.fabricatedIdKind()) {
+      case ID::ExternBlockElement:
+      // TODO: resolve types for extern block
+      // (will need the Identifier name for that)
+      auto unknownType = UnknownType::get(context);
+      return QualifiedType(QualifiedType::UNKNOWN, unknownType);
+    }
   }
 
   // Figure out what ID is contained within so we can use the
@@ -2124,6 +2127,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const ID& id) {
   r.setToId(id);
   if (id.isEmpty()) return;
+  if (id.isFabricatedId()) return;
 
   // Validate the newly set to ID.
   auto idTag = parsing::idToTag(context, id);
