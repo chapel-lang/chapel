@@ -205,7 +205,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
-        if (!fDynoCompilerLibrary) {
+        if (!fDynoScopeResolve) {
           if (modSym->hasFlag(FLAG_DEPRECATED)) {
             modSym->generateDeprecationWarning(this);
           }
@@ -330,7 +330,7 @@ bool ImportStmt::checkValid(Expr* expr) const {
 ************************************** | *************************************/
 void ImportStmt::validateList() {
   // Dyno already issues these warnings and errors.
-  if (!fDynoCompilerLibrary) {
+  if (!fDynoScopeResolve) {
     noRepeats();
   }
 
@@ -399,7 +399,7 @@ void ImportStmt::validateUnqualified() {
                            name);
           }
 
-          if (!fDynoCompilerLibrary) {
+          if (!fDynoScopeResolve) {
             if (sym->hasFlag(FLAG_DEPRECATED)) {
               sym->generateDeprecationWarning(this);
             }

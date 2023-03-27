@@ -1506,7 +1506,7 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
-            if (!fDynoCompilerLibrary) {
+            if (!fDynoScopeResolve) {
               if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
                 // Function symbols will generate a warning during function
                 // resolution, no need to warn here.
@@ -3115,7 +3115,7 @@ void scopeResolve() {
 
   resolveGotoLabels();
 
-  if (!fDynoCompilerLibrary || fDynoScopeProduction) {
+  if (!fDynoScopeResolve || fDynoScopeProduction) {
     resolveUnresolvedSymExprs();
   }
 

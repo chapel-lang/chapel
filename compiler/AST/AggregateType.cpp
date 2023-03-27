@@ -3132,7 +3132,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     // scope-resolving an AggregateType that contains a reference to itself
     // (e.g. a linked-list with a 'next' node). The 'convert-uast' pass is
     // meant to manually insert these defPoints later.
-    if (!fDynoCompilerLibrary || isAlive(symbol->defPoint)) {
+    if (!fDynoScopeResolve || isAlive(symbol->defPoint)) {
       DefExpr* defDec = new DefExpr(tsDec);
       symbol->defPoint->insertAfter(defDec);
     }

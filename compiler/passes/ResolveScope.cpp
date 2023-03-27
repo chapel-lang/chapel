@@ -831,7 +831,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (!fDynoCompilerLibrary) {
+    if (!fDynoScopeResolve) {
       if (outerMod->hasFlag(FLAG_DEPRECATED)) {
         outerMod->generateDeprecationWarning(call);
       }
