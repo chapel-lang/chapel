@@ -73,7 +73,6 @@ Compiler Features
    Checking Variable Lifetimes <lifetimeChecking>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
-   Debugging Chapel Source Code: Best Known Configuration <debuggingChapel>
 
 Tool Details
 ------------

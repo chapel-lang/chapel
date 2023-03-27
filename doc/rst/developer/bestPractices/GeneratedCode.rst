@@ -23,6 +23,8 @@ To recompile:
   shows commands issued by the compiler
 
 
+.. _more-munging-info:
+
 Why are my identifiers renamed in the generated code?
 -----------------------------------------------------
 
@@ -116,7 +118,7 @@ Debugging the generated code
 
 Using gdb and other debugging features are also discussed in:
 
-      ``$CHPL_HOME/doc/rst/usingchapel/executing.rst``
+      ``$CHPL_HOME/doc/rst/usingchapel/debugging.rst``
 
 * If you want to debug the runtime library as well, build your runtime so:
 
