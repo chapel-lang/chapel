@@ -221,6 +221,8 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
     }
   }
 
+  delete diags;
+
 #endif
 
   /*
@@ -432,6 +434,9 @@ precompiledHeaderContainsNameQuery(Context* context,
       clang::IdentifierInfo* iid = astr->get(name.c_str());
       result = (iid != nullptr);
     }
+
+    delete Clang;
+
 #if 0
     auto astr = clang::ASTReader(Clang->getPreprocessor(),
                                  Clang->getModuleCache(),
