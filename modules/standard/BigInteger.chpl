@@ -1007,53 +1007,16 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(const ref a: bigint, const ref b: bigint) {
-    const a_ = a.localize();
-    const b_ = b.localize();
-    var ret : c_int;
-
-    ret = mpz_cmp(a_.mpz, b_.mpz);
-
-    return ret;
+  private inline proc cmp(const ref a: bigint, const ref b: bigint) : c_int {
+    return a.cmp(b);
   }
 
-  private inline proc cmp(const ref a: bigint, b: int) {
-    const a_ = a.localize();
-    const b_ = b.safeCast(c_long);
-    var   ret : c_int;
-
-    ret = mpz_cmp_si(a_.mpz, b_);
-
-    return ret;
+  private inline proc cmp(const ref a: bigint, b: integral) : c_int {
+    return a.cmp(b);
   }
 
-  private inline proc cmp(a: int, const ref b: bigint) {
-    const a_ = a.safeCast(c_long);
-    const b_ = b.localize();
-    var   ret : c_int;
-
-    ret = mpz_cmp_si(b_.mpz, a_);
-
-    return 0 - ret;
-  }
-
-  private inline proc cmp(const ref a: bigint, b: uint) {
-    const a_ = a.localize();
-    const b_ = b.safeCast(c_ulong);
-    var   ret : c_int;
-
-    ret = mpz_cmp_ui(a_.mpz, b_);
-
-    return ret;
-  }
-
-  private inline proc cmp(a: uint, const ref b: bigint) {
-    const a_ = a.safeCast(c_ulong);
-    const b_ = b.localize();
-    var   ret : c_int;
-
-    ret = mpz_cmp_ui(b_.mpz, a_);
-
+  private inline proc cmp(a: integral, const ref b: bigint) : c_int {
+    const ret = a.cmp(b);
     return 0 - ret;
   }
 
@@ -1086,22 +1049,13 @@ module BigInteger {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(const ref a: bigint, b: int): bool {
+  operator bigint.!=(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(a: int, const ref b: bigint): bool {
+  operator bigint.!=(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
-
-  operator bigint.!=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
-
-  operator bigint.!=(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
-
 
 
   // Greater than
@@ -1109,19 +1063,11 @@ module BigInteger {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(const ref a: bigint, b: int): bool {
+  operator bigint.>(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
-  operator bigint.>(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
-  operator bigint.>(a: uint, const ref b: bigint): bool {
+  operator bigint.>(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
@@ -1132,19 +1078,11 @@ module BigInteger {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(const ref a: bigint, b: int): bool {
+  operator bigint.<(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
-
-  operator bigint.<(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
-
-  operator bigint.<(a: uint, const ref b: bigint): bool {
+  operator bigint.<(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
@@ -1154,22 +1092,13 @@ module BigInteger {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(const ref a: bigint, b: int): bool {
+  operator bigint.>=(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(a: int, const ref b: bigint): bool {
+  operator bigint.>=(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
-
-  operator bigint.>=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
-
-  operator bigint.>=(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
-
 
 
   // Less than or equal
@@ -1177,19 +1106,11 @@ module BigInteger {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(const ref a: bigint, b: int): bool {
+  operator bigint.<=(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-  operator bigint.<=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-  operator bigint.<=(a: uint, const ref b: bigint): bool {
+  operator bigint.<=(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
@@ -4308,7 +4229,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var b_ = b;
+        const b_ = b.localize();
 
         ret = mpz_cmp(this.mpz, b_.mpz);
       }
