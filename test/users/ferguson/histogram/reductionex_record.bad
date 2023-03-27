@@ -1,6 +1,30 @@
-reductionex_record.chpl:22: error: Illegal use of identifier 'NBUCKETS' from enclosing type
-Note: This source location is a guess.
-reductionex_record.chpl:34: error: Illegal use of identifier 'NBUCKETS' from enclosing type
-Note: This source location is a guess.
-reductionex_record.chpl:35: error: Illegal use of identifier 'NBUCKETS' from enclosing type
-Note: This source location is a guess.
+reductionex_record.chpl:18: error: illegal use of identifier 'max' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:13: note: field declared here
+reductionex_record.chpl:18: error: illegal use of identifier 'min' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:14: note: field declared here
+reductionex_record.chpl:18: error: illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:12: note: field declared here
+reductionex_record.chpl:19: error: illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:12: note: field declared here
+reductionex_record.chpl:21: In method 'identity':
+reductionex_record.chpl:22: error: illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:12: note: field declared here
+reductionex_record.chpl:34: In method 'accumulate':
+reductionex_record.chpl:34: error: illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:12: note: field declared here
+reductionex_record.chpl:35: error: illegal use of identifier 'NBUCKETS' from enclosing type
+reductionex_record.chpl:16: note: the identifier is used within class 'myhisto', declared here
+reductionex_record.chpl:11: note: however, the identifier refers to a field of an enclosing record 'Test', declared here
+reductionex_record.chpl:12: note: field declared here
