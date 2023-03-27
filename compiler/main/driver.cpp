@@ -325,7 +325,7 @@ bool fPrintChplSettings = false;
 
 bool fDetailedErrors = false;
 
-bool fDynoScopeResolve = false;
+bool fDynoScopeResolve = true;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
