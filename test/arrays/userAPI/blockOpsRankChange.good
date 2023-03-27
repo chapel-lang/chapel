@@ -110,6 +110,7 @@ local subdomains:
 is empty: false
 find last: (7, 7)
 find last again: true: (7, 7)
+count last: 1
 equals same: true
 equals diff: false
 
