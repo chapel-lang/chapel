@@ -524,6 +524,7 @@ bool LookupHelper::doLookupInImportsAndUses(
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
@@ -574,6 +575,9 @@ bool LookupHelper::doLookupInImportsAndUses(
         }
         if (onlyMethodsFields) {
           newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+        }
+        if (checkExternBlocks) {
+          newConfig |= LOOKUP_EXTERN_BLOCKS;
         }
 
         // If the whole module is being renamed, still search for the original

@@ -51,8 +51,8 @@ static void testIt(const char* testName,
   setFileText(context, path, contents);
   // parse it so that Context knows about the IDs
   const ModuleVec& vec = parseToplevel(context, path);
-  assert(vec.size() == 1);
-  const Module* M = vec[0];
+  assert(vec.size() >= 1);
+  const Module* M = vec[vec.size()-1];
   const Identifier* lastIdent = nullptr;
 
   for (auto stmt : M->stmts()) {
@@ -129,6 +129,34 @@ static void test5() {
          )"""",
          true /* foo comes from the extern block */);
 }
+static void test6() {
+  testIt("test6.chpl",
+         R""""(
+            module Lib {
+              extern { static int x; }
+            }
+            module M {
+              use Lib;
+              x;
+            }
+         )"""",
+         true /* foo comes from the extern block */);
+}
+static void test7() {
+  testIt("test7.chpl",
+         R""""(
+            module Lib {
+              extern { static int x; }
+            }
+            module M {
+              use Lib only x as y;
+              y;
+            }
+         )"""",
+         true /* foo comes from the extern block */);
+}
+
+
 
 
 int main() {
@@ -137,6 +165,8 @@ int main() {
   test3();
   test4();
   test5();
+  test6();
+  test7();
 
   return 0;
 }
