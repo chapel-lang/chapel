@@ -938,64 +938,41 @@ module BigInteger {
   }
 
 
+  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      shiftLeft(result, a, b:uint);
+    } else {
+      BigInteger.divQ2Exp(result, a, (0 - b):uint, rounding.down);
+    }
+  }
+  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: uint) {
+    BigInteger.mul_2exp(result, a, b);
+  }
 
   // Bit-shift left
-  operator bigint.<<(const ref a: bigint, b: int): bigint {
-    const a_ = a.localize();
+  operator bigint.<<(const ref a: bigint, b: integral): bigint {
     var c = new bigint();
+    BigInteger.shiftLeft(c, a, b);
+    return c;
+  }
 
+
+  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      mpz_mul_2exp(c.mpz, a_.mpz, b_);
-
+      shiftRight(result, a, b:uint);
     } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
+      BigInteger.mul_2exp(result, a, (0 - b):uint);
     }
-
-    return c;
   }
-
-  operator bigint.<<(const ref a: bigint, b: uint): bigint {
-    const a_ = a.localize();
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   c  = new bigint();
-
-    mpz_mul_2exp(c.mpz, a_.mpz, b_);
-
-    return c;
+  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: uint) {
+    BigInteger.divQ2Exp(result, a, b, rounding.down);
   }
-
 
 
   // Bit-shift right
-  operator bigint.>>(const ref a: bigint, b: int): bigint {
-    const a_ = a.localize();
+  operator bigint.>>(const ref a: bigint, b: integral): bigint {
     var c = new bigint();
-
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      mpz_mul_2exp(c.mpz, a_.mpz, b_);
-    }
-
-    return c;
-  }
-
-  operator bigint.>>(const ref a: bigint, b: uint): bigint {
-    const a_ = a.localize();
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   c  = new bigint();
-
-    mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
-
+    BigInteger.shiftRight(c, a, b);
     return c;
   }
 
@@ -1376,117 +1353,15 @@ module BigInteger {
 
 
   // <<=
-  operator bigint.<<=(ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_mul_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.<<=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(mp_bitcnt_t);
-
-    if _local {
-      mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-      }
-    }
+  operator bigint.<<=(ref a: bigint, b: integral) {
+    BigInteger.shiftLeft(a, a, b);
   }
 
 
 
   // >>=
-  operator bigint.>>=(ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_mul_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.>>=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(mp_bitcnt_t);
-
-    if _local {
-      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
-      }
-    }
+  operator bigint.>>=(ref a: bigint, b: integral) {
+    BigInteger.shiftRight(a, a, b);
   }
 
 
