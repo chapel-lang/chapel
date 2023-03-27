@@ -10,3 +10,7 @@ to initialize task-private variables.
 
 The difference of indvar-errors-3 from indvar-errors-2 is that in the
 former there are no like-named variables in an outer scope.
+
+Issue #21972 also tracks the fact that Dyno causes a "use-before-definition"
+error in this case, which is not deliberate and represents some kind of
+misresolution.
