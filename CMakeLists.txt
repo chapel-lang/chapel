@@ -284,13 +284,18 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
 
+if(CHPLENV_RETURNCODE AND NOT CHPLENV_RETURNCODE EQUAL 0)
+  message(FATAL_ERROR "CHPL_LLVM_GCC_PREFIX=${CHPL_LLVM_GCC_PREFIX} CHPL_DEVELOPER=${CHPL_DEVELOPER} CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} printchplenv failed")
+else()
+  message(VERBOSE "printchplenv ran successfully")
+endif()
+
 message(VERBOSE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
 
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
 STRING(REGEX REPLACE ";" "\\\\;" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
 STRING(REGEX REPLACE "\n" ";" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
-# message(DEBUG "printchplenv returned ${CHPLENV_RETURNCODE}")
 # set all the chplenv values from printchplenv
 foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value
