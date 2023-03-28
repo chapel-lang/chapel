@@ -2653,7 +2653,7 @@ static void codegenPartTwo() {
     codegen_config();
   }
   else {
-    genGlobalInt("chpl_nodeID", 1, false);
+    genGlobalInt("chpl_nodeID", -1, false);
   }
 
   // Don't need to do most of the rest of the function for LLVM;

@@ -124,8 +124,6 @@ void chpl_gpu_impl_init() {
     assert(glob_size == sizeof(c_nodeid_t));
     chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
   }
-
-
 }
 
 static bool chpl_gpu_device_alloc = false;
