@@ -1,6 +1,6 @@
-./Module/SubModule.chpl:2: warning: module include statements are not yet stable and may change
-./Module.chpl:2: warning: module include statements are not yet stable and may change
-./Module.chpl:3: warning: module include statements are not yet stable and may change
+Module/SubModule.chpl:2: warning: module include statements are not yet stable and may change
+Module.chpl:2: warning: module include statements are not yet stable and may change
+Module.chpl:3: warning: module include statements are not yet stable and may change
 Module init
 SubTwo init
 SubModule init

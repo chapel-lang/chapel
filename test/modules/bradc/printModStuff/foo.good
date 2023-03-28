@@ -22,7 +22,7 @@ end of module search dirs
   subdir3/bam.chpl
   subdir2/bap.chpl
   subdir4/subdir/bax.chpl
-  ./bah.chpl
+  bah.chpl
   $CHPL_HOME/modules/standard/CTypes.chpl
   $CHPL_HOME/modules/standard/ChplConfig.chpl
   $CHPL_HOME/modules/standard/HaltWrappers.chpl

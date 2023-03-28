@@ -1,4 +1,4 @@
-./MapTest.chpl:6: In function 'testMap':
-./MapTest.chpl:11: warning: creating a 'new borrowed' type is deprecated
-./MapTest.chpl:18: warning: creating a 'new borrowed' type is deprecated
+MapTest.chpl:6: In function 'testMap':
+MapTest.chpl:11: warning: creating a 'new borrowed' type is deprecated
+MapTest.chpl:18: warning: creating a 'new borrowed' type is deprecated
   testBorrowed.chpl:9: called as testMap(type t = borrowed T, param testIndexing = false)
