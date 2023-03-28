@@ -4702,6 +4702,8 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   var ret : fileWriter(kind, locking);
   var err:errorCode = 0;
   on this._home {
+    // writeln("region arg: ", region);
+
     var start : region.idxType;
     var end : region.idxType;
     try this.checkAssumingLocal();
@@ -4710,7 +4712,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
       // removed
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         start = region.low;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = region.low;
         end = region.high;
@@ -4723,7 +4725,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
     } else if (region.hasHighBound()) {
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         start = 0;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = 0;
         end = region.high;
@@ -4733,6 +4735,8 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
       start = 0;
       end = max(region.idxType);
     }
+
+    // writeln("start: ", start, " end: ", end);
 
     ret = new fileWriter(kind, locking, defaultFmtVal(true), this, err, hints,
                          start, end, style);
