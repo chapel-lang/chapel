@@ -942,7 +942,7 @@ module BigInteger {
     if b >= 0 {
       shiftLeft(result, a, b:uint);
     } else {
-      BigInteger.divQ2Exp(result, a, (0 - b):uint, rounding.down);
+      BigInteger.divQ2Exp(result, a, (0 - b):uint, round.down);
     }
   }
   private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: uint) {
@@ -965,7 +965,7 @@ module BigInteger {
     }
   }
   private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: uint) {
-    BigInteger.divQ2Exp(result, a, b, rounding.down);
+    BigInteger.divQ2Exp(result, a, b, round.down);
   }
 
 
