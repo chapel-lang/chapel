@@ -1,4 +1,4 @@
-// deprecated for 1.30 by Jade
+// deprecated in 1.31 by jade
 class A {
   var x;
 }
