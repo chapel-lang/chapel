@@ -1,4 +1,4 @@
 lastResort.chpl:6: error: ambiguous call 'plus(int(64), uint(64))'
-./stdModule.chpl:5: note: candidates are: plus(x: uint, y: uint)
-./stdModule.chpl:10: note:                 plus(x: int, y: uint)
-./userModule.chpl:1: note:                 plus(x: int, y: uint)
+stdModule.chpl:5: note: candidates are: plus(x: uint, y: uint)
+stdModule.chpl:10: note:                 plus(x: int, y: uint)
+userModule.chpl:1: note:                 plus(x: int, y: uint)

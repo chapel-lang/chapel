@@ -1,4 +1,4 @@
-./RunVectorizeOnlyRawLoops.chpl:4: warning: The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead
+RunVectorizeOnlyRawLoops.chpl:4: warning: The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead
 
  allocateLoopSuiteRunInfo...
 

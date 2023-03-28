@@ -1,4 +1,4 @@
-./ArrayTest.chpl:1: In function 'testArray':
-./ArrayTest.chpl:5: warning: creating a 'new borrowed' type is deprecated
+ArrayTest.chpl:1: In function 'testArray':
+ArrayTest.chpl:5: warning: creating a 'new borrowed' type is deprecated
   testBorrowed.chpl:9: called as testArray(type t = borrowed T)
-./ArrayTest.chpl:9: error: halt reached - Can't resize domains whose arrays' elements don't have default values
+ArrayTest.chpl:9: error: halt reached - Can't resize domains whose arrays' elements don't have default values

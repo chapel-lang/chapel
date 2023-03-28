@@ -1,4 +1,4 @@
-./TupleTest.chpl:6: In function 'test':
-./TupleTest.chpl:7: warning: creating a 'new borrowed' type is deprecated
-./TupleTest.chpl:7: warning: creating a 'new borrowed' type is deprecated
+TupleTest.chpl:6: In function 'test':
+TupleTest.chpl:7: warning: creating a 'new borrowed' type is deprecated
+TupleTest.chpl:7: warning: creating a 'new borrowed' type is deprecated
   testBorrowed.chpl:9: called as test(type t = borrowed T)
