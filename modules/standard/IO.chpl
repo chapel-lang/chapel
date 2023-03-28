@@ -7227,6 +7227,7 @@ proc fileWriter.writebits(v:integral, nbits:integral) throws {
   :arg x: a value containing *numBits* bits to write the least-significant bits
   :arg numBits: how many bits to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws IllegalArgumentError: Thrown if writing more bits than fit into `x`.
@@ -7254,6 +7255,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
 
   :arg codepoint: Unicode codepoint to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7305,6 +7307,7 @@ proc fileReader.readCodepoint(ref codepoint: int):bool throws {
 
   :arg byte: the byte to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7378,6 +7381,7 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7396,6 +7400,7 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7422,6 +7427,7 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
   :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
   :arg numBytes: the number of bytes to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7453,6 +7459,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
   :arg numBytes: the number of bytes to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7478,6 +7485,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
               order in which to write the number. Defaults to
               ``ioendian.native``.
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7510,6 +7518,7 @@ proc fileWriter.writeBinary(arg:numeric,
   :arg endian: :type:`ioendian` specifies the byte order in which
             to write the number.
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7535,6 +7544,7 @@ proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7582,6 +7592,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7620,6 +7631,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
               order in which to read the numbers. Defaults to
               ``ioendian.native``.
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -7665,6 +7677,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   :arg endian: :type:`ioendian` specifies the byte order in which
             to write the number.
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified region.
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
@@ -8263,7 +8276,7 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
 
    :throws EofError: Thrown if EOF is reached before all the arguments could be
                      written.
-   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
 pragma "fn exempt instantiation limit"
@@ -8327,10 +8340,10 @@ proc fileWriter.writeln() throws {
               internally, but for other types this function will call
               value.writeThis() with the fileWriter as an argument.
 
-   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+   :throws EofError: Thrown if EOF is reached before all the arguments
+                     could be written.
+   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
-   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments
-                               could be written.
  */
 proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());

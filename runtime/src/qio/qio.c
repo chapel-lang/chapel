@@ -2877,10 +2877,10 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   //_qio_buffered_advance_cached(ch);
 
   // handle EOF case
-  if( qio_channel_offset_unlocked(ch) > ch->end_pos ) return QIO_EEOF;
+  if( qio_channel_offset_unlocked(ch) >= ch->end_pos ) return QIO_EEOF;
 
   // handle unexpected EOF case
-  if (ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos) {
+  if (ch->end_pos < INT64_MAX && _right_mark_start(ch) + len >= ch->end_pos) {
     // now amt_written != len: will result in a QIO_ESHORT in qio_channel_write_amt
     toWriteTotal = ch->end_pos - _right_mark_start(ch);
   } else {
@@ -3139,11 +3139,11 @@ qioerr _qio_channel_flush_qio_unlocked(qio_channel_t* ch)
   }
 
   // If there was an error saved earlier, report it now.
-  // We don't report EILSEQ, EEOF, or EFORMAT on a flush.
+  // We don't report EILSEQ, EEOF, EFORMAT, or ESHORT on a flush.
   saved_err = qio_channel_error(ch);
   errcode = qio_err_to_int(saved_err);
   if( !err &&
-      !(errcode == EILSEQ || errcode == EEOF || errcode == EFORMAT) ) {
+      !(errcode == EILSEQ || errcode == EEOF || errcode == EFORMAT || errcode == ESHORT) ) {
     err = saved_err;
   }
   return err;
