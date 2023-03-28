@@ -65,6 +65,7 @@ char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
 std::string ldflags;
+bool ccwarnings = false;
 
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
