@@ -765,13 +765,17 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b: integral): bigint {
+  operator bigint.+(const ref a: bigint, b): bigint
+  where isIntegralType(b.type) || isBoolType(b.type)
+  {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
-  operator bigint.+(a: integral, const ref b: bigint): bigint {
+  operator bigint.+(a, const ref b: bigint): bigint 
+  where isIntegralType(a.type) || isBoolType(a.type)
+  {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
@@ -786,13 +790,17 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b: integral): bigint {
+  operator bigint.-(const ref a: bigint, b): bigint
+  where isIntegralType(b.type) || isBoolType(b.type)
+  {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
-  operator bigint.-(a: integral, const ref b: bigint): bigint {
+  operator bigint.-(a, const ref b: bigint): bigint
+  where isIntegralType(a.type) || isBoolType(a.type)
+  {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
@@ -805,15 +813,19 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b: integral): bigint {
+  operator bigint.*(const ref a: bigint, b): bigint
+  where isIntegralType(b.type) || isBoolType(b.type)
+  {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
-  operator bigint.*(a: integral, const ref b: bigint): bigint {
+  operator bigint.*(a, const ref b: bigint): bigint
+  where isIntegralType(a.type) || isBoolType(a.type)
+  {
     var c = new bigint();
-    BigInteger.mul(c, a, b);
+    BigInteger.mul(c, b, a);
     return c;
   }
 
