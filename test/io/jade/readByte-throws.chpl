@@ -11,10 +11,10 @@ var f = openTempFile();
   var r = f.reader();
   r.readByte(); // should not throw
   try {
-    r.readByte(); // should throw
+    r.readByte(); // should throw, fileReader is at EOF
     writeln("Incorrectly did not throw");
-  } catch e:UnexpectedEofError {
-    writeln("Correctly threw UnexpectedEofError");
+  } catch e:EofError {
+    writeln("Correctly threw EofError");
   } catch { 
     writeln("Incorrectly threw some other error");
   }

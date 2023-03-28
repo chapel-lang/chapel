@@ -6082,7 +6082,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable
 {
-  if maxSize > a.domain.size
+  if maxSize > a.size
     then throw new IllegalArgumentError("'maxSize' argument exceeds size of array in readLine");
   if maxSize == 0 then return 0;
 
@@ -6991,7 +6991,7 @@ proc fileReader.readString(maxSize: int): string throws {
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
-    throw EofError("EOF encountered in readString");
+    throw new EofError("EOF encountered in readString");
 
   return ret;
 }
@@ -7066,7 +7066,7 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 
   if e != 0 && e != EEOF then throw createSystemError(e);
   else if e == EEOF && numRead == 0 then
-    throw EofError("EOF encountered in readBytes");
+    throw new EofError("EOF encountered in readBytes");
 
   return ret;
 }
@@ -7470,9 +7470,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var byte_ptr = ptr : c_ptr(uint(8));
   e = try qio_channel_write_amt(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t);
 
-  if (e != 0) {
-    throw createSystemOrChplError(e);
-  }
+  if e != 0 then throw createSystemOrChplError(e);
 }
 
 /*
@@ -7648,11 +7646,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
 
-      if e == EEOF {
-        throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
-      } else if e != 0 {
+      if e != 0 then
         throw createSystemOrChplError(e);
-      }
     } else {
       for b in data {
         select (endian) {
@@ -7665,11 +7660,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
           }
         }
 
-        if e == EEOF {
-          throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
-        } else if e != 0 {
+        if e != 0 then
           throw createSystemOrChplError(e);
-        }
       }
     }
   }

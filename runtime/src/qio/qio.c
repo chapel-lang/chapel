@@ -2897,7 +2897,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
 
   // if possible make a direct system call instead of buffering
   if (
-    len >= qio_write_unbuffered_threshold && // the write is large enough
+    toWriteTotal >= qio_write_unbuffered_threshold && // the write is large enough
     method != QIO_METHOD_MMAP &&             // we aren't using mmap
     method != QIO_METHOD_MEMORY &&           // we aren't using mem
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
@@ -2935,7 +2935,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
           break;
       }
       if( err ) {
-        *amt_written = num_written + len - remaining;
+        *amt_written = num_written + toWriteTotal - remaining;
         goto error;
       }
       // move the ptr and right_mark_start forward by 'num_written' bytes
