@@ -34,14 +34,6 @@ else
       echo "brew-test --only-cleanup-before succeeded"
 fi
 
-brew test-bot --only-setup
-if [ $? -ne 0 ]; then
-      echo "brew test-bot --only-setup failed" 
-      exit 1
-else
-      echo "brew test-bot --only-setup succeeded"
-fi
-
 brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae=
 if [ $? -ne 0 ]; then
       echo "brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae= failed" 
