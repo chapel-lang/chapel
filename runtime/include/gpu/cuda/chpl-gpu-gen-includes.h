@@ -26,6 +26,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+extern __device__ c_nodeid_t chpl_nodeID;
 
 // General TODO
 // This file is included in the application executable only. It mirrors
@@ -55,7 +56,7 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 {
   chpl_localeID_t localeID;
-  localeID = {0,chpl_task_getRequestedSubloc()};
+  localeID = {chpl_nodeID,chpl_task_getRequestedSubloc()};
   return localeID;
 }
 
@@ -70,7 +71,7 @@ __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, 
 }
 
 __device__ static inline c_nodeid_t get_chpl_nodeID(void) {
-  return 0;
+  return chpl_nodeID;
 }
 
 __device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {

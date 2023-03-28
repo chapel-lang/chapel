@@ -84,6 +84,8 @@ static void chpl_gpu_ensure_context() {
   }
 }
 
+extern c_nodeid_t chpl_nodeID;
+
 
 void chpl_gpu_impl_init() {
   int         num_devices;
@@ -113,7 +115,17 @@ void chpl_gpu_impl_init() {
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
+
+    CUDA_CALL(cuCtxSetCurrent(context));
+    CUdeviceptr ptr;
+    size_t glob_size;
+    CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, chpl_gpu_cuda_modules[i],
+                                "chpl_nodeID"));
+    assert(glob_size == sizeof(c_nodeid_t));
+    chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
   }
+
+
 }
 
 static bool chpl_gpu_device_alloc = false;

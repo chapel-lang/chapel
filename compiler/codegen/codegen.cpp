@@ -2652,6 +2652,9 @@ static void codegenPartTwo() {
   if ( gCodegenGPU == false ) {
     codegen_config();
   }
+  else {
+    genGlobalInt("chpl_nodeID", 1, false);
+  }
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
