@@ -1,0 +1,1 @@
+shared-clear.chpl:6: warning: shared.clear is deprecated - please assign shared object to `nil` instead

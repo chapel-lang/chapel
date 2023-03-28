@@ -1,0 +1,1 @@
+shared-retain.chpl:7: warning: shared.retain is deprecated - please use shared.adopt instead

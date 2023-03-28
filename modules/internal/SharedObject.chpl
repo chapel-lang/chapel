@@ -365,20 +365,6 @@ module SharedObject {
       var ptr = owned.release(obj);
       return shared.adopt(ptr);
     }
-    /*
-      Creates a new `shared` class reference to the argument.
-      The result has the same type as the argument.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`shared.create`
-         and :proc:`shared.retain`. However, `adopt` is not as widely used as
-         `create` and `retain` yet, so there may be some bugs we have not
-         found yet. If you discover any bugs with `adopt`, please report them
-         to us and fall back on `create` and `retain`.
-    */
-    inline proc type adopt(pragma "nil from arg" in obj: shared) {
-      return obj;
-    }
 
     /*
       Starts managing the argument class instance `obj`
@@ -413,6 +399,7 @@ module SharedObject {
        The result type preserves nilability of the argument type.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
+    @deprecated(notes="shared.create from an owned is deprecated - please use a combination of :proc:`owned.release` and :proc:`shared.adopt` instead")
     inline proc type create(pragma "nil from arg" in take: owned) {
       var result : shared = take;
       return result;
@@ -420,6 +407,7 @@ module SharedObject {
 
     /* Creates a new `shared` class reference to the argument.
        The result has the same type as the argument. */
+    @deprecated(notes="shared.create from a shared is deprecated - please use assignment instead")
     inline proc type create(pragma "nil from arg" in src: shared) {
       return src;
     }
@@ -431,6 +419,7 @@ module SharedObject {
        It is an error to directly delete the class instance
        after passing it to `shared.create()`. */
     pragma "unsafe"
+    @deprecated(notes="shared.create from an unmanaged is deprecated - please use :proc:`shared.adopt` instead")
     inline proc type create(pragma "nil from arg" p : unmanaged) {
       // 'result' may have a non-nilable type
       var result: (p.type : shared);
@@ -454,6 +443,7 @@ module SharedObject {
        If this record was the last :record:`shared` managing a
        non-nil instance, that instance will be deleted.
      */
+    @deprecated(notes="shared.retain is deprecated - please use :proc:`shared.adopt` instead")
     proc ref retain(pragma "nil from arg" newPtr:unmanaged) {
       if !isCoercible(newPtr.type, chpl_t) then
         compilerError("cannot retain '" + newPtr.type:string + "' " +
@@ -475,6 +465,7 @@ module SharedObject {
        Equivalent to ``shared.retain(nil)``.
      */
     pragma "leaves this nil"
+    @deprecated(notes="shared.clear is deprecated - please assign shared object to `nil` instead")
     proc ref clear() {
       doClear();
     }
@@ -546,9 +537,8 @@ module SharedObject {
 
   pragma "no doc"
   operator =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
-    where ! isNonNilableClass(lhs)
   {
-    lhs.clear();
+    lhs.doClear();
   }
 
   /*
