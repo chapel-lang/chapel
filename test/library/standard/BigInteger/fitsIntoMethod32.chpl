@@ -32,5 +32,5 @@ check_bounds(2, c_short);
 check_bounds(3, c_ushort);
 check_bounds(4, c_int);
 check_bounds(5, c_uint);
-check_bounds(4, c_long);
-check_bounds(5, c_ulong);
+check_bounds(6, c_long);
+check_bounds(7, c_ulong);
