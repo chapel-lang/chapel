@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-Script used in docker exec command to test homebrew formula
+#Script used in docker exec command to test homebrew formula
 brew test-bot --only-tap-syntax
 if [ $? -ne 0 ]; then
       echo "brew test-bot --only-tap-syntax failed" 
@@ -9,6 +9,23 @@ else
       echo "brew test-bot --only-tap-syntax succeeded"
 fi
 
+brew test-bot --only-formulae-detect
+    if [ $? -ne 0 ]; then
+      echo "brew test-bot --only-formulae-detect failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-formulae-detect succeeded"
+    fi
+
+brew test-bot --only-setup
+    if [ $? -ne 0 ]; then
+      echo "brew test-bot --only-setup failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-setup succeeded"
+    fi
+
+# tests commands
 brew-test --only-cleanup-before
 if [ $? -ne 0 ]; then
       echo "brew-test --only-cleanup-before failed" 
