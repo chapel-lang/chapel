@@ -1007,16 +1007,16 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(const ref a: bigint, const ref b: bigint) : c_int {
+  private inline proc cmp(const ref a: bigint, const ref b: bigint) {
     return a.cmp(b);
   }
 
-  private inline proc cmp(const ref a: bigint, b: integral) : c_int {
+  private inline proc cmp(const ref a: bigint, b: integral) {
     return a.cmp(b);
   }
 
-  private inline proc cmp(a: integral, const ref b: bigint) : c_int {
-    const ret = a.cmp(b);
+  private inline proc cmp(a: integral, const ref b: bigint) {
+    const ret = b.cmp(a);
     return 0 - ret;
   }
 
