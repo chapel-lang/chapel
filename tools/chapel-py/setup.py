@@ -10,7 +10,7 @@ CXXFLAGS += subprocess.check_output(["llvm-config", "--cxxflags"]).decode(sys.st
 CXXFLAGS += ["-std=c++17", "-I/Users/daniel.fedorin/Documents/software/chapel/frontend/include"]
 
 LDFLAGS = []
-LDFLAGS += ["-L/Users/daniel.fedorin/Documents/software/chapel/lib/compiler/darwin-arm6", "-lChplFrontend"]
+LDFLAGS += ["-L/Users/daniel.fedorin/Documents/software/chapel/lib/compiler/darwin-arm64", "-lChplFrontend"]
 
 setup(name = "chapel",
       version = "0.1",
