@@ -24,9 +24,9 @@ proc extractThread(){
           if(finish.read() == true){
               return;
           }        
-          mul(q3, q, 3);
-          add(q3AndR, q3,r);
-          divQ(q3AndRDivT, q3AndR,t);
+          q3.mul(q , 3);
+          q3AndR.add(q3,r);
+          q3AndRDivT.divQ(q3AndR,t);
           digit = q3AndRDivT:int;
           extractCalculating.write(false);
     }
@@ -64,20 +64,20 @@ proc main{
                 tPrecalculation = false;
             }
             qCalculating.waitFor(false); // Wait for 'q *= 10' to finish (if it runs).
-            mul(doubleQ, q,2);
+            doubleQ.mul(q,2);
             qMultiplicator = k;
             qCalculating.write(true);
 
-            add(doubleQAndR, doubleQ,r);
-            mul(r, doubleQAndR,doubleK);
+            doubleQAndR.add(doubleQ,r);
+            r.mul(doubleQAndR,doubleK);
 
             qCalculating.waitFor(false); // Wait for 'q *= qMultiplicator' to finish.
             tCalculating.waitFor(false); // Wait for 't *= doubleK' to finish (if it runs).
             if (q <= r) {
                 extractCalculating.write(true);
-                mul(q4, q,4);
-                add(q4AndR, q4,r);
-                divQ(q4AndRDivT, q4AndR,t);
+                q4.mul(q,4);
+                q4AndR.add(q4,r);
+                q4AndRDivT.divQ(q4AndR,t);
                 var digit2 = q4AndRDivT:int;
                 extractCalculating.waitFor(false); // Wait for 'digit = (q * 3 + r) / t' to finish.
 
@@ -85,13 +85,13 @@ proc main{
                     qMultiplicator = 10;
                     qCalculating.write(true);
                     write(digit);
-                    mul(tDig, t,digit);
+                    tDig.mul(t,digit);
                     k += 1;
                     doubleK = 2 * k + 1;
                     tCalculating.write(true);
                     tPrecalculation = true;
-                    sub(rSubTDig, r,tDig);
-                    mul(r, rSubTDig,10);
+                    rSubTDig.sub(r,tDig);
+                    r.mul(rSubTDig,10);
                     i += 1;
                     n_digits += 1;
                 }

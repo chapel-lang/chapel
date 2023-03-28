@@ -14,6 +14,4 @@ FILENAME.chpl:n: warning: bigint.mul method is deprecated - please use the stand
   FILENAME.chpl:n: called as genDigits(numDigits: int(64))
 3141592653	:10
 5897932384	:20
-6264338327	:30
-9502884197	:40
-1693993751	:50
+6264338    	:27
