@@ -15,6 +15,17 @@ extern PyTypeObject AstIterType;
 
 typedef struct {
   PyObject_HEAD
+  int current;
+  int num;
+  const void* container;
+  chpl::UniqueString (*nameGetter)(const void*, int);
+  const chpl::uast::AstNode* (*childGetter)(const void*, int);
+  PyObject* contextObject;
+} AstCallIterObject;
+extern PyTypeObject AstCallIterType;
+
+typedef struct {
+  PyObject_HEAD
   chpl::Context context;
   /* Type-specific fields go here. */
 } ContextObject;
@@ -144,6 +155,61 @@ PyTypeObject AstIterType = {
   .tp_new = PyType_GenericNew,
 };
 
+static int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* astObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &astObjectPy))
+      return -1;
+  auto astObject = (AstNodeObject*) astObjectPy;
+
+  Py_INCREF(astObject->contextObject);
+  self->contextObject = astObject->contextObject;
+
+  return 0;
+}
+
+static void AstCallIterObject_dealloc(AstCallIterObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject* AstCallIterObject_iter(AstCallIterObject *self) {
+  Py_INCREF(self);
+  return (PyObject*) self;
+}
+
+static PyObject* AstCallIterObject_next(AstCallIterObject *self) {
+  if (self->current == self->num) {
+    PyErr_SetNone(PyExc_StopIteration);
+    return nullptr;
+  }
+  auto argName = self->nameGetter(self->container, self->current);
+  auto child = wrapAstNode((ContextObject*) self->contextObject,
+                           self->childGetter(self->container, self->current));
+  PyObject* toReturn = nullptr;
+  if (!argName.isEmpty()) {
+    toReturn = Py_BuildValue("sO", argName.c_str(), child);
+    Py_XDECREF(child);
+  } else {
+    toReturn = child;
+  }
+  self->current++;
+  return toReturn;
+}
+
+PyTypeObject AstCallIterType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  .tp_name = "chapel.AstCallIter",
+  .tp_basicsize = sizeof(AstCallIterObject),
+  .tp_itemsize = 0,
+  .tp_dealloc = (destructor) AstCallIterObject_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("An iterator over Chapel function call actuals"),
+  .tp_iter = (getiterfunc) AstCallIterObject_iter,
+  .tp_iternext = (iternextfunc) AstCallIterObject_next,
+  .tp_init = (initproc) AstCallIterObject_init,
+  .tp_new = PyType_GenericNew,
+};
+
 static int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) chpl::Context(getenv("CHPL_HOME"));
   return 0;
@@ -213,6 +279,14 @@ static PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(igno
   return Py_BuildValue("s", nodeType);
 }
 
+static PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto attributeGroup = self->astNode->attributeGroup();
+  if (attributeGroup != nullptr) {
+    return wrapAstNode((ContextObject*) self->contextObject, attributeGroup);
+  }
+  Py_RETURN_NONE;
+}
+
 static PyObject* AstNodeObject_iter(AstNodeObject *self) {
   auto argList = Py_BuildValue("(O)", (PyObject*) self);
   auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
@@ -223,6 +297,7 @@ static PyObject* AstNodeObject_iter(AstNodeObject *self) {
 static PyMethodDef AstNodeObject_methods[] = {
   {"dump", (PyCFunction) AstNodeObject_dump, METH_NOARGS, "Dump the internal representation of the given AST node"},
   {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
+  {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -246,9 +321,40 @@ static PyObject* NamedDeclObject_name(PyObject *self, PyObject *Py_UNUSED(ignore
   return Py_BuildValue("s", namedDecl->name().c_str());
 }
 
+static PyObject* AttributeObject_name(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto attribute = ((AttributeObject*) self)->parent.astNode->toAttribute();
+  return Py_BuildValue("s", attribute->name().c_str());
+}
+
 static PyObject* CommentObject_text(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto namedDecl = ((CommentObject*) self)->parent.astNode->toComment();
   return Py_BuildValue("s", namedDecl->c_str());
+}
+
+static PyObject* StringLiteralObject_value(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto lit = ((StringLiteralObject*) self)->parent.astNode->toStringLiteral();
+  return Py_BuildValue("s", lit->value().c_str());
+}
+
+static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
+
+  auto argList = Py_BuildValue("(O)", (PyObject*) self);
+  auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList);
+  Py_XDECREF(argList);
+
+  auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy;
+  astCalliterObject->current = 0;
+  astCalliterObject->num = attributeNode->numActuals();
+  astCalliterObject->container = attributeNode;
+  astCalliterObject->childGetter = [](const void* node, int child) {
+    return ((chpl::uast::Attribute*) node)->actual(child);
+  };
+  astCalliterObject->nameGetter = [](const void* node, int child) {
+    return ((chpl::uast::Attribute*) node)->actualName(child);
+  };
+
+  return astCallIterObjectPy;
 }
 
 template <chpl::uast::asttags::AstTag tag>
@@ -270,6 +376,23 @@ template <>
 struct PerNodeInfo<chpl::uast::asttags::Comment> {
   static constexpr PyMethodDef methods[] = {
     {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::StringLiteral> {
+  static constexpr PyMethodDef methods[] = {
+    {"value", StringLiteralObject_value, METH_NOARGS, "Get the value of the StringLiteral node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::Attribute> {
+  static constexpr PyMethodDef methods[] = {
+    {"actuals", AttributeObject_actuals, METH_NOARGS, "Get the actuals for this Attribute node"},
+    {"name", AttributeObject_name, METH_NOARGS, "Get the name of this Attribute node"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
@@ -321,6 +444,7 @@ PyMODINIT_FUNC PyInit_chapel() {
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
+  if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
 #define AST_NODE(NAME) READY_TYPE(NAME)
@@ -336,6 +460,17 @@ PyMODINIT_FUNC PyInit_chapel() {
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
 
+#define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
+#define AST_NODE(NAME) ADD_TYPE(NAME)
+#define AST_LEAF(NAME) ADD_TYPE(NAME)
+#define AST_BEGIN_SUBCLASSES(NAME) ADD_TYPE(NAME)
+#define AST_END_SUBCLASSES(NAME)
+#include "chpl/uast/uast-classes-list.h"
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+  ADD_TYPE(AstNode);
   if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
     Py_DECREF(&ContextType);
     Py_DECREF(chapelModule);
