@@ -116,6 +116,8 @@ void chpl_gpu_impl_init() {
 
     chpl_gpu_primary_ctx[i] = context;
 
+    // TODO can we refactor some of this to chpl-gpu to avoid duplication
+    // between runtime layers?
     CUDA_CALL(cuCtxSetCurrent(context));
     CUdeviceptr ptr;
     size_t glob_size;
