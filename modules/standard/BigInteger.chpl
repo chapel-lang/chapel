@@ -4383,10 +4383,10 @@ module BigInteger {
   }
 
   proc divQR(ref       result: bigint,
-                    ref       remain: bigint,
-                    const ref numer: bigint,
-                    const ref denom: bigint,
-                    param     rounding = round.zero) {
+             ref       remain: bigint,
+             const ref numer: bigint,
+             const ref denom: bigint,
+             param     rounding = round.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
