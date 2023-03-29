@@ -20,7 +20,7 @@ writeln(a, " ", cmp_parse(val), " 6");
 val = a.cmpabs(b);
 writeln("abs(", a, ") ", cmp_parse(val), " abs(", b, ")");
 
-a.neg(a);
+neg(a, a);
 val = a.cmpabs(-4.2);
 writeln("abs(", a, ") ", cmp_parse(val), " abs(-4.2)");
 
