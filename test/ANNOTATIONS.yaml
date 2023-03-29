@@ -535,6 +535,9 @@ all:
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
+  03/14/23:
+    - text: Eliminate extra destructions when yielding tuples (#21887)
+      config: chapcs
 # End all
 
 allocate:
@@ -2178,6 +2181,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Default to jemalloc for host allocator on most platforms (#20774)
   03/08/23:
     - Yield tuples by value when appropriate (#21789)
+  03/14/23:
+    - Eliminate extra destructions when yielding tuples (#21887)
 
 allTotalTime:
   <<: *compiler-perf-base

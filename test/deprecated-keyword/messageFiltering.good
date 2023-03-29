@@ -71,10 +71,12 @@ messageFiltering.chpl:n: warning: Lorem ipsum abc$ dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum abc$def dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum abc$def$ dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum abc$def$ghi dolor sit amet
-messageFiltering.chpl:n: warning: --- Identifier is led with ! (should filter) ---
-messageFiltering.chpl:n: warning: Lorem ipsum !abc dolor sit amet
-messageFiltering.chpl:n: warning: --- Currently filters, but ideally wouldn't (see #18549) ---
-messageFiltering.chpl:n: warning: Lorem ipsum :proc:`~abc.def` dolor sit amet
+messageFiltering.chpl:n: warning: --- Identifier is led with ! (should filter if well formed) ---
+messageFiltering.chpl:n: warning: Lorem ipsum abc dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum :proc:`a!bc` dolor sit amet
+messageFiltering.chpl:n: warning: --- Prefixed with ~, should filter to just last component if well formed ---
+messageFiltering.chpl:n: warning: Lorem ipsum def dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum :proc:`a~bc.def` dolor sit amet
 1000
 1001
 1002
@@ -150,5 +152,7 @@ messageFiltering.chpl:n: warning: Lorem ipsum :proc:`~abc.def` dolor sit amet
 9004
 1101
 1102
+1103
 1200
 1201
+1202

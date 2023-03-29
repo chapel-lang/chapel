@@ -7638,7 +7638,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where (d.rank == 1 && d.stridable == false) && (
+  where (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0;
@@ -7647,7 +7647,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     try this.lock(); defer { this.unlock(); }
     const tSize = c_sizeof(t) : c_ssize_t;
 
-    if endian == ioendian.native {
+    if endian == ioendian.native && data.locale == this._home && data.isDefaultRectangular() {
       e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
 
       if e != 0 then
@@ -7655,7 +7655,9 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     } else {
       for b in data {
         select (endian) {
-          when ioendian.native { }
+          when ioendian.native {
+            e = try _write_binary_internal(this._channel_internal, iokind.native, b);
+          }
           when ioendian.big {
             e = try _write_binary_internal(this._channel_internal, iokind.big, b);
           }

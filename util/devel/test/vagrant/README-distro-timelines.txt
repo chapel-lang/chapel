@@ -17,8 +17,9 @@ Alma Linux -- see https://en.wikipedia.org/wiki/AlmaLinux
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
-  2    EOL June 30, 2023
-  2022 to be released by fall 2022
+  2    EOL June 30, 2025
+  2022 was renamed to 2023 in March 2023
+  2023 to be released in 2023 ?
 
 CentOS -- see https://wiki.centos.org/About/Product
 x 5 full updates until Jan 2014, maintenance until Mar 2017
@@ -70,9 +71,11 @@ x 31 EOL Nov 2020
 x 32 EOL May 2021
 x 33 EOL Nov 2021
 x 34 EOL Jun 2022
-  35 EOL Dec 2022
+x 35 EOL Dec 2022
   36 EOL May 2023
   37 EOL Nov 2023
+  38 EOL May 2024
+  39 EOL Nov 2024
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
@@ -88,11 +91,12 @@ x 11.2 EOL Oct 2019
 x 11.4 EOL Sep 2021
 x 12.0 EOL Feb 2020
 x 12.1 EOL Jan 2021
-  12.2 EOL Mar 2022
-  12.3
-  12.4 not released yet
-  13.0 EOL Aug 2022
+x 12.2 EOL Mar 2022
+x 12.3 EOL Mar 2023
+  12.4 EOL Dec 2023
+x 13.0 EOL Aug 2022
   13.1
+  13.2 not released yet
   14.0 not released yet
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
@@ -105,7 +109,7 @@ x 42.3 EOL Jun 2019
 x 15.0 EOL Nov 2019
 x 15.1 EOL Nov 2020
 x 15.2 EOL Dec 2021
-  15.3 EOL Nov 2022
+x 15.3 EOL Nov 2022
   15.4 EOL Nov 2023
 
 Rocky Linux

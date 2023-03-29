@@ -36,4 +36,5 @@ target_sources(ChplFrontend-obj
                subprocess.cpp
                terminal.cpp
                version-info.cpp
+               filtering.cpp
               )
