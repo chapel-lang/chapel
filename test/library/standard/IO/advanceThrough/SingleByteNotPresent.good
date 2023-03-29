@@ -1,2 +1,4 @@
 UnexpectedEofError: end of file (in advanceThrough(string) with path "singleByteInput.txt" offset 60)
+EofError: end of file (in advanceThrough(string) with path "singleByteInput.txt" offset 60)
 UnexpectedEofError: end of file (in advanceThrough(bytes) with path "singleByteInput.txt" offset 60)
+EofError: end of file (in advanceThrough(bytes) with path "singleByteInput.txt" offset 60)

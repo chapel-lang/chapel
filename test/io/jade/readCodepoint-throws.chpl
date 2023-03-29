@@ -12,10 +12,10 @@ var f = open("test.txt", ioMode.cwr);
   var r = f.reader();
   r.readCodepoint(); // should not throw
   try {
-    r.readCodepoint(); // should throw
+    r.readCodepoint(); // should throw, fileReader is at EOF
     writeln("Incorrectly did not throw");
-  } catch e:UnexpectedEofError {
-    writeln("Correctly threw UnexpectedEofError");
+  } catch e:EofError {
+    writeln("Correctly threw EofError");
   } catch { 
     writeln("Incorrectly threw some other error");
   }
