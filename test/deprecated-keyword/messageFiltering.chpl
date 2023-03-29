@@ -181,6 +181,13 @@ var x1201 = 1201;
 @deprecated(notes="Lorem ipsum :proc:`a~bc.def` dolor sit amet")
 var x1202 = 1202;
 
+
+// Using rst hyperlink syntax
+@deprecated(notes="--- Text using the rst hyperlink syntax ---")
+var x1300 = 1300;
+@deprecated(notes="Lorem ipsum :proc:`abc<def.ghi>` dolor sit amet")
+var x1301 = 1301;
+
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
 
@@ -273,3 +280,6 @@ writeln(x1103);
 writeln(x1200);
 writeln(x1201);
 writeln(x1202);
+
+writeln(x1300);
+writeln(x1301);
