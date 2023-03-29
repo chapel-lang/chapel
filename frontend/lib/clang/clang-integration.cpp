@@ -323,7 +323,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
         cmd.append(arg);
         cmd.append(" ");
       }
-      context->error(Location(), "Could not run clang command %s", cmd.c_str());
+//      context->error(Location(), "Could not run clang command %s", cmd.c_str());
+      context->error(Location(), "error running clang on extern block");
       ok = false;
     }
   }
