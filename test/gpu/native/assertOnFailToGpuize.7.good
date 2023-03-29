@@ -1,3 +1,1 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-assertOnFailToGpuize.chpl:66: error: Loop containing assertOnGpu() is not eligible for execution on a GPU
-assertOnFailToGpuize.chpl:6: note: function is recursive

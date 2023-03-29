@@ -303,12 +303,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
   }
 
   if (visitedFns.count(blk->getFunction()) != 0) {
-    if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
-      return true; // allow `halt` to be potentially called recursively
-    } else {
-      reportNotGpuizable(fn, "function is recursive");
-      return false;
-    }
+    return true; // allow recursive functions
   }
 
   visitedFns.insert(blk->getFunction());
@@ -767,6 +762,9 @@ void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
     fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
     fn->addFlag(FLAG_GPU_CODEGEN);
+  } else {
+    // this function has already been handled
+    return;
   }
 
   errorForOuterVarAccesses(fn);

@@ -3,9 +3,9 @@ use GPU;
 config param failureMode = 8;
 var globalVar = 0;
 
-proc directlyRecursiveFunc() { directlyRecursiveFunc(); }
-proc indirectlyRecursiveFunc() { indirectlyRecursiveFunc2(); }
-proc indirectlyRecursiveFunc2() { indirectlyRecursiveFunc(); }
+proc directlyRecursiveFunc(i:int) { if i > 0 then directlyRecursiveFunc(i-1); }
+proc indirectlyRecursiveFunc(i:int) { if i > 0 then indirectlyRecursiveFunc2(i-1); }
+proc indirectlyRecursiveFunc2(i:int) { if i > 0 then indirectlyRecursiveFunc(i-1); }
 proc usesOutsideVar() { return globalVar; }
 
 pragma "no gpu codegen"
@@ -22,14 +22,14 @@ on here.gpus[0] {
   if failureMode == 1 {
     foreach i in 0..10 {
       assertOnGpu();
-      directlyRecursiveFunc();
+      directlyRecursiveFunc(i);
     }
   }
 
   if failureMode == 2 {
     foreach i in 0..10 {
       assertOnGpu();
-      indirectlyRecursiveFunc();
+      indirectlyRecursiveFunc(i);
     }
   }
 
@@ -56,7 +56,7 @@ on here.gpus[0] {
   if failureMode == 6 {
     forall i in 0..10 {
       assertOnGpu();
-      directlyRecursiveFunc();
+      directlyRecursiveFunc(i);
     }
   }
 
@@ -65,7 +65,7 @@ on here.gpus[0] {
     var A: [1..10, 1..10] int;
     foreach a in A {
       assertOnGpu();
-      directlyRecursiveFunc();
+      directlyRecursiveFunc(5);
     }
   }
 
