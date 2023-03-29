@@ -177,32 +177,15 @@ module OwnedObject {
 
       If the argument is `nil` it returns `nil`.
     */
-    inline proc type release(
-      pragma "leaves arg nil"
-      ref obj: owned) where _to_nilable(obj.chpl_t) == obj.chpl_t {
-      // obj ptr is nilable
-      if obj == nil || obj.chpl_p == nil then return nil;
-
+    inline proc type release(pragma "leaves arg nil" ref obj: owned) {
       var oldPtr = obj.chpl_p;
       type t = obj.chpl_t;
+
       obj.chpl_p = nil;
-      return _to_unmanaged(oldPtr) : _to_nilable(_to_unmanaged(t));
-    }
 
-
-    /*
-      Empty `obj` so that it manages `nil` and
-      return the instance previously managed by this owned object.
-
-      If the argument is `nil` it returns `nil`.
-    */
-    inline proc type release(
-      pragma "leaves arg nil"
-      ref obj: owned) where _to_nilable(obj.chpl_t) != obj.chpl_t {
-      var oldPtr = obj.chpl_p;
-      type t = obj.chpl_t;
-      obj.chpl_p = nil;
-      return _to_unmanaged(oldPtr!) : _to_nonnil(_to_unmanaged(t));
+      return if _to_nilable(t) == t
+                then _to_unmanaged(oldPtr)
+                else _to_unmanaged(oldPtr!);
     }
 
 
