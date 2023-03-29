@@ -446,9 +446,9 @@ recovered from separately from a ``SystemError``. See the following example:
     // we're done reading
   } catch e: UnexpectedEofError {
     writeln("unable to read an 'int'");
-    // try to read something else?
+    // try to read something else? ...
   } catch e: SystemError {
-    writeln("major IO error: ", e);
+    writeln("system error in IO implementation: ", e);
   } catch e: Error {
     writeln("something else went wrong...");
   }
@@ -8181,11 +8181,12 @@ proc fileReader.readlnHelper(ref args ...?k,
 
    .. code-block:: chapel
 
-     var x = stdin.read(int)
+     var x = stdin.read(int);
 
    :arg t: the type to read
    :returns: the value read
 
+   :throws EofError: Thrown if the ``fileReader`` is at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
@@ -8219,6 +8220,7 @@ proc fileReader.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
+   :throws EofError: Thrown if the ``fileReader`` is at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
@@ -8238,6 +8240,7 @@ proc fileReader.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws EofError: Thrown if the ``fileReader`` is at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
@@ -8256,6 +8259,7 @@ proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws EofError: Thrown if the ``fileReader`` is at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered while more data was
                                expected.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
