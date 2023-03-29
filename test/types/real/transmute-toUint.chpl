@@ -1,3 +1,5 @@
+import Math.pi;
+
 config param r: real = pi,
        r32: real(32) = r;
 
