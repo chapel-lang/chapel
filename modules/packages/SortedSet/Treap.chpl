@@ -725,7 +725,7 @@ module Treap {
       :rtype: `(bool, eltType)`
     */
     proc const kth(k: int): (bool, eltType) {
-      if !isDefaultInitializable(e) {
+      if !isDefaultInitializable(eltType) {
         compilerError("kth is not available on types that can't be \
                       default-initialized, here: " + eltType: string);
       }
