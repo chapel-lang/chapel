@@ -532,7 +532,7 @@ module SharedObject {
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    lhs.retain(owned.release(rhs));
+    lhs = shared.adopt(owned.release(rhs));
   }
 
   @chpldoc.nodoc

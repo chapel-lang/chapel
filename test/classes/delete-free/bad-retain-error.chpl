@@ -13,7 +13,7 @@ proc makeA() {
 proc main() {
   var x = makeA();
   if testShared {
-    x.retain(new unmanaged B());
+    x = shared.adopt(new unmanaged B());
   }
   else {
     x = owned.adopt(new unmanaged B());
