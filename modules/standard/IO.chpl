@@ -4477,7 +4477,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = region.low;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = region.low;
         end = region.high;
@@ -4500,7 +4500,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = 0;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = 0;
         end = region.high;
@@ -8279,6 +8279,8 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
 
    :throws EofError: Thrown if EOF is reached before all the arguments could be
                      written.
+   :throws UnexpectedEofError: Thrown if EOF is encountered while writing one of
+                               the arguments.
    :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
@@ -8345,6 +8347,8 @@ proc fileWriter.writeln() throws {
 
    :throws EofError: Thrown if EOF is reached before all the arguments
                      could be written.
+   :throws UnexpectedEofError: Thrown if EOF is encountered while writing one of
+                               the arguments.
    :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
