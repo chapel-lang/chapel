@@ -1,4 +1,3 @@
-In file included from <built-in>:2:
 ExternBlockClangError.chpl:2:18: error: this function declaration is not a prototype [-Werror,-Wstrict-prototypes]
   extern void foo();
                  ^
