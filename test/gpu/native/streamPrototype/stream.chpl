@@ -200,7 +200,7 @@ proc verifyResults(A, B, C) {
 }
 
 //
-// Print out success/failure, the timings, and the GB/s value
+// Print out success/failure, the timings, and the GiB/s value
 //
 proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
@@ -227,7 +227,7 @@ proc printResults(successful, execTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
-    writeln("Performance (GB/s) = ", GBPerSec);
+    const GiBPerSec = numVectors * numBytes(elemType) * (m / minTime) / (1<<30):real;
+    writeln("Performance (GiB/s) = ", GiBPerSec);
   }
 }

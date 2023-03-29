@@ -1,5 +1,5 @@
-perfkeys: Performance (GB/s) =
+perfkeys: Performance (GiB/s) =
 files: stream.dat
-graphkeys: Performance (GB/s)
-ylabel: Performance (GB/s)
-graphtitle: STREAM Performance (GB/s)
+graphkeys: Performance (GiB/s)
+ylabel: Performance (GiB/s)
+graphtitle: STREAM Performance (GiB/s)
