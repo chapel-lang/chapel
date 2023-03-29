@@ -6,8 +6,10 @@ config const unbuffThreshold = 64,
 
 // modify the unbuffered threshold and io buffer size
 extern var qio_write_unbuffered_threshold:c_ssize_t;
+extern var qio_read_unbuffered_threshold:c_ssize_t;
 extern var qbytes_iobuf_size:c_size_t;
 qio_write_unbuffered_threshold = unbuffThreshold:c_ssize_t;
+qio_read_unbuffered_threshold = unbuffThreshold:c_ssize_t;
 qbytes_iobuf_size = iobuffSize:c_size_t;
 
 proc testDB(s: int): bool {
@@ -32,16 +34,25 @@ proc testDB(s: int): bool {
   w.close();
 
   // validate the output
-  const r = openReader("./db.bin");
-
+  const r = openReader("./db.bin", locking=false, hints = ioHintSet.mmap(false));
   var d : [0..<(s+2*smallWriteSize)] uint(8);
-  r.readBinary(d);
+
+  // read a small section
+  if smallWriteSize > 0 then
+    r.readBinary(c_ptrTo(d[0..<smallWriteSize]), smallWriteSize);
+
+  // read a large section
+  r.readBinary(c_ptrTo(d[smallWriteSize..#s]), s);
+
+  // read another small section
+  if smallWriteSize > 0 then
+    r.readBinary(c_ptrTo(d[s+smallWriteSize..]), smallWriteSize);
+
+  r.close();
 
   return (&& reduce (d[0..<smallWriteSize] == 1)) &&
          (&& reduce (d[smallWriteSize..#s] == 2)) &&
          (&& reduce (d[s+smallWriteSize..] == 3));
-
-  r.close();
 }
 
 for size in (unbuffThreshold-1)..(2*unbuffThreshold) {

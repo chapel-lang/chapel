@@ -7894,7 +7894,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
                        ``fileReader``.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
@@ -7902,6 +7902,12 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
+
+    if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
+      e = qio_channel_read_amt(false, this._channel_internal, data[0], (data.size * c_sizeof(data.eltType)) : c_ssize_t);
+
+      if e then throw createSystemOrChplError(e);
+    }
 
     for (i, b) in zip(data.domain, data) {
       select (endian) {
@@ -7990,7 +7996,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
                         ``fileReader``.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var nr: int = 0;

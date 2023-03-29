@@ -2815,6 +2815,9 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
+  // print the values in the following if statement
+  printf("len: %zd, method: %u, mark_cur: %zd, \n", len, method == QIO_METHOD_MMAP, ch->mark_cur);
+
   // if possible make a direct system call instead of using the buffer
   if (
     len >= qio_read_unbuffered_threshold &&  // the read is large enough
@@ -2823,6 +2826,9 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
+    printf("unbuffered read...");
+    fflush(stdout);
+
     // copy out what's left in the buffer
     gotlen = ch->av_end - _right_mark_start(ch);
     if ( gotlen > 0 ) {
@@ -2832,53 +2838,68 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
       remaining -= gotlen;
-      ptr = ((char*)ptr) + gotlen;
+      ptr = qio_ptr_add(ptr, gotlen);
+
+      // now advance the start of the available buffer by the amount.
+      _set_right_mark_start(ch, end.offset);
+
+      // if we've moved to a new part, release old parts.
+      err = _qio_buffered_behind(ch, false);
+      if( err ) goto error;
     }
 
     // make a direct system call to read the rest
-    if ( remaining > 0 ) {
-      while( len > 0 ) {
-        num_read = 0;
-        switch (method) {
-          case QIO_METHOD_READWRITE:
-            err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining, &num_read));
-            break;
-          case QIO_METHOD_PREADPWRITE:
-            err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining, _right_mark_start(ch), &num_read));
-            break;
-          case QIO_METHOD_FREADFWRITE:
-            if( ch->file->fp ) {
-              num_read_u = fread(ptr, 1, remaining, ch->file->fp);
-              err = 0;
-              if( num_read_u == 0 ) {
-                if( feof(ch->file->fp) ) err = QIO_EEOF;
-                else err = qio_int_to_err(ferror(ch->file->fp));
-              }
-              num_read = num_read_u;
-            } else {
-              QIO_GET_CONSTANT_ERROR(err, EINVAL, "missing file pointer");
-              num_read = 0;
+    while( remaining > 0 ) {
+      num_read = 0;
+      switch (method) {
+        case QIO_METHOD_READWRITE:
+          err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining, &num_read));
+          break;
+        case QIO_METHOD_PREADPWRITE:
+          err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining, _right_mark_start(ch), &num_read));
+          break;
+        case QIO_METHOD_FREADFWRITE:
+          if( ch->file->fp ) {
+            num_read_u = fread(ptr, 1, remaining, ch->file->fp);
+            err = 0;
+            if( num_read_u == 0 ) {
+              if( feof(ch->file->fp) ) err = QIO_EEOF;
+              else err = qio_int_to_err(ferror(ch->file->fp));
             }
-            break;
-          case QIO_METHOD_MMAP:
-            break;
-          case QIO_METHOD_MEMORY:
-            break;
-        }
-        // Return early on an error or on EOF.
-        if( err ) {
-          *amt_read = len - remaining;
-          return err;
-        }
-        ptr = qio_ptr_add(ptr, num_read);
-        len -= num_read;
-        _add_right_mark_start(ch, num_read);
+            num_read = num_read_u;
+          } else {
+            QIO_GET_CONSTANT_ERROR(err, EINVAL, "missing file pointer");
+            num_read = 0;
+          }
+          break;
+        case QIO_METHOD_MMAP:
+          break;
+        case QIO_METHOD_MEMORY:
+          break;
       }
+      // Return early on an error or on EOF.
+      if( err ) {
+        *amt_read = len - remaining;
+        return err;
+      }
+      ptr = qio_ptr_add(ptr, num_read);
+      remaining -= num_read;
+      _add_right_mark_start(ch, num_read);
     }
 
+    // reposition the existing buffer space 'amt_read' bytes to the right
+    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + *amt_read);
+    ch->av_end += *amt_read;
+
+    // re-setup the buffer for any future buffered writes
+    _qio_buffered_setup_cached(ch);
+
   } else {
+    printf("buffered read...");
+    fflush(stdout);
+
     // otherwise, read from the buffer
-      while ((remaining > 0) && !eof) {
+    while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
         toRead = ch->bufIoMax;
       } else {
