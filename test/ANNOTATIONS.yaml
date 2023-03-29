@@ -2331,9 +2331,13 @@ arkouda: &arkouda-base
     - 2060 add pdarray data type and size to metric (Bears-R-Us/arkouda#2067)
   02/28/23:
     - Parallelize array deinitialization (#21670)
+  03/28/23:
+    - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
 
 
 arkouda-string:
+  <<: *arkouda-base
+arkouda-bigint:
   <<: *arkouda-base
 
 arkouda-comp:
