@@ -17,6 +17,8 @@ var gg = "-1":bigint;
 var la = "315135":bigint;
 var lb = "12412":bigint;
 
+var s:bigint;
+
 on Locales[min(Locales.domain.high, executeLocale)] {
   assert((a+1) == b);
   assert((a+(1:bigint)) == b);
@@ -74,6 +76,18 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((1:uint(32))+a == b);
   assert((1:uint(64))+a == b);
 
+  // unary
+  assert(+a == a);
+
+
+  // assign ops
+  s = a;
+  s += 1;
+  assert(s == b);
+  s = a;
+  s += 1:bigint;
+  assert(s == b);
+
   // Subtraction
 
   assert(b-(1:int(8))  == a);
@@ -103,6 +117,17 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((1:uint(16))-b == -a);
   assert((1:uint(32))-b == -a);
   assert((1:uint(64))-b == -a);
+
+  // unary
+  assert(-(17:bigint) == -17:bigint);
+
+  // assign ops
+  s = b;
+  s -= 1;
+  assert(s == a);
+  s = b;
+  s += -1:bigint;
+  assert(s == a);
 
   // Multiplication
   assert(a*(1:int(8))  == a);
@@ -136,6 +161,14 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((1:uint(32))*a == a);
   assert((1:uint(64))*a == a);
 
+  // assign ops
+  s = a;
+  s *= 1;
+  assert(s == a);
+  s = a;
+  s *= 1:bigint;
+  assert(s == a);
+
   assert(aa + bb == 327547);
   assert(aa + bb + cc == "3426495623485904783805894":bigint);
   assert(aa + bb + cc + dd == "3426495623485903384821764":bigint);
@@ -164,6 +197,14 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(-5:bigint << 3:uint  == -40);
   assert(-5:bigint >> 1:uint  == -3);
 
+  // assign ops
+  s = 5:bigint;
+  s <<= 1;
+  assert(s == 10:bigint);
+  s = 5:bigint;
+  s >>= 1;
+  assert(s == 2:bigint);
+
   // right shifting a negative value over its size will always result in -1,
   // not 0
   var neg = -5:bigint;
@@ -176,6 +217,17 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(~123:bigint == -124);
   assert(123:bigint & 234:bigint == 106);
   assert(123:bigint | 234:bigint == 251);
+  assert(123:bigint ^ 234:bigint == 145);
+
+  s = 17:bigint;
+  s &= 13:bigint;
+  assert(s == 1:bigint);
+  s = 17:bigint;
+  s |= 13:bigint;
+  assert(s == 29:bigint);
+  s = 17:bigint;
+  s ^= 13:bigint;
+  assert(s == 28:bigint);
 
   var ret:bigint;
   gcd(ret, 48:bigint, 180:bigint);
@@ -214,4 +266,40 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(a.cmp(b) == -1);
   assert(b.cmp(a) == 1);
   assert(a.cmp(a) == 0);
+
+  // cmps
+  assert(a == a);
+  assert(a < b);
+  assert(a <= b);
+  assert(b > a);
+  assert(b >= a);
+  assert(a != b);
+
+  s = 17:bigint;
+  assert(s == 17:int);
+  assert(s >  16:int);
+  assert(s >= 16:int);
+  assert(s <  18:int);
+  assert(s <= 18:int);
+  assert(s != 18:int);
+  assert(s == 17:uint);
+  assert(s >  16:uint);
+  assert(s >= 16:uint);
+  assert(s <  18:uint);
+  assert(s <= 18:uint);
+  assert(s != 18:uint);
+  assert(17:int  == s);
+  assert(16:int  <  s);
+  assert(16:int  <= s);
+  assert(18:int  >  s);
+  assert(18:int  >= s);
+  assert(18:int  != s);
+  assert(17:uint == s);
+  assert(16:uint <  s);
+  assert(16:uint <= s);
+  assert(18:uint >  s);
+  assert(18:uint >= s);
+  assert(18:uint != s);
+
+
 }
