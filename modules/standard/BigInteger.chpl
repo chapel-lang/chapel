@@ -207,11 +207,11 @@ module BigInteger {
   pragma "ignore noinit"
   record bigint {
     // The underlying GMP C structure
-    pragma "no doc"
     pragma "no init"
+    @chpldoc.nodoc
     var mpz      : mpz_t;              // A dynamic-vector of C integers
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     proc init() {
@@ -330,7 +330,7 @@ module BigInteger {
     // If a bigint is copied to a remote node then it will receive a shallow
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
@@ -573,17 +573,17 @@ module BigInteger {
   //
   // Cast operators
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(src: integral, type toType: bigint): bigint {
     return new bigint(src);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(src: string, type toType: bigint): bigint throws {
     return new bigint(src);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
@@ -604,7 +604,7 @@ module BigInteger {
     return ret:t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isUintType(t) {
     var ret: c_ulong;
 
@@ -625,7 +625,7 @@ module BigInteger {
     return ret:t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isRealType(t) {
     var ret: c_double;
 
@@ -1910,7 +1910,7 @@ module BigInteger {
   // This helper is intended for use only when the exponent argument
   // is negative.  Negative exponents result in integers that are between -1
   // and 1 (but usually 0 unless the base is -1 or 1)
-  pragma "no doc"
+  @chpldoc.nodoc
   proc powNegativeExpHelper(ref result: bigint, const ref base: bigint, exp: int) {
     if (base == 1 || (base == -1 && AutoMath.abs(exp) % 2 == 1)) {
       result = base;
@@ -1920,7 +1920,7 @@ module BigInteger {
       result = 0;
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc powNegativeExpHelper(ref result: bigint, const ref base: bigintWrapper, exp: int) {
     const base1 = mpz_cmp_ui(base.mpz, 1) == 0;
     const baseNeg1 = mpz_cmp_si(base.mpz, -1) == 0;
@@ -2572,7 +2572,7 @@ module BigInteger {
   // This helper is intended for use only when the factor is 0
   // Division by 0 is undefined and it results in a
   // Floating point exception error.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc removeFactorZeroHelper(ref result: bigint, const ref x: bigint, const ref fac: bigint) : uint {
     result = 0;
     return 0;
@@ -4603,7 +4603,7 @@ module BigInteger {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record bigintWrapper {
     pragma "no init"
     var mpz: mpz_t;
@@ -4627,7 +4627,7 @@ module BigInteger {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc bigint.localize() {
     if _local {
       const ret = new bigintWrapper(this.mpz);
@@ -4641,7 +4641,7 @@ module BigInteger {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc bigint.hash(): uint {
     var ret: uint = this > 0;
     if _local {
