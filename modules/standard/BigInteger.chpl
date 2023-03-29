@@ -1038,19 +1038,11 @@ module BigInteger {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(const ref a: bigint, b: int): bool {
+  operator bigint.==(const ref a: bigint, b: integral): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
-  operator bigint.==(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
-  operator bigint.==(a: uint, const ref b: bigint): bool {
+  operator bigint.==(a: integral, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
