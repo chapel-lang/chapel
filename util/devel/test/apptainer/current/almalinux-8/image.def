@@ -1,0 +1,12 @@
+BootStrap: docker
+From: almalinux:8
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    /provision-scripts/dnf-llvm.sh
+
+%runscript
+    ../../provision-scripts/run.sh
