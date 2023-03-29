@@ -773,7 +773,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(a, const ref b: bigint): bigint 
+  operator bigint.+(a, const ref b: bigint): bigint
   where isIntegralType(a.type) || isBoolType(a.type)
   {
     var c = new bigint();
