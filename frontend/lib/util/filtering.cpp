@@ -43,8 +43,10 @@ namespace {
     std::string reCntType2 = R"#(~([\w$]+\.?)+)#";
     // Starts with !, capture identifier to right of ! without capturing ! itself
     std::string reCntType3 = R"#(!([\w$.]+))#";
-    // support explicit title and reference target, capture the target
-    std::string reCntType4 = R"#((?:[\w$.]+)<([\w$.]+)>)#";
+    // support explicit title and reference target, captures the target
+    // note that Sphinx allows any character for the nice name of the title
+    // but does not allow a space directly before the '<'
+    std::string reCntType4 = R"#((?:[^<]+[^\s])<([\w$.]+)>)#";
 
     // OR all the content types together, wrapping each in a non capturing group
     std::string reContent = "(?:(?:" + reCntType1 + ")|(?:" + reCntType2 + ")|(?:" + reCntType3 + ")|(?:" + reCntType4 +  + "))";

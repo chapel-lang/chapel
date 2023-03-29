@@ -79,6 +79,9 @@ messageFiltering.chpl:n: warning: Lorem ipsum def dolor sit amet
 messageFiltering.chpl:n: warning: Lorem ipsum :proc:`a~bc.def` dolor sit amet
 messageFiltering.chpl:n: warning: --- Text using the rst hyperlink syntax ---
 messageFiltering.chpl:n: warning: Lorem ipsum def.ghi dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum def.ghi dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum def.ghi dolor sit amet
+messageFiltering.chpl:n: warning: Lorem ipsum :proc:`abc <def.ghi>` dolor sit amet
 1000
 1001
 1002
@@ -160,3 +163,6 @@ messageFiltering.chpl:n: warning: Lorem ipsum def.ghi dolor sit amet
 1202
 1300
 1301
+1302
+1303
+1304

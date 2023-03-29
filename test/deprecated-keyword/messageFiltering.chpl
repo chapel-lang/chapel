@@ -187,6 +187,13 @@ var x1202 = 1202;
 var x1300 = 1300;
 @deprecated(notes="Lorem ipsum :proc:`abc<def.ghi>` dolor sit amet")
 var x1301 = 1301;
+@deprecated(notes="Lorem ipsum :proc:`abc with spaces<def.ghi>` dolor sit amet")
+var x1302 = 1302;
+@deprecated(notes="Lorem ipsum :proc:`a-b_c<def.ghi>` dolor sit amet")
+var x1303 = 1303;
+// this should not filter
+@deprecated(notes="Lorem ipsum :proc:`abc <def.ghi>` dolor sit amet")
+var x1304 = 1304;
 
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
@@ -283,3 +290,6 @@ writeln(x1202);
 
 writeln(x1300);
 writeln(x1301);
+writeln(x1302);
+writeln(x1303);
+writeln(x1304);
