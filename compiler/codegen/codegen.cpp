@@ -1403,7 +1403,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       }
     }
     fprintf(hdrfile, "\n};\n");
-  } else {
+  } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *global_serializeTableEntryType =
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());
