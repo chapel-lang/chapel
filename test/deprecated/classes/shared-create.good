@@ -1,3 +1,3 @@
 shared-create.chpl:6: warning: shared.create from an unmanaged is deprecated - please use shared.adopt instead
-shared-create.chpl:11: warning: shared.create from an owned is deprecated - please use a combination of owned.release and shared.adopt instead
+shared-create.chpl:11: warning: shared.create from an owned is deprecated - please use a combination of OwnedObject.owned.release and shared.adopt instead
 shared-create.chpl:16: warning: shared.create from a shared is deprecated - please use assignment instead

@@ -399,7 +399,7 @@ module SharedObject {
        The result type preserves nilability of the argument type.
        If the argument is non-nilable, it must be recognized by the compiler
        as an expiring value. */
-    @deprecated(notes="shared.create from an owned is deprecated - please use a combination of :proc:`owned.release` and :proc:`shared.adopt` instead")
+    @deprecated(notes="shared.create from an owned is deprecated - please use a combination of :proc:`owned.release<OwnedObject.owned.release>` and :proc:`shared.adopt` instead")
     inline proc type create(pragma "nil from arg" in take: owned) {
       var result : shared = take;
       return result;
