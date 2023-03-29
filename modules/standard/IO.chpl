@@ -4529,7 +4529,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 
 /* Used to control the behavior of the region argument for :proc:`file.lines`.
    When set to ``true``, the region argument will fully specify the bounds that
-   this function would cover.  When set to ``false``, the region argument will
+   this function would cover.  When set to ``false``, the region argument useNewFileWriterRegionBounds
    exclude the high bound.  Defaults to ``false``, the original behavior.
  */
 config param useNewLinesRegionBounds = false;
@@ -4702,8 +4702,6 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   var ret : fileWriter(kind, locking);
   var err:errorCode = 0;
   on this._home {
-    // writeln("region arg: ", region);
-
     var start : region.idxType;
     var end : region.idxType;
     try this.checkAssumingLocal();
@@ -4735,8 +4733,6 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
       start = 0;
       end = max(region.idxType);
     }
-
-    // writeln("start: ", start, " end: ", end);
 
     ret = new fileWriter(kind, locking, defaultFmtVal(true), this, err, hints,
                          start, end, style);
@@ -5847,7 +5843,7 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
   :yields: lines ending in ``\n``
 
  */
-inline iter fileReader.lines() {
+iter fileReader.lines() {
 
   try! this.lock();
 
