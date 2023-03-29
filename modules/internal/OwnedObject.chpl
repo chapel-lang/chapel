@@ -33,13 +33,13 @@ module OwnedObject {
   pragma "copy mutates"
   pragma "managed pointer"
   record _owned {
-    pragma "no doc"
+    @chpldoc.nodoc
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
-    pragma "no doc"
     pragma "owned"
+    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that the compiler also allows coercion to the borrow type.
@@ -57,19 +57,19 @@ module OwnedObject {
       this.chpl_p = nil;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(p:borrowed) {
       compilerError("cannot initialize owned from a borrow");
       this.init(_to_unmanaged(p));
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(pragma "nil from arg" p:unmanaged) {
       this.chpl_t = _to_borrowed(p.type);
       this.chpl_p = _to_borrowed(p);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(p:?T) where isClass(T) == false &&
                           isSubtype(T, _owned) == false  &&
                           isIterator(p) == false {
@@ -99,7 +99,7 @@ module OwnedObject {
         compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(src: shared) {
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
@@ -107,7 +107,7 @@ module OwnedObject {
                     else _to_borrowed(src.type);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(src: borrowed) {
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
@@ -115,7 +115,7 @@ module OwnedObject {
                     else _to_borrowed(src.type);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(src: unmanaged) {
       compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
@@ -123,8 +123,9 @@ module OwnedObject {
                     else _to_borrowed(src.type);
     }
 
-    pragma "no doc"
+
     pragma "leaves this nil"
+    @chpldoc.nodoc
     proc init=(src : _nilType) {
       if this.type.chpl_t == ? then
         compilerError("Cannot establish type of owned when initializing with 'nil'");
@@ -136,7 +137,7 @@ module OwnedObject {
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
       this.chpl_t = src.chpl_t;
       this.chpl_p = owned.release(src);
@@ -145,7 +146,7 @@ module OwnedObject {
 
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc type adopt(source) {
       compilerError("cannot adopt a ", source.type:string);
     }
@@ -165,7 +166,7 @@ module OwnedObject {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc type release(source) {
       compilerError("cannot adopt a ", source.type:string);
     }
@@ -207,7 +208,7 @@ module OwnedObject {
 
 
     // Issue a compiler error for illegal uses.
-    pragma "no doc"
+    @chpldoc.nodoc
     proc type create(source) {
       compilerError("cannot create an 'owned' from ", source.type:string);
     }
@@ -365,7 +366,7 @@ module OwnedObject {
     else lhs.chpl_p = rhs_ptr;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator =(
     pragma "leaves arg nil"
     ref lhs:_owned, rhs:_nilType)
@@ -383,7 +384,7 @@ module OwnedObject {
   // initCopy is defined explicitly as a workaround
   // for problems with initializers in this case
   pragma "init copy fn"
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -393,8 +394,8 @@ module OwnedObject {
 
   // autoCopy is defined explicitly as a workaround
   // for problems with initializers in this case
-  pragma "no doc"
   pragma "auto copy fn"
+  @chpldoc.nodoc
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -403,24 +404,24 @@ module OwnedObject {
   }
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
-  pragma "no doc"
   pragma "auto destroy fn"
+  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _owned.readThis(f) throws {
     _readWriteHelper(f);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _owned.writeThis(f) throws {
     _readWriteHelper(f);
   }
 
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _owned._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
@@ -437,7 +438,7 @@ module OwnedObject {
   }
 
   // cast to owned?, no class downcast
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
     var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
@@ -447,7 +448,7 @@ module OwnedObject {
   }
 
   // cast to owned?, no class downcast
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
@@ -458,7 +459,7 @@ module OwnedObject {
   }
 
   // cast to owned!, no class downcast, no casting away nilability
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
@@ -469,7 +470,7 @@ module OwnedObject {
   }
 
   // cast to owned!, no class downcast, casting away nilability
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
@@ -483,7 +484,7 @@ module OwnedObject {
   }
 
   // this version handles downcast to non-nil owned
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(ref x:owned class?, type t:owned class) throws
     where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
   {
@@ -495,7 +496,7 @@ module OwnedObject {
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(ref x:owned class, type t:owned class) throws
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -507,7 +508,7 @@ module OwnedObject {
 
 
   // this version handles downcast to nilable owned
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(pragma "nil from arg" ref x:owned class?, type t:owned class?)
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
@@ -519,7 +520,7 @@ module OwnedObject {
     return new _owned(castPtr);
   }
   // this version handles downcast to nilable owned
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(ref x:owned class, type t:owned class?)
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
@@ -532,7 +533,7 @@ module OwnedObject {
   }
 
   // cast from nil to owned
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(pragma "nil from arg" x:_nilType, type t:_owned)  {
     if isNonNilableClass(t.chpl_t) then
       compilerError("Illegal cast from nil to non-nilable owned type");
@@ -543,8 +544,8 @@ module OwnedObject {
     return tmp;
   }
 
-  pragma "no doc"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   inline proc postfix!(const ref x:_owned) {
     import HaltWrappers;
     // Check only if --nil-checks is enabled
