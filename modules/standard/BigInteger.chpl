@@ -765,17 +765,23 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b): bigint
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
+  operator bigint.+(const ref a: bigint, b: int): bigint {
+    var c = new bigint();
+    BigInteger.add(c, a, b);
+    return c;
+  }
+  operator bigint.+(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.add(c, a, b);
     return c;
   }
 
-  operator bigint.+(a, const ref b: bigint): bigint
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
+  operator bigint.+(a: int, const ref b: bigint): bigint {
+    var c = new bigint();
+    BigInteger.add(c, b, a);
+    return c;
+  }
+  operator bigint.+(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
     return c;
@@ -790,17 +796,23 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b): bigint
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
+  operator bigint.-(const ref a: bigint, b: int): bigint {
+    var c = new bigint();
+    BigInteger.sub(c, a, b);
+    return c;
+  }
+  operator bigint.-(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
   }
 
-  operator bigint.-(a, const ref b: bigint): bigint
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
+  operator bigint.-(a: int, const ref b: bigint): bigint {
+    var c = new bigint();
+    BigInteger.sub(c, a, b);
+    return c;
+  }
+  operator bigint.-(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.sub(c, a, b);
     return c;
@@ -813,17 +825,23 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b): bigint
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
+  operator bigint.*(const ref a: bigint, b: int): bigint {
+    var c = new bigint();
+    BigInteger.mul(c, a, b);
+    return c;
+  }
+  operator bigint.*(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.mul(c, a, b);
     return c;
   }
 
-  operator bigint.*(a, const ref b: bigint): bigint
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
+  operator bigint.*(a: int, const ref b: bigint): bigint {
+    var c = new bigint();
+    BigInteger.mul(c, b, a);
+    return c;
+  }
+  operator bigint.*(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.mul(c, b, a);
     return c;
@@ -962,9 +980,12 @@ module BigInteger {
   }
 
   // Bit-shift left
-  operator bigint.<<(const ref a: bigint, b): bigint
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
+  operator bigint.<<(const ref a: bigint, b: int): bigint {
+    var c = new bigint();
+    BigInteger.shiftLeft(c, a, b);
+    return c;
+  }
+  operator bigint.<<(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.shiftLeft(c, a, b);
     return c;
@@ -984,9 +1005,12 @@ module BigInteger {
 
 
   // Bit-shift right
-  operator bigint.>>(const ref a: bigint, b): bigint
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
+  operator bigint.>>(const ref a: bigint, b: int): bigint {
+    var c = new bigint();
+    BigInteger.shiftRight(c, a, b);
+    return c;
+  }
+  operator bigint.>>(const ref a: bigint, b: uint): bigint {
     var c = new bigint();
     BigInteger.shiftRight(c, a, b);
     return c;
@@ -1023,134 +1047,108 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(const ref a: bigint, const ref b: bigint) {
-    return a.cmp(b);
-  }
+  private inline proc cmp(const ref a: bigint, const ref b: bigint)
+    do return a.cmp(b);
 
-  private inline proc cmp(const ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return a.cmp(b);
-  }
+  private inline proc cmp(const ref a: bigint, b: int)
+    do return a.cmp(b);
+  private inline proc cmp(const ref a: bigint, b: uint)
+    do return a.cmp(b);
 
-  private inline proc cmp(a, const ref b: bigint)
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    const ret = b.cmp(a);
-    return 0 - ret;
-  }
+  private inline proc cmp(a: int, const ref b: bigint)
+    do return 0 - (b.cmp(a));
+  private inline proc cmp(a: uint, const ref b: bigint)
+    do return 0 - (b.cmp(a));
 
 
   // Equality
-  operator bigint.==(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
+  operator bigint.==(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
-  operator bigint.==(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) == 0;
-  }
+  operator bigint.==(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) == 0;
+  operator bigint.==(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
-  operator bigint.==(a, const ref b: bigint): bool
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
+  operator bigint.==(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
+  operator bigint.==(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
 
   // Inequality
-  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
+  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
-  operator bigint.!=(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) != 0;
-  }
+  operator bigint.!=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) != 0;
+  operator bigint.!=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
-  operator bigint.!=(a, const ref b: bigint): bool
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) != 0;
-  }
+  operator bigint.!=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
+  operator bigint.!=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
 
   // Greater than
-  operator bigint.>(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
+  operator bigint.>(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
-  operator bigint.>(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) > 0;
-  }
+  operator bigint.>(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) > 0;
+  operator bigint.>(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
-  operator bigint.>(a, const ref b: bigint): bool
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
+  operator bigint.>(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
+  operator bigint.>(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
 
   // Less than
-  operator bigint.<(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
-  operator bigint.<(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) < 0;
+  operator bigint.<(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
-  operator bigint.<(a, const ref b: bigint): bool
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
+  operator bigint.<(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
 
   // Greater than or equal
-  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
+  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
-  operator bigint.>=(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) >= 0;
-  }
+  operator bigint.>=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) >= 0;
+  operator bigint.>=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
-  operator bigint.>=(a, const ref b: bigint): bool
-  where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) >= 0;
-  }
+  operator bigint.>=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
+  operator bigint.>=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
 
   // Less than or equal
-  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
+  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
-  operator bigint.<=(const ref a: bigint, b): bool
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    return BigInteger.cmp(a, b) <= 0;
-  }
+  operator bigint.<=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) <= 0;
+  operator bigint.<=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
-  operator bigint.<=(a, const ref b: bigint): bool
-    where isIntegralType(a.type) || isBoolType(a.type)
-  {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-
+  operator bigint.<=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
+  operator bigint.<=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
 
   //
@@ -1158,41 +1156,35 @@ module BigInteger {
   //
 
   // +=
-  operator bigint.+=(ref a: bigint, const ref b: bigint) {
-    BigInteger.add(a, a, b);
-  }
+  operator bigint.+=(ref a: bigint, const ref b: bigint)
+    do BigInteger.add(a, a, b);
 
-  operator bigint.+=(ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    BigInteger.add(a, a, b);
-  }
+  operator bigint.+=(ref a: bigint, b: int)
+    do BigInteger.add(a, a, b);
+  operator bigint.+=(ref a: bigint, b: uint)
+    do BigInteger.add(a, a, b);
 
 
 
   // -=
-  operator bigint.-=(ref a: bigint, const ref b: bigint) {
-    BigInteger.sub(a, a, b);
-  }
+  operator bigint.-=(ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(a, a, b);
 
-  operator bigint.-=(ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    BigInteger.sub(a, a, b);
-  }
+  operator bigint.-=(ref a: bigint, b: int)
+    do BigInteger.sub(a, a, b);
+  operator bigint.-=(ref a: bigint, b: uint)
+    do BigInteger.sub(a, a, b);
 
 
 
   // *=
-  operator bigint.*=(ref a: bigint, const ref b: bigint) {
-    BigInteger.mul(a, a, b);
-  }
+  operator bigint.*=(ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(a, a, b);
 
-  operator bigint.*=(ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    BigInteger.mul(a, a, b);
-  }
+  operator bigint.*=(ref a: bigint, b:  int)
+    do BigInteger.mul(a, a, b);
+  operator bigint.*=(ref a: bigint, b: uint)
+    do BigInteger.mul(a, a, b);
 
 
 
@@ -1316,20 +1308,18 @@ module BigInteger {
 
 
   // <<=
-  operator bigint.<<=(ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    BigInteger.shiftLeft(a, a, b);
-  }
+  operator bigint.<<=(ref a: bigint, b: int)
+    do BigInteger.shiftLeft(a, a, b);
+  operator bigint.<<=(ref a: bigint, b: uint)
+    do BigInteger.shiftLeft(a, a, b);
 
 
 
   // >>=
-  operator bigint.>>=(ref a: bigint, b)
-  where isIntegralType(b.type) || isBoolType(b.type)
-  {
-    BigInteger.shiftRight(a, a, b);
-  }
+  operator bigint.>>=(ref a: bigint, b:  int)
+    do BigInteger.shiftRight(a, a, b);
+  operator bigint.>>=(ref a: bigint, b: uint)
+    do BigInteger.shiftRight(a, a, b);
 
 
   // Swap

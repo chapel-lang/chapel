@@ -335,5 +335,14 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((true) >= s);
   assert((true) != s);
 
+  // test comparison under promotion
+  var abc = [a, b, c];
+  assert(abc == [a, b, c]);
+  assert(abc > [1,2,3]);
+  assert(abc > 1);
+  assert(17:bigint > [1,2,3]);
+  var ss = [1:bigint, 2:bigint, 3:bigint];
+  assert(ss == [1,2,3]);
+
 
 }
