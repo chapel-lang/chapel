@@ -4,8 +4,8 @@ use CommDiagnostics;
 
 proc main() {
   var D = Block.createDomain({0..#10});
-  var A: [D] int = 10;
-  var B: [D] int = 20;
+  var A: [D] bigint = 10;
+  var B: [D] bigint = 20;
   var C: [D] bigint;
 
   var alpha: bigint = 5;
