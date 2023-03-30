@@ -301,6 +301,26 @@ module Math {
     return chpl_erfc(x);
   }
 
+  /* Returns the value of the Napierian `e` raised to the power of the argument `x`. */
+  inline proc exp(x: real(64)): real(64) {
+    return chpl_exp(x);
+  }
+
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  inline proc exp(x : real(32)): real(32) {
+    return chpl_exp(x);
+  }
+
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  inline proc exp(z: complex(64)): complex(64) {
+    return chpl_exp(z);
+  }
+
+  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  inline proc exp(z: complex(128)): complex(128) {
+    return chpl_exp(z);
+  }
+  
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
      */
