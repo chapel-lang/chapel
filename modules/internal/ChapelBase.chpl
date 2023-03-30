@@ -1902,7 +1902,7 @@ module ChapelBase {
 
   /*
   inline proc chpl__tounmanaged(ref arg:Owned) {
-    return arg.release();
+    return owned.release(arg);
   }
   inline proc chpl__tounmanaged(arg) where arg:object {
     return arg;

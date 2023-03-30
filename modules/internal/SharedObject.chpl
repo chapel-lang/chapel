@@ -541,7 +541,7 @@ module SharedObject {
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    lhs.retain(rhs.release());
+    lhs.retain(owned.release(rhs));
   }
 
   pragma "no doc"
@@ -698,7 +698,7 @@ module SharedObject {
       compilerError("Cannot change class type in conversion from '",
                     x.type:string, "' to '", t:string, "'");
 
-    var p = x.release();
+    var p = owned.release(x);
     var rc: unmanaged ReferenceCount? = nil;
     if p != nil then
       rc = new unmanaged ReferenceCount();

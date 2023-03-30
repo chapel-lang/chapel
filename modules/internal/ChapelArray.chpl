@@ -682,7 +682,7 @@ module ChapelArray {
     return new _distribution(x);
   }
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
-    return new _distribution(x.release());
+    return new _distribution(owned.release(x));
   }
 
   proc chpl__buildDistValue(x) {

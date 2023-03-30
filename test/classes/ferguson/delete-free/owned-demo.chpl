@@ -56,28 +56,28 @@ proc examples() {
   var owned5 = new owned C(5)?;
   writeln("owned5 = ", owned5.borrow());
 
-  // The clear method can be used to delete the
-  // managed object, if any.
-  owned5.clear(); // deletes C(5)
-  writeln("after owned5.clear()");
+  // Assigning the managed object to nil can be used to 
+  // delete the managed object, if any.
+  owned5 = nil; // deletes C(5)
+  writeln("after owned5 = nil");
   writeln("owned5 = ", owned5.borrow());
 
-  // The retain method can be used to provide a new value for
+  // The adopt method can be used to provide a new value for
   // an owned to point to.
   // After this line:
   //  'owned1' will contain C(100); previous object C(4) will be destroyed
-  owned1.retain(new unmanaged C(100));
-  writeln("after owned1.retain C(100)");
+  owned1 = owned.adopt(new unmanaged C(100));
+  writeln("after owned1 = owned.adopt C(100)");
   writeln("owned1 = ", owned1.borrow());
 
   // The release method can be used to extract the
   // owned pointer when something else will have responsibility
   // for freeing it. Whatever owned has release() called on it
   // will contain nil after the call.
-  var ptr = owned1.release();
-  writeln("after owned1.release()");
+  var ptr = owned.release(owned1);
+  writeln("after owned.release(owned1)");
   writeln("owned1 = ", owned1.borrow());
-  writeln("owned1.release() returned = ", ptr);
+  writeln("owned.release(owned1) returned = ", ptr);
   delete ptr;
 
   // The `in` intent can be used to pass ownership from a call
