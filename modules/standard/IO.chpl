@@ -5883,6 +5883,7 @@ public use ChapelIOStringifyHelper;
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
+@deprecated("stringify is depredated; please use string.ioWrite instead")
 proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     return stringify_simple((...args));
@@ -5914,6 +5915,46 @@ proc stringify(const args ...?k):string {
       c_free(buf);
       return ret;
     }
+  }
+}
+
+/*
+  Create a :type:`~String.string` by writing the arguments to a
+  ``fileWriter`` and then reading the result from a ``fileReader``.
+
+  :arg args: The arguments to write to the string.
+
+  :returns: A string containing the result of writing the arguments.
+
+  :throws SystemError: Thrown if an internal error occured (more information
+                       :ref:`here reason<io-general-sys-error>`).
+*/
+proc type string.ioWrite(const args ...?k):string throws {
+  if _can_stringify_direct(args) {
+    return stringify_simple((...args));
+  } else {
+    var f = openMemFile(),
+        w = f.writer(locking=false);
+
+    w.write((...args));
+    const offset = w.offset();
+
+    try w.close();
+
+    var buf = c_malloc(uint(8), offset+1),
+        r = f.reader(locking=false);
+
+    r._readBytes(buf, offset:c_ssize_t);
+    buf[offset] = 0; // NULL terminating byte
+
+    try r.close();
+    try f.close();
+
+    const ret = createStringWithNewBuffer(buf, offset, offset+1,
+                                          decodePolicy.replace);
+
+    c_free(buf);
+    return ret;
   }
 }
 

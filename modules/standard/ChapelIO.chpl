@@ -878,8 +878,8 @@ module ChapelIO {
 
   pragma "no doc"
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only ioWrite;
+    return try! string.ioWrite((...args));
   }
 
   //
@@ -895,6 +895,6 @@ module ChapelIO {
   pragma "no doc"
   pragma "last resort"
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    return stringify(x);
+    return try! string.ioWrite(x);
   }
 }

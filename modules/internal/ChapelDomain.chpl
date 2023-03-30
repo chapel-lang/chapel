@@ -2595,7 +2595,7 @@ module ChapelDomain {
         return val._value.doiToString();
       } else {
         use IO;
-        return stringify(val);
+        return try! string.ioWrite(val);
       }
     }
 

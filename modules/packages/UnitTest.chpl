@@ -397,7 +397,7 @@ module UnitTest {
         }
         var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
-        tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
+        tmpString += "'" + string.ioWrite(seq1) + "' != '"+ string.ioWrite(seq2) + "'" ;
         for i in 0..#shorterLength {
           if seq1[i] != seq2[i] {
             tmpString += "\nFirst differing element at index "+i:string +":\n'"+seq1[i]:string+"'\n'"+seq2[i]:string+"'\n";
@@ -425,8 +425,8 @@ module UnitTest {
       array2: The second array to compare.
     */
     proc assertArrayEqual(array1: [], array2: []) throws {
-      const genericErrorMsg = "assert failed -\n'" + stringify(array1) +
-                              "'\nand\n'"+stringify(array2) + "'\n";
+      const genericErrorMsg = "assert failed -\n'" + string.ioWrite(array1) +
+                              "'\nand\n'"+string.ioWrite(array2) + "'\n";
 
       // Compare array types, size, and shape
       if array1.rank != array2.rank {
@@ -446,8 +446,8 @@ module UnitTest {
         // Compare array values
         const arraysEqual = && reduce (array1 == array2);
         if !arraysEqual {
-          const errorMsg = "assert failed -\n'" + stringify(array1) +
-                           "'\n!=\n'"+stringify(array2)+"'";
+          const errorMsg = "assert failed -\n'" + string.ioWrite(array1) +
+                           "'\n!=\n'"+string.ioWrite(array2)+"'";
           throw new owned AssertionError(errorMsg);
         }
       }
@@ -467,7 +467,7 @@ module UnitTest {
         assertSequenceEqual(tuple1,tuple2,"tuple("+firstType: string+")");
       }
       else {
-        var tmpString = "assert failed - '" + stringify(tuple1) +"' and '"+stringify(tuple2) + "' are not of same type";
+        var tmpString = "assert failed - '" + string.ioWrite(tuple1) +"' and '"+string.ioWrite(tuple2) + "' are not of same type";
         throw new owned AssertionError(tmpString);
       }
     }
@@ -499,12 +499,12 @@ module UnitTest {
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
         if (first != second) {
-          var tmpString = "assert failed - '" + stringify(first) +"' != '"+stringify(second)+"'";
+          var tmpString = "assert failed - '" + string.ioWrite(first) +"' != '"+string.ioWrite(second)+"'";
           throw new owned AssertionError(tmpString);
         }
       }
       else {
-        var tmpString = "assert failed - '" + stringify(first) +"' and '"+stringify(second) + "' are not of same type";
+        var tmpString = "assert failed - '" + string.ioWrite(first) +"' and '"+string.ioWrite(second) + "' are not of same type";
         throw new owned AssertionError(tmpString);
       }
     }
@@ -552,7 +552,7 @@ module UnitTest {
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
-          var tmpString = "assert failed -\n'" + stringify(first) +"'\n==\n'"+stringify(second)+"'";
+          var tmpString = "assert failed -\n'" + string.ioWrite(first) +"'\n==\n'"+string.ioWrite(second)+"'";
           throw new owned AssertionError(tmpString);
         }
       }
@@ -661,7 +661,7 @@ module UnitTest {
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
+          tmpString += "'"+string.ioWrite(seq1)+"'"+symbol+"'"+string.ioWrite(seq2)+"'" ;
         }
         tmpString+=tmplarge;
       }
@@ -682,13 +682,13 @@ module UnitTest {
           }
           else { // can be reimplemented using `reduce`
             if all(array1 <= array2) {
-              var tmpString = "assert failed -\n'" + stringify(array1) +"'\n<=\n'"+stringify(array2)+"'";
+              var tmpString = "assert failed -\n'" + string.ioWrite(array1) +"'\n<=\n'"+string.ioWrite(array2)+"'";
               throw new owned AssertionError(tmpString);
             }
         }
         }
         else {
-          var tmpString = "assert failed - First element is of shape " + stringify(array1.shape) +" and Second is of shape "+stringify(array2.shape);
+          var tmpString = "assert failed - First element is of shape " + string.ioWrite(array1.shape) +" and Second is of shape "+string.ioWrite(array2.shape);
           throw new owned AssertionError(tmpString);
         }
       }
@@ -755,7 +755,7 @@ module UnitTest {
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
-        var tmpString = "assert failed - '" + stringify(first) +"' <= '"+stringify(second)+"'";
+        var tmpString = "assert failed - '" + string.ioWrite(first) +"' <= '"+string.ioWrite(second)+"'";
         throw new owned AssertionError(tmpString);
       }
     }
@@ -863,7 +863,7 @@ module UnitTest {
           }
         }
         else {
-          tmpString += "'"+stringify(seq1)+"'"+symbol+"'"+stringify(seq2)+"'" ;
+          tmpString += "'"+string.ioWrite(seq1)+"'"+symbol+"'"+string.ioWrite(seq2)+"'" ;
         }
         tmpString+=tmplarge;
       }
@@ -884,13 +884,13 @@ module UnitTest {
           }
           else {
             if all(array1 >= array2) {
-              var tmpString = "assert failed - \n'" + stringify(array1) +"'\n>=\n'"+stringify(array2)+"'";
+              var tmpString = "assert failed - \n'" + string.ioWrite(array1) +"'\n>=\n'"+string.ioWrite(array2)+"'";
               throw new owned AssertionError(tmpString);
             }
         }
         }
         else {
-          var tmpString = "assert failed - First element is of shape " + stringify(array1.shape) +" and Second is of shape "+stringify(array2.shape);
+          var tmpString = "assert failed - First element is of shape " + string.ioWrite(array1.shape) +" and Second is of shape "+string.ioWrite(array2.shape);
           throw new owned AssertionError(tmpString);
         }
       }
@@ -957,7 +957,7 @@ module UnitTest {
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
-        var tmpString = "assert failed - '" + stringify(first) +"'>='"+stringify(second)+"'";
+        var tmpString = "assert failed - '" + string.ioWrite(first) +"'>='"+string.ioWrite(second)+"'";
         throw new owned AssertionError(tmpString);
       }
     }
