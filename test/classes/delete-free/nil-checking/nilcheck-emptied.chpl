@@ -51,7 +51,7 @@ proc bad4() {
   var x = new owned MyClass(1);
   ref y = x;
   var z = x;
-  y = nil;
+  writeln(y); y = nil;
   writeln(x);
   x.method();
 }

@@ -35,3 +35,13 @@ class A {
   delete un2;
 
 }
+
+
+{
+  writeln("test ownership transfer to owned object");
+  var own1: A? = new A(2, 3);
+  var own2 = own1;
+
+  writeln(own1);
+  writeln(own2);
+}

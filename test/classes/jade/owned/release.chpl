@@ -21,9 +21,3 @@ class A {
   writeln(r.type:string);
   delete r;
 }
-
-// start_test test/deprecated/classes/owned-clear.chpl \
-//   test/deprecated/classes/owned-create.chpl \
-//   test/deprecated/classes/owned-release-method.chpl \
-//   test/deprecated/classes/owned-retain.chpl \
-//   test/classes/jade/owned/*.chpl
