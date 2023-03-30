@@ -303,16 +303,11 @@ module OwnedObject {
   }
 
   /*
-    Assign one :record:`owned` to another. Deletes the object managed by
-    ``lhs``, if any. Transfers ownership of the object managed by ``rhs``
-    to ``lhs``, leaving ``rhs`` storing `nil`.
-
-    Assignment between two `owned` transfers ownership of the object
-    managed by ``rhs`` to ``lhs`` in this order:
-
-    * Set ``rhs`` to `nil`.
-    * Set ``lhs`` to point to the object that ``rhs`` referenced before, if any.
-    * Delete the object that ``lhs`` referenced before, if any.
+    Assignment between two :record:`owned` transfers ownership of the object
+    managed by ``rhs`` to ``lhs``. This is done by setting ``rhs`` to `nil` and 
+    then setting ``lhs`` to point to the object that ``rhs`` managed before,
+    if any. After that, it deletes the object previously managed by ``lhs``,
+    if any.
   */
   operator =(ref lhs:_owned,
          pragma "leaves arg nil"
