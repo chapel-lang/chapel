@@ -336,8 +336,9 @@ module OwnedObject {
         compilerError("cannot assign to '" + lhs.type:string + "' " +
                       "from '" + rhs.type:string + "'");
 
-    if lhs.chpl_p != nil then delete _to_unmanaged(lhs.chpl_p);
+    var oldPtr = _to_unmanaged(lhs.chpl_p);
     lhs.chpl_p = owned.release(rhs);
+    delete oldPtr;
   }
 
   @chpldoc.nodoc
