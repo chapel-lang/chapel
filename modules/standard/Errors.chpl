@@ -241,7 +241,7 @@ module Errors {
         cur!._next = nil; // remove from any lists
         var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
-           errorsArray[idx] = owned.adopt(cur!);
+          errorsArray[idx] = owned.adopt(cur!);
           idx += 1;
         } else {
           for e in asTaskErr!.these() {
