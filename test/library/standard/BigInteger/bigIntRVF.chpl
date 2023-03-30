@@ -11,8 +11,8 @@ proc main() {
   var alpha: bigint = 5;
 
   startCommDiagnostics();
-  forall (aV, bV, cV) in zip(A, B, C) with (var locA = alpha) {
-    cV = aV + locA * bV;
+  forall (aV, bV, cV) in zip(A, B, C) {
+    cV = aV + alpha * bV;
   }
   stopCommDiagnostics();
   printCommDiagnosticsTable();
