@@ -3,14 +3,58 @@ use GpuDiagnostics;
 use GPU;
 use Time;
 
+enum implType {
+    naive, clever, lowlevel
+}
+use implType;
+
 config const perftest = false;
 config const numTrials = 10;
-config const useNaive = false;
+config const impl = naive;
 config const sizeX = 2048*8,
              sizeY = 2048*8;
 config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
+
+inline proc transposeNaive(original, output) {
+  foreach (x,y) in original.domain do output[y,x] = original[x,y];
+}
+
+inline proc transposeClever(original, output) {
+  foreach 0..<original.size {
+    assertOnGpu();
+    // setBlockSize(blockSize * blockSize);
+    param paddedBlockSize = blockSize + blockPadding;
+    var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
+
+    const blockIdx = __primitive("gpu blockIdx x"),
+          threadIdx = __primitive("gpu threadIdx x");
+
+    const blockIdxX = blockIdx % (sizeX / blockSize),
+          blockIdxY = blockIdx / (sizeX / blockSize),
+          threadIdxX = threadIdx % blockSize,
+          threadIdxY = threadIdx / blockSize;
+    var idxX = blockIdxX * blockSize + threadIdxX,
+        idxY = blockIdxY * blockSize + threadIdxY;
+    // Store the input data in transposed order into temporary array
+    // i.e., the below is effectively smArrPtr[y][x] instead of
+    // smArrPtr[x][y] for copy
+    if (idxX < sizeX && idxY < sizeY) {
+      smArrPtr[paddedBlockSize * threadIdxX + threadIdxY] = original[idxX, idxY];
+    }
+
+    // synchronize the threads
+    syncThreads();
+
+    // Swap coordinates and write back out
+    idxX = blockIdxY * blockSize + threadIdxX;
+    idxY = blockIdxX * blockSize + threadIdxY;
+    if (idxX < sizeY && idxY < sizeX) {
+      output[idxX, idxY] = smArrPtr[paddedBlockSize * threadIdxY + threadIdxX];
+    }
+  }
+}
 
 pragma "codegen for GPU"
 pragma "always resolve function"
@@ -52,10 +96,6 @@ inline proc transposeLowLevel(original, output) {
           /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
 }
 
-inline proc transposeNaive(original, output) {
-  foreach (x,y) in original.domain do output[y,x] = original[x,y];
-}
-
 on here.gpus[0] {
   var original: [0..#sizeX, 0..#sizeY] dataType;
   var output: [0..#sizeY, 0..#sizeY] dataType;
@@ -70,9 +110,11 @@ on here.gpus[0] {
   var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
-    if useNaive {
+    if impl == naive {
       transposeNaive(original, output);
-    } else {
+    } else if impl == clever {
+      transposeClever(original, output);
+    } else if impl == lowlevel {
       transposeLowLevel(original, output);
     }
     timer.stop();

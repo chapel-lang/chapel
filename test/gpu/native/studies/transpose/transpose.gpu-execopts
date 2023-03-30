@@ -1,2 +1,3 @@
---useNaive=false # transpose-lowlevel
---useNaive=true  # transpose-naive
+--impl=naive    # transpose-naive
+--impl=clever   # transpose-clever
+--impl=lowlevel # transpose-lowlevel
