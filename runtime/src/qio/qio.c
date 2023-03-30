@@ -2815,7 +2815,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  // print the values in the following if statement
   printf("len: %zd, method: %u, mark_cur: %zd, \n", len, method == QIO_METHOD_MMAP, ch->mark_cur);
 
   // if possible make a direct system call instead of using the buffer
@@ -2835,17 +2834,29 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       start = _right_mark_start_iter(ch);
       end = start;
       qbuffer_iter_advance(&ch->buf, &end, gotlen);
+
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
       remaining -= gotlen;
       ptr = qio_ptr_add(ptr, gotlen);
+      ch->av_end += toRead;
 
       // now advance the start of the available buffer by the amount.
       _set_right_mark_start(ch, end.offset);
 
-      // if we've moved to a new part, release old parts.
-      err = _qio_buffered_behind(ch, false);
-      if( err ) goto error;
+      qbuffer_trim_front(&ch->buf, gotlen);
+
+      // set cached_curr, cached_end, cached_start to NULL
+      _qio_buffered_setup_cached(ch);
+      // ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
+
+      // err = _qio_buffered_behind(ch, true);
+      // if( err ) goto error;
+
+      start = _right_mark_start_iter(ch);
+      end = _av_end_iter(ch);
+      assert( qbuffer_iter_equals(start, end) );
+
     }
 
     // make a direct system call to read the rest
@@ -2887,9 +2898,13 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       _add_right_mark_start(ch, num_read);
     }
 
-    // reposition the existing buffer space 'amt_read' bytes to the right
+    // // reposition the existing buffer space 'amt_read' bytes to the right
     qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + *amt_read);
     ch->av_end += *amt_read;
+
+    start = _right_mark_start_iter(ch);
+    end = _av_end_iter(ch);
+    assert( qbuffer_iter_equals(start, end) );
 
     // re-setup the buffer for any future buffered writes
     _qio_buffered_setup_cached(ch);

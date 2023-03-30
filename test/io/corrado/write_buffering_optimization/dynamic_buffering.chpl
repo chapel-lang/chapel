@@ -12,7 +12,7 @@ qio_write_unbuffered_threshold = unbuffThreshold:c_ssize_t;
 qio_read_unbuffered_threshold = unbuffThreshold:c_ssize_t;
 qbytes_iobuf_size = iobuffSize:c_size_t;
 
-proc testDB(s: int): bool {
+proc testDB(s: int, verbose: bool = false): bool {
   const w = openWriter("./db.bin", locking=false, hints = ioHintSet.mmap(false));
 
   // put something small in the buffer to start with
@@ -50,6 +50,8 @@ proc testDB(s: int): bool {
 
   r.close();
 
+  if verbose then writeln(d);
+
   return (&& reduce (d[0..<smallWriteSize] == 1)) &&
          (&& reduce (d[smallWriteSize..#s] == 2)) &&
          (&& reduce (d[s+smallWriteSize..] == 3));
@@ -58,6 +60,7 @@ proc testDB(s: int): bool {
 for size in (unbuffThreshold-1)..(2*unbuffThreshold) {
   if !testDB(size) {
     writeln("failed on: ", size);
+    testDB(size, true);
     break;
   }
 }
