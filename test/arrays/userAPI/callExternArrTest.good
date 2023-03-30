@@ -41,8 +41,6 @@ local subdomains:
 {0..4}
 
 is empty: false
-head: 1.6
-tail: 5.6
 find last: 4
 find last again: true: 4
 equals same: true

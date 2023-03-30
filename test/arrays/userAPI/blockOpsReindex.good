@@ -132,8 +132,6 @@ local subdomains:
 {0..4, 1..9 by 2}
 
 is empty: false
-head: 1.8
-tail: 100.8
 find last: (9, 19)
 find last again: true: (9, 19)
 equals same: true

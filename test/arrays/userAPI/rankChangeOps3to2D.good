@@ -77,8 +77,6 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
 find last: (4, 4)
 find last again: true: (4, 4)
 equals same: true
@@ -185,8 +183,6 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
 find last: (4, 4)
 find last again: true: (4, 4)
 equals same: true
@@ -293,8 +289,6 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
 find last: (4, 4)
 find last again: true: (4, 4)
 equals same: true

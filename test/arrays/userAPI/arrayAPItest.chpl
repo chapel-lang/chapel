@@ -77,8 +77,6 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
   // Test collection interface
   writeln("is empty: ", X.isEmpty());
-  writeln("head: ", X.head());
-  writeln("tail: ", X.tail());
   writeln("find last: ", X.find(X[X.domain.high]));
   var idx: X.fullIdxType;
   writeln("find last again: ", X.find(X[X.domain.high],idx), ": ", idx);
@@ -196,8 +194,6 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test collection interface
   writeln("is empty: ", X.isEmpty());
-  writeln("head: ", X.head());
-  writeln("tail: ", X.tail());
   if isIntegral(X.idxType) then
     writeln("find last: ", X.find(X[X.domain.high]));
   var idx: X.fullIdxType;
