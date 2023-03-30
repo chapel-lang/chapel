@@ -123,7 +123,6 @@ module OwnedObject {
                     else _to_borrowed(src.type);
     }
 
-
     pragma "leaves this nil"
     @chpldoc.nodoc
     proc init=(src : _nilType) {
@@ -160,15 +159,12 @@ module OwnedObject {
       after passing it to `owned.adopt()`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
-      // 'result' may have a non-nilable type
-      var result: (obj.type : owned);
-      result = new _owned(obj);
-      return result;
+      return new _owned(obj);
     }
 
     @chpldoc.nodoc
     proc type release(source) {
-      compilerError("cannot adopt a ", source.type:string);
+      compilerError("cannot release a ", source.type:string);
     }
 
     /*
@@ -340,20 +336,12 @@ module OwnedObject {
         compilerError("cannot assign to '" + lhs.type:string + "' " +
                       "from '" + rhs.type:string + "'");
 
-    var rhs_ptr = owned.release(rhs);
-    if lhs.chpl_p != nil then delete owned.release(lhs);
-
-    // if the lhs is not nilable, make sure rhs_ptr (which is a nilable ptr) is non nil
-    if _to_nilable(lhs_type) != lhs_type
-    then lhs.chpl_p = rhs_ptr : _to_nonnil(rhs_type);
-    else lhs.chpl_p = rhs_ptr;
+    if lhs.chpl_p != nil then delete _to_unmanaged(lhs.chpl_p);
+    lhs.chpl_p = owned.release(rhs);
   }
 
   @chpldoc.nodoc
-  operator =(
-    pragma "leaves arg nil"
-    ref lhs:_owned, rhs:_nilType)
-  {
+  operator =(pragma "leaves arg nil" ref lhs:_owned, rhs:_nilType) {
     delete owned.release(lhs);
   }
   /*
