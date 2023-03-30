@@ -18,8 +18,10 @@ assert(0 == r.readLine(data[lineLen * 2..]));
 // assert(0 == r.readLine(data[-10..])); // Out of bounds slice
 
 // Can't read more than the array can store
-assert(0 == r.readLine(data, maxSize = lineLen * 2));
-assert(0 == r.readLine(data[lineLen / 2..], maxSize=lineLen));
+try { assert(0 == r.readLine(data, maxSize = lineLen * 2)); }
+catch e { writeln(e); }
+try { assert(0 == r.readLine(data[lineLen / 2..], maxSize=lineLen)); }
+catch e { writeln(e); }
 
 // Make sure we don't read more bytes than there is room in the array.
 try { r.readLine(data[lineLen / 2..]); }

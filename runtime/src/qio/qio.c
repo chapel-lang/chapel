@@ -2871,8 +2871,9 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   qbuffer_iter_t start;
   qbuffer_iter_t end;
   int64_t gotlen = 0;
-  int64_t toWrite = 0;
-  int64_t remaining = len;
+  int64_t toWriteTotal = 0;
+  int64_t toWriteBuffer = 0;
+  int64_t remaining = 0;
   qioerr err;
   int eof = 0;
   qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
@@ -2882,19 +2883,26 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
 
+  // handle EOF case
+  if( qio_channel_offset_unlocked(ch) >= ch->end_pos ) return QIO_EEOF;
+
+  // handle unexpected EOF case
+  if (ch->end_pos < INT64_MAX && _right_mark_start(ch) + len >= ch->end_pos) {
+    // now amt_written != len: will result in a QIO_ESHORT in qio_channel_write_amt
+    toWriteTotal = ch->end_pos - _right_mark_start(ch);
+  } else {
+    toWriteTotal = len;
+  }
+  remaining = toWriteTotal;
+
   // if possible make a direct system call instead of buffering
   if (
-    len >= qio_write_unbuffered_threshold && // the write is large enough
+    toWriteTotal >= qio_write_unbuffered_threshold && // the write is large enough
     method != QIO_METHOD_MMAP &&             // we aren't using mmap
     method != QIO_METHOD_MEMORY &&           // we aren't using mem
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    // only write up to EOF
-    if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
-      remaining = ch->end_pos - _right_mark_start(ch);
-    }
-
     // flush the write-behind portion of the buffer before attempting to write more
     err = _qio_channel_flush_qio_unlocked(ch);
     if( err ) goto error;
@@ -2927,7 +2935,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
           break;
       }
       if( err ) {
-        *amt_written = num_written + len - remaining;
+        *amt_written = num_written + toWriteTotal - remaining;
         goto error;
       }
       // move the ptr and right_mark_start forward by 'num_written' bytes
@@ -2949,13 +2957,13 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     // otherwise, do a buffered write
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
-        toWrite = ch->bufIoMax;
+        toWriteBuffer = ch->bufIoMax;
       } else {
-        toWrite = remaining;
+        toWriteBuffer = remaining;
       }
 
       // make sure we have buffer space. (require calls advance_cached)
-      err = _qio_channel_require_unlocked(ch, toWrite, 1);
+      err = _qio_channel_require_unlocked(ch, toWriteBuffer, 1);
       eof = 0;
       if( qio_err_to_int(err) == EEOF ) eof = 1;
       else if( err ) goto error;
@@ -2964,11 +2972,11 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
       start = _right_mark_start_iter(ch);
       end = start;
       gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
-      if( toWrite < gotlen ) gotlen = toWrite;
+      if( toWriteBuffer < gotlen ) gotlen = toWriteBuffer;
       qbuffer_iter_advance(&ch->buf, &end, gotlen);
 
       // now copy the data in to the buffer.
-      err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (len-remaining),
+      err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (toWriteTotal-remaining),
                           gotlen);
       if( err ) goto error;
 
@@ -2985,7 +2993,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   err = 0;
   if( eof ) err = QIO_EEOF;
 error:
-  *amt_written = len - remaining;
+  *amt_written = toWriteTotal - remaining;
   return err;
 }
 
@@ -3199,11 +3207,11 @@ qioerr _qio_channel_flush_qio_unlocked(qio_channel_t* ch)
   }
 
   // If there was an error saved earlier, report it now.
-  // We don't report EILSEQ, EEOF, or EFORMAT on a flush.
+  // We don't report EILSEQ, EEOF, EFORMAT, or ESHORT on a flush.
   saved_err = qio_channel_error(ch);
   errcode = qio_err_to_int(saved_err);
   if( !err &&
-      !(errcode == EILSEQ || errcode == EEOF || errcode == EFORMAT) ) {
+      !(errcode == EILSEQ || errcode == EEOF || errcode == EFORMAT || errcode == ESHORT) ) {
     err = saved_err;
   }
   return err;

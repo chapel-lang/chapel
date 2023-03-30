@@ -1,2 +1,5 @@
-caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 0) ]
-caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 0) ]
+caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 4) ]
+caught correct error [ UnexpectedEofError: short read or write (while writing string with path "outOfRange.txt" offset 0) ]
+caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 8) ]
+caught correct error [ UnexpectedEofError: short read or write (while writing string with path "outOfRange.txt" offset 0) ]
+blahblah

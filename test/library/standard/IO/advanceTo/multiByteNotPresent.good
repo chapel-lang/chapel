@@ -1,2 +1,4 @@
 UnexpectedEofError: short read or write (separator not found in advanceTo(string))
+EofError: end of file (in advanceTo(string) with path "multiByteInput.txt" offset 70)
 UnexpectedEofError: short read or write (separator not found in advanceTo(bytes))
+EofError: end of file (in advanceTo(bytes) with path "multiByteInput.txt" offset 70)

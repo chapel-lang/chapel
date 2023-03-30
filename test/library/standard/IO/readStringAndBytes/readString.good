@@ -1,5 +1,5 @@
 some data and stuff...
 and even more on another line 👍
-true
-true
+EofError: end of file (EOF encountered in readString)
 false
+true

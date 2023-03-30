@@ -8,10 +8,12 @@ var second_line = "";
 f.readString(second_line, 35);
 write(first_line, second_line);
 
-// try to read more after EOF:
-const should_be_empty = f.readString(1);
-var also_emtpy = "";
-const did_read = f.readString(also_emtpy, 1);
-writeln(should_be_empty.isEmpty());
-writeln(also_emtpy.isEmpty());
-writeln(did_read);
+// try to read more at EOF:
+try {
+    f.readString(1);
+} catch e {
+    writeln(e);
+}
+var empty = "";
+writeln(f.readString(empty, 1));
+writeln(empty.isEmpty());
