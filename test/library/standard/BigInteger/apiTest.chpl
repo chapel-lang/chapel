@@ -87,6 +87,9 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   s = a;
   s += 1:bigint;
   assert(s == b);
+  s = a;
+  s += (true);
+  assert(s == b);
 
   // Subtraction
 
@@ -126,7 +129,10 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   s -= 1;
   assert(s == a);
   s = b;
-  s += -1:bigint;
+  s -= 1:bigint;
+  assert(s == a);
+  s = b;
+  s -= (true);
   assert(s == a);
 
   // Multiplication
@@ -168,6 +174,9 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   s = a;
   s *= 1:bigint;
   assert(s == a);
+  s = a;
+  s *= true;
+  assert(s == a);
 
   assert(aa + bb == 327547);
   assert(aa + bb + cc == "3426495623485904783805894":bigint);
@@ -185,6 +194,8 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   // Bit shifts
   assert(5:bigint  << 3   == 40);
   assert(5:bigint  >> 1   == 2);
+  assert(5:bigint  >> true== 2);
+  assert(5:bigint  << true== 10);
   assert(-5:bigint << 3   == -40);
   assert(-5:bigint >> 1   == -3);
   assert(5:bigint  >> -3  == 40);
@@ -203,6 +214,12 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(s == 10:bigint);
   s = 5:bigint;
   s >>= 1;
+  assert(s == 2:bigint);
+  s = 5:bigint;
+  s <<= (true);
+  assert(s == 10:bigint);
+  s = 5:bigint;
+  s >>= (true);
   assert(s == 2:bigint);
 
   // right shifting a negative value over its size will always result in -1,
@@ -300,6 +317,23 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(18:uint >  s);
   assert(18:uint >= s);
   assert(18:uint != s);
+
+  s = 1:bigint;
+  assert(s == (true));
+  assert(s >  (false));
+  assert(s >= (false));
+  s = 0:bigint;
+  assert(s <  (true));
+  assert(s <= (true));
+  assert(s != (true));
+  s = 1:bigint;
+  assert((true)  == s);
+  assert((false) <  s);
+  assert((false) <= s);
+  s = 0:bigint;
+  assert((true) >  s);
+  assert((true) >= s);
+  assert((true) != s);
 
 
 }
