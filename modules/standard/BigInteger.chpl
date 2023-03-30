@@ -4641,6 +4641,28 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
+  record __serializeHelper {
+    var buff: mpz_t;
+    var localeId: chpl_nodeID_t;
+  }
+
+  @chpldoc.nodoc
+  proc bigint.chpl__serialize() {
+    return new __serializeHelper(this.mpz, this.localeId);
+  }
+
+  @chpldoc.nodoc
+  proc type bigint.chpl__deserialize(data) {
+    var ret: bigint;
+    if data.localeId == chpl_nodeID {
+      ret.mpz = data.buff;
+    } else {
+      chpl_gmp_get_mpz(ret.mpz, data.localeId, data.buff[0]);
+    }
+    return ret;
+  }
+
+  @chpldoc.nodoc
   inline proc bigint.localize() {
     if _local {
       const ret = new bigintWrapper(this.mpz);

@@ -14,8 +14,8 @@ on Locales[1] {
   on Locales[2] {
     /* var x = new bigint("123456"); // PASS */
     y = x;
-    writeln(x.sizeInBase(10));
-    writeln(y.sizeInBase(10));
+    writeln(x.isPerfectPower());
+    writeln(y.isPerfectPower());
   }
 }
 
