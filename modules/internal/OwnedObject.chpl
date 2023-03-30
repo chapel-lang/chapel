@@ -304,7 +304,7 @@ module OwnedObject {
 
   /*
     Assignment between two :record:`owned` transfers ownership of the object
-    managed by ``rhs`` to ``lhs``. This is done by setting ``rhs`` to `nil` and 
+    managed by ``rhs`` to ``lhs``. This is done by setting ``rhs`` to `nil` and
     then setting ``lhs`` to point to the object that ``rhs`` managed before,
     if any. After that, it deletes the object previously managed by ``lhs``,
     if any.
