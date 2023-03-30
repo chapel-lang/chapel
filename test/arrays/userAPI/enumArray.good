@@ -87,6 +87,7 @@ local subdomains:
 
 is empty: false
 find last again: true: (blue, violet)
+count last: 1
 equals same: true
 equals diff: false
 
@@ -201,6 +202,7 @@ local subdomains:
 
 is empty: false
 find last again: true: (violet, violet)
+count last: 1
 equals same: true
 equals diff: false
 

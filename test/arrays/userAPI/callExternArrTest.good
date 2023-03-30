@@ -43,6 +43,7 @@ local subdomains:
 is empty: false
 find last: 4
 find last again: true: 4
+count last: 1
 equals same: true
 equals diff: false
 

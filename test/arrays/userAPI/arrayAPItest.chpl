@@ -80,6 +80,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("find last: ", X.find(X[X.domain.high]));
   var idx: X.fullIdxType;
   writeln("find last again: ", X.find(X[X.domain.high],idx), ": ", idx);
+  writeln("count last: ", X.count(X[X.domain.high]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -198,6 +199,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
     writeln("find last: ", X.find(X[X.domain.high]));
   var idx: X.fullIdxType;
   writeln("find last again: ", X.find(X[X.domain.high],idx), ": ", idx);
+  writeln("count last: ", X.count(X[X.domain.high]));
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
