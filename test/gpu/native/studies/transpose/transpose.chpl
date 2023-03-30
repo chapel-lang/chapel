@@ -24,7 +24,7 @@ inline proc transposeNaive(original, output) {
 inline proc transposeClever(original, output) {
   foreach 0..<original.size {
     assertOnGpu();
-    // setBlockSize(blockSize * blockSize);
+    setBlockSize(blockSize * blockSize);
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
 

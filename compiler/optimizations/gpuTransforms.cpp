@@ -608,6 +608,22 @@ void GpuKernel::generateEarlyReturn() {
 
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
   std::set<Symbol*> handledSymbols;
+
+  std::vector<CallExpr*> callExprsInBody;
+  for_alist(node, loop->body) {
+    collectCallExprs(node, callExprsInBody);
+  }
+
+  for_vector(CallExpr, callExpr, callExprsInBody) {
+    if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      if (blockSize_ != nullptr) {
+        USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
+      }
+      blockSize_ = toSymExpr(callExpr->get(1));
+      callExpr->remove();
+    }
+  }
+
   for_alist(node, loop->body) {
     bool copyNode = true;
     std::vector<SymExpr*> symExprsInBody;
@@ -617,11 +633,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     collectDefExprs(node, defExprsInBody);
 
     CallExpr* call = toCallExpr(node);
-    if(call && call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-        blockSize_ = toSymExpr(call->get(1));
-        call->remove();
-        copyNode = false;
-    } else if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       // The outlined kernel can only be executed on the GPU so there's no need
       // to copy it over. Note: not all device functions are kernels so this does
       // not ensure that this assertion won't work its way into functions
