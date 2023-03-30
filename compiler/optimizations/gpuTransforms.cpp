@@ -606,6 +606,22 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
+static const std::unordered_map<PrimitiveTag, const char*>
+gpuPrimitivesDisallowedOnHost = {
+  { PRIM_GPU_BLOCKIDX_X, "getBlockIdxX" },
+  { PRIM_GPU_BLOCKIDX_Y, "getBlockIdxY" },
+  { PRIM_GPU_BLOCKIDX_Z, "getBlockIdxZ" },
+  { PRIM_GPU_BLOCKDIM_X, "getBlockDimX" },
+  { PRIM_GPU_BLOCKDIM_Y, "getBlockDimY" },
+  { PRIM_GPU_BLOCKDIM_Z, "getBlockDimZ" },
+  { PRIM_GPU_THREADIDX_X, "getThreadIdxX" },
+  { PRIM_GPU_THREADIDX_Y, "getThreadIdxY" },
+  { PRIM_GPU_THREADIDX_Z, "getThreadIdxZ" },
+  { PRIM_GPU_GRIDDIM_X, "getGridDimX" },
+  { PRIM_GPU_GRIDDIM_Y, "getGridDimY" },
+  { PRIM_GPU_GRIDDIM_Z, "getGridDimZ" },
+};
+
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
   std::set<Symbol*> handledSymbols;
 
@@ -731,6 +747,22 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     if (copyNode) {
       outlinedFunction->insertBeforeEpilogue(node->copy());
     }
+  }
+
+  for_vector(CallExpr, callExpr, callExprsInBody) {
+    if (!callExpr->isPrimitive()) continue;
+    auto tagIt = gpuPrimitivesDisallowedOnHost.find(callExpr->primitive->tag);
+    if (tagIt == gpuPrimitivesDisallowedOnHost.end()) continue;
+
+    auto errorMsg = new_CStringSymbol(astr("operation not allowed outside of GPU: ",
+                                           tagIt->second));
+    // Expecting AST:
+    //   (move call_tmp (call 'gpu prim'))
+    // Want:
+    //   (call 'rt_error' c"Operation not allowed")
+    //   (move call_tmp 0)
+    callExpr->parentExpr->insertBefore(new CallExpr(PRIM_RT_ERROR, errorMsg));
+    callExpr->replace(new SymExpr(new_IntSymbol(0)));
   }
 
   update_symbols(outlinedFunction->body, &copyMap_);
