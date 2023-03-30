@@ -336,10 +336,7 @@ module OwnedObject {
       }
     }
 
-    type rhs_type = rhs.chpl_t;
-    type lhs_type = lhs.chpl_t;
-
-    if !isCoercible(rhs_type, lhs_type) then
+    if !isCoercible(rhs.chpl_t, lhs.chpl_t) then
         compilerError("cannot assign to '" + lhs.type:string + "' " +
                       "from '" + rhs.type:string + "'");
 
