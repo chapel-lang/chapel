@@ -134,6 +134,7 @@ local subdomains:
 is empty: false
 find last: (10, 10)
 find last again: true: (10, 10)
+count last: 1
 equals same: true
 equals diff: false
 
@@ -356,6 +357,7 @@ local subdomains:
 is empty: false
 find last: (8, 8)
 find last again: true: (8, 8)
+count last: 1
 equals same: true
 equals diff: false
 
