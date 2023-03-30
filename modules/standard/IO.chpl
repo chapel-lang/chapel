@@ -5883,7 +5883,7 @@ public use ChapelIOStringifyHelper;
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
-@deprecated("stringify is depredated; please use string.ioWrite instead")
+@deprecated("stringify is deprecated; please use string.ioWrite instead")
 proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     return stringify_simple((...args));
@@ -5926,8 +5926,8 @@ proc stringify(const args ...?k):string {
 
   :returns: A string containing the result of writing the arguments.
 
-  :throws SystemError: Thrown if an internal error occured (more information
-                       :ref:`here reason<io-general-sys-error>`).
+  :throws SystemError: Thrown if an error occured writing the string (more
+                       information :ref:`here<io-general-sys-error>`).
 */
 proc type string.ioWrite(const args ...?k):string throws {
   if _can_stringify_direct(args) {

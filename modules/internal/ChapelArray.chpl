@@ -2091,7 +2091,7 @@ module ChapelArray {
   pragma "no doc"
   operator :(x: [], type t:string) {
     use IO;
-    return stringify(x);
+    return try! string.ioWrite(x);
   }
 
   pragma "no doc"
