@@ -7907,27 +7907,28 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       e = qio_channel_read_amt(false, this._channel_internal, data[0], (data.size * c_sizeof(data.eltType)) : c_ssize_t);
 
       if e then throw createSystemOrChplError(e);
-    }
+      numRead = data.size;
+    } else {
+      for (i, b) in zip(data.domain, data) {
+        select (endian) {
+          when ioendian.native {
+            e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+          }
+          when ioendian.big {
+            e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+          }
+          when ioendian.little {
+            e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+          }
+        }
 
-    for (i, b) in zip(data.domain, data) {
-      select (endian) {
-        when ioendian.native {
-          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        if e == EEOF {
+          break;
+        } else if e != 0 {
+          throw createSystemOrChplError(e);
+        } else {
+          numRead += 1;
         }
-        when ioendian.big {
-          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
-        }
-        when ioendian.little {
-          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
-        }
-      }
-
-      if e == EEOF {
-        break;
-      } else if e != 0 {
-        throw createSystemOrChplError(e);
-      } else {
-        numRead += 1;
       }
     }
   }

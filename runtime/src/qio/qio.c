@@ -2841,14 +2841,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
 
       // clean up the now unused portion of the buffer
       qbuffer_trim_front(&ch->buf, gotlen);
-
-      start = _right_mark_start_iter(ch);
-      end = _av_end_iter(ch);
-      assert( qbuffer_iter_equals(start, end) );
-
-      // printf("buffer after reading %lld bytes from buf:\n", gotlen);
-      // debug_print_qbuffer(&ch->buf);
-      // fflush(stdout);
     }
 
     // make a direct system call to read the rest
@@ -2856,10 +2848,12 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       num_read = 0;
       switch (method) {
         case QIO_METHOD_READWRITE:
-          err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining, &num_read));
+          err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining,
+                               &num_read));
           break;
         case QIO_METHOD_PREADPWRITE:
-          err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining, _right_mark_start(ch), &num_read));
+          err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining,
+                               _right_mark_start(ch), &num_read));
           break;
         case QIO_METHOD_FREADFWRITE:
           if( ch->file->fp ) {
@@ -2889,29 +2883,18 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       _add_right_mark_start(ch, num_read);
       remaining -= num_read;
       *amt_read += num_read;
-      toRead += num_read;
     }
 
-    // reposition the existing buffer space (and 'av_end') 'toRead' bytes to the right
+    // reposition the existing buffer space (and 'av_end') by the size of the direct read
     // this way, the buffer is ready for any future buffered reads
-    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + toRead);
-    ch->av_end += toRead;
-
-    start = _right_mark_start_iter(ch);
-    end = _av_end_iter(ch);
-    assert( qbuffer_iter_equals(start, end) );
+    // (the buffer is empty, so we can just move the end pointers)
+    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) +
+                       *amt_read - gotlen);
+    ch->av_end += *amt_read - gotlen;
 
     // re-setup the buffer for any future buffered writes
     _qio_buffered_setup_cached(ch);
-
-    // printf("buffer after directly reading %zd bytes from sys:\n", *amt_read);
-    // debug_print_qbuffer(&ch->buf);
-    // fflush(stdout);
-
   } else {
-    // printf("buffered read...\n");
-    // fflush(stdout);
-
     // otherwise, read from the buffer
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
@@ -2948,8 +2931,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       // move the iterator for the next read
       qbuffer_iter_advance(&ch->buf, &start, gotlen);
 
-      // did we get to a different part? if so, we can release some
-      // buffers.
+      // did we get to a different part? if so, we can release some buffers.
       err = _qio_buffered_behind(ch, false);
       if( err ) goto error;
       remaining -= gotlen;
