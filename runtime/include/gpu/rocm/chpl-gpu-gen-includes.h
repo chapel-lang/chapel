@@ -126,7 +126,7 @@ __device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __builtin_am
 __device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __builtin_amdgcn_workgroup_size_y(); }
 __device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __builtin_amdgcn_workgroup_size_z(); }
 
-__device__ static inline uint32_t chpl_gpu_getGridDimX()   { 
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   {
   return __builtin_amdgcn_grid_size_x() / chpl_gpu_getBlockDimX();
 }
 __device__ static inline uint32_t chpl_gpu_getGridDimY()   {
