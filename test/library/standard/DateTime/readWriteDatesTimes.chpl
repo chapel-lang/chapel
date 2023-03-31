@@ -12,7 +12,7 @@ proc testReadWrite(dt) {
   writeln(dt.type:string, ": ", dt == dt2);
 }
 
-var dt = datetime.now();
+var dt = dateTime.now();
 testReadWrite(dt);
-testReadWrite(dt.getdate());
-testReadWrite(dt.gettime());
+testReadWrite(dt.getDate());
+testReadWrite(dt.getTime());

@@ -1,20 +1,20 @@
 use Time;
 
 class FixedOffset: Timezone {
-  var offset: timedelta;
+  var offset: timeDelta;
   var name: string;
-  var dstoffset: timedelta;
+  var dstoffset: timeDelta;
 
-  proc init(offset: timedelta, name: string, dstoffset: timedelta=new timedelta(42)) {
+  proc init(offset: timeDelta, name: string, dstoffset: timeDelta=new timeDelta(42)) {
     this.offset = offset;
     this.name = name;
     this.dstoffset = dstoffset;
   }
 
   proc init(offset: int, name, dstoffset:int=42) {
-    this.offset = new timedelta(minutes=offset);
+    this.offset = new timeDelta(minutes=offset);
     this.name = name;
-    this.dstoffset = new timedelta(minutes=dstoffset);
+    this.dstoffset = new timeDelta(minutes=dstoffset);
   }
 
   override proc utcOffset(dt) {
@@ -53,17 +53,17 @@ proc test_zones() {
   assert(t4.timezone.borrow() == nil);
   assert(t5.timezone == utc);
 
-  assert(t1.utcOffset() == new timedelta(minutes=-300));
-  assert(t2.utcOffset() == new timedelta(minutes=0));
-  assert(t3.utcOffset() == new timedelta(minutes=60));
+  assert(t1.utcOffset() == new timeDelta(minutes=-300));
+  assert(t2.utcOffset() == new timeDelta(minutes=0));
+  assert(t3.utcOffset() == new timeDelta(minutes=60));
 
   assert(t1.tzname() == "EST");
   assert(t2.tzname() == "UTC");
   assert(t3.tzname() == "MET");
 
-  assert(t1.dst() == new timedelta(minutes=1));
-  assert(t2.dst() == new timedelta(minutes=-2));
-  assert(t3.dst() == new timedelta(minutes=3));
+  assert(t1.dst() == new timeDelta(minutes=1));
+  assert(t2.dst() == new timeDelta(minutes=-2));
+  assert(t3.dst() == new timeDelta(minutes=3));
 
   assert(t1 == t2);
   assert(t1 == t3);
@@ -96,7 +96,7 @@ proc test_zones() {
 
 proc test_replace() {
   var z100 = new shared FixedOffset(100, "+100");
-  var zm200 = new shared FixedOffset(new timedelta(minutes=-200), "-200");
+  var zm200 = new shared FixedOffset(new timeDelta(minutes=-200), "-200");
   var args = (1, 2, 3, 4);
   var base = new time((...args), z100);
   assert(base == base.replace(tz=base.timezone));
@@ -152,19 +152,19 @@ proc test_mixed_compare() {
 
   // In time w/ identical tz objects, utcoffset is ignored.
   class Varies: Timezone {
-    var offset: timedelta;
+    var offset: timeDelta;
     var name = "Var";
     proc init() {
-      offset = new timedelta(minutes=22);
+      offset = new timeDelta(minutes=22);
     }
-    override proc utcOffset(dt: datetime) {
-      offset += new timedelta(minutes=1);
+    override proc utcOffset(dt: dateTime) {
+      offset += new timeDelta(minutes=1);
       return offset;
     }
-    override proc dst(dt: datetime) {
-      return new timedelta(0);
+    override proc dst(dt: dateTime) {
+      return new timeDelta(0);
     }
-    override proc tzname(dt: datetime) {
+    override proc tzname(dt: dateTime) {
       return name;
     }
   }
@@ -172,8 +172,8 @@ proc test_mixed_compare() {
   var v = new shared Varies();
   t1 = t2.replace(tz=v);
   t2 = t2.replace(tz=v);
-  assert(t1.utcOffset() == new timedelta(minutes=23));
-  assert(t2.utcOffset() == new timedelta(minutes=24));
+  assert(t1.utcOffset() == new timeDelta(minutes=23));
+  assert(t2.utcOffset() == new timeDelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.

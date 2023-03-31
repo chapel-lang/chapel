@@ -1,7 +1,7 @@
 use Time;
 
 proc test_basic_attributes() {
-  var dt = new datetime(2002, 3, 1, 12, 0);
+  var dt = new dateTime(2002, 3, 1, 12, 0);
   assert(dt.year == 2002);
   assert(dt.month == 3);
   assert(dt.day == 1);
@@ -14,7 +14,7 @@ proc test_basic_attributes() {
 proc test_basic_attributes_nonzero() {
   // Make sure all attributes are non-zero so bugs in
   // bit-shifting access show up.
-  var dt = new datetime(2002, 3, 1, 12, 59, 59, 8000);
+  var dt = new dateTime(2002, 3, 1, 12, 59, 59, 8000);
   assert(dt.year == 2002);
   assert(dt.month == 3);
   assert(dt.day == 1);
@@ -25,14 +25,14 @@ proc test_basic_attributes_nonzero() {
 }
 
 proc test_isoformat() {
-  var t = new datetime(2, 3, 2, 4, 5, 1, 123);
+  var t = new dateTime(2, 3, 2, 4, 5, 1, 123);
   assert(t.isoFormat() == "0002-03-02T04:05:01.000123");
   assert(t.isoFormat('T') == "0002-03-02T04:05:01.000123");
   assert(t.isoFormat(' ') == "0002-03-02 04:05:01.000123");
   // str is ISO format with the separator forced to a blank.
   //assert(str(t) == "0002-03-02 04:05:01.000123");
 
-  t = new datetime(2, 3, 2);
+  t = new dateTime(2, 3, 2);
   assert(t.isoFormat() == "0002-03-02T00:00:00");
   assert(t.isoFormat('T') == "0002-03-02T00:00:00");
   assert(t.isoFormat(' ') == "0002-03-02 00:00:00");
@@ -42,15 +42,15 @@ proc test_isoformat() {
 
 proc test_more_ctime() {
   // Test fields that TestDate doesn't touch.
-  var t = new datetime(2002, 12, 4, 20, 30, 40);
+  var t = new dateTime(2002, 12, 4, 20, 30, 40);
   assert(t.ctime() == "Wed Dec  4 20:30:40 2002");
 
-  t = new datetime(2002, 3, 22, 18, 3, 5, 123);
+  t = new dateTime(2002, 3, 22, 18, 3, 5, 123);
   assert(t.ctime() == "Fri Mar 22 18:03:05 2002");
 /*
   import time;
 
-  var t = new datetime(2002, 3, 2, 18, 3, 5, 123);
+  var t = new dateTime(2002, 3, 2, 18, 3, 5, 123);
   assert(t.ctime() == "Sat Mar  2 18:03:05 2002");
   // Oops!  The next line fails on Win2K under MSVC 6, so it's commented
   // out.  The difference is that t.ctime() produces " 2" for the day,
@@ -59,15 +59,15 @@ proc test_more_ctime() {
   // self.assertEqual(t.ctime(), time.ctime(time.mktime(t.timetuple())))
 
   // So test a case where that difference doesn't matter.
-  t = new datetime(2002, 3, 22, 18, 3, 5, 123);
+  t = new dateTime(2002, 3, 22, 18, 3, 5, 123);
   assert(t.ctime() == time.ctime(time.mktime(t.timetuple())));
 */
 }
 
 proc test_tz_independent_comparing() {
-  var dt1 = new datetime(2002, 3, 1, 9, 0, 0);
-  var dt2 = new datetime(2002, 3, 1, 10, 0, 0);
-  var dt3 = new datetime(2002, 3, 1, 9, 0, 0);
+  var dt1 = new dateTime(2002, 3, 1, 9, 0, 0);
+  var dt2 = new dateTime(2002, 3, 1, 10, 0, 0);
+  var dt3 = new dateTime(2002, 3, 1, 9, 0, 0);
   assert(dt1 == dt3);
   assert(dt2 > dt3);
 
@@ -76,38 +76,38 @@ proc test_tz_independent_comparing() {
   // precision to span microsecond resolution across years 1 thru 9999,
   // so comparing via timestamp necessarily calls some distinct values
   // equal).
-  dt1 = new datetime(MAXYEAR, 12, 31, 23, 59, 59, 999998);
-  var us = new timedelta(microseconds=1);
+  dt1 = new dateTime(MAXYEAR, 12, 31, 23, 59, 59, 999998);
+  var us = new timeDelta(microseconds=1);
   dt2 = dt1 + us;
   assert(dt2 - dt1 == us);
   assert(dt1 < dt2);
 }
 
 proc test_computations() {
-  var a = new datetime(2002, 1, 31);
-  var b = new datetime(1956, 1, 31);
+  var a = new dateTime(2002, 1, 31);
+  var b = new dateTime(1956, 1, 31);
   var diff = a-b;
   assert(diff.days == 46*365 + (1956..2001 by 4).size);
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
-  a = new datetime(2002, 3, 2, 17, 6);
-  var millisec = new timedelta(0, 0, 1000);
-  var hour = new timedelta(0, 3600);
-  var day = new timedelta(1);
-  var week = new timedelta(7);
-  assert(a + hour == new datetime(2002, 3, 2, 18, 6));
-  assert(hour + a == new datetime(2002, 3, 2, 18, 6));
-  assert(a + 10*hour == new datetime(2002, 3, 3, 3, 6));
-  assert(a - hour == new datetime(2002, 3, 2, 16, 6));
-  assert(-hour + a == new datetime(2002, 3, 2, 16, 6));
+  a = new dateTime(2002, 3, 2, 17, 6);
+  var millisec = new timeDelta(0, 0, 1000);
+  var hour = new timeDelta(0, 3600);
+  var day = new timeDelta(1);
+  var week = new timeDelta(7);
+  assert(a + hour == new dateTime(2002, 3, 2, 18, 6));
+  assert(hour + a == new dateTime(2002, 3, 2, 18, 6));
+  assert(a + 10*hour == new dateTime(2002, 3, 3, 3, 6));
+  assert(a - hour == new dateTime(2002, 3, 2, 16, 6));
+  assert(-hour + a == new dateTime(2002, 3, 2, 16, 6));
   assert(a - hour == a + -hour);
-  assert(a - 20*hour == new datetime(2002, 3, 1, 21, 6));
-  assert(a + day == new datetime(2002, 3, 3, 17, 6));
-  assert(a - day == new datetime(2002, 3, 1, 17, 6));
-  assert(a + week == new datetime(2002, 3, 9, 17, 6));
-  assert(a - week == new datetime(2002, 2, 23, 17, 6));
-  assert(a + 52*week == new datetime(2003, 3, 1, 17, 6));
-  assert(a - 52*week == new datetime(2001, 3, 3, 17, 6));
+  assert(a - 20*hour == new dateTime(2002, 3, 1, 21, 6));
+  assert(a + day == new dateTime(2002, 3, 3, 17, 6));
+  assert(a - day == new dateTime(2002, 3, 1, 17, 6));
+  assert(a + week == new dateTime(2002, 3, 9, 17, 6));
+  assert(a - week == new dateTime(2002, 2, 23, 17, 6));
+  assert(a + 52*week == new dateTime(2003, 3, 1, 17, 6));
+  assert(a - 52*week == new dateTime(2001, 3, 3, 17, 6));
   assert((a + week) - a == week);
   assert((a + day) - a == day);
   assert((a + hour) - a == hour);
@@ -125,19 +125,19 @@ proc test_computations() {
   assert(a - (a - hour) == hour);
   assert(a - (a - millisec) == millisec);
   assert(a + (week + day + hour + millisec) ==
-                   new datetime(2002, 3, 10, 18, 6, 0, 1000));
+                   new dateTime(2002, 3, 10, 18, 6, 0, 1000));
   assert(a + (week + day + hour + millisec) ==
                    (((a + week) + day) + hour) + millisec);
   assert(a - (week + day + hour + millisec) ==
-                   new datetime(2002, 2, 22, 16, 5, 59, 999000));
+                   new dateTime(2002, 2, 22, 16, 5, 59, 999000));
   assert(a - (week + day + hour + millisec) ==
                    (((a - week) - day) - hour) - millisec);
 }
 
 proc test_more_compare() {
   var args = (2000, 11, 29, 20, 58, 16, 999998);
-  var t1 = new datetime((...args));
-  var t2 = new datetime((...args));
+  var t1 = new dateTime((...args));
+  var t2 = new dateTime((...args));
   assert(t1 == t2);
   assert(t1 <= t2);
   assert(t1 >= t2);
@@ -150,7 +150,7 @@ proc test_more_compare() {
   for i in 0..#args.size {
     var newargs = args;
     newargs[i] = args[i] + 1;
-    t2 = new datetime((...newargs));   // this is larger than t1
+    t2 = new dateTime((...newargs));   // this is larger than t1
     assert(t1 < t2);
     assert(t2 > t1);
     assert(t1 <= t2);
@@ -169,7 +169,7 @@ proc test_more_compare() {
 }
 
 proc test_more_timetuple() {
-  var t = new datetime(2004, 12, 31, 6, 22, 33);
+  var t = new dateTime(2004, 12, 31, 6, 22, 33);
   var tt = t.timetuple();
   assert(tt.tm_year == t.year);
   assert(tt.tm_mon == t.month);
@@ -184,12 +184,12 @@ proc test_more_timetuple() {
 }
 
 proc test_more_strftime() {
-  var t = new datetime(2004, 12, 31, 6, 22, 33);
+  var t = new dateTime(2004, 12, 31, 6, 22, 33);
   assert(t.strftime("%m %d %y %S %M %H %j") == "12 31 04 33 22 06 366");
 }
 
 proc test_strftime() {
-  var t = new datetime(2004, 12, 31, 6, 22, 33, 61234);
+  var t = new dateTime(2004, 12, 31, 6, 22, 33, 61234);
   assert(t.strftime("%m %d %y %S %M %H %f %j") == "12 31 04 33 22 06 061234 366");
   assert(t.strftime("%m %d %y %S %M %H %0f %j") == "12 31 04 33 22 06 061234 366");
   assert(t.strftime("%m %d %y %S %M %H %%f %j") == "12 31 04 33 22 06 %f 366");
@@ -198,29 +198,29 @@ proc test_strftime() {
 }
 
 proc test_extract() {
-  var dt = new datetime(2002, 3, 4, 18, 45, 3, 1234);
-  assert(dt.getdate() == new date(2002, 3, 4));
-  assert(dt.gettime() == new time(18, 45, 3, 1234));
+  var dt = new dateTime(2002, 3, 4, 18, 45, 3, 1234);
+  assert(dt.getDate() == new date(2002, 3, 4));
+  assert(dt.getTime() == new time(18, 45, 3, 1234));
 }
 
 proc test_combine() {
   var d = new date(2002, 3, 4);
   var t = new time(18, 45, 3, 1234);
-  var expected = new datetime(2002, 3, 4, 18, 45, 3, 1234);
-  var dt = datetime.combine(d, t);
+  var expected = new dateTime(2002, 3, 4, 18, 45, 3, 1234);
+  var dt = dateTime.combine(d, t);
   assert(dt == expected);
 
-  dt = datetime.combine(t=t, d=d);
+  dt = dateTime.combine(t=t, d=d);
   assert(dt == expected);
 
-  assert(d == dt.getdate());
-  assert(t == dt.gettime());
-  assert(dt == datetime.combine(dt.getdate(), dt.gettime()));
+  assert(d == dt.getDate());
+  assert(t == dt.getTime());
+  assert(dt == dateTime.combine(dt.getDate(), dt.getTime()));
 }
 
 proc test_replace() {
   var args = (1, 2, 3, 4, 5, 6, 7);
-  var base = new datetime((...args));
+  var base = new dateTime((...args));
   var nilTZ:shared Timezone?;
 
   assert(base == base.replace(tz=nilTZ));
@@ -234,9 +234,9 @@ proc test_replace() {
                          ("second", 7),
                          ("microsecond", 8)) {
     var newargs = args;
-    var got: datetime;
+    var got: dateTime;
     newargs[i] = newval;
-    var expected = new datetime((...newargs));
+    var expected = new dateTime((...newargs));
 
     if name == "year" then
       got = base.replace(year = newval, tz=nilTZ);

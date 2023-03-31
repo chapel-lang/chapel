@@ -1,5 +1,5 @@
 strptime2.chpl:4: In function 'test_microsecond':
-strptime2.chpl:7: error: unresolved call 'datetime.strptime("12:59:59.008000", "%T.%f")'
-$CHPL_HOME/modules/standard/Time.chpl:1418: note: this candidate did not match: type datetime.strptime(date_string: string, format: string)
+strptime2.chpl:7: error: unresolved call 'dateTime.strptime("12:59:59.008000", "%T.%f")'
+$CHPL_HOME/modules/standard/Time.chpl:1418: note: this candidate did not match: type dateTime.strptime(date_string: string, format: string)
 strptime2.chpl:7: note: because non-type method call receiver
-$CHPL_HOME/modules/standard/Time.chpl:1418: note: is passed to formal 'this: datetime'
+$CHPL_HOME/modules/standard/Time.chpl:1418: note: is passed to formal 'this: dateTime'

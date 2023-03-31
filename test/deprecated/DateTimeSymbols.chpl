@@ -4,9 +4,9 @@ var t = new time();
 if t.tzinfo != nil then
   writeln("time Timezone!");
 
-var dt = datetime.now();
+var dt = dateTime.now();
 if dt.tzinfo != nil then
-  writeln("datetime Timezone!");
+  writeln("dateTime Timezone!");
 
 var wd = dt.isoweekday();
 var cal = dt.isocalendar();
