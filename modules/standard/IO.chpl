@@ -7904,10 +7904,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     try this.lock(); defer { this.unlock(); }
 
     if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
-      e = qio_channel_read_amt(false, this._channel_internal, data[0], (data.size * c_sizeof(data.eltType)) : c_ssize_t);
+      e = qio_channel_read(false, this._channel_internal, data[0], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
-      if e then throw createSystemOrChplError(e);
-      numRead = data.size;
+      if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {
       for (i, b) in zip(data.domain, data) {
         select (endian) {
@@ -8435,7 +8434,7 @@ pragma "no doc"
 proc fileReader._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
     throw new owned IllegalArgumentError("bad remote fileReader._readBytes");
-  var err = qio_channel_read_amt(false, _channel_internal, x, len);
+  var err = qio_channel_read_amt(false, _channel_internal, x[0], len);
   if err then try this._ch_ioerror(err, "in fileReader._readBytes");
 }
 
