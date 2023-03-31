@@ -14,7 +14,7 @@ proc main() {
   //
   // This relies on 'idx' being a wide reference once passed to dsiAccess.
   //
-  on Locales.tail() {
+  on Locales.last {
     assert(idx.locale != here);
     assert(A.localSubdomain().contains(idx) == false);
     A.dsiAccess(idx) = 100;

@@ -7,7 +7,7 @@ proc main() {
   var changingDom = {1..5};
 
   writeln("===== on-stmt (variable domain) =====");
-  on Locales.tail() {
+  on Locales.last {
     startCommDiagnostics();
     const dims = changingDom.dims();
     if dims(0).high > 1000 then halt("foo");
@@ -24,7 +24,7 @@ proc main() {
   resetCommDiagnostics();
 
   writeln("===== on-stmt (const domain) =====");
-  on Locales.tail() {
+  on Locales.last {
     startCommDiagnostics();
     const dims = Offsets.dims();
     if dims(0).high > 1000 then halt("foo");
