@@ -1,1 +1,0 @@
-writeln(chpl_unstableInternalSymbolForTesting);
