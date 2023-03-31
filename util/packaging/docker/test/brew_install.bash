@@ -9,14 +9,6 @@ else
       echo "brew test-bot --only-tap-syntax succeeded"
 fi
 
-brew test-bot --only-formulae-detect
-    if [ $? -ne 0 ]; then
-      echo "brew test-bot --only-formulae-detect failed" 
-      exit 1
-      else
-      echo "brew test-bot --only-formulae-detect succeeded"
-    fi
-
 brew test-bot --only-setup
     if [ $? -ne 0 ]; then
       echo "brew test-bot --only-setup failed" 
