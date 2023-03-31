@@ -346,6 +346,16 @@ module Math {
     return chpl_lgamma(x);
   }
 
+  /* Returns the value of `2` raised to the power of the argument `x`. */
+  inline proc exp2(x: real(64)): real(64) {
+    return chpl_exp2(x);
+  }
+
+  /* Returns the value of `2` raised to the power of the argument `x`. */
+  inline proc exp2(x : real(32)): real(32) {
+    return chpl_exp2(x);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.

@@ -1231,13 +1231,39 @@ module AutoMath {
   }
 
 
-  /* Returns the value of `2` raised to the power of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc exp2(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_exp2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc exp2(x: real(64)): real(64) {
+    return chpl_exp2(x);
+  }
 
-  /* Returns the value of `2` raised to the power of the argument `x`. */
+  @chpldoc.nodoc
+  inline proc chpl_exp2(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc exp2(x: real(64)): real(64);
+    return exp2(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_exp2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc exp2(x : real(32)): real(32) {
+    return chpl_exp2(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_exp2(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc exp2f(x: real(32)): real(32);
