@@ -1,5 +1,4 @@
-use IO;
-import Math.pi;
+use IO, Math;
 
 config param testErrors = 0;
 
