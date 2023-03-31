@@ -1,8 +1,8 @@
 use Time;
 
-var day = getCurrentDayOfWeek():Day;
+var weekday = getCurrentDayOfWeek():day;
 
-select day {
+select weekday {
     when day.sunday do writeln("Sunday");
     when day.monday do writeln("Monday");
     when day.tuesday do writeln("Tuesday");
