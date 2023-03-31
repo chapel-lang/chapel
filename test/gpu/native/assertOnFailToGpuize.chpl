@@ -20,48 +20,47 @@ proc funcMarkedNotGpuizable() { }
 
 on here.gpus[0] {
   if failureMode == 1 {
-    foreach i in 0..10 {
-      assertOnGpu();
-      directlyRecursiveFunc(i);
-    }
-  }
-
-  if failureMode == 2 {
-    foreach i in 0..10 {
-      assertOnGpu();
-      indirectlyRecursiveFunc(i);
-    }
-  }
-
-  if failureMode == 3 {
     funcMarkedNotGpuizableThatTriesToGpuize();
   }
 
-  if failureMode == 4 {
+  if failureMode == 2 {
     foreach i in 0..10 {
       assertOnGpu();
       funcMarkedNotGpuizable();
     }
   }
 
-  if failureMode == 5 {
+  if failureMode == 3 {
     foreach i in 0..10 {
       assertOnGpu();
       usesOutsideVar();
     }
   }
 
+  // Also ensure that assertOnGpu does not fail
+  // for the following (use failureMode >= 4
+  // to run these tests):
+
+  // calling a recursive function is allowed now
+  foreach i in 0..10 {
+    assertOnGpu();
+    directlyRecursiveFunc(i);
+  }
+
+  foreach i in 0..10 {
+    assertOnGpu();
+    indirectlyRecursiveFunc(i);
+  }
+
   // I want to ensure this works
   // with forall loops as well:
-  if failureMode == 6 {
-    forall i in 0..10 {
-      assertOnGpu();
-      directlyRecursiveFunc(i);
-    }
+  forall i in 0..10 {
+    assertOnGpu();
+    directlyRecursiveFunc(i);
   }
 
   // And loops of a multidimensional array:
-  if failureMode == 7 {
+  {
     var A: [1..10, 1..10] int;
     foreach a in A {
       assertOnGpu();
@@ -69,9 +68,6 @@ on here.gpus[0] {
     }
   }
 
-  // Also ensure that assertOnGpu does not fail
-  // for the following (use failureMode >= 8
-  // to run these tests):
   foreach i in 0..10 { assertOnGpu(); }
   forall i in 0..10 { assertOnGpu(); }
   var A: [1..10, 1..10] int;
