@@ -1,0 +1,5 @@
+useDeprecatedDateTimeNames.chpl:3: warning: 'datetime' is deprecated, please use 'dateTime' instead
+useDeprecatedDateTimeNames.chpl:4: warning: 'timedelta' is deprecated. Please use 'timeDelta' instead
+useDeprecatedDateTimeNames.chpl:6: warning: enum 'Day' is deprecated. Please use 'day' instead
+useDeprecatedDateTimeNames.chpl:8: warning: 'dateTime.getdate' is deprecated. Please use 'dateTime.getDate' instead
+useDeprecatedDateTimeNames.chpl:9: warning: 'dateTime.gettime' is deprecated. Please use 'dateTime.getTime' instead
