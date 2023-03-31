@@ -927,13 +927,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
-    if (sym->hasFlag(FLAG_DEPRECATED)) {
-      sym->generateDeprecationWarning(usymExpr);
-    }
-
-    if ((sym->hasFlag(FLAG_UNSTABLE)) && (fWarnUnstable)) {
-      sym->generateUnstableWarning(usymExpr);
-    }
+    sym->maybeGenerateDeprecationWarning(usymExpr);
+    sym->maybeGenerateUnstableWarning(usymExpr);
 
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
@@ -1507,15 +1502,11 @@ static void resolveModuleCall(CallExpr* call) {
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
             if (!fDynoScopeResolve) {
-              if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
-                // Function symbols will generate a warning during function
-                // resolution, no need to warn here.
-                sym->generateDeprecationWarning(call);
-              }
-
-              if (sym->hasFlag(FLAG_UNSTABLE) &&
-                  (!isFnSymbol(sym)) && (fWarnUnstable)) {
-                sym->generateUnstableWarning(call);
+              // Function symbols will generate a warning during function
+              // resolution, no need to warn here.
+              if (!isFnSymbol(sym)) {
+                sym->maybeGenerateDeprecationWarning(call);
+                sym->maybeGenerateUnstableWarning(call);
               }
             }
 
@@ -1645,13 +1636,8 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
-                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
-                  constant->sym->generateDeprecationWarning(call);
-                }
-
-                if (constant->sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-                  constant->sym->generateUnstableWarning(call);
-                }
+                constant->sym->maybeGenerateDeprecationWarning(call);
+                constant->sym->maybeGenerateUnstableWarning(call);
 
                 call->replace(new SymExpr(constant->sym));
               }

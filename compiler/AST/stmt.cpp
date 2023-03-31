@@ -161,9 +161,7 @@ void VisibilityStmt::validateRenamed() {
       }
 
       if (!fDynoScopeResolve) {
-        if (sym->hasFlag(FLAG_DEPRECATED)) {
-          sym->generateDeprecationWarning(this);
-        }
+        sym->maybeGenerateDeprecationWarning(this);
       }
 
     } else {

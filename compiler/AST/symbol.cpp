@@ -472,7 +472,10 @@ const char* Symbol::getUnstableMsg() const {
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
-void Symbol::generateDeprecationWarning(Expr* context) {
+
+void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
+  if (!this->hasFlag(FLAG_DEPRECATED)) return;
+
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
@@ -494,10 +497,36 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   }
 }
 
-//based on generateDeprecationWarning
-void Symbol::generateUnstableWarning(Expr* context) {
+static bool isInvisibleModule(Symbol* sym) {
+  return sym == rootModule || sym == theProgram;
+}
+
+static bool isUnstableContext(Symbol* sym) {
+  if (sym->hasFlag(FLAG_UNSTABLE)) return true;
+  if (auto mod = toModuleSymbol(sym)) {
+    if (isInvisibleModule(mod)) return false;
+    if (mod->modTag == MOD_INTERNAL) return !fWarnUnstableInternal;
+    if (mod->modTag == MOD_STANDARD) return !fWarnUnstableStandard;
+  }
+  return false;
+}
+
+static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
+  if (!sym->hasFlag(FLAG_UNSTABLE)) return false;
+  auto mod = initialContext->getModule();
+  INT_ASSERT(mod);
+  if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+  if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  INT_ASSERT(mod->modTag == MOD_USER);
+  return fWarnUnstable;
+}
+
+//based on maybeGenerateDeprecationWarning
+void Symbol::maybeGenerateUnstableWarning(Expr* context) {
+  if (!isUnstableShouldWarn(this, context)) return;
+
   Symbol* contextParent = context->parentSymbol;
-  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
 
@@ -506,10 +535,11 @@ void Symbol::generateUnstableWarning(Expr* context) {
   // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
+         !isInvisibleModule(contextParent) &&
          parentUnstable != true && compilerGenerated != true &&
          parentDeprecated != true) {
     contextParent = contextParent->defPoint->parentSymbol;
-    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
   }

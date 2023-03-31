@@ -2895,9 +2895,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
     USR_FATAL(storesName, "Illegal super class");
   }
 
-  if (ts->hasFlag(FLAG_DEPRECATED)) {
-    ts->generateDeprecationWarning(storesName);
-  }
+  ts->maybeGenerateDeprecationWarning(storesName);
 
   AggregateType* pt = toAggregateType(ts->type);
 

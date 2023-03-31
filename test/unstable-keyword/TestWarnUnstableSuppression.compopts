@@ -1,0 +1,7 @@
+--warn-unstable
+--warn-unstable-internal
+--warn-unstable-standard
+--warn-unstable --warn-unstable-internal
+--warn-unstable --warn-unstable-standard
+--warn-unstable-internal --warn-unstable-standard
+--warn-unstable --warn-unstable-internal --warn-unstable-standard

@@ -50,6 +50,12 @@ module ChapelBase {
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
 
+  // Used to test "--warn-unstable-internal", ignore.
+  pragma "no doc"
+  @unstable
+  var chpl_unstableInternalSymbolForTesting: int;
+  chpl_unstableInternalSymbolForTesting;
+
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"

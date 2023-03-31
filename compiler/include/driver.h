@@ -232,6 +232,8 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnIntUint;
 extern bool fWarnUnstable;
+extern bool fWarnUnstableStandard;
+extern bool fWarnUnstableInternal;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;

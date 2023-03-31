@@ -218,13 +218,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       }
 
       if (!fDynoScopeResolve) {
-        if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
-          symAndName.first->generateDeprecationWarning(this);
-        }
-
-        if (symAndName.first->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-          symAndName.first->generateUnstableWarning(this);
-        }
+        symAndName.first->maybeGenerateDeprecationWarning(this);
+        symAndName.first->maybeGenerateUnstableWarning(this);
       }
     }
 
@@ -387,13 +382,8 @@ void UseStmt::validateNamed() {
           }
 
           if (!fDynoScopeResolve) {
-            if (sym->hasFlag(FLAG_DEPRECATED)) {
-              sym->generateDeprecationWarning(this);
-            }
-
-            if (sym->hasFlag(FLAG_UNSTABLE)) {
-              if (fWarnUnstable) sym->generateUnstableWarning(this);
-            }
+            sym->maybeGenerateDeprecationWarning(this);
+            sym->maybeGenerateUnstableWarning(this);
           }
         }
       }
