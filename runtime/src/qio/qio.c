@@ -2812,10 +2812,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   //_qio_buffered_advance_cached(ch);
 
   // handle channel position beyond end.
-  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
-
-  printf("len: %zd, method: %u, mark_cur: %zd, \n", len, method == QIO_METHOD_MMAP, ch->mark_cur);
 
   // if possible make a direct system call instead of using the buffer
   if (
@@ -2825,38 +2822,33 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    printf("unbuffered read...");
-    fflush(stdout);
-
-    // copy out what's left in the buffer
+    // copy out what remains in the buffer before making a system call
     gotlen = ch->av_end - _right_mark_start(ch);
     if ( gotlen > 0 ) {
-      start = _right_mark_start_iter(ch);
+      start = _right_mark_start_iter(ch);            // start of available data
       end = start;
-      qbuffer_iter_advance(&ch->buf, &end, gotlen);
+      qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
 
+      // copy 'gotlen' bytes into the ptr
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
-      remaining -= gotlen;
+
+      // advance the ptr, start of aviliabe data, etc.
       ptr = qio_ptr_add(ptr, gotlen);
-      ch->av_end += toRead;
-
-      // now advance the start of the available buffer by the amount.
       _set_right_mark_start(ch, end.offset);
+      remaining -= gotlen;
+      *amt_read = gotlen;
 
+      // clean up the now unused portion of the buffer
       qbuffer_trim_front(&ch->buf, gotlen);
-
-      // set cached_curr, cached_end, cached_start to NULL
-      _qio_buffered_setup_cached(ch);
-      // ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
-
-      // err = _qio_buffered_behind(ch, true);
-      // if( err ) goto error;
 
       start = _right_mark_start_iter(ch);
       end = _av_end_iter(ch);
       assert( qbuffer_iter_equals(start, end) );
 
+      // printf("buffer after reading %lld bytes from buf:\n", gotlen);
+      // debug_print_qbuffer(&ch->buf);
+      // fflush(stdout);
     }
 
     // make a direct system call to read the rest
@@ -2894,13 +2886,16 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
         return err;
       }
       ptr = qio_ptr_add(ptr, num_read);
-      remaining -= num_read;
       _add_right_mark_start(ch, num_read);
+      remaining -= num_read;
+      *amt_read += num_read;
+      toRead += num_read;
     }
 
-    // // reposition the existing buffer space 'amt_read' bytes to the right
-    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + *amt_read);
-    ch->av_end += *amt_read;
+    // reposition the existing buffer space (and 'av_end') 'toRead' bytes to the right
+    // this way, the buffer is ready for any future buffered reads
+    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) + toRead);
+    ch->av_end += toRead;
 
     start = _right_mark_start_iter(ch);
     end = _av_end_iter(ch);
@@ -2909,9 +2904,13 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     // re-setup the buffer for any future buffered writes
     _qio_buffered_setup_cached(ch);
 
+    // printf("buffer after directly reading %zd bytes from sys:\n", *amt_read);
+    // debug_print_qbuffer(&ch->buf);
+    // fflush(stdout);
+
   } else {
-    printf("buffered read...");
-    fflush(stdout);
+    // printf("buffered read...\n");
+    // fflush(stdout);
 
     // otherwise, read from the buffer
     while ((remaining > 0) && !eof) {
