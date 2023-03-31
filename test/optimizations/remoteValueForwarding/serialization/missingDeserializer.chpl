@@ -27,7 +27,7 @@ proc main() {
   const ff = new Foo(new unmanaged Helper((1,2,3)));
 
   startCommDiagnostics();
-  on Locales.tail() {
+  on Locales.last {
     if ff.h.x(1) == 100 then halt();
   }
   stopCommDiagnostics();
