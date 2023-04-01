@@ -125,7 +125,7 @@ module ArrayViewRankChange {
                            type idxType,
                            param stridable : bool,
                            dist) type {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var ranges: rank*range(idxType, boundKind.both, stridable);
       var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType,
                                                  stridable=stridable, ranges);
       return a.type;
@@ -206,7 +206,7 @@ module ArrayViewRankChange {
       // TODO: BHARSH 2019-05-13:
       // Would rather use '_getDistribution' and passing args to "new _domain",
       // see similar comment in ArrayViewReindex for more information.
-      var ranges : downrank*range(idxType, BoundedRangeType.bounded, stridable);
+      var ranges : downrank*range(idxType, boundKind.both, stridable);
       var downDomClass = dist.downDist.dsiNewRectangularDom(rank=downrank,
                                                            idxType,
                                                            stridable=stridable,

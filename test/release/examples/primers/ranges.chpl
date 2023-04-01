@@ -351,7 +351,7 @@ writeln();
 // Range types are generic with respect to three fields:
 //
 // * ``idxType``: The type of the range's values (defaults to ``int``)
-// * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
+// * ``bounds``: A :enum:`boundKind` value indicating which bounds the range stores (defaults to ``boundKind.both``)
 // * ``stridable``: A ``bool`` indicating whether or not the range can have a stride other than 1 (defaults to ``false``)
 //
 // Like other variables, range types can be inferred by the compiler
@@ -360,11 +360,11 @@ writeln();
 // are some examples that are equivalent to ones we've seen before:
 //
 const rt: range(int) = 1..10,
-      rt2: range(int, boundedType=BoundedRangeType.bounded, stridable=false)
+      rt2: range(int, bounds=boundKind.both, stridable=false)
          = 1..10,
       rte: range(color) = color.orange..color.green,
       rts: range(stridable=true) = 1..10 by 2,
-      rtub: range(boundedType=BoundedRangeType.boundedLow) = 1..;
+      rtub: range(bounds=boundKind.low) = 1..;
 
 // More importantly, range types can be used to make a range variable
 // more flexible than its initializer permits.  For example, this
@@ -399,7 +399,7 @@ acceptsAnyRange(color.orange..color.green);
 //
 proc writeRange(r: range(?)) {
   write("Range ", r);
-  if r.boundedType == BoundedRangeType.bounded ||
+  if r.bounds == boundKind.both ||
     ((isBoolType(r.idxType) || isEnumType(r.idxType)) && r.hasFirst()) {
       // The range is fully bounded, either because it is a bounded
       // range or because it is unbounded but defined on bools or an

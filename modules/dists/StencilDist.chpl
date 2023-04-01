@@ -1711,7 +1711,7 @@ proc StencilArr.updateFluff() {
   }
 }
 
-override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
 {
   //
   // For the default rectangular array, this function changes the data

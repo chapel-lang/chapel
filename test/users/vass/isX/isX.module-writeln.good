@@ -22,7 +22,7 @@ ClassType (cls)  isClass  isClassValue  isClassType  .
 RecordSmall (rec1)  isRecord  isRecordValue  isRecordType  .
 UnionType (unn)  isUnion  isUnionValue  isUnionType  .
 range (rng1)  isRange  isRangeValue  isRangeType  .
-range(uint(8), BoundedRangeType.boundedNone, true) (rng2)  isRange  isRangeValue  isRangeType  .
+range(uint(8), boundKind.neither, true) (rng2)  isRange  isRangeValue  isRangeType  .
 defaultDist (dmp)  isDmap  isDmapValue  isDmapType  .
 DomType1 (dom1)  isDomain  isDomainValue  isDomainType  .
 DomType2 (dom2)  isDomain  isDomainValue  isDomainType  .

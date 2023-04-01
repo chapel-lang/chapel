@@ -301,7 +301,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // convenience
   proc targetIds do return localDdescs.domain;
-  proc rangeT  type do  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT  type do  return range(idxType, boundKind.both, stridable);
   proc domainT type do  return domain(rank, idxType, stridable);
   proc indexT  type do  return dist.indexT;
 
@@ -917,7 +917,7 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
 }
 
 proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
-                                                 BoundedRangeType.bounded,
+                                                 boundKind.both,
                                                  stridable) {
   _traceddd(this, ".dsiGetIndices");
   return whole.dims();

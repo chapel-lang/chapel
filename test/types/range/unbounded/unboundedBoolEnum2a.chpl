@@ -51,8 +51,8 @@ for i in true.. by -3 do
 
 writeln("---");
 
-var re: range(color, BoundedRangeType.boundedNone) = ..;
-var rb: range(bool, BoundedRangeType.boundedNone) = ..;
+var re: range(color, boundKind.neither) = ..;
+var rb: range(bool, boundKind.neither) = ..;
 
 for i in re do
   writeln(i);
@@ -64,8 +64,8 @@ for i in rb do
 
 writeln("---");
 
-var reps: range(color, BoundedRangeType.boundedNone, stridable = true) = .. by 3;
-var rbps: range(bool, BoundedRangeType.boundedNone, stridable = true) = .. by 3;
+var reps: range(color, boundKind.neither, stridable = true) = .. by 3;
+var rbps: range(bool, boundKind.neither, stridable = true) = .. by 3;
 
 for i in reps do
   writeln(i);
@@ -77,8 +77,8 @@ for i in rbps do
 
 writeln("---");
 
-var rens: range(color, BoundedRangeType.boundedNone, stridable = true) = .. by -3;
-var rbns: range(bool, BoundedRangeType.boundedNone, stridable = true) = .. by -3;
+var rens: range(color, boundKind.neither, stridable = true) = .. by -3;
+var rbns: range(bool, boundKind.neither, stridable = true) = .. by -3;
 
 for i in rens do
   writeln(i);
