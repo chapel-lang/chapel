@@ -3487,10 +3487,15 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
       if (!foundQuestionMarkArg) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
-          // print out which field
-          USR_WARN(checkCall, "partial instantiation without '?' argument");
-          USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
-          USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
+          if (tt->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+            USR_FATAL(checkCall, "the c_ptr() type requires a concrete type argument, but its argument is generic");
+            return;
+          } else {
+            // print out which field
+            USR_WARN(checkCall, "partial instantiation without '?' argument");
+            USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
+            USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
+          }
           // which field names are generic?
           if (AggregateType* at = toAggregateType(tt)) {
             bool printedAnyFields = false;
