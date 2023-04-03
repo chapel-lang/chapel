@@ -4136,7 +4136,7 @@ module BigInteger {
       helper(result, numer, exp_, rounding);
     } else if result.localeId == chpl_nodeID {
       const numer_ = numer.localize();
-      helper(result, numer, exp_, rounding);
+      helper(result, numer_, exp_, rounding);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", resultLoc) {
