@@ -4144,6 +4144,9 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     }
   }
 
+  // avoid warning about not statically knowing the stack size when recursive
+  // functions are called from the kernel
+  ptxasFlags += " --suppress-stack-size-warning ";
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +

@@ -37,7 +37,7 @@ executing on a GPU sublocale.  Loops are eligible when:
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
 * They are free of any call to a function that fails to meet the above
-  criteria, accesses outer variables, or are recursive.
+  criteria or accesses outer variables.
 
 Any code in an ``on`` statement for a GPU sublocale that is not within an
 eligible loop will be executed on the CPU.
