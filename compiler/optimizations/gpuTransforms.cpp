@@ -468,8 +468,12 @@ class GpuKernel {
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
+  // Has a side effect of removing the block size primitive from the loop
+  // and the (future) outlined function.
   void handleAndRemoveBlockSize(CForLoop *loop);
   void populateBody(CForLoop *loop, FnSymbol *outlinedFunction);
+  // Has a side effect of modifying the original loop body, replacing
+  // calls to GPU-only primitives with dummy values and errors.
   void replaceDisallowedPrimitives();
   void normalizeOutlinedFunction();
   void finalize();
