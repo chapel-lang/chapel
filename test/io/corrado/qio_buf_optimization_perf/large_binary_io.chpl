@@ -6,11 +6,14 @@ config const n : uint(64) = 2048,
 
 config param PerfTest = true;
 
+// write nn arrays of n uint(64) elements to a file
 var wTime = bigWrite();
-if PerfTest then writeln("Write Time: ", wTime);
+if PerfTest then writef("Write Time: %.10r\n", wTime);
 
+// read the same array nn times from the file
+// (in the non-PerfTest case, check that the arrays match)
 var (rTime, matches) = bigRead();
-if PerfTest then writeln("Read Time: ", rTime);
+if PerfTest then writef("Read Time: %.10r\n", rTime);
 
 writeln(matches);
 remove("big.bin");
@@ -20,8 +23,10 @@ proc bigWrite(): real {
         x = [i in 1..n] i;
   var s = new stopwatch();
 
+  // write something small to allocate buffer space in the channel
   w.writeBinary(111);
 
+  // write the array nn times
   s.start();
   for i in 0..#nn do
     w.writeBinary(x);
@@ -41,9 +46,12 @@ proc bigRead() : (real, bool) {
   r.readBinary(small);
   matches = (small == 111);
 
+  // read the array nn times
   s.start();
   for i in 0..#nn {
     r.readBinary(y);
+
+    // check that the array matches
     if !PerfTest {
       if !y.equals(x) {
         writeln("Mismatch at ", i);
