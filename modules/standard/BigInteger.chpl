@@ -2098,10 +2098,11 @@ module BigInteger {
 
     if _local {
       mpz_rootrem(root.mpz, rem.mpz, u.mpz, n_);
-    } else if root.localeId == chpl_nodeID &&
-              rem.localeId == chpl_nodeID &&
-              u.localeId == chpl_nodeID {
-      mpz_rootrem(root.mpz, rem.mpz, u.mpz, n_);
+    } else if root.localeId == chpl_nodeID {
+      var rem_: bigint;
+      const u_ = u.localize();
+      mpz_rootrem(root.mpz, rem_.mpz, u_.mpz, n_);
+      rem = rem_;
     } else {
       const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", rootLoc) {
@@ -2142,10 +2143,11 @@ module BigInteger {
   proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint) {
     if _local {
       mpz_sqrtrem(root.mpz, rem.mpz, a.mpz);
-    } else if root.localeId == chpl_nodeID &&
-              rem.localeId == chpl_nodeID &&
-              a.localeId == chpl_nodeID {
-      mpz_sqrtrem(root.mpz, rem.mpz, a.mpz);
+    } else if root.localeId == chpl_nodeID {
+      var rem_ : bigint;
+      const a_ = a.localize();
+      mpz_sqrtrem(root.mpz, rem_.mpz, a_.mpz);
+      rem = rem_;
     } else {
       const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
       on __primitive("chpl_on_locale_num", rootLoc) {
@@ -4132,8 +4134,8 @@ module BigInteger {
 
     if _local {
       helper(result, numer, exp_, rounding);
-    } else if result.localeId == chpl_nodeID &&
-              numer.localeId == chpl_nodeID {
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer.localize();
       helper(result, numer, exp_, rounding);
     } else {
       const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
@@ -4223,8 +4225,9 @@ module BigInteger {
     inline proc helper(ref res, ref rem, const ref a, b) {
       if _local {
         rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b_);
-      } else if res.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b_);
+      } else if res.localeId == chpl_nodeID {
+        const a_ = a.localize();
+        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
       } else {
         const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
         on __primitive("chpl_on_locale_num", resLoc) {
