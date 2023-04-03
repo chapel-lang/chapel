@@ -73,7 +73,7 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
 @deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
-@deprecated(notes="enum 'Day' is deprecated. Please use 'day' instead")
+@deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
 enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
 /* Specifies the day of the week */
 enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
@@ -900,11 +900,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       // pay attention to the timezones.
       // >>> central = pytz.timezone("US/Central")
       // >>> pacific = pytz.timezone("US/Pacific")
-      // >>> dateTime.time(12,3,4,5,tz=central) >
-      //     dateTime.time(12,3,4,5,tz=pacific)
+      // >>> datetime.time(12,3,4,5,tz=central) >
+      //     datetime.time(12,3,4,5,tz=pacific)
       // False
-      // >>> dateTime.time(12,3,4,6,tz=central) >
-      //     dateTime.time(12,3,4,5,tz=pacific)
+      // >>> datetime.time(12,3,4,6,tz=central) >
+      //     datetime.time(12,3,4,5,tz=pacific)
       // True
       //
       // This compares the time on a specific date, and factors in the
@@ -986,7 +986,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
 
-  @deprecated(notes="'datetime' is deprecated, please use 'dateTime' instead")
+  @deprecated(notes="'datetime' is deprecated, please use :record:`dateTime` instead")
   type datetime = dateTime;
 
   /* A record representing a combined `date` and `time` */
@@ -1169,7 +1169,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Methods on dateTime values */
 
-  @deprecated(notes="'dateTime.getdate' is deprecated. Please use 'dateTime.getDate' instead")
+  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
   proc dateTime.getdate() {
     return chpl_date;
   }
@@ -1179,7 +1179,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return chpl_date;
   }
 
-  @deprecated(notes="'dateTime.gettime' is deprecated. Please use 'dateTime.getTime' instead")
+  @deprecated(notes="'dateTime.gettime' is deprecated. Please use :proc:`dateTime.getTime` instead")
   proc dateTime.gettime() {
     if chpl_time.timezone.borrow() == nil then
       return chpl_time;
@@ -1685,7 +1685,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
 
-  @deprecated(notes="'timedelta' is deprecated. Please use 'timeDelta' instead")
+  @deprecated(notes="'timedelta' is deprecated. Please use :record:`timeDelta` instead")
   type timedelta = timeDelta;
   /* A record representing an amount of time.  A `timeDelta` has fields
      representing days, seconds, and microseconds.  These fields are always
