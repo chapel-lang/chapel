@@ -7904,7 +7904,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     try this.lock(); defer { this.unlock(); }
 
     if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
-      e = qio_channel_read(false, this._channel_internal, data[0], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+      e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {

@@ -1041,6 +1041,7 @@ qioerr qio_channel_read_amt(const int threadsafe, qio_channel_t* restrict ch, vo
   if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
+    ch->mark_stack[ch->mark_cur] += len;
     err = 0;
   } else {
     ssize_t amt_read = 0;
