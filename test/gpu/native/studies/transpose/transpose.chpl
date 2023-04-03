@@ -36,16 +36,20 @@ inline proc transposeClever(original, output) {
 
     const blockIdxX = blockIdx % (sizeX / blockSize),
           blockIdxY = blockIdx / (sizeX / blockSize),
-          threadIdxX = threadIdx % blockSize,
-          threadIdxY = threadIdx / blockSize;
+          // Swapping thread X/Y here is safe because these coordinates are
+          // entirely "synthetic": all we need is a one-to-one correspondence
+          // of 1D blocks and threads to 2D blocks and threads.
+          //
+          // However, swapping X/Y seems to have a significant performance
+          // impact, for reasons yet unknown.
+          threadIdxY = threadIdx % blockSize,
+          threadIdxX = threadIdx / blockSize;
     var idxX = blockIdxX * blockSize + threadIdxX,
         idxY = blockIdxY * blockSize + threadIdxY;
     // Store the input data in transposed order into temporary array
     // i.e., the below is effectively smArrPtr[y][x] instead of
     // smArrPtr[x][y] for copy
-    if (idxX < sizeX && idxY < sizeY) {
-      smArrPtr[paddedBlockSize * threadIdxX + threadIdxY] = original[idxX, idxY];
-    }
+    smArrPtr[paddedBlockSize * threadIdxX + threadIdxY] = original[idxX, idxY];
 
     // synchronize the threads
     syncThreads();
@@ -53,9 +57,7 @@ inline proc transposeClever(original, output) {
     // Swap coordinates and write back out
     idxX = blockIdxY * blockSize + threadIdxX;
     idxY = blockIdxX * blockSize + threadIdxY;
-    if (idxX < sizeY && idxY < sizeX) {
-      output[idxX, idxY] = smArrPtr[paddedBlockSize * threadIdxY + threadIdxX];
-    }
+    output[idxX, idxY] = smArrPtr[paddedBlockSize * threadIdxY + threadIdxX];
   }
 }
 
