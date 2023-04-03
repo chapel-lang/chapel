@@ -18,12 +18,12 @@ brew test-bot --only-setup
     fi
 
 # tests commands
-brew-test --only-cleanup-before
+brew test-bot --only-cleanup-before
 if [ $? -ne 0 ]; then
-      echo "brew-test --only-cleanup-before failed" 
+      echo "brew test-bot --only-cleanup-before failed" 
       exit 1
 else
-      echo "brew-test --only-cleanup-before succeeded"
+      echo "brew test-bot --only-cleanup-before succeeded"
 fi
 
 brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae=
