@@ -18,7 +18,10 @@ config param blockPadding = 1;
 config type dataType = real(32);
 
 inline proc transposeNaive(original, output) {
-  foreach (x,y) in original.domain do output[y,x] = original[x,y];
+  foreach (x,y) in original.domain {
+    assertOnGpu();
+    output[y,x] = original[x,y];
+  }
 }
 
 inline proc transposeClever(original, output) {
@@ -110,12 +113,10 @@ on here.gpus[0] {
   var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
-    if impl == naive {
-      transposeNaive(original, output);
-    } else if impl == clever {
-      transposeClever(original, output);
-    } else if impl == lowlevel {
-      transposeLowLevel(original, output);
+    select impl {
+      when naive do transposeNaive(original, output);
+      when clever do transposeClever(original, output);
+      when lowlevel do transposeLowLevel(original, output);
     }
     timer.stop();
   }
