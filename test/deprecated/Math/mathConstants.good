@@ -1,0 +1,33 @@
+mathConstants.chpl:1: warning: In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:2: warning: In an upcoming release 'log2_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:2: warning: In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:3: warning: In an upcoming release 'log10_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:3: warning: In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:4: warning: In an upcoming release 'ln_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:5: warning: In an upcoming release 'ln_10' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:6: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:7: warning: In an upcoming release 'half_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:7: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:8: warning: In an upcoming release 'quarter_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:8: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:9: warning: In an upcoming release 'recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:9: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:11: warning: In an upcoming release 'twice_recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:11: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:13: warning: In an upcoming release 'twice_recipr_sqrt_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:13: warning: In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:14: warning: In an upcoming release 'sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+mathConstants.chpl:15: warning: In an upcoming release 'recipr_sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true
+true

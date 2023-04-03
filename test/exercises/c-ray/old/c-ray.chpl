@@ -27,6 +27,7 @@ use Image;    // use helper module related to writing out images
 use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
+import Math.quarter_pi;
 
 //
 // Configuration constants
