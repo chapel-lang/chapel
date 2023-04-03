@@ -285,19 +285,11 @@ module OwnedObject {
        In some cases such errors are caught at compile-time.
      */
     pragma "nil from this"
-    proc /*const*/ borrow() {
+    inline proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
       } else {
         return chpl_p!;
-      }
-    }
-
-    proc type borrow() type {
-      if _to_nilable(chpl_t) == chpl_t {
-        return chpl_t;
-      } else {
-        return _to_nonnil(chpl_t);
       }
     }
   }

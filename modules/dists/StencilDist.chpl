@@ -609,6 +609,7 @@ proc Stencil.getChunk(inds, locid) {
   // TODO: Should this be able to be written as myChunk[inds] ???
   //
   // TODO: Does using David's detupling trick work here?
+  // see Block.getChunk
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
