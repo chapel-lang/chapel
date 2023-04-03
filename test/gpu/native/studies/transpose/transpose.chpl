@@ -3,6 +3,16 @@ use GpuDiagnostics;
 use GPU;
 use Time;
 
+// This test implements matrix transpose operations based on the following example:
+//
+// https://www.nvidia.com/content/cudazone/cuda_sdk/Linear_Algebra.html#transpose
+//
+// In particular, the naive implType represents a naive matrix multiplication
+// (one that just writes (i,j) to (j,i)). The clever and lowlevel versions
+// represent the implementation that does memory coalescing. The lowlevel
+// verion uses a GPU kernel launch primitive to get a 2D kernel (which matches
+// the CUDA version more closely), whereas the clever version uses a 1D
+// kernel that is implicitly launched from a foreach loop.
 enum implType {
     naive, clever, lowlevel
 }
@@ -31,6 +41,10 @@ inline proc transposeClever(original, output) {
     param paddedBlockSize = blockSize + blockPadding;
     var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
 
+    // The blockIdx and threadIdx can be computed from the index variable
+    // of the loop if need be. However, using the GPU's underlying primitives
+    // to get these values is cleaner (and less brittle in case the block
+    // size changes).
     const blockIdx = __primitive("gpu blockIdx x"),
           threadIdx = __primitive("gpu threadIdx x");
 
