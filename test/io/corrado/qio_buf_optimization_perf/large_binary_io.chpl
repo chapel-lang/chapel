@@ -1,8 +1,8 @@
 use IO;
 import Time.stopwatch, FileSystem.remove;
 
-config const n : uint(64) = 2048,
-             nn = 100000;
+config const n : uint(64) = 2048*8,
+             nn = 10000;
 
 config param PerfTest = true;
 
@@ -20,11 +20,12 @@ remove("big.bin");
 
 proc bigWrite(): real {
   const w = openWriter("big.bin", hints=ioHintSet.mmap(false), locking=false),
-        x = [i in 1..n] i;
+        x = [i in 1..n] i,
+        smallArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   var s = new stopwatch();
 
   // write something small to allocate buffer space in the channel
-  w.writeBinary(111);
+  w.writeBinary(smallArray);
 
   // write the array nn times
   s.start();
@@ -41,10 +42,10 @@ proc bigRead() : (real, bool) {
   var y : [1..n] uint(64),
       s = new stopwatch(),
       matches: bool,
-      small: int;
+      small: [1..10] int;
 
   r.readBinary(small);
-  matches = (small == 111);
+  matches = (&& reduce (small == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
 
   // read the array nn times
   s.start();
