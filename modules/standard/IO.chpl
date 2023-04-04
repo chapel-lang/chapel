@@ -7205,14 +7205,8 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       ch._set_styleInternal(save_style);
     }
 
-    if t == string {
-      var tmp = string.createWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
-    else {
-      var tmp = bytes.createWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
+    var tmp = t.createWithOwnedBuffer(tx, length=lenread);
+    out_var <=> tmp;
   }
 
   return (err, lenread);
@@ -11186,10 +11180,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  if isStringType(t) then
-    return string.createWithOwnedBuffer(buf, offset, offset+1);
-  else
-    return bytes.createWithOwnedBuffer(buf, offset, offset+1);
+  return t.createWithOwnedBuffer(buf, offset, offset+1);
 }
 
 
