@@ -404,6 +404,10 @@ module String {
     return ret;
   }
 
+  inline proc type string.createWithBorrowedBuffer(x: string) : string {
+    return createStringWithBorrowedBuffer(x);
+  }
+
   /*
     Creates a new string which borrows the internal buffer of a `c_string`. If
     the buffer is freed before the string returned from this function, accessing
@@ -424,6 +428,11 @@ module String {
                                              length=x.size) : string throws {
     return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
+  }
+
+  inline proc type string.createWithBorrowedBuffer(x: c_string,
+                                             length=x.size) : string throws {
+    return createStringWithBorrowedBuffer(x, length);
   }
 
   pragma "no doc"
@@ -479,6 +488,12 @@ module String {
     return ret;
   }
 
+  inline proc type string.createWithBorrowedBuffer(x: c_ptr(?t),
+                                             length: int,
+                                             size: int) : string throws {
+    return createStringWithBorrowedBuffer(x, length, size);
+  }
+
   pragma "no doc"
   inline proc createStringWithOwnedBuffer(x: string) : string {
     // should we allow stealing ownership?
@@ -504,6 +519,10 @@ module String {
                                           length=x.size) : string throws {
     return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
+  }
+  inline proc type string.createWithOwnedBuffer(x: c_string,
+                                          length=x.size) : string throws {
+    return createStringWithOwnedBuffer(x, length);
   }
 
   /*
@@ -536,6 +555,12 @@ module String {
     return ret;
   }
 
+  inline proc type string.createWithOwnedBuffer(x: c_ptr(?t),
+                                          length: int,
+                                          size: int) : string throws {
+    return createStringWithOwnedBuffer(x, length, size);
+  }
+
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -550,6 +575,10 @@ module String {
     ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
+  }
+
+  inline proc type string.createWithNewBuffer(x: string) : string {
+    return createStringWithNewBuffer(x);
   }
 
   /*
@@ -578,6 +607,12 @@ module String {
                                         policy=decodePolicy.strict) : string throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
                                      size=length+1, policy);
+  }
+
+  inline proc type string.createWithNewBuffer(x: c_string, length=x.size,
+                                        policy=decodePolicy.strict) : string throws {
+    return createStringWithNewBuffer(x, length, policy);
+
   }
 
   /*
@@ -614,6 +649,12 @@ module String {
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
     return decodeByteBuffer(x:bufferType, length, policy);
+  }
+
+  inline proc type string.createWithNewBuffer(x: c_ptr(?t),
+                                        length: int, size=length+1,
+                                        policy=decodePolicy.strict) : string throws {
+    return createStringWithNewBuffer(x, length, size, policy);
   }
 
   // non-validating string factory functions are in this submodule. This
