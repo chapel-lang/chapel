@@ -1314,15 +1314,13 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
   pos = 0;
   endpos = pos + x.numBytes;
 
-  var ret: t;
-  var nreplaced:int;
-
   var replaced:c_string;
   var replaced_len:int(64);
-  nreplaced = qio_regex_replace(localRegex, replacement.localize().c_str(),
-                                replacement.numBytes, x.localize().c_str(),
-                                x.numBytes, pos:int, endpos:int, global,
-                                replaced, replaced_len);
+  var nreplaced: int = qio_regex_replace(localRegex, replacement.localize().c_str(),
+                                    replacement.numBytes, x.localize().c_str(),
+                                    x.numBytes, pos:int, endpos:int, global,
+                                    replaced, replaced_len);
+
   var ret = try! t.createWithOwnedBuffer(replaced, replaced_len);
 
   return (ret, nreplaced);
