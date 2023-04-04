@@ -657,7 +657,7 @@ record regex {
       var err_str = qio_regex_error(this._regex);
       var err_msg: string;
       try! {
-        err_msg = createStringWithOwnedBuffer(err_str) +
+        err_msg = string.createWithOwnedBuffer(err_str) +
                     " when compiling regex '" + patternStr + "'";
       }
       // this is a workaround for a known limitation in throwing initializers
@@ -702,7 +702,7 @@ record regex {
       var len:int;
       qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
       if exprType == string then {
-        try! pattern = createStringWithBorrowedBuffer(patternTemp, len).chpl__serialize();
+        try! pattern = string.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
       }
       else {
         pattern = createBytesWithBorrowedBuffer(patternTemp, len).chpl__serialize();
@@ -1070,7 +1070,7 @@ record regex {
       qio_regex_borrow_pattern(this._regex, patternTemp, len);
       if exprType == string then {
         try! {
-          pattern = createStringWithNewBuffer(patternTemp, len);
+          pattern = string.createWithNewBuffer(patternTemp, len);
         }
       }
       else {
@@ -1139,7 +1139,7 @@ inline operator :(x: regex(string), type t: string) {
     qio_regex_borrow_pattern(x._regex, cs, len);
     if t == string {
       try! {
-        pattern = createStringWithNewBuffer(cs, len);
+        pattern = string.createWithNewBuffer(cs, len);
       }
     }
   }
@@ -1330,7 +1330,7 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
   var ret: t;
 
   if t == string then
-    ret = try! createStringWithOwnedBuffer(newBuff, length=numBytesInResult,
+    ret = try! string.createWithOwnedBuffer(newBuff, length=numBytesInResult,
                                            size=buffSize);
   else
     ret = createBytesWithOwnedBuffer(newBuff, length=numBytesInResult,
@@ -1362,7 +1362,7 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
                                 replaced, replaced_len);
   if t==string {
     try! {
-      ret = createStringWithOwnedBuffer(replaced, replaced_len);
+      ret = string.createWithOwnedBuffer(replaced, replaced_len);
     }
   }
   else {

@@ -137,7 +137,7 @@ module ChapelUtil {
       compilerError("config variables of atomic type are not supported");
 
     try! {
-      var str = createStringWithNewBuffer(x);
+      var str = string.createWithNewBuffer(x);
       if t == string {
         return str;
       } else {
@@ -168,7 +168,7 @@ module ChapelUtil {
     for i in 0..#arg.argc {
       // FIX ME: leak c_string
       try! {
-        array[i] = createStringWithNewBuffer(chpl_get_argument_i(local_arg,
+        array[i] = string.createWithNewBuffer(chpl_get_argument_i(local_arg,
                                                                i:int(32)));
       }
     }
@@ -185,7 +185,7 @@ module ChapelUtil {
     if (flag != "--chpl-mli-socket-loc") {
       try! halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
-           createStringWithNewBuffer(flag));
+           string.createWithNewBuffer(flag));
     }
     var result: c_string = chpl_get_argument_i(local_arg,
                                                (local_arg.argc-1): int(32));

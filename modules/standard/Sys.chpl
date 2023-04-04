@@ -474,7 +474,7 @@ module Sys {
         throw createSystemError(err_out);
       }
 
-      return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+      return string.createWithOwnedBuffer(buffer, length, NI_MAXHOST);
     }
 
     /*

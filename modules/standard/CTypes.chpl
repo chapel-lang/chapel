@@ -457,13 +457,13 @@ module CTypes {
   pragma "no doc"
   inline operator c_void_ptr.:(x:c_void_ptr, type t:string) {
     try! {
-      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+      return string.createWithOwnedBuffer(__primitive("ref to string", x));
     }
   }
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
-      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+      return string.createWithOwnedBuffer(__primitive("ref to string", x));
     }
   }
   pragma "no doc"

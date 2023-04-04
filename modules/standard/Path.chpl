@@ -393,7 +393,7 @@ proc dirname(path: string): string {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c,
+               value = string.createWithNewBuffer(value_c,
                                                  policy=decodePolicy.escape);
              }
            }
@@ -414,7 +414,7 @@ proc dirname(path: string): string {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c,
+             value = string.createWithNewBuffer(value_c,
                                                policy=decodePolicy.escape);
            }
          }
@@ -593,7 +593,7 @@ proc realPath(path: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(path).c_str(), res);
   if err then try ioerror(err, "realPath", path);
-  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
+  const ret = string.createWithNewBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret;
@@ -622,7 +622,7 @@ proc realPath(f: file): string throws {
   var res: c_string;
   var err = chpl_fs_realpath_file(f._file_internal, res);
   if err then try ioerror(err, "in realPath with a file argument");
-  return createStringWithOwnedBuffer(res);
+  return string.createWithOwnedBuffer(res);
 }
 
 /* Compute the common prefix length between two lists of path components. */

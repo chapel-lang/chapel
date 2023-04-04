@@ -84,8 +84,8 @@ module ExportWrappers {
     var data = val.data:c_string;
     var size = val.size.safeCast(int);
     try! {
-      if cp then return createStringWithNewBuffer(data, size);
-      return createStringWithBorrowedBuffer(data, size);
+      if cp then return string.createWithNewBuffer(data, size);
+      return string.createWithBorrowedBuffer(data, size);
     }
   }
 

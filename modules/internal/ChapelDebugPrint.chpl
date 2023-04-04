@@ -87,7 +87,7 @@ module ChapelDebugPrint {
                                         __primitive("_get_user_file"));
       var file: string;
       try! {
-        file = createStringWithNewBuffer(file_cs);
+        file = string.createWithNewBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
@@ -102,7 +102,7 @@ module ChapelDebugPrint {
                                         __primitive("_get_user_file"));
       var file: string;
       try! {
-        file = createStringWithNewBuffer(file_cs);
+        file = string.createWithNewBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));

@@ -166,7 +166,7 @@ module ChapelTaskTable {
     for taskID in chpldev_taskTable!.dom {
       try! stderr.writeln(
              "- ",
-             createStringWithNewBuffer(chpl_lookupFilename(
+             string.createWithNewBuffer(chpl_lookupFilename(
                                         chpldev_taskTable!.map[taskID].filename)),
              ":",  chpldev_taskTable!.map[taskID].lineno,
              " is ", chpldev_taskTable!.map[taskID].state);

@@ -148,7 +148,7 @@ module LocaleModelHelpSetup {
     extern proc chpl_nodeName(): c_string;
     var _node_name: string;
     try! {
-      _node_name = createStringWithNewBuffer(chpl_nodeName());
+      _node_name = string.createWithNewBuffer(chpl_nodeName());
     }
     const _node_id = (chpl_nodeID: int): string;
 
