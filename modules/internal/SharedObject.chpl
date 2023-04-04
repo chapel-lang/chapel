@@ -353,13 +353,6 @@ module SharedObject {
       The result type preserves nilability of the argument type.
       If the argument is non-nilable, it must be recognized by the compiler
       as an expiring value.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`shared.create`
-         and :proc:`shared.retain`. However, `adopt` is not as widely used as
-         `create` and `retain` yet, so there may be some bugs we have not
-         found yet. If you discover any bugs with `adopt`, please report them
-         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: owned) {
       var ptr = owned.release(obj);
@@ -373,13 +366,6 @@ module SharedObject {
 
       It is an error to directly delete the class instance
       after passing it to `shared.adopt()`.
-
-      .. note::
-         This is part of an new interface that will replace :proc:`shared.create`
-         and :proc:`shared.retain`. However, `adopt` is not as widely used as
-         `create` and `retain` yet, so there may be some bugs we have not
-         found yet. If you discover any bugs with `adopt`, please report them
-         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
       return new _shared(obj);
