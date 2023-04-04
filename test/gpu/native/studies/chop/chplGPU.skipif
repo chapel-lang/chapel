@@ -39,4 +39,9 @@ if ! (for p in $(find patches -name "*patch"); do git -C ChOp apply ../$p; done)
   exit
 fi
 
+# Build their Cuda support
+cd ChOp
+make cuda &> ../cudaBuild.out
+cd ..
+
 echo "False"

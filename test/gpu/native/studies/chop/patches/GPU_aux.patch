@@ -1,0 +1,27 @@
+diff --git a/other_codes/chplGPU/modules/GPU_aux.chpl b/other_codes/chplGPU/modules/GPU_aux.chpl
+new file mode 100644
+index 0000000..98ad5f4
+--- /dev/null
++++ b/other_codes/chplGPU/modules/GPU_aux.chpl
+@@ -0,0 +1,9 @@
++module GPU_aux{
++
++	use CTypes;
++
++    require "headers/GPU_aux.h";
++
++    extern proc GPU_device_count(): c_int;
++
++}
+diff --git a/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl b/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
+index f736660..edc46ae 100644
+--- a/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
++++ b/other_codes/chplGPU/modules/queens_GPU_single_locale.chpl
+@@ -1,6 +1,6 @@
+ module queens_GPU_single_locale{
+ 
+-	//use GPU_aux;
++	use GPU_aux;
+ 	use queens_GPU_call_device_search;
+ 	use queens_prefix_generation;
+ 	use queens_node_module;
