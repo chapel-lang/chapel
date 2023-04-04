@@ -51,6 +51,10 @@ module Bytes {
     return ret;
   }
 
+  inline proc type bytes.createWithBorrowedBuffer(x: bytes) : bytes {
+    return createBytesWithBorrowedBuffer(x);
+  }
+
   /*
     Creates a new :type:`bytes` which borrows the internal buffer of a
     `c_string`. If the buffer is freed before the :type:`bytes` returned
@@ -66,8 +70,13 @@ module Bytes {
   */
   inline proc createBytesWithBorrowedBuffer(x: c_string,
                                             length=x.size) : bytes {
-    return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
+    return bytes.createWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                            size=length+1);
+  }
+
+  inline proc type bytes.createWithBorrowedBuffer(x: c_string,
+                                            length=x.size) : bytes {
+    return createBytesWithBorrowedBuffer(x, length);
   }
 
   pragma "no doc"
@@ -85,7 +94,7 @@ module Bytes {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return createBytesWithBorrowedBuffer(buf: c_string, length);
+    return bytes.createWithBorrowedBuffer(buf: c_string, length);
   }
 
   /*
@@ -112,6 +121,11 @@ module Bytes {
     return ret;
   }
 
+  inline proc type bytes.createWithBorrowedBuffer(x: c_ptr(?t), length: int,
+                                            size: int) : bytes {
+    return createBytesWithBorrowedBuffer(x, length, size);
+  }
+
   pragma "no doc"
   inline proc createBytesWithOwnedBuffer(s: bytes) {
     // should we allow stealing ownership?
@@ -133,6 +147,10 @@ module Bytes {
   inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) : bytes {
     return createBytesWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
+  }
+
+  inline proc type bytes.createWithOwnedBuffer(x: c_string, length=x.size) : bytes {
+    return createBytesWithOwnedBuffer(x, length);
   }
 
   /*
@@ -159,6 +177,11 @@ module Bytes {
     return ret;
   }
 
+  inline proc type bytes.createWithOwnedBuffer(x: c_ptr(?t), length: int,
+                                         size: int) : bytes {
+    return createBytesWithOwnedBuffer(x, length, size);
+  }
+
   /*
     Creates a new :type:`bytes` by creating a copy of the buffer of
     another :type:`bytes`.
@@ -171,6 +194,10 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x);
     return ret;
+  }
+
+  inline proc type bytes.createWithNewBuffer(x: bytes) : bytes {
+    return createBytesWithNewBuffer(x);
   }
 
   /*
@@ -187,6 +214,10 @@ module Bytes {
   inline proc createBytesWithNewBuffer(x: c_string, length=x.size) : bytes {
     return createBytesWithNewBuffer(x: bufferType, length=length,
                                                     size=length+1);
+  }
+
+  inline proc type bytes.createWithNewBuffer(x: c_string, length=x.size) : bytes {
+    return createBytesWithNewBuffer(x, length);
   }
 
   /*
@@ -209,6 +240,11 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
+  }
+
+  inline proc type bytes.createWithNewBuffer(x: c_ptr(?t), length: int,
+                                       size=length+1) : bytes {
+    return createBytesWithNewBuffer(x, length, size);
   }
 
   pragma "no doc"
@@ -248,17 +284,17 @@ module Bytes {
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
-          return createBytesWithNewBuffer(
+          return bytes.createWithNewBuffer(
                       chpl__getInPlaceBufferData(data.shortData),
                       data.buffLen,
                       data.size);
         } else {
           var localBuff = bufferCopyRemote(data.locale_id, data.buff,
                                            data.buffLen);
-          return createBytesWithOwnedBuffer(localBuff, data.buffLen, data.size);
+          return bytes.createWithOwnedBuffer(localBuff, data.buffLen, data.size);
         }
       } else {
-        return createBytesWithBorrowedBuffer(data.buff, data.buffLen,
+        return bytes.createWithBorrowedBuffer(data.buff, data.buffLen,
                                              data.size);
       }
     }
@@ -378,7 +414,7 @@ module Bytes {
   */
   inline proc bytes.localize() : bytes {
     if _local || this.locale_id == chpl_nodeID {
-      return createBytesWithBorrowedBuffer(this);
+      return bytes.createWithBorrowedBuffer(this);
     } else {
       const x:bytes = this; // assignment makes it local
       return x;
@@ -426,7 +462,7 @@ module Bytes {
       then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
     var (buf, size) = bufferCopy(buf=this.buff, off=i, len=1,
                                  loc=this.locale_id);
-    return createBytesWithOwnedBuffer(buf, length=1, size=size);
+    return bytes.createWithOwnedBuffer(buf, length=1, size=size);
   }
 
   /*
@@ -1050,12 +1086,12 @@ module Bytes {
 
   pragma "no doc"
   inline operator :(x: string, type t: bytes) {
-    return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
+    return bytes.createWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
   pragma "no doc"
   inline operator :(x: c_string, type t: bytes) {
     var length = x.size;
-    return createBytesWithNewBuffer(x: bufferType, length=length, size=length+1);
+    return bytes.createWithNewBuffer(x: bufferType, length=length, size=length+1);
   }
 
 
@@ -1079,7 +1115,7 @@ module Bytes {
      Halts if `lhs` is a remote bytes.
   */
   operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = createBytesWithNewBuffer(rhs_c);
+    lhs = bytes.createWithNewBuffer(rhs_c);
   }
 
   //
