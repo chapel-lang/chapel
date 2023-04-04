@@ -382,10 +382,7 @@ module SharedObject {
          to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
-      // 'result' may have a non-nilable type
-      var result: (obj.type : shared);
-      result = new _shared(obj);
-      return result;
+      return new _shared(obj);
     }
 
     // Issue a compiler error for illegal uses.
