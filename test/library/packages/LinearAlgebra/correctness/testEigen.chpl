@@ -1,4 +1,4 @@
-use LinearAlgebra, Random;
+use LinearAlgebra, Random, Math;
 
 config const epsilon = 0.0000000001;
 
