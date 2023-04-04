@@ -701,12 +701,7 @@ record regex {
       var patternTemp: c_string;
       var len:int;
       qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
-      if exprType == string then {
-        try! pattern = string.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
-      }
-      else {
-        pattern = bytes.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
-      }
+      try! pattern = exprType.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
 
       var localOptions: qio_regex_options_t;
       qio_regex_get_options(_regexCopy, localOptions);
@@ -1068,14 +1063,7 @@ record regex {
       var patternTemp:c_string;
       var len:int;
       qio_regex_borrow_pattern(this._regex, patternTemp, len);
-      if exprType == string then {
-        try! {
-          pattern = string.createWithNewBuffer(patternTemp, len);
-        }
-      }
-      else {
-        pattern = bytes.createWithNewBuffer(patternTemp, len);
-      }
+      try! pattern = exprType.createWithNewBuffer(patternTemp, len);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -1129,32 +1117,13 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
   }
 }
 
-// Cast regex to string.
-pragma "no doc"
-inline operator :(x: regex(string), type t: string) {
+inline operator :(x: regex(?exprType), type t: exprType) {
   var pattern: t;
   on x.home {
     var cs: c_string;
     var len:int;
     qio_regex_borrow_pattern(x._regex, cs, len);
-    if t == string {
-      try! {
-        pattern = string.createWithNewBuffer(cs, len);
-      }
-    }
-  }
-  return pattern;
-}
-
-// Cast regex to bytes.
-pragma "no doc"
-inline operator :(x: regex(bytes), type t: bytes) {
-  var pattern: t;
-  on x.home {
-    var cs: c_string;
-    var len:int;
-    qio_regex_borrow_pattern(x._regex, cs, len);
-    pattern = bytes.createWithNewBuffer(cs, len);
+    try! pattern = t.createWithNewBuffer(cs, len);
   }
   return pattern;
 }
@@ -1327,14 +1296,8 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
                       dst_off=writeIdx, src_off=readIdx);
   }
 
-  var ret: t;
-
-  if t == string then
-    ret = try! string.createWithOwnedBuffer(newBuff, length=numBytesInResult,
-                                           size=buffSize);
-  else
-    ret = bytes.createWithOwnedBuffer(newBuff, length=numBytesInResult,
-                                     size=buffSize);
+  var ret = try! t.createWithOwnedBuffer(newBuff, length=numBytesInResult,
+                                         size=buffSize);
 
   return (ret, totalChunksToRemove);
 }
@@ -1360,14 +1323,7 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
                                 replacement.numBytes, x.localize().c_str(),
                                 x.numBytes, pos:int, endpos:int, global,
                                 replaced, replaced_len);
-  if t==string {
-    try! {
-      ret = string.createWithOwnedBuffer(replaced, replaced_len);
-    }
-  }
-  else {
-    ret = bytes.createWithOwnedBuffer(replaced, replaced_len);
-  }
+  var ret = try! t.createWithOwnedBuffer(replaced, replaced_len);
 
   return (ret, nreplaced);
 }
