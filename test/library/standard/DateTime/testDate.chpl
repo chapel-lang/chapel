@@ -5,11 +5,11 @@ var today = date.today(); // workaround for problem with unused records
 
 proc test_date_delta_non_days_ignored() {
   var dt = new date(2000, 1, 2);
-  var delta = new timedelta(days=1, hours=2, minutes=3, seconds=4,
+  var delta = new timeDelta(days=1, hours=2, minutes=3, seconds=4,
                             microseconds=5);
 
-  var days = new timedelta(delta.days);
-  assert(days == new timedelta(1));
+  var days = new timeDelta(delta.days);
+  assert(days == new timeDelta(1));
 
   var dt2 = dt + delta;
   assert(dt2 == dt+days);
@@ -21,8 +21,8 @@ proc test_date_delta_non_days_ignored() {
   assert(dt2 == dt - days);
 
   delta = -delta;
-  days = new timedelta(delta.days);
-  assert(days == new timedelta(-2));
+  days = new timeDelta(delta.days);
+  assert(days == new timeDelta(-2));
 
   dt2 = dt + delta;
   assert(dt2 == dt + days);
@@ -82,7 +82,7 @@ proc test_date_extreme_ordinals() {
   var b = date.fromOrdinal(aord);
   assert(a == b);
 
-  b = a + new timedelta(days=1);
+  b = a + new timeDelta(days=1);
   assert(b.toOrdinal() == aord + 1);
   assert(b == date.fromOrdinal(aord+1));
 
@@ -91,7 +91,7 @@ proc test_date_extreme_ordinals() {
   b = date.fromOrdinal(aord);
   assert(a == b);
 
-  b = a - new timedelta(days=1);
+  b = a - new timeDelta(days=1);
   assert(b.toOrdinal() == aord - 1);
   assert(b == date.fromOrdinal(aord - 1));
 }
@@ -105,8 +105,8 @@ proc test_date_computations() {
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
 
-  var day = new timedelta(1);
-  var week = new timedelta(7);
+  var day = new timeDelta(1);
+  var week = new timeDelta(7);
   a = new date(2002, 3, 2);
 
   assert(a + day == new date(2002, 3, 3));
@@ -130,7 +130,7 @@ proc test_date_computations() {
 proc test_date_fromtimestamp() {
   var (year, month, day) = (1999, 9, 19);
   var d1 = new date(year, month, day);
-  var delta = d1 - unixEpoch.getdate();
+  var delta = d1 - unixEpoch.getDate();
   var ts = delta.days * 60 * 60 * 24 + delta.seconds;
 
   var d = date.fromTimestamp(ts);
@@ -143,7 +143,7 @@ proc test_date_today() {
   var tday, tdayAgain: date;
   for 1..3 { // give it a few tries in case we cross midnight
     tday = date.today();
-    var delta = tday - unixEpoch.getdate();
+    var delta = tday - unixEpoch.getDate();
     var ts = delta.days * 60 * 60 * 24 + delta.seconds;
     tdayAgain = date.fromTimestamp(ts);
     if tday == tdayAgain then
@@ -165,13 +165,13 @@ proc test_date_isocalendar() {
   for i in 0..#7 {
     var d = new date(2003, 12, 22+i);
     assert(d.isoCalendar() == (2003, 52, i+1));
-    d = new date(2003, 12, 29) + new timedelta(i);
+    d = new date(2003, 12, 29) + new timeDelta(i);
     assert(d.isoCalendar() == (2004, 1, i+1));
     d = new date(2004, 1, 5+i);
     assert(d.isoCalendar() == (2004, 2, i+1));
     d = new date(2009, 12, 21+i);
     assert(d.isoCalendar() == (2009, 52, i+1));
-    d = new date(2009, 12, 28) + new timedelta(i);
+    d = new date(2009, 12, 28) + new timeDelta(i);
     assert(d.isoCalendar() == (2009, 53, i+1));
     d = new date(2010, 1, 4+i);
     assert(d.isoCalendar() == (2010, 1, i+1));
@@ -229,14 +229,14 @@ proc test_date_resolution_info() {
   proc isdate(type t, d) param do return false;
   assert(istype(date, date.min));
   assert(istype(date, date.max));
-  assert(istype(timedelta, date.resolution));
+  assert(istype(timeDelta, date.resolution));
   assert(date.max > date.min);
 }
 
-proc test_date_extreme_timedelta() {
+proc test_date_extreme_timeDelta() {
   var big = date.max - date.min;
   var n = (big.days*24*3600 + big.seconds)*1000000 + big.microseconds;
-  var justasbig = new timedelta(0, 0, n);
+  var justasbig = new timeDelta(0, 0, n);
 
   assert(big == justasbig);
   assert(date.min + big == date.max);
@@ -339,7 +339,7 @@ test_date_isoformat();
 test_date_ctime();
 test_date_strftime();
 test_date_resolution_info();
-test_date_extreme_timedelta();
+test_date_extreme_timeDelta();
 test_date_timetuple();
 test_date_compare();
 test_date_replace();

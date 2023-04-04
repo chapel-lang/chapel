@@ -365,7 +365,7 @@ module TomlParser {
         }
         // DateTime
         else if dt.match(val) {
-          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
+          var date = dateTime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
           return new shared Toml(date);
         }
         // Date
@@ -530,7 +530,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- operator Toml.=(ref t: shared Toml, dt: datetime) {
+ operator Toml.=(ref t: shared Toml, dt: dateTime) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new shared Toml(dt);
@@ -589,7 +589,7 @@ used to recursively hold tables and respective values
       s: string,
       ld: date,
       ti: time,
-      dt: datetime,
+      dt: dateTime,
       dom: domain(1),
       arr: [dom] shared Toml?,
       A: map(string, shared Toml?, false),
@@ -633,7 +633,7 @@ used to recursively hold tables and respective values
     }
 
     // Datetime
-    proc init(dt: datetime) {
+    proc init(dt: dateTime) {
       this.dt = dt;
       this.tag = fieldDateTime;
     }
@@ -812,7 +812,7 @@ used to recursively hold tables and respective values
         t!.ti = ti;
       }
     }
-    proc set(tbl: string, dt: datetime) {
+    proc set(tbl: string, dt: dateTime) {
       ref t = this(tbl);
       if t == nil {
         t = new shared Toml(dt);
