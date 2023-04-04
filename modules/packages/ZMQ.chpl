@@ -1084,7 +1084,7 @@ module ZMQ {
   // assignment can likely be parallelized similarly, but was not
   // included in this temporary effort.
   private proc parallelCreateBytesWithNewBuffer(x: c_ptr(?t), length: int, size=length+1) {
-    if size < parallelAssignThreshold then return createBytesWithNewBuffer(x, length, size);
+    if size < parallelAssignThreshold then return bytes.createWithNewBuffer(x, length, size);
     use ByteBufferHelpers;
     use DSIUtil;
     var ret: bytes;

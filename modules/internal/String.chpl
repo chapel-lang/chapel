@@ -1188,7 +1188,7 @@ module String {
     var localThis: string = this.localize();
 
     if policy == encodePolicy.pass || this.isASCII() {  // just copy
-      return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
+      return bytes.createWithNewBuffer(localThis.buff, localThis.numBytes);
     }
     else {  // see if there is escaped data in the string
       var (buff, size) = bufferAlloc(localThis.buffLen+1);
@@ -1220,7 +1220,7 @@ module String {
         readIdx += nBytes;
       }
       buff[writeIdx] = 0;
-      return createBytesWithOwnedBuffer(buff, length=writeIdx, size=size);
+      return bytes.createWithOwnedBuffer(buff, length=writeIdx, size=size);
     }
   }
 

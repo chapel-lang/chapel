@@ -705,7 +705,7 @@ record regex {
         try! pattern = string.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
       }
       else {
-        pattern = createBytesWithBorrowedBuffer(patternTemp, len).chpl__serialize();
+        pattern = bytes.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
       }
 
       var localOptions: qio_regex_options_t;
@@ -1074,7 +1074,7 @@ record regex {
         }
       }
       else {
-        pattern = createBytesWithNewBuffer(patternTemp, len);
+        pattern = bytes.createWithNewBuffer(patternTemp, len);
       }
     }
     // Note -- this is wrong because we didn't quote
@@ -1154,7 +1154,7 @@ inline operator :(x: regex(bytes), type t: bytes) {
     var cs: c_string;
     var len:int;
     qio_regex_borrow_pattern(x._regex, cs, len);
-    pattern = createBytesWithNewBuffer(cs, len);
+    pattern = bytes.createWithNewBuffer(cs, len);
   }
   return pattern;
 }
@@ -1333,7 +1333,7 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
     ret = try! string.createWithOwnedBuffer(newBuff, length=numBytesInResult,
                                            size=buffSize);
   else
-    ret = createBytesWithOwnedBuffer(newBuff, length=numBytesInResult,
+    ret = bytes.createWithOwnedBuffer(newBuff, length=numBytesInResult,
                                      size=buffSize);
 
   return (ret, totalChunksToRemove);
@@ -1366,7 +1366,7 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
     }
   }
   else {
-    ret = createBytesWithOwnedBuffer(replaced, replaced_len);
+    ret = bytes.createWithOwnedBuffer(replaced, replaced_len);
   }
 
   return (ret, nreplaced);

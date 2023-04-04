@@ -4848,7 +4848,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var err:errorCode = 0;
@@ -5014,7 +5014,7 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createWithOwnedBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
@@ -7210,7 +7210,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       out_var <=> tmp;
     }
     else {
-      var tmp = createBytesWithOwnedBuffer(tx, length=lenread);
+      var tmp = bytes.createWithOwnedBuffer(tx, length=lenread);
       out_var <=> tmp;
     }
   }
@@ -7903,7 +7903,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
                                 this._channel_internal, tx, len, maxSize:c_ssize_t);
 
     if len > 0 then didRead = true;
-    b = try! createBytesWithOwnedBuffer(tx, length=len);
+    b = try! bytes.createWithOwnedBuffer(tx, length=len);
   }
 
   if e == EEOF {
@@ -11189,7 +11189,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
   if isStringType(t) then
     return string.createWithOwnedBuffer(buf, offset, offset+1);
   else
-    return createBytesWithOwnedBuffer(buf, offset, offset+1);
+    return bytes.createWithOwnedBuffer(buf, offset, offset+1);
 }
 
 
@@ -11245,7 +11245,7 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:bytes,
     error =
         qio_channel_read_string(false, iokind.native:c_int, len: int(64),
                                 _channel_internal, ts, gotlen, len: c_ssize_t);
-    s = createBytesWithOwnedBuffer(ts, length=gotlen);
+    s = bytes.createWithOwnedBuffer(ts, length=gotlen);
   }
 
   if ! error {
