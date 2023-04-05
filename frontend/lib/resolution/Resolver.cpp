@@ -488,21 +488,13 @@ Resolver::gatherReceiverAndParentScopesForType(Context* context,
   return scopes;
 }
 
-Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
-  if (recompute) {
-    receiverScopesComputed = false;
-  }
-
-  if (receiverScopesComputed) return savedReceiverScopes;
-
+bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
   if (!scopeResolveOnly &&
       typedSignature &&
       typedSignature->untyped()->isMethod()) {
     // use type information to compute the receiver type
-    auto receiverType = typedSignature->formalType(0).type();
-    // and use that to compute the scopes
-    savedReceiverScopes =
-      gatherReceiverAndParentScopesForType(context, receiverType);
+    if (outType) *outType = typedSignature->formalType(0);
+    return true;
   } else {
     // Use scope-resolver logic to compute the receiver scopes.
 
@@ -527,22 +519,43 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
 
     if (thisFormal) {
       auto type = thisFormal->typeExpression();
-      ID idForTypeDecl;
       if (type == nullptr) {
         // `this` formals of primary methods have no type expression. They
         // are, however, in primary methods, so the method's parent is the
         // aggregate type whose scope should be used.
 
-        idForTypeDecl = parsing::idToParentId(context, methodId);
+        if (outId) *outId = parsing::idToParentId(context, methodId);
       } else if (auto ident = type->toIdentifier()) {
-        idForTypeDecl = byPostorder.byAst(ident).toId();
+        if (outId) *outId = byPostorder.byAst(ident).toId();
       }
+      return true;
+    }
+  }
 
+  return false;
+}
+
+Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
+  if (recompute) {
+    receiverScopesComputed = false;
+  }
+
+  if (receiverScopesComputed) return savedReceiverScopes;
+
+  QualifiedType receiverType;
+  ID receiverId;
+
+  if (getMethodReceiver(&receiverType, &receiverId)) {
+    if (receiverType.type()) {
+      // use type information to compute the scopes
+      savedReceiverScopes =
+        gatherReceiverAndParentScopesForType(context, receiverType.type());
+    } else {
       // TODO: gatherReceiverAndParentScopesForDeclId is intended
       // to support scopeResolveOnly but this code is executed in other
       // cases. Does it need to be?
       savedReceiverScopes =
-        gatherReceiverAndParentScopesForDeclId(context, idForTypeDecl);
+        gatherReceiverAndParentScopesForDeclId(context, receiverId);
     }
   }
 
@@ -556,6 +569,13 @@ QualifiedType Resolver::methodReceiverType() {
   }
 
   return QualifiedType();
+}
+
+bool Resolver::isPotentialSuper(const Identifier* ident, QualifiedType* outType) {
+  if (ident->name() == USTR("super")) {
+    return getMethodReceiver(outType);
+  }
+  return false;
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
@@ -2030,7 +2050,8 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           llvm::ArrayRef<const Scope*> receiverScopes) {
+                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           bool potentialSuper) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -2057,11 +2078,16 @@ Resolver::lookupIdentifier(const Identifier* ident,
   // and probably a few other features.
   if (!scopeResolveOnly) {
     if (notFound) {
-      auto pair = namesWithErrorsEmitted.insert(ident->name());
-      if (pair.second) {
-        // insertion took place so emit the error
-        bool mentionedMoreThanOnce = identHasMoreMentions(ident);
-        CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+      // If this identifier is 'super' and we couldn't find something it refers
+      // to, it could stand for 'this.super'. But in that case, no need to
+      // issue an error.
+      if (!potentialSuper) {
+        auto pair = namesWithErrorsEmitted.insert(ident->name());
+        if (pair.second) {
+          // insertion took place so emit the error
+          bool mentionedMoreThanOnce = identHasMoreMentions(ident);
+          CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+        }
       }
     } else if (ambiguous && !resolvingCalledIdent) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());
@@ -2194,6 +2220,28 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   }
 }
 
+QualifiedType Resolver::getSuperType(Context* context,
+                                     const QualifiedType& sub,
+                                     const Identifier* identForError) {
+  // Early return: if we don't know the child type, we can't figure out the
+  // parent type either.
+  if (sub.isUnknownKindOrType()) {
+    return QualifiedType();
+  }
+
+  if (auto classType = sub.type()->toClassType()) {
+    auto basicParentClass = classType->basicClassType()->parentClassType();
+    auto newClassType = ClassType::get(context,
+        basicParentClass,
+        classType->manager(),
+        classType->decorator());
+    return QualifiedType(sub.kind(), newClassType);
+  } else {
+    CHPL_REPORT(context, InvalidSuper, identForError, sub);
+  }
+  return QualifiedType();
+}
+
 void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -2212,11 +2260,18 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     return;
   }
 
+  QualifiedType subType;
+  bool potentialSuper = isPotentialSuper(ident, &subType);
+
   // lookupIdentifier reports any errors that are needed
-  auto vec = lookupIdentifier(ident, receiverScopes);
+  auto vec = lookupIdentifier(ident, receiverScopes, potentialSuper);
 
   if (vec.size() == 0) {
-    result.setType(QualifiedType());
+    if (potentialSuper) {
+      result.setType(getSuperType(context, std::move(subType), ident));
+    } else {
+      result.setType(QualifiedType());
+    }
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
