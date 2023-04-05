@@ -146,6 +146,7 @@ CHPL_HOST_ARCH
         ========  =============================================================
         x86_64    64-bit AMD and Intel processors
         aarch64   64-bit ARM processors
+        arm64     64-bit ARM processors on Mac laptops
         ========  =============================================================
 
    If unset, the default will be computed. The command ``uname -m``
