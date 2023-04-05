@@ -86,6 +86,8 @@ static void chpl_gpu_ensure_context() {
 
 extern c_nodeid_t chpl_nodeID;
 
+// we can put this logic in chpl-gpu.c. However, it needs to execute
+// per-context/module. That's currently too low level for that layer.
 static void chpl_gpu_impl_set_globals(CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
