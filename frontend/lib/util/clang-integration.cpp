@@ -33,6 +33,7 @@
 #include "clang/Driver/Job.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
+#include "clang/Frontend/FrontendActions.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Serialization/ASTReader.h"
 
@@ -201,17 +202,20 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
 #ifdef HAVE_LLVM
   bool ok = true;
-  std::string clangExe = getClangExe(context);
+
+  // set input and output paths
   std::string idStr = externBlockId.str();
   std::string tmpInput = context->tmpDir() + "/" + idStr + ".h";
-  std::string tmpOutput = context->tmpDir() + "/" + idStr + ".ast";;
+  std::string tmpOutput = context->tmpDir() + "/" + idStr + ".ast";
 
+  // check we are working with an extern block
   const uast::AstNode* ast = parsing::idToAst(context, externBlockId);
   const uast::ExternBlock* eb = ast ? ast->toExternBlock() : nullptr;
   if (eb == nullptr) {
     ok = false;
   }
 
+  // put extern C code into input file
   std::error_code err = writeFile(tmpInput.c_str(), eb->code());
   if (err) {
     context->error(Location(), "Could not write to file %s: %s",
@@ -237,31 +241,51 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
   // run clang to generate a precompiled header
   if (ok) {
+
+    clang::CompilerInstance* Clang = new clang::CompilerInstance();
+
     // gather args to clang
-    const std::vector<std::string>& args = clangFlags(context);
+    const std::vector<std::string>& clFlags = clangFlags(context);
+    std::vector<std::string> args;
+    args.insert(args.end(), clFlags.begin(), clFlags.end());
+    args.push_back("-x");
+    args.push_back("c-header");
+    args.push_back(tmpInput);
+    args.push_back("-o");
+    args.push_back(tmpOutput);
+    /* const std::vector<std::string>& cc1args = */
+    /*     getCC1Arguments(context, clFlags, /1* forGpuCodegen *1/ false); */
+    /* std::vector<const char*> cc1argsCstrs; */
+    /* cc1argsCstrs.push_back("clang-cc1"); */
+    /* for (const auto& arg : cc1args) { */
+    /*   cc1argsCstrs.push_back(arg.c_str()); */
+    /* } */
+    std::vector<const char*> argsCstrs;
+    for (const auto& arg : args) {
+      argsCstrs.push_back(arg.c_str());
+    }
 
-    // run clang
-    std::vector<std::string> command;
+    // setup diagnostics options
+    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                       &*diagOptions);
+    auto diagID = new clang::DiagnosticIDs();
+    auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
+    Clang->setDiagnostics(diags);
 
-    command.push_back(clangExe);
-    // append args to the command vector
-    command.insert(command.end(), args.begin(), args.end());
-    command.push_back("-x");
-    command.push_back("c-header");
-    command.push_back(tmpInput);
-    command.push_back("-o");
-    command.push_back(tmpOutput);
+    // replace current compiler invocation with one including args and diags
+    bool success = clang::CompilerInvocation::CreateFromArgs(
+        Clang->getInvocation(), argsCstrs, *diags);
+    CHPL_ASSERT(success);
 
-    const char* desc = "create clang precompiled header for extern block";
-    int code = executeAndWait(command, desc);
+    // create GeneratePCHAction
+    clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
+    std::string outputFileNameFromClang;
+    genPchAction->CreateOutputFile(*Clang, tmpInput, outputFileNameFromClang);
 
-    if (code != 0) {
-      std::string cmd;
-      for (auto& arg : command) {
-        cmd.append(arg);
-        cmd.append(" ");
-      }
-      context->error(Location(), "error running clang on extern block");
+    // run action and capture results
+    if (!Clang->ExecuteAction(*genPchAction)) {
+      context->error(externBlockId, "error running clang on extern block");
       ok = false;
     }
   }
