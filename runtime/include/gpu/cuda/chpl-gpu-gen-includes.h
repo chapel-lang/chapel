@@ -26,6 +26,7 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+// this variable is added by the compiler. See codegenGpuGlobals.
 extern __device__ c_nodeid_t chpl_nodeID;
 
 // General TODO
@@ -56,7 +57,7 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 {
   chpl_localeID_t localeID;
-  localeID = {chpl_nodeID,chpl_task_getRequestedSubloc()};
+  localeID = {get_chpl_nodeID() ,chpl_task_getRequestedSubloc()};
   return localeID;
 }
 
