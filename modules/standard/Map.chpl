@@ -408,7 +408,8 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref throws {
+    proc ref this(k: keyType) ref throws
+      where isDefaultInitializable(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -430,8 +431,7 @@ module Map {
 
       var (_, slot) = table.findAvailableSlot(k);
       if !table.isSlotFull(slot) {
-        var val = new valType();
-        table.fillSlot(slot, k, val);
+        throw new KeyNotFoundError(k:string);
       }
       ref result = table.table[slot].val;
       return result;
