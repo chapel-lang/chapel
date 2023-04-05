@@ -1,11 +1,9 @@
 use Time;
 use GpuDiagnostics;
 
-extern proc chpl_task_getRequestedSubloc(): int(32);
-
 config const n = 1000;
+config const verboseGpu = false;
 config const touchOnGpu = false;
-
 
 var t: stopwatch;
 
@@ -19,13 +17,12 @@ proc stopTest(name) {
   t.clear();
 }
 
-startVerboseGpu();
+if verboseGpu then startVerboseGpu();
 startTest();
 var CpuArr: [1..n] int;
 stopTest("Cpu Array Init");
 
 on here.gpus[0] {
-  writeln(chpl_task_getRequestedSubloc());
 
 
   startTest();
@@ -37,6 +34,7 @@ on here.gpus[0] {
     GpuArr = 1;
     stopGpuDiagnostics();
     assert(getGpuDiagnostics()[0].kernel_launch == 1);
+    resetGpuDiagnostics();
   }
 
   startTest();
@@ -55,6 +53,6 @@ on here.gpus[0] {
   stopTest("device to host copy");
 
 }
-stopVerboseGpu();
+if verboseGpu then stopVerboseGpu();
 
 writeln(CpuArr.first);
