@@ -11,5 +11,5 @@ export CHPL_GPU_CODEGEN=rocm
 export CHPL_LAUNCHER_PARTITION=amdMI60
 module load rocm
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-native-rocm"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-rocm"
 $CWD/nightly -cron ${nightly_args}

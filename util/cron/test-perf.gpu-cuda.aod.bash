@@ -10,7 +10,7 @@ export CHPL_GPU_MEM_STRATEGY=array_on_device
 
 export CHPL_TEST_PERF_CONFIG_NAME='gpu'
 source $CWD/common-perf.bash
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.gpu-array-on-device"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-cuda.aod"
 
 nightly_args="${nightly_args} -performance -perflabel gpu- -numtrials 5 -startdate 07/15/22"
 $CWD/nightly -cron ${nightly_args}
