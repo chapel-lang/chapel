@@ -8,7 +8,7 @@ export CHPL_COMM=none
 
 export CHPL_TEST_PERF_CONFIG_NAME='gpu'
 source $CWD/common-perf.bash
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.gpu"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-cuda"
 
 export CHOP_URL="git@github.com:tcarneirop/ChOp.git"
 
