@@ -532,12 +532,17 @@ all:
   02/24/23:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
+    - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
+      config: gpu
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
   03/14/23:
     - text: Eliminate extra destructions when yielding tuples (#21887)
       config: chapcs
+  03/16/23:
+    - text: Update GPU performance tests to not count launches in perf mode (#21891)
+      config: gpu
 # End all
 
 allocate:
@@ -2376,3 +2381,15 @@ arkouda-comp:
 shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
+
+triadAodBw1:
+  02/28/23:
+    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
+
+sort:
+  02/24/23:
+    - Improve SHOC-Sort implementation (#21610)
+
+chplGPU:
+  03/25/23:
+    - Upstream changes
