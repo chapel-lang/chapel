@@ -15,6 +15,7 @@ gpu/native/studies/multiGpuStream/multiGpuStream.graph
 
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
 gpu/native/studies/tightLoopNotOnGpu/tightLoopNotOnGpu.graph
+gpu/native/studies/gpuArrayOps/gpuArrayOps.graph
 
 gpu/native/studies/transpose/transpose-throughput.graph
 gpu/native/studies/transpose/transpose-time.graph
@@ -25,3 +26,4 @@ gpu/native/studies/coral/coral.graph
 
 gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph
+
