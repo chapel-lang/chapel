@@ -2089,8 +2089,8 @@ module ChapelArray {
   // How to cast arrays to strings
   pragma "no doc"
   operator :(x: [], type t:string) {
-    use IO;
-    return stringify(x);
+    use IO.FormattedIO;
+    return "%t".format(x);
   }
 
   pragma "no doc"

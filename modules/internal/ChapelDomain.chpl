@@ -2594,8 +2594,8 @@ module ChapelDomain {
       if canResolveMethod(val._value, "doiToString") {
         return val._value.doiToString();
       } else {
-        use IO;
-        return stringify(val);
+        use IO.FormattedIO;
+        return "%t".format(val);
       }
     }
 

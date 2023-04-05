@@ -56,6 +56,32 @@ module StringCasts {
     return false;
   }
 
+  // homogenous tuples of primitive type
+  operator :(x: ?t, type s:string) where isTupleType(t) && isHomogeneousTupleType(t) && isPrimitiveType(x[0].type) {
+    var ret = "(";
+    for param i in 0..<x.size {
+      if i != 0 then ret += ", ";
+      if (tup[i].type == c_string) {
+        try! {
+          ret += createStringWithNewBuffer(tup[i]);
+        }
+      }
+      else {
+        ret += tup[i]:string;
+      }
+    }
+    ret += ")";
+    return ret;
+  }
+
+  operator :(x: ?t, type s:string) where isTupleType(t) && isHomogeneousTupleType(t) && !isPrimitiveType(x[0].type) {
+    compilerError("Cannot cast non-primitive tuple types to string");
+  }
+
+  operator :(x: ?t, type s:string) where isTupleType(t) && !isHomogeneousTupleType(t) {
+    compilerError("Cannot cast non-homogenous tuple types to string");
+  }
+
   //
   // int
   //

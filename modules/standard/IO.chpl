@@ -5883,6 +5883,7 @@ public use ChapelIOStringifyHelper;
     Writes each argument, possibly using a `writeThis` method,
     to a string and returns the result.
   */
+@deprecated("'strinfigy(x)' is deprecated; please use '\"%t\".format(x)' from IO.FormattedIO instead");
 proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
     return stringify_simple((...args));

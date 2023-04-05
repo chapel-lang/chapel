@@ -895,6 +895,10 @@ module ChapelIO {
   pragma "no doc"
   pragma "last resort"
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    return stringify(x);
+    compilerError(
+      "universal 'x:string' is deprecated; please define a cast to string on " +
+      x.type:string +
+      ", or use '\"%t\".format(x)' from IO.FormattedIO instead"
+    );
   }
 }
