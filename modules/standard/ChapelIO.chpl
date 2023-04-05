@@ -878,8 +878,8 @@ module ChapelIO {
 
   pragma "no doc"
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only chpl_stringify;
+    return chpl_stringify((...args));
   }
 
   //
