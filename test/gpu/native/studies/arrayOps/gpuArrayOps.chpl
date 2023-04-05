@@ -4,17 +4,23 @@ use GpuDiagnostics;
 config const n = 1000;
 config const verboseGpu = false;
 config const touchOnGpu = false;
+config const reportTime = true;
 
 var t: stopwatch;
 
 proc startTest() {
-  t.start();
+  if reportTime then t.start();
 }
 
-proc stopTest(name) {
-  t.stop();
-  writeln(name, ": ", t.elapsed());
-  t.clear();
+proc stopTest(name, bandwidth=false) {
+  if reportTime {
+    t.stop();
+    if bandwidth then
+      writeln(name, " (GB/s): ", n*numBytes(int)/t.elapsed()/1e9);
+    else
+      writeln(name, " (s): ", t.elapsed());
+    t.clear();
+  }
 }
 
 if verboseGpu then startVerboseGpu();
@@ -23,7 +29,6 @@ var CpuArr: [1..n] int;
 stopTest("Cpu Array Init");
 
 on here.gpus[0] {
-
 
   startTest();
   var GpuArr: [1..n] int;
@@ -39,7 +44,7 @@ on here.gpus[0] {
 
   startTest();
   GpuArr = CpuArr;
-  stopTest("host to device copy");
+  stopTest("host to device copy", bandwidth=true);
 
   if touchOnGpu {
     startGpuDiagnostics();
@@ -50,9 +55,10 @@ on here.gpus[0] {
 
   startTest();
   CpuArr = GpuArr;
-  stopTest("device to host copy");
+  stopTest("device to host copy", bandwidth=true);
+
 
 }
 if verboseGpu then stopVerboseGpu();
 
-writeln(CpuArr.first);
+assert(CpuArr.first == if touchOnGpu then 1 else 0);
