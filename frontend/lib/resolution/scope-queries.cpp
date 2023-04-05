@@ -455,7 +455,8 @@ struct LookupHelper {
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
                              bool onlyInnermost,
-                             bool skipPrivateVisibilities);
+                             bool skipPrivateVisibilities,
+                             bool onlyMethodsFields);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -643,7 +644,8 @@ bool LookupHelper::doLookupInImportsAndUses(
 bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
-                                         bool skipPrivateVisibilities) {
+                                         bool skipPrivateVisibilities,
+                                         bool onlyMethodsFields) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -656,6 +658,10 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
+      }
+
+      if (onlyMethodsFields) {
+        newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
       }
 
       if (trace) {
@@ -968,7 +974,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(scope, name,
-                                 onlyInnermost, skipPrivateVisibilities);
+                                 onlyInnermost,
+                                 skipPrivateVisibilities,
+                                 onlyMethodsFields);
     if (onlyInnermost && got) return true;
   }
 
