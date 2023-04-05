@@ -108,6 +108,16 @@ static void chpl_gpu_ensure_context() {
     }
   }*/
 }
+//
+// we can put this logic in chpl-gpu.c. However, it needs to execute
+// per-context/module. That's currently too low level for that layer.
+static void chpl_gpu_impl_set_globals(CUmodule module) {
+  hipDeviceptr_t ptr;
+  size_t glob_size;
+  ROCM_CALL(hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+  assert(glob_size == sizeof(c_nodeid_t));
+  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+}
 
 
 void chpl_gpu_impl_init() {
@@ -141,7 +151,9 @@ void chpl_gpu_impl_init() {
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
     ROCM_CALL(hipSetDevice(device));
-    chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
+    chpl_gpu_impl_set_globals(module);
+    chpl_gpu_rocm_modules[i] = module;
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
   }
