@@ -53,6 +53,10 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
   return 0;
 }
 
+__device__ static inline c_nodeid_t get_chpl_nodeID(void) {
+  return chpl_nodeID;
+}
+
 // TODO Rest of the functions are relatively boilerplate once we have everything
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 {
@@ -69,10 +73,6 @@ __device__ static inline void* c_pointer_return_const(const void* x) {
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
   return loc;
-}
-
-__device__ static inline c_nodeid_t get_chpl_nodeID(void) {
-  return chpl_nodeID;
 }
 
 __device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
