@@ -217,7 +217,7 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
-      if (!fDynoCompilerLibrary) {
+      if (!fDynoScopeResolve) {
         if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
           symAndName.first->generateDeprecationWarning(this);
         }
@@ -313,7 +313,7 @@ bool UseStmt::isValid(Expr* expr) const {
 void UseStmt::validateList() {
   if (isPlainUse() == false) {
     // Dyno already issues these warnings and errors.
-    if (!fDynoCompilerLibrary) {
+    if (!fDynoScopeResolve) {
       noRepeats();
     }
 
@@ -386,7 +386,7 @@ void UseStmt::validateNamed() {
                            name);
           }
 
-          if (!fDynoCompilerLibrary) {
+          if (!fDynoScopeResolve) {
             if (sym->hasFlag(FLAG_DEPRECATED)) {
               sym->generateDeprecationWarning(this);
             }

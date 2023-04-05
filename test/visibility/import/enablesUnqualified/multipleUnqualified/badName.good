@@ -1,1 +1,2 @@
-badName.chpl:5: error: Bad identifier, no known 'baz' defined in 'Foo'
+badName.chpl:4: In module 'User':
+badName.chpl:5: error: cannot 'import' symbol 'baz' as it is not defined in 'Foo'

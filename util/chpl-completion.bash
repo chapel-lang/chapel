@@ -64,6 +64,7 @@ _chpl ()
 --dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-scope-resolve \
 --dyno-verify-serialization \
 --early-deinit \
 --explain-call \
@@ -180,6 +181,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
