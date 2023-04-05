@@ -896,9 +896,9 @@ module ChapelIO {
   pragma "last resort"
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
     compilerError(
-      "universal 'x:string' is deprecated; please define a cast to string on " +
+      "universal 'x:string' is deprecated; please define a cast-to-string operator on " +
       x.type:string +
-      ", or use '\"%t\".format(x)' from IO.FormattedIO instead"
+      ", or use 'try! \"%t\".format(x)' from IO.FormattedIO instead"
     );
   }
 }

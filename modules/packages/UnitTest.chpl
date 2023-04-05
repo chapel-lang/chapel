@@ -550,7 +550,7 @@ module UnitTest {
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
-          const errorMsg = "assert failed -\n'%t'\n==\n'%t'\n".format(first, second);
+          const errorMsg = "assert failed -\n'%t'\n==\n'%t'".format(first, second);
           throw new owned AssertionError(errorMsg);
         }
       }

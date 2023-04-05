@@ -473,7 +473,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %t out of bounds".format(k));
       try! {
         var result = table.table[slot].val.borrow();
         if isNonNilableClass(valType) {
@@ -496,7 +496,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %t out of bounds".format(k));
       ref result = table.table[slot].val;
       return result;
     }
@@ -572,7 +572,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index %t out of bounds".format(k));
+        boundsCheckHalt(try! "map index %t out of bounds".format(k));
       try! {
         var result: valType, key: keyType;
         table.clearSlot(slot, key, result);
@@ -962,7 +962,7 @@ module Map {
     proc init() {}
 
     proc init(k) {
-      super.init("key '%t' not found".format(k));
+      super.init(try! "key '%t' not found".format(k));
     }
   }
 }

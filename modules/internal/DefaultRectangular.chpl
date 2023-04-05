@@ -2176,7 +2176,7 @@ module DefaultRectangular {
   //
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
     if debugDefaultDistBulkTransfer {
-      chpl_debug_writeln("""BulkTransferStride with values:\n
+      chpl_debug_writeln(try! """BulkTransferStride with values:\n
                          \tLocale        = %t\n
                          \tStride levels = %t\n
                          \tdstStride     = %t\n
