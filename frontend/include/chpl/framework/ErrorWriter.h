@@ -50,6 +50,11 @@ struct LocationOnly {
   T t; /* The thing whose location to compute */
 };
 
+template <typename T>
+struct JustOneLine {
+  T t; /* The thing whose location to compute */
+};
+
 inline Location locate(Context* context, const ID& id) {
   if (!context) return Location();
   return parsing::locateId(context, id);
@@ -62,6 +67,13 @@ inline Location locate(Context* context, const Location& loc) {
 }
 inline Location locate(Context* context, const IdOrLocation& idOrLoc) {
   return idOrLoc.computeLocation(context);
+}
+template <typename T>
+inline Location locate(Context* context, const JustOneLine<T>& jl) {
+  auto loc = locate(context, jl.t);
+  return Location(loc.path(),
+                  loc.firstLine(), loc.firstColumn(),
+                  loc.firstLine(), loc.firstColumn());
 }
 
 /// \cond DO_NOT_DOCUMENT
@@ -169,6 +181,14 @@ errordetail::AsFileName<T> fileNameOf(T t) {
 template <typename T>
 errordetail::LocationOnly<T> locationOnly(T t) {
   return errordetail::LocationOnly<T> { std::move(t) };
+}
+
+/**
+  Helper function to create a JustOneLine class.
+*/
+template <typename T>
+errordetail::JustOneLine<T> justOneLine(T t) {
+  return errordetail::JustOneLine<T> { std::move(t) };
 }
 
 /**
@@ -330,9 +350,9 @@ class ErrorWriterBase {
     This function accepts any type for which location can be inferred,
     for both the main location and the highlights.
    */
-  template <typename LocPlace, typename LocHighlight = const uast::AstNode*>
+  template <typename LocHighlight = const uast::AstNode*, typename LocPlace>
   void code(const LocPlace& place,
-                const std::vector<LocHighlight>& toHighlight = {}) {
+            const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
     std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
       return errordetail::locate(context, node);
@@ -340,6 +360,27 @@ class ErrorWriterBase {
     writeCode(errordetail::locate(context, place), ids);
   }
 
+  /**
+    Specialization of ErrorWriter::code for printing definitions. Since
+    definitions may be fairly length (e.g., a variable with a multi-line
+    initializer), this will only print the first line of the definition.
+   */
+  template <typename LocPlace>
+  void codeForDef(const LocPlace& place) {
+    code<LocPlace>(justOneLine(place), { place });
+  }
+
+  /**
+    Specialization of ErrorWriter::code for "bla bla defined here".
+    Doesn't underline, but also doesn't print the whole thing. This
+    is important, for instance, in the case that a record declaration
+    is being printed. We don't want to dump all the fields / methods
+    as part of the errror.
+   */
+  template <typename LocPlace>
+  void codeForLocation(const LocPlace& place) {
+    code<LocPlace>(justOneLine(place));
+  }
 };
 
 /**
