@@ -408,8 +408,7 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref throws
-    where isDefaultInitializable(valType) {
+    proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -419,26 +418,27 @@ module Map {
         var val: valType;
         table.fillSlot(slot, k, val);
       }
-      return table.table[slot].val;
+      ref result = table.table[slot].val;
+      return result;
     }
 
-    pragma "no doc"
-    proc const this(k: keyType) const throws
-      where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref throws
+      where isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k:string);
-      const result = table.table[slot].val;
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val = new valType();
+        table.fillSlot(slot, k, val);
+      }
+      ref result = table.table[slot].val;
       return result;
     }
 
     pragma "no doc"
-    proc const this(k: keyType) const ref throws
-      where !isNonNilableClass(valType) {
+    proc const this(k: keyType) const ref throws {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -447,23 +447,6 @@ module Map {
         throw new KeyNotFoundError(k:string);
       const ref result = table.table[slot].val;
       return result;
-    }
-
-    pragma "no doc"
-    proc const this(k: keyType) throws
-      where isNonNilableClass(valType) {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k:string);
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
