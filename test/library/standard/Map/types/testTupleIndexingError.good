@@ -1,3 +1,3 @@
-MapTest.chpl:6: In function 'testMap':
-MapTest.chpl:39: error: cannot assign to const variable
-  testTupleIndexingError.chpl:10: called as testMap(type t = 2*shared T, param testIndexing = true)
+uncaught KeyNotFoundError: key '3' not found
+  MapTest.chpl:39: thrown here
+  MapTest.chpl:39: uncaught here
