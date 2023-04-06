@@ -93,6 +93,12 @@ module CTypes {
     ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
     the ``c_void_ptr`` type.
 
+    Casting directly to a ``c_ptr`` of another pointee type is supported, but
+    will emit a safety warning for casts that can lead to violation of C's
+    strict aliasing rule. Casting to a char pointee type or across signedness,
+    or through an intermediate cast to ``c_void_ptr``, will not generate a
+    warning.
+
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
