@@ -398,15 +398,20 @@ module Map {
     }
 
     /*
-      Get the value mapped to the given key if the key exists in the
-      map. If the key does not exist and the value type is default
-      initializable, the mapping is added. Otherwise, throws an error.
+      If the key exists in the map, get a reference to the value mapped
+      to the given key. If the key does not exist in the map, the value
+      type is default initializable, and this proc is called in a mutable
+      context, then the mapping is added and a reference to that value is
+      returned. If the key does not exist in the map and either the value
+      type is not default initializable or this proc is called in a
+      non-mutable context, then an error will be thrown.
 
       :arg k: The key to access
       :type k: keyType
 
-      :throws: `KeyNotFoundError` if `k` not in map and `valType` is not
-      default initializable
+      :throws: `KeyNotFoundError` if `k` not in map, `valType` is not
+               default initializable, and proc is called in mutable
+               context.
 
       :returns: Reference to the value mapped to the given key.
     */
