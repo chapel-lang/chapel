@@ -398,12 +398,15 @@ module Map {
     }
 
     /*
-      Get the value mapped to the given key if the key exists in the map. If the key does not exist and the value type is default initializable, the mapping is added. Otherwise, throws an error.
+      Get the value mapped to the given key if the key exists in the
+      map. If the key does not exist and the value type is default
+      initializable, the mapping is added. Otherwise, throws an error.
 
       :arg k: The key to access
       :type k: keyType
 
-      :throws: `KeyNotFoundError` if `k` not in map and `valType` is not default initializable
+      :throws: `KeyNotFoundError` if `k` not in map and `valType` is not
+      default initializable
 
       :returns: Reference to the value mapped to the given key.
     */
