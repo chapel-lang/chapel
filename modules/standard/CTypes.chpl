@@ -768,12 +768,15 @@ module CTypes {
     chpl_here_free(data);
   }
 
-  /* Returns true if t is a c_ptr type or c_void_ptr.
-   */
+  pragma "no doc"
   proc isAnyCPtr(type t:c_ptr) param do return true;
   pragma "no doc"
-  proc isAnyCPtr(type t:c_void_ptr) param do return true;
+  proc isAnyCPtr(type t:c_ptrConst) param do return true;
   pragma "no doc"
+  proc isAnyCPtr(type t:c_void_ptr) param do return true;
+  /*
+     Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
+   */
   proc isAnyCPtr(type t) param do return false;
 
   /*
