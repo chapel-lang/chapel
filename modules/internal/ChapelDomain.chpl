@@ -1292,6 +1292,7 @@ module ChapelDomain {
      */
     proc dim(d : int) {
       use HaltWrappers;
+      import IO.FormattedIO.format;
       if boundsChecking then
         if (d < 0 || d >= rank) then
           HaltWrappers.boundsCheckHalt(try! "dim(%t) is out-of-bounds; must be 0..%t".format(d, rank-1));
