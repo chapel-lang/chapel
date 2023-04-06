@@ -962,6 +962,20 @@ module Map {
     proc init() {}
 
     proc init(k) {
+      // use Reflection;
+      // if isPrimitiveType(k.type) {
+      //   super.init("key '" + k:string + "' not found");
+      // } else {
+      //   super.init(try! "key '%t' not found".format(k));
+      // }
+
+      // use Reflection;
+      // if canResolveMethod(k, ":", k, string) {
+      //   super.init("key '" + k:string + "' not found");
+      // } else {
+      //   super.init(try! "key '%t' not found".format(k));
+      // }
+
       super.init(try! "key '%t' not found".format(k));
     }
   }

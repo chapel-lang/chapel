@@ -409,6 +409,12 @@ module DataFrames {
     proc writeElemNoIndex(f, i: int, len: int) throws {
       halt("generic Series cannot be accessed");
     }
+
+    pragma "no doc"
+    operator :(val: Series, type t: string) {
+      import IO.FormattedIO;
+      return try! "%t".format(val);
+    }
   }
 
   class TypedSeries : Series {

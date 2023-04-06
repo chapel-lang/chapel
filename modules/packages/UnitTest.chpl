@@ -400,7 +400,7 @@ module UnitTest {
         tmpString += "'%t' != '%t'".format(seq1, seq2);
         for i in 0..#shorterLength {
           if seq1[i] != seq2[i] {
-            tmpString += "\nFirst differing element at index: %t:\n'%t'\n'%t'\n".format(i, seq1[i], seq2[i]);
+            tmpString += "\nFirst differing element at index %t:\n'%t'\n'%t'\n".format(i, seq1[i], seq2[i]);
             break;
           }
         }
@@ -445,7 +445,7 @@ module UnitTest {
         // Compare array values
         const arraysEqual = && reduce (array1 == array2);
         if !arraysEqual {
-          const errorMsg = "assert failed -\n'%t'\n!=\n'%t'\n".format(array1, array2);
+          const errorMsg = "assert failed -\n'%t'\n!=\n'%t'".format(array1, array2);
           throw new owned AssertionError(errorMsg);
         }
       }
@@ -630,7 +630,7 @@ module UnitTest {
         for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
-            tmpString += "First %t < Second %t :".format(seq_type_name, seq_type_name);
+            tmpString += "First %t < Second %t :\n".format(seq_type_name, seq_type_name);
             tmplarge += "\nFirst larger element in second %t is at index %t:\n'%t'\n'%t'\n".format(seq_type_name, i, item1, item2);
             checkgreater = true;
             checkequal = false;
@@ -709,7 +709,7 @@ module UnitTest {
       type firstType = tuple1.type,
           secondType = tuple2.type;
       if firstType == secondType {
-        assertSequenceGreater(tuple1,tuple2,"tuple(%t)".format(firstType));
+        assertSequenceGreater(tuple1,tuple2,"tuple("+firstType:string+")");
       }
       else {
         const errorMsg = "assert failed - First element is of type %t and Second is of type %t".format(firstType:string, secondType:string);
@@ -1233,7 +1233,7 @@ module UnitTest {
     }
     // A variety of catch statements will handle errors thrown
     catch e: AssertionError {
-      testResult.addFailure(testName, e: string);
+      testResult.addFailure(testName, try! "%t".format(e));
       testsFailed.replace(testName, true);
       // print info of the assertion error
     }

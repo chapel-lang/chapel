@@ -5885,7 +5885,7 @@ public use ChapelIOStringifyHelper;
   */
 @deprecated("'stringify(x)' is deprecated; please use 'try! \"%t\".format(x)' from IO.FormattedIO instead");
 proc stringify(const args ...?k):string {
-  return chpl_stringify(args);
+  return chpl_stringify((...args));
 }
 
 pragma "no doc"

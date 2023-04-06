@@ -23,7 +23,7 @@ Error Caught in Array Others Diff Shape High Dim
 AssertionError: assert failed - First element is of shape (5, 7) and Second is of shape (7, 5)
 ================================================================================
 Error Caught in Array Others Diff Shape 1D
-AssertionError: assert failed - First element is of shape (5) and Second is of shape (3)
+AssertionError: assert failed - First element is of shape (5,) and Second is of shape (3,)
 ================================================================================
 Error Caught in Unequal Complex Type 1
 AssertionError: assert failed - First element is of type int(64) and Second is of type imag(64)

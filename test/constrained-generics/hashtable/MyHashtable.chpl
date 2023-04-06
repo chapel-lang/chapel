@@ -338,7 +338,10 @@ int implements Hashable;
 int implements StdOps;
 
 // The default implementation for toString().
-proc toString(arg): string do return arg: string;
+proc toString(arg): string {
+  import IO.FormattedIO.format;
+  return try! "%t".format(arg);
+}
 
 //
 // chpl_Hashtable: intended to replace the uses of the type chpl__hashtable.

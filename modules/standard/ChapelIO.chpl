@@ -876,7 +876,7 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
     use IO only chpl_stringify;
     return chpl_stringify((...args));
@@ -892,13 +892,14 @@ module ChapelIO {
   //
   // This version only applies to non-primitive types
   // (primitive types should support :string directly)
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator :(x, type t:string) where !isPrimitiveType(x.type) {
-    compilerError(
-      "universal 'x:string' is deprecated; please define a cast-to-string operator on " +
+    compilerWarning(
+      "universal 'x:string' is deprecated; please define a cast-to-string operator on the type '" +
       x.type:string +
-      ", or use 'try! \"%t\".format(x)' from IO.FormattedIO instead"
+      "', or use 'try! \"%t\".format(x)' from IO.FormattedIO instead"
     );
+    return chpl_stringify_wrapper(x);
   }
 }

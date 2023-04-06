@@ -598,6 +598,35 @@ module DefaultSparse {
     }
   }
 
+  // proc DefaultSparseDom.doiToString(): string {
+  //   var s = "{";
+  //   if rank == 1 {
+  //     if (_nnz >= 1) {
+  //       s += _indices(0):string;
+  //       for i in 1.._nnz-1 {
+  //         s += " " + _indices(i):string;
+  //       }
+  //     }
+  //     s += "}";
+  //   } else {
+  //     s += "\n";
+  //     if (_nnz >= 1) {
+  //       var prevInd = _indices(0);
+  //       s += " " + prevInd;
+  //       for i in 1.._nnz-1 {
+  //         if (prevInd(0) != _indices(i)(0)) {
+  //           s += "\n";
+  //         }
+  //         prevInd = _indices(i);
+  //         s += " " + prevInd:string;
+  //       }
+  //       s += "\n";
+  //     }
+  //     s += "}\n";
+  //   }
+  //   return s;
+  // }
+
 
   proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {

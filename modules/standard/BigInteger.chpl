@@ -646,6 +646,25 @@ module BigInteger {
     return ret:t;
   }
 
+  @chpldoc.nodoc
+  inline operator :(const ref x: bigint, type t: string) {
+    var s: string;
+    if _local {
+      s = x.get_str();
+
+    } else if x.localeId == chpl_nodeID {
+      s = x.get_str();
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(x.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        s = x.get_str();
+      }
+    }
+   return s;
+  }
+
   //
   // Locale-aware assignment
   //

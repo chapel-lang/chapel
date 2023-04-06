@@ -1294,7 +1294,7 @@ module ChapelDomain {
       use HaltWrappers;
       if boundsChecking then
         if (d < 0 || d >= rank) then
-          HaltWrappers.boundsCheckHalt("dim(" + d:string + ") is out-of-bounds; must be 0.." + (rank-1):string);
+          HaltWrappers.boundsCheckHalt(try! "dim(%t) is out-of-bounds; must be 0..%t".format(d, rank-1));
       return _value.dsiDim(d);
     }
 
@@ -1642,10 +1642,11 @@ module ChapelDomain {
         It is an error if `idx` is not a valid index in `arr`.
       */
       proc initialize(arr: [?d], idx, in value: arr.eltType) {
+        import IO.FormattedIO.format;
 
         // Check to make sure value and array element types match.
         if arr.eltType != value.type then
-          compilerError('Initialization value type \'' + value:string +
+          compilerError('Initialization value type \'' + value.type:string +
                         '\' does not match array element type \'' +
                         arr.eltType:string + '\'');
 
@@ -1669,15 +1670,14 @@ module ChapelDomain {
                'the domain being resized');
 
         if !arr.domain.contains(idx) then
-          halt('Array index out of bounds: ' + idx:string);
+          halt(try! 'Array index out of bounds: %t'.format(idx));
 
         // Get a reference to the array slot.
         ref elem = arr[idx];
 
         if _checks {
           if isElementInitialized(arr, idx) {
-            halt('Element at array index \'' + idx:string + '\' ' +
-                 'is already initialized');
+            halt(try! "Element at array index '%t' is already initialized".format(idx));
           }
         }
 
