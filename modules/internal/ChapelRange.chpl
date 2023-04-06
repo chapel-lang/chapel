@@ -619,7 +619,7 @@ module ChapelRange {
 
   // More cases of hasPositiveStride() will become params
   // once we switch to an enum strideKind.
-  // Need design review to make this publically available.
+  // Need design review to make this publicly available.
   /* Returns whether this range's stride is positive,
      as a `param` when possible. */
  inline proc range.chpl_hasPositiveStride() where stridable do return _stride>0;
