@@ -313,7 +313,7 @@ void AggregateType::codegenDef() {
     TypeSymbol* base = getDataClassType(symbol);
     const char* baseType = base->cname;
     std::string constness = "";
-    if (strstr(symbol->type->name(), "c_ptrConst") == symbol->type->name()) {
+    if (startsWith(symbol->type->name(), "c_ptrConst")) {
       constness = "const ";
     }
     if( outfile ) {
