@@ -23,7 +23,7 @@
 module ChapelLocale {
   use ChapelBase;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type chpl_sublocID_t = int(32);
 
   //

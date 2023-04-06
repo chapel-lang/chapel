@@ -412,7 +412,7 @@ module Sys {
     :throws IllegalArgumentError: Upon failure to provide a compatible
                                   `host` and `family`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: c_string, port: c_uint, family: c_int) throws {
       var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
       if err_out != 1 {
@@ -432,7 +432,7 @@ module Sys {
     :arg port: port number
     :type port: `c_uint`
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: sys_in_addr_t, port: c_uint) {
       sys_set_sys_sockaddr_in_t(this, host, port);
     }
@@ -449,7 +449,7 @@ module Sys {
     :arg port: port number
     :type port: `c_uint`
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: sys_in6_addr_t, port: c_uint) {
       sys_set_sys_sockaddr_in6_t(this, host, port);
     }
@@ -463,7 +463,7 @@ module Sys {
     :throws Error: If record was uninitialized and has no information
                    about `host` or `port`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref numericHost() throws {
 
       var buffer = c_calloc(c_char, NI_MAXHOST);
@@ -486,7 +486,7 @@ module Sys {
     :throws Error: If record was uninitialized and has no information
                    about `host` or `port`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref port() throws {
       var port:c_uint;
 

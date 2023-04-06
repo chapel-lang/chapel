@@ -111,7 +111,7 @@ module BitOps {
   // function.  There should be a similar version using xor
   // as the combinator, but I'm not sure where that would
   // go to be perfectly truthful
-  pragma "no doc"
+  @chpldoc.nodoc
   proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
     // return the transpose of x, treating it as an 8x8 bit-matrix.
     proc bitMatTrans(x: uint(64)) do

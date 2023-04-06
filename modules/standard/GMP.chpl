@@ -203,19 +203,19 @@ module GMP {
   // the actual GMP data.
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpz_struct;
 
   /* The GMP ``mpz_t`` type */
   extern type mpz_t           = 1 * __mpz_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __mpf_struct;
 
   /*  The GMP ``mpf_t`` type */
   extern type mpf_t           = 1 * __mpf_struct;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type __gmp_randstate_struct;
 
 
@@ -1227,7 +1227,7 @@ module GMP {
       gmp_randinit_lc_2exp_size(this.state, size.safeCast(c_ulong));
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       on this {
         gmp_randclear(this.state);

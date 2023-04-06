@@ -477,7 +477,7 @@ proc copyMode(src: string, dest: string) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
@@ -682,7 +682,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -702,7 +702,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 // addition to the one that comes from the serial iterator for a forall loop
 // that calls this. (serial, leader, follower, standalone). Rely on just
 // the serial deprecation warning to reduce it to a single message.
-pragma "no doc"
+@chpldoc.nodoc
 //@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
@@ -888,7 +888,7 @@ iter glob(pattern: string = "*"): string {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -912,7 +912,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // should be rewritten to do so (and would require freeing
 // the state at the end of the call).
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   use GlobWrappers;
@@ -929,7 +929,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
     yield followThis;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1275,7 +1275,7 @@ proc remove(name: string) throws {
   if err then try ioerror(err, "in remove", name);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc remove(out error: errorCode, name: string) {
   try {
     remove(name);
@@ -1505,7 +1505,7 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
@@ -1518,7 +1518,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
 //
 // Here's a parallel version
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string

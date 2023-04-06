@@ -246,31 +246,31 @@ module UnitTest {
   use List, Map;
   private use IO;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config const testNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const failedTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const errorTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const skippedTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: borrowed Test) throws { }
-  pragma "no doc"
+  @chpldoc.nodoc
   var tempFcf = testSignature;
-  pragma "no doc"
+  @chpldoc.nodoc
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
-    pragma "no doc"
+    @chpldoc.nodoc
     var numMaxLocales = max(int),
         numMinLocales = min(int);
-    pragma "no doc"
+    @chpldoc.nodoc
     var dictDomain: domain(int);
-    pragma "no doc"
+    @chpldoc.nodoc
     var testDependsOn: list(argType);
 
     /* Unconditionally skip a test.
@@ -322,7 +322,7 @@ module UnitTest {
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
       type firstType = first.type,
@@ -351,7 +351,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       Check that a boolean array is true.  If any element is false, returns 'false'
       else return 'true'.
@@ -364,14 +364,14 @@ module UnitTest {
       return true;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Method overloading for the above function. Return the argument itself
     */
     proc all(check: bool) {
       return check;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An equality assertion for non-array sequences (like tuples, strings, range).
       Args:
       seq1: The first sequence to compare.
@@ -418,7 +418,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific equality assertion.
       Args:
       array1: The first array to compare.
@@ -453,7 +453,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific equality assertion.
       Args:
@@ -472,7 +472,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific equality assertion.
       Args:
@@ -483,7 +483,7 @@ module UnitTest {
       __baseAssertEqual(range1,range2);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific equality assertion.
       Args:
@@ -494,7 +494,7 @@ module UnitTest {
       assertSequenceEqual(string1,string2,"String");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
@@ -520,7 +520,7 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Function that checks whether two arguments are unequal or not*/
     proc checkAssertInequality(first,second) throws {
       type firstType = first.type,
@@ -575,7 +575,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*checks the type of the arguments and then do greater than comparison */
     proc checkGreater(first, second) throws {
       type firstType = first.type,
@@ -604,7 +604,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
       seq1: The first sequence to compare.
@@ -668,7 +668,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific greater assertion.
       Args:
       array1: The first array to compare.
@@ -698,7 +698,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific greater assertion.
       Args:
@@ -717,7 +717,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific greater assertion.
       Args:
@@ -734,7 +734,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific Greater assertion.
       Args:
@@ -751,7 +751,7 @@ module UnitTest {
       }
     }
 
-     pragma "no doc"
+     @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
@@ -777,7 +777,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
       type firstType = first.type,
@@ -806,7 +806,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An less than assertion for sequences (like arrays, tuples, strings).
       Args:
       seq1: The first sequence to compare.
@@ -870,7 +870,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific less than assertion.
       Args:
       array1: The first array to compare.
@@ -900,7 +900,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific less than assertion.
       Args:
@@ -919,7 +919,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific Less than assertion.
       Args:
@@ -936,7 +936,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific Less than assertion.
       Args:
@@ -953,7 +953,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
@@ -1054,7 +1054,7 @@ module UnitTest {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*A test result class that can print formatted text results to a stream.*/
   class TextTestResult {
     var separator1 = "="* 70,
@@ -1104,7 +1104,7 @@ module UnitTest {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class TestSuite {
     var testCount = 0;
     var _tests: list(argType);
@@ -1356,7 +1356,7 @@ module UnitTest {
     testStatus.replace(testName, true);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* These errors are used for implementation purposes (communication between
      the tests and test runner). Not intended for user consumption. */
   module TestError {

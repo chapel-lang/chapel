@@ -135,27 +135,27 @@ module HDFS {
    */
   private extern proc chpl_macro_int_EEOF():c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern "struct hdfs_internal" record hdfs_internal { }
-  pragma "no doc"
+  @chpldoc.nodoc
   extern "struct hdfsFile_internal" record hdfsFile_internal { }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type hdfsFS = c_ptr(hdfs_internal);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type hdfsFile = c_ptr(hdfsFile_internal);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern record hdfsFileInfo {
     var mSize:tOffset;
     var mBlockSize:tOffset;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tSize = int(32);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tOffset = int(64);
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type tPort = uint(16);
 
   private extern proc hdfsConnect(nn:c_string, port:tPort):hdfsFS;
@@ -209,15 +209,15 @@ module HDFS {
 
   */
   record hdfs {
-    pragma "no doc"
+    @chpldoc.nodoc
     var instance:unmanaged HDFSFileSystem;
     forwarding instance;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(instance:unmanaged HDFSFileSystem) {
       this.instance = instance;
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var count = instance.release();
       if count == 0 then
@@ -230,18 +230,18 @@ module HDFS {
    reference counted and shared by open files.
    */
   class HDFSFileSystem {
-    pragma "no doc"
+    @chpldoc.nodoc
     var nameNode: string;
-    pragma "no doc"
+    @chpldoc.nodoc
     var port: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hfs:hdfsFS;
-    pragma "no doc"
+    @chpldoc.nodoc
     var refCount: atomic int;
 
     /* nameNode is the name node hostname, can be 'default'
        port is the port, can be '0' for default behavior */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(nameNode: string="default", port:int=0) {
       if verbose then
         writeln("hdfsConnect");
@@ -252,19 +252,19 @@ module HDFS {
       this.complete();
       refCount.write(1);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if verbose then
         writeln("hdfsDisconnect");
       if this.hfs != c_nil then
         hdfsDisconnect(this.hfs);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     proc retain() {
       refCount.add(1);
     }
     // should deallocate if the returned count is 0
-    pragma "no doc"
+    @chpldoc.nodoc
     proc release() {
       var oldValue = refCount.fetchSub(1);
       return oldValue - 1;
@@ -330,7 +330,7 @@ module HDFS {
     }
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc openHelper(path:string, mode:ioMode,
                     style:iostyleInternal = defaultIOStyleInternal(),
                     in flags:c_int = 0, // default to based on mode
@@ -390,7 +390,7 @@ module HDFS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class HDFSFile : QioPluginFile {
     var fs: unmanaged HDFSFileSystem;
     var hfile: hdfsFile;
@@ -483,7 +483,7 @@ module HDFS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class HDFSChannel : QioPluginChannel {
     var file: unmanaged HDFSFile;
     var qio_ch:qio_channel_ptr_t;

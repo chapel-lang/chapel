@@ -2000,7 +2000,7 @@ module M {
 
   private proc privateProc { return 37; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc procNoDoc { return 42; }
 
   // got a comment for ya
@@ -2010,7 +2010,7 @@ module M {
   var x : [1..3] int = [1, 2, 3];
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module N { }
 /* comment 4 */;
 )RAW";

@@ -77,7 +77,7 @@ iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
 }
 
 // Parallel iterator
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
@@ -156,7 +156,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -209,7 +209,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 }
 
 //Leader
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
   where tag == iterKind.leader
   {
@@ -245,7 +245,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
   }
 
 //Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
@@ -286,7 +286,7 @@ iter guided(c:range(?), numTasks:int=0) {
   for i in c do yield i;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 {
@@ -321,7 +321,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 
@@ -375,7 +375,7 @@ iter guided(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -407,7 +407,7 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
@@ -485,7 +485,7 @@ enum Method {
 */
 config param methodStealing = Method.Whole;
 
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 
@@ -612,7 +612,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -666,7 +666,7 @@ iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -698,7 +698,7 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {

@@ -67,10 +67,10 @@ module BytesStringCommon {
   enum encodePolicy { unescape, pass };
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param showStringBytesInitDeprWarnings = true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param surrogateEscape = 0xdc:byteType;
 
   private proc isBytesOrStringType(type t) param: bool {
@@ -792,7 +792,7 @@ module BytesStringCommon {
   // TODO: could use a multi-pattern search or some variant when there are
   // multiple needles. Probably wouldn't be worth the overhead for small
   // needles though
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc startsEndsWith(const ref x: ?t, needles,
                              param fromLeft: bool) : bool
                              where isHomogeneousTuple(needles) &&
@@ -1377,7 +1377,7 @@ module BytesStringCommon {
     Returns true if the argument is a valid initial byte of a UTF-8
     encoded multibyte character.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc isInitialByte(b: uint(8)) : bool {
     return (b & 0xc0) != 0x80;
   }

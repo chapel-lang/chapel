@@ -1565,7 +1565,7 @@ module AutoMath {
 
   // To prevent this auto-included module from using a non-auto-included module
   // (Math)
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_log1p(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1575,7 +1575,7 @@ module AutoMath {
 
   // To prevent this auto-included module from using a non-auto-included module
   // (Math)
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_log1p(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1586,29 +1586,29 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_log1p and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
   proc log1p(x: real(64)): real(64) {
     return chpl_log1p(x);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc log1p(x : real(32)): real(32) {
     return chpl_log1p(x);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc logBasePow2(val: int(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="logBasePow2 is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
@@ -1681,7 +1681,7 @@ module AutoMath {
     return lg2 / baseLog2;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
     if (val < 1) {
       halt("Can't take the log() of a non-positive integer");
@@ -1689,7 +1689,7 @@ module AutoMath {
     return _logBasePow2Help(val, baseLog2);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
@@ -1740,19 +1740,19 @@ module AutoMath {
   // min and max
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc max(x: int(?w), y: int(w)) do return if x > y then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc max(x: uint(?w), y: uint(w)) do return if x > y then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc max(x: real(?w), y: real(w)) do return if (x > y) | isnan(x) then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc max(x: int(?w), y: uint(w)) do return if x > y then x:uint(w) else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc max(x: uint(?w), y: int(w)) do return if x > y then x else y:uint(w);
 
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   proc max(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -1779,19 +1779,19 @@ module AutoMath {
     return if x > y then x else y;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc min(x: int(?w), y: int(w)) do return if x < y then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc min(x: uint(?w), y: uint(w)) do return if x < y then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc min(x: real(?w), y: real(w)) do return if (x < y) | isnan(x) then x else y;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc min(x: int(?w), y: uint(w)) do return if x < y then x else y:int(w);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc min(x: uint(?w), y: int(w)) do return if x < y then x:int(w) else y;
 
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   proc min(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
     compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
   }
@@ -2376,7 +2376,7 @@ module AutoMath {
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_j0(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2384,7 +2384,7 @@ module AutoMath {
     return chpl_float_j0(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_j0(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2395,8 +2395,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_j0 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc j0(x: real(32)): real(32) {
     return chpl_j0(x);
@@ -2405,14 +2405,14 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_j0 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc j0(x: real(64)): real(64) {
     return chpl_j0(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_j1(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2420,7 +2420,7 @@ module AutoMath {
     return chpl_float_j1(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_j1(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2431,8 +2431,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_j1 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc j1(x: real(32)): real(32) {
     return chpl_j1(x);
@@ -2441,14 +2441,14 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_j1 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc j1(x: real(64)): real(64) {
     return chpl_j1(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_jn(n: int, x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2456,7 +2456,7 @@ module AutoMath {
     return chpl_float_jn(n.safeCast(c_int), x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_jn(n: int, x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2467,8 +2467,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_jn and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc jn(n: int, x: real(32)): real(32) {
     return chpl_jn(n, x);
@@ -2477,14 +2477,14 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_jn and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc jn(n: int, x: real(64)): real(64) {
     return chpl_jn(n, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_y0(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
@@ -2495,7 +2495,7 @@ module AutoMath {
     return chpl_float_y0(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_y0(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
@@ -2509,8 +2509,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_y0 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc y0(x: real(32)): real(32) {
     return chpl_y0(x);
@@ -2519,14 +2519,14 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_y0 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc y0(x: real(64)): real(64) {
     return chpl_y0(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_y1(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
@@ -2537,7 +2537,7 @@ module AutoMath {
     return chpl_float_y1(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_y1(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
@@ -2551,8 +2551,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_y1 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc y1(x: real(32)): real(32) {
     return chpl_y1(x);
@@ -2561,14 +2561,14 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_y1 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc y1(x: real(64)): real(64) {
     return chpl_y1(x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_yn(n: int, x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
@@ -2579,7 +2579,7 @@ module AutoMath {
     return chpl_float_yn(n.safeCast(c_int), x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl_yn(n: int, x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
@@ -2593,8 +2593,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_yn and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc yn(n: int, x: real(32)): real(32) {
     return chpl_yn(n, x);
@@ -2603,8 +2603,8 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_yn and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   @deprecated(notes="yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc yn(n: int, x: real(64)): real(64) {
     return chpl_yn(n, x);

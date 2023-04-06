@@ -54,10 +54,10 @@ module OS {
        also defined, to support usability.
     */
     extern type blkcnt_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:blkcnt_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:blkcnt_t) do
       return __primitive("cast", t, x);
 
@@ -66,10 +66,10 @@ module OS {
        also defined, to support usability.
     */
     extern type blksize_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:blksize_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:blksize_t) do
       return __primitive("cast", t, x);
 
@@ -78,10 +78,10 @@ module OS {
        also defined, to support usability.
     */
     extern type dev_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:dev_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:dev_t) do
       return __primitive("cast", t, x);
 
@@ -90,10 +90,10 @@ module OS {
        also defined, to support usability.
     */
     extern type gid_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:gid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:gid_t) do
       return __primitive("cast", t, x);
 
@@ -102,10 +102,10 @@ module OS {
        also defined, to support usability.
     */
     extern type ino_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:ino_t, type t:c_uint) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_uint, type t:ino_t) do
       return __primitive("cast", t, x);
 
@@ -116,16 +116,16 @@ module OS {
        also defined, to support usability.
     */
     extern type mode_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator &(a: mode_t, b: mode_t) do
       return (a:c_int & b:c_int):mode_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator |(a: mode_t, b: mode_t) do
       return (a:c_int | b:c_int):mode_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:mode_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:mode_t) do
       return __primitive("cast", t, x);
 
@@ -134,10 +134,10 @@ module OS {
        also defined, to support usability.
     */
     extern type nlink_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:nlink_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:nlink_t) do
       return __primitive("cast", t, x);
 
@@ -146,16 +146,16 @@ module OS {
        ``off_t`` and integral types are also defined, to support usability.
     */
     extern type off_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:off_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:off_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:off_t, type t:integral) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:integral, type t:off_t) do
       return __primitive("cast", t, x);
 
@@ -165,10 +165,10 @@ module OS {
        also defined, to support usability.
     */
     extern type suseconds_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:integral, type t:suseconds_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:suseconds_t, type t:integral) do
       return __primitive("cast", t, x);
 
@@ -177,10 +177,10 @@ module OS {
        also defined, to support usability.
     */
     extern type time_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:integral, type t:time_t) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:time_t, type t:integral) do
       return __primitive("cast", t, x);
 
@@ -189,10 +189,10 @@ module OS {
        also defined, to support usability.
     */
     extern type uid_t;
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:uid_t, type t:c_int) do
       return __primitive("cast", t, x);
-    pragma "no doc"
+    @chpldoc.nodoc
     inline operator :(x:c_int, type t:uid_t) do
       return __primitive("cast", t, x);
 
@@ -981,53 +981,53 @@ module OS {
   private extern proc qio_int_to_err(a:int(32)):errorCode;
   private extern proc qio_err_iserr(a:errorCode):c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: errorCode, b: errorCode) {
     return (qio_err_eq(a,b) != 0:c_int);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: errorCode, b: int(32)) do
     return (qio_err_to_int(a) == b:int(32));
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: errorCode, b: int(64)) do
     return (qio_err_to_int(a) == b:int(32));
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: int(32), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.==(a: int(64), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!=(a: errorCode, b: errorCode) do return !(a == b);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!=(a: errorCode, b: int(32)) do return !(a == b);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!=(a: errorCode, b: int(64)) do return !(a == b);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!=(a: int(32), b: errorCode) do return !(a == b);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: errorCode, type t: int(64)) do return qio_err_to_int(x):int(64);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: int(32), type t: errorCode) do return qio_int_to_err(x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: int(64), type t: errorCode) do return qio_int_to_err(x:int(32));
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:int(32))
   { __primitive("=", ret, qio_int_to_err(x)); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:errorCode, x:int(64))
   { __primitive("=", ret, qio_int_to_err(x:int(32))); }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator errorCode.=(ref ret:c_int, x:errorCode)
   { __primitive("=", ret, qio_err_to_int(x):c_int); }
 
@@ -1086,9 +1086,9 @@ module OS {
     ``errorCode``, or simply the matching :class:`SystemError` subtype if this
     is not a Chapel-specific IO error.
   */
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
     // extract qioerr pointer error message, if present
     var strerror_err: c_int = 0;
@@ -1110,9 +1110,9 @@ module OS {
   /*
     Version of createSystemOrChplError accepting an integer error code.
   */
-  pragma "no doc"
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc
   proc createSystemOrChplError(err: int, details: string = ""): Error {
     return createSystemOrChplError(err:errorCode, details);
   }
@@ -1526,9 +1526,9 @@ module OS {
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc // documented in the offset version
   proc ioerror(error:errorCode, msg:string, path:string) throws
   {
     if error {
@@ -1538,9 +1538,9 @@ module OS {
     }
   }
 
-  pragma "no doc" // documented in the offset version
   pragma "insert line file info"
   pragma "always propagate line file info"
+  @chpldoc.nodoc // documented in the offset version
   proc ioerror(error:errorCode, msg:string) throws
   {
     if error then throw createSystemOrChplError(error, msg);

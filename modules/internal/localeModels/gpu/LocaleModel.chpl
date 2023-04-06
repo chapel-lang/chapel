@@ -361,7 +361,7 @@ module LocaleModel {
       return new locale(childLocales[idx]);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc gpusImpl() const ref {
       return gpuSublocales;
     }

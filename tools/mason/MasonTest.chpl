@@ -495,7 +495,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc testFile(file, ref result, show: bool) throws {
   var fileName = basename(file);
@@ -551,7 +551,7 @@ proc testFile(file, ref result, show: bool) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc testDirectory(dir, ref result, show: bool) throws {
   for file in findFiles(startdir = dir, recursive = subdir) {
@@ -561,7 +561,7 @@ proc testDirectory(dir, ref result, show: bool) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
               ref testsPassed, ref testNames, ref localesCountMap,
@@ -667,7 +667,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   return exitCode;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*Docs: Todo*/
 proc addTestResult(ref result, ref localesCountMap, ref testNames,
                   flavour, fileName, testName, errMsg, ref failedTestNames,

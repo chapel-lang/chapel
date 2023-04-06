@@ -106,7 +106,7 @@ module Futures {
   private use Reflection;
   private use ExplicitRefCount;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class FutureClass: RefCountBase {
 
     type retType;
@@ -139,17 +139,17 @@ module Futures {
      */
     type retType;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged FutureClass(retType)? = nil;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type retType) {
       this.retType = retType;
       this.complete();
       acquire(new unmanaged FutureClass(retType));
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       release();
     }
@@ -165,7 +165,7 @@ module Futures {
       return classRef!.value;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(value: retType) {
       if !isValid() then halt("set() called on invalid future");
       classRef!.value = value;
@@ -217,20 +217,20 @@ module Futures {
       return f;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc acquire(newRef: unmanaged FutureClass) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       newRef.incRefCount();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc acquire() {
       if classRef == nil then halt("acquire() called on nil future");
       classRef!.incRefCount();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc release() {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
@@ -247,21 +247,21 @@ module Futures {
 
   } // record Future
 
-  pragma "no doc"
   pragma "init copy fn"
+  @chpldoc.nodoc
   proc chpl__initCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;
   }
 
-  pragma "no doc"
   pragma "auto copy fn"
+  @chpldoc.nodoc
   proc chpl__autoCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Future.=(ref lhs: Future, rhs: Future) {
     if lhs.classRef == rhs.classRef then return;
     if lhs.classRef != nil then
@@ -306,12 +306,12 @@ module Futures {
     return f;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc getRetTypes(arg) type {
     return (arg.retType,);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc getRetTypes(arg, args...) type {
     return (arg.retType, (...getRetTypes((...args))));
   }

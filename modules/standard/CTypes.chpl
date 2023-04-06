@@ -42,7 +42,7 @@ module CTypes {
   use HaltWrappers;
   public use ChapelSysCTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_typeMoveWarning(param name: string, param mod: string,
                             param newmod: string = "CTypes") {
     compilerWarning("type '" + name + "' has moved from '" + mod +
@@ -227,7 +227,7 @@ module CTypes {
 
       return __primitive("array_get", this, i);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
@@ -247,7 +247,7 @@ module CTypes {
 
       return __primitive("array_get", this, i);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref this(param i: integral) const ref : eltType {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i:string +
@@ -303,37 +303,37 @@ module CTypes {
     lhs = c_ptrTo(rhs[0]);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:c_ptr) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:c_ptrConst) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_ptrConst assignment");
     __primitive("=", lhs, rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_void_ptr) {
     return __primitive("cast", c_void_ptr, x);
   }
@@ -344,7 +344,7 @@ module CTypes {
      types violates C strict aliasing rules. Only checks for types that have c_*
      equivalents.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
       : bool {
     // special checking when either to or from is a pointer
@@ -381,7 +381,7 @@ module CTypes {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:c_ptr) {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
@@ -392,7 +392,7 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
@@ -405,7 +405,7 @@ module CTypes {
   }
   // Also need const to non-const and vice-versa versions; although coercion
   // makes the casting extraneous, it is needed for strict aliasing warnings
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptr) {
     if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
       compilerWarning(
@@ -415,7 +415,7 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:c_ptrConst) {
     if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
       compilerWarning(
@@ -425,55 +425,55 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
       where x.eltType == e {
     return c_ptrTo(x[0]):c_ptrConst(e);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_void_ptr) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptrConst, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_void_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_void_ptr, type t:c_ptrConst) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:string) {
     try! {
       return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
       return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
       return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:_anyManagementAnyNilable) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_void_ptr to "+ t:string +
@@ -484,194 +484,194 @@ module CTypes {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:unmanaged class?) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:borrowed class?) {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:borrowed, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:unmanaged, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:_ddata) where t.eltType == x.eltType {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:_ddata) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:_ddata, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
   // casts from c pointer to c_intptr / c_uintptr
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_void_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_void_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptrConst, type t:c_intptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptrConst, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
 
   // casts from c pointer to int / uint
   // note that these are only used if c_intptr != int / c_uintptr != uint
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   // casts from c_intptr / c_uintptr to c_void_ptr
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_intptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_uintptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
 
   // casts from int / uint to c_void_ptr
   // note that these are only used if c_intptr != int / c_uintptr != uint
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.==(a: c_ptrConst, b: c_ptrConst)
       where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_ptrConst, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_void_ptr, b: c_ptrConst) {
     return __primitive("ptr_eq", a, b);
   }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.!=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.!=(a: c_ptrConst, b: c_ptrConst)
       where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(a: c_ptrConst, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(a: c_void_ptr, b: c_ptrConst) {
     return __primitive("ptr_neq", a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.+(a: c_ptr, b: integral) do return __primitive("+", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.!(x: c_ptrConst) do return x == c_nil;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.+(a: c_ptrConst, b: integral) do
     return __primitive("+", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.-(a: c_ptrConst, b: integral) do
     return __primitive("-", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptrConst.-(a: c_ptrConst(?t), b: c_ptrConst(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
-  pragma "no doc"
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
-  pragma "no doc"
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc c_pointer_return_const(const ref x:?t):c_ptrConst(t);
-  pragma "no doc"
   pragma "fn synchronization free"
+  @chpldoc.nodoc
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
                              eltSize:c_ptrdiff):c_ptrdiff;
 
@@ -990,7 +990,7 @@ module CTypes {
     return c_ptrTo(getFieldRef(x, fieldname)):c_size_t - c_ptrTo(x):c_size_t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_offsetof(type t, param fieldname: string) where !isRecordType(t) {
     compilerError("Cannot call c_offsetof on type that is not a record");
   }
@@ -1075,11 +1075,11 @@ module CTypes {
     chpl_here_free(data);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isAnyCPtr(type t:c_ptr) param do return true;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isAnyCPtr(type t:c_ptrConst) param do return true;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isAnyCPtr(type t:c_void_ptr) param do return true;
   /*
      Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.

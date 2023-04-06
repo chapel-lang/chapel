@@ -25,7 +25,7 @@ module ChapelIOStringifyHelper {
   private use ChapelStandard;
   private use BytesStringCommon only decodePolicy;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _can_stringify_direct(t) param : bool {
     if (t.type == string ||
         t.type == bytes ||
@@ -48,7 +48,7 @@ module ChapelIOStringifyHelper {
   // to report an out of bounds access for a halt. A normal
   // call to halt might not be possible because of module
   // order issues.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _stringify_tuple(tup:?t) where isTuple(t){
     var str = "(";
 
@@ -69,7 +69,7 @@ module ChapelIOStringifyHelper {
     return str;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
     proc stringify_simple(const args ...?k): string {
     // As an optimization, use string concatenation for
     // all primitive type stringify...

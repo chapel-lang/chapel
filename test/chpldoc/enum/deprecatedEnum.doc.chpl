@@ -24,8 +24,8 @@ enum bones {tibia, fibia, skull, rib, kneecap};
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated enum spiceGirls {posh, baby, scary, sporty, ginger};
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="nsync is so early 2000s")
 enum nsync {justin, lance, jc, joey, chris};

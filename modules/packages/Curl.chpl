@@ -312,11 +312,11 @@ module Curl {
 
   */
   record slist {
-    pragma "no doc"
+    @chpldoc.nodoc
     var home: locale = here;
     // Note: If we do not set the default value of this to NULL, we can get
     // non-deterministic segfaults from libcurl.
-    pragma "no doc"
+    @chpldoc.nodoc
     var list: c_ptr(curl_slist) = nil;
   }
 
@@ -508,7 +508,7 @@ module Curl {
   /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
   extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module CurlQioIntegration {
 
     import Time;
@@ -518,7 +518,7 @@ module Curl {
     use OS.POSIX;
     import OS.{errorCode};
 
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc sys_select(nfds:c_int, readfds:c_ptr(fd_set), writefds:c_ptr(fd_set), exceptfds:c_ptr(fd_set), timeout:c_ptr(struct_timeval), ref nset:c_int):c_int;
 
     class CurlFile : QioPluginFile {

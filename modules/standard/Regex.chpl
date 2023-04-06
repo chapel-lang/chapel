@@ -340,13 +340,13 @@ module Regex {
 
   // Ideally, should be a config const, but it pollutes --help output
   // unnecessarily even though it is private
-  pragma "no doc"
+  @chpldoc.nodoc
   private const initBufferSizeForSlowReplaceAndCount = 16;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern type qio_regex_t;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern record qio_regex_options_t {
   var utf8:bool;
   var posix:bool;
@@ -359,34 +359,34 @@ extern record qio_regex_options_t {
   var nongreedy:bool; // (?U)
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_regex_null():qio_regex_t;
 private extern proc qio_regex_init_default_options(ref options:qio_regex_options_t);
 private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
 private extern proc qio_regex_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_regex_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 private extern proc qio_regex_retain(const ref compiled:qio_regex_t);
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_regex_release(ref compiled:qio_regex_t);
-pragma "no doc"
+@chpldoc.nodoc
 
 private extern proc qio_regex_get_options(const ref regex:qio_regex_t, ref options: qio_regex_options_t);
 private extern proc qio_regex_borrow_pattern(const ref regex:qio_regex_t, ref pattern: c_string, ref len_out:int(64));
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_regex_get_ncaptures(const ref regex:qio_regex_t):int(64);
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_regex_ok(const ref regex:qio_regex_t):bool;
 private extern proc qio_regex_error(const ref regex:qio_regex_t):c_string;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_REGEX_ANCHOR_UNANCHORED:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_REGEX_ANCHOR_START:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_REGEX_ANCHOR_BOTH:c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern record qio_regex_string_piece_t {
   var offset:int(64); // counting from 0, -1 means "NULL"
   var len:int(64);
@@ -492,14 +492,14 @@ record regexMatch {
   var numBytes:int;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc reMatch type
 {
    compilerWarning("Regex: 'reMatch' is deprecated; please use 'regexMatch' instead");
    return regexMatch;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
   if qio_regex_string_piece_isnull(p) {
     return new regexMatch(false, (-1):byteIndex, 0);
@@ -508,10 +508,10 @@ proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator regexMatch.!(m: regexMatch) do return !m.matched;
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc regexMatch.chpl_cond_test_method() do return this.matched;
 
 /*  This function extracts the part of a string matching a regular
@@ -548,7 +548,7 @@ private proc serializedType(type exprType) type {
 /* We hold a copy of pattern string/bytes in its serialized form inside
  * this record.
  */
-pragma "no doc"
+@chpldoc.nodoc
 record chpl_serializeHelper {
   type exprType;
   var pattern:serializedType(exprType);
@@ -568,11 +568,11 @@ record chpl_serializeHelper {
 pragma "ignore noinit"
 record regex {
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type exprType;
-  pragma "no doc"
+  @chpldoc.nodoc
   var home: locale = here;
-  pragma "no doc"
+  @chpldoc.nodoc
   var _regex:qio_regex_t = qio_regex_null();
 
   proc init(type exprType) {
@@ -685,7 +685,7 @@ record regex {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _serialize() {
     var pattern: serializedType(exprType);
     var options: qio_regex_options_t;
@@ -710,7 +710,7 @@ record regex {
     return new chpl_serializeHelper(exprType, pattern, options);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
     qio_regex_create_compile(pattern.c_str(),
@@ -719,12 +719,12 @@ record regex {
                              this._regex);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__serialize() {
     return _serialize();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc type chpl__deserialize(data) {
     var ret:regex(exprType);
     ret._deserialize(data);
@@ -732,13 +732,13 @@ record regex {
   }
 
   // note - more = overloads are below.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc ref deinit() {
     qio_regex_release(_regex);
     _regex = qio_regex_null();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _handle_captures(text: exprType, matches:c_array(qio_regex_string_piece_t, ?nmatches),
                         ref captures) {
     assert(nmatches >= captures.size);
@@ -793,7 +793,7 @@ record regex {
   }
 
   // documented in the captures version
-  pragma "no doc"
+  @chpldoc.nodoc
   proc search(text: exprType):regexMatch
   {
     var dummy: int;
@@ -828,7 +828,7 @@ record regex {
   }
 
   // documented in the version taking captures.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc match(text: exprType):regexMatch
   {
     var dummy: int;
@@ -854,7 +854,7 @@ record regex {
   }
 
   // documented in the version taking captures.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc fullMatch(text: exprType):regexMatch
   {
     var dummy: int;
@@ -864,7 +864,7 @@ record regex {
   // Note - we would not need to use has_captures
   // if we had args ...?k supporting 0 args, or if tuples support zero length
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _search_match(text: exprType, anchor: c_int, param has_captures, ref captures):regexMatch
   {
     /* This pattern is a bit ugly, but we'd like to avoid
@@ -1056,7 +1056,7 @@ record regex {
   }
 
   // TODO this could use _serialize to get the pattern and options
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
     var pattern:exprType;
     on this.home {
@@ -1070,7 +1070,7 @@ record regex {
     f.write("new regex(\"", pattern, "\")");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc readThis(f) throws {
     var pattern:exprType;
     // Note -- this is wrong because we didn't quote
@@ -1091,14 +1091,14 @@ record regex {
       }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(type exprType, f: fileReader) {
     this.init(exprType);
     readThis(f);
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator regex.=(ref ret:regex(?t), x:regex(t))
 {
   // retain -- release
@@ -1130,14 +1130,14 @@ inline operator :(x: regex(?exprType), type t: exprType) {
 
 
 // Cast string to regex
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
 inline operator :(x: string, type t: regex(string)) throws {
   return new regex(x);
 }
 
 // Cast bytes to regex
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
 inline operator :(x: bytes, type t: regex(bytes)) throws {
   return new regex(x);
@@ -1678,13 +1678,13 @@ private module RegexIoSupport {
      string literal, this would be returned if we never encountered the
      opening quote. (Chapel specific)
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
   extern proc chpl_macro_int_EEOF():c_int;
   /* An error code indicating the end of file has been reached (Chapel specific)
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
   extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;

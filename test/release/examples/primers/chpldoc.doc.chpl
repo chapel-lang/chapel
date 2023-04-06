@@ -66,9 +66,9 @@ proc undocumented1() {
   To prevent the display of a particular function, class, record, specified
   module, or global variable but not prevent its access by outside modules,
   simply preface it with:
-  pragma "no doc"
+  @chpldoc.nodoc
 */
-pragma "no doc"
+@chpldoc.nodoc
 proc undocumented2() {
   // This function won't be in the final output.
 }

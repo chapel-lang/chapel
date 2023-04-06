@@ -90,7 +90,7 @@ module ChplConfig {
   param CHPL_GASNET_SEGMENT:string;
   CHPL_GASNET_SEGMENT = __primitive("get compiler variable", "CHPL_GASNET_SEGMENT");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* See :ref:`readme-chplenv.CHPL_LIBFABRIC` for more information. */
   param CHPL_LIBFABRIC:string;
   CHPL_LIBFABRIC = __primitive("get compiler variable", "CHPL_LIBFABRIC");
@@ -135,7 +135,7 @@ module ChplConfig {
   param CHPL_HWLOC:string;
   CHPL_HWLOC = __primitive("get compiler variable", "CHPL_HWLOC");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string;
   CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
@@ -148,11 +148,11 @@ module ChplConfig {
   param CHPL_LLVM:string;
   CHPL_LLVM = __primitive("get compiler variable", "CHPL_LLVM");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param CHPL_GPU_MEM_STRATEGY:string;
   CHPL_GPU_MEM_STRATEGY = __primitive("get compiler variable", "CHPL_GPU_MEM_STRATEGY");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param CHPL_GPU_CODEGEN:string;
   CHPL_GPU_CODEGEN = __primitive("get compiler variable", "CHPL_GPU_CODEGEN");
 }

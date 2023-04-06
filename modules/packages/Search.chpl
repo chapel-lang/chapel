@@ -72,7 +72,7 @@ proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc search(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high, sorted=false)
   where Dom.rank != 1 {
@@ -125,7 +125,7 @@ proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.lo
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc linearSearch(Data:[?Dom], val, comparator:?rec=defaultComparator, lo=Dom.low, hi=Dom.high)
   where Dom.rank != 1 {
@@ -180,7 +180,7 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Non-stridable binarySearch */
 proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
   where !Dom.stridable {
@@ -199,7 +199,7 @@ proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc binarySearch(Data:[?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high)
   where Dom.rank != 1 {

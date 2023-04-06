@@ -31,7 +31,7 @@ module DistributedMap {
   record distributedMap {
     type keyType;
     type valType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var m: shared distributedMapImpl(keyType, valType, ?)?;
     forwarding m!;
 
@@ -73,19 +73,19 @@ module DistributedMap {
     /* Type of map values. */
     type valType;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     const targetLocales = Locales;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     const locDom = {0..<targetLocales.size}
       dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var tables: [locDom] chpl__hashtable(keyType, valType);
 
     // TODO: eventually will want to do something like a lock per core on each
     // locale, since nodes can be beefy and we don't want to limit parallelism
-    pragma "no doc"
+    @chpldoc.nodoc
     var locks: [locDom] owned _LockWrapper =
       [i in locDom] new owned _LockWrapper();
 
@@ -95,9 +95,9 @@ module DistributedMap {
     // distributed maps that specify their own hashing strategy *can* be stored
     // in the same data structure as those that specified a different one)
     // Is that something we're okay with?
-    pragma "no doc"
+    @chpldoc.nodoc
     type funcType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var localeHasher: funcType;
 
     /* Create a map with the specified key and value type, relying on the
@@ -120,7 +120,7 @@ module DistributedMap {
     }
     // TODO: initializer that uses only a subset of the locales?
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getLocaleForKey(key: keyType): int {
       if (funcType != nothing) {
         return localeHasher(key, targetLocales.size);
@@ -218,7 +218,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const containsUnlocked(const k: keyType): bool {
       var loc: int = this.getLocaleForKey(k);
 
@@ -320,7 +320,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getValueUnlocked(k: keyType) const throws {
       var loc: int = this.getLocaleForKey(k);
 
@@ -340,7 +340,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getAndRemoveUnlocked(k: keyType): valType {
       var loc: int = this.getLocaleForKey(k);
 
@@ -534,7 +534,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc addUnlocked(in k: keyType, in v: valType): bool lifetime this < v {
       var loc: int = this.getLocaleForKey(k);
 
@@ -589,7 +589,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc setUnlocked(k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
@@ -627,7 +627,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc addOrSetUnlocked(in k: keyType, in v: valType) {
       var loc: int = this.getLocaleForKey(k);
 
@@ -670,7 +670,7 @@ module DistributedMap {
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
-    pragma "no doc"
+    @chpldoc.nodoc
     proc removeUnlocked(k: keyType): bool {
       var loc: int = this.getLocaleForKey(k);
 
@@ -717,7 +717,7 @@ module DistributedMap {
     }
 
     // default function to hash across locales
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Take key and number of locales, return locale */
     proc hashAcrossLocales(key: keyType, numLocales: int): int {
       // Based on keyToLocaleAndMapIdx from v1, but I'm sure there's a better
@@ -727,7 +727,7 @@ module DistributedMap {
     }
 
     // For debugging purposes, to ensure we're distributing the map properly
-    pragma "no doc"
+    @chpldoc.nodoc
     proc chpl_verify() {
       writeln("targetLocales = ", targetLocales);
       writeln("locDom = ", locDom);

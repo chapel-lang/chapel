@@ -1,2 +1,2 @@
-pragma "no doc"
+@chpldoc.nodoc
 writeln("test");
