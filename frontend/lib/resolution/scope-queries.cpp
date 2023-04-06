@@ -560,7 +560,7 @@ bool LookupHelper::doLookupInImportsAndUses(
         if (!allowPrivateAccess) {
           newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
         } else {
-          // TODO: this disallowes nested modules from working  with
+          // TODO: this disallows nested modules from working  with
           // a private use/import in a parent module. But, that is
           // subject to discussion in issue #21723.
           // See the history of this comment for an implementation that
@@ -873,7 +873,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     curFilter |= IdAndFlags::METHOD_FIELD;
   }
   // Note: curFilter can only represent combinations of positive flags;
-  // if it extended, it might no longer be possible to rerepresent
+  // if it extended, it might no longer be possible to represent
   // the combinedFilter below as a single bitset.
   // Also note: setting excludeFilter in some way other than the
   // handling below with checkedScopes will require other adjustments.
@@ -2300,7 +2300,7 @@ std::vector<ID> findUsedImportedModules(Context* context,
 static const std::map<ID, ID>&
 findAllModulesUsedImportedInTreeQuery(Context* context, ID id);
 
-// Pre-order depth first traveral of the entire module to gather use/import.
+// Pre-order depth first traversal of the entire module to gather use/import.
 // Key is ID of use/import, value is target module ID. We use a map here
 // because the C++ standard map maintains ordering, which should sort all
 // the use/import by their lexical order (via ID ordering).
