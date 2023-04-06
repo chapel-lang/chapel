@@ -165,6 +165,8 @@ proc test9() {
 }
 
 proc main() {
+  // TODO: Can trigger hard to reproduce bug where FCF name does not print.
+  /*
   const tests = [test0, test1, test2a, test2b, test3, test4, test5, test6,
                  test7, test8, test9];
   type T = proc(): void;
@@ -173,5 +175,29 @@ proc main() {
     writeln("--- ", test:string, " ---");
     test();
   }
+  */
+
+  writeln("--- ", "test0()", " ---");
+  test0();
+  writeln("--- ", "test1()", " ---");
+  test1();
+  writeln("--- ", "test2a()", " ---");
+  test2a();
+  writeln("--- ", "test2b()", " ---");
+  test2b();
+  writeln("--- ", "test3()", " ---");
+  test3();
+  writeln("--- ", "test4()", " ---");
+  test4();
+  writeln("--- ", "test5()", " ---");
+  test5();
+  writeln("--- ", "test6()", " ---");
+  test6();
+  writeln("--- ", "test7()", " ---");
+  test7();
+  writeln("--- ", "test8()", " ---");
+  test8();
+  writeln("--- ", "test9()", " ---");
+  test9();
 }
 
