@@ -34,7 +34,7 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
      LDFLAGS="-L$with_hwloc/lib $LDFLAGS"])
   AC_CHECK_HEADERS([hwloc.h],[],
              [qt_allgoodsofar=no])
-  
+
   # enable or disable distance support if specified
   AS_IF([test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = xyes],
         [AC_MSG_NOTICE([enabling hwloc distance support])
@@ -46,7 +46,7 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
     # do configuration checks
     [AS_IF([test "x$qt_allgoodsofar" = xyes],
             # check if we can link against hwloc
-  	    [AC_SEARCH_LIBS([${with_hwloc_symbol_prefix}topology_init], [hwloc "hwloc -lnuma" "hwloc -lnuma -lpciaccess" "hwloc -lpciaccess"], [],
+  	    [AC_SEARCH_LIBS([${with_hwloc_symbol_prefix}topology_init], [hwloc "hwloc -lnuma"], [],
   		                [qt_allgoodsofar=no])])
     # check if hwloc has distance support if it wasn't specified
     AS_IF([test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = x],
@@ -71,7 +71,7 @@ int main()
     [AC_MSG_NOTICE([skipping hwloc link checks])
     AC_DEFINE([QTHREAD_HAVE_HWLOC],[1],[if I can use the hwloc topology interface])
     # default to having distance if not specified
-    AS_IF([test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = x], 
+    AS_IF([test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = x],
         [AC_MSG_NOTICE([enabling hwloc distance support])
         AC_DEFINE([QTHREAD_HAVE_HWLOC_DISTS],[1],[hwloc has distances])])])
 
