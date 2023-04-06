@@ -1,0 +1,2 @@
+{files = {foo: (de = {})}}
+{files = {foo: (de = {files = {}})}}
