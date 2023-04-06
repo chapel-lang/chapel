@@ -1,2 +1,2 @@
-mmapParenless.chpl:3: warning: `ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead
+mmapParenless.chpl:3: warning: `ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead
 true
