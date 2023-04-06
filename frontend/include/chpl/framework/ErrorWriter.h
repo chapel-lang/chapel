@@ -375,7 +375,7 @@ class ErrorWriterBase {
     Doesn't underline, but also doesn't print the whole thing. This
     is important, for instance, in the case that a record declaration
     is being printed. We don't want to dump all the fields / methods
-    as part of the errror.
+    as part of the error.
    */
   template <typename LocPlace>
   void codeForLocation(const LocPlace& place) {
