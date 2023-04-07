@@ -50,7 +50,7 @@ module Bytes {
     return bytes.createWithBorrowedBuffer(x);
   }
 
-  inline proc bytes.createWithBorrowedBuffer(x: bytes) : bytes {
+  inline proc type bytes.createWithBorrowedBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;

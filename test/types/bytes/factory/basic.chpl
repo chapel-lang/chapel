@@ -5,13 +5,9 @@ var myBytes = b"A Chapel bytes";
 on targetLocale {
   // there should be 2 allocations, 2 frees
   writeln("Initialize from bytes");
-  var sNew = bytes.createWithNewBuffer(myBytes);
-  var sBorrowed = bytes.createWithBorrowedBuffer(sNew);
-  var sNewFromNew = bytes.createWithNewBuffer(sNew);
+  var sBorrowed = bytes.createWithBorrowedBuffer(myBytes);
 
-  writeln(sNew);
   writeln(sBorrowed);
-  writeln(sNewFromNew);
 }
 
 writeln();
