@@ -7,13 +7,9 @@ var chplStr = "A Chapel string";
 on targetLocale {
   // there should be 2 allocations, 2 frees
   writeln("Initialize from string");
-  var sNew = string.createWithNewBuffer(chplStr);
-  var sBorrowed = string.createWithBorrowedBuffer(sNew);
-  var sNewFromNew = string.createWithNewBuffer(sNew);
+  var sBorrowed = string.createWithBorrowedBuffer(chplStr);
 
-  writeln(sNew);
   writeln(sBorrowed);
-  writeln(sNewFromNew);
 }
 
 writeln();

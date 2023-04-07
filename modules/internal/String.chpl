@@ -434,7 +434,8 @@ module String {
 
   inline proc type string.createWithBorrowedBuffer(x: c_string,
                                              length=x.size) : string throws {
-    return string.createWithBorrowedBuffer(x, length);
+    return string.createWithBorrowedBuffer(x:bufferType, length=length,
+                                           size=length+1);
   }
 
   pragma "no doc"
