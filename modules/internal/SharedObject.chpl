@@ -448,7 +448,7 @@ module SharedObject {
        Equivalent to ``shared.retain(nil)``.
      */
     pragma "leaves this nil"
-    @deprecated(notes="shared.clear is deprecated - please assign shared object to `nil` instead")
+    @deprecated(notes="shared.clear is deprecated - please assign `nil` to the shared object instead")
     proc ref clear() {
       doClear();
     }
