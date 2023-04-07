@@ -7959,7 +7959,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
@@ -7968,7 +7968,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
+    if data.locale == this._home && data.isDefaultRectangular() && !d.isSparse() && endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);

@@ -2,15 +2,15 @@ use IO;
 import Time.stopwatch, FileSystem.remove;
 
 config const n : uint(64) = 2048*8,
-             nn = 10000;
+             numWrites = 10000;
 
 config param PerfTest = true;
 
-// write nn arrays of n uint(64) elements to a file
+// write 'numWrites' arrays of 'n' uint(64) elements to a file
 var wTime = bigWrite();
 if PerfTest then writef("Write Time: %.10r\n", wTime);
 
-// read the same array nn times from the file
+// read the same array 'numWrites' times from the file
 // (in the non-PerfTest case, check that the arrays match)
 var (rTime, matches) = bigRead();
 if PerfTest then writef("Read Time: %.10r\n", rTime);
@@ -24,12 +24,12 @@ proc bigWrite(): real {
         smallArray = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   var s = new stopwatch();
 
-  // write something small to allocate buffer space in the channel
+  // write something small to allocate buffer space in the fileWriter's buffer
   w.writeBinary(smallArray);
 
-  // write the array nn times
+  // write the array 'numWrites' times
   s.start();
-  for i in 0..#nn do
+  for i in 0..#numWrites do
     w.writeBinary(x);
   s.stop();
 
@@ -47,9 +47,9 @@ proc bigRead() : (real, bool) {
   r.readBinary(small);
   matches = (&& reduce (small == [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]));
 
-  // read the array nn times
+  // read the array 'numWrites' times
   s.start();
-  for i in 0..#nn {
+  for i in 0..#numWrites {
     r.readBinary(y);
 
     // check that the array matches
