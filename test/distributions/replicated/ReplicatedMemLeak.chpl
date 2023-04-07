@@ -3,7 +3,7 @@ use ReplicatedDist;
 class C { var x = 0; }
 
 proc C.deinit() {
-  writeln('C deinit ' + this);
+  writeln('C deinit ', this);
 }
 
 record r {
@@ -11,24 +11,24 @@ record r {
 
   proc init() {
     this.complete();
-    writeln('default init ' + this);
+    writeln('default init ', this);
   }
 
   proc init(const ref other: r) {
     ptr = other.ptr;
     ptr.x += 1;
-    writeln('init copy ' + other);
+    writeln('init copy ', other);
   }
 
   proc init=(const ref rhs: r) {
     ptr = rhs.ptr;
     ptr.x += 1;
-    writeln('init= ' + rhs);
+    writeln('init= ', rhs);
   }
 
   proc deinit() {
     ptr.x -= 1;
-    writeln('deinit ' + this);
+    writeln('deinit ', this);
   }
 }
 

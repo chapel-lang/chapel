@@ -8,6 +8,7 @@ record Rec {
 var r = new Rec(10, "some bytes":bytes);
 
 writef("testing default stdout: %t\n", r);
+writef("testing chapel stdout: %ht\n", r);
 writef("testing json stdout: %jt\n", r);
 
 var f = openTempFile();
