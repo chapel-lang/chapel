@@ -285,7 +285,7 @@ module OwnedObject {
        In some cases such errors are caught at compile-time.
      */
     pragma "nil from this"
-    inline proc /*const*/ borrow() {
+    proc /*const*/ borrow() {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
       } else {
