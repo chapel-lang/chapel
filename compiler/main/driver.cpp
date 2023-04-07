@@ -1636,9 +1636,12 @@ static void setPrintCppLineno() {
 }
 
 static void setGPUFlags() {
-  bool isGpuCodegen = usingGpuLocaleModel();
-
-  if(isGpuCodegen) {
+  if(usingGpuLocaleModel()) {
+    if (fWarnUnstable) {
+      USR_WARN("GPU support is under active development. As such, the"
+               " interface is unstable and expected to change in the"
+               " forthcoming releases.");
+    }
     if (!fNoChecks) {
       USR_WARN("The prototype GPU support implies --no-checks."
                " This may impact debuggability. To suppress this warning,"
