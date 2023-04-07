@@ -627,30 +627,48 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
-bool idIsInInternalModule(Context* context, ID id) {
-  UniqueString internal = internalModulePath(context);
-  if (internal.isEmpty()) return false;
+static bool
+filePathIsInInternalModule(Context* context, UniqueString filePath) {
+  UniqueString prefix = internalModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
 
+static bool
+filePathIsInBundledModule(Context* context, UniqueString filePath) {
+  UniqueString prefix = bundledModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
+
+static bool
+filePathIsInStandardModule(Context* context, UniqueString filePath) {
+  UniqueString prefix1 = bundledModulePath(context);
+  if (prefix1.isEmpty()) return false;
+  auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
+  auto prefix2 = UniqueString::getConcat(context, prefix1.c_str(), concat);
+  return filePath.startsWith(prefix2);
+}
+
+bool idIsInInternalModule(Context* context, ID id) {
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(internal);
-  }
-  return false;
+  return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
-  UniqueString modules = bundledModulePath(context);
-  if (modules.isEmpty()) return false;
-
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(modules);
-  }
-  return false;
+  return found && filePathIsInBundledModule(context, filePath);
+}
+
+bool idIsInStandardModule(Context* context, ID id) {
+  UniqueString filePath;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  return found && filePathIsInStandardModule(context, filePath);
 }
 
 static const bool& fileExistsQuery(Context* context, std::string path) {
@@ -1275,8 +1293,12 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   return ret;
 }
 
-// TODO: Might be worth figuring out how to generalize this pattern so that
-// more parts of the compiler can use it.
+//
+// TODO: The below queries on AST could be made into methods, and the
+// 'anyParentMatches' and 'firstParentMatch' could be made into
+// utility functions (not sure where those live).
+//
+
 static const AstNode*
 firstParentMatch(Context* context, ID id,
                  const std::function<bool(Context*, const AstNode*)>& f) {
@@ -1312,6 +1334,24 @@ static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
   return attr && attr->hasPragma(PRAGMA_COMPILER_GENERATED);
 }
 
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
+static bool
+isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInStandardModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+}
+
+static bool
+isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInInternalModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
@@ -1326,13 +1366,11 @@ shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
 // deprecated things are likely to be removed soon.
 static bool
 shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
-  return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast)        ||
-         isAstUnstable(context, ast);
-}
-
-static bool isAstFormal(Context* context, const AstNode* ast) {
-  return ast->isFormal();
+  return isAstUnstable(context, ast)                  ||
+         isAstDeprecated(context, ast)                ||
+         isAstCompilerGenerated(context, ast)         ||
+         isAstSuppressedStandardModule(context, ast)  ||
+         isAstSuppressedInternalModule(context, ast);
 }
 
 static std::string
@@ -1452,30 +1490,39 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning))
+  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
     return;
+  }
 
-  std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
+  deprecationWarningForIdQuery(context, idMention, idTarget);
+}
+
+static bool
+isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr || !attr->isUnstable()) return false;
+
+  auto flag = CompilerFlags::WARN_UNSTABLE;
+  if (idIsInInternalModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
+  } else if (idIsInStandardModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
+  }
+
+  return isCompilerFlagSet(context, flag);
 }
 
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
-
-  // Nothing to do, symbol is not unstable.
-  if (!attr || !attr->isUnstable()) return;
-
-  // Nothing to do, we do not report unstable things this revision.
-  if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
 
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning))
-    return;
+  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning)) return;
 
-  std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
+  unstableWarningForIdQuery(context, idMention, idTarget);
 }
 
 } // end namespace parsing

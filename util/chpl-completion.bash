@@ -270,6 +270,8 @@ _chpl ()
 --no-warn-tuple-iteration \
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
+--no-warn-unstable-internal \
+--no-warn-unstable-standard \
 --no-warnings \
 --optimize \
 --optimize-forall-unordered-ops \
@@ -363,6 +365,8 @@ _chpl ()
 --warn-tuple-iteration \
 --warn-unknown-attribute-toolname \
 --warn-unstable \
+--warn-unstable-internal \
+--warn-unstable-standard \
 --warnings \
 -I \
 -L \

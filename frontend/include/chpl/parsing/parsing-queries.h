@@ -299,6 +299,16 @@ bool idIsInInternalModule(Context* context, ID id);
 bool idIsInBundledModule(Context* context, ID id);
 
 /**
+ Returns true if the ID corresponds to something in a standard module.
+ A standard module is a bundled module, but it is not a package module
+ (which may be contributed by users and are not subject to the same
+ constraints as standard modules).
+
+ If the bundled module path is empty, this function returns false.
+ */
+bool idIsInStandardModule(Context* context, ID id);
+
+/**
  This query parses a toplevel module by name. Returns nullptr
  if no such toplevel module can be found in the module search path.
  */

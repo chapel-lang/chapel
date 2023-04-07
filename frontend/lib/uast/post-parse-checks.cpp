@@ -102,6 +102,7 @@ struct Visitor {
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
   bool isNameReservedWord(const NamedDecl* node);
+  bool shouldEmitUnstableWarning(const AstNode* node);
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
@@ -934,6 +935,10 @@ void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
 }
 
+bool Visitor::shouldEmitUnstableWarning(const AstNode* node) {
+  return isFlagSet(CompilerFlags::WARN_UNSTABLE);
+}
+
 bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   if (node->name() != USTR("this")) return false;
   if (node->isFunction()) return false;
@@ -1064,16 +1069,14 @@ void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
   }
 }
 
-// TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
-  warn(node,
-       "unions are currently unstable and are expected to change in ways that "
-       "will break their current uses.");
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "unions are currently unstable and are expected to change "
+             "in ways that will break their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
 
   auto name = node->name();
