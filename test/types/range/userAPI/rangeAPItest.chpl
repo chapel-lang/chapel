@@ -6,7 +6,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln(r);
   writeln("idxType          = ", r.idxType:string);
   writeln("stridable        = ", r.stridable);
-  writeln("boundedType      = ", r.boundedType);
+  writeln("bounds           = ", r.bounds);
   writeln("isRangeType()    = ", isRangeType(r.type));
   writeln("isBoundedRange() = ", isBoundedRange(r));
   writeln("isBounded()      = ", r.isBounded());

@@ -2541,7 +2541,7 @@ void Resolver::exit(const Range* range) {
   const ResolvedFields& resolvedFields = fieldsForTypeDecl(context, rangeType,
       DefaultsPolicy::USE_DEFAULTS);
   CHPL_ASSERT(resolvedFields.fieldName(0) == "idxType");
-  CHPL_ASSERT(resolvedFields.fieldName(1) == "boundedType");
+  CHPL_ASSERT(resolvedFields.fieldName(1) == "bounds");
   CHPL_ASSERT(resolvedFields.fieldName(2) == "stridable");
 
   // Determine index type, either via inference or by using the default.
@@ -2568,20 +2568,20 @@ void Resolver::exit(const Range* range) {
     idxType = resolvedFields.fieldType(0);
   }
 
-  // Determine the value for boundedType.
+  // Determine the value for `bounds`.
   ID refersToId; // Needed for out parameter of typeForEnumElement
   const char* rangeTypeName;
   if (range->lowerBound() && range->upperBound()) {
-    rangeTypeName = "bounded";
+    rangeTypeName = "both";
   } else if (range->lowerBound()) {
-    rangeTypeName = "boundedLow";
+    rangeTypeName = "low";
   } else if (range->upperBound()) {
-    rangeTypeName = "boundedHigh";
+    rangeTypeName = "high";
   } else {
-    rangeTypeName = "boundedNone";
+    rangeTypeName = "neither";
   }
-  auto boundedRangeTypeType = EnumType::getBoundedRangeTypeType(context);
-  auto boundedType = typeForEnumElement(boundedRangeTypeType,
+  auto boundKindType = EnumType::getBoundKindType(context);
+  auto boundedType = typeForEnumElement(boundKindType,
                                         UniqueString::get(context, rangeTypeName),
                                         range);
 

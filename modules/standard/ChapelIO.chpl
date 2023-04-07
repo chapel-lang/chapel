@@ -738,12 +738,10 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if (boundedType == BoundedRangeType.bounded ||
-        boundedType == BoundedRangeType.boundedLow) then
+    if hasLowBound() then
       f.write(lowBound);
     f._writeLiteral("..");
-    if (boundedType == BoundedRangeType.bounded ||
-        boundedType == BoundedRangeType.boundedHigh) {
+    if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);
@@ -792,10 +790,10 @@ module ChapelIO {
   }
 
   proc range.init(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param bounds : boundKind = boundKind.both,
                   param stridable : bool = false,
                   reader: fileReader(?)) {
-    this.init(idxType, boundedType, stridable);
+    this.init(idxType, bounds, stridable);
 
     // TODO:
     // The alignment logic here is pretty tricky, so fall back on the

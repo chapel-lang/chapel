@@ -521,7 +521,7 @@ proc CyclicZipOptDom.dsiReprivatize(other, reprivatizeData) {
 proc CyclicZipOptDom.dsiBuildRectangularDom(param rank, type idxType,
                                     param stridable: bool,
                                     ranges: rank*range(idxType,
-                                                       BoundedRangeType.bounded,
+                                                       boundKind.both,
                                                        stridable)) {
   if idxType != dist.idxType then
     compilerError("CyclicZipOpt domain index type does not match distribution's");

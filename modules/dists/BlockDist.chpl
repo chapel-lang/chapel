@@ -1322,7 +1322,7 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
 {
   //
   // For the default rectangular array, this function changes the data

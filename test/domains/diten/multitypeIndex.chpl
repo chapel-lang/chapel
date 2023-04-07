@@ -1,5 +1,5 @@
-var r1: range(int(32), BoundedRangeType.bounded, false);
-var r2: range(int, BoundedRangeType.bounded, false);
+var r1: range(int(32), boundKind.both, false);
+var r2: range(int, boundKind.both, false);
 
 r1 = 1..4:int(32);
 r2 = 1..4;

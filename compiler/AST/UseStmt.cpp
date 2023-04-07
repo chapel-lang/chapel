@@ -64,10 +64,11 @@ UseStmt::UseStmt(BaseAST*                            source,
   VisibilityStmt(E_UseStmt) {
 
   this->isPrivate = isPrivate;
-  src    = NULL;
   this->modRename = astr(modRename);
   except = exclude;
   canReexport = true;
+  named = *args;
+  renamed = *renames;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -77,24 +78,7 @@ UseStmt::UseStmt(BaseAST*                            source,
 
   } else {
     INT_FATAL(this, "Bad mod in UseStmt constructor");
-  }
-
-  if (args->size() > 0) {
-    // Symbols to search when going through this module's scope from an outside
-    // scope
-    for_vector(const char, str, *args) {
-      named.push_back(str);
-    }
-  }
-
-  if (renames->size() > 0) {
-    // The new names of symbols in the module being used, to avoid conflicts
-    // for instance.
-    for (std::map<const char*, const char*>::iterator it = renames->begin();
-         it != renames->end();
-         ++it) {
-      renamed[it->first] = it->second;
-    }
+    src = nullptr; // dummy
   }
 
   gUseStmts.add(this);
@@ -175,6 +159,41 @@ bool UseStmt::hasExceptList() const {
 *                                                                             *
 ************************************** | *************************************/
 
+// Deprecated by Vass in 1.31: given `use BoundedRangeType`,
+// redirect it to `use boundKind`, with a deprecation warning.
+// This seems to handle `import BoundedRangeType` as well.
+static void checkRangeDeprecations(ResolveScope* scope, UseStmt* use,
+                                   SymAndReferencedName& symAndName) {
+  ModuleSymbol* mod = toModuleSymbol(symAndName.first);
+  if (mod != nullptr && mod->modTag == MOD_INTERNAL &&
+      !strcmp(symAndName.second, "BoundedRangeType")) {
+    if (use->renamed.size() > 0) {
+      // We could merge our conversion renamings with user renamings.
+      // However it is very unlikely that a user uses BoundedRangeType
+      // with renamings. So save the effort and bail out instead.
+      USR_FATAL(use,
+        "BoundedRangeType is deprecated; please use 'boundKind' instead");
+    }
+    // Given the implentation below, it is hard to issue warnings
+    // for individual naked uses of BoundedRangeType's enum constants.
+    // Instead, issue a blanket warning here.
+    // Note: the scope resolver has already warned about BoundedRangeType.
+    //USR_WARN(use,
+    //  "BoundedRangeType is deprecated; please use 'boundKind' instead");
+    USR_WARN(use,
+      "instead of BoundedRangeType.bounded,boundedLow,boundedHigh,boundedNone"
+      " please use boundKind.both,low,high,neither");
+    UnresolvedSymExpr* repl = new UnresolvedSymExpr("boundKind");
+    symAndName = scope->lookupForImport(repl, /* isUse */ true);
+    // expect both of the following to be the ChapelRange module
+    INT_ASSERT(symAndName.first->defPoint->parentSymbol == mod);
+    use->renamed[astr("bounded")    ] = astr("both");
+    use->renamed[astr("boundedLow") ] = astr("low");
+    use->renamed[astr("boundedHigh")] = astr("high");
+    use->renamed[astr("boundedNone")] = astr("neither");
+  }
+}
+
 void UseStmt::scopeResolve(ResolveScope* scope) {
   // 2017-05-28: isValid() does not currently return on failure
   if (isValid(src) == true) {
@@ -190,6 +209,8 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       SymAndReferencedName symAndName = scope->lookupForImport(src, /* isUse */
                                                                true);
       SET_LINENO(this);
+
+      checkRangeDeprecations(scope, this, symAndName);
 
       if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
         if (symAndName.second[0] != '\0') {
