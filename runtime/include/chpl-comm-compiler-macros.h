@@ -68,7 +68,8 @@ void chpl_gen_comm_get_gpu(c_sublocid_t to_subloc, void *addr,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
-  printf("get between sublocs %d %d\n", to_subloc, from_subloc);
+  //printf("get between sublocs %d %d\n", to_subloc, from_subloc);
+  printf("get between sublocs\n");
 }
 
 static inline
@@ -118,7 +119,8 @@ void chpl_gen_comm_put_gpu(c_sublocid_t from_subloc, void* addr,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
-  printf("put between sublocs %d %d\n", to_subloc, from_subloc);
+  //printf("put between sublocs %d %d\n", to_subloc, from_subloc);
+  printf("put between sublocs\n");
 }
 
 static inline

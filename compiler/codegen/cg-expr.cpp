@@ -3790,6 +3790,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   } else {
 
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
+      // or is this where we're supposed to handle the GPU comm?
       // Assign two wide pointers through a temporary.
 
       // Create a temporary, assign tmp = from,
@@ -3826,7 +3827,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          if (usingGpuLocaleModel()) {
+          if (usingGpuLocaleModel() && to_ptr.isLVPtr == GEN_WIDE_PTR) {
             codegenCall("chpl_gen_comm_get_gpu",
                         codegenRsubloc(to_ptr),
                         codegenCastToVoidStar(to_ptr),
@@ -3861,7 +3862,7 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          if (usingGpuLocaleModel()) {
+          if (usingGpuLocaleModel() && from.isLVPtr == GEN_WIDE_PTR) {
             codegenCall("chpl_gen_comm_put_gpu",
                         codegenRsubloc(from),
                         codegenCastToVoidStar(codegenValuePtr(from)),
