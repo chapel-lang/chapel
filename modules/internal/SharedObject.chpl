@@ -384,8 +384,7 @@ module SharedObject {
        as an expiring value. */
     @deprecated(notes="shared.create from an owned is deprecated - please use a combination of :proc:`owned.release<OwnedObject.owned.release>` and :proc:`shared.adopt` instead")
     inline proc type create(pragma "nil from arg" in take: owned) {
-      var result : shared = take;
-      return result;
+      return shared.adopt(owned.release(take));
     }
 
     /* Creates a new `shared` class reference to the argument.
