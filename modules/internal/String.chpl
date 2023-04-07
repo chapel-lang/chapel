@@ -396,16 +396,17 @@ module String {
 
     :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithBorrowedBuffer(x: string) : string {
+    return string.createWithBorrowedBuffer(x);
+  }
+
+  inline proc type string.createWithBorrowedBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.cachedNumCodepoints;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  inline proc type string.createWithBorrowedBuffer(x: string) : string {
-    return createStringWithBorrowedBuffer(x);
   }
 
   /*
@@ -424,6 +425,7 @@ module String {
 
     :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithBorrowedBuffer(x: c_string,
                                              length=x.size) : string throws {
     return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
@@ -432,7 +434,7 @@ module String {
 
   inline proc type string.createWithBorrowedBuffer(x: c_string,
                                              length=x.size) : string throws {
-    return createStringWithBorrowedBuffer(x, length);
+    return string.createWithBorrowedBuffer(x, length);
   }
 
   pragma "no doc"
@@ -476,7 +478,14 @@ module String {
 
      :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
+                                             length: int,
+                                             size: int) : string throws {
+    return string.createWithBorrowedBuffer(x, length, size);
+  }
+
+  proc type string.createWithBorrowedBuffer(x: c_ptr(?t),
                                              length: int,
                                              size: int) : string throws {
     if t != byteType && t != c_char {
@@ -486,12 +495,6 @@ module String {
     ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
     initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
-  }
-
-  inline proc type string.createWithBorrowedBuffer(x: c_ptr(?t),
-                                             length: int,
-                                             size: int) : string throws {
-    return createStringWithBorrowedBuffer(x, length, size);
   }
 
   pragma "no doc"
@@ -515,14 +518,17 @@ module String {
 
     :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithOwnedBuffer(x: c_string,
                                           length=x.size) : string throws {
     return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
   }
-  inline proc type string.createWithOwnedBuffer(x: c_string,
+
+  proc type string.createWithOwnedBuffer(x: c_string,
                                           length=x.size) : string throws {
-    return createStringWithOwnedBuffer(x, length);
+    return string.createWithOwnedBuffer(x:bufferType, length=length,
+                                        size=length+1);
   }
 
   /*
@@ -543,7 +549,14 @@ module String {
 
      :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
+                                          length: int,
+                                          size: int) : string throws {
+    return string.createWithOwnedBuffer(x, length, size);
+  }
+
+  inline proc type string.createWithOwnedBuffer(x: c_ptr(?t),
                                           length: int,
                                           size: int) : string throws {
     if t != byteType && t != c_char {
@@ -555,12 +568,6 @@ module String {
     return ret;
   }
 
-  inline proc type string.createWithOwnedBuffer(x: c_ptr(?t),
-                                          length: int,
-                                          size: int) : string throws {
-    return createStringWithOwnedBuffer(x, length, size);
-  }
-
   /*
     Creates a new string by creating a copy of the buffer of another string.
 
@@ -569,16 +576,13 @@ module String {
 
     :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithNewBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  inline proc type string.createWithNewBuffer(x: string) : string {
-    return createStringWithNewBuffer(x);
   }
 
   /*
@@ -603,15 +607,16 @@ module String {
 
     :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
                                         policy=decodePolicy.strict) : string throws {
-    return createStringWithNewBuffer(x: bufferType, length=length,
-                                     size=length+1, policy);
+    return string.createWithNewBuffer(x, length, policy);
   }
 
   inline proc type string.createWithNewBuffer(x: c_string, length=x.size,
                                         policy=decodePolicy.strict) : string throws {
-    return createStringWithNewBuffer(x, length, policy);
+    return string.createWithNewBuffer(x: bufferType, length=length,
+                                     size=length+1, policy);
 
   }
 
@@ -639,7 +644,14 @@ module String {
 
      :returns: A new `string`
   */
+  @deprecated
   inline proc createStringWithNewBuffer(x: c_ptr(?t),
+                                        length: int, size=length+1,
+                                        policy=decodePolicy.strict) : string throws {
+    return string.createWithNewBuffer(x, length, size, policy);
+  }
+
+  proc type string.createWithNewBuffer(x: c_ptr(?t),
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) : string throws {
     if t != byteType && t != c_char {
@@ -649,12 +661,6 @@ module String {
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
     return decodeByteBuffer(x:bufferType, length, policy);
-  }
-
-  inline proc type string.createWithNewBuffer(x: c_ptr(?t),
-                                        length: int, size=length+1,
-                                        policy=decodePolicy.strict) : string throws {
-    return createStringWithNewBuffer(x, length, size, policy);
   }
 
   // non-validating string factory functions are in this submodule. This
@@ -1138,7 +1144,7 @@ module String {
   */
   inline proc string.localize() : string {
     if _local || this.locale_id == chpl_nodeID {
-      return createStringWithBorrowedBuffer(this);
+      return string.createWithBorrowedBuffer(this);
     } else {
       const x:string = this; // assignment makes it local
       return x;
@@ -2386,7 +2392,7 @@ module String {
   pragma "no doc"
   operator :(cs: c_string, type t: string)  {
     try {
-      return createStringWithNewBuffer(cs);
+      return string.createWithNewBuffer(cs);
     }
     catch {
       halt("Casting a non-UTF-8 c_string to string");
