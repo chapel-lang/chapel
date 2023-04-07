@@ -45,14 +45,15 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithBorrowedBuffer(x: bytes) : bytes {
+    return bytes.createWithBorrowedBuffer(x);
+  }
+
+  inline proc bytes.createWithBorrowedBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  inline proc type bytes.createWithBorrowedBuffer(x: bytes) : bytes {
-    return createBytesWithBorrowedBuffer(x);
   }
 
   /*
@@ -68,15 +69,16 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithBorrowedBuffer(x: c_string,
                                             length=x.size) : bytes {
-    return bytes.createWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
-                                                           size=length+1);
+    return bytes.createWithBorrowedBuffer(x, length=length);
   }
 
   inline proc type bytes.createWithBorrowedBuffer(x: c_string,
                                             length=x.size) : bytes {
-    return createBytesWithBorrowedBuffer(x, length);
+    return bytes.createWithBorrowedBuffer(x:bufferType, length=length,
+                                          size=length+1);
   }
 
   pragma "no doc"
@@ -111,19 +113,20 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int,
                                             size: int) : bytes {
+    return bytes.createWithBorrowedBuffer(x, length, size);
+  }
+
+  inline proc type bytes.createWithBorrowedBuffer(x: c_ptr(?t), length: int,
+                                                  size: int) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
     var ret: bytes;
     initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
-  }
-
-  inline proc type bytes.createWithBorrowedBuffer(x: c_ptr(?t), length: int,
-                                            size: int) : bytes {
-    return createBytesWithBorrowedBuffer(x, length, size);
   }
 
   pragma "no doc"
@@ -144,13 +147,14 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithOwnedBuffer(x: bufferType, length=length,
-                                                      size=length+1);
+    return bytes.createWithOwnedBuffer(x, length);
   }
 
   inline proc type bytes.createWithOwnedBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithOwnedBuffer(x, length);
+    return bytes.createWithOwnedBuffer(x: bufferType, length=length,
+                                       size=length+1);
   }
 
   /*
@@ -167,7 +171,13 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int,
+                                         size: int) : bytes {
+    return bytes.createWithOwnedBuffer(x, length, size);
+  }
+
+  inline proc type bytes.createWithOwnedBuffer(x: c_ptr(?t), length: int,
                                          size: int) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
@@ -175,11 +185,6 @@ module Bytes {
     var ret: bytes;
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
-  }
-
-  inline proc type bytes.createWithOwnedBuffer(x: c_ptr(?t), length: int,
-                                         size: int) : bytes {
-    return createBytesWithOwnedBuffer(x, length, size);
   }
 
   /*
@@ -190,14 +195,11 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithNewBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  inline proc type bytes.createWithNewBuffer(x: bytes) : bytes {
-    return createBytesWithNewBuffer(x);
   }
 
   /*
@@ -211,13 +213,14 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithNewBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithNewBuffer(x: bufferType, length=length,
-                                                    size=length+1);
+    return bytes.createWithNewBuffer(x, length);
   }
 
   inline proc type bytes.createWithNewBuffer(x: c_string, length=x.size) : bytes {
-    return createBytesWithNewBuffer(x, length);
+    return bytes.createWithNewBuffer(x: bufferType, length=length,
+                                     size=length+1);
   }
 
   /*
@@ -232,7 +235,13 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
+  @deprecated
   inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
+                                       size=length+1) : bytes {
+    return bytes.createWithNewBuffer(x, length, size);
+  }
+
+  inline proc type bytes.createWithNewBuffer(x: c_ptr(?t), length: int,
                                        size=length+1) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
@@ -240,11 +249,6 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
-  }
-
-  inline proc type bytes.createWithNewBuffer(x: c_ptr(?t), length: int,
-                                       size=length+1) : bytes {
-    return createBytesWithNewBuffer(x, length, size);
   }
 
   pragma "no doc"
