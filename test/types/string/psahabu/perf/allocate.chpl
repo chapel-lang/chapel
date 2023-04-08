@@ -61,7 +61,7 @@ if testType == types.byteString {
 }
 else {
   for i in 1..n {
-    var copy = createStringWithNewBuffer(copied);
+    var copy = string.createWithNewBuffer(copied);
     keepAlive += copy.buffLen;
   }
 }

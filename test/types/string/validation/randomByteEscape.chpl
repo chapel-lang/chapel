@@ -25,7 +25,7 @@ for i in 1..nIterations {
   try {
      randomEscapedString =
         if useFactory then
-          createStringWithNewBuffer(buf, length=nBytes, size=nBytes+1,
+          string.createWithNewBuffer(buf, length=nBytes, size=nBytes+1,
                                     policy=decodePolicy.escape)
         else
           randomBytes.decode(policy=decodePolicy.escape);

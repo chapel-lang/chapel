@@ -50,7 +50,7 @@ module OuterModule {
   var str:c_string;
   setString(c_ptrTo(str));
   try {
-    writeln(createStringWithNewBuffer(str));
+    writeln(string.createWithNewBuffer(str));
   }
   catch e:DecodeError {
     writeln("Decode error creating string");

@@ -205,9 +205,9 @@ module unitTest {
       const cs: c_string = "0";
       try! {
         if useExpr {
-          writeMe(s+createStringWithNewBuffer(cs));
+          writeMe(s+string.createWithNewBuffer(cs));
         } else {
-          const scs = s+createStringWithNewBuffer(cs);
+          const scs = s+string.createWithNewBuffer(cs);
           writeMe(scs);
         }
       }
@@ -223,9 +223,9 @@ module unitTest {
       const s: t = "0";
       try! {
         if useExpr {
-          writeMe(createStringWithNewBuffer(cs)+s);
+          writeMe(string.createWithNewBuffer(cs)+s);
         } else {
-          const css = createStringWithNewBuffer(cs)+s;
+          const css = string.createWithNewBuffer(cs)+s;
           writeMe(css);
         }
       }
@@ -242,9 +242,9 @@ module unitTest {
         const cs: c_string = "r";
         try! {
           if useExpr {
-            writeMe(s+createStringWithNewBuffer(cs));
+            writeMe(s+string.createWithNewBuffer(cs));
           } else {
-            const scs = s+createStringWithNewBuffer(cs);
+            const scs = s+string.createWithNewBuffer(cs);
             writeMe(scs);
           }
         }
@@ -262,9 +262,9 @@ module unitTest {
         const cs: c_string = "s";
         try! {
           if useExpr {
-            writeMe(createStringWithNewBuffer(cs)+s);
+            writeMe(string.createWithNewBuffer(cs)+s);
           } else {
-            const css = createStringWithNewBuffer(cs)+s;
+            const css = string.createWithNewBuffer(cs)+s;
             writeMe(css);
           }
         }
