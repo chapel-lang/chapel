@@ -36,7 +36,7 @@ extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
   var value = getenv(cname);
-  return createStringWithNewBuffer(value);
+  return string.createWithNewBuffer(value);
 }
 
 
