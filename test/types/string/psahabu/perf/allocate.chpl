@@ -55,7 +55,7 @@ var copied = if testType == types.utf8String then "mañana"
 if timing then tCopy.start();
 if testType == types.byteString {
   for i in 1..n {
-    var copy = createBytesWithNewBuffer(copied);
+    var copy = bytes.createWithNewBuffer(copied);
     keepAlive += copy.buffLen;
   }
 }

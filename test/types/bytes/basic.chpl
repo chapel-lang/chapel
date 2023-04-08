@@ -10,8 +10,8 @@ writeln();
 
 // TEST INITIALIZERS
 writeln("Initializer tests");
-var b_from_s = createBytesWithNewBuffer(s:bytes);
-var b_from_cs = createBytesWithNewBuffer(cs);
+var b_from_s = bytes.createWithNewBuffer(s:bytes);
+var b_from_cs = bytes.createWithNewBuffer(cs);
 
 var c_char_arr = c_malloc(uint(8), 4);
 c_char_arr[0] = 65; //A
@@ -20,7 +20,7 @@ c_char_arr[2] = 67; //C
 c_char_arr[3] = 0;
 
 //length and size are in bytes
-var b_from_c_ptr = createBytesWithNewBuffer(c_char_arr, length=3, size=4);
+var b_from_c_ptr = bytes.createWithNewBuffer(c_char_arr, length=3, size=4);
 
 writeln("bytes object from string: ", b_from_s);
 writeln("bytes object from c_string: ", b_from_cs);

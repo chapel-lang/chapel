@@ -14,7 +14,7 @@ for i in 1..nIterations {
   }
   buf[nBytes] = 0;
 
-  const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+  const randomBytes = bytes.createWithOwnedBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
   if randomBytes.size != nBytes {
