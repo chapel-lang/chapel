@@ -2376,7 +2376,7 @@ module String {
     qio_encode_char_buf(buffer, i);
     buffer[mblength] = 0;
     try! {
-      return createStringWithOwnedBuffer(buffer, mblength, mbsize);
+      return string.createWithOwnedBuffer(buffer, mblength, mbsize);
     }
   }
 
