@@ -31,7 +31,7 @@ if errorCase == 1 {
 }
 
 var hi_c = c"hi";
-var ss = string.createWithNewBuffer(hi_c)+ createStringWithNewBuffer(hi_c);
+var ss = string.createWithNewBuffer(hi_c)+ string.createWithNewBuffer(hi_c);
 var s = ss.c_str();
 
 f(string.createWithNewBuffer(s));
