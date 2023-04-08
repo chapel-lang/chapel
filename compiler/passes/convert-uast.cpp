@@ -456,11 +456,6 @@ struct Converter {
 
           // handle other Identifiers
           Symbol* sym = findConvertedSym(id);
-          if (sym == nullptr) {
-            // we will fix it later
-            sym = new TemporaryConversionSymbol(id);
-          }
-
           SymExpr* se = new SymExpr(sym);
           Expr* ret = se;
 
@@ -4305,7 +4300,7 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
            id.str().c_str(), inSymbolId.str().c_str());
   }
 
-  return nullptr;
+  return new TemporaryConversionSymbol(id);
 }
 
 FnSymbol* ConvertedSymbolsMap::findConvertedFn(
