@@ -273,3 +273,22 @@ equivalent replacement for the default initializer, which is a burden.
    var f2 = new Foo(newName=30); // Still works without warning
    var f3 = new Foo(30); // Still works without warning
    var f4 = new Foo(); // Still works without warning
+
+Support for specifying the type ``Foo(oldName=...)``
+and for field queries like ``proc p(arg: Foo(oldName=?n))``
+was implemented for the particular case of renaming ``range.boundedType``
+to ``range.bounds`` with ad-hoc compiler changes in PR #22059.
+GitHub Issue #22069 requests user-facing support for this feature.
+
+Renaming An Enum Type
++++++++++++++++++++++
+
+Renaming an enum while deprecating the old name can be done
+by making the old enum name a ``type`` alias to the new enum name,
+and replacing the old constants with param-returning methods
+on the new enum type.
+Support for ``use oldName;`` was implemented for the particular case
+of renaming ``enum BoundedRangeType`` to ``enum boundKind``
+with ad-hoc compiler changes in PR #22059.
+GitHub Issue #22069 requests user-facing support for this feature.
+
