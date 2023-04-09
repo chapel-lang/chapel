@@ -1,4 +1,4 @@
-proc writeme(r:range(?)) where isBoundedRange(r) {
+proc writeme(r:range(?)) {
   write(r.lowBound, "..", r.highBound);
   if r.stridable {
     write(" by ", r.stride);

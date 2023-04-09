@@ -656,7 +656,7 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
+                                   if ``x`` does not have both bounds
      */
      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
@@ -1170,14 +1170,14 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
+                                   if ``x`` does not have both bounds
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         var dom: domain(1,stridable=true);
 
-        if !isBoundedRange(x) {
+        if x.boundedType != BoundedRangeType.bounded {
           compilerError('input range must be bounded');
         } else {
           dom = {x};

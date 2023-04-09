@@ -187,7 +187,7 @@ module ChapelDomain {
       if ranges(0).idxType != ranges(i).idxType then
         compilerError("idxType varies among domain's dimensions");
     for param i in 0..rank-1 do
-      if ! isBoundedRange(ranges(i)) then
+      if ranges(i).boundedType != BoundedRangeType.bounded then
         compilerError("one of domain's dimensions is not a bounded range");
     var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
     d.setIndices(ranges);
