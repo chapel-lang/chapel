@@ -932,7 +932,7 @@ module ChapelRange {
       if _low > _high then return 0;
     }
 
-    if !this.boundedType == BoundedRangeType.bounded && isFiniteIdxType(idxType) {
+    if this.boundedType != BoundedRangeType.bounded && isFiniteIdxType(idxType) {
       return sizeAsHelp(t,
                         this.chpl_alignedLowAsIntForIter,
                         this.chpl_alignedHighAsIntForIter);
@@ -2973,7 +2973,7 @@ operator :(r: range(?), type t: range(?)) {
       if boundsChecking {
         if this.hasLast() {
           // this check is for typechecking only
-          if !this.boundedType == BoundedRangeType.bounded then
+          if this.boundedType != BoundedRangeType.bounded then
             assert(false, "hasFirst && hasLast do not imply a range is bounded");
         }
         if flwlen != 0 then
