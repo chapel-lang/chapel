@@ -756,7 +756,7 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+                           ranges: rank*range(idxType, boundKind.both,stridable),
                            definedConst: bool = false) {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
 
@@ -770,7 +770,7 @@ module ChapelArray {
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
                            definedConst: bool = false) {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var ranges: rank*range(idxType, boundKind.both, stridable);
       return newRectangularDom(rank, idxType, stridable, ranges, definedConst);
     }
 

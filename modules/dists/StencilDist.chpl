@@ -609,6 +609,7 @@ proc Stencil.getChunk(inds, locid) {
   // TODO: Should this be able to be written as myChunk[inds] ???
   //
   // TODO: Does using David's detupling trick work here?
+  // see Block.getChunk
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
@@ -1711,7 +1712,7 @@ proc StencilArr.updateFluff() {
   }
 }
 
-override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
 {
   //
   // For the default rectangular array, this function changes the data

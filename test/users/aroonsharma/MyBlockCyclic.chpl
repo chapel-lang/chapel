@@ -290,7 +290,7 @@ class LocMyBlockCyclic {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+  const myStarts: rank*range(idxType, boundKind.low, stridable=true);
 
   //
   // Constructor computes what chunk of index(1) is owned by the
@@ -541,7 +541,7 @@ override proc MyBlockCyclicDom.dsiIndexOrder(i) {
 proc MyBlockCyclicDom.dsiBuildRectangularDom(param rank: int, type idxType,
                                          param stridable: bool,
                                          ranges: rank*range(idxType,
-                                                            BoundedRangeType.bounded,
+                                                            boundKind.both,
                                                             stridable)) {
   if idxType != dist.idxType then
     compilerError("MyBlockCyclic domain index type does not match distribution's");

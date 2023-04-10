@@ -4069,12 +4069,9 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     delete candidate;
   }
 
-  if (retval && retval->hasFlag(FLAG_DEPRECATED)) {
-    retval->generateDeprecationWarning(info.call);
-  }
-
-  if (retval && retval->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-    retval->generateUnstableWarning(info.call);
+  if (retval) {
+    retval->maybeGenerateDeprecationWarning(info.call);
+    retval->maybeGenerateUnstableWarning(info.call);
   }
 
   return retval;

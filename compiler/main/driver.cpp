@@ -198,6 +198,8 @@ bool fWarnArrayOfRange = true;
 bool fWarnConstLoops = true;
 bool fWarnIntUint = false;
 bool fWarnUnstable = false;
+bool fWarnUnstableStandard = false;
+bool fWarnUnstableInternal = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -326,6 +328,7 @@ bool fPrintChplSettings = false;
 bool fDetailedErrors = false;
 
 bool fDynoCompilerLibrary = false;
+bool fDynoScopeResolve = true;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
@@ -1286,10 +1289,11 @@ static ArgumentDescription arg_desc[] = {
  {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
-
+ {"warn-unstable-internal", ' ', NULL, "Enable [disable] unstable warnings in internal modules", "N", &fWarnUnstableInternal, NULL, NULL},
+ {"warn-unstable-standard", ' ', NULL, "Enable [disable] unstable warnings in standard modules", "N", &fWarnUnstableStandard, NULL, NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, NULL, NULL},
-
  {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-scope-resolve", ' ', NULL, "Enable [disable] using dyno for scope resolution", "N", &fDynoScopeResolve, "CHPL_DYNO_SCOPE_RESOLVE", NULL},
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
@@ -1632,9 +1636,12 @@ static void setPrintCppLineno() {
 }
 
 static void setGPUFlags() {
-  bool isGpuCodegen = usingGpuLocaleModel();
-
-  if(isGpuCodegen) {
+  if(usingGpuLocaleModel()) {
+    if (fWarnUnstable) {
+      USR_WARN("GPU support is under active development. As such, the"
+               " interface is unstable and expected to change in the"
+               " forthcoming releases.");
+    }
     if (!fNoChecks) {
       USR_WARN("The prototype GPU support implies --no-checks."
                " This may impact debuggability. To suppress this warning,"
@@ -1893,6 +1900,10 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   // Configure compilation flags for the context.
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
+  flags.set(chpl::CompilerFlags::WARN_UNSTABLE_INTERNAL,
+            fWarnUnstableInternal);
+  flags.set(chpl::CompilerFlags::WARN_UNSTABLE_STANDARD,
+            fWarnUnstableStandard);
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);

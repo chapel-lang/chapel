@@ -5,7 +5,7 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-interop"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda.interop"
 
 export CHPL_COMM_SUBSTRATE=ibv
 

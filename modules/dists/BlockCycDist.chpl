@@ -452,7 +452,7 @@ class LocBlockCyclic {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+  const myStarts: rank*range(idxType, boundKind.low, stridable=true);
 
   //
   // Initializer computes what chunk of index(0) is owned by the
@@ -465,7 +465,7 @@ class LocBlockCyclic {
     this.rank = rank;
     this.idxType = idxType;
 
-    var myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+    var myStarts: rank*range(idxType, boundKind.low, stridable=true);
       for param i in 0..rank-1 {
         const locid_i = if isTuple(locid) then locid(i) else locid;
         const lo = lowIdx(i) + (locid_i * blocksize(i));

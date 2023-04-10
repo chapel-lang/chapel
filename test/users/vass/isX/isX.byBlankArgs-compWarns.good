@@ -247,17 +247,17 @@ isUnionValue
 isUnionType
   isX.byBlankArgs-compWarns.chpl:213: called as test(arg: UnionType)
 
-range(int(64),bounded,false)
+range(int(64),both,false)
 isRange
 isRangeValue
 isRangeType
-  isX.byBlankArgs-compWarns.chpl:214: called as test(arg: range(int(64),bounded,false))
+  isX.byBlankArgs-compWarns.chpl:214: called as test(arg: range(int(64),both,false))
 
-range(uint(8),boundedNone,true)
+range(uint(8),neither,true)
 isRange
 isRangeValue
 isRangeType
-  isX.byBlankArgs-compWarns.chpl:215: called as test(arg: range(uint(8),boundedNone,true))
+  isX.byBlankArgs-compWarns.chpl:215: called as test(arg: range(uint(8),neither,true))
 
 DefaultDist
 isDmap

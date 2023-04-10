@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-queries.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
@@ -455,7 +456,8 @@ struct LookupHelper {
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
                              bool onlyInnermost,
-                             bool skipPrivateVisibilities);
+                             bool skipPrivateVisibilities,
+                             bool onlyMethodsFields);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -643,7 +645,8 @@ bool LookupHelper::doLookupInImportsAndUses(
 bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
-                                         bool skipPrivateVisibilities) {
+                                         bool skipPrivateVisibilities,
+                                         bool onlyMethodsFields) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -656,6 +659,10 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
+      }
+
+      if (onlyMethodsFields) {
+        newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
       }
 
       if (trace) {
@@ -968,7 +975,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(scope, name,
-                                 onlyInnermost, skipPrivateVisibilities);
+                                 onlyInnermost,
+                                 skipPrivateVisibilities,
+                                 onlyMethodsFields);
     if (onlyInnermost && got) return true;
   }
 
@@ -1635,6 +1644,30 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
+  // Added to help deprecate BoundedRangeType in 1.31.
+  // Pattern match the case `use ABC` where ABC is a parenless type function
+  // with a single statement `return XYZ`. If so, treat it as `use XYZ`,
+  // resolving `XYZ` in the scope where the function is defined.
+  if (isFunction(tag)) {
+    auto function = parsing::idToAst(context, foundId)->toFunction();
+    if (function->isParenless() && !function->isMethod() &&
+        function->returnIntent() == Function::ReturnIntent::TYPE) {
+      if (auto block = function->body()->toBlock()) {
+        if (block->numStmts() == 1) {
+          if (auto return_ = block->child(0)->toReturn()) {
+            if (auto ident = return_->value()->toIdentifier()) {
+              auto functionScope = scopeForId(context, foundId);
+              maybeEmitWarningsForId(context, idForErrs, functionScope->id());
+              return findScopeViz(context, functionScope, ident->name(),
+                  resolving, idForErrs, useOrImport, isFirstPart,
+                  previousPartName);
+            }
+          }
+        }
+      }
+    }
+  }
 
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {

@@ -1,8 +1,8 @@
+unstable_module.chpl:6: warning: This Matrix which uses 'Linear Algebra' is unstable
+unstable_module.chpl:7: warning: This Matrix which uses 'Linear Algebra' is unstable
 unstable_module.chpl:14: warning: This Matrix which uses 'Linear Algebra' is unstable
 unstable_module.chpl:15: warning: This Matrix which uses 'Linear Algebra' is unstable
 unstable_module.chpl:18: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:6: warning: This Matrix which uses 'Linear Algebra' is unstable
-unstable_module.chpl:7: warning: This Matrix which uses 'Linear Algebra' is unstable
 3 3 3 3
 3 3 3 3
 3 3 3 3

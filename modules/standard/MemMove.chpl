@@ -373,8 +373,8 @@ module MemMove {
        (isRange(srcRegion) && src.rank > 1) then
       compilerError("'moveArrayElements' does not accept range regions for arrays with more than 1 dimension", 2);
 
-    if (isRange(dstRegion) && dstRegion.boundedType != BoundedRangeType.bounded) ||
-       (isRange(srcRegion) && srcRegion.boundedType != BoundedRangeType.bounded) then
+    if (isRange(dstRegion) && dstRegion.bounds != boundKind.both) ||
+       (isRange(srcRegion) && srcRegion.bounds != boundKind.both) then
       compilerError("'moveArrayElements' does not accept unbounded ranges", 2);
 
     proc _idxHelper(A, B, param Aname: string, param Bname: string) {

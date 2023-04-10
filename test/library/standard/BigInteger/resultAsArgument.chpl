@@ -455,6 +455,14 @@ use BigInteger;
   writeln(b);
 }
 {
+  // test the swap behavior where op2 has more limbs than op1
+  write("ior ");
+  var a = new bigint(10);
+  var b = new bigint("1267650600228229401496703205376"); // 2**100
+  ior(a, a, b);
+  writeln(a);
+}
+{
   write("xor ");
   var a = new bigint(5);
   var b = new bigint(6);

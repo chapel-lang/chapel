@@ -768,7 +768,7 @@ module ChapelDomain {
   operator by(a: domain, b) {
     errorIfNotRectangular(a, "by");
     var r: a.rank*range(a._value.idxType,
-                      BoundedRangeType.bounded,
+                      boundKind.both,
                       true);
     var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
@@ -783,7 +783,7 @@ module ChapelDomain {
   operator align(a: domain, b) {
     errorIfNotRectangular(a, "align");
     var r: a.rank*range(a._value.idxType,
-                      BoundedRangeType.bounded,
+                      boundKind.both,
                       a.stridable);
     var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
@@ -996,7 +996,7 @@ module ChapelDomain {
               param rank : int,
               type idxType = int,
               param stridable: bool = false,
-              ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+              ranges: rank*range(idxType, boundKind.both,stridable),
               definedConst: bool = false) {
       this.init(d.newRectangularDom(rank, idxType, stridable, ranges,
                 definedConst));
@@ -1200,7 +1200,7 @@ module ChapelDomain {
     where chpl__isTupleOfRanges(ranges) {
       param stridable = _value.stridable || chpl__anyStridable(ranges);
       var r: rank*range(_value.idxType,
-                        BoundedRangeType.bounded,
+                        boundKind.both,
                         stridable);
       const myDims = dims();
 

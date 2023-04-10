@@ -1,5 +1,5 @@
 use BigInteger;
-import round; // avoid conflict with Math.round
+import BigInteger.round; // avoid conflict with Math.round
 
 // Tests the division functions
 var a = new bigint(  8);

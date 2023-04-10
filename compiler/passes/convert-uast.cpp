@@ -4436,7 +4436,7 @@ convertToplevelModule(chpl::Context* context,
   astlocMarker markAstLoc(mod->id());
   Converter c(context, modTag);
 
-  c.canScopeResolve = fDynoCompilerLibrary;
+  c.canScopeResolve = fDynoScopeResolve;
   c.trace = fDynoDebugTrace;
 
   ModuleSymbol* ret = c.convertModule(mod);

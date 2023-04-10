@@ -7656,7 +7656,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     const tSize = c_sizeof(t) : c_ssize_t;
 
     if endian == ioendian.native && data.locale == this._home && data.isDefaultRectangular() {
-      e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
+      e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
       if e != 0 then
         throw createSystemOrChplError(e);
@@ -7965,7 +7965,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
@@ -7974,25 +7974,31 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    for (i, b) in zip(data.domain, data) {
-      select (endian) {
-        when ioendian.native {
-          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
-        }
-        when ioendian.big {
-          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
-        }
-        when ioendian.little {
-          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
-        }
-      }
+    if data.locale == this._home && data.isDefaultRectangular() && endian == ioendian.native {
+      e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
 
-      if e == EEOF {
-        break;
-      } else if e != 0 {
-        throw createSystemOrChplError(e);
-      } else {
-        numRead += 1;
+      if e != 0 && e != EEOF then throw createSystemOrChplError(e);
+    } else {
+       for (i, b) in zip(data.domain, data) {
+        select (endian) {
+          when ioendian.native {
+            e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+          }
+          when ioendian.big {
+            e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+          }
+          when ioendian.little {
+            e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+          }
+        }
+
+        if e == EEOF {
+          break;
+        } else if e != 0 {
+          throw createSystemOrChplError(e);
+        } else {
+          numRead += 1;
+        }
       }
     }
   }
@@ -8022,7 +8028,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
-  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var rv: bool = false;

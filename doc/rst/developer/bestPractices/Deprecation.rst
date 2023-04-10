@@ -86,7 +86,7 @@ Changing A Function's Return Type
 When nothing about a function except its return type needs to change, it can
 be tricky for a user to opt in to the new behavior.
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("foo returning 'int' is deprecated")
    proc foo(): int { ... }
@@ -98,7 +98,7 @@ be tricky for a user to opt in to the new behavior.
 In this situation, we recommend adding a ``config param`` and a ``where`` clause
 that responds to it to the deprecated function and its replacement:
 
-.. code-block:: text
+.. code-block:: chapel
 
    // The default state should result in the deprecated behavior, so users can
    // adjust their code at their leisure
@@ -115,7 +115,7 @@ that responds to it to the deprecated function and its replacement:
 When the deprecated function is removed, the flag should also be deprecated (and
 removed from the new function to avoid generating noise for the user):
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("'fooReturnsBool' is deprecated and no longer has an effect")
    config param fooReturnsBool = false;
@@ -136,7 +136,7 @@ When only the name of a function argument needs to change and not its type, a
 new overload will encounter conflicts when a user relies solely on positional
 ordering:
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("argument name 'a' is deprecated, use 'b' instead")
    proc foo(a: int) { ... }
@@ -159,7 +159,7 @@ resort"`` - this will avoid conflicts in the positional ordering case while
 still keeping the old argument name available to generate the deprecation
 warning:
 
-.. code-block:: text
+.. code-block:: chapel
 
    pragma "last resort"
    @deprecated("argument name 'a' is deprecated, use 'b' instead")
@@ -240,7 +240,7 @@ support for opting in to maintaining the default initializer (which is planned
 but not currently implemented), this will also require the addition of an
 equivalent replacement for the default initializer, which is a burden.
 
-.. code-block:: text
+.. code-block:: chapel
 
    record Foo {
      var newName: int;
