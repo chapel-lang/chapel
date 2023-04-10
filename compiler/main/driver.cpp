@@ -1555,8 +1555,11 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
         break;
+      case GpuCodegenType::GPU_CG_NONE:
+        gGpuSdkPath = "";
+        break;
       default:
-        INT_ASSERT(0 && "Should be unreachable");
+        INT_FATAL("Unknown value returned from getGpuCodegenType()");
     }
   }
 

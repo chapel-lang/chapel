@@ -104,9 +104,13 @@ GpuCodegenType getGpuCodegenType() {
     INT_ASSERT(usingGpuLocaleModel());
     if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
-    } else {
-      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "rocm")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
+    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "none")) {
+      return GpuCodegenType::GPU_CG_NONE;
+    } else {
+      INT_FATAL("Unknown value for CHPL_GPU_CODEGEN.");
+      return GpuCodegenType::GPU_CG_NONE;
     }
   }();
   return cached;
