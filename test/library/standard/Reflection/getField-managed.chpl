@@ -1,9 +1,10 @@
 use Reflection;
-proc test(const ref obj) {
+proc test(in obj) {
   writeln("===== ", obj.type:string);
   writeln("  numFields       ", numFields(obj.type)            :string);
   writeln("  getFieldName    ", getFieldName(obj.type, 5)             );
-  writeln("  getField        ", getField(obj, 5)         :string);
+  writeln("  getField        ", getField(obj, 5)               :string);
+  writeln("  getFieldRef     ", getFieldRef(obj, 5)             :string);
   writeln("  hasField        ", hasField(obj.type, "f6")       :string);
   writeln("  getFieldIndex   ", getFieldIndex(obj.type, "f6")  :string);
   writeln("  isFieldBound 5  ", isFieldBound(obj.type, 5)      :string);
