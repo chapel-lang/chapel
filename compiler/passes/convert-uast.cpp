@@ -4367,7 +4367,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
-    if (sym == nullptr) {
+    if (isTemporaryConversionSymbol(sym)) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
