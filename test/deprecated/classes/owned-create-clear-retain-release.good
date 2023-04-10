@@ -1,5 +1,5 @@
 owned-create-clear-retain-release.chpl:8: warning: owned.create from an unmanaged is deprecated - please use owned.adopt instead
 owned-create-clear-retain-release.chpl:13: warning: owned.create from an owned is deprecated - please use assignment instead
-owned-create-clear-retain-release.chpl:18: warning: owned.clear is deprecated - please assign owned object to `nil` instead
+owned-create-clear-retain-release.chpl:18: warning: owned.clear is deprecated - please assign `nil` to the owned object instead
 owned-create-clear-retain-release.chpl:24: warning: owned.retain is deprecated - please use owned.adopt instead
 owned-create-clear-retain-release.chpl:29: warning: owned.release is deprecated - please use the owned.release type method instead

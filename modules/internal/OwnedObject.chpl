@@ -232,7 +232,7 @@ module OwnedObject {
        Deletes the previously managed object, if any.
      */
     pragma "leaves this nil"
-    @deprecated(notes="owned.clear is deprecated - please assign owned object to `nil` instead")
+    @deprecated(notes="owned.clear is deprecated - please assign `nil` to the owned object instead")
     proc ref clear() {
       if chpl_p != nil {
         delete _to_unmanaged(chpl_p);
