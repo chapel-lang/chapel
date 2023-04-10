@@ -3,7 +3,6 @@ import os
 import glob
 import json
 import chpl_locale_model
-import chpl_llvm
 import re
 from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
@@ -20,10 +19,9 @@ def _validate_rocm_version():
 #   Default GPU architecure for the vendor
 #   LLVM target
 GPU_TYPES = {
-    "cuda": ("CHPL_CUDA_PATH", "nvcc",  2,"sm_60",  "NVPTX",
-             _validate_cuda_version),
-    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU",
-             _validate_rocm_version)
+    "cuda": ("CHPL_CUDA_PATH", "nvcc", 2, "sm_60", "NVPTX"),
+    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU"),
+    "none": ("NONE", "none", 1, "none", "none", none)
 }
 
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
@@ -71,7 +69,7 @@ def get_arch():
 
     # No arch if GPU is not being used.
     if gpu_type == 'none':
-        return ''
+        return 'none'
 
     # Check if user is overriding the arch.
     arch = os.environ.get("CHPL_GPU_ARCH")
@@ -88,7 +86,7 @@ def get_sdk_path(for_gpu):
 
     # No SDK path if GPU is not being used.
     if gpu_type == 'none':
-        return ''
+        return 'none'
 
     # Check vendor-specific environment variable for SDK path
     gpu_variable, gpu_program, gpu_bin_depth, _, _, _ = GPU_TYPES[for_gpu]
@@ -136,7 +134,7 @@ def get_cuda_libdevice_path():
         else:
             return libdevices[0]
 
-    return ""
+    return "none"
 
 
 def get_runtime():

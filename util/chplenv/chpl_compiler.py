@@ -5,6 +5,7 @@ import os
 import sys
 
 import chpl_platform, chpl_locale_model, overrides
+from chpl_gpu import get_runtime
 from utils import which, error, memoize, warning
 
 
@@ -24,9 +25,10 @@ def validate_compiler(compiler_val, flag):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
 
     if chpl_locale_model.get() == 'gpu' and flag == 'target':
-        if compiler_val != 'llvm':
-            error("The 'gpu' locale model can only be used with "
-                  "CHPL_TARGET_COMPILER=llvm.")
+        if get_runtime() != 'none':
+            if compiler_val != 'llvm':
+                error("The 'gpu' locale model can only be used with "
+                      "CHPL_TARGET_COMPILER=llvm.")
 
 
 
