@@ -121,6 +121,10 @@ bool usingGpuLocaleModel() {
   return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
 }
 
+bool doGpuCodegen() {
+  return 0 != strcmp(CHPL_GPU_CODEGEN, "none");
+}
+
 bool forceWidePtrsForLocal() {
   // For the gpu (for now) we don't want wide pointers inside kernel
   // functions (which we consider a local block) but we still want
