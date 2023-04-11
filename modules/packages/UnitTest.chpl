@@ -1034,7 +1034,7 @@ module UnitTest {
         }
       }
       if !canRun {
-        const errorMsg = "Required Locales = %t".format(",".join(this.dictDomain));
+        const errorMsg = "Required Locales = {%t}".format(", ".join([i in this.dictDomain] i:string));
         throw new owned TestIncorrectNumLocales(errorMsg);
       }
     }
@@ -1338,16 +1338,16 @@ module UnitTest {
       }
     }
     catch e: TestSkipped {
-      testResult.addSkip(testName, e.message());
+      testResult.addSkip(testName, "TestSkipped: " + e.message());
       testsSkipped.replace(testName, true);
       // Print info on test skipped
     }
     catch e: TestIncorrectNumLocales {
-      testResult.addIncorrectNumLocales(testName, e.message());
+      testResult.addIncorrectNumLocales(testName, "TestIncorrectNumLocales: " + e.message());
       testsLocalFails.replace(testName, true);
     }
     catch e: UnexpectedLocales {
-      testResult.addFailure(testName, e.message());
+      testResult.addFailure(testName, "UnexpectedLocales: " + e.message());
       testsFailed.replace(testName, true);
     }
     catch e {

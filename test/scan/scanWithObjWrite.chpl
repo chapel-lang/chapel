@@ -10,5 +10,5 @@ proc foo() {
 }
 
 var o: object = new object();
-writeln("o is: " + o:string);
+writeln("o is: ", o);
 writeln("B is: ", B);
