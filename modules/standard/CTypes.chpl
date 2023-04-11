@@ -155,6 +155,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
+  pragma "c_ptrConst class"
   class c_ptrConst {
     type eltType;
     inline proc this(i: integral) const ref {

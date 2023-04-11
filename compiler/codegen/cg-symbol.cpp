@@ -1024,7 +1024,7 @@ transformTypeForPointer(Type* type) {
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
     std::string constness = "";
-    if (startsWith(type->name(), "c_ptrConst")) {
+    if (type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
       constness = "const ";
     }
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
