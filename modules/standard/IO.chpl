@@ -4873,7 +4873,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
     return qio_channel_print_bytes(false, _channel_internal, local_x.c_str(), local_x.numBytes:c_ssize_t);
   } else if isEnumType(t) {
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
-    var s = x:string;
+    var s = chpl_stringify(x);
     if st == QIO_AGGREGATE_FORMAT_JSON then s = '"'+s+'"';
     return qio_channel_print_literal(false, _channel_internal, s.c_str(), s.numBytes:c_ssize_t);
   } else {
@@ -9716,7 +9716,11 @@ proc _toString(x:bytes)
 private inline
 proc _toString(x:?t) where (_isIoPrimitiveType(t) && t!=bytes && t!=string)
 {
-  return (x:string, true);
+  if isPrimitiveType(t) {
+    return (x:string, true);
+  } else {
+    return (chpl_stringify(x), true);
+  }
 }
 private inline
 proc _toString(x:?t) where !_isIoPrimitiveType(t)
