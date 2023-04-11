@@ -2263,3 +2263,11 @@ void
 setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
   ts->type->setSubstitutionWithName(astr("eltType"), ets);
 }
+
+const char* getConstnessSpecifierForDataClass(TypeSymbol* ts) {
+  const char* constness = "";
+  if (ts->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    constness = "const ";
+  }
+  return constness;
+}

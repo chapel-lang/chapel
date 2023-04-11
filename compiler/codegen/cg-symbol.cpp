@@ -1023,10 +1023,7 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
-    std::string constness = "";
-    if (type->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
-      constness = "const ";
-    }
+    const char* constness = getConstnessSpecifierForDataClass(type->symbol);
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
     return constness + pointedTo->codegen().c + " *";
   }
