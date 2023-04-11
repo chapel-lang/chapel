@@ -257,6 +257,12 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+
+  // this is not really cool. Should we have a realloc in the impl layer?
+  if (cur_size == -1) {
+    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+  }
+
   if (size == cur_size) {
     return memAlloc;
   }
