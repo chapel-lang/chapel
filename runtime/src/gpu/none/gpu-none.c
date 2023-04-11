@@ -62,7 +62,7 @@ void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
 }
 
 void chpl_gpu_get_device_count(int* into) {
-  *into = 1;
+  *into = 3;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
@@ -112,7 +112,10 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
-  return chpl_comm_regMemAlloc(size, description, lineno, filename);
+  // this function's upstream is blocked by GPU_RUNTIME_NONE check, This should
+  // be unreachable
+  chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
+  return chpl_malloc(size);
 }
 
 
