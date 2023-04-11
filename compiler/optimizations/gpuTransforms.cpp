@@ -903,10 +903,16 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   // } else {
   //   run the existing loop on the CPU
   // }
-  Expr* condExpr =
-      new CallExpr(PRIM_GREATEROREQUAL,
-                   new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
-                   new_IntSymbol(0));
+  Expr* condExpr;
+  if (!doGpuCodegen()) {
+    condExpr = new SymExpr(gFalse);
+  }
+  else {
+    condExpr = new CallExpr(PRIM_GREATEROREQUAL,
+                            new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                            new_IntSymbol(0));
+  }
+
   BlockStmt* thenBlock = new BlockStmt();
   BlockStmt* elseBlock = new BlockStmt();
   CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
