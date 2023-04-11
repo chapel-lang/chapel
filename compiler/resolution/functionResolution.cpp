@@ -1525,7 +1525,7 @@ bool canCoerceAsSubtype(Type*     actualType,
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
-    if (actualElt && formalElt && actualElt == formalElt) {
+    if (actualElt && formalElt && (actualElt == formalElt)) {
       return true;
     }
   }
@@ -1544,7 +1544,7 @@ bool canCoerceAsSubtype(Type*     actualType,
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
-    if (actualElt && formalElt && actualElt == formalElt)
+    if (actualElt && formalElt && (actualElt == formalElt))
       return true;
   }
 

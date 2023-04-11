@@ -122,8 +122,8 @@ described in the next section.
 Pointer and String Types
 ------------------------
 
-Chapel supports five C pointer types: c_void_ptr, c_ptr(T), c_ptrConst(T),
-c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
+Chapel supports the following C pointer types: c_void_ptr, c_ptr(T),
+c_ptrConst(T), c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
 
 These types are the same as C types:
 
@@ -170,11 +170,11 @@ indexing to get a reference to the i'th element (starting from 0).
 c_ptrConst(T)
 ~~~~~~~~~~~~~
 
-The c_ptrConst(T) type is equivalent to c_ptr(T), except for disallowing
-mutation of the pointee. Like C, this does not change anything about the
-pointee's inherent mutability; it is simply not possible to mutate anything via
-a const pointer. It is also possible to use a c_ptr(T) where a c_ptrConst(T) is
-called for, but not vice-versa without explicitly casting away the constness.
+The c_ptrConst(T) type is equivalent to c_ptr(T), except it disallows changing
+the pointed-to value. Like C, this does not change anything about the pointee's
+inherent mutability; it is simply not possible to mutate anything via a const
+pointer. It is also possible to use a c_ptr(T) where a c_ptrConst(T) is called
+for, but not vice-versa without explicitly casting away the constness.
 
 c_array(T,n)
 ~~~~~~~~~~~~

@@ -150,6 +150,7 @@ module CTypes {
     Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
     the type `const eltType*`.
   */
+  // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -576,6 +577,14 @@ module CTypes {
   inline operator !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
+  pragma "no doc"
+  inline operator !=(a: c_ptrConst, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
+  pragma "no doc"
+  inline operator !=(a: c_void_ptr, b: c_ptrConst) {
+    return __primitive("ptr_neq", a, b);
+  }
 
   pragma "no doc"
   inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
@@ -638,7 +647,10 @@ module CTypes {
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if (arr._value.locale != here) then
-      halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+      halt(
+          "c_ptrTo() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
 
     if boundsChecking {
       if (arr.size == 0) then
@@ -656,7 +668,10 @@ module CTypes {
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
     if (arr._value.locale != here) then
-      halt("c_ptrToConst() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+      halt(
+          "c_ptrToConst() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
 
     if boundsChecking {
       if (arr.size == 0) then
