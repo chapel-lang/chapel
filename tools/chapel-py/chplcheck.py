@@ -69,7 +69,9 @@ def check_rule(root, rule):
         if ignores_rule(node, name): continue
 
         if not func(node):
-            print("Node {} violates rule {}".format(node, name))
+            location = node.location()
+            first_line, _ = location.start()
+            print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
 
 IgnoreAttr = ("ignore", ["rule", "comment"])
 
@@ -82,8 +84,6 @@ Rules = [
 
 ctx = chapel.Context()
 ast = ctx.parse("oneplusone.chpl")
-
-ast.dump()
 
 for rule in Rules:
     check_rule(ast, rule)

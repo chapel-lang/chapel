@@ -33,6 +33,12 @@ extern PyTypeObject ContextType;
 
 typedef struct {
   PyObject_HEAD
+  chpl::Location location;
+} LocationObject;
+extern PyTypeObject LocationType;
+
+typedef struct {
+  PyObject_HEAD
   PyObject* contextObject;
   const chpl::uast::AstNode* astNode;
 } AstNodeObject;
@@ -210,6 +216,50 @@ PyTypeObject AstCallIterType = {
   .tp_new = PyType_GenericNew,
 };
 
+static int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs) {
+  new (&self->location) chpl::Location();
+  return 0;
+}
+
+static void LocationObject_dealloc(LocationObject* self) {
+  self->location.~Location();
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(args)) {
+  auto& location = self->location;
+  return Py_BuildValue("ii", location.firstLine(), location.firstColumn());
+}
+
+static PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args)) {
+  auto& location = self->location;
+  return Py_BuildValue("ii", location.firstLine(), location.firstColumn());
+}
+
+static PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args)) {
+  return Py_BuildValue("s", self->location.path().c_str());
+}
+
+static PyMethodDef LocationObject_methods[] = {
+  { "start", (PyCFunction) LocationObject_start, METH_VARARGS, "Get the start of a Location object" },
+  { "end", (PyCFunction) LocationObject_end, METH_VARARGS, "Get the end of a Location object" },
+  { "path", (PyCFunction) LocationObject_path, METH_VARARGS, "Get the path of a Location object" },
+  {NULL, NULL, 0, NULL}  /* Sentinel */
+};
+
+PyTypeObject LocationType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+  .tp_name = "chapel.Location",
+  .tp_basicsize = sizeof(LocationObject),
+  .tp_itemsize = 0,
+  .tp_dealloc = (destructor) LocationObject_dealloc,
+  .tp_flags = Py_TPFLAGS_DEFAULT,
+  .tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state"),
+  .tp_methods = LocationObject_methods,
+  .tp_init = (initproc) LocationObject_init,
+  .tp_new = PyType_GenericNew,
+};
+
 static int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) chpl::Context(getenv("CHPL_HOME"));
   return 0;
@@ -294,10 +344,20 @@ static PyObject* AstNodeObject_iter(AstNodeObject *self) {
   return astIterObjectPy;
 }
 
+static PyObject* AstNodeObject_location(AstNodeObject *self) {
+  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
+  auto& location = ((LocationObject*) locationObjectPy)->location;
+  auto context = &((ContextObject*) self->contextObject)->context;
+
+  location = chpl::parsing::locateAst(context, self->astNode);
+  return locationObjectPy;
+}
+
 static PyMethodDef AstNodeObject_methods[] = {
   {"dump", (PyCFunction) AstNodeObject_dump, METH_NOARGS, "Dump the internal representation of the given AST node"},
   {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
   {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
+  {"location", (PyCFunction) AstNodeObject_location, METH_NOARGS, "Get the location of this AST node in its file"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -443,6 +503,7 @@ PyMODINIT_FUNC PyInit_chapel() {
   PyObject* chapelModule = nullptr;
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
+  if (PyType_Ready(&LocationType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
   if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;
