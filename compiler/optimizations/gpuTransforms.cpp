@@ -647,6 +647,8 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       // called from the kernel, but we remove it here anyway cause why not, it's
       // a slight optimization.
       copyNode = false;
+
+      loop->insertBefore(node->remove());
     }
     else if (DefExpr* def = toDefExpr(node)) {
       copyNode = false; // we'll do it here to adjust our symbol map
