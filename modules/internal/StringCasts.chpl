@@ -74,6 +74,12 @@ module StringCasts {
     return ret;
   }
 
+  // enums
+  operator :(x: t, type s:string) where isEnumType(t) {
+    use Reflection;
+    return ;
+  }
+
   //
   // int
   //
