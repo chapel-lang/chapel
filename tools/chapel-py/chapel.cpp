@@ -375,45 +375,39 @@ PyTypeObject AstNodeType = {
   .tp_new = PyType_GenericNew,
 };
 
-static PyObject* VarLikeDeclObject_storage_kind(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto varLikeDecl = ((VarLikeDeclObject*) self)->parent.astNode->toVarLikeDecl();
-  return Py_BuildValue("s", chpl::uast::qualifierToString(varLikeDecl->storageKind()));
-}
+template <typename T>
+const char* toCString(T& t) { throw std::invalid_argument("Invalid conversion into C string"); }
 
-static PyObject* NamedDeclObject_name(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto namedDecl = ((NamedDeclObject*) self)->parent.astNode->toNamedDecl();
-  return Py_BuildValue("s", namedDecl->name().c_str());
-}
+template <>
+const char* toCString<const char*>(const char*& t) { return t; }
 
-static PyObject* AttributeObject_name(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto attribute = ((AttributeObject*) self)->parent.astNode->toAttribute();
-  return Py_BuildValue("s", attribute->name().c_str());
-}
+template <>
+const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_str(); }
 
-static PyObject* CommentObject_text(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto namedDecl = ((CommentObject*) self)->parent.astNode->toComment();
-  return Py_BuildValue("s", namedDecl->c_str());
-}
+#define PLAIN_GETTER(NODE, NAME, TYPESTR, BODY)\
+  static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
+    auto cast = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
+    auto result = [](const chpl::uast::NODE* node) { \
+      BODY; \
+    }(cast); \
+    if constexpr (std::string_view(TYPESTR) == std::string_view("s")) { \
+      return Py_BuildValue(TYPESTR, toCString(result)); \
+    } else { \
+      return Py_BuildValue(TYPESTR, result); \
+    } \
+  }
 
-static PyObject* StringLiteralObject_value(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto lit = ((StringLiteralObject*) self)->parent.astNode->toStringLiteral();
-  return Py_BuildValue("s", lit->value().c_str());
-}
-
-static PyObject* FunctionObject_kind(PyObject* self, PyObject *Py_UNUSED(ignored)) {
-  auto fn = ((FunctionObject*) self)->parent.astNode->toFunction();
-  return Py_BuildValue("s", chpl::uast::Function::kindToString(fn->kind()));
-}
-
-static PyObject* FnCallObject_used_square_brackets(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto call = ((FnCallObject*) self)->parent.astNode->toFnCall();
-  return Py_BuildValue("b", call->callUsedSquareBrackets());
-}
-
-static PyObject* DotObject_field(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto dot = ((DotObject*) self)->parent.astNode->toDot();
-  return Py_BuildValue("s", dot->field().c_str());
-}
+PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return chpl::uast::qualifierToString(node->storageKind()))
+PLAIN_GETTER(NamedDecl, name, "s", return node->name());
+PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
+PLAIN_GETTER(Attribute, name, "s", return node->name());
+PLAIN_GETTER(Comment, text, "s", return node->c_str());
+PLAIN_GETTER(StringLiteral, value, "s", return node->value());
+PLAIN_GETTER(Function, kind, "s", return chpl::uast::Function::kindToString(node->kind()));
+PLAIN_GETTER(Function, is_method, "b", return node->isMethod());
+PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
+PLAIN_GETTER(FnCall, used_square_brackets, "b", return node->callUsedSquareBrackets());
+PLAIN_GETTER(Dot, field, "s", return node->field());
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
@@ -460,6 +454,14 @@ struct PerNodeInfo<chpl::uast::asttags::START_NamedDecl> {
 };
 
 template <>
+struct PerNodeInfo<chpl::uast::asttags::Variable> {
+  static constexpr PyMethodDef methods[] = {
+    {"is_config", VariableObject_is_config, METH_NOARGS, "Check if the given Variable node is a config variable"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
 struct PerNodeInfo<chpl::uast::asttags::Comment> {
   static constexpr PyMethodDef methods[] = {
     {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
@@ -479,6 +481,8 @@ template <>
 struct PerNodeInfo<chpl::uast::asttags::Function> {
   static constexpr PyMethodDef methods[] = {
     {"kind", FunctionObject_kind, METH_NOARGS, "Get the kind of this Function node"},
+    {"is_method", FunctionObject_is_method, METH_NOARGS, "Check if this function is a method"},
+    {"is_primary_method", FunctionObject_is_primary_method, METH_NOARGS, "Check if this function is a primary method"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
