@@ -881,6 +881,19 @@ module ChapelIO {
   }
 
   //
+  // handle casting FCF types to string
+  //
+  @chpldoc.nodoc
+  proc isFcfType(type t) param {
+    return __primitive("is fcf type", t);
+  }
+
+  @chpldoc.nodoc
+  operator :(x, type t:string) where isFcfType(x.type) {
+    return chpl_stringify_wrapper(x);
+  }
+
+  //
   // Catch all
   //
   // Convert 'x' to a string just the way it would be written out.
@@ -900,4 +913,5 @@ module ChapelIO {
     );
     return chpl_stringify_wrapper(x);
   }
+
 }

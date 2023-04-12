@@ -77,6 +77,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_NILABLE_CLASS_TYPE:
     case PRIM_IS_NON_NILABLE_CLASS_TYPE:
     case PRIM_IS_RECORD_TYPE:
+    case PRIM_IS_FCF_TYPE:
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_EXTERN_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
