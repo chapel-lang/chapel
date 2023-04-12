@@ -7963,7 +7963,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
-      numRead = 0;
+      numRead : c_ssize_t = 0;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -7997,7 +7997,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     }
   }
 
-  return numRead;
+  return numRead : int;
 }
 
 /*
