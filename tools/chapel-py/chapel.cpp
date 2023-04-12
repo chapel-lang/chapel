@@ -375,6 +375,10 @@ PyTypeObject AstNodeType = {
   .tp_new = PyType_GenericNew,
 };
 
+static PyObject* VarLikeDeclObject_storage_kind(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto varLikeDecl = ((VarLikeDeclObject*) self)->parent.astNode->toVarLikeDecl();
+  return Py_BuildValue("s", chpl::uast::qualifierToString(varLikeDecl->storageKind()));
+}
 
 static PyObject* NamedDeclObject_name(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto namedDecl = ((NamedDeclObject*) self)->parent.astNode->toNamedDecl();
@@ -394,6 +398,21 @@ static PyObject* CommentObject_text(PyObject *self, PyObject *Py_UNUSED(ignored)
 static PyObject* StringLiteralObject_value(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto lit = ((StringLiteralObject*) self)->parent.astNode->toStringLiteral();
   return Py_BuildValue("s", lit->value().c_str());
+}
+
+static PyObject* FunctionObject_kind(PyObject* self, PyObject *Py_UNUSED(ignored)) {
+  auto fn = ((FunctionObject*) self)->parent.astNode->toFunction();
+  return Py_BuildValue("s", chpl::uast::Function::kindToString(fn->kind()));
+}
+
+static PyObject* FnCallObject_used_square_brackets(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto call = ((FnCallObject*) self)->parent.astNode->toFnCall();
+  return Py_BuildValue("b", call->callUsedSquareBrackets());
+}
+
+static PyObject* DotObject_field(PyObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto dot = ((DotObject*) self)->parent.astNode->toDot();
+  return Py_BuildValue("s", dot->field().c_str());
 }
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
@@ -425,6 +444,14 @@ struct PerNodeInfo {
 };
 
 template <>
+struct PerNodeInfo<chpl::uast::asttags::START_VarLikeDecl> {
+  static constexpr PyMethodDef methods[] = {
+    {"storage_kind", VarLikeDeclObject_storage_kind, METH_NOARGS, "Get the storage kind of this VarLikeDecl node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
 struct PerNodeInfo<chpl::uast::asttags::START_NamedDecl> {
   static constexpr PyMethodDef methods[] = {
     {"name", NamedDeclObject_name, METH_NOARGS, "Get the name of this NamedDecl node"},
@@ -444,6 +471,30 @@ template <>
 struct PerNodeInfo<chpl::uast::asttags::StringLiteral> {
   static constexpr PyMethodDef methods[] = {
     {"value", StringLiteralObject_value, METH_NOARGS, "Get the value of the StringLiteral node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::Function> {
+  static constexpr PyMethodDef methods[] = {
+    {"kind", FunctionObject_kind, METH_NOARGS, "Get the kind of this Function node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::FnCall> {
+  static constexpr PyMethodDef methods[] = {
+    {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::Dot> {
+  static constexpr PyMethodDef methods[] = {
+    {"field", DotObject_field, METH_NOARGS, "Get the field accessed in the Dot node"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
