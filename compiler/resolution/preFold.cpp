@@ -1533,17 +1533,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_IS_FCF_TYPE: {
-    // AggregateType* at = toAggregateType(call->get(1)->typeInfo());
-
-    // if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS))
-    //   retval = new SymExpr(gTrue);
-    // else
-    //   retval = new SymExpr(gFalse);
-
-    // call->replace(retval);
-
-    // break;
-
     Type* t = call->get(1)->typeInfo();
 
     if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS))
