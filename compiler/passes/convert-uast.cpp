@@ -1113,13 +1113,12 @@ struct Converter {
         noteConvertedSym(expr, svs);
         addForallIntent(ret, svs);
       } else {
-        auto r = symStack.back().resolved;
-        if (r != nullptr) {
-          const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
-          if (rr != nullptr) {
-            if (isTaskVarDecl) {
-              noteConvertedSym(expr, svs);
-            } else {
+        if (isTaskVarDecl) {
+          noteConvertedSym(expr, svs);
+        } else {
+          auto r = symStack.back().resolved;
+          if (r != nullptr) {
+            if (auto rr = r->byAstOrNull(expr)) {
               noteConvertedSym(expr, findConvertedSym(rr->toId()));
             }
           }
