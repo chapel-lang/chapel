@@ -323,9 +323,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                         numLocales : localesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
-    if (localesPerNode > 1) {
-      fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
-    }
 
     // request specified node access
     if (nodeAccessStr != NULL)
@@ -392,9 +389,18 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
-    // add the srun command and the (possibly wrapped) binary name.
-    fprintf(slurmFile, "srun --kill-on-bad-exit %s %s ",
+    // add the srun command
+    fprintf(slurmFile, "srun --kill-on-bad-exit  ");
+
+    fprintf(slurmFile, "--cpus-per-task=%d ", cpusPerTask);
+
+    if (localesPerNode > 1) {
+      fprintf(slurmFile, "--cpu-bind=none ");
+    }
+    // add the (possibly wrapped) binary name.
+    fprintf(slurmFile, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+
 
     // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {
