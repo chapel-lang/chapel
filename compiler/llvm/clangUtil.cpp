@@ -2344,6 +2344,20 @@ static bool isTargetCpuValid(const char* targetCpu) {
   }
 }
 
+static void generateClangGpuArgs(std::vector<std::string>& args) {
+  if (usingGpuLocaleModel()) {
+    args.push_back("-x");
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        args.push_back("cuda");
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        args.push_back("hip");
+        break;
+    }
+  }
+}
+
 // If we are parsing an extern block with clang, we might
 // be configured to use a target compiler that is not clang.
 // In that event, filter out everything but the -D and -I arguments,
@@ -2556,15 +2570,7 @@ void runClang(const char* just_parse_filename) {
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
-    clangOtherArgs.push_back("-x");
-    switch (getGpuCodegenType()) {
-      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        clangOtherArgs.push_back("cuda");
-        break;
-      case GpuCodegenType::GPU_CG_AMD_HIP:
-        clangOtherArgs.push_back("hip");
-        break;
-    }
+    generateClangGpuArgs(clangOtherArgs);
 
     std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
     clangOtherArgs.push_back(gpuArch);
@@ -4578,11 +4584,20 @@ void makeBinaryLLVM(void) {
     cargs += clangInfo->clangCCArgs[i];
   }
 
+  std::vector<std::string> gpuArgsVec;
+  std::string gpuArgs;
+  generateClangGpuArgs(gpuArgsVec);
+  for( size_t i = 0; i < gpuArgsVec.size(); ++i ) {
+    gpuArgs += " ";
+    gpuArgs += gpuArgsVec[i];
+  }
+  gpuArgs += " -Wno-unknown-cuda-version";
+
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      std::string cmd = clangCC + " -c -o " + objFilename + " " +
+      std::string cmd = clangCC + gpuArgs + " -c -o " + objFilename + " " +
                         inputFilename + " " + cargs;
 
       mysystem(cmd.c_str(), "Compile C File");
