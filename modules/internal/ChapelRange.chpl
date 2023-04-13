@@ -102,9 +102,9 @@ module ChapelRange {
   pragma "range"
   record range
   {
-    type idxType = int;                            // element type
-    param bounds: boundKind = boundKind.both;      // lower/upper bounds
-    param stridable: bool = false;                 // range can be strided
+    type idxType;                 // element type
+    param bounds: boundKind;      // lower/upper bounds
+    param stridable: bool;        // range can be strided
 
     // deprecated by Vass in 1.31 to implement #17126
     @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
@@ -122,6 +122,10 @@ module ChapelRange {
       return idxType;
     }
   }
+
+  // convenience aliases
+  type boundedRange = range(bounds = boundKind.both, ?);
+  type simpleRange = range(int, boundKind.both, false);
 
   /* The ``idxType`` as represented by an integer type.  When
      ``idxType`` is an enum type, this evaluates to ``int``.
@@ -204,6 +208,7 @@ module ChapelRange {
   proc range.init(type idxType, low: idxType, high: idxType) {
     this.idxType = idxType;
     this.bounds = boundKind.both;
+    this.stridable = false;
     this._low = chpl__idxToInt(low);
     this._high = chpl__idxToInt(high);
   }
@@ -214,6 +219,7 @@ module ChapelRange {
   proc range.init(low: ?t) {
     this.idxType = t;
     this.bounds = boundKind.low;
+    this.stridable = false;
     this._low = chpl__idxToInt(low);
     this.complete();
     if isFiniteIdxType(idxType) {
@@ -227,6 +233,7 @@ module ChapelRange {
   proc range.init(high: ?t) {
     this.idxType = t;
     this.bounds = boundKind.high;
+    this.stridable = false;
     this._high = chpl__idxToInt(high);
     this.complete();
     if isFiniteIdxType(idxType) {
@@ -240,6 +247,7 @@ module ChapelRange {
   proc range.init() {
     this.idxType = int;
     this.bounds = boundKind.neither;
+    this.stridable = false;
     this.complete();
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
@@ -2980,7 +2988,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
       if this.stridable || myFollowThis.stridable {
-        var r: range(idxType, stridable=true);
+        var r: range(idxType, boundKind.both, stridable=true);
 
         if flwlen != 0 {
           const stride = this.stride * myFollowThis.stride;
@@ -2999,7 +3007,7 @@ operator :(r: range(?), type t: range(?)) {
           yield i;
 
       } else {
-        var r:range(idxType);
+        var r:range(idxType, boundKind.both, false);
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
