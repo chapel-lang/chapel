@@ -884,6 +884,19 @@ CanPassResult CanPassResult::canPass(Context* context,
       return instantiate();
     }
 
+    // Passing in a type to another type requires instantiation.
+    // Note: we might encounter this situation for a type method on a
+    //   generic type. I.e., passing 'R(?)' to 'R(?)' for the 'this' formal.
+    //   This case should instantiate so that code looking for a substitution
+    //   will find one, rather than just seeing a generic type and guessing
+    //   that it wasn't instantiated.
+    //
+    // 'AnyType' has special meaning elsewhere, so it doesn't count as
+    // instantiation here.
+    if (formalQT.kind() == QualifiedType::TYPE && !formalT->isAnyType()) {
+      return instantiate();
+    }
+
     // otherwise we can pass as-is
     return passAsIs();
   }

@@ -341,6 +341,48 @@ static void test6() {
   assert(initType.type()->isIntType());
 }
 
+static void test7() {
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program =
+      R""""(
+        record R {
+          var x : int;
+
+          proc type factory() do return 1;
+        }
+
+        var x = R.factory();
+      )"""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type()->isIntType());
+  }
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program =
+      R""""(
+        record R {
+          type T;
+          var x : int;
+
+          proc type factory() do return 1;
+        }
+
+        var x = R.factory();
+      )"""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(initType.type()->isIntType());
+  }
+}
+
 
 int main() {
   test1();
@@ -349,6 +391,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
