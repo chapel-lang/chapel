@@ -450,6 +450,27 @@ static void test16() {
   assert(qt.type()->isRealType());
 }
 
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto qt = resolveQualifiedTypeOfX(context,
+                R""""(
+                  var x : 3*int;
+                )"""");
+
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isTupleType());
+  auto tt = qt.type()->toTupleType();
+
+  assert(tt->numElements() == 3);
+  assert(tt->isStarTuple());
+  assert(tt->elementType(0).type()->isIntType());
+  assert(tt->elementType(1).type()->isIntType());
+  assert(tt->elementType(2).type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
@@ -467,6 +488,7 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
 
   return 0;
 }

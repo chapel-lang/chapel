@@ -2497,6 +2497,16 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
+  if (ci.name() == USTR("*") && ci.numActuals() == 2) {
+    auto first = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (first.isParam() && first.type()->isIntType() &&
+        second.isType()) {
+      // TODO: rename these methods...
+      return TupleType::getVarArgTuple(context, first, second);
+    }
+  }
+
   if (auto t = getManagedClassType(context, astForErr, ci)) {
     return t;
   }
