@@ -1,5 +1,5 @@
 class A {
-  var rng: range;
+  var rng: simpleRange; /*autofix*/
 }
 
 proc main() {

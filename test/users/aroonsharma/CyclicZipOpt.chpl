@@ -60,7 +60,7 @@ class CyclicZipOpt: BaseDist {
       targetLocs = targetLocales;
     } else if targetLocales.rank == 1 {
       const factors = _factor(rank, targetLocales.size);
-      var ranges: rank*range;
+      var ranges: rank*simpleRange; /*autofix*/
       for param i in 1..rank {
         ranges(i) = 0..#factors(i);
       }
@@ -71,7 +71,7 @@ class CyclicZipOpt: BaseDist {
     } else {
       if targetLocales.rank != rank then
         compilerError("locales array rank must be one or match distribution rank");
-      var ranges: rank*range;
+      var ranges: rank*simpleRange; /*autofix*/
       for param i in 1..rank do {
         var thisRange = targetLocales.domain.dim(i);
         ranges(i) = 0..#thisRange.size; 

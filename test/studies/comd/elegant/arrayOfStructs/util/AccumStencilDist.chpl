@@ -1265,7 +1265,7 @@ iter AccumStencilArr.dsiBoundaries() {
       return {(...r)};
     }
 
-    var ndr : rank*range;
+    var ndr : rank*simpleRange; /*autofix*/
     for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 
@@ -1319,7 +1319,7 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
       return {(...r)};
     }
 
-    var ndr : rank*range;
+    var ndr : rank*simpleRange; /*autofix*/
     for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 

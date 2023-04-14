@@ -1,6 +1,6 @@
 record MyRecord {
   param p: int;
-  var r: range;
+  var r: simpleRange; /*autofix*/
 
   proc init(param p:int, r) {
     this.p = p;

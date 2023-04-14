@@ -158,7 +158,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
   const numTasks = if tasksPerLocale==0 then here.maxTaskPar else
     tasksPerLocale;
 
-  var rowRange: range;
+  var rowRange: simpleRange; /*autofix*/
   if onlyDim==rank-1 then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank-1 then nnzDom.low else rowRange.low;
@@ -203,7 +203,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
 
   const otherIdxTup = chpl__tuplify(otherIdx);
 
-  var rowRange: range;
+  var rowRange: simpleRange; /*autofix*/
   if onlyDim==rank-1 then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank-1 then _indices.domain.low else rowRange.low;

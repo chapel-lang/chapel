@@ -1,5 +1,5 @@
-var r: range;
-var r2: range;
+var r: simpleRange; /*autofix*/
+var r2: simpleRange; /*autofix*/
 
 
 writeln(r.contains(r2));

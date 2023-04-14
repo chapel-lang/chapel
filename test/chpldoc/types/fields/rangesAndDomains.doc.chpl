@@ -1,5 +1,5 @@
 record R {
-  var isRange: range;
+  var isRange: simpleRange; /*autofix*/
 
   var boundedRange = 1..10;
   var lowBoundedRange = 1..;

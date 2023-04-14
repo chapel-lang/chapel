@@ -8,7 +8,7 @@ record Foo {
 }
 
 class Bar {
-  var r: range;
+  var r: simpleRange; /*autofix*/
 
   proc init(num: int) {
     r = 0..#num;

@@ -103,7 +103,7 @@ class MyBlockCyclic : BaseDist {
       // BLC: Common code, factor out
 
       const factors = _factor(rank, targetLocales.size);
-      var ranges: rank*range;
+      var ranges: rank*simpleRange; /*autofix*/
       for param i in 1..rank do
         ranges(i) = 0..factors(i)-1;
       targetLocDom = {(...ranges)};
@@ -117,7 +117,7 @@ class MyBlockCyclic : BaseDist {
       if targetLocales.rank != rank then
     compilerError("locales array rank must be one or match distribution rank");
 
-      var ranges: rank*range;
+      var ranges: rank*simpleRange; /*autofix*/
       for param i in 1..rank do {
     var thisRange = targetLocales.domain.dim(i);
     ranges(i) = 0..#thisRange.size; 

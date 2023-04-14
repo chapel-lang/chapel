@@ -3,7 +3,7 @@ use CommDiagnostics, Map;
 config const n = 10;
 
 class Helper {
-  var x : 3*range;
+  var x : 3*simpleRange; /*autofix*/
 }
 
 record Foo {

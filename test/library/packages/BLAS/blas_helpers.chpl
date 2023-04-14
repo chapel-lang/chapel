@@ -167,7 +167,7 @@ proc bandArrayTriangular(A: [?Dom] ?eltType, k, uplo=Uplo.Upper, order=Order.Row
   var a: [{0..#(k+1), 0..#n}] eltType;
 
   var m = 0;
-  var irange: range;
+  var irange: simpleRange; /*autofix*/
 
   if order == order.Col {
     for j in 0..#n {

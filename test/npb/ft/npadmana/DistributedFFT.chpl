@@ -372,7 +372,7 @@ prototype module DistributedFFT {
   pragma "default intent is ref"
   record BatchedFFTWplan {
     param ftType : FFTtype;
-    const parRange: range;
+    const parRange: simpleRange; /*autofix*/
     const numTasks: int;
     const batchSizeSm, batchSizeLg: int;
     var planSm, planLg: FFTWplan(ftType);

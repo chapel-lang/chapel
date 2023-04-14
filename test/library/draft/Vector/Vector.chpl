@@ -1003,7 +1003,7 @@ module Vector {
       :type other: `list(eltType)`
     */
     proc ref append(other: vector(eltType, ?p)) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange; /*autofix*/
       on this {
         _enter();
         _requestCapacity(_size + other.size);
@@ -1022,7 +1022,7 @@ module Vector {
       :type other: `[?d] eltType`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange; /*autofix*/
       on this {
         _enter();
         _requestCapacity(_size + d.size);
@@ -1052,7 +1052,7 @@ module Vector {
         compilerError(msg);
       }
 
-      var ret: range;
+      var ret: simpleRange; /*autofix*/
       on this {
         _enter();
         _requestCapacity(_size + other.size);

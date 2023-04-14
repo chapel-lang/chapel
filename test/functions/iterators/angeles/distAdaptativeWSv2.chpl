@@ -50,7 +50,7 @@ proc CheckCorrectness(grainsize:string)
   var t: stopwatch;
   var delay:uint;
   var n,m,chunk:int;
-  var r:range;
+  var r:simpleRange; /*autofix*/
   const mW, mS:string="BS";
   
  

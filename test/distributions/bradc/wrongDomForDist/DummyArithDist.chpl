@@ -16,7 +16,7 @@ class MyDom : BaseRectangularDom {
   const dist: unmanaged MyDist?;
 
   proc dsiGetIndices() {
-    var r: range;
+    var r: simpleRange; /*autofix*/
     return r;
   }
 

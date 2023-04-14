@@ -1,5 +1,5 @@
 class C {
-  const irng: range;
+  const irng: simpleRange; /*autofix*/
 
   proc init(v1: int) {
     irng = v1..v1;

@@ -36,7 +36,7 @@ proc readData(param dims: int, dataname: string) {
 
   cdfError(nc_inq_vardimid(ncid, varid, dimids[0]));
   extern proc nc_inq_dimlen_WAR(ncid:c_int, dimid: c_int, ref dimlens): c_int;
-  var dimranges: dims*range;
+  var dimranges: dims*simpleRange; /*autofix*/
   for i in 0..#ndims {
     cdfError(nc_inq_dimlen_WAR(ncid, dimids[i], dimlens[i]));
     dimranges(i+1) = 0..#dimlens[i];
