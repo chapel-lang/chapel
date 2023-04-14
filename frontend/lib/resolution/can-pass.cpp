@@ -876,7 +876,8 @@ CanPassResult CanPassResult::canPass(Context* context,
     return fail();
   }
 
-  if (actualT == formalT) {
+  // Type-query Kinds should always pass
+  if (actualT == formalT || typeQueryActual) {
     if (formalQT.kind() == QualifiedType::PARAM &&
         formalQT.param() == nullptr) {
       // if the formal parameter value is unknown, we need to instantiate
