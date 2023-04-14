@@ -54,13 +54,6 @@ TemporaryFileResult::create(Context* context,
 
 TemporaryFileResult::~TemporaryFileResult() {
   if (deleteOnDestroy_) {
-#ifndef NDEBUG
-    if (!path_.empty()) {
-      HashFileResult zero;
-      zero.fill(0);
-      CHPL_ASSERT(hash_ != zero && "did you forget to call .complete() ?");
-    }
-#endif
     if (!path_.empty()) {
       std::error_code err = llvm::sys::fs::remove(path_,
                                                   /* IgnoreNonExisting */ true);
@@ -107,6 +100,28 @@ bool TemporaryFileResult::operator==(const TemporaryFileResult& other) const {
   // so that the comparison is about the file contents, instead.
 
   return (length_ == other.length_ && hash_ == other.hash_);
+}
+
+bool TemporaryFileResult::update(owned<TemporaryFileResult>& keep,
+                                 owned<TemporaryFileResult>& addin) {
+#ifndef NDEBUG
+  if (const TemporaryFileResult* t = addin.get()) {
+    if (!t->path_.empty()) {
+      // 'complete' should be called on a TemporaryFileResult after the
+      // data is stored within the file. If it is forgetten, the query
+      // framework will not correctly handle incremental changes. So,
+      // check here in the update function (which will be called when
+      // the TemporaryFileResult is the result of a query) that the data
+      // is completed.
+
+      HashFileResult zero;
+      zero.fill(0);
+      CHPL_ASSERT(t->hash_ != zero && "did you forget to call .complete() ?");
+    }
+  }
+#endif
+
+  return defaultUpdateOwned(keep, addin);
 }
 
 void TemporaryFileResult::stringify(std::ostream& ss,

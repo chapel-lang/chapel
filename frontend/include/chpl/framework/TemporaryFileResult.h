@@ -84,9 +84,7 @@ class TemporaryFileResult final {
     return !(*this == other);
   }
   static bool update(owned<TemporaryFileResult>& keep,
-                     owned<TemporaryFileResult>& addin) {
-    return defaultUpdateOwned(keep, addin);
-  }
+                     owned<TemporaryFileResult>& addin);
   void mark(Context* context) const { }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
