@@ -191,7 +191,6 @@ static void cleanup_for_exit() {
     if (gContext) {
       gContext->cleanupTmpDirIfNeeded();
     }
-    //deleteTmpDir();
   }
   stopCatchingSignals();
 }

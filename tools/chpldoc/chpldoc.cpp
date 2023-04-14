@@ -2209,7 +2209,6 @@ int main(int argc, char** argv) {
   // Root of the sphinx project and generated rst files. If
   // --docs-save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  std::string doctmpdirname;
   if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
