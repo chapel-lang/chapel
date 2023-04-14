@@ -13,7 +13,7 @@ proc checkit(d1, d2) {
 }
 
 {
-  var init_range: rank*range(stridable=true);
+  var init_range: rank*range(int, boundKind.both, true) /*autofix*/;
   for param i in 1..rank do
     init_range(i) = 1..n*i by s;
   const D1: domain(rank, stridable=true) = init_range;
@@ -24,7 +24,7 @@ proc checkit(d1, d2) {
 }
 
 {
-  var init_range: rank*range(stridable=true);
+  var init_range: rank*range(int, boundKind.both, true) /*autofix*/;
   for param i in 1..rank do
     init_range(i) = 1..n*i by -s;
   const D1: domain(rank, stridable=true) = init_range;
@@ -36,7 +36,7 @@ proc checkit(d1, d2) {
 
 
 {
-  var init_range: rank*range(stridable=true);
+  var init_range: rank*range(int, boundKind.both, true) /*autofix*/;
   for param i in 1..rank do
     init_range(i) = 1..n*i by s;
   const D1: domain(rank, stridable=true) = init_range;

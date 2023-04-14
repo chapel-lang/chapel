@@ -36,7 +36,7 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
   var ret = new list(domain(rank, stridable=true));
 
   var innerDom = {1..0};
-  var perDim : [1..rank] [innerDom] range(stridable=true);
+  var perDim : [1..rank] [innerDom] range(int, boundKind.both, true) /*autofix*/;
 
   for i in 0..#rank {
     const cur = Orig.dim(i);
@@ -47,7 +47,7 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
     const quart = size/4;
     const str = Orig.dim(i).stride;
 
-    var mine : list(range(stridable=true));
+    var mine : list(range(int, boundKind.both, true) /*autofix*/);
 
     if cur.size == 1 {
       mine.append(cur by str);
@@ -150,7 +150,7 @@ proc testReindex(param rank : int, Dom) {
 }
 
 proc makeDom(param rank : int, low : int, str = 1) {
-  var r : rank*range(stridable=true);
+  var r : rank*range(int, boundKind.both, true) /*autofix*/;
   for param i in 0..rank-1 do r(i) = low.. by str # n;
   return r;
 }

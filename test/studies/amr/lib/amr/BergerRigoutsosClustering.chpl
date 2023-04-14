@@ -206,7 +206,7 @@ class CandidateDomain {
 proc CandidateDomain.trim()
 {    
   //===> Find bounds of trimmed domain ===>
-  var trimmed_ranges:      rank*range(stridable=true);
+  var trimmed_ranges:      rank*range(int, boundKind.both, true) /*autofix*/;
   var trim_low, trim_high: int;
   
   for d in 0..rank-1 {
@@ -311,7 +311,7 @@ proc CandidateDomain.removeHole()
   var D1, D2: domain(rank, stridable=true);
   D1 = D;
 
-  var ranges:      rank*range(stridable=true);
+  var ranges:      rank*range(int, boundKind.both, true) /*autofix*/;
   var hole_low:    int;
   var hole_high:   int;
   var low_active:  bool;
@@ -416,7 +416,7 @@ proc CandidateDomain.removeHole()
 proc CandidateDomain.inflectionCut ()
 {
 
-  var ranges: rank*range(stridable=true);
+  var ranges: rank*range(int, boundKind.both, true) /*autofix*/;
 
   var D1, D2: domain(rank, stridable=true);
   D1 = D;

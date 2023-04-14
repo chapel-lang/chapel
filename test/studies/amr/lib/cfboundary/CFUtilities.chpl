@@ -74,7 +74,7 @@ proc refine (
 
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(int, boundKind.both, true) /*autofix*/;
 
   for d in dimensions do
     ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
@@ -105,7 +105,7 @@ proc refine (
 
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(int, boundKind.both, true) /*autofix*/;
 
   for d in dimensions do
     ranges(d) = fine_cells_low(d) .. fine_cells_high(d) by 2;
@@ -166,7 +166,7 @@ proc coarsen (
   
 
   //==== Set and return new domain ====
-  var ranges: dimension*range(stridable=true);
+  var ranges: dimension*range(int, boundKind.both, true) /*autofix*/;
   for d in dimensions do
     ranges(d) = low_coarse(d) .. high_coarse(d) by 2;
 

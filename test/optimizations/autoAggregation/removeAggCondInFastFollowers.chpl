@@ -19,7 +19,7 @@ class Arr {
 // fine.
 
 proc sliceIndexMsg(): string throws {
-  var slice: range(stridable=true) = 1..10;
+  var slice: range(int, boundKind.both, true) /*autofix*/ = 1..10;
 
   proc sliceHelper(type t) throws {
       var e = new Arr(int);

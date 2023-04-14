@@ -368,7 +368,7 @@ proc AMRHierarchy.buildRefinedLevel ( i_refining: int )
 
     for cell in cells do
       if flags(cell) {
-        var ranges: dimension*range(stridable=true);
+        var ranges: dimension*range(int, boundKind.both, true) /*autofix*/;
         for d in dimensions do ranges(d) = cell(d)-2 .. cell(d)+2 by 2;
         var neighborhood: domain(dimension,stridable=true) = ranges;
         for nbr in cells(neighborhood) do

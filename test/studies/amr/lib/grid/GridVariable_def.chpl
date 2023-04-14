@@ -206,7 +206,7 @@ proc GridVariable.writeData (
     // Transpose cells; iterating over the transpose in row major
     // order achieves column major order on the original domain.
     //------------------------------------------------------------
-    var range_tuple: dimension*range(stridable=true);
+    var range_tuple: dimension*range(int, boundKind.both, true) /*autofix*/;
     [d in dimensions with (ref range_tuple)] // could also be 'for param d'
       range_tuple(d) = grid.cells.dim(dimension - (d+1));
 
