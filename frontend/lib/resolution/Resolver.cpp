@@ -2350,13 +2350,6 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
-      if (scopeResolveOnly) {
-        // Possibly a "compatibility hack" with production: we haven't checked
-        // whether the call is valid, but the production scope resolver doesn't
-        // care and assumes `ident` points to this function.
-        ResolvedExpression& r = byPostorder.byAst(ident);
-        r.setToId(id);
-      }
       return;
     }
 
