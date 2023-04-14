@@ -54,6 +54,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+using ForwardingInfoVec = std::vector<QualifiedType>;
 
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
@@ -2590,8 +2592,28 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-using CandidatesVec = std::vector<const TypedFnSignature*>;
-using ForwardingInfoVec = std::vector<QualifiedType>;
+static CallResolutionResult
+resolveFnCallDomain(Context* context,
+                    const Call* call,
+                    const CallInfo& ci,
+                    const Scope* inScope,
+                    const PoiScope* inPoiScope) {
+  // TODO: a compiler-generated type constructor would be simpler, but we
+  // don't support default values on compiler-generated methods because the
+  // default values require existing AST.
+
+  // Note: 'dmapped' is treated like a binary operator at the moment, so
+  // we don't need to worry about distribution type for 'domain(...)' exprs.
+
+  // Transform domain type expressions like `domain(arg1, ...)` into:
+  //   _domain.static_type(arg1, ...)
+  auto genericDom = DomainType::getGenericDomainType(context);
+  auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+  auto typeCtorName = UniqueString::get(context, "static_type");
+  auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+
+  return resolveCall(context, call, ctorCall, inScope, inPoiScope);
+}
 
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
@@ -3269,6 +3291,10 @@ CallResolutionResult resolveCall(Context* context,
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
+    if (ci.name() == "domain" && !ci.isMethodCall()) {
+      return resolveFnCallDomain(context, call, ci, inScope, inPoiScope);
+    }
+
     // otherwise do regular call resolution
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
