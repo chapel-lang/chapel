@@ -26,6 +26,7 @@
 
 #include "../util/filesystem_help.h"
 
+#ifdef HAVE_LLVM
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
@@ -42,6 +43,7 @@
 #include "llvm/TargetParser/Host.h"
 #else
 #include "llvm/Support/Host.h"
+#endif
 #endif
 
 namespace chpl {
