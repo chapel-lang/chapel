@@ -623,16 +623,8 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 }
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
-  QualifiedType subType;
-  auto potentialSuper = initResolver_.isPotentialSuper(node, &subType);
   auto scope = initResolver_.methodReceiverScopes();
-  auto vec = initResolver_.lookupIdentifier(node, scope, potentialSuper);
-
-  if (vec.size() == 0 && potentialSuper) {
-    auto& re = initResolver_.byPostorder.byAst(node);
-    re.setType(initResolver_.getSuperType(initResolver_.context, subType, node));
-    return true;
-  }
+  auto vec = initResolver_.lookupIdentifier(node, scope);
 
   // Handle and exit early if there were no ambiguities.
   if (vec.size() == 1 && vec[0].numIds() == 1) {

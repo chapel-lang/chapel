@@ -2050,8 +2050,7 @@ bool Resolver::identHasMoreMentions(const Identifier* ident) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           llvm::ArrayRef<const Scope*> receiverScopes,
-                           bool potentialSuper) {
+                           llvm::ArrayRef<const Scope*> receiverScopes) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -2081,7 +2080,10 @@ Resolver::lookupIdentifier(const Identifier* ident,
       // If this identifier is 'super' and we couldn't find something it refers
       // to, it could stand for 'this.super'. But in that case, no need to
       // issue an error.
-      if (!potentialSuper) {
+      if (isPotentialSuper(ident)) {
+        // We found a single ID, and it's just 'super'.
+        return { BorrowedIdsWithName::createWithBuiltinId() };
+      } else {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
@@ -2233,8 +2235,8 @@ QualifiedType Resolver::getSuperType(Context* context,
     auto basicParentClass = classType->basicClassType()->parentClassType();
     auto newClassType = ClassType::get(context,
         basicParentClass,
-        classType->manager(),
-        classType->decorator());
+        /* no manager for borrowed class */ nullptr,
+        classType->decorator().toBorrowed());
     return QualifiedType(sub.kind(), newClassType);
   } else {
     CHPL_REPORT(context, InvalidSuper, identForError, sub);
@@ -2260,18 +2262,11 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     return;
   }
 
-  QualifiedType subType;
-  bool potentialSuper = isPotentialSuper(ident, &subType);
-
   // lookupIdentifier reports any errors that are needed
-  auto vec = lookupIdentifier(ident, receiverScopes, potentialSuper);
+  auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
-    if (potentialSuper) {
-      result.setType(getSuperType(context, std::move(subType), ident));
-    } else {
-      result.setType(QualifiedType());
-    }
+    result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
@@ -2283,8 +2278,11 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     bool isMethodOrField = idv.isMethodOrField();
     QualifiedType type;
 
-    // empty IDs from the scope resolution process are builtins
-    if (id.isEmpty()) {
+    // empty IDs from the scope resolution process are builtins or super
+    if (id.isEmpty() && isPotentialSuper(ident, &type)) {
+      result.setType(getSuperType(context, type, ident));
+      return;
+    } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
       result.setToId(id);
       result.setType(type);

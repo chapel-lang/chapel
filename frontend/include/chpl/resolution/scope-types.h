@@ -397,6 +397,13 @@ class BorrowedIdsWithName {
     return maybeIds.getValue();
   }
 
+  static BorrowedIdsWithName
+  createWithBuiltinId() {
+    // Implementation only happens to coincide; there is no philosophical
+    // relation between a top-level module ID and a builtin ID.
+    return createWithToplevelModuleId(ID());
+  }
+
   /** Return the number of IDs stored here */
   int numIds() const {
     return numVisibleIds_;

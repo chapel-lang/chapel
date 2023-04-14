@@ -443,8 +443,7 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   llvm::ArrayRef<const Scope*> receiverScopes,
-                   bool potentialSuper);
+                   llvm::ArrayRef<const Scope*> receiverScopes);
 
   void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
