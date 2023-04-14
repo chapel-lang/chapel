@@ -93,15 +93,17 @@ static void errorForOuterVarAccesses(FnSymbol* fn) {
 }
 
 static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint,
-   const char* name, Type* type) {
+                                     const char* name, Type* type) {
   VarSymbol *var = new VarSymbol(name, type);
   var->defPoint = new DefExpr(var);
   insertionPoint->insertAtTail(var->defPoint);
   return var;
 }
 
-static VarSymbol* generateAssignmentToPrimitive(
-    FnSymbol* fn, const char *varName, PrimitiveTag prim, Type *primReturnType) {
+static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
+                                                const char *varName,
+                                                PrimitiveTag prim,
+                                                Type *primReturnType) {
 
   VarSymbol *var = insertNewVarAndDef(fn->body, varName, primReturnType);
   CallExpr *c1 = new CallExpr(PRIM_MOVE, var, new CallExpr(prim));
@@ -899,35 +901,38 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
 
 static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
                                       GpuKernel &kernel) {
-  // if (chpl_task_getRequestedSubloc() >= 0) {
-  //   code to determine number of threads to launch kernel with
-  //   call the generated GPU kernel
-  // } else {
-  //   run the existing loop on the CPU
-  // }
-  Expr* condExpr;
-  if (!doGpuCodegen()) {
-    condExpr = new SymExpr(gFalse);
-  }
-  else {
-    condExpr = new CallExpr(PRIM_GREATEROREQUAL,
-                            new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
-                            new_IntSymbol(0));
-  }
-
   BlockStmt* thenBlock = new BlockStmt();
   BlockStmt* elseBlock = new BlockStmt();
-  CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
   BlockStmt* gpuLaunchBlock = new BlockStmt();
-
-  gpuLoop.loop()->insertBefore(loopCloneCond);
   thenBlock->insertAtHead(gpuLaunchBlock);
-  elseBlock->insertAtHead(gpuLoop.loop()->remove());
-
   VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
   gpuLaunchBlock->insertAtTail(gpuCall);
   gpuLaunchBlock->flattenAndRemove();
+
+  if (doGpuCodegen()) {
+    // if (chpl_task_getRequestedSubloc() >= 0) {
+    //   code to determine number of threads to launch kernel with
+    //   call the generated GPU kernel
+    // } else {
+    //   run the existing loop on the CPU
+    // }
+    CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
+                                      new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                                      new_IntSymbol(0));
+    CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
+    gpuLoop.loop()->insertBefore(loopCloneCond);
+  }
+  else {
+    // just put two blocks before the loop without any conditional. This will
+    // result in both blocks to be executed so that the runtime support gets
+    // called while also executing the original loop. This way (1) we still
+    // coung kernel launches with GpuDiagnostics, (2) exercise more GPU code.
+    gpuLoop.loop()->insertBefore(thenBlock);
+    gpuLoop.loop()->insertBefore(elseBlock);
+  }
+
+  elseBlock->insertAtHead(gpuLoop.loop()->remove());
 }
 
 static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
