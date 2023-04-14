@@ -166,6 +166,10 @@ const std::string& Context::tmpDir() {
   return tmpDir_;
 }
 
+bool Context::shouldSaveTmpDirFiles() const {
+  return config_.keepTmpDir;
+}
+
 std::string Context::tmpDirAnchorFile() {
   std::string path = tmpDir();
   if (!path.empty() && !tmpDirAnchorCreated_) {

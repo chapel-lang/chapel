@@ -358,6 +358,10 @@ class Context {
    */
   const std::string& tmpDir();
 
+  /** Returns 'true' if this Context is configured to save the temporary
+      directory (with keepTmpDir=true). */
+  bool shouldSaveTmpDirFiles() const;
+
   /** Return a path to a file within tmpDir that is not modified after
       it is created, to serve as a source for normalizing modification times */
   std::string tmpDirAnchorFile();

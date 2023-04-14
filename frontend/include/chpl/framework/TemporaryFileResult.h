@@ -49,6 +49,7 @@ class TemporaryFileResult final {
   std::string path_;
   size_t length_ = 0;
   HashFileResult hash_;
+  bool deleteOnDestroy_ = false;
 
  public:
   /** Create an empty TemporaryFileResult. It will have an empty

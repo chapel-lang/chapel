@@ -39,31 +39,35 @@ TemporaryFileResult::create(Context* context,
                             llvm::StringRef prefix,
                             llvm::StringRef suffix) {
   const std::string& tmpDir = context->tmpDir();
- 
+
   int index = globalTemporaryResultCounter++;
 
   TemporaryFileResult* ret = new TemporaryFileResult();
 
   ret->path_ = (llvm::Twine(tmpDir) + "/" +
                 prefix + "-" + llvm::Twine(index) + suffix).str();
+  // delete the file on destruction unless we are saving the tmp dir files
+  ret->deleteOnDestroy_ = !context->shouldSaveTmpDirFiles();
 
   return toOwned(ret);
 }
 
 TemporaryFileResult::~TemporaryFileResult() {
+  if (deleteOnDestroy_) {
 #ifndef NDEBUG
-  if (!path_.empty()) {
-    HashFileResult zero;
-    zero.fill(0);
-    CHPL_ASSERT(hash_ != zero && "did you forget to call .complete() ?");
-  }
+    if (!path_.empty()) {
+      HashFileResult zero;
+      zero.fill(0);
+      CHPL_ASSERT(hash_ != zero && "did you forget to call .complete() ?");
+    }
 #endif
-  if (!path_.empty()) {
-    std::error_code err = llvm::sys::fs::remove(path_,
-                                                /* IgnoreNonExisting */ true);
-    std::ignore = err; // it is a temporary space issue but
-                       // failing to remove such a file need not be a fatal
-                       // error. Could warn about it though. 
+    if (!path_.empty()) {
+      std::error_code err = llvm::sys::fs::remove(path_,
+                                                  /* IgnoreNonExisting */ true);
+      std::ignore = err; // it is a temporary space issue but
+                         // failing to remove such a file need not be a fatal
+                         // error. Could warn about it though.
+    }
   }
 }
 
