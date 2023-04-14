@@ -1,6 +1,6 @@
-var r1: range(int) = 0..1;
-var r2: range(uint) = 0:uint..1;
-var r64: range(int(64)) = 0..1;
+var r1: range(int,?) = 0..1;
+var r2: range(uint,?) = 0:uint..1;
+var r64: range(int(64),?) = 0..1;
 
 proc test1(i1:range(?IT,?,?), i2:range(IT,?,?)) {
   writeln((i1,i2));

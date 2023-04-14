@@ -51,8 +51,8 @@ for i in true.. by -3 do
 
 writeln("---");
 
-var re: range(color, boundKind.neither) = ..;
-var rb: range(bool, boundKind.neither) = ..;
+var re: range(color, boundKind.neither, ?) = ..;
+var rb: range(bool, boundKind.neither, ?) = ..;
 
 for i in re do
   writeln(i);

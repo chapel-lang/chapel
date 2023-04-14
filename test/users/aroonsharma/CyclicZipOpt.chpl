@@ -238,7 +238,7 @@ proc _CyclicZipOpt_matchArgsShape(type rangeType, type scalarType, args) type {
 
 proc CyclicZipOpt.dsiCreateRankChangeDist(param newRank: int, args) {
   var collapsedDimInds: rank*idxType;
-  var collapsedLocs: _cyclic_matchArgsShape(range(int), int, args);
+  var collapsedLocs: _cyclic_matchArgsShape(simpleRange, int, args);
   var newLow: newRank*idxType;
 
   var j: int = 1;

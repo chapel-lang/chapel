@@ -1,4 +1,4 @@
-proc foo(x: range) {
+proc foo(x: simpleRange) {
   writeln("x is: ", x);
 }
 

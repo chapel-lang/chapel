@@ -1,11 +1,11 @@
-var empty: range(bool, boundKind.neither);
+var empty: range(bool, boundKind.neither, false);
 
 writeln(empty.low);
 writeln(empty.high);
 writeln(empty._low);
 writeln(empty._high);
 
-var empty2: range(bool, boundKind.neither);
+var empty2: range(bool, boundKind.neither, false);
 
 writeln(empty2.low);
 writeln(empty2.high);

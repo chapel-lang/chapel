@@ -1,6 +1,6 @@
 class A
 {
-  var rng: range(int);
+  var rng: range(int, boundKind.both, false);
 }
 
 proc main()

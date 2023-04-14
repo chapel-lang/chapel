@@ -1,6 +1,6 @@
 // should be oblivious of idxType
-var r1: range(int(32)) = 0..1:int(32);
-var r2: range(uint(32))= 0..1:uint(32);
+var r1: range(int(32), ?) = 0..1:int(32);
+var r2: range(uint(32), ?)= 0..1:uint(32);
 writeln(r1==r2);
 writeln(r1!=r2);
 
