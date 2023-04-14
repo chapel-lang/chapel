@@ -112,6 +112,26 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
     }
   }
 
+  // Some basic getter methods for domain properties
+  //
+  // TODO: We can eventually replace these for calls on a domain *value* by
+  // looking at the property from the _instance implementation. But that won't
+  // work if we want to support these methods on a domain type-expression.
+  //
+  // TODO: calling these within a method doesn't work
+  if (type->isDomainType()) {
+    if (parenless) {
+      if (name == "idxType" || name == "rank" || name == "stridable" ||
+          name == "parSafe") {
+        return true;
+      }
+    } else {
+      if (name == "isRectangular" || name == "isAssociative") {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -328,6 +348,43 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
   return ret;
 }
 
+static const TypedFnSignature*
+generateDomainMethod(Context* context,
+                     const DomainType* dt,
+                     UniqueString name) {
+  // Build a basic function signature for methods querying some aspect of
+  // a domain's type.
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, dt));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ dt->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, dt->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 fieldAccessorQuery(Context* context,
                    const types::CompositeType* compType,
@@ -407,6 +464,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateInitCopySignature(context, compType);
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
+    } else if (type->isDomainType()) {
+      result = generateDomainMethod(context, type->toDomainType(), name);
     } else {
       CHPL_ASSERT(false && "Not implemented yet!");
     }
