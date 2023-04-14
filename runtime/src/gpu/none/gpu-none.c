@@ -82,7 +82,6 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_y,
                                         int blk_dim_z,
                                         int nargs, va_list args) {
-  chpl_error("kernel launcher is called", ln, fn);
 }
 
 inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
@@ -91,7 +90,6 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              int blk_dim,
                                              int nargs,
                                              va_list args) {
-  chpl_error("kernel launcher is called", ln, fn);
 }
 
 void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {

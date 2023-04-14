@@ -910,29 +910,31 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   gpuLaunchBlock->insertAtTail(gpuCall);
   gpuLaunchBlock->flattenAndRemove();
 
-  if (doGpuCodegen()) {
-    // if (chpl_task_getRequestedSubloc() >= 0) {
-    //   code to determine number of threads to launch kernel with
-    //   call the generated GPU kernel
-    // } else {
-    //   run the existing loop on the CPU
-    // }
-    CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
-                                      new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
-                                      new_IntSymbol(0));
-    CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
-    gpuLoop.loop()->insertBefore(loopCloneCond);
-  }
-  else {
-    // just put two blocks before the loop without any conditional. This will
-    // result in both blocks to be executed so that the runtime support gets
-    // called while also executing the original loop. This way (1) we still
-    // coung kernel launches with GpuDiagnostics, (2) exercise more GPU code.
-    gpuLoop.loop()->insertBefore(thenBlock);
-    gpuLoop.loop()->insertBefore(elseBlock);
-  }
+  // if (chpl_task_getRequestedSubloc() >= 0) {
+  //   code to determine number of threads to launch kernel with
+  //   call the generated GPU kernel
+  // } else {
+  //   run the existing loop on the CPU
+  // }
+  CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
+                                    new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                                    new_IntSymbol(0));
+  CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock);
+
+  gpuLoop.loop()->insertBefore(loopCloneCond);
 
   elseBlock->insertAtHead(gpuLoop.loop()->remove());
+  if (doGpuCodegen()) {
+    loopCloneCond->elseStmt = elseBlock;
+  }
+  else {
+    // just put the loop block right after conditional. This will result in both
+    // blocks to be executed so that the runtime support gets called while also
+    // executing the original loop. This way (1) we still count kernel launches
+    // with GpuDiagnostics, (2) exercise more GPU code.
+    loopCloneCond->insertAfter(elseBlock);
+  }
+
 }
 
 static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
