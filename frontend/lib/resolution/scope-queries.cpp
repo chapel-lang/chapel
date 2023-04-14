@@ -467,7 +467,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config);
 
-  bool doLookupInExternBlock(const Scope* scope, UniqueString name);
+  bool doLookupInExternBlocks(const Scope* scope, UniqueString name);
 
   bool doLookupInScope(const Scope* scope,
                        llvm::ArrayRef<const Scope*> receiverScopes,
@@ -808,8 +808,8 @@ static const std::vector<ID>& gatherExternBlocks(Context* context, ID scopeID) {
   return QUERY_END(result);
 }
 
-bool LookupHelper::doLookupInExternBlock(const Scope* scope,
-                                         UniqueString name) {
+bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
+                                          UniqueString name) {
   // Which are the IDs of the contained extern block(s)?
   const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
 
@@ -1145,7 +1145,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // return the extern block ID
   if (checkExternBlocks && scope->containsExternBlock()) {
     foundExternBlock = true;
-    doLookupInExternBlock(scope, name);
+    doLookupInExternBlocks(scope, name);
   }
 
   if (trace) {
