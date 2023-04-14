@@ -30,7 +30,7 @@ CHPL_ENV_HEADER_TEMPLATE=$(CHPL_MAKE_HOME)/runtime/etc/chpl-env-gen-template.h
 CHPL_ENV_HEADER_DIR=$(RUNTIME_OBJDIR)/include/
 CHPL_ENV_HEADER=$(CHPL_ENV_HEADER_DIR)/chpl-env-gen.h
 
-all: $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
+all: reqchecks $(CHPL_ENV_HEADER) third-party-pkgs all.helpme
 
 depend:
 
@@ -51,6 +51,11 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
 
+# Tell printchplenv to perform any dependnecy checks that should be met before
+# building the runtime.
+reqchecks:
+	@$(CHPL_MAKE_HOME)/util/printchplenv --runtime --no-tidy --anonymize --runtime-req-checks
+	
 # save output of printchplenv into #defines but munge away
 # characters that can't be in #defines
 $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/chplenv/*

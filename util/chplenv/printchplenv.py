@@ -46,7 +46,8 @@ from collections import namedtuple
 from functools import partial
 import optparse
 import os
-from sys import stdout, path
+import unittest
+from sys import stdout, path, stderr, argv
 
 from chplenv import *
 
@@ -476,6 +477,10 @@ def parse_args():
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
 
+    #[hidden]
+    parser.add_option('--runtime-req-checks', action='store_true', dest='runtime_req_checks')
+    parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
+
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -485,6 +490,20 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    if options.do_unit_tests:
+      this_dir = os.path.realpath(os.path.dirname(__file__))
+      test_loader = unittest.TestLoader()
+      test_suite = test_loader.discover(this_dir, pattern="*.py")
+      test_runner = unittest.TextTestRunner()
+      test_runner.run(test_suite)
+      exit(1)
+
+    # We only want to report missing runtime requirements before building the
+    # runtime library, to do this check we have the runtime's Makefile pass
+    # printchplenv a hidden --runtime-req-checks flag.
+    if options.runtime_req_checks:
+        utils.err_if_runtime_reqs_unmet = True
 
     # Handle --all flag
     if options.all:

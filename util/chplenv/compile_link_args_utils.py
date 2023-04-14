@@ -60,12 +60,14 @@ def get_runtime_includes_and_defines():
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
 
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
-        if gpu_type == "cuda":
-            system.append("-I" + os.path.join(sdk_path, "include"))
-        elif gpu_type == "rocm":
-            # -isystem instead of -I silences warnings from inside these includes.
-            system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
-            system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
+
+        if sdk_path is not None:
+            if gpu_type == "cuda":
+                system.append("-I" + os.path.join(sdk_path, "include"))
+            elif gpu_type == "rocm":
+                # -isystem instead of -I silences warnings from inside these includes.
+                system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
+                system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
@@ -92,16 +94,18 @@ def get_runtime_link_args(runtime_subdir):
         # and add cuda libraries
         gpu_type = chpl_gpu.get()
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
-        if gpu_type == "cuda":
-            system.append("-L" + os.path.join(sdk_path, "lib64"))
-            system.append("-lcuda")
-            system.append("-lcudart")
-        elif gpu_type == "rocm":
-            lib_path = os.path.join(sdk_path, "lib")
-            system.append("-L" + lib_path)
-            system.append("-Wl,-rpath," + lib_path)
-            system.append("-lamdhip64")
-            system.append("-lhsa-runtime64")
+
+        if sdk_path is not None:
+            if gpu_type == "cuda":
+                system.append("-L" + os.path.join(sdk_path, "lib64"))
+                system.append("-lcuda")
+                system.append("-lcudart")
+            elif gpu_type == "rocm":
+                lib_path = os.path.join(sdk_path, "lib")
+                system.append("-L" + lib_path)
+                system.append("-Wl,-rpath," + lib_path)
+                system.append("-lamdhip64")
+                system.append("-lhsa-runtime64")
 
     # always link with the math library
     system.append("-lm")
