@@ -359,12 +359,12 @@ writeln();
 // examples.  However, they can also be specified if desired.  Here
 // are some examples that are equivalent to ones we've seen before:
 //
-const rt: range(int) = 1..10,
+const rt: range(int, ?) = 1..10,
       rt2: range(int, bounds=boundKind.both, stridable=false)
          = 1..10,
-      rte: range(color) = color.orange..color.green,
-      rts: range(stridable=true) = 1..10 by 2,
-      rtub: range(bounds=boundKind.low) = 1..;
+      rte: range(color, ?) = color.orange..color.green,
+      rts: range(stridable=true, ?) = 1..10 by 2,
+      rtub: range(bounds=boundKind.low, ?) = 1..;
 
 // More importantly, range types can be used to make a range variable
 // more flexible than its initializer permits.  For example, this
@@ -372,13 +372,13 @@ const rt: range(int) = 1..10,
 // declared with ``stridable=true``, it can later be assigned a range
 // value with a stride.
 
-var rangeVar: range(int, stridable=true) = 1..10;
+var rangeVar: range(int, boundKind.both, stridable=true) = 1..10;
 
 // Range types are also valuable in declaring formal arguments of a
 // procedure in which you want to leave certain aspects of the range
 // constrained or unconstrained.
 
-proc acceptsNonStridedIntRangesOnly(r: range(int)) { }
+proc acceptsNonStridedIntRangesOnly(r: range(int, boundKind.both, false)) { }
 proc acceptsAnyRange(r: range(?)) { }
 
 acceptsNonStridedIntRangesOnly(1..10);
