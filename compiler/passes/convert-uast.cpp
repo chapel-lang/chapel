@@ -407,7 +407,22 @@ struct Converter {
       const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
       if (rr != nullptr) {
         auto id = rr->toId();
-        if (!id.isEmpty()) {
+        if (id.isEmpty()) {
+          // super could be a formal or variable; in that case, it shouldn't
+          // be turned into a this.super call. Here the ID is empty, so
+          // it doesn't refer to a variable -- fall back to trying this.super.
+          if (node->name() == USTR("super")) {
+            if (methodThisStack.empty()) {
+              // TODO: probably too strict; what about field initializers?
+              USR_FATAL(node->id(), "super cannot occur outside of a method");
+            }
+            Symbol* parentMethodConvertedThis = methodThisStack.back();
+            auto thisExpr = new SymExpr(parentMethodConvertedThis);
+            auto nameExpr = new_CStringSymbol(node->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
+            return ret;
+          }
+        } else if (!id.isEmpty()) {
 
           // If we're referring to an associated type in an interface,
           // leave it unconverted for now because the compiler does some
