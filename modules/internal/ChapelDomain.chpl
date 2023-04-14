@@ -2491,7 +2491,7 @@ module ChapelDomain {
         for param dim in 0..inds.size-1 {
           if inds(dim).stride != 1 then
             halt("non-stridable domain assigned non-unit stride in dimension ", dim);
-          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
+          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType, boundKind.both,
                                                           stridable=false));
         }
         tmpD.setIndices(unstridableInds);
