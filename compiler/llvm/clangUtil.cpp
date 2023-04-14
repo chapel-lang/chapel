@@ -2356,7 +2356,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
-  if (usingGpuLocaleModel()) {
+  if (doGpuCodegen()) {
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2605,7 +2605,7 @@ void runClang(const char* just_parse_filename) {
                        clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
-  if (usingGpuLocaleModel()) {
+  if (doGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
 
@@ -4285,6 +4285,8 @@ void makeBinaryLLVM(void) {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         artifactFilename = genIntermediateFilename("chpl__gpu.o");
         break;
+      case GpuCodegenType::GPU_CG_NONE:
+        break;
     }
   }
 
@@ -4564,6 +4566,8 @@ void makeBinaryLLVM(void) {
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
           makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_NONE:
           break;
       }
     }

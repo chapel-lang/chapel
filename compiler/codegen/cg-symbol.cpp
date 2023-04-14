@@ -2320,6 +2320,8 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
             break;
+          case GpuCodegenType::GPU_CG_NONE:
+            break;
         }
       } else {
         // This is a function called from a GPU kernel
