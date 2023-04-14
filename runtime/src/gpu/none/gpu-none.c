@@ -98,6 +98,10 @@ void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
   return chpl_memmove(dst, src, n);
 }
 
+void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
+  return memset(addr, val, n);
+}
+
 void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   chpl_memcpy(dst, src, n);
 }
@@ -108,6 +112,15 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
 
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   chpl_memcpy(dst, src, n);
+}
+
+void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n) {
+  chpl_memcpy(dst, src, n);
+  return NULL;
+}
+
+void chpl_gpu_impl_comm_wait(void *stream) {
+  assert(stream==NULL);
 }
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
@@ -125,6 +138,10 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
   chpl_mem_free(0, 0, 0);
+}
+
+void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
+
 }
 
 // This can be used for proper reallocation

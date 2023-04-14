@@ -2333,6 +2333,8 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setVisibility(llvm::Function::HiddenVisibility);
             break;
+          case GpuCodegenType::GPU_CG_NONE:
+            break;
         }
       }
     }

@@ -3,6 +3,8 @@ import os
 import glob
 import json
 import chpl_locale_model
+import chpl_llvm
+import chpl_compiler
 import re
 from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
@@ -257,6 +259,13 @@ def validate(chplLocaleModel, chplComm):
     # Run function to validate that we have a satisfactory version of our SDK
     # (e.g. cuda or rocm)
     GPU_TYPES[get()][5]()
+
+    if get_runtime() == 'none':
+        return True
+
+    if chpl_compiler.get('target') != 'llvm':
+        error("The 'gpu' locale model can only be used with "
+              "CHPL_TARGET_COMPILER=llvm.")
 
     llvmTgt = GPU_TYPES[get()][4]
     if not validateLlvmBuiltForTgt(llvmTgt):
