@@ -108,9 +108,6 @@ static inline mode_t chpl_os_posix_S_ISUID(void) { return S_ISUID; }
 static inline mode_t chpl_os_posix_S_ISGID(void) { return S_ISGID; }
 static inline mode_t chpl_os_posix_S_ISVTX(void) { return S_ISVTX; }
 
-#ifdef __cplusplus
-#warning __cplusplus
-#endif
 // The POSIX spec and Darwin disagree on the names of the timestamp
 // members with type struct timespec. Here we define a common type
 // the module code can use, and a stat(3p) shim that converts from
