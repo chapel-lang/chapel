@@ -901,40 +901,39 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
 
 static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
                                       GpuKernel &kernel) {
-  BlockStmt* thenBlock = new BlockStmt();
-  BlockStmt* elseBlock = new BlockStmt();
-  BlockStmt* gpuLaunchBlock = new BlockStmt();
-  thenBlock->insertAtHead(gpuLaunchBlock);
-  VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, gpuLoop);
-  CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
-  gpuLaunchBlock->insertAtTail(gpuCall);
-  gpuLaunchBlock->flattenAndRemove();
-
   // if (chpl_task_getRequestedSubloc() >= 0) {
   //   code to determine number of threads to launch kernel with
   //   call the generated GPU kernel
-  // } else {
+  // } [else] {
   //   run the existing loop on the CPU
   // }
+  //
+  // Normally, We put the CPU block as the else block. If we are not doung GPU
+  // codegen, we put it as an anonymous block right after the conditional. This
+  // will make sure that we call the runtime support as if there's a GPU, yet
+  // still executing the loop always.
+
+  BlockStmt* gpuBlock = new BlockStmt();
+
+  VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
+  CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  gpuBlock->insertAtTail(gpuCall);
+
   CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
                                     new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                                     new_IntSymbol(0));
-  CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock);
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock);
+  gpuLoop.loop()->insertBefore(cond);
 
-  gpuLoop.loop()->insertBefore(loopCloneCond);
+  BlockStmt* cpuBlock = new BlockStmt();
+  cpuBlock->insertAtHead(gpuLoop.loop()->remove());
 
-  elseBlock->insertAtHead(gpuLoop.loop()->remove());
   if (doGpuCodegen()) {
-    loopCloneCond->elseStmt = elseBlock;
+    cond->elseStmt = cpuBlock;
   }
   else {
-    // just put the loop block right after conditional. This will result in both
-    // blocks to be executed so that the runtime support gets called while also
-    // executing the original loop. This way (1) we still count kernel launches
-    // with GpuDiagnostics, (2) exercise more GPU code.
-    loopCloneCond->insertAfter(elseBlock);
+    cond->insertAfter(cpuBlock);
   }
-
 }
 
 static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
