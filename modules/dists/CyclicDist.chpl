@@ -441,7 +441,7 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
 proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
     type strType = chpl__signedType(idxType);
     param rank = targetLocBox.size;
-    var inds: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, boundKind.both, stridable=true);
     for param i in 0..rank-1 {
       // NOTE: Not bothering to check to see if these can fit into idxType
       const lo = chpl__tuplify(startIdx)(i): idxType;
@@ -473,7 +473,7 @@ class LocCyclic {
     else
       for param i in 0..rank-1 do locidx(i) = locid(i):idxType;
 
-    var inds: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, boundKind.both, stridable=true);
 
     inds = chpl__computeCyclic(idxType, locid, distLocDims, startIdx);
     myChunk = {(...inds)};
@@ -646,7 +646,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
       // distribution (at least, I couldn't figure out a way to not go
       // back and forth without breaking tests)
       const zeroShift = {(...newFollowThis)}.chpl__unTranslate(wholeLow);
-      var result: rank*range(idxType=idxType, stridable=true);
+      var result: rank*range(idxType=idxType, boundKind.both, stridable=true);
       type strType = chpl__signedType(idxType);
       for param i in 0..rank-1 {
         const wholestride = chpl__tuplify(wholeStride)(i);
@@ -662,7 +662,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 // of 'whole'
 private proc chpl__followThisToOrig(type idxType, followThis, whole) {
   param rank = followThis.size;
-  var t: rank*range(idxType, stridable=true);
+  var t: rank*range(idxType, boundKind.both, stridable=true);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
                      " follower is: ", followThis);
@@ -964,7 +964,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
-  var t: rank*range(idxType=idxType, stridable=true);
+  var t: rank*range(idxType=idxType, boundKind.both, stridable=true);
   for param i in 0..rank-1 {
     type strType = chpl__signedType(idxType);
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
@@ -1142,7 +1142,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
         const sb  = chpl__tuplify(regionSrc.stride);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el, boundKind.both, stridable = true);
         r2 = regionDest.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
@@ -1184,7 +1184,7 @@ where useBulkTransferDist {
 
         //r2 is the domain to refer the elements of A in locale j
         //r1 is the domain to refer the corresponding elements of Dest
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el, boundKind.both, stridable = true);
         r2 = inters.dims();
 
         //In the case that the number of elements in dimension t for r1 and r2
@@ -1226,7 +1226,7 @@ where useBulkTransferDist {
         const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
         const sb  = chpl__tuplify(srcDom.stride);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
+        var r1,r2: rank * range(idxType = el, boundKind.both, stridable = true);
         r2 = inters.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1

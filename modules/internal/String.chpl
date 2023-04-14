@@ -1068,7 +1068,7 @@ module String {
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  inline proc string.indices : range do return 0..<size;
+  inline proc string.indices : simpleRange do return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
@@ -1507,7 +1507,7 @@ module String {
    */
 
   inline proc string.find(pattern: string,
-                          indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                          indices: range(?) = this.byteIndices:range(byteIndex, boundKind.both, false)) : byteIndex {
     if this.isASCII() then
       return doSearchNoEnc(this, pattern, indices, count=false): byteIndex;
     else
@@ -1524,7 +1524,7 @@ module String {
               within a string, or -1 if the `pattern` is not in the string.
    */
   inline proc string.rfind(pattern: string,
-                           indices: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                           indices: range(?) = this.byteIndices:range(byteIndex, boundKind.both, false)) : byteIndex {
     if this.isASCII() then
       return doSearchNoEnc(this, pattern, indices,
                            count=false, fromLeft=false): byteIndex;

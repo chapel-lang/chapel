@@ -13,8 +13,8 @@ writeln(brt);
 
 // NB deprecating `range(boundedType=...)` required changing AggregateType.cpp
 var r: range(boundedType =              // d: boundedType
-  BoundedRangeType.boundedHigh);        // d: BoundedRangeType, boundedHigh
-
+  BoundedRangeType.boundedHigh,         // d: BoundedRangeType, boundedHigh
+  int, false);
 compilerWarning(r.boundedType:string);  // d: boundedType
 
 // NB deprecating `range(boundedType=?B)` required changing preFold.cpp

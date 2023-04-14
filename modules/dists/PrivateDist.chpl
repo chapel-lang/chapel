@@ -100,9 +100,7 @@ class PrivateDom: BaseRectangularDom {
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall loc in Locales do on loc {
-      var t: 1*range(idxType);
-      t(0) = here.id..here.id;
-      yield t;
+      yield ((here.id..here.id): range(idxType, boundKind.both, false), );  //1*range
     }
   }
 
@@ -295,9 +293,7 @@ iter PrivateArr.these() ref {
 
 iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   coforall loc in Locales do on loc {
-    var t: 1*range(idxType);
-    t(0) = here.id..here.id;
-    yield t;
+    yield ((here.id..here.id): range(idxType, boundKind.both, false), );  //1*range
   }
 }
 

@@ -422,7 +422,7 @@ inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType) do
 // oblivious of 'wholeR'
 inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT,
                                                 param zerobased)
-  : range(idxType)
+  : range(idxType, boundKind.both, false)
 {
   const startCycle = mulP2(cycNo, cycleSizePos) -
     // cycNo*cycleSize may be <adjLowIdx, subtraction would wrap for unsigned
@@ -568,7 +568,7 @@ inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
   return hiCycNo * storagePerCycle:stoIndexT + hiIdxAdj;
 }
 
-proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
+proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT, boundKind.both, false) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
 
@@ -692,7 +692,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   type resultIdxType = globDD.idxType;
   // Ensure it is the same as dsiMyDensifiedRangeType1d(globDD).idxType.
   // Have to do it a bit indirectly.
-  compilerAssert(range(idxType=resultIdxType, stridable=globDD.stridable)
+  compilerAssert(range(idxType=resultIdxType, boundKind.both, stridable=globDD.stridable)
                  == dsiMyDensifiedRangeType1d(globDD));
 
   // Assume 2*numLocales always fits in 31 bits, so we can skip this check
@@ -723,7 +723,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
 }
 
 proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type do
-  return range(idxType=globDD.idxType, stridable=globDD.stridable);
+  return range(idxType=globDD.idxType, boundKind.both, stridable=globDD.stridable);
 
 proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
   : range(stoIndexT, sliceRange.bounds, false)

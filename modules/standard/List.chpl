@@ -749,7 +749,7 @@ module List {
       :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);
@@ -771,7 +771,7 @@ module List {
       :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);
@@ -801,7 +801,7 @@ module List {
         param msg = "Cannot extend " + e + " with unbounded " + f;
         compilerError(msg);
       }
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);

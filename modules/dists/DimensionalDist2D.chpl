@@ -320,7 +320,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // replace this with 'this.stridable' for simplicity?
   proc stoStridable param do  return stoStridableDom(stoIndexT, dom1, dom2);
-  proc stoRangeT type do  return range(stoIndexT, stridable = stoStridable);
+  proc stoRangeT type do  return range(stoIndexT, boundKind.both, stoStridable);
   proc stoDomainT type do  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom

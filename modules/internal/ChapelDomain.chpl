@@ -1223,7 +1223,7 @@ module ChapelDomain {
       var idx: rank*idxType;
       param uprank = chpl__countRanges((...args));
       param upstridable = this.stridable || chpl__anyRankChangeStridable(args);
-      var upranges: uprank*range(idxType=_value.idxType,
+      var upranges: uprank*range(idxType=_value.idxType, boundKind.both,
                                  stridable=upstridable);
       var updim = 0;
 
@@ -2486,7 +2486,7 @@ module ChapelDomain {
         return this;
       else if !tmpD.stridable && this.stridable {
         const inds = this.getIndices();
-        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
+        var unstridableInds: rank*range(tmpD.idxType, boundKind.both, stridable=false);
 
         for param dim in 0..inds.size-1 {
           if inds(dim).stride != 1 then
@@ -2575,10 +2575,10 @@ module ChapelDomain {
         return d;
       else if !tmpD.stridable && d.stridable {
         var inds = d.getIndices();
-        var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+        var unstridableInds: d.rank*range(tmpD.idxType, boundKind.both, stridable=false);
 
         for param i in 0..tmpD.rank-1 {
-          unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+          unstridableInds(i) = inds(i):range(tmpD.idxType, boundKind.both, stridable=false);
         }
         tmpD.setIndices(unstridableInds);
         return tmpD;

@@ -646,7 +646,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
-  var dims : rank*range(low(0).type);
+  var dims : rank*range(low(0).type, boundKind.both, false);
   for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
@@ -674,7 +674,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   param rank = targetLocBox.rank;
   type idxType = chpl__tuplify(boundingBox)(0).idxType;
-  var inds: rank*range(idxType);
+  var inds: rank*range(idxType, boundKind.both, false);
   for param i in 0..rank-1 {
     const lo = boundingBox.dim(i).lowBound;
     const hi = boundingBox.dim(i).highBound;
@@ -803,7 +803,8 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
   if chpl__testParFlag then
     chpl__testPar("Stencil domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, boundKind.both,
+                    stridable=stridable||anyStridable(followThis));
   for param i in 0..rank-1 {
     const wholeDim  = whole.dim(i);
     const followDim = followThis(i);
@@ -928,7 +929,7 @@ proc StencilDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 // Create a domain that points to the nearest neighboring locales
 private proc nearestDom(param rank) {
-  var nearest : rank*range;
+  var nearest : rank*simpleRange;
   for param i in 0..rank-1 do nearest(i) = -1..1;
   const ND : domain(rank) = nearest;
   return ND;
@@ -1313,7 +1314,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Stencil array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, boundKind.both, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {

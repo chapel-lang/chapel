@@ -1,3 +1,3 @@
 
-var D : domain(range);
+var D : domain(simpleRange);
 var A : [D] int;

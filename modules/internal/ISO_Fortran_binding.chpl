@@ -193,7 +193,7 @@ module ISO_Fortran_binding {
       cumulativeLength *= FA.dim[i-1].extent;
     }
 
-    var dims: rank*range;
+    var dims: rank*simpleRange;
     for param i in 0..<rank {
       assert(FA.dim[i].lower_bound == 0);
       dims[i] = 1..#FA.dim[i].extent;

@@ -447,7 +447,7 @@ module UnrolledLinkedList {
       :rtype: `range`
     */
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);
@@ -468,7 +468,7 @@ module UnrolledLinkedList {
       :rtype: `range`
     */
     proc ref append(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);
@@ -489,7 +489,7 @@ module UnrolledLinkedList {
       :rtype: `range`
     */
     proc ref append(other: [?d] eltType) lifetime this < other {
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);
@@ -521,7 +521,7 @@ module UnrolledLinkedList {
         compilerError(msg);
       }
 
-      var ret: range;
+      var ret: simpleRange;
       on this {
         _enter();
         ret = _appendGeneric(other);

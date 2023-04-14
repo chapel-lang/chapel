@@ -111,8 +111,8 @@ class CSDom: BaseSparseDomImpl {
   param stridable;
   var dist: unmanaged CS(compressRows,sortedIndices);
 
-  var rowRange: range(idxType, stridable=stridable);
-  var colRange: range(idxType, stridable=stridable);
+  var rowRange: range(idxType, boundKind.both, stridable=stridable);
+  var colRange: range(idxType, boundKind.both, stridable=stridable);
 
   /* (row|col) startIdxDom */
   var startIdxDom: domain(1, idxType);

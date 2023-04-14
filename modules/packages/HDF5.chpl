@@ -3573,7 +3573,7 @@ module HDF5 {
       var data: [0..# (* reduce dims)] eltType;
       readHDF5Dataset(file_id, dsetName, data);
 
-      var rngTup: rank*range;
+      var rngTup: rank*simpleRange;
       for param i in 0..rank-1 do rngTup[i] = 1..dims[i]:int;
 
       const D = {(...rngTup)};

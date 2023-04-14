@@ -3,7 +3,7 @@ use List;
 config const n = 100;
 
 record R {
-  var x : range;
+  var x : simpleRange;
 }
 
 operator R.<(x:R, y:R) {

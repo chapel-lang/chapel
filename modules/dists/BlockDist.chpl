@@ -714,7 +714,7 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low  = chpl__tuplify(targetLocsIdx(locSpace.low));
   const high = chpl__tuplify(targetLocsIdx(locSpace.high));
-  var dims : rank*range(low(0).type);
+  var dims : rank*range(low(0).type, boundKind.both, false);
   for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
@@ -761,7 +761,7 @@ proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
                         boundingBoxDims /* boundingBox.dims() */) {
   param rank = targetLocBox.rank;
   type idxType = boundingBox.idxType;
-  var inds: rank*range(idxType);
+  var inds: rank*range(idxType, boundKind.both, false);
   for param i in 0..rank-1 {
     const lo = boundingBoxDims(i).lowBound;
     const hi = boundingBoxDims(i).highBound;
@@ -899,7 +899,8 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
   if chpl__testParFlag then
     chpl__testParWriteln("Block domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, boundKind.both,
+                    stridable=stridable||anyStridable(followThis));
   for param i in 0..rank-1 {
     const wholeDim  = whole.dim(i);
     const followDim = followThis(i);
@@ -1224,7 +1225,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, boundKind.both, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {

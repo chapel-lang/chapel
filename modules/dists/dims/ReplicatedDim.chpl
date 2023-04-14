@@ -85,7 +85,7 @@ record Replicated1locdom {
   type stoIndexT;
   param stridable;
   // our copy of wholeR
-  var locWholeR: range(stoIndexT, stridable=stridable);
+  var locWholeR: range(stoIndexT, boundKind.both, stridable=stridable);
 }
 
 
@@ -300,7 +300,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()
 // and (if applicable) by dsiMyDensifiedRangeForTaskID1d().
 proc Replicated1locdom.dsiMyDensifiedRangeType1d(globDD) type do
-  return range(globDD.idxType);
+  return range(globDD.idxType, boundKind.both, false);
 
 // REQ-2 if !dsiStorageUsesUserIndices
 // Returns a range of storage indices corresponding to the user indices

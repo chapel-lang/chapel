@@ -362,7 +362,7 @@ module Bytes {
     :returns: The indices that can be used to index into the bytes
               (i.e., the range ``0..<this.size``)
   */
-  proc bytes.indices : range do return 0..<size;
+  proc bytes.indices : simpleRange do return 0..<size;
 
   /*
     :returns: The number of bytes in the :type:`bytes`.

@@ -498,7 +498,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   param rank = targetLocDom.rank;
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.size);
-    var ranges: rank*range;
+    var ranges: rank*simpleRange;
     for param i in 0..rank-1 do
       ranges(i) = 0..#factors(i);
     targetLocDom = {(...ranges)};
@@ -506,7 +506,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
   } else {
     if specifiedLocArr.rank != rank then
       compilerError("specified target array of locales must equal 1 or distribution rank");
-    var ranges: rank*range;
+    var ranges: rank*simpleRange;
     for param i in 0..rank-1 do
       ranges(i) = 0..#specifiedLocArr.domain.dim(i).sizeAs(int);
     targetLocDom = {(...ranges)};
@@ -515,7 +515,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
 }
 
 proc setupTargetLocRanges(param rank, specifiedLocArr) {
-  var ranges: rank*range;
+  var ranges: rank*simpleRange;
 
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.size);
@@ -612,7 +612,7 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
   param needsStridable = targetDom.stridable || srcSlice.stridable;
   var rngs = targetDom.dims() :
-             (targetDom.rank*range(targetDom.idxType,stridable=needsStridable));
+             (targetDom.rank*range(targetDom.idxType, boundKind.both, stridable=needsStridable));
 
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);

@@ -3,7 +3,7 @@ operator *(D1: domain, D2: domain)
   param stridable = D1.stridable || D2.stridable;
   param rank = D1.rank + D2.rank;
 
-  var ranges: rank*range(stridable=stridable);
+  var ranges: rank*range(int, boundKind.both, stridable);
   for i in 0..#D1.rank do
     ranges(i) = D1.dim(i);
   for i in 0..#D2.rank do

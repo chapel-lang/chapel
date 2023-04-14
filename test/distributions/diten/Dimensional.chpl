@@ -60,7 +60,7 @@ class Dimensional {
   // mapped to that locale for that dimension within the range
   // min(idxType)..max(idxType)
   proc getLocRanges(loc: nDims*int) {
-    var ranges: nDims*range(stridable=true);
+    var ranges: nDims*range(int, boundKind.both, stridable=true);
     for param dim in 0..nDims-1 {
       ranges(dim) = dimensionDistributors(dim).localPart(localeDomain, loc, idxType);
     }

@@ -1,5 +1,5 @@
 class C {
-  proc bbox(x: int): range {
+  proc bbox(x: int): simpleRange {
     halt("bbox() not implemented for this class");
   }
 }

@@ -186,7 +186,7 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 proc Block1dom.dsiIsReplicated1d() param do return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  var defaultVal: range(stoIndexT, stridable=this.stridable);
+  var defaultVal: range(stoIndexT, boundKind.both, this.stridable);
   return new Block1locdom(myRange = defaultVal);
 }
 
@@ -251,7 +251,7 @@ proc Block1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
 
 iter Block1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
-  yield locRange: range(globDD.idxType);
+  yield locRange: range(globDD.idxType, boundKind.both, false);
 }
 
 proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param do return false;
@@ -268,7 +268,7 @@ proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:in
 }
 
 proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type do
-  return range(globDD.idxType);
+  return range(globDD.idxType, boundKind.both, false);
 
 iter Block1dom.dsiSerialArrayIterator1d() {
   // The Block distribution assigns indices to locales contiguously and

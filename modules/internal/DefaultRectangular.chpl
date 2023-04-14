@@ -400,10 +400,10 @@ module DefaultRectangular {
             const numSublocTasks = (if chunk < dptpl % numChunks
                                     then dptpl / numChunks + 1
                                     else dptpl / numChunks);
-            var locBlock: rank*range(intIdxType);
+            var locBlock: rank*range(intIdxType, boundKind.both, false);
             for param i in 0..rank-1 do
               locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
-            var followMe: rank*range(intIdxType) = locBlock;
+            var followMe = locBlock;
             const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
                                           numChunks, chunk,
                                           locBlock(parDim)._high,
@@ -415,13 +415,10 @@ module DefaultRectangular {
                                                              minIndicesPerTask,
                                                              followMe);
             coforall chunk2 in 0..#numChunks2 {
-              var locBlock2: rank*range(intIdxType);
-              for param i in 0..rank-1 do
-                locBlock2(i) = followMe(i).lowBound..followMe(i).highBound;
-              var followMe2: rank*range(intIdxType) = locBlock2;
-              const low  = locBlock2(parDim2)._low,
-                high = locBlock2(parDim2)._high;
-              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(intIdxType),
+              var followMe2 = followMe;
+              const low  = followMe(parDim2)._low,
+                high = followMe(parDim2)._high;
+              const (lo,hi) = _computeBlock(followMe(parDim2).sizeAs(intIdxType),
                                             numChunks2, chunk2,
                                             high, low, low);
               followMe2(parDim2) = lo..hi;
@@ -462,13 +459,13 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        var locBlock: rank*range(intIdxType);
+        var locBlock: rank*range(intIdxType, boundKind.both, false);
         for param i in 0..rank-1 do
           locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
+          var followMe = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
@@ -504,7 +501,7 @@ module DefaultRectangular {
         chpl_debug_writeln("In domain follower code: Following ", followThis);
 
       param stridable = this.stridable || anyStridable(followThis);
-      var block: rank*range(idxType=intIdxType, stridable=stridable);
+      var block: rank*range(idxType=intIdxType, boundKind.both, stridable=stridable);
       if boundsChecking then
         for param i in 0..rank-1 do
           if followThis(i).highBound >= ranges(i).sizeAs(uint) then
@@ -685,7 +682,7 @@ module DefaultRectangular {
 
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
-      var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
+      var allocRange:range(idxType,?) = (ranges(0).lowBound)..#allocSize;
       return new unmanaged DefaultRectangularArr(eltType=eltType,
                                        rank=rank,
                                        idxType=idxType,

@@ -352,7 +352,7 @@ proc BlockCyclic.getStarts(inds, locid) {
   // TODO: Does using David's detupling trick work here?
   //
   var D: domain(rank, idxType, stridable=true);
-  var R: rank*range(idxType, stridable=true);
+  var R: rank*range(idxType, boundKind.both, stridable=true);
   for i in 0..rank-1 {
     var lo, hi: idxType;
     const domlo = inds.dim(i).lowBound,
@@ -533,13 +533,13 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     // passed through nested loops correctly (or at all).
     for follow in locDom.myStarts.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
       for i in locDom.myStarts.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
-        var retblock: rank*range(idxType);
+        var retblock: rank*range(idxType, boundKind.both, false);
         for param j in 0..rank-1 {
           const lo     = if rank == 1 then i else i(j);
           const dim    = whole.dim(j);
           const dimLow = dim.lowBound;
 
-          var temp : range(idxType, stridable=stridable);
+          var temp : range(idxType, boundKind.both, stridable=stridable);
           temp = max(lo, dimLow)..
                      min(lo + dist.blocksize(j):idxType-1, dim.highBound);
           temp     = dim[temp];
@@ -567,7 +567,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  var t: rank*range(idxType, stridable=stridable);
+  var t: rank*range(idxType, boundKind.both, stridable=stridable);
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
@@ -995,7 +995,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 }
 
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
+  var myFollowThis: rank*range(idxType=idxType, boundKind.both, stridable=stridable);
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
@@ -1059,7 +1059,7 @@ iter do_dsiLocalSubdomains(indexDom) {
   const blockSizes = indexDom.globDom.dist.blocksize;
   const globDims = indexDom.globDom.whole.dims();
   foreach i in indexDom.myStarts {
-    var temp : rank*range(idxType);
+    var temp : rank*range(idxType, boundKind.both, false);
     for param j in 0..rank-1 {
       var lo: idxType;
       if rank == 1 then lo = i;
