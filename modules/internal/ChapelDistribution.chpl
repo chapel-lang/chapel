@@ -1192,7 +1192,9 @@ module ChapelDistribution {
         eCast.dsiReallocate(tmp);
       }
     }
+    writeln(here.id, "Calling dsiSetIndices with ", rhs.getIndices());
     lhs.dsiSetIndices(rhs.getIndices());
+    lhs.dsiDisplayRepresentation();
     for e in lhs._arrs do {
       var eCastQ = e:arrType?;
       var eCast = eCastQ!;

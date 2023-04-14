@@ -342,7 +342,7 @@ class Block : BaseDist {
 class LocBlock {
   param rank: int;
   type idxType;
-  const myChunk: domain(rank, idxType);
+  var myChunk: domain(rank, idxType);
 }
 
 //
@@ -1016,8 +1016,9 @@ proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 proc BlockDom.setup() {
   coforall (localeIdx, loc, locDomsElt)
            in zip(dist.targetLocDom, dist.targetLocales, locDoms) {
-    on loc {
+             on loc {
       locDomsElt.myBlock = dist.getChunk(whole, localeIdx);
+               writeln(here.id, " In setup: ", whole, " ", localeIdx, " ", locDomsElt.myBlock);
     }
   }
 }
@@ -1041,8 +1042,10 @@ proc LocBlockDom.contains(i) do return myBlock.contains(i);
 override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
+    /*
     if doRADOpt then
       writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD!.RAD);
+*/
   }
 }
 
@@ -1539,8 +1542,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
-    return whole[(...inds)];
+    return locDoms[locid].myBlock;
   } else {
     var d: domain(rank, idxType, stridable);
     return d;
