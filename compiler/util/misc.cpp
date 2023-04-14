@@ -122,7 +122,7 @@ bool usingGpuLocaleModel() {
 }
 
 bool doGpuCodegen() {
-  return 0 != strcmp(CHPL_GPU_CODEGEN, "none");
+  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU_CODEGEN, "none"));
 }
 
 bool forceWidePtrsForLocal() {
