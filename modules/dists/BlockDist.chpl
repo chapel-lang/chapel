@@ -1016,9 +1016,8 @@ proc BlockDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 proc BlockDom.setup() {
   coforall (localeIdx, loc, locDomsElt)
            in zip(dist.targetLocDom, dist.targetLocales, locDoms) {
-             on loc {
+    on loc {
       locDomsElt.myBlock = dist.getChunk(whole, localeIdx);
-               writeln(here.id, " In setup: ", whole, " ", localeIdx, " ", locDomsElt.myBlock);
     }
   }
 }
@@ -1042,10 +1041,8 @@ proc LocBlockDom.contains(i) do return myBlock.contains(i);
 override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
-    /*
-    if doRADOpt then
+    if doRADOpt && locArr[tli].locRAD != nil then
       writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD!.RAD);
-*/
   }
 }
 
