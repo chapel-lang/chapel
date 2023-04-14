@@ -19,8 +19,6 @@
 
 #include "chpl/util/clang-integration.h"
 
-// TODO: move this file to util to match the header
-
 #include "chpl/framework/TemporaryFileResult.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -39,20 +37,12 @@
 
 #include "llvm/Config/llvm-config.h"
 #include "llvm/Support/TargetSelect.h"
-//#include "llvm/Support/VirtualFileSystem.h"
 
 #if LLVM_VERSION_MAJOR >= 16
 #include "llvm/TargetParser/Host.h"
 #else
 #include "llvm/Support/Host.h"
 #endif
-
-/*
-#include <unistd.h> // TODO: remove
-#include <iostream> // TODO: remove
-#include <chrono> // TODO: remove
-#include <ctime> // TODO: remove
-*/
 
 namespace chpl {
 namespace util {
@@ -136,40 +126,10 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   // TODO: look at CHPL_TARGET_ARCH
   initializeLlvmTargets();
 
-#if 0
-  // Here is how it could work with ci.generateCC1CommandLine /
-  // ci.getCC1CommandLine.
-  // This does not include all of the arguments that the later
-  // version includes.
 
-  // TODO: Should this call CompilerInvocation::generateCC1CommandLine ?
-  auto diagOptions = new clang::DiagnosticOptions();
-  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
-                                                     &*diagOptions);
-  auto diagID = new clang::DiagnosticIDs();
-  auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-
-  clang::CompilerInvocation ci;
-  clang::CompilerInvocation::CreateFromArgs(ci, argsCstrs, *diags);
-
-  // result = ci.getCC1CommandLine();
-
-  {
-    // Set up string allocator.
-    llvm::BumpPtrAllocator Alloc;
-    llvm::StringSaver Strings(Alloc);
-    auto SA = [&Strings](const llvm::Twine &Arg) { return Strings.save(Arg).data(); };
-
-    // Synthesize full command line from the CompilerInvocation, including "-cc1".
-    llvm::SmallVector<const char *, 32> Args{"-cc1"};
-    ci.generateCC1CommandLine(Args, SA);
-
-    // Convert arguments to the return type.
-    result = std::vector<std::string>{Args.begin(), Args.end()};
-  }
-
-  delete diags;
-#endif
+  // Note: considered using ci.generateCC1CommandLine /
+  // ci.getCC1CommandLine but this does not produce all of the arguments
+  // that the below strategy does.
 
   std::string triple = llvm::sys::getDefaultTargetTriple();
   // Create a compiler instance to handle the actual work.
@@ -225,12 +185,6 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
 
 #endif
 
-  /*
-  printf("getCC1Arguments returning\n");
-  for (auto arg : result) {
-    printf("  %s\n", arg.c_str());
-  }*/
-
   return QUERY_END(result);
 }
 
@@ -242,10 +196,6 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   QUERY_BEGIN(createClangPrecompiledHeader, context, externBlockId);
 
   owned<TemporaryFileResult> result;
-
-  /*printf("Running createClangPrecompiledHeader tmpdir is %s\n",
-         context->tmpDir().c_str());*/
-  //sleep(1);
 
 #ifdef HAVE_LLVM
   bool ok = true;
@@ -280,15 +230,6 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   }
 #endif
 
-  /*{
-    llvm::sys::fs::file_status status;
-    llvm::sys::fs::status(tmpInput, status);
-    auto time = status.getLastModificationTime();
-    auto e = time.time_since_epoch();
-    //std::cout << "Modification time: " << std::ctime(&e) << "\n";
-    std::cout << "Modification time: " << e.count() << "\n";
-  }*/
-
   // TODO: this could use the clang linked with instead of spawning it
   // (although doing so is more complex to implement).
 
@@ -309,11 +250,6 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     command.push_back("-o");
     command.push_back(tmpOutput);
 
-    /*printf("Precompiling with clang:\n");
-    for (auto arg: command) {
-      printf("  %s\n", arg.c_str());
-    }*/
-
     const char* desc = "create clang precompiled header for extern block";
     int code = executeAndWait(command, desc);
 
@@ -323,7 +259,6 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
         cmd.append(arg);
         cmd.append(" ");
       }
-//      context->error(Location(), "Could not run clang command %s", cmd.c_str());
       context->error(Location(), "error running clang on extern block");
       ok = false;
     }
@@ -346,10 +281,6 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     }
   }
 
-  /*printf("createClangPrecompiledHeader returning\n");
-  if (result.get() != nullptr) {
-    result->dump();
-  }*/
 #endif
 
   return QUERY_END(result);
@@ -364,9 +295,6 @@ precompiledHeaderContainsNameQuery(Context* context,
   bool result = false;
 
 #ifdef HAVE_LLVM
-
-  //printf("Running precompiledHeaderContainsNameQuery %s\n", name.c_str());
-  //printf("CHPL_HOME is %s\n", context->chplHome().c_str());
 
   if (pch != nullptr) {
     std::vector<std::string> clFlags = clangFlags(context);
@@ -395,11 +323,6 @@ precompiledHeaderContainsNameQuery(Context* context,
 
     Clang->setDiagnostics(diags);
 
-    /*printf("Creating CompilerInvocation from\n");
-    for (auto arg : cc1argsCstrs) {
-      printf("  %s\n", arg);
-    }*/
-
     bool success =
       clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
                                                 cc1argsCstrs, *diags);
@@ -420,31 +343,11 @@ precompiledHeaderContainsNameQuery(Context* context,
                                     clang::SourceLocation(),
                                     clang::ASTReader::ARR_None);
     if (readResult == clang::ASTReader::Success) {
-      /*printf("Total identifiers %i\n", (int) astr->getTotalNumIdentifiers());
-      printf("Total macros %i\n", (int) astr->getTotalNumMacros());
-      printf("Total types %i\n", (int) astr->getTotalNumTypes());*/
-      /*{
-        printf("Looking up identifiers in %s\n", pch->path().c_str());
-        clang::IdentifierIterator* it = astr->getIdentifiers();
-        for (llvm::StringRef found = it->Next();
-             !found.empty();
-             found = it->Next()) {
-          printf("  found ident %s\n", found.str().c_str());
-        }
-      }*/
-
       clang::IdentifierInfo* iid = astr->get(name.c_str());
       result = (iid != nullptr);
     }
 
     delete Clang;
-
-#if 0
-    auto astr = clang::ASTReader(Clang->getPreprocessor(),
-                                 Clang->getModuleCache(),
-                                 /* ASTContext */ nullptr
-        Clang->getASTContext(),
-#endif
   }
 #endif
 

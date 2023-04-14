@@ -103,6 +103,8 @@ class Context {
 
     /** Tool name (for use when creating the tmpDir in /tmp if needed) */
     std::string toolName = "chpl";
+
+    void swap(Configuration& other);
   };
 
  private:
@@ -119,15 +121,12 @@ class Context {
 
   // --------- begin all Context fields ---------
 
+  // The current Configuration
+  Configuration config_;
+
   // The current error handler.
   owned<ErrorHandler> handler_
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
-
-  // The CHPL_HOME variable
-  std::string chplHome_;
-
-  // Variables to explicitly set before getting chplenv
-  std::unordered_map<std::string, std::string> chplEnvOverrides;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -190,8 +189,6 @@ class Context {
   std::string tmpDir_;
   bool tmpDirExists_ = false;
   bool tmpDirAnchorCreated_ = false;
-  bool keepTmpDir_ = false;
-  std::string toolName_ = "chpl";
 
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;

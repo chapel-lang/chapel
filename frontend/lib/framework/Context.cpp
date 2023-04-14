@@ -59,6 +59,13 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+void Context::Configuration::swap(Context::Configuration& other) {
+  std::swap(chplHome, other.chplHome);
+  std::swap(chplEnvOverrides, other.chplEnvOverrides);
+  std::swap(tmpDir, other.tmpDir);
+  std::swap(keepTmpDir, other.keepTmpDir);
+  std::swap(toolName, other.toolName);
+}
 
 void Context::setupGlobalStrings() {
   if (this == &detail::rootContext) {
@@ -74,9 +81,8 @@ void Context::setupGlobalStrings() {
 }
 
 void Context::swap(Context& other) {
+  config_.swap(other.config_);
   std::swap(handler_, other.handler_);
-  std::swap(chplHome_, other.chplHome_);
-  std::swap(chplEnvOverrides, other.chplEnvOverrides);
   std::swap(computedChplEnv, other.computedChplEnv);
   std::swap(chplEnv, other.chplEnv);
   std::swap(detailedErrors, other.detailedErrors);
@@ -99,9 +105,6 @@ void Context::swap(Context& other) {
   std::swap(queryTraceIgnoreQueries, other.queryTraceIgnoreQueries);
   std::swap(queryDepthColor, other.queryDepthColor);
   std::swap(queryTimingTraceOutput, other.queryTimingTraceOutput);
-  std::swap(tmpDir_, other.tmpDir_);
-  std::swap(keepTmpDir_, other.keepTmpDir_);
-  std::swap(toolName_, other.toolName_);
   std::swap(lastPrepareToGCRevisionNumber, other.lastPrepareToGCRevisionNumber);
   std::swap(gcCounter, other.gcCounter);
 }
@@ -111,11 +114,7 @@ Context::Context() {
 }
 Context::Context(Configuration config) {
   // swap the configuration settings in to place
-  std::swap(chplHome_, config.chplHome);
-  std::swap(chplEnvOverrides, config.chplEnvOverrides);
-  std::swap(tmpDir_, config.tmpDir);
-  std::swap(keepTmpDir_, config.keepTmpDir);
-  std::swap(toolName_, config.toolName);
+  config_.swap(config);
 
   setupGlobalStrings();
 }
@@ -124,11 +123,7 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   this->swap(consumeContext);
 
   // now set the new configuration information
-  std::swap(chplHome_, newConfig.chplHome);
-  std::swap(chplEnvOverrides, newConfig.chplEnvOverrides);
-  std::swap(tmpDir_, newConfig.tmpDir);
-  std::swap(keepTmpDir_, newConfig.keepTmpDir);
-  std::swap(toolName_, newConfig.toolName);
+  config_.swap(newConfig);
 }
 
 void Context::reportError(Context* context, const ErrorBase* err) {
@@ -136,19 +131,25 @@ void Context::reportError(Context* context, const ErrorBase* err) {
 }
 
 const std::string& Context::chplHome() const {
-  return chplHome_;
+  return config_.chplHome;
 }
 
 const std::string& Context::tmpDir() {
   if (tmpDir_.empty()) {
-    std::string dir;
-    auto err = makeTempDir(toolName_ + "-", dir);
-
-    if (err) {
-      this->error(Location(), "Could not create temp directory");
+    if (!config_.tmpDir.empty()) {
+      // if a temp dir was configured, use that
+      tmpDir_ = config_.tmpDir;
     } else {
-      tmpDir_ = dir;
-      tmpDirExists_ = true;
+      // otherwise, generate a temp directory
+      std::string dir;
+      auto err = makeTempDir(config_.toolName + "-", dir);
+
+      if (err) {
+        this->error(Location(), "Could not create temp directory");
+      } else {
+        tmpDir_ = dir;
+        tmpDirExists_ = true;
+      }
     }
   }
 
@@ -183,7 +184,7 @@ std::string Context::tmpDirAnchorFile() {
 }
 
 void Context::cleanupTmpDirIfNeeded() {
-  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !keepTmpDir_) {
+  if (!tmpDir_.empty() && fileExists(tmpDir_.c_str()) && !config_.keepTmpDir) {
     // delete the tmp dir
     deleteDir(tmpDir_);
   }
@@ -194,8 +195,9 @@ void Context::setDetailedErrorOutput(bool detailedErrors) {
 }
 
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
-  if (chplHome_.empty() || computedChplEnv) return chplEnv;
-  auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome_.c_str());
+  if (config_.chplHome.empty() || computedChplEnv) return chplEnv;
+  auto chplEnvResult = ::chpl::getChplEnv(config_.chplEnvOverrides,
+                                          config_.chplHome.c_str());
   if (auto err = chplEnvResult.getError()) {
     // forward error to caller
     return err;
