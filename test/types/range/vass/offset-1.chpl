@@ -23,7 +23,7 @@ proc suite(r:range(?)) {
     test(r, i);
 }
 
-proc supersuite(r:range) {
+proc supersuite(r:range) {   // now generic
   const steps = (1, 2, -1, -2);
   suite(r);
   for param i in 0..steps.size-1 do suite(r by steps(i));

@@ -79,7 +79,7 @@ class Level {
 
 
     //---- Possible cells ----
-    var ranges: dimension*range(stridable = true);
+    var ranges: dimension*range(int, boundKind.both, true);
     for d in dimensions do ranges(d) = 1 .. 2*n_cells(d)-1 by 2;
     possible_cells = ranges;
 

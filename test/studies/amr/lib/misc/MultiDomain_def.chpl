@@ -573,7 +573,7 @@ class MDNode
   {
     assert( bisect_dim>0, "Error: Called MDNode.createLeft with bisect_dim<=0.");
     
-    var subranges: rank*range(stridable=stridable);
+    var subranges: rank*range(int, boundKind.both, stridable);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
     for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);    
@@ -592,7 +592,7 @@ class MDNode
   {
     assert( bisect_dim>0, "Error: Called MDNode.createRight with bisect_dim<=0.");
     
-    var subranges: rank*range(stridable=stridable);
+    var subranges: rank*range(int, boundKind.both, stridable);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
     for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);
@@ -678,7 +678,7 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
     var parent:  unmanaged MDNode(rank,stridable)?;
     // var sibling: MDNode(rank,stridable);
     
-    var subranges: rank*range(stridable=stridable);
+    var subranges: rank*range(int, boundKind.both, stridable);
     var D_temp:    domain(rank,stridable=stridable);
     
     for d in 0..ext_d-1    do subranges(d) = Domain.dim(d);  

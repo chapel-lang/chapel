@@ -533,8 +533,8 @@ proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
 proc LocAccumStencil.init(param rank: int,
                           type idxType,
                           locid, // the locale index from the target domain
-                          boundingBox: rank*range(idxType),
-                          targetLocBox: rank*range) {
+                          boundingBox: rank*range(idxType, boundKind.both, false),
+                          targetLocBox: rank*simpleRange) {
   this.rank = rank;
   this.idxType = idxType;
   if rank == 1 {
@@ -546,7 +546,7 @@ proc LocAccumStencil.init(param rank: int,
                                      max(idxType), min(idxType), lo);
     myChunk = {blo..bhi};
   } else {
-    var inds: rank*range(idxType);
+    var inds: rank*range(idxType, boundKind.both, false);
     for param i in 0..rank-1 {
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
@@ -669,7 +669,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
   if chpl__testParFlag then
     chpl__testPar("AccumStencil domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, boundKind.both, stridable||anyStridable(followThis));
   type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
@@ -1074,7 +1074,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for AccumStencil array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, bounds=boundKind.both, stridable=stridable || anyStridable(followThis));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
