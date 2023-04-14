@@ -252,6 +252,25 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   return QualifiedType(QualifiedType::PARAM,
                        BoolType::get(context, 0),
                        BoolParam::get(context, callAndFnResolved));
+
+}
+
+static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() == 3) {
+    auto type = DomainType::getRectangularType(context,
+                                          ci.actual(0).type(),
+                                          ci.actual(1).type(),
+                                          ci.actual(2).type());
+    return QualifiedType(QualifiedType::TYPE, type);
+  } else if (ci.numActuals() == 2) {
+    auto type = DomainType::getAssociativeType(context,
+                                               ci.actual(0).type(),
+                                               ci.actual(1).type());
+    return QualifiedType(QualifiedType::TYPE, type);
+  } else {
+    CHPL_ASSERT(false && "unhandled domain type?");
+  }
+  return QualifiedType();
 }
 
 CallResolutionResult resolvePrimCall(Context* context,
@@ -516,6 +535,11 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
+
+    case PRIM_STATIC_DOMAIN_TYPE:
+      type = computeDomainType(context, ci);
+      break;
+
 
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
