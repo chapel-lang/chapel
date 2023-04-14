@@ -24,6 +24,10 @@ test((new owned CCon()).borrow());
 test(((new owned CCon()):owned class?).borrow());
 test(new unmanaged CCon());
 test((new unmanaged CCon()):unmanaged class?);
+var a = new CCon();
+test(a.borrow());
+var b = new CCon():class?;
+test(b.borrow());
 
 record RCon {
   var f1, f2, f3, f4, f5: int;
