@@ -1330,9 +1330,9 @@ class ResolutionResultByPostorderID {
     return map.at(postorder);
   }
   const ResolvedExpression* byIdOrNull(const ID& id) const {
-    auto found = map.find(id.postOrderId());
-    if (found != map.end()) {
-      return &found->second;
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &map.at(postorder);
     }
     return nullptr;
   }
