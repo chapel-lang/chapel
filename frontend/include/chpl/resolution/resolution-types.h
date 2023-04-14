@@ -1315,7 +1315,7 @@ class ResolutionResultByPostorderID {
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
-        0 <= postorder && map.count(postorder))
+        0 <= postorder && (map.count(postorder) > 0))
       return true;
 
     return false;
@@ -1330,9 +1330,9 @@ class ResolutionResultByPostorderID {
     return map.at(postorder);
   }
   const ResolvedExpression* byIdOrNull(const ID& id) const {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &map.at(postorder);
+    auto found = map.find(id.postOrderId());
+    if (found != map.end()) {
+      return &found->second;
     }
     return nullptr;
   }
