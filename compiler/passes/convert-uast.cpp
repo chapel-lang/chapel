@@ -3787,6 +3787,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::FunctionType:   return convertFunctionType(qt);
 
     case typetags::BasicClassType:   return convertBasicClassType(qt);
+    case typetags::DomainType:   return dtUnknown;
     case typetags::RecordType:   return convertRecordType(qt);
     case typetags::TupleType:   return convertTupleType(qt);
     case typetags::UnionType:   return convertUnionType(qt);

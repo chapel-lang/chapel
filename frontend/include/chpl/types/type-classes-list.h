@@ -100,6 +100,7 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
     TYPE_NODE(BasicClassType)
+    TYPE_NODE(DomainType)
     TYPE_NODE(RecordType)
     TYPE_NODE(TupleType)
     TYPE_NODE(UnionType)
