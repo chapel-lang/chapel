@@ -101,21 +101,22 @@ static void chpl_gpu_ensure_context() {
   chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
 }
 
-void chpl_gpu_impl_init() {
+void chpl_gpu_impl_init(int* num_devices) {
   int         num_devices;
 
   // CUDA initialization
   CUDA_CALL(cuInit(0));
 
-  CUDA_CALL(cuDeviceGetCount(&num_devices));
+  CUDA_CALL(cuDeviceGetCount(num_devices));
 
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
-  chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*num_devices);
-  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*num_devices);
-  deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
+  const int loc_num_devices = *num_devices;
+  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*loc_num_devices);
+  chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*loc_num_devices);
+  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*loc_num_devices);
+  deviceClockRates = chpl_malloc(sizeof(int)*loc_num_devices);
 
   int i;
-  for (i=0 ; i<num_devices ; i++) {
+  for (i=0 ; i<loc_num_devices ; i++) {
     CUdevice device;
     CUcontext context;
 
@@ -151,10 +152,6 @@ static bool chpl_gpu_device_alloc = false;
 
 void chpl_gpu_impl_support_module_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
-}
-
-void chpl_gpu_get_device_count(int* into) {
-  cudaGetDeviceCount(into);
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {

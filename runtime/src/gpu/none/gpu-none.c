@@ -34,8 +34,9 @@
 #include <stdbool.h>
 
 
-void chpl_gpu_impl_init() {
+void chpl_gpu_impl_init(int* num_devices) {
   CHPL_GPU_DEBUG("Initializing none GPU layer.\n");
+  *num_devices = 1;
 }
 
 static bool chpl_gpu_device_alloc = false;
@@ -59,10 +60,6 @@ void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
   // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
   // flip the flag.
   chpl_gpu_device_alloc = true;
-}
-
-void chpl_gpu_get_device_count(int* into) {
-  *into = 3;
 }
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
