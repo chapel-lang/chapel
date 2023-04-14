@@ -713,6 +713,9 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
         return;
       }
 
+      // TODO: need to implement type queries for domain type expressions
+      if (actualCt->isDomainType()) return;
+
       auto baseCt = actualCt->instantiatedFromCompositeType();
       auto sig = typeConstructorInitial(context, baseCt);
 

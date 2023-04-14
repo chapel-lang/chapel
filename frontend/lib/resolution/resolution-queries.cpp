@@ -869,6 +869,16 @@ static Type::Genericity getFieldsGenericity(Context* context,
       }
     }
     return combined;
+  } else if (auto dt = ct->toDomainType()) {
+    Type::Genericity combined = Type::CONCRETE;
+
+    // Allows for instantiation of things like 'arg: domain'
+    // TODO: currently partially generic domains are not supported
+    if (dt->kind() == DomainType::Kind::Unknown) {
+      combined = Type::GENERIC;
+    }
+
+    return combined;
   }
 
   // Some testing code creates CompositeType with empty IDs.
