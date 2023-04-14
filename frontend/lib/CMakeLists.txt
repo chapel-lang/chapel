@@ -67,7 +67,6 @@ target_include_directories(ChplFrontend-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_options(ChplFrontend-obj PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
-add_subdirectory(clang)
 add_subdirectory(immediates)
 add_subdirectory(parsing)
 add_subdirectory(framework)
