@@ -3832,7 +3832,7 @@ module HDF5 {
         // using 1-based domains for the yielded arrays.
         //
         //var positionalRangeTup: outRank * range,
-        var rangeTup: outRank * range;
+        var rangeTup: outRank * simpleRange;
 
         var inOffsetArr, inCountArr,
             outOffsetArr, outCountArr: [0..#outRank] C_HDF5.hsize_t;

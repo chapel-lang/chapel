@@ -1475,7 +1475,7 @@ module SampleSortHelp {
       return numBuckets * (1 + equalBuckets:int);
     }
     proc getBinsToRecursivelySort() {
-      var r:range(stridable=true);
+      var r:range(int, boundKind.both, true);
       if equalBuckets {
         // odd bins will be equality buckets
         r = (0..(getNumBuckets()-1)) by 2;
