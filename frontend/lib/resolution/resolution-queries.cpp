@@ -1536,7 +1536,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -2502,8 +2502,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
     auto second = ci.actual(1).type();
     if (first.isParam() && first.type()->isIntType() &&
         second.isType()) {
-      // TODO: rename these methods...
-      return TupleType::getVarArgTuple(context, first, second);
+      return TupleType::getStarTuple(context, first, second);
     }
   }
 

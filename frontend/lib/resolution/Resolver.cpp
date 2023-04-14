@@ -957,7 +957,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
       QualifiedType elt = QualifiedType(newKind, typePtr);
-      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
+      typePtr = TupleType::getStarTuple(context, paramSize, elt);
     }
   }
 
