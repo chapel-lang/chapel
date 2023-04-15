@@ -118,7 +118,7 @@ module DefaultRectangular {
     // So we don't have to copy it when a clone is requested.
     proc dsiClone() do return _to_unmanaged(this);
 
-    proc dsiAssign(other: unmanaged this.type) { }
+    proc dsiAssign(other: this.type) { }
 
     proc dsiEqualDMaps(d:unmanaged DefaultDist) param do return true;
     proc dsiEqualDMaps(d) param do return false;

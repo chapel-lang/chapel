@@ -10,7 +10,7 @@ inspectDist(A);
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
-  B.redistribute({1..n});
+  B = new dmap(new Block({1..n}));
   D = {1..n};
   inspectDist(A);
 
@@ -37,17 +37,4 @@ proc inspectDist(X: [] ?t) {
         writeln(here.id, ": ", X.domain.localSubdomain(), " from ", X.domain);
     }
   writeln("-------------");
-}
-
-proc Block.redistribute(const in newBbox) {
-  const newBboxDims = newBbox.dims();
-  const pid = this.pid;
-  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist)
-    do on loc {
-      const that = chpl_getPrivatizedCopy(this.type, pid);
-      that.boundingBox = newBbox;
-
-      var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
-      locdist.myChunk = {(...inds)};
-    }
 }

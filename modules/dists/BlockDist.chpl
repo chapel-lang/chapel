@@ -530,26 +530,17 @@ proc Block.init(boundingBox: domain,
 }
 
 proc Block.dsiAssign(other: this.type) {
+  const newBbox = other.boundingBox;
+  const newBboxDims = newBbox.dims();
+  const pid = this.pid;
+  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist)
+    do on loc {
+      const that = chpl_getPrivatizedCopy(this.type, pid);
+      that.boundingBox = newBbox;
 
-  coforall (loc, locDistElt) in zip(targetLocales, locDist) {
-    on loc {
-      delete locDistElt;
+      var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
+      locdist.myChunk = {(...inds)};
     }
-  }
-  boundingBox = other.boundingBox;
-  targetLocDom = other.targetLocDom;
-  targetLocales = other.targetLocales;
-  dataParTasksPerLocale = other.dataParTasksPerLocale;
-  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-  dataParMinGranularity = other.dataParMinGranularity;
-
-  coforall (locid, loc, locDistElt)
-           in zip(targetLocDom, targetLocales, locDist) {
-    on loc {
-      locDistElt = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
-                                          targetLocDom);
-    }
-  }
 }
 
 //
