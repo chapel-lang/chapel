@@ -20,8 +20,8 @@ proc verifyLaunches() {
 }
 
 config param useForeach = true;
-
 config const useGpuDiags = true;
+config const SI = true;
 
 //
 // The number of vectors and element type of those vectors
@@ -227,7 +227,14 @@ proc printResults(successful, execTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GiBPerSec = numVectors * numBytes(elemType) * (m / minTime) / (1<<30):real;
-    writeln("Performance (GiB/s) = ", GiBPerSec);
+    if SI {
+      const GBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
+      writeln("Performance (GB/s) = ", GBPerSec);
+    } else {
+      const GiBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) / (1<<30):real;
+      writeln("Performance (GiB/s) = ", GiBPerSec);
+    }
   }
 }
