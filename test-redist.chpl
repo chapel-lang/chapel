@@ -5,10 +5,9 @@ var B = new dmap(new Block({1..10}));
 var D = {1..n} dmapped B;
 var A: [D] real;
 
-writeln(B.type:string);
 inspectDist(A);
 
-for i in 1..1 {
+for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
   B.redistribute({1..n});
@@ -38,14 +37,6 @@ proc inspectDist(X: [] ?t) {
         writeln(here.id, ": ", X.domain.localSubdomain(), " from ", X.domain);
     }
   writeln("-------------");
-}
-
-proc (_distribution(?)).redistribute(const in newBbox) {
-  /* First attempt, didn't work:
-  var newDist = new dmap(new Block((...args)));
-  this = newDist;
-  */
-  this._value.redistribute(newBbox);
 }
 
 proc Block.redistribute(const in newBbox) {
