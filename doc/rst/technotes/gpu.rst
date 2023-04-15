@@ -121,12 +121,15 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* Either ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available; Chapel
-  uses libraries included in these packages and will automatically deduce the
-  path to these libraries based on the location of the ``nvcc``/``hipcc``
-  executable. Note that the automatically deduced paths may be overwritten by
-  manually setting the ``CHPL_CUDA_PATH`` or ``CHPL_ROCM_PATH`` environment
-  variables.
+* Either the CUDA toolkit (for NVIDIA), or ROCM (for AMD) must be installed.
+
+  * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
+    (inclusive). If using version 10.x you must set
+    ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. In some cases versions as early as
+    7.x or at or above 12.x may work but we have not tested these.
+
+  * If targeting AMD GPUs, we require a version of ROCM greater than 4.x.
+
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
