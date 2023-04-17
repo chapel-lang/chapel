@@ -18,6 +18,7 @@
  */
 
 #include "test-resolution.h"
+#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -27,44 +28,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
-
-static std::string DomainModule =
-R"""(
-module ChapelDomain {
-  record _domain {
-    var _pid: int;
-    var _instance;
-    var _unowned:bool;
-  }
-
-  proc type _domain.static_type(param rank : int, type idxType=int, param stridable: bool = false) type {
-    return __primitive("static domain type", rank, idxType, stridable);
-  }
-
-  proc type _domain.static_type(type idxType, param parSafe: bool = true) type {
-    return __primitive("static domain type", idxType, parSafe);
-  }
-
-  proc computeIndexType(arg: domain) type {
-    if arg.isRectangular() {
-      if arg.rank == 1 then return arg.idxType;
-      else return arg.rank*arg.idxType;
-    } else {
-      return arg.idxType;
-    }
-  }
-
-  iter _domain.these() {
-    var ret : computeIndexType(this);
-    yield ret;
-  }
-
-  // Prove that fields and methods on '_domain' work
-  proc _domain.pid() {
-    return _pid;
-  }
-}
-)""";
 
 static void testRectangular(std::string domainType,
                                   int rank,
