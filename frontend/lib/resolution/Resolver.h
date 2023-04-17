@@ -482,6 +482,9 @@ struct Resolver {
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
 
+  bool enter(const uast::Domain* decl);
+  void exit(const uast::Domain* decl);
+
   // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);
   void exit(const uast::Call* call);

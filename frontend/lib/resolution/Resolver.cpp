@@ -2654,6 +2654,18 @@ void Resolver::exit(const Range* range) {
   re.setType(QualifiedType(QualifiedType::CONST_VAR, rangeTypeInst));
 }
 
+bool Resolver::enter(const uast::Domain* decl) {
+  return true;
+}
+
+void Resolver::exit(const uast::Domain* decl) {
+  if (decl->numExprs() == 0) {
+    auto& re = byPostorder.byAst(decl);
+    auto dt = QualifiedType(QualifiedType::CONST_VAR, DomainType::getGenericDomainType(context));
+    re.setType(dt);
+  }
+}
+
 types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
   if (op->numActuals() != 2) {
     return typeErr(op, "invalid op call");
