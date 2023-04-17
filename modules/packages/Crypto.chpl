@@ -507,10 +507,10 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize(): c_int;
 
-    var ciphertextLen = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
-    var cipherDomain: domain(1) = {0..ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
+    var cipherDomain: domain(1) = {0..ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
@@ -523,7 +523,7 @@ module Crypto {
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext): c_ptr(c_uchar),
                         c_ptrTo(updatedCipherLen): c_ptr(c_int));
@@ -542,11 +542,11 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -558,7 +558,7 @@ module Crypto {
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
@@ -710,10 +710,10 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize():c_int;
 
-    var ciphertextLen = plaintextLen + 8;
-    var cipherDomain: domain(1) = {0..#ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 8;
+    var cipherDomain: domain(1) = {0..#ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
@@ -727,7 +727,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
 
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
@@ -746,11 +746,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -762,7 +762,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext[plaintextLen..]): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));

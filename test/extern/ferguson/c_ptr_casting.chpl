@@ -13,7 +13,7 @@ proc go() {
   for i in 1..10 do a[i] = new R(i:c_int);
 
   writeln(a);
-  printarr(c_ptrTo(a[1]):c_ptr(c_int), 10);
+  printarr(c_ptrTo(a[1]):c_void_ptr:c_ptr(c_int), 10);
 }
 
 go();
