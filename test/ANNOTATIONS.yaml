@@ -1482,6 +1482,10 @@ memleaksfull:
     - IO Encoders/Decoders prototype (#21586)
   02/23/23:
     - QIO fix Free the mark stack if it has been allocated (#21662)
+  03/30/23:
+    - IO module error types cleanup (#22003)
+  03/31/23:
+    - Fix memory leaks in readAll tests (#22032)
 # End memleaksfull
 
 meteor:
@@ -2340,6 +2344,8 @@ arkouda: &arkouda-base
     - Add initial aggregation support for bigint (Bears-R-Us/arkouda#2290)
   03/28/23:
     - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
+  03/30/23:
+    - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
 
 
 arkouda-string:
