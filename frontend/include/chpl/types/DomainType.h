@@ -54,9 +54,6 @@ class DomainType final : public CompositeType {
 
  private:
   // TODO: distributions
-  QualifiedType idxType_;
-  QualifiedType rank_;
-  bool stridable_ = false;
   Kind kind_;
 
   // Will compute idxType, rank, and stridable from 'subs'
@@ -73,9 +70,7 @@ class DomainType final : public CompositeType {
 
   bool contentsMatchInner(const Type* other) const override {
     const DomainType* rhs = (const DomainType*) other;
-    return stridable_ == rhs->stridable_ &&
-           rank_ == rhs->rank_ &&
-           kind_ == rhs->kind_ &&
+    return kind_ == rhs->kind_ &&
            compositeTypeContentsMatchInner(rhs);
   }
 
