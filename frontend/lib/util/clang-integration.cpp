@@ -283,6 +283,12 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       context->error(externBlockId, "error running clang on extern block");
       ok = false;
     }
+
+    // delete genPctAction
+    delete genPchAction;
+
+    // delete Clang instance to clean up the various components
+    delete Clang;
   }
 
   // rename the generated file to the TemporaryFileResult path
