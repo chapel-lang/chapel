@@ -90,7 +90,7 @@ static void chpl_gpu_ensure_context() {
   ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
 
   // The below is a direct "hipification" of the CUDA runtime
-  // but it's using depercated APIs
+  // but it's using deprecated APIs
   /*if (!chpl_gpu_has_context()) {
     ROCM_CALL(hipCtxPushCurrent(next_context));
   }

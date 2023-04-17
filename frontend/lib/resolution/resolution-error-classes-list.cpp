@@ -80,7 +80,7 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 // end with a space.
 //
 // 'encounteredAutoModule' is set to 'false' at the start of this function
-// but will be set to 'true' if the symbol came from an automaticly use'd
+// but will be set to 'true' if the symbol came from an automatically use'd
 // module
 //
 // 'from' is set to 'name' at the start of this function and will be
@@ -745,8 +745,8 @@ static bool firstIdFromDecls(
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithIter
-      // to filter Idvs.
+      // To do that, would use flags in BorrowedIdsWithName
+      // to filter Ids.
       result = matches[i].firstId();
       return true;
     }

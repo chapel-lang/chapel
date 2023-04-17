@@ -1589,7 +1589,7 @@ record ioHintSet {
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
-  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead")
+  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead")
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
@@ -5951,7 +5951,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
 
 /*
    Read one or more values from a ``fileReader``. The ``fileReader``'s lock
-   will be held while reading the values — this protects agianst interleaved
+   will be held while reading the values — this protects against interleaved
    reads.
 
    :arg args: a series of variables to read into. Basic types are handled
@@ -5960,7 +5960,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
-   :throws UnexpectedEofError: Thrown if an EOF occured while reading an item.
+   :throws UnexpectedEofError: Thrown if an EOF occurred while reading an item.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         for :ref:`another reason<io-general-sys-error>`.
  */
@@ -8265,7 +8265,7 @@ proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
 
 /*
    Read values of passed types and return a tuple containing the read values.
-   The ``fileReader``'s lock will be held while reading — this protects agianst
+   The ``fileReader``'s lock will be held while reading — this protects against
    interleaved reads.
 
    :arg t: more than one type to read

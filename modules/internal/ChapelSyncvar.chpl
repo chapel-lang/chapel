@@ -227,7 +227,7 @@ module ChapelSyncvar {
 
       * full: return a copy of the stored value.
       * empty: return either a new default-initialized value of the stored type
-        or, the last value stored (implementation dependant).
+        or, the last value stored (implementation dependent).
 
     :returns: The value of the ``sync`` variable.
   */
@@ -882,7 +882,7 @@ module ChapelSyncvar {
 
       * full: return a copy of the stored value.
       * empty: return either a new default-initialized value of the stored type
-        or, the last value stored (implementation dependant).
+        or, the last value stored (implementation dependent).
 
     :returns: The value of the ``single`` variable.
   */

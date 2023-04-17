@@ -83,7 +83,7 @@ class IdAndFlags {
       case uast::Decl::PRIVATE:
         flags |= NOT_PUBLIC;
         break;
-      // no defaut for compilation error if more are added
+      // no default for compilation error if more are added
     }
     if (isMethodOrField) {
       flags |= METHOD_FIELD;
