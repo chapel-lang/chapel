@@ -36,9 +36,6 @@ class ArrayType final : public CompositeType {
   // - Slicing
   // - Array literals
 
-  QualifiedType domainType_;
-  QualifiedType eltType_;
-
   // Will compute domainType and eltType from 'subs'
   ArrayType(ID id, UniqueString name,
             const ArrayType* instantiatedFrom,
@@ -51,9 +48,7 @@ class ArrayType final : public CompositeType {
 
   bool contentsMatchInner(const Type* other) const override {
     const ArrayType* rhs = (const ArrayType*) other;
-    return domainType_ == rhs->domainType_ &&
-           eltType_ == rhs->eltType_ &&
-           compositeTypeContentsMatchInner(rhs);
+    return compositeTypeContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
