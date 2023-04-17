@@ -1,10 +1,10 @@
 .. _compiler-internals-index:
 
-Compiler Library API Docs
+Frontend Library API Docs
 =========================
 
 This section documents the various functions and types of the
-new compiler.
+new compiler frontend.
 
 .. toctree::
    :caption: Conceptual Guide
