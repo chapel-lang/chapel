@@ -10,8 +10,8 @@ proc test() {
   m.add("one", new owned C(1));
   m.add("two", new owned C(2));
 
-  var x = m["one"];
-  x!.i = -1;
+  var x = m["one"]!.borrow();
+  x.i = -1;
 
   writeln(m);
 }
