@@ -369,14 +369,44 @@ module CTypes {
   inline operator c_ptr.:(x:c_ptr, type t:c_ptr) {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
-      compilerWarning("Casting c_ptr to a non-equivalent, non-char element type"
-                      + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
-                      "') can cause undefined behavior.");
+      compilerWarning(
+          "Casting c_ptr to a non-equivalent, non-char element type"
+          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
   pragma "no doc"
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
+    // emit warning for C strict aliasing violations
+    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+      compilerWarning(
+          "Casting c_ptrConst to a non-equivalent, non-char element type"
+          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          "') can cause undefined behavior.");
+    }
+    return __primitive("cast", t, x);
+  }
+  // Also need const to non-const and vice-versa versions; although coercion
+  // makes the casting extraneous, it is needed for strict aliasing warnings
+  pragma "no doc"
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptr) {
+    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+      compilerWarning(
+          "Casting c_ptrConst to a non-equivalent, non-char element type"
+          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          "') can cause undefined behavior.");
+    }
+    return __primitive("cast", t, x);
+  }
+  pragma "no doc"
+  inline operator c_ptr.:(x:c_ptr, type t:c_ptrConst) {
+    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+      compilerWarning(
+          "Casting c_ptr to a non-equivalent, non-char element type"
+          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          "') can cause undefined behavior.");
+    }
     return __primitive("cast", t, x);
   }
   pragma "no doc"

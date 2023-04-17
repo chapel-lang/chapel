@@ -14,3 +14,23 @@ var xp_float = xp : c_ptr(c_float);
 var xp_double = xp : c_ptr(c_double);
 
 writeln(xp_char.deref());
+
+
+// same thing but for const pointers
+
+var xpconst : c_ptrConst(c_int) = c_ptrToConst(x);
+
+var xpconst_char = xpconst : c_ptrConst(c_char);
+var xpconst_schar = xpconst : c_ptrConst(c_schar);
+var xpconst_uchar = xpconst : c_ptrConst(c_uchar);
+var xpconst_uint = xpconst : c_ptrConst(c_uint);
+
+var xpconst_float = xpconst : c_ptrConst(c_float);
+var xpconst_double = xpconst : c_ptrConst(c_double);
+
+writeln(xpconst_char.deref());
+
+
+// should also warn from non-const to const and vice-versa
+var xpconst_float_from_nonconst = xp : c_ptrConst(c_float);
+var xp_float_from_const = xpconst : c_ptr(c_float);
