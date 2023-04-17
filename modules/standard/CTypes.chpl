@@ -320,9 +320,9 @@ module CTypes {
       return true;
     }
     // allow types differing only in signedness
-    if (numBytes(from) == numBytes(to) &&
-        (isIntegralType(from) && isIntegralType(to)
-         || isRealType(from) && isRealType(to))) {
+    if ((isIntegralType(from) && isIntegralType(to) ||
+         isRealType(from) && isRealType(to)) &&
+        numBytes(from) == numBytes(to)) {
       return true;
     }
     // otherwise, return false
