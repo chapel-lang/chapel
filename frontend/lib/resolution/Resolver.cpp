@@ -3585,7 +3585,7 @@ bool Resolver::enter(const Catch* node) {
       // default to Error placeholder
       const ClassType* errorType = CompositeType::getErrorType(context);
       auto qt = QualifiedType(QualifiedType::VAR, errorType);
-      ResolvedExpression& re = byPostorder.byAstExpanding(errVar);
+      ResolvedExpression& re = byPostorder.byAst(errVar);
       re.setType(qt);
     } else {
       errVar->traverse(*this);
