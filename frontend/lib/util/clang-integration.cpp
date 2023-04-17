@@ -226,30 +226,21 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     }
   }
 
-  // set the input file to match the modification of the revision file.
-  // This avoids differences in the precompiled header file
-  // that only reflect timestamps stored in the file, so that
-  // the precompiled header file can be reused in more cases.
-  if (ok) {
-    err = copyModificationTime(context->tmpDirAnchorFile(), tmpInput);
-    // can ignore err; failure here will just cause recomputation
-#ifndef NDEBUG
-    if (err) {
-      fprintf(stderr, "Warning: could not set modification time for %s\n",
-              tmpInput.c_str());
-    }
-#endif
-  }
-
   if (ok) {
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
 
     // gather args to clang
     const std::vector<std::string>& clFlags = clangFlags(context);
     std::vector<std::string> args = clFlags;
+    // disable storing timestamps in precompiled headers
+    args.push_back("-Xclang");
+    args.push_back("-fno-pch-timestamp");
+    // ask to generate a precompiled header
     args.push_back("-x");
     args.push_back("c-header");
+    // specify input
     args.push_back(tmpInput);
+    // specify output
     args.push_back("-o");
     args.push_back(tmpOutput);
     const std::vector<std::string>& cc1args =
@@ -272,6 +263,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     bool success = clang::CompilerInvocation::CreateFromArgs(
         Clang->getInvocation(), cc1argsCstrs, *diags);
     CHPL_ASSERT(success);
+
+    CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
