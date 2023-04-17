@@ -56,7 +56,7 @@ struct NamedCollector {
       }
       return true;
     }
-    void exit(const uast::NamedDecl node) {
+    void exit(const uast::NamedDecl* node) {
     }
 
     const uast::AstNode* only() {
