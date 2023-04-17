@@ -99,6 +99,7 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(FunctionType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
+    TYPE_NODE(ArrayType)
     TYPE_NODE(BasicClassType)
     TYPE_NODE(DomainType)
     TYPE_NODE(RecordType)

@@ -21,6 +21,7 @@
 #define CHPL_TYPES_ALL_TYPES_H
 
 #include "chpl/types/AnyType.h"
+#include "chpl/types/ArrayType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/CStringType.h"
