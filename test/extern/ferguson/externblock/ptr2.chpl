@@ -1,4 +1,6 @@
 extern {
+  #include <stdio.h>
+
   void printit(int n, int* arr);
   void printit(int n, int* arr)
   {

@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,14 +17,27 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <cstdlib>
-#include "tmpdirname.h"
+// TODO: move this file to the util tests
+#include "chpl/framework/Context.h"
+#include "chpl/util/filesystem.h"
 
-//
-// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
-//
-const char* tmpdirname = NULL;
-//
-//          ^^^^^^^^^^
-//
+#include <cstring>
+
+using namespace chpl;
+
+int main(int argc, char** argv) {
+
+  for (int i = 1; i < argc; i++) {
+    printf("hashing %s\n", argv[i]);
+    char* fname = argv[i];
+
+    llvm::ErrorOr<HashFileResult> hashOrErr = hashFile(fname);
+    if (hashOrErr) {
+      printf("%s\n", fileHashToHex(hashOrErr.get()).c_str());
+    } else {
+      printf("error\n");
+    }
+  }
+
+  return 0;
+}

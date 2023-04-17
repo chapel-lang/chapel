@@ -118,10 +118,9 @@ void ensureDirExists(const char* dirname, const char* explanation) {
 }
 
 const char* makeTempDir(const char* dirPrefix) {
- std::string tmpDirPath;
- if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
-  USR_FATAL(NULL, "%s", err.message().c_str());
- }
+ std::string tmpDirPath = gContext->tmpDir();
+ ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
+
  return astr(tmpDirPath.c_str());
 }
 
@@ -147,40 +146,6 @@ void deleteDir(const char* dirname) {
               err.message().c_str());
   }
 }
-
-
-void deleteTmpDir() {
-  static int inDeleteTmpDir = 0; // break infinite recursion
-
-  if (inDeleteTmpDir) {
-    return;
-  }
-  inDeleteTmpDir = 1;
-
-#ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
-    if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
-        strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL("tmp directory name looks fishy");
-    }
-    deleteDir(tmpdirname);
-    tmpdirname = NULL;
-  }
-  if (doctmpdirname != NULL) {
-    if (strlen(doctmpdirname) < 1 ||
-        strchr(doctmpdirname, '*') != NULL ||
-        strcmp(doctmpdirname, "//") == 0) {
-      INT_FATAL("doc tmp directory name looks fishy");
-    }
-    deleteDir(doctmpdirname);
-    doctmpdirname = NULL;
-  }
-#endif
-
-  inDeleteTmpDir = 0;
-}
-
 
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";

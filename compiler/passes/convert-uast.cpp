@@ -407,7 +407,14 @@ struct Converter {
       const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
       if (rr != nullptr) {
         auto id = rr->toId();
-        if (id.isEmpty()) {
+        if (id.isFabricatedId()) {
+          // Right now, this only covers extern block elements
+          // For those, return nullptr because we can't yet compute
+          // the type of those.
+          // TODO: compute the appropriate 'extern proc' etc and return that
+          CHPL_ASSERT(id.fabricatedIdKind() == ID::ExternBlockElement);
+          return nullptr;
+        } else if (id.isEmpty()) {
           // super could be a formal or variable; in that case, it shouldn't
           // be turned into a this.super call. Here the ID is empty, so
           // it doesn't refer to a variable -- fall back to trying this.super.
@@ -423,7 +430,6 @@ struct Converter {
             return ret;
           }
         } else if (!id.isEmpty()) {
-
           // If we're referring to an associated type in an interface,
           // leave it unconverted for now because the compiler does some
           // mangling of the AST and breaks the "points-to" ID.

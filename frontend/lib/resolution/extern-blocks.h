@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,14 +17,26 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <cstdlib>
-#include "tmpdirname.h"
+#ifndef EXTERN_BLOCKS_H
+#define EXTERN_BLOCKS_H
 
-//
-// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
-//
-const char* tmpdirname = NULL;
-//
-//          ^^^^^^^^^^
-//
+#include "chpl/framework/Context.h"
+#include "chpl/framework/ID.h"
+#include "chpl/framework/UniqueString.h"
+
+namespace chpl {
+namespace resolution {
+
+
+/** Given an extern block ID and a name, returns 'true' if that
+    extern block defines or declares something with that name.
+ */
+bool externBlockContainsName(Context* context,
+                             ID externBlockId,
+                             UniqueString name);
+
+
+} // end namespace resolution
+} // end namespace chpl
+
+#endif

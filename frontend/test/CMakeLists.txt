@@ -38,6 +38,7 @@ function(comp_unit_test target)
   add_dependencies(tests ${target})
 endfunction(comp_unit_test)
 
+add_subdirectory(clang)
 add_subdirectory(framework)
 add_subdirectory(parsing)
 add_subdirectory(resolution)

@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,14 +17,29 @@
  * limitations under the License.
  */
 
-#include <cstdio>
-#include <cstdlib>
-#include "tmpdirname.h"
+#include "extern-blocks.h"
 
-//
-// IF tmpdirname's name CHANGES, IT NEEDS TO CHANGE IN createGDBFile AS WELL
-//
-const char* tmpdirname = NULL;
-//
-//          ^^^^^^^^^^
-//
+#include "chpl/util/clang-integration.h"
+
+namespace chpl {
+namespace resolution {
+
+
+using namespace util;
+
+bool externBlockContainsName(Context* context,
+                             ID externBlockId,
+                             UniqueString name) {
+  const owned<TemporaryFileResult>& tfs =
+    createClangPrecompiledHeader(context, externBlockId);
+  const TemporaryFileResult* ptr = tfs.get();
+  if (ptr != nullptr && precompiledHeaderContainsName(context, ptr, name)) {
+    return true;
+  }
+
+  return false;
+}
+
+
+} // end namespace resolution
+} // end namespace chpl

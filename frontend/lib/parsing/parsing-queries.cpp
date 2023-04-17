@@ -874,13 +874,15 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr) {
-    result = ast->tag();
-  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-    result = asttags::Record;
-  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-    result = asttags::Class;
+  if (!id.isFabricatedId()) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      result = ast->tag();
+    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
+      result = asttags::Record;
+    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+      result = asttags::Class;
+    }
   }
 
   return QUERY_END(result);

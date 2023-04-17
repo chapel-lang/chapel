@@ -15,27 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(ChplFrontend-obj
-               PRIVATE
-
-               # C sources
-               my_aligned_alloc.h
-               my_aligned_alloc.c
-               my_strerror_r.h
-               my_strerror_r.c
-
-               # C++ sources
-               assertions.cpp
-               bitmap.cpp
-               break.cpp
-               chplenv.cpp
-               clang-integration.cpp
-               filesystem.cpp
-               filesystem_help.h
-               printf.cpp
-               string-escapes.cpp
-               subprocess.cpp
-               terminal.cpp
-               version-info.cpp
-               filtering.cpp
-              )
+comp_unit_test(testClangCC1Args)
+comp_unit_test(testPch)
+comp_unit_test(testShaFile)

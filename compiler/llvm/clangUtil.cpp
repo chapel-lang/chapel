@@ -2352,11 +2352,10 @@ static bool isTargetCpuValid(const char* targetCpu) {
 // This could filter out more aggressively but we do need the
 // paths and defines for the runtime headers to work.
 static void addFilteredArgs(std::vector<std::string>& dst,
-                            std::vector<std::string>& src,
-                            bool parseOnly) {
+                            std::vector<std::string>& src) {
   bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
                0 == strcmp(CHPL_TARGET_COMPILER, "clang");
-  bool filter = parseOnly && !clang;
+  bool filter = !clang;
 
   if (filter) {
     for (size_t i = 0; i < src.size(); i++) {
@@ -2380,13 +2379,11 @@ static void addFilteredArgs(std::vector<std::string>& dst,
   }
 }
 
-// if just_parse_filename != NULL, it is a file
-// containing an extern block to parse only
-// (and in that setting there is no need to work with the runtime).
-void runClang(const char* just_parse_filename) {
-  bool parseOnly = (just_parse_filename != NULL);
-  static bool is_installed_fatal_error_handler = false;
-
+static void helpComputeClangArgs(std::string& clangCC,
+                                 std::string& clangCXX,
+                                 std::vector<std::string>& clangCCArgs,
+                                 std::vector<std::string>& clangOtherArg,
+                                 std::vector<std::string>& clangLDArgs) {
   // These warnings are _required_ to make sure the code Clang generates
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
@@ -2410,12 +2407,6 @@ void runClang(const char* just_parse_filename) {
   const char* clang_ieee_float = "-fno-fast-math";
 
   std::vector<std::string> split;
-  std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs;
-  std::vector<std::string> clangLDArgs;
-
-  // find the path to clang and clang++
-  std::string clangCC, clangCXX;
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
   splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
@@ -2460,7 +2451,7 @@ void runClang(const char* just_parse_filename) {
     expandInstallationPaths(args);
 
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
 
   // add a -I. so we can find headers named on command line in same dir
@@ -2546,8 +2537,33 @@ void runClang(const char* just_parse_filename) {
     std::vector<std::string> args;
     splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
+}
+
+void computeClangArgs(std::vector<std::string>& clangCCArgs) {
+  std::string ignoredClangCC, ignoredClangCXX;
+  std::vector<std::string> ignoredOtherArgs, ignoredLDArgs;
+
+  helpComputeClangArgs(ignoredClangCC, ignoredClangCXX,
+                       clangCCArgs,
+                       ignoredOtherArgs, ignoredLDArgs);
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
+void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
+  static bool is_installed_fatal_error_handler = false;
+
+  // find the path to clang and clang++
+  std::string clangCC, clangCXX;
+  std::vector<std::string> clangCCArgs;
+  std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangLDArgs;
+  helpComputeClangArgs(clangCC, clangCXX,
+                       clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
   if (usingGpuLocaleModel()) {

@@ -251,17 +251,21 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (enableStdLib) {
-    if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
-      chpl_home = chpl_home_env;
-      printf("CHPL_HOME is set, so setting up search paths\n");
-    } else {
-      printf("--std only works when CHPL_HOME is set\n");
-      exit(1);
-    }
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+    printf("# CHPL_HOME is set, so using it\n");
+  } else {
+    printf("# CHPL_HOME not set so running without one\n");
   }
 
-  Context context(chpl_home);
+  if (enableStdLib && chpl_home.empty()) {
+    printf("--std only works when CHPL_HOME is set\n");
+    exit(1);
+  }
+
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context context(config);
   Context* ctx = &context;
   context.setDetailedErrorOutput(!brief);
 
