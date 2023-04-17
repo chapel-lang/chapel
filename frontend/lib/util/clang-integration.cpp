@@ -216,30 +216,31 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
   }
 
   // put extern C code into input file
-  std::error_code err = writeFile(tmpInput.c_str(), eb->code());
-  if (err) {
-    context->error(Location(), "Could not write to file %s: %s",
-                   tmpInput.c_str(), err.message().c_str());
-    ok = false;
+  std::error_code err;
+  if (ok) {
+    err = writeFile(tmpInput.c_str(), eb->code());
+    if (err) {
+      context->error(Location(), "Could not write to file %s: %s",
+                     tmpInput.c_str(), err.message().c_str());
+      ok = false;
+    }
   }
 
   // set the input file to match the modification of the revision file.
   // This avoids differences in the precompiled header file
   // that only reflect timestamps stored in the file, so that
   // the precompiled header file can be reused in more cases.
-  err = copyModificationTime(context->tmpDirAnchorFile(), tmpInput);
-  // can ignore err; failure here will just cause recomputation
+  if (ok) {
+    err = copyModificationTime(context->tmpDirAnchorFile(), tmpInput);
+    // can ignore err; failure here will just cause recomputation
 #ifndef NDEBUG
-  if (err) {
-    fprintf(stderr, "Warning: could not set modification time for %s\n",
-            tmpInput.c_str());
-  }
+    if (err) {
+      fprintf(stderr, "Warning: could not set modification time for %s\n",
+              tmpInput.c_str());
+    }
 #endif
+  }
 
-  // TODO: this could use the clang linked with instead of spawning it
-  // (although doing so is more complex to implement).
-
-  // run clang to generate a precompiled header
   if (ok) {
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
 
