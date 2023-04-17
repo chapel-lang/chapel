@@ -3314,6 +3314,30 @@ bool Resolver::enter(const IndexableLoop* loop) {
       with->traverse(*this);
     }
     loop->body()->traverse(*this);
+
+    if (!scopeResolveOnly && loop->isBracketLoop()) {
+      // Check if this is an array
+      auto iterandType = byPostorder.byAst(loop->iterand()).type();
+      if (!iterandType.isUnknown() && iterandType.type()->isDomainType()) {
+        QualifiedType eltType;
+        if (loop->numStmts() == 1) {
+          eltType = byPostorder.byAst(loop->stmt(0)).type();
+        } else if (loop->numStmts() == 0) {
+          eltType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        } else {
+          CHPL_ASSERT(false && "array expression with multiple loop body statements?");
+        }
+
+        // TODO: resolve array types when the iterand is something other than
+        // a domain.
+        if (eltType.isType()) {
+          auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
+
+          ResolvedExpression& re = byPostorder.byAst(loop);
+          re.setType(QualifiedType(QualifiedType::TYPE, arrayType));
+        }
+      }
+    }
   }
 
   return false;
