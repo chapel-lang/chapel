@@ -150,8 +150,10 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   clang::driver::Command* job = nullptr;
 
   if (usingGpuLocaleModel(context) == false) {
-    // Not a CPU+GPU compilation, so just use first job.
-    job = &*C->getJobs().begin();
+    if (C->getJobs().begin() != C->getJobs().end()) {
+      // Not a CPU+GPU compilation, so just use first job.
+      job = &*C->getJobs().begin();
+    }
   } else {
     // CPU+GPU compilation
     //  1st cc1 command is for the GPU
