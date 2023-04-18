@@ -28,6 +28,8 @@ int main(int argc, char** argv) {
   std::string chpl_home;
   std::vector<std::string> clangArgs;
 
+  clangArgs.push_back("clang");
+
   for (int i = 1; i < argc; i++) {
     clangArgs.push_back(argv[i]);
   }

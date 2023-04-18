@@ -33,16 +33,19 @@ class TemporaryFileResult;
 namespace util {
 
 
-/** Return the currently set clang flags */
+/** Return the currently set clang flags.
+    The first vector element is the clang to run (like argv[0]). */
 const std::vector<std::string>& clangFlags(Context* context);
 
-/** Set the clang flags for this revision if they have not been set already */
+/** Set the clang flags for this revision if they have not been set already.
+    The first vector element should be the clang to run (like argv[0]). */
 void setClangFlags(Context* context, std::vector<std::string> clangFlags);
 
 /** Initialize all LLVM targets */
 void initializeLlvmTargets();
 
-/** Given arguments to 'clang', convert them into arguments for 'cc1' */
+/** Given arguments to 'clang', convert them into arguments for 'cc1'.
+    The first element of 'arg' should be which clang to use (like argv[0]). */
 const std::vector<std::string>& getCC1Arguments(Context* context,
                                                 std::vector<std::string> args,
                                                 bool forGpuCodegen);
