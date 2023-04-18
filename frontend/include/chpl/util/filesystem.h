@@ -20,6 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
+#include "llvm/Config/llvm-config.h"
+
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Twine.h"
@@ -109,10 +111,16 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 */
 bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2);
 
+
+#if LLVM_VERSION_MAJOR >= 13
 /**
  Non-error result type for hashFile.
  */
 using HashFileResult = std::array<uint8_t, 32>;
+#else
+// LLVM 12 and older don't have SHA256, so use the SHA1 size.
+using HashFileResult = std::array<uint8_t, 20>;
+#endif
 
 /**
   Convert a HashFileResult to a string storing its hex value
