@@ -1517,18 +1517,34 @@ bool canCoerceAsSubtype(Type*     actualType,
       return true;
   }
 
+  // coerce c_ptr to c_ptrConst
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      !actualType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    // check element types match
+    Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
+    Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
+    if (actualElt && formalElt && (actualElt == formalElt)) {
+      return true;
+    }
+  }
+
+  // coerce c_ptr to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
       formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
-    if (actualElt && formalElt && actualElt == formalElt)
+    if (actualElt && formalElt && (actualElt == formalElt))
       return true;
   }
 

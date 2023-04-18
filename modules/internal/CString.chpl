@@ -114,16 +114,32 @@ module CString {
   //
   // casts from c_string to c_ptr(c_char/int(8)/uint(8))
   //
-  inline operator :(x: c_string, type t:c_ptr)
-    where t.eltType == c_char || t.eltType == int(8) || t.eltType == uint(8)
+  inline operator :(x: c_string, type t:c_ptr(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_string to c_ptrConst(c_char/int(8)/uint(8))
+  //
+  inline operator :(x: c_string, type t:c_ptrConst(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }
   //
   // casts from c_ptr(c_char/int(8)/uint(8)) to c_string
   //
-  inline operator :(x: c_ptr, type t:c_string)
-    where x.eltType == c_char || x.eltType == int(8) || x.eltType == uint(8)
+  inline operator :(x: c_ptr(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_ptrConst(c_char/int(8)/uint(8)) to c_string
+  //
+  inline operator :(x: c_ptrConst(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }

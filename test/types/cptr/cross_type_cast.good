@@ -1,3 +1,8 @@
 cross_type_cast.chpl:13: warning: Casting c_ptr to a non-equivalent, non-char element type ('int(32)' -> 'real(32)') can cause undefined behavior.
 cross_type_cast.chpl:14: warning: Casting c_ptr to a non-equivalent, non-char element type ('int(32)' -> 'real(64)') can cause undefined behavior.
+cross_type_cast.chpl:28: warning: Casting c_ptrConst to a non-equivalent, non-char element type ('int(32)' -> 'real(32)') can cause undefined behavior.
+cross_type_cast.chpl:29: warning: Casting c_ptrConst to a non-equivalent, non-char element type ('int(32)' -> 'real(64)') can cause undefined behavior.
+cross_type_cast.chpl:35: warning: Casting c_ptr to a non-equivalent, non-char element type ('int(32)' -> 'real(32)') can cause undefined behavior.
+cross_type_cast.chpl:36: warning: Casting c_ptrConst to a non-equivalent, non-char element type ('int(32)' -> 'real(32)') can cause undefined behavior.
+1
 1

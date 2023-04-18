@@ -312,8 +312,11 @@ void AggregateType::codegenDef() {
   } else if (symbol->hasFlag(FLAG_DATA_CLASS)) {
     TypeSymbol* base = getDataClassType(symbol);
     const char* baseType = base->cname;
+    const char* constness = getConstnessSpecifierForDataClass(symbol);
     if( outfile ) {
-      fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
+      fprintf(outfile, "typedef %s%s *%s;\n",
+              constness, baseType,
+              symbol->cname);
     } else {
 #ifdef HAVE_LLVM
       llvm::Type* llBaseType;
