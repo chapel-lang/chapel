@@ -32,6 +32,10 @@ int main(int argc, char** argv) {
     clangArgs.push_back(argv[i]);
   }
 
+  if (clangArgs.empty()) {
+    clangArgs.push_back("test.c");
+  }
+
   if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
     chpl_home = chpl_home_env;
     printf("CHPL_HOME was set\n");
