@@ -1,2 +1,2 @@
 bad-retain-error.chpl:13: In function 'main':
-bad-retain-error.chpl:16: error: cannot retain 'unmanaged B' (expected 'unmanaged A')
+bad-retain-error.chpl:16: error: Cannot assign to borrowed A? from borrowed B?

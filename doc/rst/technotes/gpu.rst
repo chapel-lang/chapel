@@ -294,7 +294,7 @@ improvements in the future.
   supported).
 
 * Associative arrays cannot be used on GPU sublocales with
-  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
+  ``CHPL_GPU_MEM_STRATEGY=array_on_device``.
 
 * If using CUDA 10, single thread per locale can be used. i.e., you have to set
   ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.

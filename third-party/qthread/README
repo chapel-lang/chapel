@@ -30,9 +30,10 @@ as follows:
 
 * We modified the configuration to support the
   --with-hwloc-get-topology-function argument that specifies a function that
-    qthreads should call to get the hwloc topology, and several files to
-    support this behavior including the Makefile to pass this argument to
-    configure, and binders.c and hwloc.c to call the function.
+  qthreads should call to get the hwloc topology, and several files to
+  support this behavior including the Makefile to pass this argument to
+  configure, and binders.c and hwloc.c to call the function.
 
-* Added -lpciaccess to the list of libraries to try when linking against
-  hwloc.
+* We added --disable-hwloc-configure-checks to disable hwloc link checks,
+  and --disable-hwloc-has-distance to specify whether or not hwloc supports
+  distance information.

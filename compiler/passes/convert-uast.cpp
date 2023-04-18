@@ -407,8 +407,29 @@ struct Converter {
       const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
       if (rr != nullptr) {
         auto id = rr->toId();
-        if (!id.isEmpty()) {
-
+        if (id.isFabricatedId()) {
+          // Right now, this only covers extern block elements
+          // For those, return nullptr because we can't yet compute
+          // the type of those.
+          // TODO: compute the appropriate 'extern proc' etc and return that
+          CHPL_ASSERT(id.fabricatedIdKind() == ID::ExternBlockElement);
+          return nullptr;
+        } else if (id.isEmpty()) {
+          // super could be a formal or variable; in that case, it shouldn't
+          // be turned into a this.super call. Here the ID is empty, so
+          // it doesn't refer to a variable -- fall back to trying this.super.
+          if (node->name() == USTR("super")) {
+            if (methodThisStack.empty()) {
+              // TODO: probably too strict; what about field initializers?
+              USR_FATAL(node->id(), "super cannot occur outside of a method");
+            }
+            Symbol* parentMethodConvertedThis = methodThisStack.back();
+            auto thisExpr = new SymExpr(parentMethodConvertedThis);
+            auto nameExpr = new_CStringSymbol(node->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
+            return ret;
+          }
+        } else if (!id.isEmpty()) {
           // If we're referring to an associated type in an interface,
           // leave it unconverted for now because the compiler does some
           // mangling of the AST and breaks the "points-to" ID.
@@ -456,11 +477,6 @@ struct Converter {
 
           // handle other Identifiers
           Symbol* sym = findConvertedSym(id);
-          if (sym == nullptr) {
-            // we will fix it later
-            sym = new TemporaryConversionSymbol(id);
-          }
-
           SymExpr* se = new SymExpr(sym);
           Expr* ret = se;
 
@@ -1118,13 +1134,12 @@ struct Converter {
         noteConvertedSym(expr, svs);
         addForallIntent(ret, svs);
       } else {
-        auto r = symStack.back().resolved;
-        if (r != nullptr) {
-          const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
-          if (rr != nullptr) {
-            if (isTaskVarDecl) {
-              noteConvertedSym(expr, svs);
-            } else {
+        if (isTaskVarDecl) {
+          noteConvertedSym(expr, svs);
+        } else {
+          auto r = symStack.back().resolved;
+          if (r != nullptr) {
+            if (auto rr = r->byAstOrNull(expr)) {
               noteConvertedSym(expr, findConvertedSym(rr->toId()));
             }
           }
@@ -4305,7 +4320,7 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
            id.str().c_str(), inSymbolId.str().c_str());
   }
 
-  return nullptr;
+  return new TemporaryConversionSymbol(id);
 }
 
 FnSymbol* ConvertedSymbolsMap::findConvertedFn(
@@ -4372,7 +4387,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
-    if (sym == nullptr) {
+    if (isTemporaryConversionSymbol(sym)) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }

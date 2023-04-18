@@ -448,7 +448,7 @@ class FunctionType final : public Type {
   buildUserFacingTypeString(Kind kind,
                             const std::vector<Formal>& formals,
                             RetTag returnIntent,
-                            Type* returntType,
+                            Type* returnType,
                             bool throws);
 
   FunctionType(Kind kind, std::vector<Formal> formals,

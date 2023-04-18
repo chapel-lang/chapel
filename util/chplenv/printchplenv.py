@@ -125,6 +125,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_VERSION', COMPILER),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
@@ -223,6 +224,7 @@ def compute_all_values():
     llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
+    ENV_VALS['  CHPL_LLVM_STATIC_DYNAMIC'] = chpl_llvm.get_static_dynamic()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -425,6 +427,10 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
             if env.name == 'CHPL_TARGET_CPU':
                 value = ENV_VALS['CHPL_RUNTIME_CPU']
             elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
+                value += '-debug'
+            elif env.name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
+                value += '-debug'
+            elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
         if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
                 value += ' (deprecated)'

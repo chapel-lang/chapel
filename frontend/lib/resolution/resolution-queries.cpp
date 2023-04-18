@@ -126,7 +126,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule()) {
+            child->isModule() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -144,7 +145,10 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }
@@ -175,7 +179,8 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface()) {
+            child->isInterface() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -193,7 +198,10 @@ scopeResolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }

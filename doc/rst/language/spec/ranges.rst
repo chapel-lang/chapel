@@ -928,7 +928,7 @@ with a range that is identical except it is given an alignment
 in such a way that that the intersection of the two ranges'
 represented sequences is non-empty, if possible.
 How this substitute alignment is chosen when multiple possibilities
-are availble is implementation-dependent.
+are available is implementation-dependent.
 
 If the resulting sequence cannot be expressed as a range with the
 original ``idxType``, the slice expression evaluates to the empty

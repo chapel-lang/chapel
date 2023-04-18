@@ -80,7 +80,7 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 // end with a space.
 //
 // 'encounteredAutoModule' is set to 'false' at the start of this function
-// but will be set to 'true' if the symbol came from an automaticly use'd
+// but will be set to 'true' if the symbol came from an automatically use'd
 // module
 //
 // 'from' is set to 'name' at the start of this function and will be
@@ -507,6 +507,34 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   wr.message("The 'new' expression can only be used with records or classes.");
 }
 
+void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
+  auto superExpr = std::get<const uast::Identifier*>(info);
+  auto qt = std::get<types::QualifiedType>(info);
+
+  const types::RecordType* recordType = nullptr;
+  if (auto type = qt.type()) {
+    recordType = type->toRecordType();
+  }
+
+  if (recordType) {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' in record '", recordType->name(), "'.");
+  } else {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' with ", qt);
+  }
+  wr.code(superExpr, { superExpr });
+  if (recordType) {
+    wr.note(superExpr, "inheritance is not currently supported for records.");
+    wr.message(
+        "Thoughts on what record inheritance should entail can be added to "
+        "https://github.com/chapel-lang/chapel/issues/6851.");
+    wr.message(recordType->name(), " declared as a record here:");
+    wr.codeForLocation(recordType->id());
+    wr.message("If you meant to declare '", recordType->name(), "' as a class ",
+               "instead, you can do that by writing 'class ", recordType->name(),
+               "' instead of 'record ", recordType->name(), "'.");
+  }
+}
+
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   auto newCall = std::get<const uast::New*>(info);
   auto type = std::get<const types::Type*>(info);
@@ -528,7 +556,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   wr.message("Memory management strategies can only be used with classes.");
   if (record) {
     wr.note(record->id(), "'", record->name(), "' declared as record here:");
-    wr.code(record->id());
+    wr.codeForLocation(record->id());
     wr.message(
                "Consider removing the '", uast::New::managementToString(newCall->management()),
                "' keyword to fix this error, or defining '", record->name(),
@@ -717,8 +745,8 @@ static bool firstIdFromDecls(
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithIter
-      // to filter Idvs.
+      // To do that, would use flags in BorrowedIdsWithName
+      // to filter Ids.
       result = matches[i].firstId();
       return true;
     }

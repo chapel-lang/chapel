@@ -1,4 +1,3 @@
-MapTest.chpl:6: In function 'testMap':
-MapTest.chpl:39: error: illegal lvalue in assignment
-MapTest.chpl:43: error: cannot initialize variable 'zz' of type 'unmanaged T' from a 'borrowed T'
-  testNonNilableUnmanagedIndexingError.chpl:11: called as testMap(type t = unmanaged T, param testIndexing = true)
+uncaught KeyNotFoundError: key '3' not found
+  MapTest.chpl:39: thrown here
+  MapTest.chpl:39: uncaught here

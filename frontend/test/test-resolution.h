@@ -52,4 +52,13 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly);
 
+// check that in method methodIdStr, the call with id callIdStr resolves
+// to a function with id calledFnIdStr.
+// if calledFnIdStr == "", expect no match (e.g. ambiguity)
+void testCall(const char* testName,
+              const char* program,
+              const char* methodIdStr,
+              const char* callIdStr,
+              const char* calledFnIdStr);
+
 #endif

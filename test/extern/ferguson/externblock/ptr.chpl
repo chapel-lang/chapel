@@ -10,6 +10,7 @@ export proc chplFromC(arr: c_ptr(c_int), n:c_int):c_int
 }
 
 extern {
+  #include <stdio.h>
 
   int chplFromC(int *nums, int n);
 

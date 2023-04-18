@@ -1657,7 +1657,7 @@ proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool 
   return b.size > 0;
 }
 
-/* helper for: readThrough(regex), readTo(regex) (and eventually andvanceTo, advanceThrough)
+/* helper for: readThrough(regex), readTo(regex) (and eventually advanceTo, advanceThrough)
 
   looks for a regex match in the next 'maxBytes' bytes in the channel
 

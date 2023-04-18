@@ -2398,7 +2398,7 @@ module BigInteger {
     if _local {
       mpz_gcdext(result.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
     } else if result.localeId == chpl_nodeID {
-      // TODO: need to revist this in relation to Cray/chapel-private#4628
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
       var s_ : bigint;
       var t_ : bigint;
       const a_ = a;
@@ -2765,7 +2765,7 @@ module BigInteger {
     if _local {
       mpz_fib2_ui(result.mpz, fnsub1.mpz, n_);
     } else if result.localeId == chpl_nodeID {
-        // TODO: need to revist this in relation to Cray/chapel-private#4628
+        // TODO: need to revisit this in relation to Cray/chapel-private#4628
         var fnsub1_ : bigint;
         mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
         fnsub1 = fnsub1_;
@@ -2811,7 +2811,7 @@ module BigInteger {
     if _local {
       mpz_lucnum2_ui(result.mpz, fnsub1.mpz, n_);
     } else if result.localeId == chpl_nodeID {
-      // TODO: need to revist this in relation to Cray/chapel-private#4628
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
       var fnsub1_ : bigint;
       mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
       fnsub1 = fnsub1_;
@@ -3888,7 +3888,7 @@ module BigInteger {
     if _local {
       helper(result, remain, numer, denom, rounding);
     } else if result.localeId == chpl_nodeID {
-      // TODO: need to revist this in relation to Cray/chapel-private#4628
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
       var   remain_ : bigint;
       const numer_ = numer;
       const denom_ = denom;

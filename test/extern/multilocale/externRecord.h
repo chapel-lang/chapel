@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 typedef struct _R {
   int x;
 } R;

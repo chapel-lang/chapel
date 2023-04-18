@@ -83,6 +83,30 @@ class Context {
     virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
+  /** This struct stores configuration information to use when
+      constructing a Context. */
+  struct Configuration {
+    /** Used for determining Chapel environment variables */
+    std::string chplHome;
+
+    std::unordered_map<std::string, std::string> chplEnvOverrides;
+
+    /** Temporary directory in which to store files.
+        If it is "", it will be set to something like /tmp/chpl-1234/.
+        It will be deleted when the context is deleted, unless
+        keepTmpDir is true.
+     */
+    std::string tmpDir;
+
+    /** If 'true', the tmpDir will not be deleted. */
+    bool keepTmpDir = false;
+
+    /** Tool name (for use when creating the tmpDir in /tmp if needed) */
+    std::string toolName = "chpl";
+
+    void swap(Configuration& other);
+  };
+
  private:
 
   // The implementation of the default error handler.
@@ -95,18 +119,14 @@ class Context {
     }
   };
 
+  // --------- begin all Context fields ---------
+
+  // The current Configuration
+  Configuration config_;
+
   // The current error handler.
   owned<ErrorHandler> handler_
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
-
-  // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err);
-
-  // The CHPL_HOME variable
-  const std::string chplHome_;
-
-  // Variables to explicitly set before getting chplenv
-  const std::unordered_map<std::string, std::string> chplEnvOverrides;
 
   // State for printchplenv data
   bool computedChplEnv = false;
@@ -158,14 +178,30 @@ class Context {
   int queryTraceDepth = 0;
 
   // list of query names to ignore when tracing
-  const std::vector<std::string>
+  std::vector<std::string>
   queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
 
   // list of colors to use for open/close braces depending on query depth
-  const std::vector<TermColorName>
-  queryDepthColor  = {BLUE, BRIGHT_YELLOW, MAGENTA};
+  std::vector<TermColorName> queryDepthColor = {BLUE, BRIGHT_YELLOW, MAGENTA};
 
   owned<std::ostream> queryTimingTraceOutput = nullptr;
+
+  std::string tmpDir_;
+  bool tmpDirExists_ = false;
+  bool tmpDirAnchorCreated_ = false;
+
+  // The following are only used for UniqueString garbage collection
+  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
+  querydetail::RevisionNumber gcCounter = 1;
+
+  // --------- end all Context fields ---------
+
+  void setupGlobalStrings();
+
+  void swap(Context& other);
+
+  // Report an error to the current handler.
+  void reportError(Context* context, const ErrorBase* err);
 
   // return an ANSI color code for this query depth, if supported by terminal
   void setQueryDepthColor(int depth, std::ostream& os) {
@@ -185,11 +221,6 @@ class Context {
     }
   }
 
-
-
-  // The following are only used for UniqueString garbage collection
-  querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
-  querydetail::RevisionNumber gcCounter = 1;
 
   char* setupStringMetadata(char* buf, size_t len);
   const char* getOrCreateUniqueStringWithAllocation(char* buf,
@@ -297,15 +328,47 @@ class Context {
   static void defaultReportError(Context* context, const ErrorBase* err);
 
   /**
-    Create a new AST Context. Optionally, specify the value of the
-    CHPL_HOME environment variable, which is used for determining
-    chapel environment variables.
+    Create a new Context without specifying chplHome or any
+    other Configuration settings.
    */
-  Context(std::string chplHome = "",
-          std::unordered_map<std::string, std::string> chplEnvOverrides = {});
+  Context();
+
+  /**
+    Create a new Context while specifying a Configuration.
+    */
+  Context(Configuration config);
+
+  /**
+    Create a new Context by consuming the contents of another Context
+    context while changing Configuration. The passed Context will no
+    longer be usable. Assumes that any queries that have run so far
+    do not depend on the Configuration settings that have changed.
+
+    This function is useful during compiler start up. */
+  Context(Context& consumeContext, Configuration newConfig);
+
   ~Context();
 
   const std::string& chplHome() const;
+
+  /** Return a temporary directory that can be used by this process.
+      It is typically a subdirectory of '/tmp' that will be removed
+      when the Context is destroyed.
+      If it does not exist yet, create it.
+   */
+  const std::string& tmpDir();
+
+  /** Returns 'true' if this Context is configured to save the temporary
+      directory (with keepTmpDir=true). */
+  bool shouldSaveTmpDirFiles() const;
+
+  /** Return a path to a file within tmpDir that is not modified after
+      it is created, to serve as a source for normalizing modification times */
+  std::string tmpDirAnchorFile();
+
+  /** Delete the temporary directory if needed. This function
+      can be called during program exit. */
+  void cleanupTmpDirIfNeeded();
 
   void setDetailedErrorOutput(bool useDetailed);
 
@@ -468,7 +531,7 @@ class Context {
      called for this ID).
 
     Returns the path by setting 'pathOut'.
-    Returns the parent symbol path (relevant for 'module include'
+    Returns the parent symbol path (relevant for 'module include')
     by setting 'parentSymbolPathOut'.
    */
   bool filePathForId(ID id,
@@ -601,7 +664,9 @@ class Context {
   */
   void setBreakOnHash(const size_t hashVal);
 
-  /** Enables/disables timing each query execution */
+  /** Enables/disables timing each query execution.
+      This does not output anything to stdout / a file / etc.
+      To see the results, call queryTimingReport. */
   void setQueryTimingFlag(bool enable) {
     enableQueryTiming = enable;
   }

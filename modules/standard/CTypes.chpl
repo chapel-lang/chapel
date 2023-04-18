@@ -93,6 +93,12 @@ module CTypes {
     ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
     the ``c_void_ptr`` type.
 
+    Casting directly to a ``c_ptr`` of another pointee type is supported, but
+    will emit a safety warning for casts that can lead to violation of C's
+    strict aliasing rule. Casting to a char pointee type or across signedness,
+    or through an intermediate cast to ``c_void_ptr``, will not generate a
+    warning.
+
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
 
@@ -298,8 +304,39 @@ module CTypes {
 
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
+  /* Helper function for determining if casting between two types as pointee
+     types violates C strict aliasing rules. Only checks for types that have c_*
+     equivalents.
+   */
+  pragma "no doc"
+  inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
+      : bool {
+    // allow identical types
+    if (from == to) {
+      return true;
+    }
+    // allow aliasing to any char type
+    if (to == int(8) || to == uint(8)) {
+      return true;
+    }
+    // allow types differing only in signedness
+    if ((isIntegralType(from) && isIntegralType(to) ||
+         isRealType(from) && isRealType(to)) &&
+        numBytes(from) == numBytes(to)) {
+      return true;
+    }
+    // otherwise, return false
+    return false;
+  }
+
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:c_ptr) {
+    // emit warning for C strict aliasing violations
+    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+      compilerWarning("Casting c_ptr to a non-equivalent, non-char element type"
+                      + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+                      "') can cause undefined behavior.");
+    }
     return __primitive("cast", t, x);
   }
   pragma "no doc"

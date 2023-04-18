@@ -332,8 +332,8 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(real),
-                                    c_ptrTo(arr) : c_ptr(complex), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex), flags);
   }
 
   //
@@ -409,8 +409,8 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(complex),
-                                    c_ptrTo(arr) : c_ptr(real), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real), flags);
   }
 
   pragma "no doc"

@@ -20,6 +20,8 @@ config const n = 100000;
 // for the Chapel code below to use.
 extern {
 
+  #include <stdint.h>
+
   // make puts available for the example below
   #include <stdio.h>
 
