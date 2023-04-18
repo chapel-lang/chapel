@@ -122,6 +122,10 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   // swap all fields in to place from consumeContext
   this->swap(consumeContext);
 
+  // set consumeContext not to delete the temp dir when it is deleted
+  // since this context will do so if that is needed.
+  consumeContext.config_.keepTmpDir = true;
+
   // now set the new configuration information
   config_.swap(newConfig);
 }

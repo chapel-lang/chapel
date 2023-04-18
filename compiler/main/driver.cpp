@@ -1889,7 +1889,9 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   config.toolName = "chpl";
 
   // Replace the current gContext with one using the new configuration.
-  gContext = new chpl::Context(*gContext, std::move(config));
+  auto oldContext = gContext;
+  gContext = new chpl::Context(*oldContext, std::move(config));
+  delete oldContext;
 
   // set up the clang arguments
 #ifdef HAVE_LLVM

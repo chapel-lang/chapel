@@ -2726,12 +2726,29 @@ void codegen() {
 
     if (pid == 0) {
       // child process
+
+      // Currently, gpu code generation is done in on forked process. This
+      // forked process produces some files in the tmp directory that are
+      // later read by the main process, so we want the main process
+      // to clean up the temp dir and not the forked process.
+
+      // set up the child to have a gContext with the same tmp dir
+      // that does not delete that tmp dir
+      auto oldContext = gContext;
+      auto config = oldContext->configuration();
+      config.tmpDir = oldContext->tmpDir();
+      config.keepTmpDir = true;
+      gContext = new chpl::Context(*oldContext, std::move(config));
+      delete oldContext;
+
+      // activate GPU code generation
       gCodegenGPU = true;
       codegenPartTwo();
       makeBinary();
       clean_exit(0);
     } else {
       // parent process
+
       INT_ASSERT(!gCodegenGPU);
       int status = 0;
       while (wait(&status) != pid) {

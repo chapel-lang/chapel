@@ -54,9 +54,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
 void ensureTmpDirExists();
-const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
-void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
