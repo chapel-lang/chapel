@@ -1999,7 +1999,7 @@ module ArgumentParser {
 
   // helper to prepare numArgs ranges for use
   pragma "no doc"
-  proc _prepareRange(rIn: range(?)) : simpleRange throws { // bug: should be able to have the generic 'range' for the ret. type 
+  proc _prepareRange(rIn: range(?)) : simpleRange throws { // bug: should be able to have the generic 'range' for the ret. type
     var nArgs:simpleRange;
     if rIn.hasLowBound() && !rIn.hasHighBound() {
       nArgs = rIn.low..max(int);
