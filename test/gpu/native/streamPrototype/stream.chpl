@@ -200,7 +200,7 @@ proc verifyResults(A, B, C) {
 }
 
 //
-// Print out success/failure, the timings, and the GiB/s value
+// Print out success/failure, the timings, and the throughput
 //
 proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
