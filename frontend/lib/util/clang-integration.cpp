@@ -54,6 +54,7 @@ namespace util {
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
   std::vector<std::string> ret;
+  ret.push_back("clang"); // dummy argv[0] to make this callable in C++ tests
   return QUERY_END(ret);
 }
 
@@ -76,19 +77,6 @@ void initializeLlvmTargets() {
 }
 
 #ifdef HAVE_LLVM
-// Get the current clang executable path from printchplenv
-static std::string getClangExe(Context* context) {
-  std::string clangExe = "clang";
-  auto chplEnv = context->getChplEnv();
-  if (chplEnv) {
-    auto it = chplEnv->find("CHPL_LLVM_CLANG_C");
-    if (it != chplEnv->end()) {
-      clangExe = it->second;
-    }
-  }
-  return clangExe;
-}
-
 static std::string getChplLocaleModel(Context* context) {
   std::string result = "flat";
   auto chplEnv = context->getChplEnv();
@@ -115,14 +103,12 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   std::vector<std::string> result;
 
 #ifdef HAVE_LLVM
-  std::string clangExe = getClangExe(context);
-  std::vector<const char*> argsCstrs;
+  CHPL_ASSERT(args.size() > 0 && "clang to use should be arg 0");
 
-  argsCstrs.push_back(clangExe.c_str());
+  std::vector<const char*> argsCstrs;
   for (const auto& arg : args) {
     argsCstrs.push_back(arg.c_str());
   }
-
 
 
   // TODO: use a different triple when cross compiling
@@ -143,15 +129,17 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
 
   // takes ownership of all of the above
-  clang::driver::Driver D(clangExe, triple, *diags);
+  clang::driver::Driver D(argsCstrs[0], triple, *diags);
 
   std::unique_ptr<clang::driver::Compilation> C(D.BuildCompilation(argsCstrs));
 
   clang::driver::Command* job = nullptr;
 
   if (usingGpuLocaleModel(context) == false) {
-    // Not a CPU+GPU compilation, so just use first job.
-    job = &*C->getJobs().begin();
+    if (!C->getJobs().empty()) {
+      // Not a CPU+GPU compilation, so just use first job.
+      job = &*C->getJobs().begin();
+    }
   } else {
     // CPU+GPU compilation
     //  1st cc1 command is for the GPU
@@ -230,21 +218,20 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
 
     // gather args to clang
-    const std::vector<std::string>& clFlags = clangFlags(context);
-    std::vector<std::string> args = clFlags;
+    std::vector<std::string> clFlags = clangFlags(context);
     // disable storing timestamps in precompiled headers
-    args.push_back("-Xclang");
-    args.push_back("-fno-pch-timestamp");
+    clFlags.push_back("-Xclang");
+    clFlags.push_back("-fno-pch-timestamp");
     // ask to generate a precompiled header
-    args.push_back("-x");
-    args.push_back("c-header");
+    clFlags.push_back("-x");
+    clFlags.push_back("c-header");
     // specify input
-    args.push_back(tmpInput);
+    clFlags.push_back(tmpInput);
     // specify output
-    args.push_back("-o");
-    args.push_back(tmpOutput);
+    clFlags.push_back("-o");
+    clFlags.push_back(tmpOutput);
     const std::vector<std::string>& cc1args =
-        getCC1Arguments(context, args, /* forGpuCodegen */ false);
+        getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
     std::vector<const char*> cc1argsCstrs;
     for (const auto& arg : cc1args) {
       cc1argsCstrs.push_back(arg.c_str());

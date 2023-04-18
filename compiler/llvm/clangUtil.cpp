@@ -63,6 +63,7 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -2406,10 +2407,12 @@ static void helpComputeClangArgs(std::string& clangCC,
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> split;
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  SmallVector<const char *, 0> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
     if (i == 0) {
@@ -2421,7 +2424,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     }
   }
   split.clear();
-  splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_CXX, Saver, split);
   if (split.size() > 0) {
     clangCXX = split[0];
   }
@@ -2542,12 +2545,23 @@ static void helpComputeClangArgs(std::string& clangCC,
 }
 
 void computeClangArgs(std::vector<std::string>& clangCCArgs) {
-  std::string ignoredClangCC, ignoredClangCXX;
+  std::string clangCC, ignoredClangCXX;
   std::vector<std::string> ignoredOtherArgs, ignoredLDArgs;
 
-  helpComputeClangArgs(ignoredClangCC, ignoredClangCXX,
-                       clangCCArgs,
+  std::vector<std::string> gotCCArgs;
+
+  helpComputeClangArgs(clangCC, ignoredClangCXX,
+                       gotCCArgs,
                        ignoredOtherArgs, ignoredLDArgs);
+
+  // append clangCC argument first
+  if (clangCC == "") {
+    clangCC = "clang";
+  }
+  clangCCArgs.push_back(clangCC);
+
+  // append the other arguments
+  clangCCArgs.insert(clangCCArgs.end(), gotCCArgs.begin(), gotCCArgs.end());
 }
 
 // if just_parse_filename != NULL, it is a file

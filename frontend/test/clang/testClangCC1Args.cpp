@@ -28,8 +28,14 @@ int main(int argc, char** argv) {
   std::string chpl_home;
   std::vector<std::string> clangArgs;
 
+  clangArgs.push_back("clang");
+
   for (int i = 1; i < argc; i++) {
     clangArgs.push_back(argv[i]);
+  }
+
+  if (clangArgs.empty()) {
+    clangArgs.push_back("test.c");
   }
 
   if (const char* chpl_home_env  = getenv("CHPL_HOME")) {

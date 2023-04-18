@@ -1896,6 +1896,12 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   {
     std::vector<std::string> clangCCArgs;
     computeClangArgs(clangCCArgs);
+    if (developer && printSystemCommands) {
+      printf("computed clang arguments:\n");
+      for (const auto& arg : clangCCArgs) {
+        printf("  %s\n", arg.c_str());
+      }
+    }
     chpl::util::setClangFlags(gContext, clangCCArgs);
   }
 #endif
