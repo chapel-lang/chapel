@@ -1,3 +1,5 @@
+// See the README file for more information about this test.
+
 extern {
   #include <cuda.h>
   #include <assert.h>
