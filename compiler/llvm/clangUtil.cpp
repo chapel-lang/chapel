@@ -3411,6 +3411,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (makeRef || t->isRef()) {
     ::Type* eltType = t->getValType();
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const refs
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -3418,6 +3419,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_DATA_CLASS)) {
     ::Type* eltType = getDataClassType(ts)->type;
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const C pointers
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
