@@ -1,3 +1,5 @@
+// See the README for more info on this test
+
 extern {
   #include <hip/hip_runtime.h>
   #include <hip/hip_runtime_api.h>
