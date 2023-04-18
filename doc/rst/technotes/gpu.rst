@@ -125,10 +125,11 @@ Requirements
 
   * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
     (inclusive). If using version 10.x you must set
-    ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. In some cases versions as early as
-    7.x or at or above 12.x may work but we have not tested these.
+    ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
+    although we have not tested this.
 
-  * If targeting AMD GPUs, we require a version of ROCM greater than 4.x.
+  * If targeting AMD GPUs, we require ROCM version 4.x; we suspect version 5.x
+    will work as well although we have not tested so.
 
 
 GPU-Related Environment Variables
