@@ -349,6 +349,10 @@ class Context {
 
   ~Context();
 
+  /** Return the Configuration used by this Context */
+  const Configuration& configuration() const { return config_; }
+
+  /** Return the configured CHPL_HOME directory */
   const std::string& chplHome() const;
 
   /** Return a temporary directory that can be used by this process.
@@ -370,6 +374,8 @@ class Context {
       can be called during program exit. */
   void cleanupTmpDirIfNeeded();
 
+  /** Change whether or not this Context is configured for detailed
+      error/warning output (vs brief output). */
   void setDetailedErrorOutput(bool useDetailed);
 
   /**

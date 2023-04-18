@@ -42,7 +42,6 @@
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
 
 #include <pwd.h>
 #include <unistd.h>
@@ -117,7 +116,7 @@ void ensureDirExists(const char* dirname, const char* explanation) {
   }
 }
 
-const char* makeTempDir(const char* dirPrefix) {
+static const char* makeTempDir() {
  std::string tmpDirPath = gContext->tmpDir();
  ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
 
@@ -126,14 +125,17 @@ const char* makeTempDir(const char* dirPrefix) {
 
 void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
-      tmpdirname = makeTempDir("chpl-");
-      intDirName = tmpdirname;
+    if (intDirName == NULL) {
+      intDirName = makeTempDir();
     }
   } else {
     if (intDirName != saveCDir) {
       intDirName = saveCDir;
       ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      if (0 != strcmp(makeTempDir(), saveCDir)) {
+        // expected gContext to have been constructed with saveCDir
+        INT_FATAL("misconfiguration with temp dir");
+      }
     }
   }
 }
