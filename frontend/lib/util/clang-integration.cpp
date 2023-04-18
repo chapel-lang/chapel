@@ -54,7 +54,7 @@ namespace util {
 const std::vector<std::string>& clangFlags(Context* context) {
   QUERY_BEGIN_INPUT(clangFlags, context);
   std::vector<std::string> ret;
-  ret.push_back("clang"); // dummy argv[0]
+  ret.push_back("clang"); // dummy argv[0] to make this callable in C++ tests
   return QUERY_END(ret);
 }
 
@@ -136,7 +136,7 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   clang::driver::Command* job = nullptr;
 
   if (usingGpuLocaleModel(context) == false) {
-    if (C->getJobs().begin() != C->getJobs().end()) {
+    if (!C->getJobs().empty()) {
       // Not a CPU+GPU compilation, so just use first job.
       job = &*C->getJobs().begin();
     }
