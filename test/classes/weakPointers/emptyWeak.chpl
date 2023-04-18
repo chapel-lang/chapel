@@ -1,4 +1,4 @@
-use WeakPointer
+use WeakPointer;
 
 class C {
     var x: int;
@@ -7,7 +7,7 @@ class C {
 var w = new weak(shared C);
 
 try {
-    var c = w : C;
+    var c = w : shared C;
 } catch e: NilClassError {
     writeln("correct");
 } catch e {
