@@ -64,11 +64,9 @@ if smallWriteSize > 0 {
 }
 
 r.close();
-
-writeln(d);
-
 remove("multi_ops.bin");
 
+// writeln(d);
 writeln(
   (&& reduce (d[0..<smallWriteSize] == 1)) &&
   (&& reduce (d[smallWriteSize..#smallWriteSize] == 2)) &&

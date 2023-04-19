@@ -2822,14 +2822,11 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    printf("direct read of %ld bytes\n", len);
-    fflush(stdout);
-
     // copy out what remains in the buffer before making a system call
     // gotlen = ch->av_end - _right_mark_start(ch);
-    gotlen = qio_ptr_diff(ch->cached_cur, ch->cached_start);
+    gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
     if ( gotlen > 0 ) {
-      start = _right_mark_start_iter(ch);            // start of available data
+      start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
       end = start;
       qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
 
@@ -2840,6 +2837,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       // advance the ptr, start of aviliabe data, etc.
       ptr = qio_ptr_add(ptr, gotlen);
       _set_right_mark_start(ch, end.offset);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
       remaining -= gotlen;
       *amt_read = gotlen;
 
@@ -2896,12 +2894,10 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
                        *amt_read - gotlen);
     ch->av_end += *amt_read - gotlen;
 
-    // re-setup the buffer for any future buffered writes
-    _qio_buffered_setup_cached(ch);
+    ch->cached_cur = NULL;
+    ch->cached_end = NULL;
+    ch->cached_start = NULL;
   } else {
-    printf("buffered read of %ld bytes\n", len);
-    fflush(stdout);
-
     // otherwise, read from the buffer
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
