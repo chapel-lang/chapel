@@ -548,15 +548,17 @@ module ZMQ {
 
     proc deinit() {
       on this.home {
-        var ret = zmq_close(socket):int;
-        if ret == -1 {
-          var errmsg: string;
-          try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+        if socket != c_nil {
+          var ret = zmq_close(socket):int;
+          if ret == -1 {
+            var errmsg: string;
+            try! {
+              errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            }
+            halt("Error in SocketClass.deinit(): %s\n", errmsg);
           }
-          halt("Error in SocketClass.deinit(): %s\n", errmsg);
+          socket = c_nil;
         }
-        socket = c_nil;
       }
     }
   }
@@ -625,17 +627,9 @@ module ZMQ {
 
     /*
       Close the socket.
-
-      :arg linger: Optional argument to specify the linger period for the
-          socket prior to closing.  If -1, then the linger period is infinite;
-          if non-negative, then the linger period shall be set to the specified
-          value (in milliseconds).
-      :type linger: `int`
      */
-    proc close(linger: int = unset) {
+    proc close() {
       on classRef.home {
-        if linger != unset then
-          setsockopt(ZMQ_LINGER, linger:c_int);
         var ret = zmq_close(classRef.socket):int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
