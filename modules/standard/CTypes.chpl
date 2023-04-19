@@ -387,7 +387,7 @@ module CTypes {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
           "Casting c_ptr to a non-equivalent, non-char element type"
-          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          + " ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -398,7 +398,7 @@ module CTypes {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
           "Casting c_ptrConst to a non-equivalent, non-char element type"
-          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          + " ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -410,7 +410,7 @@ module CTypes {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
           "Casting c_ptrConst to a non-equivalent, non-char element type"
-          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          + " ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -420,7 +420,7 @@ module CTypes {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
           "Casting c_ptr to a non-equivalent, non-char element type"
-          + " ('" + x.eltType:string + "' -> '" + t.eltType:string +
+          + " ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
