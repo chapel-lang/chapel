@@ -1,0 +1,19 @@
+data: |
+   There once was a tall man from Ealing
+   Who got on a bus to Darjeeling
+       It said on the door
+       "Please don't sit on the floor"
+   So he carefully sat on the ceiling
+data2: >
+   There once was a tall man from Ealing
+   Who got on a bus to Darjeeling
+       It said on the door
+       "Please don't sit on the floor"
+   So he carefully sat on the ceiling
+{name: John Smith, age: 33}
+--- # Shopping list
+[milk, pumpkin pie, eggs, juice]
+--- # Favorite movies
+- Casablanca
+- North by Northwest
+- The Man Who Wasn't There
