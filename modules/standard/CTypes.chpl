@@ -347,6 +347,11 @@ module CTypes {
   pragma "no doc"
   inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
       : bool {
+    // if from and to are both pointer types themselves, recurse into their
+    // respective pointee types (strip a layer of indirection)
+    if (isAnyCPtr(from) && isAnyCPtr(to)) {
+      return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
+    }
     // allow identical types
     if (from == to) {
       return true;
