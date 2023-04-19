@@ -232,31 +232,38 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     clFlags.push_back(tmpOutput);
     const std::vector<std::string>& cc1args =
         getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+
     std::vector<const char*> cc1argsCstrs;
     for (const auto& arg : cc1args) {
       cc1argsCstrs.push_back(arg.c_str());
     }
 
-    // setup diagnostics options
-    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient =
         new clang::TextDiagnosticPrinter(llvm::errs(), &*diagOptions);
-    auto diagID = new clang::DiagnosticIDs();
-    auto diags =
-        new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-    Clang->setDiagnostics(diags);
+
+    auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+    Clang->setDiagnostics(&*clangDiags);
 
     // replace current compiler invocation with one including args and diags
     bool success = clang::CompilerInvocation::CreateFromArgs(
-        Clang->getInvocation(), cc1argsCstrs, *diags);
+        Clang->getInvocation(), cc1argsCstrs, *clangDiags);
     CHPL_ASSERT(success);
 
     CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
+    //Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
+    //Clang->createFileManager();
+    //Clang->createSourceManager(Clang->getFileManager());
+    //Clang->createPreprocessor(clang::TU_Complete);
+
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
-    std::string outputFileNameFromClang;
-    genPchAction->CreateOutputFile(*Clang, tmpInput, outputFileNameFromClang);
+    //std::string outputFileNameFromClang;
+    //genPchAction->CreateOutputFile(*Clang, tmpInput, outputFileNameFromClang);
 
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
