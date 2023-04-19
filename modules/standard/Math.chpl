@@ -89,6 +89,30 @@ module Math {
     return chpl_carg(z);
   }
 
+  /* Returns the error function of the argument `x`. */
+  inline proc erf(x: real(64)): real(64) {
+    return chpl_erf(x);
+  }
+
+  /* Returns the error function of the argument `x`. */
+  inline proc erf(x : real(32)): real(32) {
+    return chpl_erf(x);
+  }
+
+  /* Returns the complementary error function of the argument.
+     This is equivalent to 1.0 - :proc:`erf`\(`x`).
+  */
+  inline proc erfc(x: real(64)): real(64) {
+    return chpl_erfc(x);
+  }
+
+  /* Returns the complementary error function of the argument.
+     This is equivalent to 1.0 - :proc:`erf`\(`x`).
+  */
+  inline proc erfc(x : real(32)): real(32) {
+    return chpl_erfc(x);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.

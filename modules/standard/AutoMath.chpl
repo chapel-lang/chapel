@@ -688,32 +688,74 @@ module AutoMath {
     return m / n;
   }
 
+  // When removing this deprecated function, be sure to remove chpl_erf and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc erf(x: real(64)): real(64) {
+    return chpl_erf(x);
+  }
 
-  /* Returns the error function of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc erf(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_erf(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erf(x: real(64)): real(64);
+    return erf(x);
+  }
 
-  /* Returns the error function of the argument `x`. */
+  // When removing this deprecated function, be sure to remove chpl_erf and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x : real(32)): real(32) {
+    return chpl_erf(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_erf(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc erff(x: real(32)): real(32);
     return erff(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_erfc and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc erfc(x: real(64)): real(64) {
+    return chpl_erfc(x);
+  }
 
-  /* Returns the complementary error function of the argument.
-     This is equivalent to 1.0 - :proc:`erf`\(`x`).
-  */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc erfc(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_erfc(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfc(x: real(64)): real(64);
+    return erfc(x);
+  }
 
-  /* Returns the complementary error function of the argument.
-     This is equivalent to 1.0 - :proc:`erf`\(`x`).
-  */
+  // When removing this deprecated function, be sure to remove chpl_erfc and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erfc(x : real(32)): real(32) {
+    return chpl_erfc(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_erfc(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc erfcf(x: real(32)): real(32);
