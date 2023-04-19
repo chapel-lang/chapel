@@ -386,8 +386,8 @@ module CTypes {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
-          "Casting c_ptr to a non-equivalent, non-char element type"
-          + " ('" + x.type:string + "' -> '" + t:string +
+          "Casting c_ptr to a pointer of non-equivalent, non-char "
+          + "element type ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -397,8 +397,8 @@ module CTypes {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
-          "Casting c_ptrConst to a non-equivalent, non-char element type"
-          + " ('" + x.type:string + "' -> '" + t:string +
+          "Casting c_ptrConst to a pointer of non-equivalent, non-char "
+          + "element type ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -409,8 +409,8 @@ module CTypes {
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptr) {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
-          "Casting c_ptrConst to a non-equivalent, non-char element type"
-          + " ('" + x.type:string + "' -> '" + t:string +
+          "Casting c_ptrConst to a pointer of non-equivalent, non-char "
+          + "element type ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
@@ -419,8 +419,8 @@ module CTypes {
   inline operator c_ptr.:(x:c_ptr, type t:c_ptrConst) {
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
-          "Casting c_ptr to a non-equivalent, non-char element type"
-          + " ('" + x.type:string + "' -> '" + t:string +
+          "Casting c_ptr to a pointer of non-equivalent, non-char "
+          + "element type ('" + x.type:string + "' -> '" + t:string +
           "') can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
