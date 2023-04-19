@@ -692,7 +692,6 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
@@ -713,7 +712,6 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x : real(32)): real(32) {
     return chpl_erf(x);
@@ -731,7 +729,6 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erfc(x: real(64)): real(64) {
     return chpl_erfc(x);
@@ -752,7 +749,6 @@ module AutoMath {
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erfc(x : real(32)): real(32) {
     return chpl_erfc(x);
