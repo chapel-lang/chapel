@@ -350,6 +350,10 @@ module CTypes {
     // if from and to are both pointer types themselves, recurse into their
     // respective pointee types (strip a layer of indirection)
     if (isAnyCPtr(from) && isAnyCPtr(to)) {
+      // allow casting to and from void pointer pointee type
+      if (from == c_void_ptr || to == c_void_ptr) {
+        return true;
+      }
       return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
     }
     // allow identical types

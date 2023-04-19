@@ -34,3 +34,13 @@ writeln(xpconst_char.deref());
 // should also warn from non-const to const and vice-versa
 var xpconst_float_from_nonconst = xp : c_ptrConst(c_float);
 var xp_float_from_const = xpconst : c_ptr(c_float);
+
+
+// double pointers should recursively check pointee types
+var xpp : c_ptr(c_ptr(c_int)) = c_ptrTo(xp);
+var xpp_char = xpp : c_ptr(c_ptr(c_int)); // acceptable to strict aliasing
+var xpp_float = xpp : c_ptr(c_ptr(c_float)); // unacceptable
+
+// casting to and from void pointer pointee type is ok
+var xpp_void = xpp : c_ptr(c_void_ptr);
+var xpp_void_int_again = xpp_void : c_ptr(c_ptr(c_int));
