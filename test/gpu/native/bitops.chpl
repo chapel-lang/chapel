@@ -37,7 +37,7 @@ proc main() {
     foreach i in r do R[0] = clz(arg); R[1] = clz(arg); check(R, "clz");
     foreach i in r do R[0] = ctz(arg); R[1] = ctz(arg); check(R, "ctz");
 
-    foreach i in r do R[0] = popcount(arg); R[1] = popcount(arg); check(R, "popcount");
+    foreach i in r do R[0] = popCount(arg); R[1] = popCount(arg); check(R, "popCount");
     foreach i in r do R[0] = parity(arg); R[1] = parity(arg); check(R, "parity");
 
     foreach i in r do R[0] = rotl(arg,2); R[1] = rotl(arg,2); check(R, "rotl");
