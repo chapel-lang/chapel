@@ -255,16 +255,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
-    //Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
-    //Clang->createFileManager();
-    //Clang->createSourceManager(Clang->getFileManager());
-    //Clang->createPreprocessor(clang::TU_Complete);
-
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
-    //std::string outputFileNameFromClang;
-    //genPchAction->CreateOutputFile(*Clang, tmpInput, outputFileNameFromClang);
-
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
       context->error(externBlockId, "error running clang on extern block");
