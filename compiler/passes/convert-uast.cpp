@@ -442,6 +442,18 @@ struct Converter {
             return new SymExpr(symbol);
           }
         } else if (!id.isEmpty()) {
+          // Don't resolve non-method, non-parenless function references.
+          //
+          // TODO: it's not quite clear why this is a problem; however, the
+          // symptoms of not doing this check are that forall optimizations
+          // pick the function identifier as something "captured" from outer
+          // scope.
+          if (parsing::idIsFunction(context, id) &&
+              !parsing::idIsMethod(context, id) &&
+              !parsing::idIsParenlessFunction(context, id)) {
+            return nullptr;
+          }
+
           // If we're referring to an associated type in an interface,
           // leave it unconverted for now because the compiler does some
           // mangling of the AST and breaks the "points-to" ID.
@@ -465,7 +477,7 @@ struct Converter {
           // to the current 'this' type.
           bool isFieldAccess = false;
           Symbol* parentMethodConvertedThis = nullptr;
-          if (parsing::idIsField(context, id)) {
+          if (parsing::idIsField(context, id) || parsing::idIsMethod(context, id)) {
             if (methodThisStack.size() > 0) {
               parentMethodConvertedThis = methodThisStack.back();
               isFieldAccess = true;
@@ -480,9 +492,16 @@ struct Converter {
             Symbol* thisSym = parentMethodConvertedThis;
             INT_ASSERT(thisSym != nullptr);
             auto ast = parsing::idToAst(context, id);
-            INT_ASSERT(ast && ast->isVariable());
-            auto var = ast->toVariable();
-            auto str = new_CStringSymbol(var->name().c_str());
+            INT_ASSERT(ast);
+            UniqueString name;
+            if (auto var = ast->toVariable()) {
+              name = var->name();
+            } else {
+              auto fn = ast->toFunction();
+              INT_ASSERT(fn);
+              name = fn->name();
+            }
+            auto str = new_CStringSymbol(name.c_str());
             CallExpr* ret = new CallExpr(".", thisSym, str);
             return ret;
           }

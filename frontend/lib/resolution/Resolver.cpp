@@ -2344,13 +2344,21 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       } else {
         // Possibly a "compatibility hack" with production: we haven't checked
         // whether the call is valid, but the production scope resolver doesn't
-        // care and assumes `ident` points to this parenless function.
-        r.setToId(id);
+        // care and assumes `ident` points to this parenless function. Setting
+        // the toId also helps determine if this is a method call and should
+        // have `this` inserted, as well as wehther or not to turn this
+        // into a parenless call.
+        validateAndSetToId(r, ident, id);
       }
       return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
-      return;
+      // Possibly a "compatibility hack" with production: we haven't checked
+      // whether the call is valid, but the production scope resolver doesn't
+      // care and assumes `ident` points to this function. Setting
+      // the toId also helps determine if this is a method call
+
+      // Fall through to validateAndSetToId
     }
 
     validateAndSetToId(result, ident, id);
