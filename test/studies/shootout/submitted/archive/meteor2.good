@@ -1,4 +1,7 @@
+meteor2.chpl:302: In function 'goodPiece':
+meteor2.chpl:328: warning: popcount is deprecated - please use popCount instead
 2098 solutions found
+meteor2.chpl:170: called as goodPiece(mask: int(64), pos: int(64))
 
 0 0 0 0 1 
  2 2 2 0 1 
