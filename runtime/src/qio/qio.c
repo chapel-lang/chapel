@@ -2823,10 +2823,10 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
     // copy out what remains in the buffer before making a system call
-    // gotlen = ch->av_end - _right_mark_start(ch);
     gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
     if ( gotlen > 0 ) {
-      start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
+      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
+      // start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
       end = start;
       qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
 
