@@ -77,18 +77,6 @@ module Math {
   /* 1/sqrt(2) */
   param recipr_sqrt_2 = 0.70710678118654752440;
 
-  /* Returns the phase (often called `argument`) of complex `z`, an angle (in
-     radians).
-
-     In concert with the related :proc:`~AutoMath.abs`, the magnitude (a.k.a.
-     modulus) of `z`, it can be used to recompute `z`.
-
-     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
-  */
-  inline proc carg(z: complex(?w)): real(w/2) {
-    return chpl_carg(z);
-  }
-
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
