@@ -320,18 +320,18 @@ precompiledHeaderContainsNameQuery(Context* context,
     }
 
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
-
-    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                        &*diagOptions);
-    auto diagID = new clang::DiagnosticIDs();
-    auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-
-    Clang->setDiagnostics(diags);
+    auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+    Clang->setDiagnostics(&*clangDiags);
 
     bool success =
       clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
-                                                cc1argsCstrs, *diags);
+                                                cc1argsCstrs, *clangDiags);
     CHPL_ASSERT(success);
 
     Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));
