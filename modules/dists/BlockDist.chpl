@@ -533,14 +533,21 @@ proc Block.dsiAssign(other: this.type) {
   const newBbox = other.boundingBox;
   const newBboxDims = newBbox.dims();
   const pid = this.pid;
-  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist)
-    do on loc {
+
+  if (this.targetLocDom != other.targetLocDom ||
+      || reduce (this.targetLocales != other.targetLocales)) {
+    halt("Block distribution assignments currently require the target locale arrays to match");
+  }
+
+  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist) {
+    on loc {
       const that = chpl_getPrivatizedCopy(this.type, pid);
       that.boundingBox = newBbox;
 
       var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
       locdist.myChunk = {(...inds)};
     }
+  }
 }
 
 //
@@ -1530,7 +1537,15 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return locDoms[locid].myBlock;
+    if loc == here {
+      // If we're doing the common case of just querying our own ownership,
+      // return the local, pre-computed value
+      return locDoms[locid].myBlock;
+    } else {
+      // Otherwise, compute it to avoid communication...
+      var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());                                                       
+      return whole[(...inds)]; 
+    }
   } else {
     var d: domain(rank, idxType, stridable);
     return d;
