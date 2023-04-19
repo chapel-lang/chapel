@@ -818,8 +818,12 @@ module WeakPointer {
       }
     }
 
-    // type-only constructor for array initialization, etc.
-    @chpldoc.nodoc
+
+    /*
+      Create an empty ``weak`` for the given class type.
+
+      Attempting to upgrade the resulting ``weak`` will always fail.
+    */
     proc init(type classType: shared) {
       if !isClass(classType) then
         compilerError("a `weak` can only be initialized from a shared class");
