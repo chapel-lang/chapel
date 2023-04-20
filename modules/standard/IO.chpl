@@ -5856,7 +5856,7 @@ iter fileReader.lines(stripNewline = false) {
   const saved_style: iostyleInternal = this._styleInternal();
   // Update iostyleInternal
   var newline_style: iostyleInternal = this._styleInternal();
-  
+
   param newlineChar = 0x0A; // '\n'
 
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
