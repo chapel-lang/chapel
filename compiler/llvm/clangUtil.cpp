@@ -111,6 +111,7 @@
 #include "llvmVer.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/clang-integration.h"
 
 #include "global-ast-vecs.h"
 
@@ -1640,7 +1641,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
   auto diagOptions =
-    clang::CreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
+    chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
   auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                      &*diagOptions);
   auto clangDiags =

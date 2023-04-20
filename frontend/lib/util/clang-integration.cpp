@@ -31,6 +31,7 @@
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+#include "clang/Driver/Options.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
@@ -75,6 +76,24 @@ void initializeLlvmTargets() {
   }
 #endif
 }
+
+#ifdef HAVE_LLVM
+std::unique_ptr<clang::DiagnosticOptions>
+wrapCreateAndPopulateDiagOpts(llvm::ArrayRef<const char *> Argv) {
+#if LLVM_VERSION_MAJOR >= 14
+  return clang::CreateAndPopulateDiagOpts(Argv);
+#else
+  auto diagOpts = std::make_unique<clang::DiagnosticOptions>();
+  unsigned missingArgIndex, missingArgCount;
+  llvm::opt::InputArgList Args =
+    clang::driver::getDriverOptTable().ParseArgs(Argv.slice(1),
+                                                 missingArgIndex,
+                                                 missingArgCount);
+  clang::ParseDiagnosticArgs(*diagOpts, Args);
+  return diagOpts;
+#endif
+}
+#endif
 
 #ifdef HAVE_LLVM
 static std::string getChplLocaleModel(Context* context) {
@@ -238,7 +257,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       cc1argsCstrs.push_back(arg.c_str());
     }
 
-    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
+    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient =
         new clang::TextDiagnosticPrinter(llvm::errs(), &*diagOptions);
 
@@ -320,7 +339,7 @@ precompiledHeaderContainsNameQuery(Context* context,
     }
 
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
-    auto diagOptions = clang::CreateAndPopulateDiagOpts(cc1argsCstrs);
+    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                        &*diagOptions);
     auto clangDiags =
