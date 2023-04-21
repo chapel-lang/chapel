@@ -1546,13 +1546,19 @@ void MarkTempsVisitor::handleStmtGroup() {
   }
 
   // are we in a module init function?
+  // or a shadow variable symbol?
   ModuleSymbol* inModInitForMod = nullptr;
+  ShadowVarSymbol* inShadowVar = nullptr;
   if (!vars.empty()) {
     VarSymbol* v = vars[0];
-    FnSymbol* inFn = toFnSymbol(v->defPoint->parentSymbol);
+    Symbol* inSymbol = v->defPoint->parentSymbol;
+    FnSymbol* inFn = toFnSymbol(inSymbol);
     if (inFn && inFn->hasFlag(FLAG_MODULE_INIT)) {
       inModInitForMod = v->defPoint->getModule();
       INT_ASSERT(inModInitForMod->initFn == inFn);
+    }
+    if (ShadowVarSymbol* s = toShadowVarSymbol(inSymbol)) {
+      inShadowVar = s;
     }
   }
 
@@ -1573,6 +1579,12 @@ void MarkTempsVisitor::handleStmtGroup() {
         }
       }
     }
+  }
+  // and, when working with a task-private variable / forall intent,
+  // (shadow variable) the reference being set can be in an outer scope,
+  // so look for that.
+  if (inShadowVar && inShadowVar->isRef()) {
+    allEndOfBlock = true;
   }
 
   // set the lifetime for variables
