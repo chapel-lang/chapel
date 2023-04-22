@@ -86,7 +86,6 @@ void verify();
 void checkInvariants(char log_tag);
 void checkPrimitives();                 // constrains primitive use
 void checkPostResolution();
-void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
 void checkArgsAndLocals();
