@@ -130,7 +130,7 @@ values:
 
 Any non-promoted arguments to a promoted call are only promoted once. Consider
 a promoted call to ``maybeCopy()`` where the first two arguments are promoted
-and the third argument is not promoted.
+and the third argument is not.
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
