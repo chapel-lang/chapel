@@ -865,13 +865,37 @@ module AutoMath {
      `false` otherwise. */
   inline proc isnan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
 
-  /* Multiply by an integer power of 2.
-     Returns x * 2**n.
-     */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc ldexp(x:real(64), n:int(32)):real(64);
+  // When removing this deprecated function, be sure to remove chpl_ldexp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc ldexp(x:real(64), n:int(32)):real(64) {
+    return chpl_ldexp(x, n);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_ldexp(x:real(64), n:int(32)):real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexp(x:real(64), n:int(32)):real(64);
+    return ldexp(x, n);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_ldexp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    return chpl_ldexp(x, n);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_ldexp(x:real(32), n:int(32)):real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ldexpf(x:real(32), n:int(32)):real(32);
