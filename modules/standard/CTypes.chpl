@@ -358,6 +358,8 @@ module CTypes {
     } else if (from == c_string) {
       // a c_string can be interpreted as a pointer to c_char for these purposes
       return pointeeCastStrictAliasingAllowed(c_char, to.eltType);
+    } else if (to == c_string) {
+      return pointeeCastStrictAliasingAllowed(from.eltType, c_char);
     }
     // allow identical types
     if (from == to) {
