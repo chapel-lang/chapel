@@ -192,3 +192,22 @@ writeln(A);
 A = 0.0;
 maybeCopy(A, forall i in 1..3 do 2*i + 0.5, true);
 writeln(A);
+
+// evaluating a call only once in multi-argument promotion
+
+writeln();
+proc computeMask() {
+  writeln("computing mask...");
+  return true;
+}
+
+A = 0.0;
+B = [1.2, 3.4, 5.6];
+maybeCopy(A, B, computeMask());
+writeln(A, "\n");
+
+A = 0.0;
+var tmp = computeMask();
+forall (a, b) in zip(A, B) do
+  maybeCopy(a, b, tmp);
+writeln(A);
