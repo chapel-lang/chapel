@@ -197,7 +197,7 @@ module AutoMath {
 
   /* Returns the magnitude (often called modulus) of complex `z`.
 
-     In concert with the related :proc:`~Math.carg`, the phase (a.k.a. argument)
+     In concert with the related :proc:`carg`, the phase (a.k.a. argument)
      of `z`, it can be used to recompute `z`.
 
      :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
@@ -215,18 +215,16 @@ module AutoMath {
       return cabs(z);
   }
 
-  // When removing this deprecated function, be sure to remove chpl_carg and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'carg' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc carg(z: complex(?w)): real(w/2) {
-    return chpl_carg(z);
-  }
+  /* Returns the phase (often called `argument`) of complex `z`, an angle (in
+     radians).
 
-  @chpldoc.nodoc
-  inline proc chpl_carg(z: complex(?w)): real(w/2) {
+     In concert with the related :proc:`abs`, the magnitude (a.k.a.
+     modulus) of `z`, it can be used to recompute `z`.
+
+     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
+  */
+
+  inline proc carg(z: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cargf(z: complex(64)): real(32);
