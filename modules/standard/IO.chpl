@@ -5844,10 +5844,11 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
     performance if the current locale is not the same locale on which the
     fileReader was created.
 
-  :yields: lines ending in ``\n``
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. Defaults to false
+  :yields: lines from the fileReader, by default with a trailing ``\n``
 
  */
-iter fileReader.lines() {
+iter fileReader.lines(stripNewline = false) {
 
   try! this.lock();
 
@@ -5856,14 +5857,22 @@ iter fileReader.lines() {
   // Update iostyleInternal
   var newline_style: iostyleInternal = this._styleInternal();
 
+  param newlineChar = 0x0A; // '\n'
+
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
-  newline_style.string_end = 0x0a; // '\n'
+  newline_style.string_end = newlineChar;
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
   var itemReader = new itemReaderInternal(string, kind, locking, fmtType, this);
   for line in itemReader {
-    yield line;
+    if !stripNewline then yield line;
+    else {
+      var lastCharIdx = line.size-1;
+      if !line.isEmpty() && line.byte(lastCharIdx) == newlineChar
+        then yield line[..<lastCharIdx];
+        else yield line;
+    }
   }
 
   // Set the iostyle back to original state
