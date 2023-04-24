@@ -390,7 +390,7 @@ typedef struct yaml_event_s {
 
     /** The event data. */
     union {
-        
+
         /** The stream parameters (for @c YAML_STREAM_START_EVENT). */
         struct {
             /** The document encoding. */
@@ -1982,4 +1982,3 @@ yaml_emitter_flush(yaml_emitter_t *emitter);
 #endif
 
 #endif /* #ifndef YAML_H */
-

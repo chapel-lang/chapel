@@ -41,6 +41,30 @@
 
 #include "yaml_private.h"
 
+// yaml_event_type_t C_YAML_NO_EVENT = YAML_NO_EVENT;
+// yaml_event_type_t C_YAML_STREAM_START_EVENT = YAML_STREAM_START_EVENT;
+// yaml_event_type_t C_YAML_STREAM_END_EVENT = YAML_STREAM_END_EVENT;
+// yaml_event_type_t C_YAML_DOCUMENT_START_EVENT = YAML_DOCUMENT_START_EVENT;
+// yaml_event_type_t C_YAML_DOCUMENT_END_EVENT = YAML_DOCUMENT_END_EVENT;
+// yaml_event_type_t C_YAML_ALIAS_EVENT = YAML_ALIAS_EVENT;
+// yaml_event_type_t C_YAML_SCALAR_EVENT = YAML_SCALAR_EVENT;
+// yaml_event_type_t C_YAML_SEQUENCE_START_EVENT = YAML_SEQUENCE_START_EVENT;
+// yaml_event_type_t C_YAML_SEQUENCE_END_EVENT = YAML_SEQUENCE_END_EVENT;
+// yaml_event_type_t C_YAML_MAPPING_START_EVENT = YAML_MAPPING_START_EVENT;
+// yaml_event_type_t C_YAML_MAPPING_END_EVENT = YAML_MAPPING_END_EVENT;
+
+// extern yaml_event_type_t C_YAML_NO_EVENT = YAML_NO_EVENT;
+// extern yaml_event_type_t C_YAML_STREAM_START_EVENT = YAML_STREAM_START_EVENT;
+// extern yaml_event_type_t C_YAML_STREAM_END_EVENT = YAML_STREAM_END_EVENT;
+// extern yaml_event_type_t C_YAML_DOCUMENT_START_EVENT = YAML_DOCUMENT_START_EVENT;
+// extern yaml_event_type_t C_YAML_DOCUMENT_END_EVENT = YAML_DOCUMENT_END_EVENT;
+// extern yaml_event_type_t C_YAML_ALIAS_EVENT = YAML_ALIAS_EVENT;
+// extern yaml_event_type_t C_YAML_SCALAR_EVENT = YAML_SCALAR_EVENT;
+// extern yaml_event_type_t C_YAML_SEQUENCE_START_EVENT = YAML_SEQUENCE_START_EVENT;
+// extern yaml_event_type_t C_YAML_SEQUENCE_END_EVENT = YAML_SEQUENCE_END_EVENT;
+// extern yaml_event_type_t C_YAML_MAPPING_START_EVENT = YAML_MAPPING_START_EVENT;
+// extern yaml_event_type_t C_YAML_MAPPING_END_EVENT = YAML_MAPPING_END_EVENT;
+
 /*
  * Peek the next token in the token queue.
  */
@@ -1372,4 +1396,3 @@ error:
     yaml_free(copy.prefix);
     return 0;
 }
-
