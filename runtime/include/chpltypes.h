@@ -73,7 +73,8 @@ typedef _Bool chpl_bool;
 typedef bool chpl_bool;
 #endif
 
-static inline void* c_pointer_return(const void* x) { return (void*)x; }
+static inline void* c_pointer_return(void* x) { return x; }
+static inline void* c_pointer_return_const(const void* x) { return (void*)x; }
 static inline ptrdiff_t c_pointer_diff(void* a, void* b, ptrdiff_t eltSize) {
   return (((unsigned char*)a) - ((unsigned char*)b)) / eltSize;
 }

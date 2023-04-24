@@ -658,7 +658,11 @@ module CTypes {
   pragma "no doc"
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
-  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  pragma "no doc"
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc c_pointer_return_const(const ref x:?t):c_ptrConst(t);
   pragma "no doc"
   pragma "fn synchronization free"
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
@@ -713,7 +717,7 @@ module CTypes {
         halt("Can't create a C pointer for an array with 0 elements.");
     }
 
-    return c_pointer_return(arr[arr.domain.low]):c_ptrConst(arr.eltType);
+    return c_pointer_return_const(arr[arr.domain.low]);
   }
 
   /*
@@ -744,7 +748,7 @@ module CTypes {
     if isDomainType(t) then
       compilerError("c_ptrToConst domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
-    return c_pointer_return(x):c_ptrConst(t);
+    return c_pointer_return_const(x);
   }
 
   pragma "no doc"
