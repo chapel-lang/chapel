@@ -451,7 +451,6 @@ test/types/string/validation/stress.good
 /tools/chplvis/chplvis
 /tools/chplvis/chplvis.cxx
 /tools/chplvis/chplvis.h
-/tools/chpldoc/COPYRIGHT
 
 # Util ignores.
 /util/pastPerformance/ra.dat

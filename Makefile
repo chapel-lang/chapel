@@ -118,7 +118,7 @@ third-party-c2chapel-venv: FORCE
 
 test-venv: third-party-test-venv
 
-chpldoc: third-party-chpldoc-venv
+chpldoc: compiler third-party-chpldoc-venv
 	cd compiler && $(MAKE) chpldoc
 	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
@@ -137,7 +137,7 @@ chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
 
-mason: compiler chpldoc notcompiler FORCE
+mason: chpldoc notcompiler FORCE
 	cd tools/mason && $(MAKE) && $(MAKE) install
 
 protoc-gen-chpl: chpldoc notcompiler FORCE
