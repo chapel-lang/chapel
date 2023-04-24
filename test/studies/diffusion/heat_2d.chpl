@@ -22,7 +22,7 @@ const indices = {0..<nx, 0..<ny},
 var u : [indices] real;
 
 // setup initial conditions
-u = 1;
+u = 1.0;
 u[
   (0.5 / dx):int..<(1.0 / dx + 1):int,
   (0.5 / dy):int..<(1.0 / dy + 1):int
