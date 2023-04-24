@@ -36,9 +36,8 @@ class YamlSequence: YamlValue {
     this.sequence = new list(owned YamlValue);
   }
 
-  proc append(ref value: owned YamlValue) {
-    const myValue = value;
-    this.sequence.append(myValue);
+  proc append(in value: owned YamlValue) {
+    this.sequence.append(value);
   }
 }
 
@@ -71,7 +70,7 @@ class YamlMapping: YamlValue {
     this.mapping = new map(owned YamlValue, owned YamlValue);
   }
 
-  proc add(key: owned YamlValue, value: owned YamlValue): bool {
+  proc add(in key: owned YamlValue, in value: owned YamlValue): bool {
     return this.mapping.add(key, value);
   }
 }

@@ -52,7 +52,7 @@ private extern proc fopen(filename: c_string, mode: c_string): c_FILE;
 private extern proc fclose(file: c_FILE): c_int;
 
 
-proc parseYamlFile(filePath: string): YamlValue throws {
+proc parseYamlFile(filePath: string): [] owned YamlValue throws {
   var file = fopen(filePath.c_str(), "r".c_str()),
       fr = openReader(filePath, locking=false);
 
@@ -68,21 +68,23 @@ proc parseYamlFile(filePath: string): YamlValue throws {
   yaml_parser_delete(c_ptrTo(parser));
   fclose(file);
 
-  return yvs[0];
+  return yvs;
 }
 
-iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): owned YamlValue throws {
+iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): owned YamlValue {
   var event: yaml_event_t;
   c_memset(c_ptrTo(event):c_void_ptr, 0, c_sizeof(yaml_event_t));
 
   if !yaml_parser_parse(parser, c_ptrTo(event)) then
-      throw new Error("Failed to parse next YAML event");
+      halt("Failed to parse next YAML event");
 
   while true {
     select event.t {
       when E_STREAM_START {
         writeln("STREAM START");
-        yield parseUntilNextCloser(parser, reader);
+        for e in parseUntilNextCloser(parser, reader) {
+          yield e;
+        }
       }
       when E_STREAM_END {
         writeln("STREAM END");
@@ -91,7 +93,9 @@ iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): own
       }
       when E_DOCUMENT_START {
         writeln("DOCUMENT START");
-        yield parseUntilNextCloser(parser, reader);
+        for e in parseUntilNextCloser(parser, reader) {
+          yield e;
+        }
       }
       when E_DOCUMENT_END {
         writeln("DOCUMENT END");
@@ -100,7 +104,7 @@ iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): own
       when E_ALIAS {
         writeln("ALIAS");
         yaml_event_delete(c_ptrTo(event));
-        throw new Error("Aliases not supported yet");
+        halt("Aliases not supported yet");
       }
       when E_SCALAR {
         writeln("SCALAR");
@@ -127,14 +131,16 @@ iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): own
       when E_MAPPING_START {
         writeln("MAPPING START");
         var ym = new YamlMapping(),
-            nextKey: owned YamlValue,
+            nextKey = new owned YamlValue(),
             key = true;
+
         for e in parseUntilNextCloser(parser, reader) {
+          var cpy: unmanaged YamlValue = owned.release(e);
           if key {
-            nextKey = e;
+            nextKey = owned.adopt(cpy);
             key = false;
           } else {
-            ym.add(nextKey, e);
+            ym.add(nextKey, owned.adopt(cpy));
             key = true;
           }
         }
@@ -145,10 +151,15 @@ iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): own
         yaml_event_delete(c_ptrTo(event));
         return;
       }
+      when E_NO_EVENT {
+        writeln("NO EVENT");
+        // yaml_event_delete(c_ptrTo(event));
+        // halt("Yaml No Event");
+      }
       otherwise {
         writeln("OTHER");
         yaml_event_delete(c_ptrTo(event));
-        throw new Error("Unexpected YAML event");
+        halt("Unexpected YAML event");
       }
     }
     yaml_event_delete(c_ptrTo(event));
