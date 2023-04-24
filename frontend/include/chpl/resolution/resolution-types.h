@@ -1067,6 +1067,8 @@ class CallResolutionResult {
   PoiInfo poiInfo_;
 
  public:
+  CallResolutionResult() {}
+
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
     : exprType_(std::move(exprType)) {

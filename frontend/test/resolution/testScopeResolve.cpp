@@ -30,30 +30,6 @@
 
 // helper functions
 
-static const Variable* findVariable(const AstNode* ast, const char* name) {
-  if (auto v = ast->toVariable()) {
-    if (v->name() == name) {
-      return v;
-    }
-  }
-
-  for (auto child : ast->children()) {
-    auto got = findVariable(child, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-
-static const Variable* findVariable(const ModuleVec& vec, const char* name) {
-  for (auto mod : vec) {
-    auto got = findVariable(mod, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-
 static const ResolvedExpression&
 scopeResolveIt(Context* context, const AstNode* ast) {
   ID mId = idToParentModule(context, ast->id());

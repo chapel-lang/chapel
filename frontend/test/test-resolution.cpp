@@ -75,7 +75,6 @@ resolveTypeOfX(Context* context, std::string program) {
   return t;
 }
 
-
 const ResolvedExpression*
 resolvedExpressionForAst(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
@@ -178,4 +177,44 @@ void testCall(const char* testName,
     assert(toIdentId.isEmpty() && toFnId.isEmpty());
   }
   printf("\n");
+}
+
+const Variable* findVariable(const AstNode* ast, const char* name) {
+  if (auto v = ast->toVariable()) {
+    if (v->name() == name) {
+      return v;
+    }
+  }
+
+  for (auto child : ast->children()) {
+    auto got = findVariable(child, name);
+    if (got) return got;
+  }
+
+  return nullptr;
+}
+
+const Variable* findVariable(const ModuleVec& vec, const char* name) {
+  for (auto mod : vec) {
+    auto got = findVariable(mod, name);
+    if (got) return got;
+  }
+
+  return nullptr;
+}
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context,
+                        std::string program,
+                        const std::vector<std::string>& variables) {
+  auto m = parseModule(context, std::move(program));
+  auto& rr = resolveModule(context, m->id());
+
+  std::unordered_map<std::string, QualifiedType> toReturn;
+  for (auto& variable : variables) {
+    auto varAst = findVariable(m, variable.c_str());
+    assert(varAst != nullptr);
+    toReturn[variable] = rr.byAst(varAst).type();
+  }
+  return toReturn;
 }
