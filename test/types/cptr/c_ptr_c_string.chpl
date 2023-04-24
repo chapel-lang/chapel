@@ -11,6 +11,7 @@ proc main() {
   var x:string = "hello";
 
   var cstr = x.c_str();
+  var cstr_p : c_ptr(c_string) = c_ptrTo(cstr);
   var p1 = cstr:c_void_ptr;
   var p2 = cstr:c_ptr(c_char);
   var p3 = cstr:c_ptr(int(8));
@@ -18,6 +19,7 @@ proc main() {
   var p5 = cstr:c_ptrConst(c_char);
   var p6 = cstr:c_ptrConst(int(8));
   var p7 = cstr:c_ptrConst(uint(8));
+  var p8 = cstr_p:c_ptr(c_ptr(uint(8)));
 
   var c1 = p1:c_string;
   var c2 = p2:c_string;
@@ -26,6 +28,7 @@ proc main() {
   var c5 = p5:c_string;
   var c6 = p6:c_string;
   var c7 = p7:c_string;
+  var c8 = p8:c_ptr(c_string);
 
   printit(c1);
   printit(c2);
