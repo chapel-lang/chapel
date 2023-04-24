@@ -128,15 +128,17 @@ values:
   :language: text
   :lines: 27,25
 
-When arguments are promoted, they are only evaluated once. Consider a promoted
-call where one of the arguments is the result of a call:
+Any non-promoted arguments to a promoted call are only promoted once. Consider
+a promoted call to ``maybeCopy()`` where the first two arguments are promoted
+and the third argument is not promoted.
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
   :lines: 199-202,206
 
-The call to ``computeMask()`` will be resolved before the promotion and the
-message will only be printed once. The equivalent forall-loop is:
+The third argument, the result of a call to ``computeMask()``, will be resolved
+before the promotion and the message will only be printed once. The equivalent
+forall-loop is:
 
 .. literalinclude:: examples/users-guide/datapar/promotion.chpl
   :language: chapel
