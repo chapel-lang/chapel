@@ -109,14 +109,22 @@ static void chpl_gpu_ensure_context() {
   }*/
 }
 //
-// we can put this logic in chpl-gpu.c. However, it needs to execute
-// per-context/module. That's currently too low level for that layer.
-static void chpl_gpu_impl_set_globals(CUmodule module) {
+static void chpl_gpu_impl_set_globals(hipModule_t module) {
+  /*
+    we expect this to work, but the LLVM backend puts the device version of
+    chpl_nodeID in the constant memory. To access constant memory, you need a
+    pointer to the thing, and can't do a name-based lookup. Differentiating by
+    name is complicated, because the compiler explicitly uses "chpl_nodeID" as
+    the name. We need to fix by making sure that chpl_nodeID is created in the
+    global memory and not in the constant memory.
+
   hipDeviceptr_t ptr;
   size_t glob_size;
   ROCM_CALL(hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+
+  */
 }
 
 
