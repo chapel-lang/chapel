@@ -66,25 +66,25 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
         if (parentAst->isModule()) {
           if (scopeResolveOnly) {
             const auto& byId = scopeResolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
+            return byId.byAstOrNull(ast);
           } else {
             const auto& byId = resolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
+            return byId.byAstOrNull(ast);
           }
         } else if (auto parentFn = parentAst->toFunction()) {
           auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
           if (inFn && inFn->signature()->untyped() == untyped) {
-            return &inFn->resolutionById().byAst(ast);
+            return inFn->byAstOrNull(ast);
           } else {
             if (scopeResolveOnly) {
               auto rFn = scopeResolveFunction(context, parentFn->id());
-              return &rFn->resolutionById().byAst(ast);
+              return rFn->byAstOrNull(ast);
             } else {
               auto typed = typedSignatureInitial(context, untyped);
               if (!typed->needsInstantiation()) {
                 auto rFn = resolveFunction(context, typed, nullptr);
-                return &rFn->resolutionById().byAst(ast);
+                return rFn->byAstOrNull(ast);
               }
             }
           }
@@ -100,9 +100,8 @@ resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
     return nullptr;
   }
 
-  if (inFn != nullptr && inFn->id() != ast->id() &&
-      inFn->id().contains(ast->id())) {
-    return &inFn->byAst(ast);
+  if (inFn != nullptr && inFn->id() != ast->id()) {
+    return inFn->byAstOrNull(ast);
   }
   return nullptr;
 }
