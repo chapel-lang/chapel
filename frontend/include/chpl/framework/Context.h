@@ -123,7 +123,7 @@ class Context {
     const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
     /**
       Checks if any syntax errors or errors occurred while running.
-      Warnigns do not cause this method to return false.
+      Warnings do not cause this method to return false.
     */
     bool ranWithoutErrors() const;
   };
@@ -282,6 +282,14 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
 
+  // tracks whether or not we are re-running a previously-executed query.
+  //
+  // When a query is being initially executed, its dependencies are evaluated
+  // in the order they're discovered. However, when it's re-executed, the
+  // dependencies are evaluated in a bottom-up order. Certain features
+  // of the query framework behave differently depending on whether a query
+  // is being executed "regularly" or "bottom-up" (most notably, a re-executed
+  // dependency is not used to modify the dependency graph).
   bool isRecomputing = false;
 
   // If this vector is non-empty, the back element is a collection into
@@ -522,6 +530,11 @@ class Context {
     return this->handler_.get();
   }
 
+  /**
+    Execute a function or lambda using the context, and track whether or not
+    errors occurred while doing so. Errors emitted from inside the function are
+    not shown to the user.
+   */
   template <typename F>
   auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
     RunResult<decltype(f(this))> result;

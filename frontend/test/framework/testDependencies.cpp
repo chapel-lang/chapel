@@ -462,9 +462,9 @@ static void test6a() {
 }
 
 // This is pretty much the same as 6a, except the sub-computation of 3->1->i
-// is computed separately before 7 is ever invoked. This reproduces a bug
-// in the query system in which query 7 could be made to depend on query 1,
-// thus making it be recomputed.
+// is computed separately before 7 is ever invoked. This is a regression test
+// for a bug in the query system in which query 7 could be made to depend on
+// query 1, thus making it be recomputed.
 static void test6b() {
   Context ctx;
   Context* context = &ctx;
