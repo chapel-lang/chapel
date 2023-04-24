@@ -1,35 +1,45 @@
-// setup simulation parameters
-config const xLen : real = 2,
-             yLen : real = 2,
-             nx = 31,
-             ny = 31,
-             nt = 50,
-             sigma = 0.25,
-             nu = 0.05;
+// ---- set up simulation parameters ------
+// declare configurable parameters with default values
+config const xLen = 2.0,    // length of the domain in x
+             yLen = 2.0,    // length of the domain in y
+             nx = 31,       // number of grid points in x
+             ny = 31,       // number of grid points in y
+             nt = 50,       // number of time steps
+             sigma = 0.25,  // CFL condition
+             nu = 0.05;     // viscosity
 
-const dx : real = xLen / (nx - 1),
-      dy : real = yLen / (ny - 1),
-      dt : real = sigma * dx * dy / nu;
+// declare non-configurable parameters
+const dx: real = xLen / (nx - 1),       // grid spacing in x
+      dy: real = yLen / (ny - 1),       // grid spacing in y
+      dt: real = sigma * dx * dy / nu;  // time step size
 
-// define a 2D domain and subdomain
-const dom = {0..<nx, 0..<ny},
-      domInner : subdomain(dom) = dom.expand(-1);
+// ---- set up the grid ------
+// define a 2D domain and subdomain to describe the grid and its interior
+const indices = {0..<nx, 0..<ny},
+      indicesInner = {1..<nx-1, 1..<ny-1};
 
-// define an array to hold the solution
-var u : [dom] real;
+// define a 2D array over the above domain
+var u: [indices] real;
 
-// setup initial conditions
-u = 1;
+// set up initial conditions
+u = 1.0;
 u[
   (0.5 / dx):int..<(1.0 / dx + 1):int,
   (0.5 / dy):int..<(1.0 / dy + 1):int
 ] = 2;
 
-// run finite difference computation
+// ---- run the finite difference computation ------
+// create a temporary copy of 'u' to store the previous time step
 var un = u;
-for n in 0..#nt {
+
+// iterate for 'nt' time steps
+for 1..nt {
+
+  // swap the arrays to prepare for the next time step
   u <=> un;
-  forall (i, j) in domInner {
+
+  // update the solution over the interior of the domain in parallel
+  forall (i, j) in indicesInner {
     u[i, j] = un[i, j] +
               nu * dt / dy**2 *
                 (un[i-1, j] - 2 * un[i, j] + un[i+1, j]) +
@@ -38,7 +48,7 @@ for n in 0..#nt {
   }
 }
 
-// print the standard deviation of the solution
+// ---- print final results ------
 const mean = (+ reduce u) / u.size,
       stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
