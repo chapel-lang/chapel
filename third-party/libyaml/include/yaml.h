@@ -382,6 +382,30 @@ typedef enum yaml_event_type_e {
     YAML_MAPPING_END_EVENT
 } yaml_event_type_t;
 
+// #define E_NO_EVENT YAML_NO_EVENT;
+// #define E_STREAM_START YAML_STREAM_START_EVENT;
+// #define E_STREAM_END YAML_STREAM_END_EVENT;
+// #define E_DOCUMENT_START YAML_DOCUMENT_START_EVENT;
+// #define E_DOCUMENT_END YAML_DOCUMENT_END_EVENT;
+// #define E_ALIAS YAML_ALIAS_EVENT;
+// #define E_SCALAR YAML_SCALAR_EVENT;
+// #define E_SEQUENCE_START YAML_SEQUENCE_START_EVENT;
+// #define E_SEQUENCE_END YAML_SEQUENCE_END_EVENT;
+// #define E_MAPPING_START YAML_MAPPING_START_EVENT;
+// #define E_MAPPING_END YAML_MAPPING_END_EVENT;
+
+extern int E_NO_EVENT;
+extern int E_STREAM_START;
+extern int E_STREAM_END;
+extern int E_DOCUMENT_START;
+extern int E_DOCUMENT_END;
+extern int E_ALIAS;
+extern int E_SCALAR;
+extern int E_SEQUENCE_START;
+extern int E_SEQUENCE_END;
+extern int E_MAPPING_START;
+extern int E_MAPPING_END;
+
 /** The event structure. */
 typedef struct yaml_event_s {
 

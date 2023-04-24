@@ -1,6 +1,18 @@
 
 #include "yaml_private.h"
 
+int E_NO_EVENT = YAML_NO_EVENT;
+int E_STREAM_START = YAML_STREAM_START_EVENT;
+int E_STREAM_END = YAML_STREAM_END_EVENT;
+int E_DOCUMENT_START = YAML_DOCUMENT_START_EVENT;
+int E_DOCUMENT_END = YAML_DOCUMENT_END_EVENT;
+int E_ALIAS = YAML_ALIAS_EVENT;
+int E_SCALAR = YAML_SCALAR_EVENT;
+int E_SEQUENCE_START = YAML_SEQUENCE_START_EVENT;
+int E_SEQUENCE_END = YAML_SEQUENCE_END_EVENT;
+int E_MAPPING_START = YAML_MAPPING_START_EVENT;
+int E_MAPPING_END = YAML_MAPPING_END_EVENT;
+
 /*
  * Get the library version.
  */
@@ -1389,5 +1401,3 @@ yaml_document_append_mapping_pair(yaml_document_t *document,
 
     return 1;
 }
-
-

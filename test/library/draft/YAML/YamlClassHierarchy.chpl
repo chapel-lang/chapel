@@ -2,10 +2,17 @@ use List, Map;
 
 class YamlDocument {
   var root: owned YamlValue;
-
 }
 
 class YamlValue { }
+
+class YamlScalar: YamlValue {
+  var value: string;
+
+  proc asString(): string {
+    return value;
+  }
+}
 
 class YamlSequence: YamlValue {
   var sequence: list(owned YamlValue);
@@ -29,8 +36,9 @@ class YamlSequence: YamlValue {
     this.sequence = new list(owned YamlValue);
   }
 
-  proc append(value: owned YamlValue) {
-    this.sequence.append(value);
+  proc append(ref value: owned YamlValue) {
+    const myValue = value;
+    this.sequence.append(myValue);
   }
 }
 
