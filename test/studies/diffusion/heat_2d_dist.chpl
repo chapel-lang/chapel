@@ -1,6 +1,6 @@
 use StencilDist;
 
-// ---- setup simulation parameters ------
+// ---- set up simulation parameters ------
 // declare configurable parameters with default values
 config const xLen = 2.0,    // length of the domain in x
              yLen = 2.0,    // length of the domain in y
@@ -15,7 +15,7 @@ const dx : real = xLen / (nx - 1),       // grid spacing in x
       dy : real = yLen / (ny - 1),       // grid spacing in y
       dt : real = sigma * dx * dy / nu;  // time step size
 
-// ---- setup the grid ------
+// ---- set up the grid ------
 // define a distributed 2D domain and subdomain to describe the grid and its interior
 const indices = {0..<nx, 0..<ny} dmapped Stencil({1..<nx-1, 1..<ny-1}, fluff=(1,1)),
       indicesInner = indices[{1..<nx-1, 1..<ny-1}];
@@ -23,7 +23,7 @@ const indices = {0..<nx, 0..<ny} dmapped Stencil({1..<nx-1, 1..<ny-1}, fluff=(1,
 // define a distributed 2D array over the above domain
 var u : [indices] real;
 
-// setup initial conditions
+// set up initial conditions
 u = 1.0;
 u[
   (0.5 / dx):int..<(1.0 / dx + 1):int,
