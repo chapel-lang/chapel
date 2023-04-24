@@ -46,14 +46,14 @@
  *                  if reading or writing while setting up or tearing down)
  */
 struct gnix_smrn {
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct gnix_mr_notifier *notifier;
 	struct dlist_entry rq_head;
 	int references;
 };
 
 struct gnix_smrn_rq {
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct dlist_entry list;
 	struct dlist_entry entry;
 };

@@ -123,9 +123,9 @@ STATIC ssize_t psmx3_ep_cancel(fid_t fid, void *context)
 		return  -FI_EOPNOTSUPP;
 	}
 
-	err = psm2_mq_cancel((psm2_mq_req_t *)&PSMX3_CTXT_REQ(fi_context));
+	err = psm3_mq_cancel((psm2_mq_req_t *)&PSMX3_CTXT_REQ(fi_context));
 	if (err == PSM2_OK) {
-		err = psm2_mq_test2((psm2_mq_req_t *)&PSMX3_CTXT_REQ(fi_context), &status);
+		err = psm3_mq_test2((psm2_mq_req_t *)&PSMX3_CTXT_REQ(fi_context), &status);
 		if (err == PSM2_OK && ep->recv_cq) {
 			event = psmx3_cq_create_event(
 					ep->recv_cq,
@@ -979,18 +979,18 @@ int psmx3_sep_open(struct fid_domain *domain, struct fi_info *info,
 			uuid = info->ep_attr->auth_key;
 		}
 
-		if (info->ep_attr->tx_ctx_cnt > psmx3_hfi_info.max_trx_ctxt) {
+		if (info->ep_attr->tx_ctx_cnt > psmx3_domain_info.max_trx_ctxt) {
 			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"tx_ctx_cnt %"PRIu64" exceed limit %d.\n",
 				info->ep_attr->tx_ctx_cnt,
-				psmx3_hfi_info.max_trx_ctxt);
+				psmx3_domain_info.max_trx_ctxt);
 			goto errout;
 		}
-		if (info->ep_attr->rx_ctx_cnt > psmx3_hfi_info.max_trx_ctxt) {
+		if (info->ep_attr->rx_ctx_cnt > psmx3_domain_info.max_trx_ctxt) {
 			FI_WARN(&psmx3_prov, FI_LOG_EP_CTRL,
 				"rx_ctx_cnt %"PRIu64" exceed limit %d.\n",
 				info->ep_attr->rx_ctx_cnt,
-				psmx3_hfi_info.max_trx_ctxt);
+				psmx3_domain_info.max_trx_ctxt);
 			goto errout;
 		}
 		ctxt_cnt = info->ep_attr->tx_ctx_cnt;

@@ -52,7 +52,15 @@ extern "C" {
 #define FI_SYMMETRIC		(1ULL << 59)
 #define FI_SYNC_ERR		(1ULL << 58)
 #define FI_UNIVERSE		(1ULL << 57)
-
+#define FI_BARRIER_SET		(1ULL << 40)
+#define FI_BROADCAST_SET	(1ULL << 41)
+#define FI_ALLTOALL_SET		(1ULL << 42)
+#define FI_ALLREDUCE_SET	(1ULL << 43)
+#define FI_ALLGATHER_SET	(1ULL << 44)
+#define FI_REDUCE_SCATTER_SET	(1ULL << 45)
+#define FI_REDUCE_SET		(1ULL << 46)
+#define FI_SCATTER_SET		(1ULL << 47)
+#define FI_GATHER_SET		(1ULL << 48)
 
 struct fi_av_attr {
 	enum fi_av_type		type;
@@ -118,6 +126,8 @@ enum fi_hmem_iface {
 	FI_HMEM_CUDA,
 	FI_HMEM_ROCR,
 	FI_HMEM_ZE,
+	FI_HMEM_NEURON,
+	FI_HMEM_SYNAPSEAI,
 };
 
 struct fi_mr_attr {
@@ -134,6 +144,8 @@ struct fi_mr_attr {
 		uint64_t	reserved;
 		int		cuda;
 		int		ze;
+		int		neuron;
+		int		synapseai;
 	} device;
 };
 
@@ -273,6 +285,8 @@ struct fi_ops_domain {
 	int	(*query_collective)(struct fid_domain *domain,
 			enum fi_collective_op coll,
 			struct fi_collective_attr *attr, uint64_t flags);
+	int	(*endpoint2)(struct fid_domain *domain, struct fi_info *info,
+			struct fid_ep **ep, uint64_t flags, void *context);
 };
 
 /* Memory registration flags */
@@ -312,6 +326,18 @@ fi_domain(struct fid_fabric *fabric, struct fi_info *info,
 	   struct fid_domain **domain, void *context)
 {
 	return fabric->ops->domain(fabric, info, domain, context);
+}
+
+static inline int
+fi_domain2(struct fid_fabric *fabric, struct fi_info *info,
+	   struct fid_domain **domain, uint64_t flags, void *context)
+{
+	if (!flags)
+		return fi_domain(fabric, info, domain, context);
+
+	return FI_CHECK_OP(fabric->ops, struct fi_ops_fabric, domain2) ?
+		fabric->ops->domain2(fabric, info, domain, flags, context) :
+		-FI_ENOSYS;
 }
 
 static inline int

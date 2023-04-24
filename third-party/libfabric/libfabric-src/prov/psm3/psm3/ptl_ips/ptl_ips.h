@@ -59,10 +59,8 @@
 #include "psm_user.h"
 
 #include "ips_proto.h"
-#include "ips_stats.h"
-#include "ips_subcontext.h"
 
-struct ptl_shared;
+struct gen1_ptl_shared;	// OPA-only shared context
 
 /*
  * PTL at the ips level (for OPA)
@@ -103,7 +101,6 @@ struct ptl_ips {
 	psm2_epaddr_t epaddr;	/* cached from ep */
 	ips_epaddr_t *ipsaddr;	/* cached from epaddr */
 	ptl_ctl_t *ctl;		/* cached from init */
-	const psmi_context_t *context;	/* cached from init */
 
 	void *spioc;	        /* PIO send control (opaque ptr) */
 	struct ips_proto proto;	/* protocol instance: timerq, epstate, spio */
@@ -118,8 +115,8 @@ struct ptl_ips {
 
 	/* context's status check timeout in cycles -- cached */
 	uint64_t status_cyc_timeout;
-	/* Shared contexts context */
-	struct ptl_shared *recvshc;
+	/* Shared contexts context  - OPA only */
+	struct gen1_ptl_shared *recvshc;
 	/* Rcv thread context */
 	struct ptl_rcvthread *rcvthread;
 }
@@ -128,34 +125,28 @@ struct ptl_ips {
 #endif
  __attribute__ ((PACK_STRUCT_STL aligned(16)));
 
-
 /*
  * Connect/disconnect are wrappers around psm proto's connect/disconnect,
  * mostly to abstract away PSM-specific stuff from ips internal structures
  */
-psm2_error_t ips_ptl_connect(ptl_t *ptl, int numep,
+psm2_error_t psm3_ips_ptl_connect(ptl_t *ptl, int numep,
 			    const psm2_epid_t *array_of_epid,
 			    const int *array_of_epid_mask,
 			    psm2_error_t *array_of_errors,
 			    psm2_epaddr_t *array_of_epaddr,
 			    uint64_t timeout_in);
 
-psm2_error_t ips_ptl_disconnect(ptl_t *ptl, int force, int numep,
+psm2_error_t psm3_ips_ptl_disconnect(ptl_t *ptl, int force, int numep,
 			       psm2_epaddr_t array_of_epaddr[],
 			       const int array_of_epaddr_mask[],
 			       psm2_error_t array_of_errors[],
 			       uint64_t timeout_in);
 
 /*
- * Generic Poll function for ips-level ptl
- */
-psm2_error_t ips_ptl_poll(ptl_t *ptl, int _ignored);
-
-/*
  * Support for receive thread
  */
-psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl, struct ips_recvhdrq *recvq);
-psm2_error_t ips_ptl_rcvthread_fini(ptl_t *ptl);
-void ips_ptl_rcvthread_transfer_ownership(ptl_t *from_ptl, ptl_t *to_ptl);
+psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl, struct ips_recvhdrq *recvq);
+psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl);
+void psm3_ips_ptl_rcvthread_transfer_ownership(ptl_t *from_ptl, ptl_t *to_ptl);
 
 #endif /* _IPS_PTL_H */

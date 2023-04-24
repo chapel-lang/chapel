@@ -71,6 +71,14 @@ int fi_no_domain(struct fid_fabric *fabric, struct fi_info *info,
 {
 	return -FI_ENOSYS;
 }
+int fi_no_domain2(struct fid_fabric *fabric, struct fi_info *info,
+		struct fid_domain **dom, uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_domain(fabric, info, dom, context);
+}
 int fi_no_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_pep **pep, void *context)
 {
@@ -248,6 +256,14 @@ int fi_no_endpoint(struct fid_domain *domain, struct fi_info *info,
 		struct fid_ep **ep, void *context)
 {
 	return -FI_ENOSYS;
+}
+int fi_no_endpoint2(struct fid_domain *domain, struct fi_info *info,
+		struct fid_ep **ep, uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_endpoint(domain, info, ep, context);
 }
 int fi_no_scalable_ep(struct fid_domain *domain, struct fi_info *info,
 		struct fid_ep **sep, void *context)
@@ -603,9 +619,43 @@ int fi_no_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 	return -FI_ENOSYS;
 }
 
-ssize_t fi_coll_no_barrier(struct fid_ep *ep, fi_addr_t coll_addr, void *context)
+int fi_no_av_set_union(struct fid_av_set *dst, const struct fid_av_set *src)
 {
 	return -FI_ENOSYS;
+}
+int fi_no_av_set_intersect(struct fid_av_set *dst, const struct fid_av_set *src)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_diff(struct fid_av_set *dst, const struct fid_av_set *src)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_insert(struct fid_av_set *set, fi_addr_t addr)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_remove(struct fid_av_set *set, fi_addr_t addr)
+{
+	return -FI_ENOSYS;
+}
+int fi_no_av_set_addr(struct fid_av_set *set, fi_addr_t *coll_addr)
+{
+	return -FI_ENOSYS;
+}
+
+ssize_t fi_coll_no_barrier(struct fid_ep *ep, fi_addr_t coll_addr,
+			   void *context)
+{
+	return -FI_ENOSYS;
+}
+ssize_t fi_coll_no_barrier2(struct fid_ep *ep, fi_addr_t coll_addr,
+			   uint64_t flags, void *context)
+{
+	if (flags)
+		return -FI_ENOSYS;
+
+	return fi_barrier(ep, coll_addr, context);
 }
 ssize_t fi_coll_no_broadcast(struct fid_ep *ep, void *buf, size_t count, void *desc,
 			     fi_addr_t coll_addr, fi_addr_t root_addr,

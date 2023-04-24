@@ -164,7 +164,7 @@ static int gnix_sep_tx_ctx(struct fid_ep *sep, int index,
 	 * allocated
 	 */
 
-	fastlock_acquire(&sep_priv->sep_lock);
+	ofi_spin_lock(&sep_priv->sep_lock);
 
 	if (sep_priv->tx_ep_table[index] != NULL) {
 		ret = -FI_EBUSY;
@@ -243,7 +243,7 @@ static int gnix_sep_tx_ctx(struct fid_ep *sep, int index,
 		attr->op_flags = tx_priv->op_flags;
 	}
 err:
-	fastlock_release(&sep_priv->sep_lock);
+	ofi_spin_unlock(&sep_priv->sep_lock);
 
 	return ret;
 }
@@ -293,7 +293,7 @@ static int gnix_sep_rx_ctx(struct fid_ep *sep, int index,
 	 * allocated
 	 */
 
-	fastlock_acquire(&sep_priv->sep_lock);
+	ofi_spin_lock(&sep_priv->sep_lock);
 
 	if (sep_priv->rx_ep_table[index] != NULL) {
 		ret = -FI_EBUSY;
@@ -370,7 +370,7 @@ static int gnix_sep_rx_ctx(struct fid_ep *sep, int index,
 		attr->op_flags = rx_priv->op_flags;
 	}
 err:
-	fastlock_release(&sep_priv->sep_lock);
+	ofi_spin_unlock(&sep_priv->sep_lock);
 
 	return ret;
 }
@@ -790,7 +790,7 @@ int gnix_sep_open(struct fid_domain *domain, struct fi_info *info,
 	sep_priv->my_name.rx_ctx_cnt = info->ep_attr->rx_ctx_cnt;
 	sep_priv->my_name.name_type = name_type;
 
-	fastlock_init(&sep_priv->sep_lock);
+	ofi_spin_init(&sep_priv->sep_lock);
 	_gnix_ref_get(domain_priv);
 
 	*sep = &sep_priv->ep_fid;

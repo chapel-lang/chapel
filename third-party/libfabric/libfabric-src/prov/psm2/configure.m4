@@ -36,7 +36,7 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 					 [psm2_happy=0])
 			AS_IF([test x$psm2_happy = x0],
 			      [
-				$as_echo "$as_me: recheck psm2 without psm2_info_query."
+				AC_MSG_NOTICE([$as_me: recheck psm2 without psm2_info_query.])
 				have_psm2_info_query=0
 				FI_CHECK_PACKAGE([psm2],
 						 [psm2.h],
@@ -50,7 +50,7 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 			      ])
 			AS_IF([test x$psm2_happy = x0],
 			      [
-				$as_echo "$as_me: recheck psm2 without psm2_mq_ipeek_dequeue_multi."
+				AC_MSG_NOTICE([recheck psm2 without psm2_mq_ipeek_dequeue_multi.])
 				have_psm2_mq_req_user=0
 				FI_CHECK_PACKAGE([psm2],
 						 [psm2.h],
@@ -64,7 +64,7 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 			      ])
 			AS_IF([test x$psm2_happy = x0],
 			      [
-				$as_echo "$as_me: recheck psm2 without psm2_mq_fp_msg."
+				AC_MSG_NOTICE([recheck psm2 without psm2_mq_fp_msg.])
 				have_psm2_mq_fp_msg=0
 				FI_CHECK_PACKAGE([psm2],
 						 [psm2.h],
@@ -78,7 +78,7 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 			      ])
 			AS_IF([test x$psm2_happy = x0],
 			      [
-				$as_echo "$as_me: recheck psm2 without psm2_am_register_handlers_2."
+				AC_MSG_NOTICE([recheck psm2 without psm2_am_register_handlers_2.])
 				have_psm2_am_register_handlers_2=0
 				FI_CHECK_PACKAGE([psm2],
 						 [psm2.h],
@@ -107,7 +107,7 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 						]])],
 				          [],
 				          [
-						$as_echo "$as_me: hfi1_user.h version 6.x not found"
+						AC_MSG_NOTICE([hfi1_user.h version 6.x not found])
 						psm2_happy=0
 					  ])
 			AS_IF([test x$psm2_happy = x1],
@@ -120,13 +120,13 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 						[],
 						[],
 						[
-							$as_echo "$as_me: numactl-devel or libnuma-devel not found"
+							AC_MSG_NOTICE([numactl-devel or libnuma-devel not found])
 							psm2_happy=0
 						])])
 			AS_IF([test x$psm2_happy = x1],
 			      [AS_IF([test -f $with_psm2_src/psm_hal_gen1/opa_common_gen1.h],
 				     [
-					$as_echo "$as_me: creating links for PSM2 source code."
+					AC_MSG_NOTICE([creating links for PSM2 source code.])
 					mkdir -p $srcdir/prov/psm2/src/psm2
 					cp -srf $with_psm2_src/* $srcdir/prov/psm2/src/psm2/
 					ln -sf ../include/rbtree.h $srcdir/prov/psm2/src/psm2/ptl_ips/
@@ -134,15 +134,15 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 
 					hal_decl_file=$srcdir/prov/psm2/src/psm2/psm2_hal_inlines_d.h
 					hal_impl_file=$srcdir/prov/psm2/src/psm2/psm2_hal_inlines_i.h
-					$as_echo "#define PSMI_HAL_INST_CNT 1" >$hal_decl_file
-					$as_echo "#define PSMI_HAL_INLINE inline" >>$hal_decl_file
-					$as_echo "#define PSMI_HAL_CAT_INL_SYM(KERNEL) hfp_gen1_##KERNEL" >>$hal_decl_file
-					$as_echo "#include \"psm2_hal_inline_t.h\"" >>$hal_decl_file
-					$as_echo "#include \"psm_hal_gen1/psm_hal_inline_i.h\"" >$hal_impl_file
+					echo "#define PSMI_HAL_INST_CNT 1" >$hal_decl_file
+					echo "#define PSMI_HAL_INLINE inline" >>$hal_decl_file
+					echo "#define PSMI_HAL_CAT_INL_SYM(KERNEL) hfp_gen1_##KERNEL" >>$hal_decl_file
+					echo "#include \"psm2_hal_inline_t.h\"" >>$hal_decl_file
+					echo "#include \"psm_hal_gen1/psm_hal_inline_i.h\"" >$hal_impl_file
 				     ],
 				     [
-					$as_echo "$as_me: PSM2 source under <$with_psm2_src> is missing or too old."
-					$as_echo "$as_me: Please get the latest source from https://github.com/intel/opa-psm2."
+					AC_MSG_NOTICE([PSM2 source under <$with_psm2_src> is missing or too old.])
+					AC_MSG_NOTICE([Please get the latest source from https://github.com/intel/opa-psm2.])
 					psm2_happy=0
 				     ])
 			      ])
@@ -166,12 +166,12 @@ AC_DEFUN([FI_PSM2_CONFIGURE],[
 ])
 
 AC_ARG_WITH([psm2-src],
-	    AC_HELP_STRING([--with-psm2-src=DIR],
+	    AS_HELP_STRING([--with-psm2-src=DIR],
                            [Provide path to the source code of PSM2 library
 			    to be compiled into the provider]))
 
 AC_ARG_WITH([numa],
-	    AC_HELP_STRING([--with-numa=DIR],
+	    AS_HELP_STRING([--with-numa=DIR],
                            [Provide path to where the numactl-devel or libnuma-devel
 			    package is installed]))
 

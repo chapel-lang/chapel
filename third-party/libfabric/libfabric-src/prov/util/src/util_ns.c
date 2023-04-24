@@ -41,6 +41,8 @@
  * a query to the name server residing on "node".
  */
 
+#include <config.h>
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -112,7 +114,7 @@ err2:
 err1:
 	return ret;
 }
- 
+
 static int util_ns_map_del(struct util_ns *ns, void *service_in,
 			   void *name_in)
 {
@@ -120,8 +122,8 @@ static int util_ns_map_del(struct util_ns *ns, void *service_in,
 	int ret = -FI_ENOENT;
 	void *service, *name;
 
-        it = rbtFind(ns->map, service_in);
-        if (it) {
+	it = rbtFind(ns->map, service_in);
+	if (it) {
 		rbtKeyValue(ns->map, it, &service, &name);
 		if (memcmp(name, name_in, ns->name_len))
 			return ret;
@@ -140,7 +142,7 @@ static int util_ns_map_lookup(struct util_ns *ns, void *service_in,
 	RbtIterator it;
 	void *key, *name;
 
-        it = rbtFind(ns->map, service_in);
+	it = rbtFind(ns->map, service_in);
 	if (!it)
 		return -FI_ENOENT;
 
@@ -239,11 +241,11 @@ static void util_ns_close_listen(struct util_ns *ns)
  * on getting an ADDRINUSE error on either bind or listen if another
  * process has started the name server.
  */
-static int util_ns_listen(struct util_ns *ns)
+static int util_ns_listen(struct util_ns *ns, int af)
 {
 	struct addrinfo hints = {
 		.ai_flags = AI_PASSIVE,
-		.ai_family = AF_UNSPEC,
+		.ai_family = af,
 		.ai_socktype = SOCK_STREAM
 	};
 	struct addrinfo *res, *p;
@@ -527,8 +529,16 @@ int ofi_ns_start_server(struct util_ns *ns)
 		goto err1;
 	}
 
-	ret = util_ns_listen(ns);
-	if (ret) {
+	// When using AF_UNSPEC as a hint to getaddrinfo, Linux seems to return IPv4
+	// addresses before IPv6 ones and Windows does the opposite. So, try IPv4
+	// addresses first followed by IPv6 addresses.
+	ret = util_ns_listen(ns, AF_INET);
+	/* EADDRINUSE likely indicates a peer is running the NS */
+	if (ret == -FI_EADDRINUSE) {
+		rbtDelete(ns->map);
+		return 0;
+	} else if (ret) {
+		ret = util_ns_listen(ns, AF_INET6);
 		/* EADDRINUSE likely indicates a peer is running the NS */
 		if (ret == -FI_EADDRINUSE) {
 			rbtDelete(ns->map);

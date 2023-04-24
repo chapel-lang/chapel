@@ -228,7 +228,7 @@ struct psmx_unexp {
 };
 
 struct psmx_req_queue {
-	fastlock_t	lock;
+	ofi_spin_t	lock;
 	struct slist	list;
 };
 
@@ -264,7 +264,7 @@ struct psmx_fid_domain {
 	uint64_t		caps;
 
 	enum fi_mr_mode		mr_mode;
-	fastlock_t		mr_lock;
+	ofi_spin_t		mr_lock;
 	uint64_t		mr_reserved_key;
 	RbtHandle		mr_map;
 
@@ -292,7 +292,7 @@ struct psmx_fid_domain {
 	/* lock to prevent the sequence of psm_mq_ipeek and psm_mq_test be
 	 * interleaved in a multithreaded environment.
 	 */
-	fastlock_t		poll_lock;
+	ofi_spin_t		poll_lock;
 
 	int			progress_thread_enabled;
 	pthread_t		progress_thread;
@@ -330,7 +330,7 @@ struct psmx_fid_cq {
 	size_t				event_count;
 	struct slist			event_queue;
 	struct slist			free_list;
-	fastlock_t			lock;
+	ofi_spin_t			lock;
 	struct psmx_cq_event		*pending_error;
 	struct util_wait		*wait;
 	int				wait_cond;
