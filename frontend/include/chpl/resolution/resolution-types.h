@@ -1456,6 +1456,9 @@ class ResolvedFunction {
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
   }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return resolutionById_.byAstOrNull(ast);
+  }
 
   const ID& id() const {
     return signature_->id();
