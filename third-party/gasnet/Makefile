@@ -77,9 +77,7 @@ endif
 # built for the target platform. Note that this uses an "unofficial" target
 # that the gasnet team has provided for us.
 ifeq ($(CHPL_MAKE_LAUNCHER),amudprun)
-HOST_CC=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CC)
-HOST_CXX=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CXX)
-XTRA_POST_BUILD_COMMAND=cd $(GASNET_BUILD_DIR)/other/amudp && $(MAKE) CC='$(HOST_CC)' CXX='$(HOST_CXX)' amudprun-host && mv amudprun-host amudprun
+XTRA_POST_BUILD_COMMAND=cd $(GASNET_BUILD_DIR)/other/amudp && $(MAKE) CC='$(CHPL_MAKE_HOST_CC)' CXX='$(CHPL_MAKE_HOST_CXX)' amudprun-host && mv amudprun-host amudprun
 endif
 
 
