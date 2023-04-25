@@ -1,137 +1,302 @@
 use List, Map;
 
-class YamlDocument {
-  var root: owned YamlValue;
+enum ScalarType {
+  YamlFloat,
+  YamlInt,
+  YamlStr,
+  YamlBool,
+  YamlBinary,
+  Implicit,
+  UserDefined,
 }
 
-class YamlValue { }
+class YamlValue {
+  var tag: string = "";
+
+  /* index into a YAML mapping by string */
+  proc this(key: string): borrowed YamlValue throws {
+    throw new YamlKeyError("indexing not supported");
+  }
+
+  /* index into a YAML mapping by YAML value */
+  proc this(key: owned YamlValue): borrowed YamlValue throws {
+    throw new YamlKeyError("indexing not supported");
+  }
+
+  /* index into a YAML sequence */
+  proc this(idx: int): borrowed YamlValue throws {
+    throw new YamlKeyError("indexing not supported");
+  }
+
+  /* get the size of a YAML sequence or mapping */
+  proc size: int {
+    throw new YamlKeyError("size not supported");
+  }
+
+  proc asString(): string throws {
+    throw new YamlTypeError("cannot convert to string");
+  }
+
+  proc asBytes(): bytes throws {
+    throw new YamlTypeError("cannot convert to bytes");
+  }
+
+  proc asReal(strict: bool): real throws {
+    throw new YamlTypeError("cannot convert to real");
+  }
+
+  proc asInt(strict: bool): int throws {
+    throw new YamlTypeError("cannot convert to int");
+  }
+
+  proc asBool(): bool throws {
+    throw new YamlTypeError("cannot convert to bool");
+  }
+
+  proc asMapOf(type valueType): map(string, valueType) throws {
+    throw new YamlTypeError("cannot convert to map");
+  }
+
+  proc asListOf(type valueType): map(string, valueType) throws {
+    throw new YamlTypeError("cannot convert to list");
+  }
+
+  @chpldoc.nodoc
+  proc writeThis(fw) throws {
+    if tag != "" then
+      fw.write(tag, " ");
+  }
+
+  @chpldoc.nodoc
+  proc _asKey(): string {
+    return this.tag;
+  }
+}
+
+class YamlNull: YamlValue {
+  @chpldoc.nodoc
+  override proc _asKey(): string {
+    return "null";
+  }
+}
 
 class YamlScalar: YamlValue {
+  var yamlType: ScalarType;
+  var userType: string = "";
   var value: string;
 
-  proc asString(): string {
+  proc init(rawValue: string) {
+    if rawValue.startsWith("!!") {
+      const (typeTag, _, value) = rawValue.partition(" ");
+      select typeTag {
+        when "!!float" do this.yamlType = ScalarType.YamlFloat;
+        when "!!int" do this.yamlType = ScalarType.YamlInt;
+        when "!!str" do this.yamlType = ScalarType.YamlStr;
+        when "!!bool" do this.yamlType = ScalarType.YamlBool;
+        when "!!binary" do this.yamlType = ScalarType.YamlBinary;
+        otherwise {
+          writeln("Unknown Yaml-type tag: ", typeTag);
+          halt(1);
+        }
+      }
+      this.value = value;
+    } else if rawValue.startsWith("!") {
+      const (typeTag, _, value) = rawValue.partition(" ");
+      this.yamlType = ScalarType.UserDefined;
+      this.userType = typeTag;
+      this.value = value;
+    } else {
+      this.yamlType = ScalarType.Implicit;
+      if rawValue.startsWith("|") then
+        this.value = rawValue[1..];
+      else if rawValue.startsWith(">") then
+        this.value = rawValue[1..].replace("\n", "");
+      else
+        this.value = rawValue;
+    }
+  }
+
+  override proc asString(): string {
+    return value;
+  }
+
+  override proc asBytes(): bytes {
+    return value: bytes;
+  }
+
+  override proc asReal(strict: bool): real throws {
+    if yamlType == ScalarType.YamlInt && strict then
+      throw new error("cannot convert '!!int' value to real");
+
+    try {
+      return value : real;
+    } catch {
+      throw new YamlTypeError("cannot convert value to real");
+    }
+  }
+
+  override proc asInt(strict: bool): int throws {
+    if yamlType == ScalarType.YamlFloat && strict then
+      throw new error("cannot convert '!!float' value to int");
+
+    try {
+      return value : int;
+    } catch {
+      throw new YamlTypeError("cannot convert value to int");
+    }
+  }
+
+ override proc asBool(): bool throws {
+    if value == "On" then return true;
+    if value == "Off" then return false;
+    throw new YamlTypeError("cannot convert to bool");
+  }
+
+  @chpldoc.nodoc
+  override proc writeThis(fw) throws {
+    super.writeThis(fw);
+    select this.yamlType {
+      when ScalarType.YamlFloat do fw.write("!!float ");
+      when ScalarType.YamlInt do fw.write("!!int ");
+      when ScalarType.YamlStr do fw.write("!!str ");
+      when ScalarType.YamlBool do fw.write("!!bool ");
+      when ScalarType.YamlBinary do fw.write("!!binary ");
+      when ScalarType.UserDefined do fw.write("!", this.userType, " ");
+      otherwise { }
+    }
+    fw.write(value);
+  }
+
+  @chpldoc.nodoc
+  override proc _asKey(): string {
     return value;
   }
 }
 
+
 class YamlSequence: YamlValue {
   var sequence: list(owned YamlValue);
 
-  proc this(idx: int): owned YamlValue throws {
+  override proc this(idx: int): borrowed YamlValue throws {
     if idx < 0 || idx >= sequence.size then
       throw new YamlKeyError("index out of bounds");
     return sequence[idx];
   }
 
-  proc asList(type t): list(t) throws {
-    unimplemented();
-    return new list(t);
+  override proc size: int {
+    return sequence.size;
   }
 
-  proc size: int {
-    return sequence.size;
+  override proc asListOf(type t): list(t) throws {
+    var l = new list(t);
+    for s in sequence do l.append(s: t);
+    return new list(t);
   }
 
   proc init() {
     this.sequence = new list(owned YamlValue);
   }
 
-  proc append(in value: owned YamlValue) {
+  proc _append(in value: owned YamlValue) {
     this.sequence.append(value);
+  }
+
+  @chpldoc.nodoc
+  override proc writeThis(fw) throws {
+    super.writeThis(fw);
+    fw.write("[");
+    for i in 0..sequence.size-1 do {
+      if i > 0 then
+        fw.write(", ");
+      sequence[i].writeThis(fw);
+    }
+    fw.write("]");
+  }
+
+  @chpldoc.nodoc
+  override proc _asKey(): string {
+    var s = "[";
+    for i in 0..sequence.size-1 do {
+      if i > 0 then
+        s = s + ", ";
+      s = s + sequence[i]._asKey();
+    }
+    s = s + "]";
+    return s;
   }
 }
 
 class YamlMapping: YamlValue {
-  var mapping: map(owned YamlValue, owned YamlValue);
+  // var mapping: map(owned YamlValue, owned YamlValue);
+  var mapping: map(string, owned YamlValue);
 
-  proc this(key: borrowed YamlValue): owned YamlValue throws {
+  override proc this(key: string): borrowed YamlValue throws {
     if !mapping.contains(key) then
       throw new YamlKeyError("key not found");
     return mapping[key];
   }
 
-  proc this(key: string): owned YamlValue throws {
-    const yKey = new owned YamlString(key);
-    if !mapping.contains(yKey) then
+  override proc this(key: owned YamlValue): borrowed YamlValue throws {
+    if !mapping.contains(key._asKey()) then
       throw new YamlKeyError("key not found");
-    return mapping[yKey];
+    return mapping[key._asKey()];
   }
 
-  proc asMap(type keyType, type valType): map(keyType, valType) throws {
-    unimplemented();
-    return new map(keyType, valType);
-  }
-
-  proc size: int {
+  override proc size: int {
     return mapping.size;
   }
 
+  override proc asMap(type valType): map(string, valType) throws {
+    var m = new map(string, valType);
+    for k in mapping.keys() do m.add(k, mapping[k]: valType);
+    return m;
+  }
+
   proc init() {
-    this.mapping = new map(owned YamlValue, owned YamlValue);
+    this.mapping = new map(string, owned YamlValue);
   }
 
-  proc add(in key: owned YamlValue, in value: owned YamlValue): bool {
-    return this.mapping.add(key, value);
-  }
-}
-
-class YamlString: YamlValue {
-  var value: string;
-
-  proc asString(): string {
-    return value;
+  @chpldoc.nodoc
+  proc _add(in key: owned YamlValue, in value: owned YamlValue): bool {
+    return this.mapping.add(key._asKey(), value);
   }
 
-  proc type from(s: string): owned YamlString {
-    return new owned YamlString(s);
-  }
-}
-
-class YamlBool: YamlValue {
-  var value: bool;
-
-  proc asBool(): bool {
-    return value;
+  @chpldoc.nodoc
+  override proc writeThis(fw) throws {
+    super.writeThis(fw);
+    this.mapping.writeThis(fw);
   }
 
-  proc init(value: bool) {
-    this.value = value;
+  @chpldoc.nodoc
+  override proc _asKey(): string {
+    var s = "{";
+    const keys = mapping.keys();
+    for i in 0..keys.size-1 do {
+      if i > 0 then
+        s = s + ", ";
+      s = s + keys[i] + ": " + mapping[keys[i]]._asKey();
+    }
+    s += "}";
+    return s;
   }
 }
 
-class YamlNumber: YamlValue {
-  // TODO: use a union here
-  var intValue: int = -1;
-  var realValue: real = -1.0;
-  var isReal: bool = false;
+class YamlAlias: YamlValue {
+  var alias: string;
 
-  proc asInt(): int throws {
-    if isReal then
-      throw new YamlTypeError("cannot retrieve integer value from real");
-    return intValue;
+  proc init(alias: string) {
+    this.alias = alias;
   }
 
-  proc asReal(): real throws {
-    if !isReal then
-      throw new YamlTypeError("cannot retrieve real value from integer");
-    return realValue;
-  }
-}
-
-class YamlNull: YamlValue { }
-
-class YamlTagged: YamlValue {
-  var tag: string;
-  var value: owned YamlValue;
-}
-
-class YamlKeyError: Error {
-  proc init(msg: string) {
-    super.init(msg);
+  @chpldoc.nodoc
+  override proc writeThis(fw) throws {
+    super.writeThis(fw);
+    fw.write("*", alias);
   }
 
-  override proc message(): string {
-    return "YAML Key Error: " + super.message();
+  @chpldoc.nodoc
+  override proc _asKey(): string {
+    return "*" + alias;
   }
 }
 
@@ -145,7 +310,12 @@ class YamlTypeError: Error {
   }
 }
 
-inline proc unimplemented() {
-  import Reflection.getRoutineName;
-  writeln("'", getRoutineName(), "' unimplemented!");
+class YamlKeyError: Error {
+  proc init(msg: string) {
+    super.init(msg);
+  }
+
+  override proc message(): string {
+    return "YAML Key Error: " + super.message();
+  }
 }

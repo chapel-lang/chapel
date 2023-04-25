@@ -18,18 +18,6 @@ extern record yaml_mark_t {
   var column: c_size_t;
 };
 
-// extern record yaml_char_t {};
-// extern record yaml_node_type_t {};
-// extern "struct yaml_node_s" record yaml_node {
-//   extern "type" var t: yaml_node_type_t;
-//   var tag: yaml_char_t;
-
-//   var data: opaque;
-
-//   var start_mark: yaml_mark_t;
-//   var end_mark: yaml_mark_t;
-// };
-
 extern const E_NO_EVENT: c_int;
 extern const E_STREAM_START: c_int;
 extern const E_STREAM_END: c_int;
@@ -51,7 +39,6 @@ private extern proc yaml_event_delete(event: c_ptr(yaml_event_t)): c_int;
 private extern proc fopen(filename: c_string, mode: c_string): c_FILE;
 private extern proc fclose(file: c_FILE): c_int;
 
-
 proc parseYamlFile(filePath: string): [] owned YamlValue throws {
   var file = fopen(filePath.c_str(), "r".c_str()),
       fr = openReader(filePath, locking=false);
@@ -63,7 +50,7 @@ proc parseYamlFile(filePath: string): [] owned YamlValue throws {
     throw new Error("Failed to initialize parser");
   yaml_parser_set_input_file(c_ptrTo(parser), file);
 
-  var yvs = parseUntilNextCloser(c_ptrTo(parser), fr);
+  var yvs = parseUntilEvent(E_STREAM_END, parser, fr);
 
   yaml_parser_delete(c_ptrTo(parser));
   fclose(file);
@@ -71,95 +58,93 @@ proc parseYamlFile(filePath: string): [] owned YamlValue throws {
   return yvs;
 }
 
-iter parseUntilNextCloser(parser: c_ptr(yaml_parser_t), reader: fileReader): owned YamlValue {
+iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReader): owned YamlValue {
   var event: yaml_event_t;
   c_memset(c_ptrTo(event):c_void_ptr, 0, c_sizeof(yaml_event_t));
 
-  if !yaml_parser_parse(parser, c_ptrTo(event)) then
-      halt("Failed to parse next YAML event");
+  inline proc finish() {
+    yaml_event_delete(c_ptrTo(event));
+    return;
+  }
 
   while true {
+    // parse until the next event
+    if !yaml_parser_parse(c_ptrTo(parser), c_ptrTo(event)) then
+        halt("Failed to parse next YAML event");
+
+    // handle event
     select event.t {
       when E_STREAM_START {
-        writeln("STREAM START");
-        for e in parseUntilNextCloser(parser, reader) {
+        for e in parseUntilEvent(E_STREAM_END, parser, reader) {
           yield e;
         }
       }
       when E_STREAM_END {
-        writeln("STREAM END");
-        yaml_event_delete(c_ptrTo(event));
-        return;
+        if e_stop != E_STREAM_END then
+          writeln("wrong closing event. Expected ", e_stop", got E_STREAM_END");
+        finish();
       }
       when E_DOCUMENT_START {
-        writeln("DOCUMENT START");
-        for e in parseUntilNextCloser(parser, reader) {
+        for e in parseUntilEvent(E_DOCUMENT_END, parser, reader) {
           yield e;
         }
       }
       when E_DOCUMENT_END {
-        writeln("DOCUMENT END");
-        return;
+        if e_stop != E_DOCUMENT_END then
+          writeln("wrong closing event. Expected ", e_stop", got E_DOCUMENT_END");
+        finish();
       }
       when E_ALIAS {
-        writeln("ALIAS");
-        yaml_event_delete(c_ptrTo(event));
-        halt("Aliases not supported yet");
+        reader.seek((event.start_mark.idx:int)..);
+        yield new YamlAlias(reader.readString((event.end_mark.idx - event.start_mark.idx):int));
       }
       when E_SCALAR {
-        writeln("SCALAR");
-        var ys = new YamlScalar();
-        reader.seek((event.start_mark.idx:int)..); // TODO: should the upper bound be provided here?
-        const s = reader.readString((event.end_mark.idx - event.start_mark.idx):int);
-        ys.value = s;
-
-        yield ys;
+        reader.seek((event.start_mark.idx:int)..);
+        yield new YamlScalar(reader.readString((event.end_mark.idx - event.start_mark.idx):int));
       }
       when E_SEQUENCE_START {
-        writeln("SEQUENCE START");
-        var ys = new YamlSequence();
-        for e in parseUntilNextCloser(parser, reader) {
-          ys.append(e);
+        var seq = new YamlSequence();
+        for e in parseUntilEvent(E_SEQUENCE_END, parser, reader) {
+          seq._append(e);
         }
-        yield ys;
+        yield seq;
       }
       when E_SEQUENCE_END {
-        writeln("SEQUENCE END");
-        yaml_event_delete(c_ptrTo(event));
-        return;
+        if e_stop != E_SEQUENCE_END then
+          writeln("wrong closing event. Expected ", e_stop", got E_SEQUENCE_END");
+        finish();
       }
       when E_MAPPING_START {
-        writeln("MAPPING START");
-        var ym = new YamlMapping(),
+        var mapping = new YamlMapping(),
             nextKey = new owned YamlValue(),
             key = true;
 
-        for e in parseUntilNextCloser(parser, reader) {
+        for e in parseUntilEvent(E_MAPPING_END, parser, reader) {
+          // TODO: is there a better way to do this without using unmanaged?
+          // should this pattern be supported for owned?
           var cpy: unmanaged YamlValue = owned.release(e);
           if key {
             nextKey = owned.adopt(cpy);
             key = false;
           } else {
-            ym.add(nextKey, owned.adopt(cpy));
+            mapping._add(nextKey, owned.adopt(cpy));
             key = true;
           }
         }
-        yield ym;
+        yield mapping;
       }
       when E_MAPPING_END {
-        writeln("MAPPING END");
-        yaml_event_delete(c_ptrTo(event));
-        return;
+        if e_stop != E_MAPPING_END then
+          writeln("wrong closing event. Expected ", e_stop", got E_MAPPING_END");
+        finish();
       }
       when E_NO_EVENT {
-        writeln("NO EVENT");
-        // yaml_event_delete(c_ptrTo(event));
-        // halt("Yaml No Event");
+        finish();
       }
       otherwise {
-        writeln("OTHER");
         yaml_event_delete(c_ptrTo(event));
-        halt("Unexpected YAML event");
+        writeln("Unexpected YAML event");
+        finish();
       }
     }
     yaml_event_delete(c_ptrTo(event));
