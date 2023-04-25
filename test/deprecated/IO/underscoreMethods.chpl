@@ -1,3 +1,4 @@
+// deprecated by jade in 1.31
 use IO;
 config var filename = "test.txt";
 
