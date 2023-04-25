@@ -33,6 +33,14 @@
 // - this[] access
 // - Slices
 
+static QualifiedType findVarType(const Module* m,
+                                 const ResolutionResultByPostorderID& rr,
+                                 std::string name) {
+  const Variable* var = findOnlyNamed(m, name)->toVariable();
+  assert(var != nullptr);
+  return rr.byAst(var).type();
+}
+
 static void testArray(std::string domainType,
                       std::string eltType) {
   Context ctx;
@@ -90,29 +98,17 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  const Variable* d = findOnlyNamed(m, "d")->toVariable();
-  QualifiedType dType = rr.byAst(d).type();
+  QualifiedType dType = findVarType(m, rr, "d");
 
-  const Variable* e = findOnlyNamed(m, "eltType")->toVariable();
-  QualifiedType eType = rr.byAst(e).type();
+  QualifiedType eType = findVarType(m, rr, "eltType");
 
-  const Variable* A = findOnlyNamed(m, "A")->toVariable();
-  QualifiedType AType = rr.byAst(A).type();
+  QualifiedType AType = findVarType(m, rr, "A");
 
-  {
-    const Variable* AD = findOnlyNamed(m, "AD")->toVariable();
-    assert(rr.byAst(AD).type().type() == dType.type());
-  }
+  assert(findVarType(m, rr, "AD").type() == dType.type());
 
-  {
-    const Variable* s = findOnlyNamed(m, "s")->toVariable();
-    assert(rr.byAst(s).type().type()->isIntType());
-  }
+  assert(findVarType(m, rr, "s").type()->isIntType());
 
-  {
-    const Variable* z = findOnlyNamed(m, "z")->toVariable();
-    assert(rr.byAst(z).type().type() == eType.type());
-  }
+  assert(findVarType(m, rr, "z").type() == eType.type());
 
   {
     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
