@@ -147,8 +147,20 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   }
 
   memset(buf, 0, buflen);
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
+  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
     chpl_error("Error trying to determine number of cores per node", 0, 0);
+  }
+
+  if (!strncmp("Invalid node format specification: i", buf,
+               strlen("Invalid node format specification: i"))) {
+    // older versions of sinfo don't support the %i format. Try again
+    // without it. We won't be able to exclude reservations, but there's
+    // not much we can do about that.
+    argv[2] = (char *)  "--format=%c %Z";
+    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+  }
 
   char *cursor = buf;
   char *line;
