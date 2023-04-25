@@ -1,7 +1,7 @@
 use IO;
 
 var filename = "fileWriterLimited.txt";
-var f = open(filename, iomode.cw);
+var f = open(filename, ioMode.cw);
 
 var writeCh = f.writer();
 writeCh.writeln("She said she was looking for me");

@@ -63,7 +63,7 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Variable(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
@@ -73,7 +73,7 @@ class Variable final : public VarLikeDecl {
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     vis,
                     linkage,
                     linkageNameChildNum,
@@ -83,6 +83,12 @@ class Variable final : public VarLikeDecl {
                     initExpressionChildNum),
         isConfig_(isConfig),
         isField_(isField) {
+  }
+
+  Variable(Deserializer& des)
+    : VarLikeDecl(asttags::Variable, des) {
+    isConfig_ = des.read<bool>();
+    isField_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -111,7 +117,7 @@ class Variable final : public VarLikeDecl {
   ~Variable() override = default;
 
   static owned<Variable> build(Builder* builder, Location loc,
-                               owned<Attributes> attributes,
+                               owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<AstNode> linkageName,
@@ -137,10 +143,21 @@ class Variable final : public VarLikeDecl {
   */
   bool isField() const { return this->isField_; }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Variable);
+
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Variable::Kind, uint8_t);
+
 } // end namespace chpl
 
 #endif

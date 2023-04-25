@@ -1,3 +1,6 @@
+revcomp3.chpl:13: In function 'main':
+revcomp3.chpl:15: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
+revcomp3.chpl:17: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

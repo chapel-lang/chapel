@@ -1,0 +1,1 @@
+c_ptrToRemote.chpl:6: error: halt reached - c_ptrToConst() can only be applied to an array from the locale on which it lives (array is on locale 0, call was made on locale 1)

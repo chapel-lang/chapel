@@ -183,13 +183,6 @@ static const char* cleanCompilerFilename(const char* name) {
 static void cleanup_for_exit() {
   closeCodegenFiles();
 
-  // Currently, gpu code generation is done in on forked process. This
-  // forked process produces some files in the tmp directory that are
-  // later read by the main process, so we want the main process
-  // to clean up the temp dir and not the forked process.
-  if (!gCodegenGPU) {
-    deleteTmpDir();
-  }
   stopCatchingSignals();
 }
 
@@ -567,6 +560,49 @@ static bool interestingModuleInit(FnSymbol* fn) {
   return strcmp(modulename, basename) != 0;
 }
 
+// If the new frontend emitted errors but did not terminate compilation,
+// (e.g., all it did was print deprecation warnings), then it printed
+// an error header based on 'chpl::ID'. The role of this function is
+// to see if the function we want to use for a header has the same
+// 'chpl::ID' as the last symbol used to print the dyno error header.
+// If so, then we return nullptr to avoid having the production compiler
+// print out a duplicate header.
+static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
+  static FnSymbol* fnForSkip = nullptr;
+  static bool once = false;
+
+  // There is no input function.
+  if (!fn) return nullptr;
+
+  // We've already bridged from ID to FnSymbol, or there is no ID.
+  if (once || dynoIdForLastContainingDecl.isEmpty()) return fn;
+
+  // If we are skipping...
+  if (fnForSkip) {
+
+    // We hit a different function, so stop skipping forever.
+    if (fnForSkip != fn) {
+      once = true;
+      return fn;
+
+    // Otherwise, keep skipping.
+    } else {
+      return nullptr;
+    }
+  }
+
+  // If the very first input function is different, never skip.
+  if (fn->astloc.id() != dynoIdForLastContainingDecl) {
+    once = true;
+    return fn;
+  }
+
+  // Otherwise, start skipping...
+  fnForSkip = fn;
+
+  return nullptr;
+}
+
 // return values:
 //   -1 = no filename:line# was printed;
 //    0 = they were printed and were not the result of a guess
@@ -591,9 +627,12 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
         if (fn->defPoint == NULL || !fn->inTree())
           fn = NULL;
 
+      fn = determineIfHeaderIsRedundantWithDyno(fn);
+
       if (fn && fn->id != err_fn_id) {
         printCallstackForLastError();
         err_fn_header_printed = false;
+
         err_fn = fn;
 
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
@@ -713,12 +752,15 @@ static void printErrorFooter(int guess) {
   // Apologize for our internal errors to the end-user
   //
   if (!developer && !err_user) {
-    print_error("\n\n"
-      "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
-      "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
-      "please see %s for instructions.%s\n\n", help_url,
-      (guess == -1) ? "" : "  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.");
+    print_error(
+        "\n\n"
+        "Internal errors indicate a bug in the Chapel compiler,\nand we're "
+        "sorry for the hassle.  We would appreciate your reporting this bug "
+        "--\nplease see %s for instructions.%s\n\n",
+        help_url,
+        (guess == -1) ? ""
+                      : "  In the meantime,\nthe filename + line number above "
+                        "may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)

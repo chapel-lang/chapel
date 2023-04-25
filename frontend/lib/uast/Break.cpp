@@ -36,7 +36,7 @@ std::string Break::dumpChildLabelInner(int i) const {
 owned<Break> Break::build(Builder* builder, Location loc,
                           owned<Identifier> target) {
   AstList lst;
-  int8_t targetChildNum = -1;
+  int8_t targetChildNum = NO_CHILD;
 
   if (target.get() != nullptr) {
     targetChildNum = lst.size();

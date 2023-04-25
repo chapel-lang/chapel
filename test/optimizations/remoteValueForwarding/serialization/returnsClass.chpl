@@ -20,7 +20,7 @@ record Foo {
 proc main() {
   const f = new Foo();
 
-  on Locales.tail() {
+  on Locales.last {
     if f.x(1) == 100 then halt();
   }
 }

@@ -62,20 +62,26 @@ class AggregateDecl : public TypeDecl {
   }
 
  public:
-  AggregateDecl(AstTag tag, AstList children, int attributesChildNum,
+  AggregateDecl(AstTag tag, AstList children, int attributeGroupChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 int linkageNameChildNum,
                 UniqueString name,
                 int elementsChildNum,
                 int numElements)
-    : TypeDecl(tag, std::move(children), attributesChildNum, vis, linkage,
+    : TypeDecl(tag, std::move(children), attributeGroupChildNum, vis, linkage,
                linkageNameChildNum,
                name),
       elementsChildNum_(elementsChildNum),
       numElements_(numElements) {
 
     CHPL_ASSERT(validAggregateChildren(declOrComments()));
+  }
+
+  AggregateDecl(AstTag tag, Deserializer& des)
+    : TypeDecl(tag, des) {
+    elementsChildNum_ = des.read<int>();
+    numElements_ = des.read<int>();
   }
 
   ~AggregateDecl() = 0; // this is an abstract base class
@@ -119,6 +125,12 @@ class AggregateDecl : public TypeDecl {
     return AstListNoCommentsIteratorPair<Decl>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
+  }
+
+  void serialize(Serializer& ser) const override {
+    TypeDecl::serialize(ser);
+    ser.write(elementsChildNum_);
+    ser.write(numElements_);
   }
 };
 

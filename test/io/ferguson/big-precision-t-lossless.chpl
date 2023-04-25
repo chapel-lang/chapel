@@ -12,7 +12,7 @@ config const verbose = false;
   if verbose then
     writef("%.20t\n", A);
 
-  var testfile = openmem();
+  var testfile = openMemFile();
   {
     testfile.writer().writef("%.20t\n", A);
   }
@@ -47,7 +47,7 @@ config const verbose = false;
   if verbose then
     writef("%.20jt\n", A);
 
-  var testfile = openmem();
+  var testfile = openMemFile();
   {
     testfile.writer().writef("%.20jt\n", A);
   }

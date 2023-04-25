@@ -48,6 +48,10 @@ class Yield final : public AstNode {
     CHPL_ASSERT(children_.size() == 1);
   }
 
+  Yield(Deserializer& des)
+    : AstNode(asttags::Yield, des) {
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     // The 'valueChildNum_' is const and does not need to be compared.
     return true;
@@ -76,6 +80,12 @@ class Yield final : public AstNode {
     CHPL_ASSERT(ret);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Yield);
 
 };
 

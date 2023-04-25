@@ -2,7 +2,7 @@ use Random;
 use Sort;
 //use BlockDist;
 use Time;
-use Barriers;
+use Collectives;
 use PeekPoke;
 
 config const seed = SeedGenerator.oddCurrentTime;
@@ -718,7 +718,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   // TODO: For Block distribution
   //   - Block per-locale chunk size should be a multiple of blockSize
   //   - Need to find starting index
-  var barrier = new Barrier(nTasks);
+  var barrier = new barrier(nTasks);
 
   // Overflow block
   var overflow:[0..#blockSize] eltType;
@@ -1836,7 +1836,7 @@ proc simpletestcore(input:[], seed:int) {
   var localCopy = input;
   shuffle(localCopy, seed);
 
-  const blockDom = input.domain; //newBlockDom(input.domain);
+  const blockDom = input.domain; //Block.createDomain(input.domain);
   var A: [blockDom] uint = localCopy;
 
   assert(isSorted(input));
@@ -1897,7 +1897,7 @@ simpletest([0xda524a179483bc7:uint,
             0xde0546a7b5c06e9:uint]);
 
 proc randomtest(n:int) {
-  const blockDom = {0..#n}; //newBlockDom({0..#n});
+  const blockDom = {0..#n}; //Block.createDomain({0..#n});
   var A: [blockDom] uint;
 
   if skew {

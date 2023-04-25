@@ -18,7 +18,7 @@ var b: borrowed Child = (new owned Child(x = 10, y = 20, z = 30)).borrow();
 writeln("a is ", a);
 writeln("b is ", b);
 
-var f = open("test.txt", iomode.cwr);
+var f = open("test.txt", ioMode.cwr);
 var writer = f.writer();
 writer.writeln(a);
 writer.close();

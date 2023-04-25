@@ -20,6 +20,7 @@
 #include "chpl/types/BasicClassType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 
 namespace chpl {
 namespace types {
@@ -58,6 +59,19 @@ BasicClassType::getObjectType(Context* context) {
 
   return getBasicClassType(context, emptyId, name,
                            /* parentType */ nullptr,
+                           /* instantiatedFrom */ nullptr,
+                           SubstitutionsMap()).get();
+}
+
+const BasicClassType*
+BasicClassType::getReduceScanOpType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "ChapelReduce.ReduceScanOp");
+  auto name = UniqueString::get(context, "ReduceScanOp");
+  auto id = ID(symbolPath, -1, 0);
+  auto objectType = getObjectType(context);
+
+  return getBasicClassType(context, id, name,
+                           /* parentType */ objectType,
                            /* instantiatedFrom */ nullptr,
                            SubstitutionsMap()).get();
 }

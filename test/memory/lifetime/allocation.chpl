@@ -25,7 +25,7 @@ proc doUnmanagedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
   
@@ -45,7 +45,7 @@ proc doSharedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 
@@ -65,7 +65,7 @@ proc doOwnedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 

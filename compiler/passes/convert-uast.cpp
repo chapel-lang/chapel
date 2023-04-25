@@ -38,6 +38,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -140,10 +141,19 @@ struct Converter {
   bool inImportOrUse = false;
   bool canScopeResolve = false;
   bool trace = false;
+  int delegateCounter = 0;
 
   ModTag topLevelModTag;
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
+
+  /* When working within a method, field accesses need to be code generated
+     as using 'this' rather than as SymExprs pointing to a field.
+     To enable that, this stack tracks the Symbol* for the 'this' formal
+     for a method currently being generated.
+     This is different from symStack above because the process of converting
+     ForwardingDecls will add a method that does not exist in the uAST. */
+  std::vector<Symbol*> methodThisStack;
 
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
@@ -189,6 +199,7 @@ struct Converter {
        const uast::AstNode* ast,
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
+  const resolution::ResolutionResultByPostorderID* currentResolutionResult();
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
@@ -257,7 +268,12 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::Attributes* node) {
+  Expr* visit(const uast::AttributeGroup* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
+  Expr* visit(const uast::Attribute* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
@@ -276,7 +292,7 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
-    auto attr = node->attributes();
+    auto attr = node->attributeGroup();
 
     if (!attr) return;
 
@@ -387,88 +403,96 @@ struct Converter {
     }
 
     // Check for a resolution result that includes a target ID
-    if (symStack.size() > 0) {
-      auto r = symStack.back().resolved;
-      if (r != nullptr) {
-        const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
-        if (rr != nullptr) {
-          auto id = rr->toId();
-          if (!id.isEmpty()) {
-
-            // If we're referring to an associated type in an interface,
-            // leave it unconverted for now because the compiler does some
-            // mangling of the AST and breaks the "points-to" ID.
-            auto toAst = parsing::idToAst(context, id);
-            if (auto varLikeDecl = toAst->toVarLikeDecl()) {
-              if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
-                auto toParentId = parsing::idToParentId(context, id);
-                auto toParentAst = parsing::idToAst(context, toParentId);
-
-                if (toParentAst->isInterface()) {
-                  // We're looking at an associated type.
-                  Symbol* sym = new TemporaryConversionSymbol(id);
-                  return new SymExpr(sym);
-                }
-              }
+    if (auto r = currentResolutionResult()) {
+      const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
+      if (rr != nullptr) {
+        auto id = rr->toId();
+        if (id.isFabricatedId()) {
+          // Right now, this only covers extern block elements
+          // For those, return nullptr because we can't yet compute
+          // the type of those.
+          // TODO: compute the appropriate 'extern proc' etc and return that
+          CHPL_ASSERT(id.fabricatedIdKind() == ID::ExternBlockElement);
+          return nullptr;
+        } else if (id.isEmpty()) {
+          // super could be a formal or variable; in that case, it shouldn't
+          // be turned into a this.super call. Here the ID is empty, so
+          // it doesn't refer to a variable -- fall back to trying this.super.
+          if (node->name() == USTR("super")) {
+            if (methodThisStack.empty()) {
+              // TODO: probably too strict; what about field initializers?
+              USR_FATAL(node->id(), "super cannot occur outside of a method");
             }
-
-            // figure out if it is field access
-            bool isFieldAccess = false;
-            const uast::Formal* parentMethodThis = nullptr;
-            if (parsing::idIsField(context, id)) {
-              // are we in a method? if so, what is the 'this' formal?
-              for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
-                if (it->ast != nullptr) {
-                  if (auto inFn = it->ast->toFunction()) {
-                    if (inFn->isMethod()) {
-                      parentMethodThis = inFn->thisFormal();
-                      isFieldAccess = true;
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-
-            // handle field access when only scope resolving
-            if (!shouldResolve(node) && isFieldAccess) {
-              // if we are just scope resolving, convert field
-              // access to this.field using a string literal to
-              // match production scope resolve
-              Symbol* thisSym = findConvertedSym(parentMethodThis->id());
-              INT_ASSERT(thisSym != nullptr);
-              auto ast = parsing::idToAst(context, id);
-              INT_ASSERT(ast && ast->isVariable());
-              auto var = ast->toVariable();
-              auto str = new_CStringSymbol(var->name().c_str());
-              CallExpr* ret = new CallExpr(".", thisSym, str);
-              return ret;
-            }
-
-            // handle other Identifiers
-            Symbol* sym = findConvertedSym(id);
-            if (sym == nullptr) {
-              // we will fix it later
-              sym = new TemporaryConversionSymbol(id);
-            }
-
-            SymExpr* se = new SymExpr(sym);
-            Expr* ret = se;
-
-            if (parsing::idIsParenlessFunction(context, id)) {
-              // it's a parenless function call so add a CallExpr
-              ret = new CallExpr(se);
-            }
-            if (isFieldAccess) {
-              INT_FATAL("resolving field access call not yet implemented");
-              // TODO: convert it to a call to the field accessor
-              // using the resolved TypedFnSignature from rr
-            }
-
-            // fixup, if any, will be noted in noteAllContainedFixups
-
+            Symbol* parentMethodConvertedThis = methodThisStack.back();
+            auto thisExpr = new SymExpr(parentMethodConvertedThis);
+            auto nameExpr = new_CStringSymbol(node->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
             return ret;
           }
+        } else if (!id.isEmpty()) {
+          // If we're referring to an associated type in an interface,
+          // leave it unconverted for now because the compiler does some
+          // mangling of the AST and breaks the "points-to" ID.
+          auto toAst = parsing::idToAst(context, id);
+          if (auto varLikeDecl = toAst->toVarLikeDecl()) {
+            if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
+              auto toParentId = parsing::idToParentId(context, id);
+              auto toParentAst = parsing::idToAst(context, toParentId);
+
+              if (toParentAst->isInterface()) {
+                // We're looking at an associated type.
+                Symbol* sym = new TemporaryConversionSymbol(id);
+                return new SymExpr(sym);
+              }
+            }
+          }
+
+          // figure out if it is field access
+          // TODO: Once we are using types for 'this', this should check
+          // that it is not a field access to some record/class unrelated
+          // to the current 'this' type.
+          bool isFieldAccess = false;
+          Symbol* parentMethodConvertedThis = nullptr;
+          if (parsing::idIsField(context, id)) {
+            if (methodThisStack.size() > 0) {
+              parentMethodConvertedThis = methodThisStack.back();
+              isFieldAccess = true;
+            }
+          }
+
+          // handle field access when only scope resolving
+          if (!shouldResolve(node) && isFieldAccess) {
+            // if we are just scope resolving, convert field
+            // access to this.field using a string literal to
+            // match production scope resolve
+            Symbol* thisSym = parentMethodConvertedThis;
+            INT_ASSERT(thisSym != nullptr);
+            auto ast = parsing::idToAst(context, id);
+            INT_ASSERT(ast && ast->isVariable());
+            auto var = ast->toVariable();
+            auto str = new_CStringSymbol(var->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisSym, str);
+            return ret;
+          }
+
+          // handle other Identifiers
+          Symbol* sym = findConvertedSym(id);
+          SymExpr* se = new SymExpr(sym);
+          Expr* ret = se;
+
+          if (parsing::idIsParenlessFunction(context, id)) {
+            // it's a parenless function call so add a CallExpr
+            ret = new CallExpr(se);
+          }
+          if (isFieldAccess) {
+            INT_FATAL("resolving field access call not yet implemented");
+            // TODO: convert it to a call to the field accessor
+            // using the resolved TypedFnSignature from rr
+          }
+
+          // fixup, if any, will be noted in noteAllContainedFixups
+
+          return ret;
         }
       }
     }
@@ -616,11 +640,11 @@ struct Converter {
     return DeferStmt::build(stmts);
   }
 
-  BlockStmt* visit(const uast::Local* node) {
+  Expr* visit(const uast::Local* node) {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto condition = convertExprOrNull(node->condition());
     if (condition) {
-      return buildLocalStmt(condition, body);
+      return buildThunk(buildConditionalLocalStmt, condition, body);
     } else {
       return buildLocalStmt(body);
     }
@@ -787,9 +811,9 @@ struct Converter {
 
     UniqueString filePath;
 
-   if (builderResult != nullptr) {
-     filePath = builderResult->filePath();
-   }
+    if (builderResult != nullptr) {
+      filePath = builderResult->filePath();
+    }
 
     // convert the included module
 
@@ -814,6 +838,9 @@ struct Converter {
 
     // allow production compiler to take action now that it is parsed
     noteParsedIncludedModule(mod, astr(filePath));
+
+    // note that the converted 'module include' is the same as 'mod'
+    noteConvertedSym(node, mod);
 
     return buildChapelStmt(new DefExpr(mod));
   }
@@ -1107,13 +1134,12 @@ struct Converter {
         noteConvertedSym(expr, svs);
         addForallIntent(ret, svs);
       } else {
-        auto r = symStack.back().resolved;
-        if (r != nullptr) {
-          const resolution::ResolvedExpression* rr = r->byAstOrNull(expr);
-          if (rr != nullptr) {
-            if (isTaskVarDecl) {
-              noteConvertedSym(expr, svs);
-            } else {
+        if (isTaskVarDecl) {
+          noteConvertedSym(expr, svs);
+        } else {
+          auto r = symStack.back().resolved;
+          if (r != nullptr) {
+            if (auto rr = r->byAstOrNull(expr)) {
               noteConvertedSym(expr, findConvertedSym(rr->toId()));
             }
           }
@@ -1515,7 +1541,7 @@ struct Converter {
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
-  BlockStmt* visit(const uast::Coforall* node) {
+  Expr* visit(const uast::Coforall* node) {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
@@ -1525,8 +1551,7 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
-    return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
-                                 zippered);
+    return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
   Expr* visit(const uast::For* node) {
@@ -2310,36 +2335,118 @@ struct Converter {
 
   /// ForwardingDecl ///
   Expr* visit(const uast::ForwardingDecl* node) {
-    // ForwardingDecl may contain a VisibilityClause, an Expression,
-    // or a Variable declaration
-    if (node->expr()->isVisibilityClause()){
-      auto child = node->expr()->toVisibilityClause();
-      bool except=false;
-      if (child->limitationKind() == uast::VisibilityClause::ONLY) {
-        except=false;
+    // ForwardingDecl may contain a VisibilityClause and
+    // then an Expression or a Variable declaration
+
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+    UniqueString varName;
+
+    // First, if we find a variable declaration, add that to the block
+    if (auto var = node->expr()->toVariable()) {
+      auto child = node->expr()->toVariable();
+      BlockStmt* varBlock = (BlockStmt*)visit(child);
+      // Remove the END_OF_STATEMENT marker, not used for fields
+      Expr* last = varBlock->body.last();
+      if (last && isEndOfStatementMarker(last)) {
+        last->remove();
       }
-      else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
-        except=true;
+      // Add the DefExpr for the VarSymbol to the ret Block
+      for_alist(tmp, varBlock->body) {
+        ret->insertAtTail(tmp->remove());
       }
-      // convert the AstList of renames
-      std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
-      for (auto lim:child->limitations()) {
-        PotentialRename* name = convertRename(lim);
-        names->push_back(name);
-      }
-      return buildForwardingStmt(convertExprOrNull(child->symbol()),
-                                 names, except);
-    } else if (node->expr()->isVariable()) {
-        auto child = node->expr()->toVariable();
-        return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier()
-               || node->expr()->isFnCall()
-               || node->expr()->isOpCall()) {
-      return buildForwardingStmt(convertExprOrNull(node->expr()));
+      varName = var->name();
     }
 
-    INT_FATAL("Failed to convert ForwardingDecl");
-    return nullptr;
+    // Now construct the method (always a primary method) for the
+    // forwarding part
+    const char* name = astr("chpl_forwarding_expr", istr(++delegateCounter));
+    if (!varName.isEmpty()) {
+      name = astr(name, "_", varName.c_str());
+    }
+
+    FnSymbol* fn = new FnSymbol(name);
+
+    fn->addFlag(FLAG_INLINE);
+    fn->addFlag(FLAG_MAYBE_REF);
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+
+    // compute the 'this' formal type
+    const uast::AggregateDecl* decl = nullptr;
+    INT_ASSERT(symStack.size() > 0);
+    {
+      SymStackEntry& last = symStack.back();
+      INT_ASSERT(last.ast != nullptr);
+      decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    }
+    // TODO: use the resolved type for the contained declaration
+    auto thisTypeExpr = new UnresolvedSymExpr(decl->name().c_str());
+
+    // add a 'this' formal
+    ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this",
+                                   dtUnknown, thisTypeExpr);
+    fn->_this = arg;
+
+    fn->insertFormalAtTail(new DefExpr(new ArgSymbol(INTENT_BLANK,
+                                                 "_mt",
+                                                 dtMethodToken)));
+    fn->insertFormalAtTail(new DefExpr(arg));
+
+    // note that we're in a forwarding declaration working with 'fn'
+    // to get the field accesses to convert correctly
+    methodThisStack.push_back(fn->_this);
+
+    Expr* expr = nullptr;
+
+    std::vector<PotentialRename*>* visNames = nullptr;
+    bool except = false;
+    if (auto vis = node->expr()->toVisibilityClause()) {
+      // compute the visibility clauses
+      if (vis->limitationKind() == uast::VisibilityClause::EXCEPT) {
+        except = true;
+      }
+      // convert the AstList of renames
+      visNames = new std::vector<PotentialRename*>;
+      for (auto lim : vis->limitations()) {
+        PotentialRename* rename = convertRename(lim);
+        visNames->push_back(rename);
+      }
+      // compute the forwarded-to expression
+      expr = convertExprOrNull(vis->symbol());
+    } else {
+      // convert the forwarding expression & insert it into fn
+      if (!varName.isEmpty()) {
+        // forwarding var bla;
+        expr = new UnresolvedSymExpr(varName.c_str());
+      } else {
+        // forwarding someExpression();
+        expr = convertExprOrNull(node->expr());
+      }
+    }
+
+    // insert the forwarding expression into the forwarding method
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+
+    // note, no longer working within forwarding method 'fn'
+    methodThisStack.pop_back();
+
+    // Add the forwarding target method to the ret Block
+    DefExpr* fnDef = new DefExpr(fn);
+    ret->insertAtTail(fnDef);
+
+    // Create a ForwardingStmt to help the production resolver
+    // It includes handling 'only' and 'except'
+    ForwardingStmt* forwardingStmt = nullptr;
+    if (node->expr()->isVisibilityClause()) {
+      forwardingStmt = buildForwardingStmt(fnDef, visNames, except);
+    } else {
+      forwardingStmt = buildForwardingStmt(fnDef);
+    }
+    ret->insertAtTail(forwardingStmt);
+
+    return ret;
   }
 
   /// NamedDecls ///
@@ -2384,24 +2491,39 @@ struct Converter {
             name == USTR("<<="));
   }
 
-  const char* createLambdaName(void) {
+  static const char*
+  createAnonymousRoutineName(const uast::Function* node) {
+    std::ignore = node;
+
     static const int maxDigits = 100;
     static unsigned int nextId = 0;
+    static const char* prefix = "chpl_anon";
     char buf[maxDigits];
 
     if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
 
-    // Use snprintf to prevent buffer overflow if there are too many lambdas.
-    int n = snprintf(buf, (size_t)maxDigits, "chpl_lambda_%i", nextId++);
+    auto kind = astr(uast::Function::kindToString(node->kind()));
+
+    // Use sprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, (size_t) maxDigits, "%s_%s_%i", prefix, kind,
+                     nextId++);
     if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
 
     auto ret = astr(buf);
     return ret;
   }
 
-  const char* convertFunctionNameAndAstr(UniqueString name,
-                                         uast::Function::Kind kind) {
-    if (kind == uast::Function::LAMBDA) return createLambdaName();
+  static const char*
+  convertFunctionNameAndAstr(const uast::Function* node) {
+    auto name = node->name();
+    auto kind = node->kind();
+
+    if (node->isAnonymous()) return createAnonymousRoutineName(node);
+
+    if (name.isEmpty()) {
+      INT_ASSERT(kind == uast::Function::PROC);
+      return nullptr;
+    }
 
     const char* ret = nullptr;
     if (name == USTR("by")) {
@@ -2561,6 +2683,7 @@ struct Converter {
 
             convertedReceiver = toArgSymbol(conv->sym);
             INT_ASSERT(convertedReceiver);
+            methodThisStack.push_back(convertedReceiver);
 
             conv->sym->addFlag(FLAG_ARG_THIS);
 
@@ -2602,8 +2725,7 @@ struct Converter {
       }
     }
 
-    const char* convName = convertFunctionNameAndAstr(node->name(),
-                                                      node->kind());
+    const char* convName = convertFunctionNameAndAstr(node);
 
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
@@ -2638,8 +2760,12 @@ struct Converter {
         setupTypeIntentArg(toArgSymbol(fn->_this));
       }
 
-    } else if (node->kind() == uast::Function::LAMBDA) {
+    } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+      fn->addFlag(FLAG_ANONYMOUS_FN);
+      if (node->kind() == uast::Function::LAMBDA) {
+        fn->addFlag(FLAG_LEGACY_LAMBDA);
+      }
     }
 
     Expr* retType = nullptr;
@@ -2702,6 +2828,9 @@ struct Converter {
 
     // pop the function from the symStack
     popFromSymStack(node, fn);
+    if (convertedReceiver) {
+      methodThisStack.pop_back();
+    }
 
     return fn;
   }
@@ -2843,6 +2972,8 @@ struct Converter {
   Expr* visit(const uast::FunctionSignature* node) {
     FnSymbol* fn = convertFunctionSignature(node);
     fn->addFlag(FLAG_ANONYMOUS_FN);
+    fn->addFlag(FLAG_NO_FN_BODY);
+    INT_ASSERT(fn->isAnonymous() && fn->isSignature());
     auto ret = new DefExpr(fn);
     return ret;
   }
@@ -3186,49 +3317,63 @@ struct Converter {
     }
   }
 
+  static bool isEnsureDomainExprCall(Expr* expr) {
+    if (auto call = toCallExpr(expr)) {
+      return call->isNamed("chpl__ensureDomainExpr");
+    }
+    return false;
+  }
+
   CallExpr* convertArrayType(const uast::BracketLoop* node,
                              bool isFormalType=false) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
 
+    const uast::TypeQuery* lastTypeQuery = nullptr;
+    int numTypeQueries = 0;
     Expr* domActuals = nullptr;
+    bool isEmptyDomain = false;
 
     if (auto iterand = node->iterand()) {
-      auto astForIterand = iterand;
 
+      // Most domains can be converted, but some require special attention.
       if (auto dom = iterand->toDomain()) {
 
-        // If there are no domain expressions, use 'nil'.
+        // If there are no domain expressions, use 'nil'. TODO: 'dtAny'?
         if (!dom->numExprs()) {
           domActuals = new SymExpr(gNil);
+          isEmptyDomain = true;
 
-        // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
-        } else if (dom->numExprs() > 1) {
-          CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
-          domActuals = actualsList;
-
-          for (auto expr : dom->exprs()) {
-            actualsList->insertAtTail(convertAST(expr));
-          }
-
-          domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
-
-        // Use a single argument directly.
+        // Otherwise, check for and sanitize type queries.
         } else {
-          astForIterand = dom->expr(0);
+          for (int i = 0; i < dom->numExprs(); i++) {
+            if (auto tq = dom->expr(i)->toTypeQuery()) {
+              numTypeQueries += 1;
+              lastTypeQuery = tq;
+            }
+          }
         }
+      } else if (auto tq = iterand->toTypeQuery()) {
+        numTypeQueries = 1;
+        lastTypeQuery = tq;
       }
 
-      if (domActuals == nullptr) {
-        auto expr = astForIterand;
-        domActuals = convertAST(expr);
+      CHPL_ASSERT(numTypeQueries <= 1);
 
-        // But wrap it if it is not a type query for a formal type.
-        bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
-        if (!isFormalTypeQuery) {
-          domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
-        }
+      // If there is a type query, extract it from the domain.
+      if (lastTypeQuery) {
+        CHPL_ASSERT(isFormalType);
+        CHPL_ASSERT(!domActuals);
+        domActuals = convertAST(lastTypeQuery);
+      }
+
+      // Make sure we have something to work with.
+      domActuals = !domActuals ? convertAST(iterand) : domActuals;
+
+      if (!isEnsureDomainExprCall(domActuals) && numTypeQueries == 0 &&
+          !isEmptyDomain) {
+        domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
 
@@ -3316,6 +3461,9 @@ struct Converter {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
           auto convArrayType = convertArrayType(bkt);
+
+          // Use this builder because it is performing checks for skyline
+          // arrays amongst other things (that are too arcane for me).
           initExpr = buildForallLoopExprFromArrayType(convArrayType);
         } else {
           initExpr = convertAST(ie);
@@ -3523,31 +3671,27 @@ static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
 }
 
 void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
+  if (auto r = currentResolutionResult()) {
+    // Get the type of the variable itself
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
+    if (rr != nullptr) {
+      types::QualifiedType qt = rr->type();
+      if (!qt.isUnknown()) {
+        printf("SETTING VARIABLE TYPE!!\n");
 
-    if (r != nullptr) {
-      // Get the type of the variable itself
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
-      if (rr != nullptr) {
-        types::QualifiedType qt = rr->type();
-        if (!qt.isUnknown()) {
-          printf("SETTING VARIABLE TYPE!!\n");
+        // Set a type for the variable
+        sym->type = convertType(qt);
 
-          // Set a type for the variable
-          sym->type = convertType(qt);
+        // Set the Qualifier
+        Qualifier q = convertQualifier(qt.kind());
+        if (q != QUAL_UNKNOWN)
+          sym->qual = q;
 
-          // Set the Qualifier
-          Qualifier q = convertQualifier(qt.kind());
-          if (q != QUAL_UNKNOWN)
-            sym->qual = q;
-
-          // Set the param value for the variable in paramMap, if applicable
-          if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
-            if (qt.hasParamPtr()) {
-              Symbol* val = convertParam(qt);
-              paramMap.put(sym, val);
-            }
+        // Set the param value for the variable in paramMap, if applicable
+        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+          if (qt.hasParamPtr()) {
+            Symbol* val = convertParam(qt);
+            paramMap.put(sym, val);
           }
         }
       }
@@ -3556,33 +3700,29 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
 }
 
 void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
-
-    if (r != nullptr) {
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
-      if (rr != nullptr) {
-        const auto& candidates = rr->mostSpecific();
-        int nBest = candidates.numBest();
-        if (nBest == 0) {
-          // nothing to do
-        } else if (nBest > 1) {
-          INT_FATAL("return intent overloading not yet handled");
-        } else if (nBest == 1) {
-          const resolution::TypedFnSignature* sig = candidates.only();
-          Symbol* fn = findConvertedFn(sig);
-          if (fn == nullptr) {
-            // we will fix it later
-            fn = new TemporaryConversionSymbol(sig);
-          }
-
-          // TODO: Do we need to remove the old baseExpr?
-          SymExpr* se = new SymExpr(fn);
-          expr->baseExpr = se;
-          parent_insert_help(expr, expr->baseExpr);
-
-          // fixup, if any, will noted in noteAllContainedFixups
+  if (auto r = currentResolutionResult()) {
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
+    if (rr != nullptr) {
+      const auto& candidates = rr->mostSpecific();
+      int nBest = candidates.numBest();
+      if (nBest == 0) {
+        // nothing to do
+      } else if (nBest > 1) {
+        INT_FATAL("return intent overloading not yet handled");
+      } else if (nBest == 1) {
+        const resolution::TypedFnSignature* sig = candidates.only();
+        Symbol* fn = findConvertedFn(sig);
+        if (fn == nullptr) {
+          // we will fix it later
+          fn = new TemporaryConversionSymbol(sig);
         }
+
+        // TODO: Do we need to remove the old baseExpr?
+        SymExpr* se = new SymExpr(fn);
+        expr->baseExpr = se;
+        parent_insert_help(expr, expr->baseExpr);
+
+        // fixup, if any, will noted in noteAllContainedFixups
       }
     }
   }
@@ -3646,7 +3786,9 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::EnumType:   return convertEnumType(qt);
     case typetags::FunctionType:   return convertFunctionType(qt);
 
+    case typetags::ArrayType: return dtUnknown;
     case typetags::BasicClassType:   return convertBasicClassType(qt);
+    case typetags::DomainType:   return dtUnknown;
     case typetags::RecordType:   return convertRecordType(qt);
     case typetags::TupleType:   return convertTupleType(qt);
     case typetags::UnionType:   return convertUnionType(qt);
@@ -3985,8 +4127,15 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // can copy the AST freely.
 
   if (depth > 0) {
-    if (isModuleSymbol(ast) || isFnSymbol(ast)) {
+    if (isModuleSymbol(ast)) {
       return;
+    }
+    if (auto fn = toFnSymbol(ast)) {
+      if (!fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+        // ignore functions that are created from building expressions
+        // but aren't represented in the uAST
+        return;
+      }
     }
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (isAggregateType(ts->type)) {
@@ -4056,18 +4205,30 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
     CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
-    printf("Exiting %s %s\n",
-           astName(ast).c_str(), ast->id().str().c_str());
+    int id = 0;
+    if (ret != nullptr) id = ret->id;
+
+    printf("Exiting %s %s [%i]\n",
+           astName(ast).c_str(), ast->id().str().c_str(), id);
   }
   symStack.pop_back();
+}
+const resolution::ResolutionResultByPostorderID*
+Converter::currentResolutionResult() {
+  const resolution::ResolutionResultByPostorderID* r = nullptr;
+  if (symStack.size() > 0) {
+    r = symStack.back().resolved;
+  }
+  return r;
 }
 
 void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
                                            Symbol* sym,
                                            bool trace) {
   if (trace) {
-    printf("Converted sym %s %s and noting it in %s\n",
+    printf("Converted sym %s %s to %s[%i] and noting it in %s\n",
            astName(ast).c_str(), ast->id().str().c_str(),
+           sym->name, sym->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4079,9 +4240,10 @@ void ConvertedSymbolsMap::noteConvertedFn(
                                 FnSymbol* fn,
                                 bool trace) {
   if (trace) {
-    printf("Converted fn %s %s and noting it in %s\n",
+    printf("Converted fn %s %s to %s[%i] and noting it in %s\n",
            sig->untyped()->name().c_str(),
            sig->untyped()->id().str().c_str(),
+           fn->name, fn->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4092,7 +4254,8 @@ void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
                                                ConvertedSymbolsMap* cur,
                                                bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            id.str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4106,7 +4269,8 @@ void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
                                 ConvertedSymbolsMap* cur,
                                 bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            sig->untyped()->id().str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4158,7 +4322,7 @@ Symbol* ConvertedSymbolsMap::findConvertedSym(ID id, bool trace) {
            id.str().c_str(), inSymbolId.str().c_str());
   }
 
-  return nullptr;
+  return new TemporaryConversionSymbol(id);
 }
 
 FnSymbol* ConvertedSymbolsMap::findConvertedFn(
@@ -4225,7 +4389,7 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
     INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
-    if (sym == nullptr) {
+    if (isTemporaryConversionSymbol(sym)) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
@@ -4289,7 +4453,7 @@ convertToplevelModule(chpl::Context* context,
   astlocMarker markAstLoc(mod->id());
   Converter c(context, modTag);
 
-  c.canScopeResolve = fDynoCompilerLibrary;
+  c.canScopeResolve = fDynoScopeResolve;
   c.trace = fDynoDebugTrace;
 
   ModuleSymbol* ret = c.convertModule(mod);
@@ -4312,6 +4476,7 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  // Fix method receivers
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this == nullptr) continue; // not a method
 
@@ -4326,12 +4491,22 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+    if (thunk->inTree()) {
+      SET_LINENO(thunk);
+      thunk->replace(thunk->force());
+    }
+  }
+
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {
     forv_Vec(SymExpr, se, gSymExprs) {
       if (isTemporaryConversionSymbol(se->symbol())) {
         INT_ASSERT(!se->inTree());
       }
+    }
+    forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+      INT_ASSERT(!thunk->inTree());
     }
   }
 

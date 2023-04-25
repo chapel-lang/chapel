@@ -6,7 +6,7 @@ class Parent {
 class HasGenericFields : Parent {
   param stridable : bool;
 
-  proc chpl__promotionType() type return idxType;
+  proc chpl__promotionType() type do return idxType;
 
   iter these() {
     var i : idxType;
@@ -20,7 +20,7 @@ writeln(h + 1);
 
 
 class NoGenericFields : Parent {
-  proc chpl__promotionType() type return idxType;
+  proc chpl__promotionType() type do return idxType;
 
   iter these() {
     var i : idxType;

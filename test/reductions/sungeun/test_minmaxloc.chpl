@@ -19,7 +19,7 @@ class lastmaxloc: ReduceScanOp {
   type eltType;
   var state: LastLocState(eltType);
 
-  proc identity  return new LastLocState(eltType, startMin=true);
+  proc identity do  return new LastLocState(eltType, startMin=true);
 
   proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
 
@@ -41,16 +41,16 @@ class lastmaxloc: ReduceScanOp {
       accumulate(otherOp.state);
   }
 
-  proc generate()  return state.value;
+  proc generate() do  return state.value;
 
-  proc clone()     return new unmanaged lastmaxloc(eltType = eltType);
+  proc clone() do     return new unmanaged lastmaxloc(eltType = eltType);
 }
 
 class lastminloc: ReduceScanOp {
   type eltType;
   var state: LastLocState(eltType);
 
-  proc identity  return new LastLocState(eltType, startMin=false);
+  proc identity do  return new LastLocState(eltType, startMin=false);
 
   proc accumulate(otherSt) { accumulateOntoState(this.state, otherSt.value); }
 
@@ -72,9 +72,9 @@ class lastminloc: ReduceScanOp {
       accumulate(otherOp.state);
   }
 
-  proc generate()  return state.value;
+  proc generate() do  return state.value;
 
-  proc clone()     return new unmanaged lastminloc(eltType = eltType);
+  proc clone() do     return new unmanaged lastminloc(eltType = eltType);
 }
 
 config const seed = 889;

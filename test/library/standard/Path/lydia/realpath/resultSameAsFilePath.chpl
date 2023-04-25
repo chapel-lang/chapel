@@ -5,7 +5,7 @@ var originalPath = "resultSameAsFilePath.chpl";
 var firstRun = realPath(originalPath);
 // firstRun will be an exact path
 // use the exact path to open a file
-var f = open(firstRun, iomode.r);
+var f = open(firstRun, ioMode.r);
 
 var secondTimeThrough = realPath(f);
 // Nothing should need to be done to f's path, so the result of that

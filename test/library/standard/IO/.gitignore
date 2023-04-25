@@ -3,3 +3,4 @@ openwriterEndBug.txt
 fileWriterLimited.txt
 fileWriterBadRegion.txt
 writeBinary/*.bin
+writeStringAndBytes/*.txt

@@ -146,6 +146,10 @@ var branchInfo = [
                   { "release": "1.29.0", 
                     "releaseDate": "2022-12-15",
                     "branchDate" : "2022-12-09",
+                    "revision" : -1},
+                  { "release": "1.30.0", 
+                    "releaseDate": "2023-03-23",
+                    "branchDate" : "2023-03-17",
                     "revision" : -1}
                     
                   ];
@@ -542,6 +546,12 @@ function computeGitHubLinks(text) {
   var re = /\(#([0-9]+)\)/gi;
   text = text.replace(re, function(m, num) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+
+  var private_re = /\(Cray\/chapel-private#([0-9]+)\)/gi;
+  text = text.replace(private_re, function(m, num) {
+    var url = "https://github.com/Cray/chapel-private/issues/" + num;
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
 

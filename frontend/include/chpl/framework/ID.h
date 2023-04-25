@@ -34,6 +34,12 @@ class Context;
   All AST nodes have IDs.
  */
 class ID final {
+ public:
+  enum FabricatedIdKind {
+    // all of these need to be <= -2
+    ExternBlockElement = -2,
+  };
+
  private:
   // A path to the symbol, e.g. MyModule#0.MyFunction#1
   // Note that this is escaped (\. and \# are not the same as . and #)
@@ -41,11 +47,13 @@ class ID final {
 
   // Within that symbol, what is the number of this node in
   // a postorder traversal?
-  // The symbol itself has ID -1.
+  // The symbol itself has postOrderId -1.
+  // Generated symbols have postOrderId <= -2.
   int postOrderId_ = -1;
 
-  // How many of the previous ids would be considered within
-  // this node?
+  // How many of the previous ids would be considered within this node?
+  // Note that this field is not compared or hashed, so IDs without it
+  // can be used as a key.
   int numChildIds_ = 0;
 
  public:
@@ -78,6 +86,35 @@ class ID final {
     (as with Function or Module) this will return -1.
    */
   int postOrderId() const { return postOrderId_; }
+
+  /**
+    Some IDs are introduced during compilation and don't represent
+    something that is directly contained within the source code.
+    This function will return 'true' for such IDs.
+   */
+  bool isFabricatedId() const { return postOrderId_ <= -2; }
+
+  FabricatedIdKind fabricatedIdKind() const {
+    CHPL_ASSERT(isFabricatedId());
+    return (FabricatedIdKind) postOrderId_;
+  }
+
+  /**
+    Create an ID that represents something that isn't directly contained
+    in the source code but rather something created during compilation.
+    In order to keep postorder ID numbering intact, there are some constraints:
+      * Such an ID can only be added within another ID that is a symbol
+        (e.g. within a Module, Function, Record; but not within a Block).
+      * Such an ID can itself only be a symbol
+
+    Also note that even though a fabricated ID will report as being
+    contained within another ID (with ID::contains), uAST traversal
+    will never find it.
+   */
+  static ID fabricateId(Context* context,
+                        ID parentSymbolId,
+                        UniqueString name,
+                        FabricatedIdKind kind);
 
   /**
     Return the number of ids contained in this node, not including itself. In
@@ -154,7 +191,7 @@ class ID final {
   expandSymbolPath(Context* context, UniqueString symbolPath);
 
   bool operator==(const ID& other) const {
-    (void)numChildIds_; // quiet nextLinter
+    (void)numChildIds_; // this field is intentionally not compared
     return symbolPath_ == other.symbolPath_ &&
            postOrderId_ == other.postOrderId_;
   }
@@ -181,7 +218,7 @@ class ID final {
   }
 
   size_t hash() const {
-    (void)numChildIds_; // quiet nextLinter
+    (void)numChildIds_; // this field is intentionally not hashed
     std::hash<int> hasher;
     return hash_combine(symbolPath_.hash(), hasher(postOrderId_));
   }
@@ -196,15 +233,31 @@ class ID final {
     this->symbolPath_.mark(context);
   }
 
-  static bool update(chpl::ID& keep, chpl::ID& addin);
+  static bool update(ID& keep, ID& addin);
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond
 
+  /** Return a string encoding this ID */
   std::string str() const;
+
+  /** The inverse of str() -- converts a string encoding an ID to an ID */
+  static ID fromString(Context* context, const char* idStr);
+
+  void serialize(Serializer& ser) const {
+    ser.write(symbolPath_);
+    ser.write(postOrderId_);
+    ser.write(numChildIds_);
+  }
+  static ID deserialize(Deserializer& des) {
+    auto path = des.read<UniqueString>();
+    auto poi = des.read<int>();
+    auto nci = des.read<int>();
+    return ID(path, poi, nci);
+  }
 };
 
 // docs are turned off for this as a workaround for breathe errors

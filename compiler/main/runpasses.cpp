@@ -40,8 +40,8 @@ struct PassInfo {
 };
 
 // These entries should be kept in the same order as those in the pass list
-#define LOG_parse                              'p'
-#define LOG_checkParsed                        LOG_NEVER
+#define LOG_parseAndConvertUast                'p'
+#define LOG_checkUast                          LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -89,8 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parse),                   // parse files and create AST
-  RUN(checkParsed),             // checks semantics of parsed AST
+  RUN(parseAndConvertUast),     // parse files and create AST
+  RUN(checkUast),               // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -151,18 +151,21 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
+static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+
 static void runPass(PhaseTracker& tracker, size_t passIndex);
 
-void runPasses(PhaseTracker& tracker) {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
-  setupLogfiles();
-
-  if (printPasses == true || printPassesFile != 0) {
-    tracker.ReportPass();
+// Set up and validate flags-specified pass to stop after.
+static void setupStopAfterPass() {
+  // --parse-only conflicts with otherwise specified pass to stop after
+  if (fParseOnly) {
+    if (stopAfterPass[0]) {
+      USR_FATAL("cannot provide both parse-only and stop after pass flags");
+    }
+    strcpy(stopAfterPass, "checkUast");
   }
 
-  // verify that user-specified pass to stop after actually exists
+  // ensure pass to stop after exists
   if (stopAfterPass[0]) {
     bool stopAfterPassValid = false;
     for (size_t i = 0; i < passListSize; i++) {
@@ -176,6 +179,17 @@ void runPasses(PhaseTracker& tracker) {
                 stopAfterPass);
     }
   }
+}
+
+void runPasses(PhaseTracker& tracker) {
+
+  setupLogfiles();
+
+  if (printPasses == true || printPassesFile != 0) {
+    tracker.ReportPass();
+  }
+
+  setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
     runPass(tracker, i);
@@ -251,8 +265,6 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 // This routine also verifies that each non-NUL flag is unique.
 
 void initPassesForLogging() {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
   for (size_t i = 0; i < passListSize; i++) {
     PassInfo* pass = &sPassList[i];
 

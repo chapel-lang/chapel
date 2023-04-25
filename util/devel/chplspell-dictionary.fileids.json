@@ -244,6 +244,9 @@
   "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/parser/parser.cpp"
   ],
+  "1c3aed2e-ac5b-11ed-b67e-4d191cd16eac": [
+    "compiler/passes/InitErrorHandling.cpp"
+  ],
   "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/addInitGuards.cpp"
   ],
@@ -294,6 +297,9 @@
   ],
   "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
     "compiler/resolution/expandVarArgs.cpp"
+  ],
+  "19b44eb2-d463-11ed-ae82-c11fabc62016": [
+    "compiler/resolution/fcf-support.cpp"
   ],
   "c50323ec-5a60-11ed-baec-ef9f14c5b529": [
     "compiler/resolution/firstClassFunctions.cpp"
@@ -458,6 +464,9 @@
   "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/expressions.rst"
   ],
+  "92abfbbc-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/language/spec/generics.rst"
+  ],
   "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/interoperability.rst"
   ],
@@ -496,6 +505,12 @@
   ],
   "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/platforms/cray.rst"
+  ],
+  "41875858-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/platforms/raspberrypi.rst"
+  ],
+  "73f04412-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/technotes/attributes.rst"
   ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/dsi.rst"
@@ -584,14 +599,26 @@
   "9a17c742-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/all-global-strings.h"
   ],
+  "645372f0-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/framework/error-classes-list.h"
+  ],
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
+  "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/parsing/parser-error-classes-list.h"
+  ],
+  "5d6b5c0a-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/parsing/parser-error.h"
+  ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/include/chpl/parsing/parser-stats.h"
+  ],
+  "5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/resolution/scope-types.h"
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/AnyType.h"
@@ -947,6 +974,9 @@
   "495be19a-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/ParserContextImpl.h"
   ],
+  "068304b4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/parsing/parser-error-classes-list.cpp"
+  ],
   "8af2955e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parser-help.h"
   ],
@@ -962,8 +992,14 @@
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parsing-queries.cpp"
   ],
+  "8d09636e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/Resolver.cpp"
+  ],
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/Resolver.h"
+  ],
+  "a1123384-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/resolution/VarScopeVisitor.h"
   ],
   "fcb9430e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/can-pass.cpp"
@@ -974,11 +1010,17 @@
   "ffedfa58-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/prims.cpp"
   ],
+  "13e186e4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/resolution-error-classes-list.cpp"
+  ],
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/resolution-queries.cpp"
   ],
   "8eccc1ce-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/resolution/scope-queries.cpp"
+  ],
+  "806baa5e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/scope-types.cpp"
   ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/ClassType.cpp"
@@ -992,6 +1034,9 @@
   "202a65c2-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/uast/Builder.cpp"
   ],
+  "a33853a2-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/uast/BuilderResult.cpp"
+  ],
   "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/uast/Pragma.cpp"
   ],
@@ -1001,8 +1046,14 @@
   "079d1948-12c1-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/uast/post-parse-checks.cpp"
   ],
+  "689a30e2-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/util/chplenv.cpp"
+  ],
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/filesystem.cpp"
+  ],
+  "e091e076-d463-11ed-ae82-c11fabc62016": [
+    "frontend/lib/util/filtering.cpp"
   ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/subprocess.cpp"
@@ -1259,6 +1310,9 @@
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
   ],
+  "cb0197c8-d464-11ed-ae82-c11fabc62016": [
+    "modules/standard/MemMove.chpl"
+  ],
   "bd895c06-e3ac-11ec-a8be-cd81bce0efc4": [
     "modules/standard/OS.chpl"
   ],
@@ -1285,6 +1339,9 @@
   ],
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
+  ],
+  "a89bd786-945c-11ed-b9f6-7def56659a0b": [
+    "modules/standard/Version.chpl"
   ],
   "d0707fc2-f562-11eb-bb15-35b7469d4b43": [
     "runtime/etc/src/mli/chpl-mli-common-runtime.c"
@@ -1318,6 +1375,12 @@
   ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
+  ],
+  "2879db88-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/cuda/chpl-gpu-gen-includes.h"
+  ],
+  "302b726a-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/rocm/chpl-gpu-gen-includes.h"
   ],
   "83d35d38-d6dc-11ea-8acb-843835579daa": [
     "runtime/include/mem/jemalloc/chpl-mem-impl.h"
@@ -1370,6 +1433,9 @@
   ],
   "607e4bce-3010-11ed-b71b-d7492178b4dc": [
     "runtime/src/gpu/cuda/gpu-cuda.c"
+  ],
+  "31c40b14-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/src/gpu/rocm/gpu-rocm.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"

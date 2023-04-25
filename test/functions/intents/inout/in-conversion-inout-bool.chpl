@@ -5,7 +5,7 @@ proc h(in arg: bool) {
 
 proc test1() {
   writeln("test1");
-  var x: bool(8) = false;
+  var x: bool = false;
   h(x);
   writeln(x);
 }
@@ -18,9 +18,8 @@ proc i(inout arg: bool) {
 
 proc test2() {
   writeln("test2");
-  var x: bool(8) = false;
-  i(x); // works because bool(8) can be converted to bool, and then
-        // x: bool(8) can be assigned to a bool
+  var x: bool = false;
+  i(x);
   writeln(x);
 }
 test2();

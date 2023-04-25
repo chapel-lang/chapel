@@ -45,22 +45,22 @@ std::string Interface::dumpChildLabelInner(int i) const {
 
 
 owned<Interface> Interface::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility visibility,
                                   UniqueString name,
                                   bool isFormalListPresent,
                                   AstList formals,
                                   AstList body) {
   AstList children;
-  int attributesChildNum = AstNode::NO_CHILD;
+  int attributeGroupChildNum = AstNode::NO_CHILD;
   int interfaceFormalsChildNum = AstNode::NO_CHILD;
   int numInterfaceFormals = 0;
   int bodyChildNum = AstNode::NO_CHILD;
   int numBodyStmts = 0;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = children.size();
-    children.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = children.size();
+    children.push_back(std::move(attributeGroup));
   }
 
   if (formals.size() != 0) {
@@ -75,7 +75,7 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
     for (auto& ast : body) children.push_back(std::move(ast));
   }
 
-  Interface* ret = new Interface(std::move(children), attributesChildNum,
+  Interface* ret = new Interface(std::move(children), attributeGroupChildNum,
                                  visibility,
                                  name,
                                  interfaceFormalsChildNum,

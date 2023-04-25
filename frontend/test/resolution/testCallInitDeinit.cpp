@@ -316,7 +316,7 @@ static void test3a() {
     {
       {AssociatedAction::DEFAULT_INIT, "x",        ""},
       {AssociatedAction::DEFAULT_INIT, "y",        ""},
-      {AssociatedAction::ASSIGN,       "M.test@7", ""},
+      // assignment x=y is resolved but not as an associated action
       {AssociatedAction::DEINIT,       "M.test@8", "y"},
       {AssociatedAction::DEINIT,       "M.test@8", "x"}
     });

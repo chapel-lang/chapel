@@ -85,12 +85,12 @@ proc test_strftime() {
 }
 
 proc test_resolution_info() {
-  proc valIsType(type t, val: t) param return true;
-  proc valIsType(type t, val) param return false;
+  proc valIsType(type t, val: t) param do return true;
+  proc valIsType(type t, val) param do return false;
 
   assert(valIsType(time, time.min));
   assert(valIsType(time, time.max));
-  assert(valIsType(timedelta, time.resolution));
+  assert(valIsType(timeDelta, time.resolution));
   assert(time.max > time.min);
 }
 

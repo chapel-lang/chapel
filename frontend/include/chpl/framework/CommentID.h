@@ -42,6 +42,15 @@ class CommentID {
 
   /** Return the index of the comment id */
   int index() const { return index_; }
+
+  void serialize(Serializer& ser) const {
+    ser.write<int32_t>(index_);
+  }
+
+  static CommentID deserialize(Deserializer& des) {
+    int val = (int)des.read<int32_t>();
+    return CommentID(val);
+  }
 };
 
 } // end namespace chpl

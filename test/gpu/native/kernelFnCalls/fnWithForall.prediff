@@ -1,4 +1,4 @@
 #!/bin/sh
 
 sort $2 > $2.tmp
-mv $2.tmp $2
+grep -v "modules/internal" $2.tmp >$2  # ignore launches from internal modules

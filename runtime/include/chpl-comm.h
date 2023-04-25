@@ -185,6 +185,12 @@ int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 int32_t chpl_comm_getMaxThreads(void);
 
 
+// initialization required to enable comm calls made by the topo layer
+// during its initialization, specifically:
+//  * chpl_get_num_locales_on_node
+//
+void chpl_comm_pre_topo_init(void);
+
 //
 // initializes the communications package
 //   set chpl_nodeID and chpl_numNodes
@@ -194,8 +200,15 @@ int32_t chpl_comm_getMaxThreads(void);
 void chpl_comm_init(int *argc_p, char ***argv_p);
 
 //
-// Allow the communication layer to do any secondary initialization it needs
-// to, after the memory layer is initialized.
+// Allow the communication layer to do any additional initialization
+// after the topology layer has been fully initialized but before the
+// memory layer is initialized.
+//
+void chpl_comm_pre_mem_init(void);
+
+//
+// Allow the communication layer to do any additional initialization
+// after the memory layer is initialized.
 //
 void chpl_comm_post_mem_init(void);
 
@@ -581,17 +594,18 @@ void* chpl_get_global_serialize_table(int64_t idx);
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
 
-// Sets the number of locales on the local node and determines if the node is
-// oversubscribed.
+// Sets the number of locales on the local node.
 void chpl_set_num_locales_on_node(int32_t count);
 
 // Returns the number of locales on the local node.
-
 int32_t chpl_get_num_locales_on_node(void);
 
-// Returns true if node is oversubscribed, false otherwise.
+// Sets our local rank on the node.
+void chpl_set_local_rank(int32_t rank);
 
-chpl_bool chpl_get_oversubscribed(void);
+// Returns our local rank on the node, -1 if chpl_set_local_rank has
+// not been called.
+int32_t chpl_get_local_rank(void);
 
 #ifdef __cplusplus
 }

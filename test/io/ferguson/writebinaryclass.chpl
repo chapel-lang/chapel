@@ -11,7 +11,7 @@ class R {
   }
 }
 
-var f = open("binary-output.bin", iomode.cwr);
+var f = open("binary-output.bin", ioMode.cwr);
 
 var A = (new owned R(1,2,3,4,5)).borrow();
 

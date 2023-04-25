@@ -49,6 +49,10 @@ class Domain final : public AstNode {
     : AstNode(asttags::Domain, std::move(children)),
       usedCurlyBraces_(usedCurlyBraces) {
   }
+  Domain(Deserializer& des)
+    : AstNode(asttags::Domain, des) {
+    usedCurlyBraces_ = des.read<bool>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Domain* rhs = (const Domain*) other;
@@ -97,6 +101,13 @@ class Domain final : public AstNode {
   bool usedCurlyBraces() const {
     return usedCurlyBraces_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(usedCurlyBraces_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Domain);
 
 };
 

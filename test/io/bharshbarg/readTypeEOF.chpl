@@ -5,7 +5,7 @@ use IO;
 // arguments will throw an EOF error.
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   var r = f.reader();
 
   try {

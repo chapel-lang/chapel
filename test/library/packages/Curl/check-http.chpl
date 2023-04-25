@@ -28,7 +28,7 @@ module CheckHttp {
         if verbose then
           writeln("Testing with file ", f);
 
-        var filereader = open(f, iomode.r).reader();
+        var filereader = open(f, ioMode.r).reader();
 
         var url = "http://" + host + ":" + port + "/" + f;
         var urlreader = openUrlReader(url);

@@ -52,7 +52,7 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body);
+   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false);
   ~CatchStmt() override = default;
 
   const char* name() const;

@@ -54,8 +54,6 @@ def get_runtime_includes_and_defines():
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
         memtype = chpl_gpu.get_gpu_mem_strategy()
-        if memtype == "array_on_device":
-            bundled.append("-DCHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE")
 
         # If compiling for GPU locales, add CUDA runtime headers to include path
         gpu_type = chpl_gpu.get()
@@ -99,8 +97,11 @@ def get_runtime_link_args(runtime_subdir):
             system.append("-lcuda")
             system.append("-lcudart")
         elif gpu_type == "rocm":
-            system.append("-L" + os.path.join(sdk_path, "hip", "lib"))
+            lib_path = os.path.join(sdk_path, "lib")
+            system.append("-L" + lib_path)
+            system.append("-Wl,-rpath," + lib_path)
             system.append("-lamdhip64")
+            system.append("-lhsa-runtime64")
 
     # always link with the math library
     system.append("-lm")

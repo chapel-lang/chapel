@@ -261,3 +261,20 @@ slurm job, however.
 
 
 .. _Homebrew: https://github.com/Homebrew/brew
+
+.. _bound-endpoints:
+
+Bound Endpoints
+_______________________
+
+For best performance endpoints should be "bound" to cores, so that
+each core has a dedicated transmit endpoint. Unfortunately, some
+providers incorrectly report that they support too few endpoints to bind
+each core to an endpoint. You can override the number of endpoints reported
+by the provider by setting ``CHPL_RT_COMM_OFI_EP_COUNT``. Note that
+endpoint creation will fail if you set this variable to a value higher
+than the number of endpoints that the provider can support. You
+may verify whether or not endpoints are bound by specifying the
+the ``-v`` option on the command line and looking at the line in the output
+that starts with ``COMM=``.
+

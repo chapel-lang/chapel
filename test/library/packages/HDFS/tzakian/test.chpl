@@ -18,7 +18,7 @@ proc bar(nm: string) {
   writeln("size of file is: ", fileInfo.mSize);
   var s = HDFS.chadoopReadFile(hdfsFS, dataFileLocal, fileInfo.mSize: int(32)):string;
 
-  var outfile = open("foo.txt", iomode.cw);
+  var outfile = open("foo.txt", ioMode.cw);
   var writer = outfile.writer();
 
   writer.write(s);

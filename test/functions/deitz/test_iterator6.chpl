@@ -3,7 +3,7 @@ iter foo() {
     yield i;
 }
 
-proc bar(i: int) return i**2;
+proc bar(i: int) do return i**2;
 
 for i in bar(foo()) do
   writeln(i);

@@ -1,4 +1,0 @@
-error in duplicateEnumElement.chpl:1: enum 'languagesILike' has multiple elements named 'chapel'
-  note in duplicateEnumElement.chpl:2: one instance occurs here
-  note in duplicateEnumElement.chpl:3: another instance occurs here
-  note in duplicateEnumElement.chpl:3: another instance occurs here

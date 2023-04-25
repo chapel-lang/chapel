@@ -1,5 +1,5 @@
 record Foo {
-  deprecated var x: int;
+  @deprecated var x: int;
 
   proc init() {  }
 }

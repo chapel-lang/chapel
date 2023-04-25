@@ -1,0 +1,4 @@
+redefinition-def-with-public-use.chpl:4: In module 'T2':
+redefinition-def-with-public-use.chpl:6: error: 'a' has multiple definitions
+redefinition-def-with-public-use.chpl:5: note: redefined through the 'use' statement here
+redefinition-def-with-public-use.chpl:2: note: leading to the definition here

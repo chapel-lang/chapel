@@ -1,6 +1,6 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
-startVerboseGPU();
+startVerboseGpu();
 
 on here.gpus[0] {
   for j in 1..128 {
@@ -10,4 +10,4 @@ on here.gpus[0] {
   }
 }
 
-stopVerboseGPU();
+stopVerboseGpu();

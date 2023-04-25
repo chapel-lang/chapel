@@ -1,1 +1,3 @@
-overloaded.chpl:10: error: cannot capture overloaded function 'foo'
+overloaded.chpl:10: error: cannot capture routine with name 'foo' because it is overloaded
+overloaded.chpl:2: note: declared here
+overloaded.chpl:6: note: declared here

@@ -1,7 +1,4 @@
-var bool1 : [1..17] bool(8);
-var bool2 : [1..17] bool(16);
-var bool3 : [1..17] bool(32);
-var bool4 : [1..17] bool(64);
+var bool1 : [1..17] bool;
 
 var int1 : [1..20] int(8);
 var int2 : [1..20] int(16);

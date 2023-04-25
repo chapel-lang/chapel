@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 use Time;
 
 config const timeLimit = 5; //seconds
@@ -10,7 +10,7 @@ config const n = 1;
 
 var t = new stopwatch();
 
-if validate then startGPUDiagnostics();
+if validate then startGpuDiagnostics();
 var numLaunches = 0;
 
 on here.gpus[0] {
@@ -25,8 +25,8 @@ on here.gpus[0] {
 }
 
 if validate {
-  stopGPUDiagnostics();
-  assert(getGPUDiagnostics()[0].kernel_launch == numLaunches);
+  stopGpuDiagnostics();
+  assert(getGpuDiagnostics()[0].kernel_launch == numLaunches);
 }
 
 if report {

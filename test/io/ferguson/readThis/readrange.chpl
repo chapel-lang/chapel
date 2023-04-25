@@ -1,6 +1,6 @@
 use IO;
 
-var f = openmem();
+var f = openMemFile();
 
 var w = f.writer();
 

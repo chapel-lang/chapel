@@ -92,12 +92,12 @@ module LCALSDataTypes {
 
     var imin: int;
     var jmin: int;
-    var kmin: int;
     var imax: int;
     var jmax: int;
-    var kmax: int;
 
     var jp: int;
+    var kmin: int;
+    var kmax: int;
     var kp: int;
     var nnalls: int;
 

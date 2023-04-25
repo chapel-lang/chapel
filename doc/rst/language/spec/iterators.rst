@@ -12,7 +12,7 @@ values (consecutively or in parallel) via its yield statements.
    *Open issue*.
 
    The parallel iterator story is under development. It is expected that
-   the specification will be expanded regarding parallel iterators soon.
+   the specification will be expanded regarding parallel iterators.
 
 .. _Iterator_Function_Definitions:
 
@@ -25,7 +25,7 @@ The syntax to declare an iterator is given by:
 
    iterator-declaration-statement:
      privacy-specifier[OPT] 'iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
-     iterator-body
+     function-body
 
    iterator-name:
      identifier
@@ -39,10 +39,6 @@ The syntax to declare an iterator is given by:
 
    yield-type:
      : type-expression
-
-   iterator-body:
-     block-statement
-     yield-statement
 
 The syntax of an iterator declaration is similar to a procedure
 declaration, with some key differences:
@@ -88,6 +84,13 @@ execution continues from the point immediately following the ``yield``
 statement. A yield statement in an iterator that yields references must
 yield an lvalue expression.
 
+The iterator's ``yield-intent`` determines how each value is yielded.
+The rules for yielding are the same as the rules for returning values
+from procedures, see :ref:`Return_Intent`, except an iterator with
+the ``ref`` or ``const ref`` yield intent is allowed to yield an lvalue
+that is local to the iterator's scope.
+The rules for yielding a tuple are specified in :ref:`Tuple_Yield_Behavior`.
+
 When a ``return`` is encountered, the iterator finishes without yielding
 another index value. The ``return`` statements appearing in an iterator
 are not permitted to have a return expression. An iterator also
@@ -121,7 +124,8 @@ Iterators in For and Forall Loops
 
 When an iterator is accessed via a for or forall loop, the iterator is
 evaluated alongside the loop body in an interleaved manner. For each
-iteration, the iterator yields a value and the body is executed.
+iteration, the iterator yields a value or a reference
+and the loop body is executed.
 
 .. _Iterators_as_Arrays:
 

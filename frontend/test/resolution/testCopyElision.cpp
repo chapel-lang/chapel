@@ -630,6 +630,7 @@ static void test28() {
 
         proc test() {
           var a: int;
+          var c: int;
           var z;
           if cond {
             z = a;
@@ -640,7 +641,7 @@ static void test28() {
         }
       }
     )"""",
-    {"M.test@6", "M.test@10"});
+    {"M.test@8", "M.test@12"});
 }
 // including with a try/catch
 static void test29() {

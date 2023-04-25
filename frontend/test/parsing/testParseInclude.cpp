@@ -30,7 +30,8 @@
 #include "chpl/uast/Module.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "include module Foo;\n"
       "/* comment 2 */\n"
@@ -40,7 +41,7 @@ static void test0(Parser* parser) {
       "include private prototype module Zing;\n"
       "include public prototype module A;\n"
       "include public module B;\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 9);

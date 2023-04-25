@@ -15,7 +15,7 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time, Barriers, DSIUtil;
+  use SSCA2_compilation_config_params, Time, Collectives, DSIUtil;
 
   var sw : stopwatch;
 
@@ -323,9 +323,9 @@ module SSCA2_kernels
           BCaux[s].path_count$.write(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref barrier) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
@@ -336,7 +336,7 @@ module SSCA2_kernels
             BCaux[s].min_distance.write(0);
             f2(BCaux, s);
           }
-          barrier.barrier();
+          bar.barrier();
 
           var current_distance : int = 0;
   
@@ -399,7 +399,7 @@ module SSCA2_kernels
             // level are completed before updating to use the next level
 
             // do some work while we wait
-            // barrier.notify(); // This is expensive without network atomics
+            // bar.notify(); // This is expensive without network atomics
             //  for now, just do a normal barrier
 
             if AL.next!.next == nil {
@@ -409,18 +409,18 @@ module SSCA2_kernels
             } else {
               AL.next!.next!.Members.clear();
             }
-            // barrier.wait(); // ditto
-            barrier.barrier();
+            // bar.wait(); // ditto
+            bar.barrier();
             if here.id==shere {
               remaining = false;
             }
 
-            barrier.barrier();
+            bar.barrier();
             Active_Level[here.id] = AL.next!;
             if Active_Level[here.id]!.Members.size:bool then
               remaining = true;
 
-            barrier.barrier();
+            bar.barrier();
 
           };  // end forward pass
 
@@ -460,7 +460,7 @@ module SSCA2_kernels
                 f4(BCaux, Between_Cent$, u);
             }
 
-            barrier.barrier();
+            bar.barrier();
           }
         }
 

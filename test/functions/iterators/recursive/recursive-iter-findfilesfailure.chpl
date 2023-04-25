@@ -3,7 +3,7 @@ use IO;
 
 proc main() throws {
   for f in myfindfiles() {
-    var filereader = open(f, iomode.r).reader();
+    var filereader = open(f, ioMode.r).reader();
   }
 }
 

@@ -2,6 +2,7 @@ Block-distributed array
 ----------------
 eltType is: real(64)
 idxType is: int(64)
+fullIdxType is: 2*int(64)
 rank is: 2
 
 size is: 100
@@ -130,8 +131,9 @@ local subdomains:
 {1..10, 1..10}
 
 is empty: false
-head: 1.8
-tail: 100.8
+find last: (10, 10)
+find last again: true: (10, 10)
+count last: 1
 equals same: true
 equals diff: false
 
@@ -249,6 +251,7 @@ Slice of Block-distributed array
 ----------------
 eltType is: real(64)
 idxType is: int(64)
+fullIdxType is: 2*int(64)
 rank is: 2
 
 size is: 49
@@ -350,8 +353,9 @@ local subdomains:
 {2..8, 2..8}
 
 is empty: false
-head: 1.8
-tail: 49.8
+find last: (8, 8)
+find last again: true: (8, 8)
+count last: 1
 equals same: true
 equals diff: false
 

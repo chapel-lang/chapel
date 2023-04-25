@@ -33,13 +33,16 @@ namespace resolution {
     The argument 'isThis' indicates if the formal argument is
     the 'this' method receiver argument.
 
+    The argument 'isInit' indicates if the function being resolved
+    is an 'init' or 'init=' function.
+
     The generic and resolved intents are all represented as QualifiedType::Kind.
 
     If the type is not known or only partially known, this function
     can return a generic intent.
  */
 types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
-                                         bool isThis);
+                                         bool isThis, bool isInit);
 
 
 } // end namespace resolution

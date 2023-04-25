@@ -274,58 +274,10 @@ y=1.0 + 0.0i complex(128) 1.0 + 0.0i
 z=1.0 + 0.0i complex(128) 1.0 + 0.0i
 a=true bool true
 
-complex(128) initialized by bool(64) true
-x=1.0 + 0.0i complex(128) 1.0 + 0.0i
-y=1.0 + 0.0i complex(128) 1.0 + 0.0i
-z=1.0 + 0.0i complex(128) 1.0 + 0.0i
-a=true bool(64) true
-
-complex(128) initialized by bool(32) true
-x=1.0 + 0.0i complex(128) 1.0 + 0.0i
-y=1.0 + 0.0i complex(128) 1.0 + 0.0i
-z=1.0 + 0.0i complex(128) 1.0 + 0.0i
-a=true bool(32) true
-
-complex(128) initialized by bool(16) true
-x=1.0 + 0.0i complex(128) 1.0 + 0.0i
-y=1.0 + 0.0i complex(128) 1.0 + 0.0i
-z=1.0 + 0.0i complex(128) 1.0 + 0.0i
-a=true bool(16) true
-
-complex(128) initialized by bool(8) true
-x=1.0 + 0.0i complex(128) 1.0 + 0.0i
-y=1.0 + 0.0i complex(128) 1.0 + 0.0i
-z=1.0 + 0.0i complex(128) 1.0 + 0.0i
-a=true bool(8) true
-
 complex(64) initialized by bool true
 x=1.0 + 0.0i complex(64) 1.0 + 0.0i
 y=1.0 + 0.0i complex(64) 1.0 + 0.0i
 z=1.0 + 0.0i complex(64) 1.0 + 0.0i
 a=true bool true
-
-complex(64) initialized by bool(64) true
-x=1.0 + 0.0i complex(64) 1.0 + 0.0i
-y=1.0 + 0.0i complex(64) 1.0 + 0.0i
-z=1.0 + 0.0i complex(64) 1.0 + 0.0i
-a=true bool(64) true
-
-complex(64) initialized by bool(32) true
-x=1.0 + 0.0i complex(64) 1.0 + 0.0i
-y=1.0 + 0.0i complex(64) 1.0 + 0.0i
-z=1.0 + 0.0i complex(64) 1.0 + 0.0i
-a=true bool(32) true
-
-complex(64) initialized by bool(16) true
-x=1.0 + 0.0i complex(64) 1.0 + 0.0i
-y=1.0 + 0.0i complex(64) 1.0 + 0.0i
-z=1.0 + 0.0i complex(64) 1.0 + 0.0i
-a=true bool(16) true
-
-complex(64) initialized by bool(8) true
-x=1.0 + 0.0i complex(64) 1.0 + 0.0i
-y=1.0 + 0.0i complex(64) 1.0 + 0.0i
-z=1.0 + 0.0i complex(64) 1.0 + 0.0i
-a=true bool(8) true
 
 

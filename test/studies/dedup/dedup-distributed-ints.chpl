@@ -92,7 +92,7 @@ proc stringToHash(s:string): Hash {
   // can't take in a maximum field width
 
   // Open up an in-memory "file"
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
   // Write int-sized substrings separated by spaces
   w.write(s[1..16], " ");

@@ -1,0 +1,4 @@
+< day12.stdin              # day12.good
+--version=1 < day12.stdin  # day12.good
+--version=2 < day12.stdin  # day12.good
+--version=3 < day12.stdin  # day12.good

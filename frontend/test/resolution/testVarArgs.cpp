@@ -527,7 +527,7 @@ static void testMatcher(Qualifier formalIntent,
 
 static Collector
 customHelper(std::string program, bool fail = false,
-             std::vector<const ErrorBase*>* errorsOut=nullptr) {
+             std::vector<owned<ErrorBase>>* errorsOut=nullptr) {
   Context* context = getNewContext();
   ErrorGuard guard(context);
 
@@ -538,8 +538,9 @@ customHelper(std::string program, bool fail = false,
   ResolvedVisitor<Collector> rv(context, m, pc, rr);
   m->traverse(rv);
 
+  int numErrors = guard.numErrors();
   if (guard.errors().size() && errorsOut) {
-    for (auto err : guard.errors()) errorsOut->push_back(err);
+    guard.moveErrors(*errorsOut);
   }
 
   if (debug) {
@@ -558,7 +559,8 @@ customHelper(std::string program, bool fail = false,
   }
 
   // Consume the errors so the destructor does not abort.
-  assert(fail == guard.realizeErrors());
+  guard.realizeErrors();
+  assert(fail == numErrors);
 
   return pc;
 }
@@ -671,7 +673,7 @@ proc fn(param n : int, args...n) {
 }
 )""");
 
-  std::vector<const ErrorBase*> errors;
+  std::vector<owned<ErrorBase>> errors;
   auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2.0, "hello");)""");
@@ -767,7 +769,7 @@ proc fn(param n : int, args...n, y : int, z : real) {
 )""");
 
   auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
-  std::vector<const ErrorBase*> errors;
+  std::vector<owned<ErrorBase>> errors;
 
   auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");
   customHelper(paramFn + good);

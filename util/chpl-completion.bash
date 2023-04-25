@@ -61,8 +61,11 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-scope-resolve \
+--dyno-verify-serialization \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -78,6 +81,7 @@ _chpl ()
 --gmp \
 --gpu-arch \
 --gpu-block-size \
+--gpu-ptxas-enforce-optimization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -177,6 +181,8 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-scope-resolve \
+--no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -253,14 +259,19 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
+--no-use-io-formatters \
 --no-vectorize \
 --no-verify \
+--no-warn-array-of-range \
 --no-warn-const-loops \
 --no-warn-domain-literal \
 --no-warn-int-uint \
 --no-warn-special \
 --no-warn-tuple-iteration \
+--no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
+--no-warn-unstable-internal \
+--no-warn-unstable-standard \
 --no-warnings \
 --optimize \
 --optimize-forall-unordered-ops \
@@ -283,6 +294,7 @@ _chpl ()
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \
+--print-chpl-loc \
 --print-chpl-settings \
 --print-code-size \
 --print-commands \
@@ -340,15 +352,21 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
+--use-io-formatters \
+--using-attribute-toolname \
 --vectorize \
 --verify \
 --version \
+--warn-array-of-range \
 --warn-const-loops \
 --warn-domain-literal \
 --warn-int-uint \
 --warn-special \
 --warn-tuple-iteration \
+--warn-unknown-attribute-toolname \
 --warn-unstable \
+--warn-unstable-internal \
+--warn-unstable-standard \
 --warnings \
 -I \
 -L \
@@ -361,7 +379,7 @@ _chpl ()
 -o \
 -s"
 
-      # non-developer options
+      # user options
       local nodevel_opts="\
 --atomics \
 --auto-aggregation \
@@ -483,6 +501,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-vectorize \
+--no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
 --optimize \
@@ -496,6 +515,7 @@ _chpl ()
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
+--print-chpl-home \
 --print-code-size \
 --print-commands \
 --print-module-files \
@@ -524,8 +544,10 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
+--using-attribute-toolname \
 --vectorize \
 --version \
+--warn-unknown-attribute-toolname \
 --warn-unstable \
 --warnings \
 -I \

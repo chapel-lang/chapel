@@ -1110,7 +1110,7 @@ module GMP {
   extern proc gmp_fprintf(fp: c_FILE, fmt: c_string, arg...);
 
   pragma "last resort"
-  deprecated "the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'"
+  @deprecated(notes="the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'")
   extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
 
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);

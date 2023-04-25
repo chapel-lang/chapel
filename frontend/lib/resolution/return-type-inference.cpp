@@ -50,6 +50,10 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// forward declarations
+static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+                                           QualifiedType retType);
+
 
 // Get a Type for an AggregateDecl
 // poiScope, instantiatedFrom are nullptr if not instantiating
@@ -64,7 +68,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   // Filter out substitutions that aren't fields within 'ad'.
   // In particular, there might be substitutions to do with a parent class.
   SubstitutionsMap filteredSubs;
-  for (auto pair : substitutions) {
+  for (const auto& pair : substitutions) {
     if (ad->id().contains(pair.first)) {
       filteredSubs.insert(pair);
     }
@@ -136,16 +140,23 @@ const CompositeType* helpGetTypeForDecl(Context* context,
                               insnFromBct, std::move(filteredSubs));
 
   } else if (auto r = ad->toRecord()) {
-    const RecordType* insnFromRec = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto rec = instantiatedFrom->toRecordType())
-        insnFromRec = rec;
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
+    if (r->id().symbolPath() == "ChapelDomain._domain") {
+      ret = DomainType::getGenericDomainType(context);
+      // TODO: update this to call a method on ArrayType to get the id or path
+    } else if (r->id().symbolPath() == "ChapelArray._array") {
+      ret = ArrayType::getGenericArrayType(context);
+    } else {
+      const RecordType* insnFromRec = nullptr;
+      if (instantiatedFrom != nullptr) {
+        if (auto rec = instantiatedFrom->toRecordType())
+          insnFromRec = rec;
+        else
+          CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
 
-    ret = RecordType::get(context, r->id(), r->name(),
-                          insnFromRec, std::move(filteredSubs));
+      ret = RecordType::get(context, r->id(), r->name(),
+                            insnFromRec, std::move(filteredSubs));
+    }
 
   } else if (auto u = ad->toUnion()) {
     const UnionType* insnFromUni = nullptr;
@@ -220,6 +231,9 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
 
 void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
                                      const QualifiedType& qt) {
+  if (!qt.type()) {
+    return;
+  }
   if (qt.type()->isVoidType()) {
     if (returnIntent == Function::REF) {
       context->error(inExpr, "Cannot return void with ref return intent");
@@ -283,7 +297,8 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       context->error(astForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
-    return retType.getValue();
+    auto adjType = adjustForReturnIntent(returnIntent, retType.getValue());
+    return adjType;
   }
 }
 
@@ -450,8 +465,8 @@ static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
   QualifiedType::Kind kind = (QualifiedType::Kind) ri;
   // adjust default / const return intent to 'var'
   if (kind == QualifiedType::DEFAULT_INTENT ||
-      kind == QualifiedType::CONST_VAR) {
-    kind = QualifiedType::VAR;
+      kind == QualifiedType::VAR) {
+    kind = QualifiedType::CONST_VAR;
   }
   return QualifiedType(kind, retType.type(), retType.param());
 }
@@ -642,6 +657,42 @@ static bool helpComputeReturnType(Context* context,
         // return a ref
         result = QualifiedType(QualifiedType::REF, ft.type());
       }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+      auto dt = sig->formalType(0).type()->toDomainType();
+
+      if (untyped->name() == "idxType") {
+        result = dt->idxType();
+      } else if (untyped->name() == "rank") {
+        result = dt->rank();
+      } else if (untyped->name() == "stridable") {
+        result = dt->stridable();
+      } else if (untyped->name() == "parSafe") {
+        result = dt->parSafe();
+      } else if (untyped->name() == "isRectangular") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else if (untyped->name() == "isAssociative") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
+        return true;
+      }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+      auto at = sig->formalType(0).type()->toArrayType();
+
+      if (untyped->name() == "domain") {
+        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+      } else if (untyped->name() == "eltType") {
+        result = at->eltType();
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated array method");
+      }
+
       return true;
     } else {
       CHPL_ASSERT(false && "unhandled compiler-generated method");

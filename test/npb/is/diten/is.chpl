@@ -83,9 +83,9 @@ proc main() {
   writeln(" Size            = ", totalKeys);
   writeln(" Iterations      = ", maxIterations);
   if printTime {
-    writeln(" Time in seconds = ", time.elapsed(TimeUnits.seconds));
+    writeln(" Time in seconds = ", time.elapsed());
     writeln(" Mop/s total     = ",
-            (maxIterations*totalKeys)/time.elapsed(TimeUnits.seconds)/1000000);
+            (maxIterations*totalKeys)/time.elapsed()/1000000);
   }
   if (passedVerifications == (maxIterations+1) * 5 + 1) then
     writeln(" Verification    = SUCCESSFUL");

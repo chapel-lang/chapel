@@ -50,8 +50,19 @@ module BitOps {
     :returns: the number of 1 bits set in `x` as `x.type`
     :rtype: `x.type`
    */
+  @deprecated(notes="popcount is deprecated - please use :proc:`popCount` instead")
   inline proc popcount(x: integral) {
-    return BitOps_internal.popcount(x);
+    return popCount(x);
+  }
+
+  /*
+    Find the population count of `x`.
+
+    :returns: the number of 1 bits set in `x` as `x.type`
+    :rtype: `x.type`
+   */
+  inline proc popCount(x: integral) {
+    return BitOps_internal.popCount(x);
   }
 
   /*
@@ -103,7 +114,7 @@ module BitOps {
   pragma "no doc"
   proc bitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
     // return the transpose of x, treating it as an 8x8 bit-matrix.
-    proc bitMatTrans(x: uint(64))
+    proc bitMatTrans(x: uint(64)) do
       return ((x & 0x8040201008040201)       |
               (x & 0x0080402010080402) <<  7 |
               (x & 0x0000804020100804) << 14 |
@@ -130,7 +141,7 @@ module BitOps {
     }
 
     // set every bit in sets of eight to one if the last one is one
-    inline proc byteExpand(u: uint(64))
+    inline proc byteExpand(u: uint(64)) do
       return 0x8080808080808080 ^ (0x8080808080808080 - u);
 
     var result:uint(64) = 0;
@@ -246,7 +257,7 @@ private module BitOps_internal {
     return BitOps_internal.ctz(x:uint(bits)):int(bits);
   }
 
-  inline proc popcount(x: uint(?bits)) {
+  inline proc popCount(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -263,12 +274,12 @@ private module BitOps_internal {
         // NOTE: this actually cant happen with how the integer types are setup
         //       right now - leaving it here for the future when we support
         //       >64bit types
-        compilerError("popcount is not supported for that bit width.");
+        compilerError("popCount is not supported for that bit width.");
     }
   }
 
-  inline proc popcount(x: int(?bits)) {
-    return BitOps_internal.popcount(x:uint(bits)):int(bits);
+  inline proc popCount(x: int(?bits)) {
+    return BitOps_internal.popCount(x:uint(bits)):int(bits);
   }
 
   inline proc parity(x: uint(?bits)) {

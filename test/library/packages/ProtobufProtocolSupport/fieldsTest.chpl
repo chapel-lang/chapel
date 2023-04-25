@@ -2,7 +2,7 @@ use ProtobufProtocolSupport.Fields;
 use ProtobufProtocolSupport.WireEncoding;
 use IO;
 
-var f = openmem();
+var f = openMemFile();
 
 uint64Append(92233720368, 1, f.writer(kind=iokind.little, locking=false));
 var r = f.reader(kind=iokind.little, locking=false);

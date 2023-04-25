@@ -22,10 +22,10 @@
 
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "firstClassFunctions.h"
 #include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -46,6 +46,8 @@
 #include "wellknown.h"
 
 #include "global-ast-vecs.h"
+
+#include "chpl/util/version-info.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -112,12 +114,13 @@ Expr* preFold(CallExpr* call) {
     } else {
       if (symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
-        // Type constructor calls OK
-      } else if (isLcnSymbol(symExpr->symbol()) == true) {
-        baseExpr->replace(new UnresolvedSymExpr("this"));
 
-        call->insertAtHead(baseExpr);
-        call->insertAtHead(gMethodToken);
+      } else if (isLcnSymbol(symExpr->symbol())) {
+        if (!isFunctionType(symExpr->symbol()->type)) {
+          baseExpr->replace(new UnresolvedSymExpr("this"));
+          call->insertAtHead(baseExpr);
+          call->insertAtHead(gMethodToken);
+        }
       }
 
       if (Expr* tmp = preFoldNamed(call)) {
@@ -785,14 +788,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (tagResult == TGR_TAGGING_ABORTED ||
                   (tagResult == TGR_NEWLY_TAGGED && fn->isGeneric()))
                 continue;
-              if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
-                totalTest++;
-                CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
-                fn->defPoint->getStmtExpr()->insertAfter(newCall);
-                auto val = fcfWrapperInstanceFromPrimCall(newCall);
+              if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
+                                          testType,
+                                          call)) {
+                // TODO: Replace me with a function pointer.
+                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                                            new SymExpr(fn));
+                fn->defPoint->getStmtExpr()->insertAfter(capture);
+                Expr* val = resolveExpr(capture);
                 testCaptureVector.push_back(val);
-                newCall->remove();
-                testNameIndex[name] = totalTest;
+                val->remove();
+                testNameIndex[name] = ++totalTest;
               }
             }
           }
@@ -962,23 +968,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
 
-  case PRIM_CAPTURE_FN_FOR_CHPL: {
-    retval = fcfWrapperInstanceFromPrimCall(call);
-    call->replace(retval);
-    break;
-  }
-  case PRIM_CAPTURE_FN_FOR_C: {
-    retval = fcfRawFunctionPointerFromPrimCall(call);
-    call->replace(retval);
-    break;
-  }
-  case PRIM_CREATE_FN_TYPE: {
-    Type* t = fcfWrapperSuperTypeFromFuncFnCall(call);
-    retval = new SymExpr(t->symbol);
-    call->replace(retval);
-    break;
-  }
-
   case PRIM_DEREF: {
     // remove deref if arg is already a value
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
@@ -990,7 +979,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
-    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -1016,9 +1005,25 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 toString(classType));
     }
 
-    retval = new CallExpr(PRIM_GET_MEMBER,
-                          call->get(1)->copy(),
-                          new_CStringSymbol(name));
+    if(isManagedPtrType(call->get(1)->getValType())) {
+      // Extract the 'chpl_p' field.
+      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField("chpl_p");
+      VarSymbol* pTemp = newTempConst(pField->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE,
+                            pTemp,
+                            new CallExpr(PRIM_GET_MEMBER,
+                                call->get(1)->copy(),
+                                pField)));
+
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            new SymExpr(pTemp),
+                            new_CStringSymbol(name));
+    } else {
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            call->get(1)->copy(),
+                            new_CStringSymbol(name));
+    }
 
     call->replace(retval);
 
@@ -2085,7 +2090,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_VERSION_SHA: {
     retval = (get_is_official_release() ?
               new SymExpr(new_StringSymbol("")) :
-              new SymExpr(new_StringSymbol(get_build_version())));
+              new SymExpr(new_StringSymbol(chpl::getCommitHash())));
     call->replace(retval);
     break;
   }
@@ -2794,6 +2799,19 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
+// Deprecated by Vass in 1.31: given `range(boundedType=?b),
+// redirect it to `range(bounds=?b)`, with a deprecation warning.
+static void checkRangeDeprecations(AggregateType* at, VarSymbol* var,
+                                   Symbol*& retval) {
+  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
+    const char* requested = var->immediate->v_string.c_str();
+    if (!strcmp(requested, "boundedType")) {
+      USR_WARN(var,
+        "range.boundedType is deprecated; please use '.bounds' instead");
+      retval = at->getField("bounds");
+    }
+  }
+}
 
 //
 // determine field associated with query expression
@@ -2807,6 +2825,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
+    checkRangeDeprecations(at, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

@@ -37,9 +37,7 @@ void Decl::dumpFieldsInner(const DumpSettings& s) const {
   }
 }
 std::string Decl::dumpChildLabelInner(int i) const {
-  if (i == attributesChildNum_) {
-    return "attributes";
-  } else if (i == linkageNameChildNum_) {
+  if (i == linkageNameChildNum_) {
     return "linkage-name";
   }
 

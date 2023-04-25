@@ -2,6 +2,7 @@
 ----------------
 eltType is: real(64)
 idxType is: string
+fullIdxType is: string
 rank is: 1
 
 size is: 13
@@ -43,6 +44,7 @@ local subdomains:
 {eight, five, four, half, nine, one, pointone, seven, six, ten, three, two, zero}
 
 is empty: false
+find 10.6: true, ten
 equals same: true
 equals diff: false
 

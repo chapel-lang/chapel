@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+if [ -z "$HADOOP_HOME" ]
+then
+  echo "True"
+  exit 0;
+else
+  echo "False"
+fi

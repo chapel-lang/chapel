@@ -1,0 +1,32 @@
+start
+ok  1..20 , ..10 by 2 , 1..10 by 2 align 1
+ok  1..20 , 2.. by -2 , 2..20 by -2 align 0
+ok  1..20 , .. by 2 , 1..20 by 2 align 1
+ok  1..20 , .. by -2 , 1..20 by -2 align 0
+ok  1.. by -2 align 1 , ..9 by 3 , 1..9 by -6 align 3
+ok  1..9 by -2 , ..9 by 3 , 1..9 by -6 align 3
+ok  1..8 by 2 , 4.. by -2 , 4..8 by -2 align 1
+ok  1..8 by -2 , 5.. by -2 , 5..8 by 2 align 0
+ok  1..8 by -2 , ..5 by 2 , 1..5 by -2 align 0
+ok  1..7 , 4.. by -2 , 4..7 by -2 align 1
+ok  1..7 , ..4 by 2 , 1..4 by 2 align 1
+ok  1..7 by -1 , ..4 by 2 , 1..4 by -2 align 0
+ok  1..10 by -3 , ..9 by 2 , 1..9 by -6 align 1
+ok  -10..10 by -3 , ..8 by 2 , -10..8 by -6 align 1
+ok  -10..10 by -3 , ..7 by 2 , -10..7 by -6 align 1
+ok  -10..10 by -3 , ..4 by 2 , -10..4 by -6 align 4
+ok  -10..10 by 3 , .. by 2 , -10..10 by 6 align 2
+ok  -10..10 by -3 , .. by 2 , -10..10 by -6 align 4
+ok  -10..10 by 3 , .. by -2 , -10..10 by -6 align 2
+ok  -10..10 by -3 , .. by -2 , -10..10 by 6 align 1
+ok  1.. by -2 align 1 , ..6 , 1..6 by -2 align 1
+ok  .. by 2 align 0 , .. by 3 align 1 , .. by 6 align 4
+ok  1..9 by 2 , 1..7 by -2 , 1..7 by -2 align 1
+ok  1..10 by 2 , 1..10 by -2 , 1..0 by -2 align 1
+ok  1..10 by 2 , 1..10 by -3 , 1..10 by -6 align 1
+ok  1..9 by 2 , 1..9 by -4 , 1..9 by -4 align 1
+done
+slice-new-rules-1.chpl:20: warning: slicing '1..10 by -3' with the unaligned range '..9 by 2 align 0' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '..8 by 2 align 0' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by 3' with the unaligned range '.. by -2 align 0' is unstable w.r.t. the choice of alignment
+slice-new-rules-1.chpl:20: warning: slicing '-10..10 by -3' with the unaligned range '.. by -2 align 0' is unstable w.r.t. the choice of alignment

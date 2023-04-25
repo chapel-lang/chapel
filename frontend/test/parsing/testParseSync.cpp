@@ -30,12 +30,13 @@
 #include "chpl/framework/Context.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "sync /* comment 2 */\n"
       "  begin foo();\n"
       "/* comment 3 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -73,7 +74,8 @@ static void test0(Parser* parser) {
 
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "sync /* comment 2 */ {\n"
       "  /* comment 3 */\n"
@@ -81,7 +83,7 @@ static void test1(Parser* parser) {
       "  /* comment 4 */\n"
       "}\n"
       "/* comment 5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -116,7 +118,8 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "sync /* comment 2 */ {\n"
       "  /* comment 3 */\n"
@@ -125,7 +128,7 @@ static void test2(Parser* parser) {
       "  /* comment 4 */\n"
       "}\n"
       "/* comment 5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

@@ -39,7 +39,7 @@ owned<Serial> Serial::build(Builder* builder,
                           AstList stmts) {
 
   AstList lst;
-  int8_t condChildNum = -1;
+  int8_t condChildNum = NO_CHILD;
 
   const int bodyChildNum = lst.size();
   const int numBodyStmts = stmts.size();
@@ -63,7 +63,7 @@ owned<Serial> Serial::build(Builder* builder,
   CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
-  int8_t condChildNum = -1;
+  int8_t condChildNum = NO_CHILD;
 
   if (condition.get() != nullptr) {
     condChildNum = lst.size();

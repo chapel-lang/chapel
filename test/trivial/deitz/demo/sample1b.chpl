@@ -5,7 +5,7 @@ class trio {
   var x2 : elt_type;
   var x3 : elt_type;
 
-  proc sum()
+  proc sum() do
     return x1 + x2 + x3;
 }
 

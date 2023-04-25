@@ -40,6 +40,7 @@ public:
   enum ARMProcFamilyEnum : uint8_t {
     Others,
     A64FX,
+    Ampere1,
     AppleA7,
     AppleA10,
     AppleA11,
@@ -242,6 +243,10 @@ protected:
 
   // Enable 64-bit vectorization in SLP.
   unsigned MinVectorRegisterBitWidth = 64;
+
+  // Do not place a BTI instruction after a call to a return twice function like
+  // setjmp.
+  bool NoBTIAtReturnTwice = false;
 
   bool OutlineAtomics = false;
   bool PredictableSelectIsExpensive = false;
@@ -587,6 +592,8 @@ public:
   bool hasMOPS() const { return HasMOPS; }
 
   bool fixCortexA53_835769() const { return FixCortexA53_835769; }
+
+  bool noBTIAtReturnTwice() const { return NoBTIAtReturnTwice; }
 
   bool addrSinkUsingGEPs() const override {
     // Keeping GEPs inbounds is important for exploiting AArch64

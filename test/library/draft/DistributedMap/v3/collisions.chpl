@@ -1,6 +1,6 @@
 use ChainTable;
 
-var table = new chainTable(uint, int, 10);
+var table = new chainTable(uint, int, 5);
 
 // add four entries to the table in the same bucket
 for i in [0, 5, 8, 13] {

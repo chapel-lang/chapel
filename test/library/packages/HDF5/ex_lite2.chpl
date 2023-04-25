@@ -15,7 +15,7 @@ proc main {
 
   if pathPrefix != "" {
     use FileSystem;
-    copyFile(filename, pathPrefix + filename);
+    copy(filename, pathPrefix + filename, permissions=false);
   }
 
   /* open file from ex_lite1.chpl */

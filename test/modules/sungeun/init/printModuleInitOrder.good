@@ -21,6 +21,8 @@ Initializing Modules:
           IO
            FormattedIO
             Regex
+             RegexIoSupport
+           Types
          Sort
           List
            ChapelLocks
@@ -45,7 +47,6 @@ Initializing Modules:
     ChapelUtil
     ExportWrappers
     ChapelGpuSupport
-    Types
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

@@ -268,10 +268,10 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     switch (imm.string_kind) {
       case STRING_KIND_STRING:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getStringType(context)};
+                CompositeType::getStringType(context)};
       case STRING_KIND_BYTES:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getBytesType(context)};
+                CompositeType::getBytesType(context)};
       case STRING_KIND_C_STRING:
         return {StringParam::get(context, imm.v_string),
                 CStringType::get(context)};
@@ -364,6 +364,27 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 #undef PARAM_NODE
   }
 
+}
+
+void Param::serialize(Serializer& ser) const {
+  ser.write(tag_);
+}
+
+const Param* Param::deserialize(Deserializer& des) {
+  ParamTag tag = des.read<ParamTag>();
+
+  switch (tag) {
+#define PARAM_NODE(NAME, VALTYPE) \
+    case paramtags::NAME: { \
+      return NAME::deserialize(des); \
+      break; \
+    }
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
+  }
+
+  assert(false);
+  return nullptr;
 }
 
 uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {

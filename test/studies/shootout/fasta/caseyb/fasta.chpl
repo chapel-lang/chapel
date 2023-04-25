@@ -8,7 +8,7 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-var outfd = openfd(1);
+var outfd = new file(1);
 var stdout = outfd.writer(locking=false);
 
 record Freq {

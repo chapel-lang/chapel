@@ -216,7 +216,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     const projectHome = getProjectHome(cwd);
 
     // parse lockfile
-    const toParse = open(projectHome + "/Mason.lock", iomode.r);
+    const toParse = open(projectHome + "/Mason.lock", ioMode.r);
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
@@ -654,7 +654,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
-    for key in localesCountMap {
+    for key in localesCountMap.keys() {
       if maxCount < localesCountMap[key] {
         reqLocales = key;
         maxCount = localesCountMap[key];

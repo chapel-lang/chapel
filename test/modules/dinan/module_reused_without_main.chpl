@@ -1,6 +1,6 @@
 module OuterModule {
   module test {
-    proc getString() return "Hello World";
+    proc getString() do return "Hello World";
   }
 
   use test;

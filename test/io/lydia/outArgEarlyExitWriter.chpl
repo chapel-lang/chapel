@@ -9,7 +9,7 @@ proc normalReturn(doWhat: bool): bool {
 
   // This code won't get executed in the calls made by
   // this test.
-  var f = open("file1.txt", iomode.cw);
+  var f = open("file1.txt", ioMode.cw);
   var c = f.writer();
   c.write("I write what I want!\n");
   c.flush();
@@ -27,7 +27,7 @@ proc outReturn(out res: bool, doWhat: bool) {
 
   // This code won't get executed in the calls made by
   // this test.
-  var f = open("file2.txt", iomode.cw);
+  var f = open("file2.txt", ioMode.cw);
   var c = f.writer();
   c.write("I write what I want!\n");
   c.flush();

@@ -1,0 +1,3 @@
+bug: implicitly generic records have their field accessors resolved as if concrete
+
+#22011

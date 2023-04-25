@@ -1,1 +1,1 @@
--swaitAlg=Spin -sshiftAlg=SerForall -ssearchAlg=MemChr
+-swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=MemChr

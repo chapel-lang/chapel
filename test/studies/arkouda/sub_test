@@ -102,11 +102,25 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # Run benchmarks
   if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-    benchmark_opts="--gen-graphs --dat-dir $CHPL_TEST_PERF_DIR --graph-dir $CHPL_TEST_PERF_DIR/html"
+    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/html"
+    if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "false" ] ; then
+        # Where should perf logs go?
+        export ARKOUDA_TEST_PERF_DIR="${WORKSPACE}/perfData"
+        test_start "make perf dir"
+        if mkdir -p $ARKOUDA_TEST_PERF_DIR ; then
+            log_success "created perf directory $ARKOUDA_TEST_PERF_DIR"
+        else
+            log_error "creating perf directory"
+        fi
+        test_end
+        benchmark_opts="--save-data --dat-dir $ARKOUDA_TEST_PERF_DIR"
+    fi
 
     benchmark_opts="${benchmark_opts} --annotations $CHPL_HOME/test/ANNOTATIONS.yaml"
     if [[ -n $CHPL_TEST_PERF_DESCRIPTION ]]; then
-      benchmark_opts="${benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+        if [ "${CHPL_TEST_GEN_ARKOUDA_GRAPHS}" = "true" ] ; then
+            benchmark_opts="${benchmark_opts} --description $CHPL_TEST_PERF_DESCRIPTION"
+        fi
     fi
     if [[ -n $CHPL_TEST_PERF_CONFIG_NAME ]]; then
       benchmark_opts="${benchmark_opts} --platform $CHPL_TEST_PERF_CONFIG_NAME"

@@ -19,24 +19,6 @@
  */
 
 /*
-Synchronization variables have a logical state associated with the value. The
-state of the variable is either full or empty. Normal reads of a
-synchronization variable cannot proceed until the variable's state is full.
-Normal writes of a synchronization variable cannot proceed until the variable's
-state is empty.
-
-Chapel supports two types of synchronization variables: sync and single. Both
-types behave similarly, except that a single variable may only be written once.
-Consequently, when a sync variable is read, its state transitions to empty,
-whereas when a single variable is read, its state does not change. When either
-type of synchronization variable is written, its state transitions to full.
-
-If a task attempts to read or write a synchronization variable that is not in
-the correct state, the task is suspended. When the variable transitions to the
-correct state, the task is resumed. If there are multiple tasks blocked waiting
-for the state transition, one is non-deterministically selected to proceed and
-the others continue to wait if it is a sync variable; all tasks are selected to
-proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
@@ -68,7 +50,7 @@ module ChapelSyncvar {
   // working, but this does not seem to be more broadly necessary.
   //
 
-  private proc isSupported(type t) param
+  private proc isSupported(type t) param do
     return isNothingType(t)       ||
            isBoolType(t)          ||
            isIntegralType(t)      ||
@@ -124,7 +106,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x) return x;
+  proc chpl__readXX(x) do return x;
 
   /************************************ | *************************************
   *                                                                           *
@@ -173,7 +155,7 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
-    deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side"
+    @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side")
     proc init=(const ref other: _syncvar(?)) {
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
@@ -203,6 +185,12 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
+    proc type decodeFrom(r) throws {
+      var ret : this;
+      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of sync vars.
     proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
@@ -210,33 +198,38 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Block until the sync variable is full.
-    2) Read the value of the sync variable and set the variable to empty.
+    Read a full ``sync`` variable, leaving it empty.
 
-    :returns: The value of the sync variable.
+    1) Block until the ``sync`` variable is full.
+    2) Read the value of the ``sync`` variable and set the variable to empty.
+
+    :returns: The value of the ``sync`` variable.
   */
   proc _syncvar.readFE() {
     return wrapped.readFE();
   }
 
-  /*
-    1) Block until the sync variable is full.
-    2) Read the value of the sync variable and leave the variable full
+  /*  Read a full ``sync`` variable, leaving it full.
 
-    :returns: The value of the sync variable.
+    1) Block until the ``sync`` variable is full.
+    2) Read the value of the ``sync`` variable and leave the variable full.
+
+    :returns: The value of the ``sync`` variable.
   */
   proc _syncvar.readFF() {
     return wrapped.readFF();
   }
 
-  /*
-    1) Read the value of the ``sync`` variable. For a full ``sync``, returns a
-       copy of the value stored. For an empty ``sync``, the implementation will
-       return either a new default-initialized value of the value type or the
-       last value stored.
-    2) Does not change the full/empty state
+  /*  Read a ``sync`` variable regardless of its state, leaving its state unchanged.
 
-    :returns: The value of the sync variable.
+    1) Without blocking, read the value of the ``sync`` variable
+    2) Leaving the state unchanged, return a value based on the current state:
+
+      * full: return a copy of the stored value.
+      * empty: return either a new default-initialized value of the stored type
+        or, the last value stored (implementation dependent).
+
+    :returns: The value of the ``sync`` variable.
   */
   proc _syncvar.readXX() {
     // Yield to allow readXX in a loop to make progress
@@ -244,38 +237,42 @@ module ChapelSyncvar {
     return wrapped.readXX();
   }
 
-  /*
-    1) Block until the sync variable is empty.
-    2) Write the value of the sync variable and leave the variable full
+  /* Write into an empty ``sync`` variable, leaving it full.
 
-    :arg val: New value of the sync variable.
+    1) Block until the ``sync`` variable is empty.
+    2) Write the value of the ``sync`` variable and leave the variable full.
+
+    :arg x: New value of the ``sync`` variable.
   */
   proc _syncvar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
-  /*
-    1) Block until the sync variable is full.
-    2) Write the value of the sync variable and leave the variable full
+  /* Write into a full ``sync`` variable, leaving it full.
 
-    :arg val: New value of the sync variable.
+    1) Block until the ``sync`` variable is full.
+    2) Write the value of the ``sync`` variable and leave the variable full.
+
+    :arg x: New value of the ``sync`` variable.
   */
   proc _syncvar.writeFF(in x : valType) {
     wrapped.writeFF(x);
   }
 
-  /*
-    1) Write the value of the sync variable and leave the variable full
+  /* Write into a ``sync`` variable regardless of its state, leaving it full.
 
-    :arg val: New value of the sync variable.
+    1) Do not block.
+    2) Write the value of the ``sync`` variable, leave it's state full.
+
+    :arg x: New value of the ``sync`` variable.
   */
   proc _syncvar.writeXF(in x : valType) {
     wrapped.writeXF(x);
   }
 
   /*
-    Resets the value of this sync variable to the default value of
-    its type. This method is non-blocking and the state of the sync
+    Resets the value of this ``sync`` variable to the default value of
+    its type. This method is non-blocking and the state of the ``sync``
     variable is set to empty when this method completes.
   */
   proc _syncvar.reset() {
@@ -283,10 +280,10 @@ module ChapelSyncvar {
   }
 
   /*
-     Determine if the sync variable is full without blocking.
-     Does not alter the state of the sync variable
+    Determine if the ``sync`` variable is full without blocking.
+    Does not alter the state of the ``sync`` variable.
 
-     :returns: true if the state of the sync variable is full.
+    :returns: ``true`` if the state of the ``sync`` variable is full, ``false`` if it's empty.
   */
   proc _syncvar.isFull {
     return wrapped.isFull;
@@ -305,7 +302,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  deprecated "Casting sync variables is deprecated"
+  @deprecated(notes="Casting sync variables is deprecated")
   inline operator :(from: _syncvar, type toType:_syncvar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
@@ -390,7 +387,7 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side"
+  @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side")
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
     return sv.readFE();
   }
@@ -404,7 +401,7 @@ module ChapelSyncvar {
   }
 
   // Be explicit about whether syncs are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param return true;
+  inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param do return true;
 
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
@@ -413,7 +410,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   pragma "no doc"
   operator <=>(lhs : _syncvar, ref rhs) {
@@ -867,24 +864,25 @@ module ChapelSyncvar {
      }
   }
 
-  /*
-    1) Block until the single variable is full.
-    2) Read the value of the single variable and leave the variable full
+  /* Read a full ``single`` variable, leaving it full.
 
-    :returns: The value of the single variable.
+    1) Block until the ``single`` variable is full.
+    2) Read the value of the ``single`` variable and leave the variable full
+
+    :returns: The value of the ``single`` variable.
   */
   proc _singlevar.readFF() {
     return wrapped.readFF();
   }
 
-  /*
+  /* Read a ``single`` variable regardless of its state, leaving its state unchanged.
 
-    1) Read the value of the ``single`` variable. For a full ``single``, returns
-       a copy of the value stored. For an empty ``single``, the implementation
-       will return either a new default-initialized value of the value type or
-       the last value stored.
+    1) Without blocking, read the value of the ``single`` variable.
+    2) Leaving the state unchanged, return a value based on the current state:
 
-    2) Does not change the full/empty state
+      * full: return a copy of the stored value.
+      * empty: return either a new default-initialized value of the stored type
+        or, the last value stored (implementation dependent).
 
     :returns: The value of the ``single`` variable.
   */
@@ -894,21 +892,22 @@ module ChapelSyncvar {
     return wrapped.readXX();
   }
 
-  /*
-    1) Block until the single variable is empty.
-    2) Write the value of the single variable and leave the variable full
+  /* Write into an empty ``single`` variable, leaving it full.
 
-    :arg val: New value of the single variable.
+    1) Block until the ``single`` variable is empty.
+    2) Write the value of the ``single`` variable and leave the variable full.
+
+    :arg x: New value of the single variable.
   */
   proc _singlevar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
   /*
-     Determine if the single variable is full without blocking.
-     Does not alter the state of the single variable
+     Determine if the ``single`` variable is full without blocking.
+     Does not alter the state of the ``single`` variable.
 
-     :returns: true if the state of the single variable is full.
+     :returns: ``true`` if the state of the ``single`` variable is full, ``false`` if it's empty.
   */
   proc _singlevar.isFull {
     return wrapped.isFull;
@@ -927,7 +926,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  deprecated "Casting single variables is deprecated"
+  @deprecated(notes="Casting single variables is deprecated")
   inline operator :(from: _singlevar, type toType:_singlevar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _singlevar(from);
@@ -958,7 +957,7 @@ module ChapelSyncvar {
   }
 
   // Be explicit about whether singles are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param return true;
+  inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param do return true;
 
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
@@ -967,7 +966,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(const ref x : _singlevar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************
   *                                                                           *
@@ -1234,5 +1233,14 @@ private module AlignedTSupport {
   }
   proc aligned_t.readThis(f) throws {
     this = f.read(uint(64)) : aligned_t;
+  }
+
+  proc aligned_t.encodeTo(f) throws {
+    writeThis(f);
+  }
+  proc type aligned_t.readThis(f) throws {
+    var ret : aligned_t;
+    ret.readThis(f);
+    return ret;
   }
 }

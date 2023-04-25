@@ -32,17 +32,19 @@ namespace uast {
  */
 class TypeDecl : public NamedDecl {
  protected:
-  TypeDecl(asttags::AstTag tag, AstList children, int attributesChildNum,
+  TypeDecl(asttags::AstTag tag, AstList children, int attributeGroupChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name)
-    : NamedDecl(tag, std::move(children), attributesChildNum, vis,
+    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
                 linkage,
                 linkageNameChildNum,
                 name) {
 
   }
+  TypeDecl(AstTag tag, Deserializer& des)
+    : NamedDecl(tag, des) { }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);
@@ -54,6 +56,10 @@ class TypeDecl : public NamedDecl {
 
  public:
   virtual ~TypeDecl() = 0; // this is an abstract base class
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
 };
 
 

@@ -2,7 +2,7 @@ use HashedDist;
 
 var D: domain(real) dmapped Hashed(idxType=real);
 
-var inds = [2.1];
+var inds = [2.1, ];
 
 D.bulkAdd(inds);
 

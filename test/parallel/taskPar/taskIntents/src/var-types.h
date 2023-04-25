@@ -1,8 +1,4 @@
 lvar(b0,  bool,     true)
-lvar(b8,  bool(8),  true)
-lvar(b16, bool(16), true)
-lvar(b32, bool(32), true)
-lvar(b64, bool(64), true)
 
 lvar(u8,  uint(8),  78)
 lvar(u16, uint(16), 716)

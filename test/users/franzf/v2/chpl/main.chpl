@@ -71,11 +71,11 @@ proc main() {
         }    
     
         //  benchmark computation
-        startTime = getCurrentTime(TimeUnits.microseconds);
+        startTime = timeSinceEpoch().totalSeconds()*1_000_000;
         for i in 1..NUMRUNS {
             fft(N, Y, X);
         }
-        execTime = (getCurrentTime(TimeUnits.microseconds) - startTime)/NUMRUNS;
+        execTime = (timeSinceEpoch().totalSeconds()*1_000_000 - startTime)/NUMRUNS;
 	if (printTimings) then
           writeln("fft_", N, ": ", execTime, "us = ", ops / execTime, " Mflop/s");
 	else

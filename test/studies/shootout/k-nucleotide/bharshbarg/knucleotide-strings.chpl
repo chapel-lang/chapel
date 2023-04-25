@@ -63,7 +63,7 @@ proc calculate(data : string, size : int) {
     }
 
     lock$.readFE();                         // read to acquire lock
-    for (k,v) in privMap.items() do
+    for (k,v) in zip(privMap.keys(), privMap.values()) do
       freqs[k] += v;                        // accumulate into returned array
     lock$.writeEF(true);                    // write to release lock
   }
@@ -80,7 +80,7 @@ proc write_frequencies(data : string, size : int) {
   // string.
   //
   var sorted : [1..freqs.size] (int, uint);
-  for (s, (e, f)) in zip(sorted, freqs.items()) do
+  for (s, e, f) in zip(sorted, freqs.keys(), freqs.values()) do
     s = (f, e);
 
   // sort will sort starting at the tuple's first element.

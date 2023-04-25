@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config param useForall = false;
 
@@ -26,16 +26,16 @@ proc nopeGPU(A) {
 on here.gpus[0] {
   var A: [1..10] int;
 
-  startGPUDiagnostics();
+  startGpuDiagnostics();
   yepGPU(A);
-  stopGPUDiagnostics();
-  assert(getGPUDiagnostics()[0].kernel_launch == 1);
+  stopGpuDiagnostics();
+  assert(getGpuDiagnostics()[0].kernel_launch == 1);
   writeln(A);
 
-  resetGPUDiagnostics();
-  startGPUDiagnostics();
+  resetGpuDiagnostics();
+  startGpuDiagnostics();
   nopeGPU(A);
-  stopGPUDiagnostics();
-  assert(getGPUDiagnostics()[0].kernel_launch == 0);
+  stopGpuDiagnostics();
+  assert(getGpuDiagnostics()[0].kernel_launch == 0);
   writeln(A);
 }

@@ -1,0 +1,30 @@
+if HAVE_DMABUF_PEER_MEM
+
+_dmabuf_peer_mem_files = \
+	prov/hook/dmabuf_peer_mem/src/hook_dmabuf_peer_mem.c
+
+_dmabuf_peer_mem_headers = \
+	prov/hook/dmabuf_peer_mem/include/hook_dmabuf_peer_mem.h \
+	prov/hook/dmabuf_peer_mem/include/dmabuf_reg.h
+
+if HAVE_DMABUF_PEER_MEM_DL
+pkglib_LTLIBRARIES += libdmabuf_peer_mem-fi.la
+libdmabuf_peer_mem_fi_la_SOURCES = $(_dmabuf_peer_mem_files) \
+				   $(_dmabuf_peer_mem_headers) \
+				   $(common_srcs) \
+				   $(common_hook_srcs)
+libdmabuf_peer_mem_fi_la_CPPFLAGS = $(AM_CPPFLAGS) \
+				    -I$(top_srcdir)/prov/hook/include \
+				    -I$(top_srcdir)/prov/hook/perf/include \
+				    -I$(top_srcdir)/prov/hook/dmabuf_peer_mem/include
+libdmabuf_peer_mem_fi_la_LIBADD = $(linkback) dmabuf_peer_mem_shm_LIBS
+libdmabuf_peer_mem_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libdmabuf_peer_mem_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_DMABUF_PEER_MEM_DL
+src_libfabric_la_SOURCES += $(_dmabuf_peer_mem_files) \
+			    $(_dmabuf_peer_mem_headers)
+src_libfabric_la_CPPFLAGS += -I$(top_srcdir)/prov/hook/dmabuf_peer_mem/include
+src_libfabric_la_LIBADD	+= dmabuf_peer_mem_shm_LIBS
+endif !HAVE_DMABUF_PEER_MEM_DL
+
+endif HAVE_DMABUF_PEER_MEM

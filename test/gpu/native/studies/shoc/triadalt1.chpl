@@ -1,7 +1,17 @@
 use Time;
 use ResultDB;
 use IO.FormattedIO;
-use GPUDiagnostics;
+use GpuDiagnostics;
+
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory"
+                      then 523 else 547;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
+
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -22,13 +32,14 @@ proc main(){
     param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
     param halfNumFloats = numMaxFloats/2;
 
+    var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
+    var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
+    var triadDB = new ResultDatabase("Triad Time", "sec");
+    var kernelDB = new ResultDatabase("Kernel Time", "sec");
+
     var hos: [0..#numMaxFloats] real(32);
-    startGPUDiagnostics();
+    if !perftest then startGpuDiagnostics();
     on here.gpus[0] {
-        var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
-        var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        var triadDB = new ResultDatabase("Triad Time", "sec");
-        var kernelDB = new ResultDatabase("Kernel Time", "sec");
         var kernelLaunches = 0;
         for pass in 0..#passes{
             for blkSize in blockSizes {
@@ -196,18 +207,21 @@ proc main(){
                 }
             }
         }
-        if(output) {
-            flopsDB.printDatabaseStats();
-            bdwthDB.printDatabaseStats();
-            triadDB.printDatabaseStats();
-            kernelDB.printDatabaseStats();
-        }
-        if(perftest){
-            bdwthDB.printPerfStats();
-            triadDB.printPerfStats();
-            kernelDB.printPerfStats();
-        }
     }
-    stopGPUDiagnostics();
-    writeln(getGPUDiagnostics());
+
+    if(output) {
+      flopsDB.printDatabaseStats();
+      bdwthDB.printDatabaseStats();
+      triadDB.printDatabaseStats();
+      kernelDB.printDatabaseStats();
+    }
+    if(perftest){
+      bdwthDB.printPerfStats();
+      triadDB.printPerfStats();
+      kernelDB.printPerfStats();
+    }
+    else {
+      stopGpuDiagnostics();
+      verifyLaunches();
+    }
 }

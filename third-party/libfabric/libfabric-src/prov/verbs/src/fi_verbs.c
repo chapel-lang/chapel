@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2013-2021 Intel Corporation, Inc.  All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,6 +36,7 @@
 
 #include "fi_verbs.h"
 #include "ofi_hmem.h"
+#include "verbs_osd.h"
 
 static void vrb_fini(void);
 
@@ -122,9 +123,9 @@ vrb_get_rdmacm_rai(const char *node, const char *service, uint64_t flags,
 		rai_hints.ai_flags |= RAI_PASSIVE;
 	}
 
-	ret = rdma_getaddrinfo(node, service, &rai_hints, &_rai);
+	ret = rdma_getaddrinfo((char *) node, (char *) service, &rai_hints, &_rai);
 	if (ret) {
-		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_getaddrinfo", errno);
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_getaddrinfo");
 		if (errno)
 			ret = -errno;
 		goto out;
@@ -174,7 +175,7 @@ vrb_get_sib_rai(const char *node, const char *service, uint64_t flags,
 		return -FI_ENOMEM;
 
 	ret = vrb_set_rai(addr_format, src_addr, src_addrlen, dest_addr,
-						 dest_addrlen, flags, *rai);
+			  dest_addrlen, flags, *rai);
 	if (ret)
 		return ret;
 
@@ -250,7 +251,7 @@ vrb_get_rdma_rai(const char *node, const char *service, uint32_t addr_format,
 	}
 
 	return vrb_get_rdmacm_rai(node, service, flags, addr_format, src_addr,
-					src_addrlen, dest_addr, dest_addrlen, rai);
+				  src_addrlen, dest_addr, dest_addrlen, rai);
 }
 
 int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
@@ -274,7 +275,7 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	ret = rdma_create_id(NULL, id, NULL, vrb_get_port_space(hints ? hints->addr_format:
 					FI_FORMAT_UNSPEC));
 	if (ret) {
-		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_create_id", errno);
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_create_id");
 		ret = -errno;
 		goto err1;
 	}
@@ -282,7 +283,7 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	if ((*rai)->ai_flags & RAI_PASSIVE) {
 		ret = rdma_bind_addr(*id, (*rai)->ai_src_addr);
 		if (ret) {
-			VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_bind_addr", errno);
+			VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_bind_addr");
 			ofi_straddr_log(&vrb_prov, FI_LOG_INFO, FI_LOG_FABRIC,
 					"bind addr", (*rai)->ai_src_addr);
 			ret = -errno;
@@ -294,7 +295,7 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	ret = rdma_resolve_addr(*id, (*rai)->ai_src_addr,
 				(*rai)->ai_dst_addr, VERBS_RESOLVE_TIMEOUT);
 	if (ret) {
-		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_resolve_addr", errno);
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_resolve_addr");
 		ofi_straddr_log(&vrb_prov, FI_LOG_INFO, FI_LOG_FABRIC,
 				"src addr", (*rai)->ai_src_addr);
 		ofi_straddr_log(&vrb_prov, FI_LOG_INFO, FI_LOG_FABRIC,
@@ -305,7 +306,7 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	return 0;
 err2:
 	if (rdma_destroy_id(*id))
-		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_destroy_id", errno);
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_destroy_id");
 err1:
 	rdma_freeaddrinfo(*rai);
 	return ret;
@@ -327,8 +328,7 @@ int vrb_create_ep(struct vrb_ep *ep, enum rdma_port_space ps,
 
 	if (rdma_create_id(NULL, id, NULL, ps)) {
 		ret = -errno;
-		FI_WARN(&vrb_prov, FI_LOG_FABRIC, "rdma_create_id failed: "
-			"%s (%d)\n", strerror(-ret), -ret);
+		VRB_WARN_ERRNO(FI_LOG_FABRIC, "rdma_create_id");
 		goto err1;
 	}
 
@@ -343,8 +343,7 @@ int vrb_create_ep(struct vrb_ep *ep, enum rdma_port_space ps,
 	if (rdma_resolve_addr(*id, rai->ai_src_addr, rai->ai_dst_addr,
 			      VERBS_RESOLVE_TIMEOUT)) {
 		ret = -errno;
-		FI_WARN(&vrb_prov, FI_LOG_EP_CTRL, "rdma_resolve_addr failed: "
-			"%s (%d)\n", strerror(-ret), -ret);
+		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "rdma_resolve_addr");
 		ofi_straddr_log(&vrb_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
 				"src addr", rai->ai_src_addr);
 		ofi_straddr_log(&vrb_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
@@ -433,7 +432,7 @@ static void vrb_dbg_query_qp_attr(struct ibv_qp *qp)
 	ret = ibv_query_qp(qp, &qp_attr, IBV_QP_TIMEOUT | IBV_QP_RETRY_CNT |
 			   IBV_QP_RNR_RETRY | IBV_QP_MIN_RNR_TIMER, &attr);
 	if (ret) {
-		VERBS_WARN(FI_LOG_EP_CTRL, "Unable to query QP\n");
+		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "ibv_query_qp");
 		return;
 	}
 
@@ -457,7 +456,7 @@ void vrb_set_rnr_timer(struct ibv_qp *qp)
 	int ret;
 
 	if (vrb_gl_data.min_rnr_timer > 31) {
-		VERBS_WARN(FI_LOG_EQ, "min_rnr_timer value out of valid range; "
+		VRB_WARN(FI_LOG_EQ, "min_rnr_timer value out of valid range; "
 			   "using default value of %d\n",
 			   VERBS_DEFAULT_MIN_RNR_TIMER);
 		attr.min_rnr_timer = VERBS_DEFAULT_MIN_RNR_TIMER;
@@ -471,7 +470,7 @@ void vrb_set_rnr_timer(struct ibv_qp *qp)
 
 	ret = ibv_modify_qp(qp, &attr, IBV_QP_MIN_RNR_TIMER);
 	if (ret)
-		VERBS_WARN(FI_LOG_EQ, "Unable to modify QP attribute\n");
+		VRB_WARN_ERRNO(FI_LOG_EP_CTRL, "ibv_modify_qp");
 
 	vrb_dbg_query_qp_attr(qp);
 }
@@ -626,32 +625,32 @@ static int vrb_read_params(void)
 	if (vrb_get_param_int("tx_size", "Default maximum tx context size",
 			      &vrb_gl_data.def_tx_size) ||
 	    (vrb_gl_data.def_tx_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of tx_size\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of tx_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("rx_size", "Default maximum rx context size",
 			      &vrb_gl_data.def_rx_size) ||
 	    (vrb_gl_data.def_rx_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of rx_size\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of rx_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("tx_iov_limit", "Default maximum tx iov_limit",
 			      &vrb_gl_data.def_tx_iov_limit) ||
 	    (vrb_gl_data.def_tx_iov_limit < 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of tx_iov_limit\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of tx_iov_limit\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("rx_iov_limit", "Default maximum rx iov_limit",
 			      &vrb_gl_data.def_rx_iov_limit) ||
 	    (vrb_gl_data.def_rx_iov_limit < 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of rx_iov_limit\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of rx_iov_limit\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("inline_size", "Default maximum inline size. "
 			      "Actual inject size returned in fi_info may be "
 			      "greater", &vrb_gl_data.def_inline_size) ||
 	    (vrb_gl_data.def_inline_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of inline_size\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of inline_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("min_rnr_timer", "Set min_rnr_timer QP "
@@ -659,7 +658,7 @@ static int vrb_read_params(void)
 			      &vrb_gl_data.min_rnr_timer) ||
 	    ((vrb_gl_data.min_rnr_timer < 0) ||
 	     (vrb_gl_data.min_rnr_timer > 31))) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of min_rnr_timer\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of min_rnr_timer\n");
 		return -FI_EINVAL;
 	}
 
@@ -667,7 +666,7 @@ static int vrb_read_params(void)
 			       "registrations, if supported.  This is "
 			       "currently required to register DAX file system "
 			       "mmapped memory.", &vrb_gl_data.use_odp)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of use_odp\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of use_odp\n");
 		return -FI_EINVAL;
 	}
 
@@ -676,41 +675,52 @@ static int vrb_read_params(void)
 			       "setting must usually be combined with setting "
 			       "FI_OFI_RXM_USE_SRX.  See fi_verbs.7 man page.",
 				&vrb_gl_data.msg.prefer_xrc)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of prefer_xrc\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of prefer_xrc\n");
 		return -FI_EINVAL;
 	}
 
 	if (vrb_get_param_str("xrcd_filename", "A file to "
 			      "associate with the XRC domain.",
 			      &vrb_gl_data.msg.xrcd_filename)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of xrcd_filename\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of xrcd_filename\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("cqread_bunch_size", "The number of entries to "
 			      "be read from the verbs completion queue at a time",
 			      &vrb_gl_data.cqread_bunch_size) ||
 	    (vrb_gl_data.cqread_bunch_size <= 0)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of cqread_bunch_size\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of cqread_bunch_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("gid_idx", "Set which gid index to use "
 			      "attribute (0 - 255)", &vrb_gl_data.gid_idx) ||
 	    (vrb_gl_data.gid_idx < 0 || vrb_gl_data.gid_idx > 255)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of gid index\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of gid index\n");
 		return -FI_EINVAL;
 	}
 
 	if (vrb_get_param_str("device_name", "The prefix or the full name of the "
 			      "verbs device to use", &vrb_gl_data.device_name)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of device_name\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of device_name\n");
 		return -FI_EINVAL;
 	}
+
+	if (vrb_gl_data.dmabuf_support) {
+		if (vrb_get_param_bool("use_dmabuf", "Enable dmabuf based memory "
+				       "registrations, if supported. Yes by default.",
+				       (int *)&vrb_gl_data.dmabuf_support)) {
+			VRB_WARN(FI_LOG_CORE, "Invalid value of use_dmabuf\n");
+			return -FI_EINVAL;
+		}
+	}
+	VRB_INFO(FI_LOG_CORE, "dmabuf support is %s\n",
+		 vrb_gl_data.dmabuf_support ? "enabled" : "disabled");
 
 	/* MSG-specific parameter */
 	if (vrb_get_param_str("iface", "The prefix or the full name of the "
 			      "network interface associated with the verbs "
 			      "device", &vrb_gl_data.iface)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid value of iface\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid value of iface\n");
 		return -FI_EINVAL;
 	}
 
@@ -722,7 +732,7 @@ static int vrb_read_params(void)
 			       "to resolve IP-addresses to provider specific "
 			       "addresses. If MPI is used, the NS is disabled "
 			       "by default.", &vrb_gl_data.dgram.use_name_server)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid dgram_use_name_server\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid dgram_use_name_server\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("dgram_name_server_port", "The port on which "
@@ -730,7 +740,7 @@ static int vrb_read_params(void)
 			      "requests.", &vrb_gl_data.dgram.name_server_port) ||
 	    (vrb_gl_data.dgram.name_server_port < 0 ||
 	     vrb_gl_data.dgram.name_server_port > 65535)) {
-		VERBS_WARN(FI_LOG_CORE, "Invalid dgram_name_server_port\n");
+		VRB_WARN(FI_LOG_CORE, "Invalid dgram_name_server_port\n");
 		return -FI_EINVAL;
 	}
 
@@ -807,6 +817,7 @@ static void vrb_fini(void)
 #endif
 	fi_freeinfo((void *)vrb_util_prov.info);
 	verbs_devs_free();
+	vrb_os_fini();
 	vrb_util_prov.info = NULL;
 }
 
@@ -817,10 +828,11 @@ VERBS_INI
 	ofi_hmem_init();
 	ofi_monitors_init();
 #endif
-	vrb_set_peer_mem_support();
-	vrb_set_dmabuf_support();
 
-	if (vrb_read_params()|| vrb_init_info(&vrb_util_prov.info))
+	vrb_os_mem_support();
+
+	if (vrb_read_params() || vrb_os_ini() ||
+	    vrb_init_info(&vrb_util_prov.info))
 		return NULL;
 	return &vrb_prov;
 }

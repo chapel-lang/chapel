@@ -3,7 +3,7 @@ use IO, OS.POSIX;
 var filename = "secretlyNotADir/foo.txt";
 
 try {
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   writeln("uh oh, no error");
 } catch e: NotADirectoryError {
   writeln(e.message());

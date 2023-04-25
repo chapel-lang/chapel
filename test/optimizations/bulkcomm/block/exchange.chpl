@@ -1,6 +1,6 @@
 
 use BlockDist;
-use Barriers;
+use Collectives;
 use CommDiagnostics;
 use Time;
 
@@ -24,7 +24,7 @@ proc main() {
 
   var A : [D] int;
 
-  var b = new Barrier(numLocales);
+  var b = new barrier(numLocales);
 
   if !time then resetCommDiagnostics();
   else tmr.start();

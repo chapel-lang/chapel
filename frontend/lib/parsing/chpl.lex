@@ -131,7 +131,6 @@ const            return processToken(yyscanner, TCONST);
 continue         return processToken(yyscanner, TCONTINUE);
 defer            return processToken(yyscanner, TDEFER);
 delete           return processToken(yyscanner, TDELETE);
-deprecated       return processToken(yyscanner, TDEPRECATED);
 dmapped          return processToken(yyscanner, TDMAPPED);
 do               return processToken(yyscanner, TDO);
 domain           return processToken(yyscanner, TDOMAIN);
@@ -211,7 +210,6 @@ type             return processToken(yyscanner, TTYPE);
 uint             return processToken(yyscanner, TUINT);
 union            return processToken(yyscanner, TUNION);
 unmanaged        return processToken(yyscanner, TUNMANAGED);
-"@unstable"      return processToken(yyscanner, TUNSTABLE);
 use              return processToken(yyscanner, TUSE);
 var              return processToken(yyscanner, TVAR);
 void             return processToken(yyscanner, TVOID);
@@ -222,6 +220,7 @@ with             return processToken(yyscanner, TWITH);
 yield            return processToken(yyscanner, TYIELD);
 zip              return processToken(yyscanner, TZIP);
 
+"@"              return processToken(yyscanner, TATMARK);
 "_"              return processToken(yyscanner, TUNDERSCORE);
 
 "="              return processToken(yyscanner, TASSIGN);

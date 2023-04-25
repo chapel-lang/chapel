@@ -1,0 +1,13 @@
+#!/bin/bash
+
+grep "fileTextQuery (\|^MYPREFIX" $2 > $2.tmp
+
+cat $2.tmp | sed 's/hash: .*$//g' > $2
+
+mv $2 $2.tmp
+cat $2.tmp | sed "s|${CHPL_HOME}|\$CHPL_HOME|g" > $2
+
+mv $2 $2.tmp
+cat $2.tmp | sed s/modules\\/standard\\/gen\\/[a-z0-9_\-]*/modules\\/standard\\/gen\\/\.\.\./ > $2
+
+rm $2.tmp

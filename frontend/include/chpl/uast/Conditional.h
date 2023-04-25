@@ -80,6 +80,13 @@ class Conditional final : public AstNode {
     CHPL_ASSERT(thenBodyChildNum_ < (int) children_.size());
   }
 
+  Conditional(Deserializer& des)
+    : AstNode(asttags::Conditional, des) {
+    thenBlockStyle_ = des.read<BlockStyle>();
+    elseBlockStyle_ = des.read<BlockStyle>();
+    isExpressionLevel_ = des.read<bool>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Conditional* lhs = this;
     const Conditional* rhs = other->toConditional();
@@ -253,6 +260,15 @@ class Conditional final : public AstNode {
   bool isExpressionLevel() const {
     return isExpressionLevel_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(thenBlockStyle_);
+    ser.write(elseBlockStyle_);
+    ser.write(isExpressionLevel_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Conditional);
 
 };
 

@@ -1,7 +1,7 @@
-use Barriers;
+use Collectives; 
 
 proc main() {
-  var barrier = new Barrier(4);
+  var bar = new barrier(4);
 
   // simple begin
   sync {
@@ -12,8 +12,8 @@ proc main() {
   }
 
   proc mytask() {
-    barrier.barrier();
+    bar.barrier();
     writeln(here.runningTasks());
-    barrier.barrier();
+    bar.barrier();
   }
 }

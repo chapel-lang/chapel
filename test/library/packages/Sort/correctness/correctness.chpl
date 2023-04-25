@@ -34,7 +34,7 @@ proc main() {
   var largeA: [largeD] int,
       strideA: [strideD] int,
       strideAlignA: [strideAlignD] int,
-      strideRevA: [strideRevD] int;
+      strideRevA: [strideRevD] int;     // neg-stride
 
   largeA = [-17, -10, -4, -2, 0, 1, 2, 3, 5, 8,
 	    13, 21, 34, 55, 89, 4242, 424242, 42424242, 4242424242, 424242424242 ];
@@ -52,7 +52,7 @@ proc main() {
                 (largeA, defaultComparator),
                 (strideA, defaultComparator),
                 (strideAlignA, defaultComparator),
-                (strideRevA, defaultComparator),
+                (strideRevA, reverseComparator),
 
                 // Testing comparators
                 ([-1, 2, 3, -4, 5, 6, -7, 8, 9, -10, 11, 12, -13, 14, 15, -16, 17, 18, -19, 20], absKey),

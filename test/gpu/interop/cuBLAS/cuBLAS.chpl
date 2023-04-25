@@ -27,7 +27,7 @@ module cuBLAS {
   proc cpu_to_gpu(src_ptr: c_ptr(?t), size: c_size_t){
     require "c_cublas.h", "c_cublas.o";
     var gpu_ptr: DevicePtr(t);
-    gpu_ptr.val = to_gpu(src_ptr, size): c_ptr(t);
+    gpu_ptr.val = to_gpu(src_ptr, size):c_void_ptr:c_ptr(t);
     return gpu_ptr;
   }
 

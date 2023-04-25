@@ -51,6 +51,10 @@ class Select final : public AstNode {
       numWhenStmts_(numWhenStmts) {
   }
 
+  Select(Deserializer& des) : AstNode(asttags::Select, des) {
+    numWhenStmts_ = des.read<int>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Select* rhs = other->toSelect();
     return this->numWhenStmts_ == rhs->numWhenStmts_;
@@ -111,6 +115,13 @@ class Select final : public AstNode {
     auto end = begin + numWhenStmts_;
     return AstListIteratorPair<When>(begin, end);
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(numWhenStmts_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Select);
 
 };
 

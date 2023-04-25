@@ -1,0 +1,2 @@
+readbytes.chpl:5: warning: 'readbytes' is deprecated; please use 'readBytes' instead
+this is a file

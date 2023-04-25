@@ -7,7 +7,7 @@ var hostname: string;
 sub.stdout.readln(hostname);
 
 // store hostname in file for prediff
-var outfile = open("localeName.hostname", iomode.cw);
+var outfile = open("localeName.hostname", ioMode.cw);
 var writer = outfile.writer();
 writer.writeln(hostname);
 writer.close();

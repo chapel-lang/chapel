@@ -28,13 +28,14 @@
 #include "chpl/framework/Context.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       " /* c1 */\n"
       " interface Foo(a, b, c) {\n"
       "   proc foo() {}\n"
       " }\n"
       " /* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

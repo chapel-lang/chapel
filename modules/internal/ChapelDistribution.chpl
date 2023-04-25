@@ -127,26 +127,26 @@ module ChapelDistribution {
       compilerError("sparse domains not supported by this distribution");
     }
 
-    proc dsiSupportsPrivatization() param return false;
-    proc dsiRequiresPrivatization() param return false;
+    proc dsiSupportsPrivatization() param do return false;
+    proc dsiRequiresPrivatization() param do return false;
 
     proc dsiDestroyDist() { }
 
     // Does the distribution keep a list of domains? Can the domains
     // keep the distribution alive longer? false for DefaultDist.
-    proc trackDomains() param return true;
+    proc trackDomains() param do return true;
 
     // dynamically-dispatched counterpart of linksDistribution
-    proc dsiTrackDomains() return true;
+    proc dsiTrackDomains() do return true;
 
     // indicates if a distribution is a singleton. If so, we make no
     // effort to free it. DefaultDist is a singleton.
-    proc singleton() param return false;
+    proc singleton() param do return false;
     // We could add dsiSingleton as a dynamically-dispatched counterpart
 
     // indicates if this distribution is a layout. This helps
     // with certain warnings.
-    proc dsiIsLayout() param return false;
+    proc dsiIsLayout() param do return false;
   }
 
   //
@@ -348,15 +348,15 @@ module ChapelDistribution {
       }
     }
 
-    proc dsiSupportsPrivatization() param return false;
-    proc dsiRequiresPrivatization() param return false;
+    proc dsiSupportsPrivatization() param do return false;
+    proc dsiRequiresPrivatization() param do return false;
 
     // Does the distribution keep a list of domains? Can the
     // domains keep the distribution alive longer?
-    proc linksDistribution() param return true;
+    proc linksDistribution() param do return true;
 
     // dynamically-dispatched counterpart of linksDistribution
-    proc dsiLinksDistribution() return true;
+    proc dsiLinksDistribution() do return true;
 
     // Overload to to customize domain destruction
     proc dsiDestroyDom() { }
@@ -371,16 +371,16 @@ module ChapelDistribution {
       return false;
     }
 
-    proc isRectangular() param return false;
-    proc isAssociative() param return false;
-    proc isSparse()      param return false;
+    proc isRectangular() param do return false;
+    proc isAssociative() param do return false;
+    proc isSparse()      param do return false;
 
-    proc type isDefaultRectangular() param return false;
-    proc isDefaultRectangular() param return false;
+    proc type isDefaultRectangular() param do return false;
+    proc isDefaultRectangular() param do return false;
 
-    proc isSliceDomainView() param return false; // likely unnecessary?
-    proc isRankChangeDomainView() param return false;
-    proc isReindexDomainView() param return false;
+    proc isSliceDomainView() param do return false; // likely unnecessary?
+    proc isRankChangeDomainView() param do return false;
+    proc isReindexDomainView() param do return false;
 
     // proc dsiAssignDomain is a required overload to implement domain
     // assignment. It is not declared here because we do not wish
@@ -413,7 +413,7 @@ module ChapelDistribution {
     type idxType;
     param stridable: bool;
 
-    override proc isRectangular() param return true;
+    override proc isRectangular() param do return true;
 
     proc getBaseArrType() type {
       var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
@@ -643,7 +643,7 @@ module ChapelDistribution {
 
     /*var nnz = 0; //: int;*/
 
-    override proc isSparse() param return true;
+    override proc isSparse() param do return true;
 
     proc getNNZ(): int {
       halt("nnz queried on base class");
@@ -714,7 +714,7 @@ module ChapelDistribution {
 
 
   class BaseAssociativeDom : BaseDom {
-    override proc isAssociative() param return true;
+    override proc isAssociative() param do return true;
 
     proc deinit() {
       // this is a bug workaround
@@ -765,7 +765,7 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    proc dsiStaticFastFollowCheck(type leadType) param return false;
+    proc dsiStaticFastFollowCheck(type leadType) param do return false;
 
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
@@ -898,15 +898,15 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
-    proc dsiSupportsAlignedFollower() param return false;
+    proc dsiSupportsAlignedFollower() param do return false;
 
-    proc dsiSupportsPrivatization() param return false;
-    proc dsiRequiresPrivatization() param return false;
+    proc dsiSupportsPrivatization() param do return false;
+    proc dsiRequiresPrivatization() param do return false;
 
-    proc type isDefaultRectangular() param return false;
-    proc isDefaultRectangular() param return false;
+    proc type isDefaultRectangular() param do return false;
+    proc isDefaultRectangular() param do return false;
 
-    proc doiCanBulkTransferRankChange() param return false;
+    proc doiCanBulkTransferRankChange() param do return false;
 
     proc decEltCountsIfNeeded() {
       // degenerate so it can be overridden
@@ -954,7 +954,7 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,stridable)) {
       halt("reallocating not supported for this array type");
     }
 
@@ -1012,7 +1012,7 @@ module ChapelDistribution {
 
     var dom; /* : DefaultSparseDom(?); */
 
-    override proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() do return dom;
 
     proc deinit() {
       // this is a bug workaround
@@ -1180,13 +1180,13 @@ module ChapelDistribution {
         var eCast = eCastQ!;
 
         var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+        var tmp:rank * range(idxType,boundKind.both,stridable);
 
         // set tmp = inds with some error checking
         for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
-            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+            from.safeCast(range(idxType,boundKind.both,stridable));
         }
 
         eCast.dsiReallocate(tmp);

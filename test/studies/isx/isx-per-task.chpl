@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (Collectives), and timers (Time).
 //
-use BlockDist, Barriers, Time;
+use BlockDist, Collectives, Time;
 
 //
 // The type of key to use when sorting.
@@ -147,7 +147,7 @@ var totalTime, inputTime, bucketCountTime, bucketOffsetTime, bucketizeTime,
     exchangeKeysTime, countKeysTime: [DistTaskSpace] [1..numTrials] real;
 var verifyKeyCount: atomic int;
 
-var barrier = new Barrier(numTasks);
+var bar = new barrier(numTasks);
 
 // should result in one loop iteration per task
 proc main() {
@@ -218,7 +218,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   }
   
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
-  barrier.barrier();
+  bar.barrier();
 
   if subtime {
     exchangeKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
@@ -241,7 +241,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   // reset the receive offsets for the next iteration
   //
   recvOffset[taskID].write(0);
-  barrier.barrier();
+  bar.barrier();
 }
 
 
@@ -335,7 +335,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
   //
   //
   verifyKeyCount.add(myBucketSize);
-  barrier.barrier();
+  bar.barrier();
   if verifyKeyCount.read() != totalKeys then
     halt("total key count mismatch: ", verifyKeyCount.read(), " != ", totalKeys);
 

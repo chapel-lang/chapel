@@ -2,7 +2,7 @@ module testmodule {
 
   // Work-around for const-ref version only in Reflection
   // causing 'coercion passed to const ref' errors
-  proc canResolve(param fname : string, in arg) param : bool
+  proc canResolve(param fname : string, in arg) param : bool do
     return __primitive("call resolves", fname, arg);
 
 

@@ -3,7 +3,7 @@ use IO;
 use Map;
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
 
   var m = new map(int, real);
   for i in 1..10 do m[i] = (i**2):real;
@@ -15,7 +15,7 @@ proc main() {
   {
     var r = f.reader();
     var contents : string;
-    r.readstring(contents);
+    r.readAll(contents);
     writeln("Wrote:");
     writeln("==========");
     writeln(contents.strip());

@@ -25,11 +25,12 @@
    per locale.
 
    The :var:`allLocalesBarrier` barrier only supports the
-   :proc:`~Barriers.Barrier.barrier()` and :proc:`~Barriers.Barrier.reset()`
-   methods of the :attr:`~Barriers.Barrier` interface. By default it can be
+   :proc:`~Collectives.barrier.barrier()` and
+   :proc:`~Collectives.barrier.reset()` methods of the
+   :attr:`~Collectives.barrier` interface. By default it can be
    used as a barrier between 1 task on each locale. The
-   :proc:`~Barriers.Barrier.reset()` method can be used change how many tasks
-   per locale will participate in each barrier.
+   :proc:`~Collectives.barrier.reset()` method can be used change how
+   many tasks per locale will participate in each barrier.
 
    Use of this barrier is similar to ``shmem_barrier_all()`` or
    ``MPI_Barrier(MPI_COMM_WORLD)``, except that it's possible for multiple
@@ -65,7 +66,7 @@
    barrier that's optimized for the network will be used.
 */
 module AllLocalesBarriers {
-  use BlockDist, Barriers;
+  use BlockDist, Collectives;
 
   private const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
   private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);

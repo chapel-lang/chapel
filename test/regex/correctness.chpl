@@ -13,9 +13,9 @@ var locales2 = Locales[numLocales - 1];
  */
 
 /* init= */
-var r1 = compile("a+":t);
+var r1 = new regex("a+":t);
 assert(r1:t == "a+":t);
-var r2 = compile("b+":t);
+var r2 = new regex("b+":t);
 assert(r1.match("aaa":t).matched);
 
 /* operator.= */
@@ -25,10 +25,10 @@ assert(r1.match("bbb":t).matched);
 
 var pattern = "a+":t;
 on locales1 {
-  var r2 = compile(pattern);
+  var r2 = new regex(pattern);
 }
 
-r1 = compile("a+":t);
+r1 = new regex("a+":t);
 on locales1 {
   /* operator.= */
   /* here(1) != ret: (r1.home(0) == x: r2.home(0)) */
@@ -36,7 +36,7 @@ on locales1 {
 }
 assert(r1.match("bbb":t).matched);
 
-r1 = compile("a+":t);
+r1 = new regex("a+":t);
 on locales1 {
   /* init= */
   /* here(1) != x: r1.home(0) */
@@ -44,9 +44,9 @@ on locales1 {
   assert(r3.match("aaa":t).matched);
 }
 
-r1 = compile("a+":t);
+r1 = new regex("a+":t);
 on locales1 {
-  var r3 = compile("c+":t);
+  var r3 = new regex("c+":t);
   /* operator.= */
   /* here(1) == ret: r3.home(1) != x: r1.home(0) */
   r3 = r1;
@@ -54,28 +54,28 @@ on locales1 {
 }
 
 /* long regex that doesn't fit in a small string */
-r1 = compile("abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
+r1 = new regex("abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
 on locales1 {
-  var r3 = compile("c+":t);
+  var r3 = new regex("c+":t);
   /* operator.= */
   /* here(1) == ret: r3.home(1) != x: r1.home(0) */
   r3 = r1;
   assert(r3:t == "abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
 }
 
-r1 = compile("a+":t);
+r1 = new regex("a+":t);
 on locales1 {
-  var r3 = compile("c+":t);
+  var r3 = new regex("c+":t);
   /* operator.= */
   /* here(1) != ret: r1.home(0) != (x: r3.home(1) == here(1)) */
   r1 = r3;
 }
 assert(r1.match("ccc":t).matched);
 
-var r4 = compile("a+":t);
+var r4 = new regex("a+":t);
 
 on locales1 {
-  var r5 = compile("b+":t);
+  var r5 = new regex("b+":t);
   on locales2 {
     /* operator.= */
     /* here(2) != ret: r4.home(0) != x: r5.home(1) */
@@ -89,9 +89,9 @@ assert(r4.match("bbb":t).matched);
 
 /* And the reverse */
 /* reset r4.home(0) */
-r4 = compile("a+":t);
+r4 = new regex("a+":t);
 on locales1 {
-  var r5 = compile("b+":t);
+  var r5 = new regex("b+":t);
   on locales2 {
     /* operator.= */
     /* here(2) != ret: r5.home(1) != x: r4.home(0) */
@@ -99,14 +99,14 @@ on locales1 {
   }
 }
 
-r4 = compile("a+":t);
+r4 = new regex("a+":t);
 on locales1 {
-  var (s, n) = r4.subn("hello":t, "aaaa world aa":t);
+  var (s, n) = ("aaaa world aa":t).replaceAndCount(r4, "hello":t);
   assert(n == 2);
   assert(s == "hello world hello":t);
 }
 
-var r6 = compile("a+":t);
+var r6 = new regex("a+":t);
 var xs : [1..10] t = [
   "a":t,
   "aa":t,
@@ -140,7 +140,7 @@ forall s in ys do
 coforall taskId in 1..#ys.size do
   assert(r6.match(ys[taskId]).matched);
 
-var r7 = compile("a+":t, ignoreCase=true);
+var r7 = new regex("a+":t, ignoreCase=true);
 on locales1 {
   assert(r7.match("aaa":t).matched);
   assert(r7.match("AAA":t).matched);
@@ -148,9 +148,9 @@ on locales1 {
   assert(r8.match("AAA":t).matched);
 }
 
-var r8 = compile("a+":t);
+var r8 = new regex("a+":t);
 on locales1 {
-  var r5 = compile("b+":t, ignoreCase=true);
+  var r5 = new regex("b+":t, ignoreCase=true);
   on locales2 {
     assert(r8.match("aaa":t).matched);
     r8 = r5;
@@ -171,9 +171,9 @@ assert(r8.match("BBB":t).matched);
 
 proc inafunction() {
   /* init= */
-  var r1 = compile("a+":t);
+  var r1 = new regex("a+":t);
   assert(r1:t == "a+":t);
-  var r2 = compile("b+":t);
+  var r2 = new regex("b+":t);
   assert(r1.match("aaa":t).matched);
 
   /* operator.= */
@@ -183,10 +183,10 @@ proc inafunction() {
 
   var pattern = "a+":t;
   on locales1 {
-    var r2 = compile(pattern);
+    var r2 = new regex(pattern);
   }
 
-  r1 = compile("a+":t);
+  r1 = new regex("a+":t);
   on locales1 {
     /* operator.= */
     /* here(1) != ret: (r1.home(0) == x: r2.home(0)) */
@@ -194,7 +194,7 @@ proc inafunction() {
   }
   assert(r1.match("bbb":t).matched);
 
-  r1 = compile("a+":t);
+  r1 = new regex("a+":t);
   on locales1 {
     /* init= */
     /* here(1) != x: r1.home(0) */
@@ -202,9 +202,9 @@ proc inafunction() {
     assert(r3.match("aaa":t).matched);
   }
 
-  r1 = compile("a+":t);
+  r1 = new regex("a+":t);
   on locales1 {
-    var r3 = compile("c+":t);
+    var r3 = new regex("c+":t);
     /* operator.= */
     /* here(1) == ret: r3.home(1) != x: r1.home(0) */
     r3 = r1;
@@ -212,28 +212,28 @@ proc inafunction() {
   }
 
   /* long regex that doesn't fit in a small string */
-  r1 = compile("abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
+  r1 = new regex("abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
   on locales1 {
-    var r3 = compile("c+":t);
+    var r3 = new regex("c+":t);
     /* operator.= */
     /* here(1) == ret: r3.home(1) != x: r1.home(0) */
     r3 = r1;
     assert(r3:t == "abcdefghijklmnopqrstuvwxyxabcdefghijklmnopqrstuvwxyx":t);
   }
 
-  r1 = compile("a+":t);
+  r1 = new regex("a+":t);
   on locales1 {
-    var r3 = compile("c+":t);
+    var r3 = new regex("c+":t);
     /* operator.= */
     /* here(1) != ret: r1.home(0) != (x: r3.home(1) == here(1)) */
     r1 = r3;
   }
   assert(r1.match("ccc":t).matched);
 
-  var r4 = compile("a+":t);
+  var r4 = new regex("a+":t);
 
   on locales1 {
-    var r5 = compile("b+":t);
+    var r5 = new regex("b+":t);
     on locales2 {
       /* operator.= */
       /* here(2) != ret: r4.home(0) != x: r5.home(1) */
@@ -247,9 +247,9 @@ proc inafunction() {
 
   /* And the reverse */
   /* reset r4.home(0) */
-  r4 = compile("a+":t);
+  r4 = new regex("a+":t);
   on locales1 {
-    var r5 = compile("b+":t);
+    var r5 = new regex("b+":t);
     on locales2 {
       /* operator.= */
       /* here(2) != ret: r5.home(1) != x: r4.home(0) */
@@ -257,14 +257,14 @@ proc inafunction() {
     }
   }
 
-  r4 = compile("a+":t);
+  r4 = new regex("a+":t);
   on locales1 {
-    var (s, n) = r4.subn("hello":t, "aaaa world aa":t);
+    var (s, n) = ("aaaa world aa":t).replaceAndCount(r4, "hello":t);
     assert(n == 2);
     assert(s == "hello world hello":t);
   }
 
-  var r6 = compile("a+":t);
+  var r6 = new regex("a+":t);
   var xs : [1..10] t = [
                         "a":t,
                         "aa":t,
@@ -298,7 +298,7 @@ proc inafunction() {
   coforall taskId in 1..#ys.size do
     assert(r6.match(ys[taskId]).matched);
 
-  var r7 = compile("a+":t, ignoreCase=true);
+  var r7 = new regex("a+":t, ignoreCase=true);
   on locales1 {
     assert(r7.match("aaa":t).matched);
     assert(r7.match("AAA":t).matched);
@@ -306,9 +306,9 @@ proc inafunction() {
     assert(r8.match("AAA":t).matched);
   }
 
-  var r8 = compile("a+":t);
+  var r8 = new regex("a+":t);
   on locales1 {
-    var r5 = compile("b+":t, ignoreCase=true);
+    var r5 = new regex("b+":t, ignoreCase=true);
     on locales2 {
       assert(r8.match("aaa":t).matched);
       r8 = r5;

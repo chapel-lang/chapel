@@ -1,2 +1,4 @@
 bug: compilation errors for global extern record containing array
 #12055
+
+Remove the skipif once this works non-CHPL_COMM=none

@@ -50,7 +50,7 @@ a number of methods that wrap GMP functions in a natural way:
 
  writeln(a * b);
 
- c.fac(100);
+ fac(c, 00);
  writeln(c);
 
 Casting and declarations can be used to create ``bigint`` records as
@@ -150,7 +150,6 @@ module BigInteger {
   use CTypes;
   use GMP;
   use HaltWrappers;
-  use CTypes;
   use OS;
 
 
@@ -164,7 +163,7 @@ module BigInteger {
 
        The enum Round is deprecated, please use the enum round instead
   */
-  deprecated "The enum Round is deprecated, please use the enum round instead"
+  @deprecated(notes="The enum Round is deprecated, please use the enum round instead")
   enum Round {
     DOWN = -1,
     ZERO =  0,
@@ -189,13 +188,30 @@ module BigInteger {
     up = 1
   }
 
+  /* A compile-time parameter to control the behavior of bigint initializers
+     that take a string argument.
+
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.)
+
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`~OS.BadFormatError` to be thrown)
+  */
+  config param bigintInitThrows = false;
+
+  // TODO: remove when initializers can throw in their body
+  private proc throwingInitWorkaround() throws {
+    throw new BadFormatError("Error initializing big integer");
+  }
+
   pragma "ignore noinit"
   record bigint {
     // The underlying GMP C structure
-    pragma "no doc"
+    pragma "no init"
+    @chpldoc.nodoc
     var mpz      : mpz_t;              // A dynamic-vector of C integers
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var localeId : chpl_nodeID_t;      // The locale id for the GMP state
 
     proc init() {
@@ -242,7 +258,8 @@ module BigInteger {
       this.init(num);
     }
 
-    proc init(str: string, base: int = 0) {
+    @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
+    proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -256,7 +273,9 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    @deprecated(notes="bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0, out error: errorCode) {
+
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -272,13 +291,46 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    /* Initialize a :type:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg str: The value to be stored in the resulting :type:`bigint`.
+       :type str: `string`
+
+       :arg base: The base to use when creating the :type:`bigint` from ``str``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``str``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const str_  = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
     //
     // If a bigint is copied to a remote node then it will receive a shallow
     // copy.  The localeId points back the correct locale but the mpz field
     // is meaningless.
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if _local || this.localeId == chpl_nodeID {
         mpz_clear(this.mpz);
@@ -288,9 +340,9 @@ module BigInteger {
     /*
       .. warning::
 
-         bigint.size() is deprecated
+         bigint.size() is @deprecated
     */
-    deprecated "bigint.size() is deprecated"
+    @deprecated(notes="bigint.size() is deprecated")
     proc size() : c_size_t {
       var ret: c_size_t;
 
@@ -316,8 +368,8 @@ module BigInteger {
 
          bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
     */
-    deprecated
-    "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
+    @deprecated
+    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
     proc sizeinbase(base: int) : uint {
       return sizeInBase(base).safeCast(uint);
     }
@@ -357,12 +409,12 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead"
+    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead")
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead"
+    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead")
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
@@ -383,7 +435,7 @@ module BigInteger {
       return ret;
     }
 
-    deprecated "mpzStruct is deprecated, please use :proc:`getImpl` instead"
+    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
     proc mpzStruct() : __mpz_struct {
       return getImpl();
     }
@@ -414,7 +466,7 @@ module BigInteger {
       return ret;
     }
 
-    deprecated "get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead"
+    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
     proc get_d_2exp() : (uint(32), real) {
       var (dbl, exp) = getD2Exp();
       return (exp, dbl);
@@ -521,17 +573,17 @@ module BigInteger {
   //
   // Cast operators
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(src: integral, type toType: bigint): bigint {
     return new bigint(src);
   }
 
-  pragma "no doc"
-  inline operator :(src: string, type toType: bigint): bigint {
+  @chpldoc.nodoc
+  inline operator :(src: string, type toType: bigint): bigint throws {
     return new bigint(src);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
@@ -552,7 +604,7 @@ module BigInteger {
     return ret:t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isUintType(t) {
     var ret: c_ulong;
 
@@ -573,7 +625,7 @@ module BigInteger {
     return ret:t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isRealType(t) {
     var ret: c_double;
 
@@ -692,17 +744,13 @@ module BigInteger {
 
   operator bigint.-(const ref a: bigint): bigint {
     var c = new bigint(a);
-
-    mpz_neg(c.mpz, c.mpz);
-
+    BigInteger.neg(c, a);
     return c;
   }
 
   operator bigint.~(const ref a: bigint): bigint {
     var c = new bigint(a);
-
-    mpz_com(c.mpz, c.mpz);
-
+    BigInteger.com(c, a);
     return c;
   }
 
@@ -713,132 +761,29 @@ module BigInteger {
   // Addition
   operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_add(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_add(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_add(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.add(c, a, b);
     return c;
   }
 
   operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-
-    if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_add_ui(c.mpz, a_.mpz, b_);
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(c.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_sub_ui(c.mpz, a.mpz, b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_sub_ui(c.mpz, a_.mpz, b_);
-      }
-    }
-
+    BigInteger.add(c, a, b);
+    return c;
+  }
+  operator bigint.+(const ref a: bigint, b: uint): bigint {
+    var c = new bigint();
+    BigInteger.add(c, a, b);
     return c;
   }
 
   operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if a >= 0 {
-      const a_ = a.safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
-
-      } else if b.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
-
-      } else {
-        const b_ = b;
-
-        mpz_add_ui(c.mpz, b_.mpz, a_);
-      }
-
-    } else {
-      const a_ = (0 - a).safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(c.mpz, b.mpz,  a_);
-
-      } else if b.localeId == chpl_nodeID {
-        mpz_sub_ui(c.mpz, b.mpz,  a_);
-
-      } else {
-        const b_ = b;
-
-        mpz_sub_ui(c.mpz, b_.mpz, a_);
-      }
-    }
-
+    BigInteger.add(c, b, a);
     return c;
   }
-
-  operator bigint.+(const ref a: bigint, b: uint): bigint {
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_add_ui(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_add_ui(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_add_ui(c.mpz, a_.mpz, b_);
-    }
-
-    return c;
-  }
-
   operator bigint.+(a: uint, const ref b: bigint): bigint {
-    const a_ = a.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_add_ui(c.mpz, b.mpz,  a_);
-
-    } else if b.localeId == chpl_nodeID {
-      mpz_add_ui(c.mpz, b.mpz,  a_);
-
-    } else {
-      const b_ = b;
-
-      mpz_add_ui(c.mpz, b_.mpz, a_);
-    }
-
+    var c = new bigint();
+    BigInteger.add(c, b, a);
     return c;
   }
 
@@ -847,239 +792,67 @@ module BigInteger {
   // Subtraction
   operator bigint.-(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_sub(c.mpz, a.mpz,  b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_sub(c.mpz, a.mpz,  b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_sub(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.sub(c, a, b);
     return c;
   }
 
   operator bigint.-(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-
-    if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_sub_ui(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_sub_ui(c.mpz, a_.mpz, b_);
-      }
-
-    } else {
-      const b_ = b:bigint;
-
-      if _local {
-        mpz_sub(c.mpz, a.mpz, b_.mpz);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_sub(c.mpz, a.mpz, b_.mpz);
-
-      } else {
-        const a_ = a;
-
-        mpz_sub(c.mpz, a_.mpz, b_.mpz);
-      }
-    }
-
+    BigInteger.sub(c, a, b);
+    return c;
+  }
+  operator bigint.-(const ref a: bigint, b: uint): bigint {
+    var c = new bigint();
+    BigInteger.sub(c, a, b);
     return c;
   }
 
   operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if a >= 0 {
-      const a_ = a.safeCast(c_ulong);
-
-      if _local {
-        mpz_ui_sub(c.mpz, a_, b.mpz);
-
-      } else if b.localeId == chpl_nodeID {
-        mpz_ui_sub(c.mpz, a_, b.mpz);
-
-      } else {
-        const b_ = b;
-
-        mpz_ui_sub(c.mpz, a_, b_.mpz);
-      }
-
-    } else {
-      const a_ = a:bigint;
-
-      if _local {
-        mpz_sub(c.mpz, a_.mpz, b.mpz);
-
-      } else if b.localeId == chpl_nodeID {
-        mpz_sub(c.mpz, a_.mpz, b.mpz);
-
-      } else {
-        const b_ = b;
-
-        mpz_sub(c.mpz, a_.mpz, b.mpz);
-      }
-    }
-
+    BigInteger.sub(c, a, b);
     return c;
   }
-
-  operator bigint.-(const ref a: bigint, b: uint): bigint {
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_sub_ui(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_sub_ui(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_sub_ui(c.mpz, a_.mpz, b_);
-    }
-
-    return c;
-  }
-
   operator bigint.-(a: uint, const ref b: bigint): bigint {
-    const a_ = a.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_ui_sub(c.mpz, a_, b.mpz);
-
-    } else if b.localeId == chpl_nodeID {
-      mpz_ui_sub(c.mpz, a_, b.mpz);
-
-    } else {
-      const b_ = b;
-
-      mpz_ui_sub(c.mpz, a_, b_.mpz);
-    }
-
+    var c = new bigint();
+    BigInteger.sub(c, a, b);
     return c;
   }
-
 
   // Multiplication
   operator bigint.*(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_mul(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_mul(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_mul(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.mul(c, a, b);
     return c;
   }
 
   operator bigint.*(const ref a: bigint, b: int): bigint {
-    const b_ = b.safeCast(c_long);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_mul_si(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_si(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_mul_si(c.mpz, a_.mpz, b_);
-    }
-
+    var c = new bigint();
+    BigInteger.mul(c, a, b);
+    return c;
+  }
+  operator bigint.*(const ref a: bigint, b: uint): bigint {
+    var c = new bigint();
+    BigInteger.mul(c, a, b);
     return c;
   }
 
   operator bigint.*(a: int, const ref b: bigint): bigint {
-    const a_ = a.safeCast(c_long);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_mul_si(c.mpz, b.mpz,  a_);
-
-    } else if b.localeId == chpl_nodeID {
-      mpz_mul_si(c.mpz, b.mpz,  a_);
-
-    } else {
-      const b_ = b;
-
-      mpz_mul_si(c.mpz, b_.mpz, a_);
-    }
-
+    var c = new bigint();
+    BigInteger.mul(c, b, a);
     return c;
   }
-
-  operator bigint.*(const ref a: bigint, b: uint): bigint {
-    const b_ = b.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_mul_ui(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_ui(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_mul_ui(c.mpz, a_.mpz, b_);
-    }
-
-    return c;
-  }
-
   operator bigint.*(a: uint, const ref b: bigint): bigint {
-    const a_ = a.safeCast(c_ulong);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_mul_ui(c.mpz, b.mpz,  a_);
-
-    } else if b.localeId == chpl_nodeID {
-      mpz_mul_ui(c.mpz, b.mpz,  a_);
-
-    } else {
-      const b_ = b;
-
-      mpz_mul_ui(c.mpz, b_.mpz, a_);
-    }
-
+    var c = new bigint();
+    BigInteger.mul(c, b, a);
     return c;
   }
-
 
 
   // Division
   // Documented in (bigint, integral) version
   operator bigint./(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-    c.divQ(a, b, round.zero);
+    BigInteger.divQ(c, a, b, round.zero);
 
     return c;
   }
@@ -1105,12 +878,12 @@ module BigInteger {
 
     if exp >= 0 {
       if exp.fitsInto(c_ulong) then
-        c.pow(base, exp: c_ulong);
+        BigInteger.pow(c, base, exp: c_ulong);
       else
         halt("Exponent too large to compute result.");
     } else {
       if exp.fitsInto(int) then
-        c.pow(base, exp: int);
+        BigInteger.pow(c, base, exp: int);
       else
         halt("Exponent too large to compute result.");
     }
@@ -1122,9 +895,9 @@ module BigInteger {
     var c = new bigint();
 
     if exp >= 0 {
-      c.pow(base, exp: c_ulong);
+      BigInteger.pow(c, base, exp: c_ulong);
     } else {
-      c.pow(base, exp: int);
+      BigInteger.pow(c, base, exp: int);
     }
 
     return c;
@@ -1134,7 +907,7 @@ module BigInteger {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
-    c.pow(base, exp_);
+    BigInteger.pow(c, base, exp_);
 
     return c;
   }
@@ -1148,17 +921,11 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
+    const a_ = a.localize();
+    const b_ = b.localize();
     var c = new bigint();
 
-    if _local {
-      mpz_tdiv_r(c.mpz, a.mpz, b.mpz);
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_tdiv_r(c.mpz, a.mpz, b.mpz);
-    } else {
-      const a_ = a;
-      const b_ = b;
-      mpz_tdiv_r(c.mpz, a_.mpz, b_.mpz);
-    }
+    mpz_tdiv_r(c.mpz, a_.mpz, b_.mpz);
 
     return c;
   }
@@ -1171,6 +938,7 @@ module BigInteger {
   */
   operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
+    const a_ = a.localize();
     var b_ : c_ulong;
 
     if b >= 0 then
@@ -1178,14 +946,7 @@ module BigInteger {
     else
       b_ = (0 - b).safeCast(c_ulong);
 
-    if _local {
-      mpz_tdiv_r_ui(c.mpz, a.mpz, b_);
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_r_ui(c.mpz, a.mpz, b_);
-    } else {
-      const a_ = a;
-      mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-    }
+    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
 
     return c;
   }
@@ -1197,161 +958,68 @@ module BigInteger {
      It is an error if `b` == 0.
   */
   operator bigint.%(const ref a: bigint, b: uint): bigint {
-    var   c  = new bigint();
+    const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
+    var   c  = new bigint();
 
-    if _local {
-      mpz_tdiv_r_ui(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_r_ui(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
-    }
+    mpz_tdiv_r_ui(c.mpz, a_.mpz, b_);
 
     return c;
   }
 
 
+  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      shiftLeft(result, a, b:uint);
+    } else {
+      BigInteger.divQ2Exp(result, a, (0 - b):uint, round.down);
+    }
+  }
+  private inline proc shiftLeft(ref result: bigint, const ref a: bigint, b: uint) {
+    BigInteger.mul_2exp(result, a, b);
+  }
 
   // Bit-shift left
   operator bigint.<<(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_mul_2exp(c.mpz, a_.mpz, b_);
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
-      }
-    }
-
+    BigInteger.shiftLeft(c, a, b);
     return c;
   }
-
   operator bigint.<<(const ref a: bigint, b: uint): bigint {
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_mul_2exp(c.mpz, a_.mpz, b_);
-    }
-
+    var c = new bigint();
+    BigInteger.shiftLeft(c, a, b);
     return c;
   }
 
+
+  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      shiftRight(result, a, b:uint);
+    } else {
+      BigInteger.mul_2exp(result, a, (0 - b):uint);
+    }
+  }
+  private inline proc shiftRight(ref result: bigint, const ref a: bigint, b: uint) {
+    BigInteger.divQ2Exp(result, a, b, round.down);
+  }
 
 
   // Bit-shift right
   operator bigint.>>(const ref a: bigint, b: int): bigint {
     var c = new bigint();
-
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(c.mpz, a.mpz,  b_);
-
-      } else {
-        const a_ = a;
-
-        mpz_mul_2exp(c.mpz, a_.mpz, b_);
-      }
-    }
-
+    BigInteger.shiftRight(c, a, b);
     return c;
   }
-
   operator bigint.>>(const ref a: bigint, b: uint): bigint {
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   c  = new bigint();
-
-    if _local {
-      mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
-    }
-
+    var c = new bigint();
+    BigInteger.shiftRight(c, a, b);
     return c;
   }
-
-
 
   // Bitwise and
   operator bigint.&(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_and(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_and(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_and(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.and(c, a, b);
     return c;
   }
 
@@ -1360,20 +1028,7 @@ module BigInteger {
   // Bitwise ior
   operator bigint.|(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_ior(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_ior(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_ior(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.ior(c, a, b);
     return c;
   }
 
@@ -1382,20 +1037,7 @@ module BigInteger {
   // Bitwise xor
   operator bigint.^(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
-
-    if _local {
-      mpz_xor(c.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_xor(c.mpz, a.mpz, b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      mpz_xor(c.mpz, a_.mpz, b_.mpz);
-    }
-
+    BigInteger.xor(c, a, b);
     return c;
   }
 
@@ -1405,238 +1047,108 @@ module BigInteger {
   // Comparison Operations
   //
 
-  private inline proc cmp(const ref a: bigint, const ref b: bigint) {
-    var ret : c_int;
+  private inline proc cmp(const ref a: bigint, const ref b: bigint)
+    do return a.cmp(b);
 
-    if _local {
-      ret = mpz_cmp(a.mpz,  b.mpz);
+  private inline proc cmp(const ref a: bigint, b: int)
+    do return a.cmp(b);
+  private inline proc cmp(const ref a: bigint, b: uint)
+    do return a.cmp(b);
 
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_cmp(a.mpz,  b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      ret = mpz_cmp(a_.mpz, b_.mpz);
-    }
-
-    return ret;
-  }
-
-  private inline proc cmp(const ref a: bigint, b: int) {
-    const b_ = b.safeCast(c_long);
-    var   ret : c_int;
-
-    if _local {
-      ret = mpz_cmp_si(a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      ret = mpz_cmp_si(a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      ret = mpz_cmp_si(a_.mpz, b_);
-    }
-
-    return ret;
-  }
-
-  private inline proc cmp(a: int, const ref b: bigint) {
-    const a_ = a.safeCast(c_long);
-    var   ret : c_int;
-
-    if _local {
-      ret = mpz_cmp_si(b.mpz,  a_);
-
-    } else if b.localeId == chpl_nodeID {
-      ret = mpz_cmp_si(b.mpz,  a_);
-
-    } else {
-      const b_ = b;
-
-      ret = mpz_cmp_si(b_.mpz, a_);
-    }
-
-    return 0 - ret;
-  }
-
-  private inline proc cmp(const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-    var   ret : c_int;
-
-    if _local {
-      ret = mpz_cmp_ui(a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      ret = mpz_cmp_ui(a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      ret = mpz_cmp_ui(a_.mpz, b_);
-    }
-
-    return ret;
-  }
-
-  private inline proc cmp(a: uint, const ref b: bigint) {
-    const a_ = a.safeCast(c_ulong);
-    var   ret : c_int;
-
-    if _local {
-      ret = mpz_cmp_ui(b.mpz,  a_);
-
-    } else if b.localeId == chpl_nodeID {
-      ret = mpz_cmp_ui(b.mpz,  a_);
-
-    } else {
-      const b_ = b;
-
-      ret = mpz_cmp_ui(b_.mpz, a_);
-    }
-
-    return 0 - ret;
-  }
+  private inline proc cmp(a: int, const ref b: bigint)
+    do return 0 - (b.cmp(a));
+  private inline proc cmp(a: uint, const ref b: bigint)
+    do return 0 - (b.cmp(a));
 
 
   // Equality
-  operator bigint.==(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
+  operator bigint.==(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
-  operator bigint.==(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
+  operator bigint.==(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) == 0;
+  operator bigint.==(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
-  operator bigint.==(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
-  operator bigint.==(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
-  operator bigint.==(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) == 0;
-  }
-
+  operator bigint.==(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
+  operator bigint.==(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) == 0;
 
 
   // Inequality
-  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
+  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
-  operator bigint.!=(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
+  operator bigint.!=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) != 0;
+  operator bigint.!=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
-  operator bigint.!=(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
-
-  operator bigint.!=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
-
-  operator bigint.!=(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) != 0;
-  }
-
+  operator bigint.!=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
+  operator bigint.!=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) != 0;
 
 
   // Greater than
-  operator bigint.>(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
+  operator bigint.>(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
-  operator bigint.>(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
+  operator bigint.>(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) > 0;
+  operator bigint.>(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
-  operator bigint.>(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
-  operator bigint.>(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
-  operator bigint.>(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) > 0;
-  }
-
+  operator bigint.>(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
+  operator bigint.>(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) > 0;
 
 
   // Less than
-  operator bigint.<(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
-  operator bigint.<(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) < 0;
+  operator bigint.<(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
-  operator bigint.<(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
-
-  operator bigint.<(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
-
-  operator bigint.<(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) < 0;
-  }
+  operator bigint.<(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
+  operator bigint.<(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) < 0;
 
 
   // Greater than or equal
-  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
+  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
-  operator bigint.>=(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
+  operator bigint.>=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) >= 0;
+  operator bigint.>=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
-  operator bigint.>=(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
-
-  operator bigint.>=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
-
-  operator bigint.>=(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) >= 0;
-  }
-
+  operator bigint.>=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
+  operator bigint.>=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) >= 0;
 
 
   // Less than or equal
-  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
+  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
-  operator bigint.<=(const ref a: bigint, b: int): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
+  operator bigint.<=(const ref a: bigint, b: int): bool
+    do return BigInteger.cmp(a, b) <= 0;
+  operator bigint.<=(const ref a: bigint, b: uint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
-  operator bigint.<=(a: int, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-  operator bigint.<=(const ref a: bigint, b: uint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-  operator bigint.<=(a: uint, const ref b: bigint): bool {
-    return BigInteger.cmp(a, b) <= 0;
-  }
-
-
+  operator bigint.<=(a: int, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
+  operator bigint.<=(a: uint, const ref b: bigint): bool
+    do return BigInteger.cmp(a, b) <= 0;
 
 
   //
@@ -1644,218 +1156,42 @@ module BigInteger {
   //
 
   // +=
-  operator bigint.+=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_add(a.mpz, a.mpz, b.mpz);
+  operator bigint.+=(ref a: bigint, const ref b: bigint)
+    do BigInteger.add(a, a, b);
 
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_add(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_add(a.mpz, a.mpz, b_.mpz);
-      }
-    }
-  }
-
-  operator bigint.+=(ref a: bigint, b: int) {
-    if (b >= 0) {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_add_ui(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_add_ui(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_sub_ui(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_sub_ui(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.+=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_add_ui(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_add_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_add_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.+=(ref a: bigint, b: int)
+    do BigInteger.add(a, a, b);
+  operator bigint.+=(ref a: bigint, b: uint)
+    do BigInteger.add(a, a, b);
 
 
 
   // -=
-  operator bigint.-=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_sub(a.mpz, a.mpz, b.mpz);
+  operator bigint.-=(ref a: bigint, const ref b: bigint)
+    do BigInteger.sub(a, a, b);
 
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_sub(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_sub(a.mpz, a.mpz, b_.mpz);
-      }
-    }
-  }
-
-  operator bigint.-=(ref a: bigint, b: int) {
-    if (b >= 0) {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_sub_ui(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_sub_ui(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_add_ui(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_add_ui(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.-=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_sub_ui(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_sub_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_sub_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.-=(ref a: bigint, b: int)
+    do BigInteger.sub(a, a, b);
+  operator bigint.-=(ref a: bigint, b: uint)
+    do BigInteger.sub(a, a, b);
 
 
 
   // *=
-  operator bigint.*=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_mul(a.mpz, a.mpz, b.mpz);
+  operator bigint.*=(ref a: bigint, const ref b: bigint)
+    do BigInteger.mul(a, a, b);
 
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_mul(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_mul(a.mpz, a.mpz, b_.mpz);
-      }
-    }
-  }
-
-  operator bigint.*=(ref a: bigint, b: int) {
-    const b_ = b.safeCast(c_long);
-
-    if _local {
-      mpz_mul_si(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_si(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mul_si(a.mpz, a.mpz, b_);
-      }
-    }
-  }
-
-  operator bigint.*=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
-
-    if _local {
-      mpz_mul_ui(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_ui(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mul_ui(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.*=(ref a: bigint, b:  int)
+    do BigInteger.mul(a, a, b);
+  operator bigint.*=(ref a: bigint, b: uint)
+    do BigInteger.mul(a, a, b);
 
 
 
   // /=
   // Documented in (bigint, integral) version
   operator bigint./=(ref a: bigint, const ref b: bigint) {
-    a.divQ(a, b, round.zero);
+    BigInteger.divQ(a, a, b, round.zero);
   }
 
   /* Divide ``a`` by ``b``, storing the result in ``a``.
@@ -1874,51 +1210,15 @@ module BigInteger {
 
   // **=
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
-    if _local {
-      base = base ** exp;
-
-    } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      base = base ** exp;
-
-    } else {
-      const base_ = base;
-      const exp_  = exp;
-
-      base = base_ ** exp_;
-    }
+    base = base ** exp;
   }
 
   operator bigint.**=(ref base: bigint, exp: int) {
-    if _local {
-      base.pow(base, exp);
-
-    } else if base.localeId == chpl_nodeID {
-      base.pow(base, exp);
-
-    } else {
-      const base_ = base;
-      const exp_ = exp;
-
-      base.pow(base_, exp_);
-    }
+    BigInteger.pow(base, base, exp);
   }
 
   operator bigint.**=(ref base: bigint, exp: uint) {
-    const exp_ = exp.safeCast(c_ulong);
-
-    if _local {
-      base.pow(base, exp_);
-
-    } else if base.localeId == chpl_nodeID {
-      base.pow(base, exp_);
-
-    } else {
-      const baseLoc = chpl_buildLocaleID(base.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", baseLoc) {
-        base.pow(base, exp_);
-      }
-    }
+    BigInteger.pow(base, base, exp);
   }
 
 
@@ -1995,173 +1295,31 @@ module BigInteger {
   }
 
   operator bigint.&=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_and(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_and(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_and(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    BigInteger.and(a, a, b);
   }
 
   operator bigint.|=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_ior(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_ior(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_ior(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    BigInteger.ior(a, a, b);
   }
 
   operator bigint.^=(ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_xor(a.mpz, a.mpz, b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_xor(a.mpz, a.mpz, b.mpz);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        const b_ = b;
-
-        mpz_xor(a.mpz, a.mpz, b_.mpz);
-      }
-    }
+    BigInteger.xor(a, a, b);
   }
 
 
   // <<=
-  operator bigint.<<=(ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_mul_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.<<=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(mp_bitcnt_t);
-
-    if _local {
-      mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.<<=(ref a: bigint, b: int)
+    do BigInteger.shiftLeft(a, a, b);
+  operator bigint.<<=(ref a: bigint, b: uint)
+    do BigInteger.shiftLeft(a, a, b);
 
 
 
   // >>=
-  operator bigint.>>=(ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-
-    } else {
-      const b_ = (0 - b).safeCast(mp_bitcnt_t);
-
-      if _local {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else if a.localeId == chpl_nodeID {
-        mpz_mul_2exp(a.mpz, a.mpz, b_);
-
-      } else {
-        const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_mul_2exp(a.mpz, a.mpz, b_);
-        }
-      }
-    }
-  }
-
-  operator bigint.>>=(ref a: bigint, b: uint) {
-    const b_ = b.safeCast(mp_bitcnt_t);
-
-    if _local {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-    } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-
-    } else {
-      const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
-      }
-    }
-  }
+  operator bigint.>>=(ref a: bigint, b:  int)
+    do BigInteger.shiftRight(a, a, b);
+  operator bigint.>>=(ref a: bigint, b: uint)
+    do BigInteger.shiftRight(a, a, b);
 
 
   // Swap
@@ -2201,20 +1359,11 @@ module BigInteger {
 
   // Special Operations
   proc jacobi(const ref a: bigint, const ref b: bigint) : int {
+    const a_ = a.localize();
+    const b_ = b.localize();
     var ret : c_int;
 
-    if _local {
-      ret = mpz_jacobi(a.mpz,  b.mpz);
-
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_jacobi(a.mpz,  b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      ret = mpz_jacobi(a_.mpz, b_.mpz);
-    }
+    ret = mpz_jacobi(a_.mpz, b_.mpz);
 
     return ret.safeCast(int);
   }
@@ -2222,20 +1371,11 @@ module BigInteger {
 
 
   proc legendre(const ref a: bigint, const ref p: bigint) : int {
+    const a_ = a.localize();
+    const p_ = p.localize();
     var ret : c_int;
 
-    if _local {
-      ret = mpz_legendre(a.mpz,  p.mpz);
-
-    } else if a.localeId == chpl_nodeID && p.localeId == chpl_nodeID {
-      ret = mpz_legendre(a.mpz,  p.mpz);
-
-    } else {
-      const a_ = a;
-      const p_ = p;
-
-      ret = mpz_legendre(a_.mpz, p_.mpz);
-    }
+    ret = mpz_legendre(a_.mpz, p_.mpz);
 
     return ret.safeCast(int);
   }
@@ -2246,94 +1386,50 @@ module BigInteger {
   proc kronecker(const ref a: bigint, const ref b: bigint) : int {
     var ret : c_int;
 
-    if _local {
-      ret = mpz_kronecker(a.mpz,  b.mpz);
+    const a_ = a.localize();
+    const b_ = b.localize();
 
-    } else if a.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_kronecker(a.mpz,  b.mpz);
-
-    } else {
-      const a_ = a;
-      const b_ = b;
-
-      ret = mpz_kronecker(a_.mpz, b_.mpz);
-    }
+    ret = mpz_kronecker(a_.mpz, b_.mpz);
 
     return ret.safeCast(int);
   }
 
   proc kronecker(const ref a: bigint, b: int) : int {
+    const a_ = a.localize();
     const b_ = b.safeCast(c_long);
     var  ret : c_int;
 
-    if _local {
-      ret = mpz_kronecker_si(a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      ret = mpz_kronecker_si(a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      ret = mpz_kronecker_si(a_.mpz, b_);
-    }
+    ret = mpz_kronecker_si(a_.mpz, b_);
 
     return ret.safeCast(int);
   }
 
   proc kronecker(a: int, const ref b: bigint) : int {
     const a_ = a.safeCast(c_long);
+    const b_ = b.localize();
     var  ret : c_int;
 
-    if _local {
-      ret = mpz_si_kronecker(a_, b.mpz);
-
-    } else if b.localeId == chpl_nodeID {
-      ret = mpz_si_kronecker(a_, b.mpz);
-
-    } else {
-      const b_ = b;
-
-      ret = mpz_si_kronecker(a_, b_.mpz);
-    }
+    ret = mpz_si_kronecker(a_, b_.mpz);
 
     return ret.safeCast(int);
   }
 
   proc kronecker(const ref a: bigint, b: uint) : int {
+    const a_ = a.localize();
     const b_ = b.safeCast(c_ulong);
     var  ret : c_int;
 
-    if _local {
-      ret = mpz_kronecker_ui(a.mpz,  b_);
-
-    } else if a.localeId == chpl_nodeID {
-      ret = mpz_kronecker_ui(a.mpz,  b_);
-
-    } else {
-      const a_ = a;
-
-      ret = mpz_kronecker_ui(a_.mpz, b_);
-    }
+    ret = mpz_kronecker_ui(a_.mpz, b_);
 
     return ret.safeCast(int);
   }
 
   proc kronecker(a: uint, const ref b: bigint) : int {
     const a_ = b.safeCast(c_ulong);
+    const b_ = b.localize();
     var  ret : c_int;
 
-    if _local {
-      ret = mpz_ui_kronecker(a_, a.mpz);
-
-    } else if b.localeId == chpl_nodeID {
-      ret = mpz_ui_kronecker(a_, a.mpz);
-
-    } else {
-      const b_ = b;
-
-      ret = mpz_ui_kronecker(a_, b_.mpz);
-    }
+    ret = mpz_ui_kronecker(a_, b_.mpz);
 
     return ret.safeCast(int);
   }
@@ -2349,10 +1445,10 @@ module BigInteger {
        n and d are deprecated - please use numer and denom respectively
   */
   pragma "last resort"
-  deprecated
-  "n and d are deprecated - please use numer and denom respectively"
+  @deprecated
+  ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
-    this.divexact(numer=n, denom=d);
+    BigInteger.divexact(this, numer=n, denom=d);
   }
   /*
     .. warning::
@@ -2360,36 +1456,61 @@ module BigInteger {
        n and d are deprecated - please use numer and denom respectively
   */
   pragma "last resort"
-  deprecated
-  "n and d are deprecated - please use numer and denom respectively"
+  @deprecated
+  ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, d: integral) {
-    this.divexact(numer=n,denom=new bigint(d));
+    BigInteger.divexact(this, numer=n,denom=new bigint(d));
   }
 
   // documented in bigint, integral version
-  proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+  proc divexact(ref result: bigint, const ref numer: bigint, const ref denom: bigint) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
 
     if _local {
-      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              numer.localeId    == chpl_nodeID &&
-              denom.localeId    == chpl_nodeID {
-      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
-
+      mpz_divexact(result.mpz, numer.mpz, denom.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer;
+      const denom_ = denom;
+      mpz_divexact(result.mpz, numer_.mpz, denom_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
-
-        mpz_divexact(this.mpz, numer_.mpz, denom_.mpz);
+        mpz_divexact(result.mpz, numer_.mpz, denom_.mpz);
       }
     }
+  }
+
+  // documented in bigint, integral version
+  @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divexact`")
+  proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+    BigInteger.divexact(this, numer, denom);
+  }
+
+  /*
+    Computes ``numer/denom`` and stores the result in ``result``, which is a
+    :record:`bigint` instance.
+
+    .. warning::
+
+       ``divexact`` is optimized to handle cases where ``numer/denom`` results
+       in an integer.  When ``numer/denom`` does not produce an integer, this
+       method may produce incorrect results.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+
+    :arg numer: numerator
+    :type numer: :record:`bigint`
+
+    :arg denom: denominator
+    :type denom: :record:`bigint` or ``integral``
+  */
+  proc divexact(ref result: bigint, const ref numer: bigint, denom: integral) {
+    BigInteger.divexact(result, numer, new bigint(denom));
   }
 
   /*
@@ -2410,8 +1531,9 @@ module BigInteger {
 
     :type denom: :record:`bigint` or ``integral``
   */
+  @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divexact`")
   proc bigint.divexact(const ref numer: bigint, denom: integral) {
-    this.divexact(numer, new bigint(denom));
+    BigInteger.divexact(this, numer, denom);
   }
 
   // divisible_p
@@ -2420,8 +1542,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(const ref d: bigint) : int {
     return this.isDivisible(d);
   }
@@ -2430,8 +1552,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(d: int) : int {
     return this.isDivisible(d);
   }
@@ -2440,8 +1562,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(d: uint) : int {
     return this.isDivisible(d);
   }
@@ -2449,20 +1571,11 @@ module BigInteger {
   // divisible_p
   // documented in uint version
   proc bigint.isDivisible(const ref div: bigint) : bool {
+    const t_ = this.localize();
+    const div_ = div.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_divisible_p(this.mpz, div.mpz);
-
-    } else if this.localeId == chpl_nodeID && div.localeId == chpl_nodeID {
-      ret = mpz_divisible_p(this.mpz, div.mpz);
-
-    } else {
-      const t_ = this;
-      const div_ = div;
-
-      ret = mpz_divisible_p(this.mpz, div.mpz);
-    }
+    ret = mpz_divisible_p(this.mpz, div.mpz);
 
     if ret then
       return true;
@@ -2472,6 +1585,7 @@ module BigInteger {
 
   // documented in uint version
   proc bigint.isDivisible(div: int) : bool {
+    const t_ = this.localize();
     var div_ = 0 : c_ulong;
     var ret: c_int;
 
@@ -2480,17 +1594,7 @@ module BigInteger {
     else
       div_ = (0 - div).safeCast(c_ulong);
 
-    if _local {
-      ret = mpz_divisible_ui_p(this.mpz, div_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, div_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_ui_p(t_.mpz,   div_);
-    }
+    ret = mpz_divisible_ui_p(t_.mpz,   div_);
 
     if ret then
       return true;
@@ -2512,20 +1616,11 @@ module BigInteger {
     :rtype: ``bool``
    */
   proc bigint.isDivisible(div: uint) : bool {
+    const t_ = this.localize();
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
 
-    if _local {
-      ret = mpz_divisible_ui_p(this.mpz, div_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, div_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_ui_p(t_.mpz,   div_);
-    }
+    ret = mpz_divisible_ui_p(t_.mpz, div_);
 
     if ret then
       return true;
@@ -2538,8 +1633,8 @@ module BigInteger {
 
        bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
   */
-  deprecated
-  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead"
+  @deprecated
+  ("bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead")
   proc bigint.divisible_2exp_p(b: integral) : int {
     return this.isDivisibleBy2Pow(b);
   }
@@ -2557,20 +1652,11 @@ module BigInteger {
     :rtype: ``bool``
    */
   proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
+    const t_ = this.localize();
     const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
-    if _local {
-      ret = mpz_divisible_2exp_p(this.mpz, exp_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_2exp_p(this.mpz, exp_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
-    }
+    ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
 
     if ret then
       return true;
@@ -2584,8 +1670,8 @@ module BigInteger {
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  deprecated
-  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  @deprecated
+  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
     return this.isCongruent(c,d);
   }
@@ -2594,8 +1680,8 @@ module BigInteger {
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  deprecated
-  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  @deprecated
+  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
   proc bigint.congruent_p(c: integral, d: integral) : int {
     return this.isCongruent(c,d);
   }
@@ -2603,23 +1689,12 @@ module BigInteger {
   // congruent_p
   // documented in integral, integral version
   proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
+    const t_ = this.localize();
+    const con_ = con.localize();
+    const mod_ = mod.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              con.localeId    == chpl_nodeID &&
-              mod.localeId    == chpl_nodeID {
-      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
-
-    } else {
-      const t_ = this;
-      const con_ = con;
-      const mod_ = mod;
-
-      ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
-    }
+    ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
 
     if ret then
       return true;
@@ -2646,21 +1721,12 @@ module BigInteger {
     :rtype: ``bool``
    */
   proc bigint.isCongruent(con: integral, mod: integral) : bool {
+    const t_ = this.localize();
     const con_ = con.safeCast(c_ulong);
     const mod_ = mod.safeCast(c_ulong);
     var   ret: c_int;
 
-    if _local {
-      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
-    }
+    ret = mpz_congruent_ui_p(t_.mpz, con_, mod_);
 
     if ret then
       return true;
@@ -2673,8 +1739,8 @@ module BigInteger {
 
        bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
   */
-  deprecated
-  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead"
+  @deprecated
+  ("bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead")
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
     return this.isCongruentBy2Pow(c,b);
   }
@@ -2697,22 +1763,12 @@ module BigInteger {
     :rtype: ``bool``
    */
   proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
+    const t_ = this.localize();
+    const con_ = con.localize();
     const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
-    if _local {
-      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
-
-    } else if this.localeId == chpl_nodeID &&
-              con.localeId    == chpl_nodeID {
-      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
-
-    } else {
-      const t_ = this;
-      const con_ = con;
-
-      ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
-    }
+    ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
 
     if ret then
       return true;
@@ -2725,12 +1781,12 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   /*
@@ -2738,12 +1794,12 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   /*
@@ -2751,88 +1807,103 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  uint,
                    const ref mod:  bigint) {
-    this.powMod(base, exp, mod);
+    BigInteger.powMod(this, base, exp, mod);
   }
-
 
   // Exponentiation Functions
   // Note: Documentation on `exp: uint` version
-  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
-                     const ref mod:  bigint) {
+  proc powMod(ref result: bigint,
+              const ref base: bigint,
+              const ref exp: bigint,
+              const ref mod: bigint)  {
     if _local {
-      mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              base.localeId == chpl_nodeID &&
-              exp.localeId  == chpl_nodeID &&
-              mod.localeId  == chpl_nodeID {
-      mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
-
+      mpz_powm(result.mpz, base.mpz, exp.mpz, mod.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const base_ = base;
+      const exp_ = exp;
+      const mod_ = mod;
+      mpz_powm(result.mpz, base_.mpz, exp_.mpz, mod_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
-        const exp_  = exp;
+        const exp_ = exp;
         const mod_  = mod;
-
-        mpz_powm(this.mpz, base_.mpz, exp_.mpz, mod_.mpz);
+        mpz_powm(result.mpz, base_.mpz, exp_.mpz, mod_.mpz);
       }
     }
   }
 
+  // Exponentiation Functions
   // Note: Documentation on `exp: uint` version
-  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
+  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
+  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
+                     const ref mod:  bigint) {
+    BigInteger.powMod(this, base, exp, mod);
+  }
+
+  proc powMod(ref result: bigint,
+              const ref base: bigint,
+              exp: int,
+              const ref mod: bigint)  {
     if exp >= 0 {
-      const exp_ = exp.safeCast(c_ulong);
+      BigInteger.powMod(result, base, exp:uint, mod);
+    }
+    else {
+      BigInteger.powMod(result, base, new bigint(exp), mod);
+    }
+  }
 
-      if _local {
-        mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
+  // Note: Documentation on `exp: uint` version
+  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
+  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
+    BigInteger.powMod(this, base, exp, mod);
+  }
 
-      } else if this.localeId == chpl_nodeID &&
-                base.localeId == chpl_nodeID &&
-                mod.localeId  == chpl_nodeID {
-        mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
+  /* Set ``result`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
 
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
 
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const base_ = base;
-          const mod_  = mod;
+     :arg base: The value to be raised to the power of ``exp`` before performing
+                a modulo operation on.
+     :type base: :record:`bigint`
 
-          mpz_powm_ui(this.mpz, base_.mpz, exp_, mod_.mpz);
-        }
-      }
+     :arg exp: The exponent to raise ``base`` to the power of prior to the
+               modulo operation.  Can be negative if the inverse (1/``base``)
+               modulo ``mod`` exists.
+     :type exp: :record:`bigint`, ``int``, or ``uint``
 
+     :arg mod: The divisor for the modulo operation.
+     :type mod: :record:`bigint`
+
+     .. warning::
+        The program behavior is undefined if ``exp`` is negative and the inverse
+        (1/``base``) modulo ``mod`` does not exist.
+   */
+  proc powMod(ref result: bigint,
+              const ref base: bigint,
+              exp: uint,
+              const ref mod: bigint)  {
+    const exp_ = exp.safeCast(c_ulong);
+
+    if _local {
+      mpz_powm_ui(result.mpz, base.mpz, exp_, mod.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const base_ = base;
+      const mod_ = mod;
+      mpz_powm_ui(result.mpz, base_.mpz, exp, mod_.mpz);
     } else {
-      if _local {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, mod.mpz);
-
-      } else if this.localeId == chpl_nodeID &&
-                base.localeId == chpl_nodeID &&
-                mod.localeId  == chpl_nodeID {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, mod.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const base_ = base;
-          const exp_  = new bigint(exp);
-          const mod_  = mod;
-
-          mpz_powm(this.mpz, base_.mpz, exp_.mpz, mod_.mpz);
-        }
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const base_ = base;
+        const mod_  = mod;
+        mpz_powm_ui(result.mpz, base_.mpz, exp_, mod_.mpz);
       }
     }
   }
@@ -2841,237 +1912,256 @@ module BigInteger {
 
      :arg base: The value to be raised to the power of ``exp`` before performing
                 a modulo operation on.
-     :type base: ``bigint``
+     :type base: :record:`bigint`
 
      :arg exp: The exponent to raise ``base`` to the power of prior to the
                modulo operation.  Can be negative if the inverse (1/``base``)
                modulo ``mod`` exists.
-     :type exp: ``bigint``, ``int``, or ``uint``
+     :type exp: :record:`bigint`, ``int``, or ``uint``
 
      :arg mod: The divisor for the modulo operation.
-     :type mod: ``bigint``
+     :type mod: :record:`bigint`
 
      .. warning::
         The program behavior is undefined if ``exp`` is negative and the inverse
         (1/``base``) modulo ``mod`` does not exist.
    */
+  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
   proc bigint.powMod(const ref base: bigint, exp: uint, const ref mod: bigint) {
-    const exp_ = exp.safeCast(c_ulong);
-
-    if _local {
-      mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              base.localeId == chpl_nodeID &&
-              mod.localeId  == chpl_nodeID {
-      mpz_powm_ui(this.mpz, base.mpz, exp_, mod.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const base_ = base;
-        const mod_  = mod;
-
-        mpz_powm_ui(this.mpz, base_.mpz, exp_, mod_.mpz);
-      }
-    }
+    BigInteger.powMod(this, base, exp, mod);
   }
 
   // This helper is intended for use only when the exponent argument
   // is negative.  Negative exponents result in integers that are between -1
   // and 1 (but usually 0 unless the base is -1 or 1)
-  pragma "no doc"
-  proc bigint.powNegativeExpHelper(const ref base: bigint, exp: int) {
+  @chpldoc.nodoc
+  proc powNegativeExpHelper(ref result: bigint, const ref base: bigint, exp: int) {
     if (base == 1 || (base == -1 && AutoMath.abs(exp) % 2 == 1)) {
-      this = base;
+      result = base;
     } else if (base == -1 && AutoMath.abs(exp) % 2 == 0) {
-      this = 1;
+      result = 1;
     } else {
-      this = 0;
+      result = 0;
+    }
+  }
+  @chpldoc.nodoc
+  proc powNegativeExpHelper(ref result: bigint, const ref base: bigintWrapper, exp: int) {
+    const base1 = mpz_cmp_ui(base.mpz, 1) == 0;
+    const baseNeg1 = mpz_cmp_si(base.mpz, -1) == 0;
+    if (base1 || (baseNeg1 && AutoMath.abs(exp) % 2 == 1)) {
+      mpz_set(result.mpz, base.mpz);
+    } else if (baseNeg1 && AutoMath.abs(exp) % 2 == 0) {
+      result = 1;
+    } else {
+      result = 0;
     }
   }
 
   // Documented in uint, uint version
-  proc bigint.pow(const ref base: bigint, exp: int) {
+  proc pow(ref result: bigint, const ref base: bigint, exp: int) {
     if exp >= 0 {
-      this.pow(base, exp : uint);
-
+      BigInteger.pow(result, base, exp : uint);
     } else {
       if _local {
-        this.powNegativeExpHelper(base, exp);
-
-      } else if this.localeId == chpl_nodeID &&
-                base.localeId == chpl_nodeID {
-        this.powNegativeExpHelper(base, exp);
-
+        powNegativeExpHelper(result, base, exp);
+      } else if result.localeId == chpl_nodeID {
+        const base_ = base;
+        powNegativeExpHelper(result, base_, exp);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          this.powNegativeExpHelper(base, exp);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resultLoc) {
+          const base_ = base;
+          powNegativeExpHelper(result, base_, exp);
         }
       }
     }
   }
 
   // Documented in uint, uint version
-  proc bigint.pow(const ref base: bigint, exp: uint) {
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: int) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  // Documented in uint, uint version
+  proc pow(ref result: bigint, const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
-
     if _local {
-      mpz_pow_ui(this.mpz, base.mpz, exp_);
-
-    } else if this.localeId == chpl_nodeID &&
-              base.localeId == chpl_nodeID {
-      mpz_pow_ui(this.mpz, base.mpz, exp_);
-
+      mpz_pow_ui(result.mpz, base.mpz, exp_);
+    } else if result.localeId == chpl_nodeID {
+      const base_ = base;
+      mpz_pow_ui(result.mpz, base_.mpz, exp_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const base_ = base;
-
-        mpz_pow_ui(this.mpz, base_.mpz, exp_);
+        mpz_pow_ui(result.mpz, base_.mpz, exp_);
       }
     }
   }
 
   // Documented in uint, uint version
-  proc bigint.pow(base: int, exp: int) {
-    if base >= 0 && exp >= 0 {
-      this.pow(base : uint, exp : uint);
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(const ref base: bigint, exp: uint) {
+    BigInteger.pow(this, base, exp);
+  }
 
+  // Documented in uint, uint version
+  proc pow(ref result: bigint, base: int, exp: int) {
+    if base >= 0 && exp >= 0 {
+      BigInteger.pow(result, base : uint, exp : uint);
     } else if base <  0 && exp >= 0 {
-      this.pow((0 - base) : uint, exp : uint);
+      BigInteger.pow(result, (0 - base) : uint, exp : uint);
 
       if (exp % 2) == 1 {
-        this.neg(this);
+        BigInteger.neg(result, result);
       }
-
     } else {
-      this.pow(new bigint(base), exp);
+      BigInteger.pow(result, new bigint(base), exp);
+    }
+  }
+
+  // Documented in uint, uint version
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
+  proc bigint.pow(base: int, exp: int) {
+    BigInteger.pow(this, base, exp);
+  }
+
+  /* Set ``result`` to the result of ``base`` raised to ``exp``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg base: The value to be raised to the power of ``exp``.
+     :type base: :record:`bigint`, ``int`` or ``uint``
+
+     :arg exp: The exponent to raise ``base`` to the power of.
+     :type exp: ``int`` or ``uint``
+   */
+  proc pow(ref result: bigint, base: uint, exp: uint) {
+    const base_ = base.safeCast(c_ulong);
+    const exp_  = exp.safeCast(c_ulong);
+
+    if _local {
+      mpz_ui_pow_ui(result.mpz, base_, exp_);
+    } else if result.localeId == chpl_nodeID {
+      mpz_ui_pow_ui(result.mpz, base_, exp_);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        mpz_ui_pow_ui(result.mpz, base_, exp_);
+      }
     }
   }
 
   /* Set ``this`` to the result of ``base`` raised to ``exp``.
 
      :arg base: The value to be raised to the power of ``exp``.
-     :type base: ``bigint``, ``int`` or ``uint``
+     :type base: :record:`bigint`, ``int`` or ``uint``
 
      :arg exp: The exponent to raise ``base`` to the power of.
      :type exp: ``int`` or ``uint``
    */
+  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
   proc bigint.pow(base: uint, exp: uint) {
-    const base_ = base.safeCast(c_ulong);
-    const exp_  = exp.safeCast(c_ulong);
-
-    if _local {
-      mpz_ui_pow_ui(this.mpz, base_, exp_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_ui_pow_ui(this.mpz, base_, exp_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_ui_pow_ui(this.mpz, base_, exp_);
-      }
-    }
+    BigInteger.pow(this, base, exp);
   }
 
   // Root Extraction Functions
-  proc bigint.root(const ref a: bigint, n: uint) : int {
+  proc root(ref result: bigint, const ref a: bigint, n: uint) : int {
     const n_  = n.safeCast(c_ulong);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_root(this.mpz, a.mpz, n_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_root(this.mpz, a.mpz, n_);
-
+      ret = mpz_root(result.mpz, a.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      ret = mpz_root(result.mpz, a_.mpz, n_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        ret = mpz_root(this.mpz, a_.mpz, n_);
+        ret = mpz_root(result.mpz, a_.mpz, n_);
       }
     }
-
     return ret.safeCast(int);
   }
 
-  // this gets root, rem gets remainder.
-  proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint) {
+  @deprecated(notes="bigint.root method is deprecated - please use the standalone function :proc:`~BigInteger.root`")
+  proc bigint.root(const ref a: bigint, n: uint) : int {
+    return BigInteger.root(this, a, n);
+  }
+
+  // root gets root, rem gets remainder.
+  proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint) {
     const n_  = n.safeCast(c_ulong);
 
     if _local {
-      mpz_rootrem(this.mpz, rem.mpz, u.mpz, n_);
-
-    } else if this.localeId == chpl_nodeID &&
-              rem.localeId  == chpl_nodeID &&
-              u.localeId    == chpl_nodeID {
-      mpz_rootrem(this.mpz, rem.mpz, u.mpz, n_);
-
+      mpz_rootrem(root.mpz, rem.mpz, u.mpz, n_);
+    } else if root.localeId == chpl_nodeID {
+      var rem_: bigint;
+      const u_ = u;
+      mpz_rootrem(root.mpz, rem_.mpz, u_.mpz, n_);
+      rem = rem_;
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var   rem_ = rem;
-        const u_   = u;
-
-        mpz_rootrem(this.mpz, rem_.mpz, u_.mpz, n_);
-
+      const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", rootLoc) {
+        var rem_: bigint;
+        const u_ = u;
+        mpz_rootrem(root.mpz, rem_.mpz, u_.mpz, n_);
         rem = rem_;
       }
     }
   }
 
-  proc bigint.sqrt(const ref a: bigint) {
+  @deprecated(notes="bigint.rootrem method is deprecated - please use the standalone function :proc:`~BigInteger.rootrem`")
+  proc bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint) {
+    BigInteger.rootrem(this, rem, u, n);
+  }
+
+  proc sqrt(ref result: bigint, const ref a: bigint) {
     if _local {
-      mpz_sqrt(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_sqrt(this.mpz, a.mpz);
-
+      mpz_sqrt(result.mpz, a.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_sqrt(result.mpz, a_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_sqrt(this.mpz, a_.mpz);
+        mpz_sqrt(result.mpz, a_.mpz);
       }
     }
   }
 
+  @deprecated(notes="bigint.sqrt method is deprecated - please use the standalone function :proc:`~BigInteger.sqrt`")
+  proc bigint.sqrt(const ref a: bigint) {
+    BigInteger.sqrt(this, a);
+  }
+
   // this gets root, rem gets remainder of a-root*root.
-  proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint) {
+  proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint) {
     if _local {
-      mpz_sqrtrem(this.mpz, rem.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              rem.localeId  == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_sqrtrem(this.mpz, rem.mpz, a.mpz);
-
+      mpz_sqrtrem(root.mpz, rem.mpz, a.mpz);
+    } else if root.localeId == chpl_nodeID {
+      var rem_ : bigint;
+      const a_ = a;
+      mpz_sqrtrem(root.mpz, rem_.mpz, a_.mpz);
+      rem = rem_;
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = rem;
+      const rootLoc = chpl_buildLocaleID(root.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", rootLoc) {
+        var rem_ : bigint;
         const a_ = a;
-
-        mpz_sqrtrem(this.mpz, r_.mpz, a_.mpz);
-
-        rem = r_;
+        mpz_sqrtrem(root.mpz, rem_.mpz, a_.mpz);
+        rem = rem_;
       }
     }
+  }
+
+  @deprecated(notes="bigint.sqrtrem method is deprecated - please use the standalone function :proc:`~BigInteger.sqrtrem`")
+  proc bigint.sqrtrem(ref rem: bigint, const ref a: bigint) {
+    BigInteger.sqrtrem(this, rem, a);
   }
 
   /*
@@ -3079,8 +2169,8 @@ module BigInteger {
 
        bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
   */
-  deprecated
-  "bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead"
+  @deprecated
+  ("bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead")
   proc bigint.perfect_power_p() : int {
     return this.isPerfectPower();
   }
@@ -3095,16 +2185,10 @@ module BigInteger {
     :return: ``true`` if ``this`` is a perfect power, ``false`` otherwise.
    */
   proc bigint.isPerfectPower () : bool {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
-      ret = mpz_perfect_power_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_perfect_power_p(t_.mpz);
-    }
+    ret = mpz_perfect_power_p(t_.mpz);
 
     if ret then
       return true;
@@ -3117,8 +2201,8 @@ module BigInteger {
 
        bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
   */
-  deprecated
-  "bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead"
+  @deprecated
+  ("bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead")
   proc bigint.perfect_square_p() : int {
     return this.isPerfectSquare();
   }
@@ -3132,16 +2216,10 @@ module BigInteger {
     :rtype: ``bool``
    */
   proc bigint.isPerfectSquare() : bool {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
-      ret = mpz_perfect_square_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_perfect_square_p(t_.mpz);
-    }
+    ret = mpz_perfect_square_p(t_.mpz);
 
     if ret then
       return true;
@@ -3158,8 +2236,8 @@ module BigInteger {
 
        bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
   */
-  deprecated
-  "bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead"
+  @deprecated
+  ("bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead")
   proc bigint.probab_prime_p(reps: int) : int {
     var ret = this.probablyPrime(reps):int;
     return ret;
@@ -3199,17 +2277,12 @@ module BigInteger {
     :rtype: :enum:`primality`
    */
   proc bigint.probablyPrime(reps: int) : primality {
+    var t_ = this.localize();
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
-    if _local || this.localeId == chpl_nodeID {
-      ret = mpz_probab_prime_p(this.mpz, reps_);
+    ret = mpz_probab_prime_p(t_.mpz, reps_);
 
-    } else {
-      var t_ = this;
-
-      ret = mpz_probab_prime_p(t_.mpz, reps_);
-    }
     use primality;
     if ret==0 then
       return notPrime;
@@ -3219,75 +2292,130 @@ module BigInteger {
       return isPrime;
   }
 
+  proc nextprime(ref result: bigint, const ref a: bigint) {
+    if _local {
+      mpz_nextprime(result.mpz, a.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_nextprime(result.mpz, a_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        mpz_nextprime(result.mpz, a_.mpz);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextprime`")
   proc bigint.nextprime(const ref a: bigint) {
+    BigInteger.nextprime(this, a);
+  }
+
+  proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_nextprime(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_nextprime(this.mpz, a.mpz);
-
+      mpz_gcd(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_gcd(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-
-        mpz_nextprime(this.mpz, a_.mpz);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        mpz_gcd(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
-
-
-  // gcd
+  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
   proc bigint.gcd(const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_gcd(this.mpz, a.mpz, b.mpz);
+    BigInteger.gcd(this, a, b);
+  }
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_gcd(this.mpz, a.mpz, b.mpz);
+  proc gcd(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      BigInteger.gcd(result, a, b : uint);
 
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+      BigInteger.gcd(result, a, new bigint(b));
+    }
+  }
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var b_ = b;
+  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
+  proc bigint.gcd(const ref a: bigint, b: int) {
+    BigInteger.gcd(this, a, b);
+  }
 
-        mpz_gcd(this.mpz, a_.mpz, b_.mpz);
+  proc gcd(ref result: bigint, const ref a: bigint, b: uint) {
+    const b_ = b.safeCast(c_ulong);
+    if _local {
+      mpz_gcd_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_gcd_ui(result.mpz, a_.mpz, b_);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        mpz_gcd_ui(result.mpz, a_.mpz, b_);
       }
     }
   }
 
-  proc bigint.gcd(const ref a: bigint, b: int) {
-    if b >= 0 {
-      this.gcd(a, b : uint);
-
-    } else {
-      this.gcd(a, new bigint(b));
-    }
+  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
+  proc bigint.gcd(const ref a: bigint, b: uint) {
+    BigInteger.gcd(this, a, b);
   }
 
-  proc bigint.gcd(const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+  /* Set ``result`` to the greatest common divisor of ``a`` and ``b``, and
+     set ``s`` and ``t`` to coefficients such that ``a*s + b*t == result``.
 
+     .. note::
+        The result stored in ``result`` is always positive, even if one or
+        both of ``a`` and ``b`` are negative (or zero if both are zero).
+
+     This fulfills the same role as the GMP function ``mpz_gcdext``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg a: One of the numbers to compute the greatest common divisor of
+     :type a: :record:`bigint`
+
+     :arg b: One of the numbers to compute the greatest common divisor of
+     :type b: :record:`bigint`
+
+     :arg s: The returned coefficient that can be multiplied by ``a``.
+     :type s: :record:`bigint`
+
+     :arg t: The returned coefficient that can be multiplied by ``b``.
+     :type t: :record:`bigint`
+   */
+  proc gcd(ref result: bigint, const ref a: bigint, const ref b: bigint,
+                  ref s: bigint, ref t: bigint): void {
     if _local {
-      mpz_gcd_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID {
-      mpz_gcd_ui(this.mpz, a.mpz, b_);
-
+      mpz_gcdext(result.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
+      var s_ : bigint;
+      var t_ : bigint;
+      const a_ = a;
+      const b_ = b;
+      mpz_gcdext(result.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
+      s = s_;
+      t = t_;
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-
-        mpz_gcd_ui(this.mpz, a_.mpz, b_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var s_ : bigint;
+        var t_ : bigint;
+        const a_ = a;
+        const b_ = b;
+        mpz_gcdext(result.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
+        s = s_;
+        t = t_;
       }
     }
   }
@@ -3313,110 +2441,76 @@ module BigInteger {
      :arg t: The returned coefficient that can be multiplied by ``b``.
      :type t: :record:`bigint`
    */
+  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
   proc bigint.gcd(const ref a: bigint, const ref b: bigint,
                   ref s: bigint, ref t: bigint): void {
-    if _local {
-      mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              s.localeId    == chpl_nodeID &&
-              t.localeId    == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_gcdext(this.mpz, s.mpz, t.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var s_ = s;
-        var t_ = t;
-        var a_ = a;
-        var b_ = b;
-
-        mpz_gcdext(this.mpz, s_.mpz, t_.mpz, a_.mpz, b_.mpz);
-
-        s = s_;
-        t = t_;
-      }
-    }
+    BigInteger.gcd(this, a, b, s, t);
   }
 
   // sets this to gcd(a,b)
   // set s and t to to coefficients satisfying a*s + b*t == g
-  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
+  @deprecated(notes="gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead")
   proc bigint.gcdext(ref s: bigint,
                      ref t: bigint,
                      const ref a: bigint,
                      const ref b: bigint) {
-    this.gcd(a, b, s, t);
+    BigInteger.gcd(this, a, b, s, t);
   }
 
-  // lcm
+  proc lcm(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_lcm(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_lcm(result.mpz, a_.mpz, b_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        mpz_lcm(result.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
   proc bigint.lcm(const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_lcm(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_lcm(this.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var b_ = b;
-
-        mpz_lcm(this.mpz, a_.mpz, b_.mpz);
-      }
-    }
+    BigInteger.lcm(this, a, b);
   }
 
-  proc bigint.lcm(const ref a: bigint, b: int) {
-    var b_ : c_ulong;
-
+  proc lcm(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 then
-      b_ = b.safeCast(c_ulong);
+      BigInteger.lcm(result, a, b:uint);
     else
-      b_ = (0 - b).safeCast(c_ulong);
-
-    if _local {
-      mpz_lcm_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_lcm_ui(this.mpz, a.mpz, b_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-
-        mpz_lcm_ui(this.mpz, a_.mpz, b_);
-      }
-    }
+      BigInteger.lcm(result, a, (0 - b):uint);
   }
 
-  proc bigint.lcm(const ref a: bigint, b: uint) {
+  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
+  proc bigint.lcm(const ref a: bigint, b: int) {
+    BigInteger.lcm(this, a, b);
+  }
+
+  proc lcm(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_lcm_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_lcm_ui(this.mpz, a.mpz, b_);
-
+      mpz_lcm_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_lcm_ui(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-
-        mpz_lcm_ui(this.mpz, a_.mpz, b_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        mpz_lcm_ui(result.mpz, a_.mpz, b_);
       }
     }
+  }
+
+  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
+  proc bigint.lcm(const ref a: bigint, b: uint) {
+    BigInteger.lcm(this, a, b);
   }
 
   /*
@@ -3433,42 +2527,43 @@ module BigInteger {
     }
   }
 
-  /*
-  A parameter to select between the new and deprecated overloads of :proc:`bigint.invert()`
-  * `InvertReturnInt = true` causes the deprecated version of :proc:`bigint.invert()` to be called
-  * `InvertReturnInt = false` causes the new version of :proc:`bigint.invert()` to be called (this version does not return a status integer)
+  /* Set the value of ``result`` to the inverse of ``a`` modulo ``b``
+
+     .. note::
+        If an inverse does not exist, an :class:`InversionError` will be thrown,
+        and the value of ``result`` will be left undefined
+
+     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg a: The dividend of the modulo operation
+     :type a: :record:`bigint`
+
+     :arg b: The divisor of the modulo operation
+     :type b: :record:`bigint`
+
   */
-  config param InvertReturnInt = true;
-
-  deprecated "The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `InvertReturnInt` to false"
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws where InvertReturnInt == true {
+  proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws {
     var ret: c_int;
-
     if _local {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
+      ret = mpz_invert(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      ret = mpz_invert(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var b_ = b;
-
-        ret = mpz_invert(this.mpz, a_.mpz, b_.mpz);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        ret = mpz_invert(result.mpz, a_.mpz, b_.mpz);
       }
     }
 
-    var ret_int = ret.safeCast(int);
-
-    if (ret_int == 0) {
+    if (ret.safeCast(int) == 0) {
       throw new owned InversionError();
-    } else {
-      return ret_int;
     }
   }
 
@@ -3487,31 +2582,9 @@ module BigInteger {
      :type b: :record:`bigint`
 
   */
-  proc bigint.invert(const ref a: bigint, const ref b: bigint) throws where InvertReturnInt == false {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      ret = mpz_invert(this.mpz, a.mpz, b.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var b_ = b;
-
-        ret = mpz_invert(this.mpz, a_.mpz, b_.mpz);
-      }
-    }
-
-    if (ret.safeCast(int) == 0) {
-      throw new owned InversionError();
-    }
+  @deprecated(notes="bigint.invert method is deprecated - please use the standalone function :proc:`~BigInteger.invert`")
+  proc bigint.invert(const ref a: bigint, const ref b: bigint) throws {
+    BigInteger.invert(this, a, b);
   }
 
   // remove
@@ -3520,20 +2593,60 @@ module BigInteger {
 
        bigint.remove is deprecated, use bigint.removeFactor instead
   */
-  deprecated
-  "bigint.remove is deprecated, use bigint.removeFactor instead"
+  @deprecated
+  ("bigint.remove is deprecated, use bigint.removeFactor instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
-    return this.removeFactor(a,f);
+    return BigInteger.removeFactor(this, a,f);
   }
 
   // This helper is intended for use only when the factor is 0
   // Division by 0 is undefined and it results in a
   // Floating point exception error.
-  pragma "no doc"
-  proc bigint.removeFactorZeroHelper(const ref x: bigint, const ref fac: bigint) : uint {
-    this = 0;
+  @chpldoc.nodoc
+  proc removeFactorZeroHelper(ref result: bigint, const ref x: bigint, const ref fac: bigint) : uint {
+    result = 0;
     return 0;
   }
+
+  /*
+    Remove all occurrences of the factor ``fac`` from ``x`` and store the result
+    in ``result``.  Return the number of occurrences removed.
+
+    :arg result: Where the result is stored
+    :type result: :record:`bigint`
+
+    :arg x: The value to remove all occurrences of ``fac`` from
+    :type x: :record:`bigint`
+
+    :arg fac: The factor to remove from ``x``.
+    :type fac: :record:`bigint`
+
+    :return: The number of occurrences of ``fac`` found in ``x``.
+    :rtype: ``uint``
+   */
+  proc removeFactor(ref result: bigint, const ref x: bigint, const ref fac: bigint) : uint {
+    var ret: c_ulong;
+    if(fac!=0){
+      if _local {
+        ret = mpz_remove(result.mpz, x.mpz, fac.mpz);
+      } else if result.localeId == chpl_nodeID {
+          const x_ = x;
+          const fac_ = fac;
+          ret = mpz_remove(result.mpz, x_.mpz, fac_.mpz);
+      } else {
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resultLoc) {
+          const x_ = x;
+          const fac_ = fac;
+          ret = mpz_remove(result.mpz, x_.mpz, fac_.mpz);
+        }
+      }
+      return ret.safeCast(uint);
+    }else{
+      return removeFactorZeroHelper(result,x,fac);
+    }
+  }
+
 
   /*
     Remove all occurrences of the factor ``fac`` from ``x`` and store the result
@@ -3548,230 +2661,199 @@ module BigInteger {
     :return: The number of occurrences of ``fac`` found in ``x``.
     :rtype: ``uint``
    */
+  @deprecated(notes="bigint.removeFactor method is deprecated - please use the standalone function :proc:`~BigInteger.removeFactor`")
   proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
-    var ret: c_ulong;
-    if(fac!=0){
-      if _local {
-        ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
-
-      } else if this.localeId == chpl_nodeID &&
-              x.localeId    == chpl_nodeID &&
-              fac.localeId    == chpl_nodeID {
-          ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          var x_ = x;
-          var fac_ = fac;
-
-          ret = mpz_remove(this.mpz, x_.mpz, fac_.mpz);
-        }
-      }
-
-      return ret.safeCast(uint);
-
-    }else{
-      return this.removeFactorZeroHelper(x,fac);
-    }
-
+    return BigInteger.removeFactor(this, x, fac);
   }
 
 
   // Factorial
-  proc bigint.fac(a: integral) {
+  proc fac(ref result: bigint, a: integral) {
     const a_ = a.safeCast(c_ulong);
-
     if _local {
-      mpz_fac_ui(this.mpz, a_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_fac_ui(this.mpz, a_);
-
+      mpz_fac_ui(result.mpz, a_);
+    } else if result.localeId == chpl_nodeID {
+      mpz_fac_ui(result.mpz, a_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_fac_ui(this.mpz, a_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        mpz_fac_ui(result.mpz, a_);
       }
     }
+  }
+
+  @deprecated(notes="bigint.fac method is deprecated - please use the standalone function :proc:`~BigInteger.fac`")
+  proc bigint.fac(a: integral) {
+    BigInteger.fac(this, a);
   }
 
 
 
   // Binomial
-  proc bigint.bin(const ref n: bigint, k: integral) {
+  proc bin(ref result: bigint, const ref n: bigint, k: integral) {
     const k_ = k.safeCast(c_ulong);
-
     if _local {
-      mpz_bin_ui(this.mpz, n.mpz, k_);
-
-    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
-      mpz_bin_ui(this.mpz, n.mpz, k_);
-
+      mpz_bin_ui(result.mpz, n.mpz, k_);
+    } else if result.localeId == chpl_nodeID {
+      const n_ = n;
+      mpz_bin_ui(result.mpz, n_.mpz, k_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var n_ = n;
-
-        mpz_bin_ui(this.mpz, n_.mpz, k_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const n_ = n;
+        mpz_bin_ui(result.mpz, n_.mpz, k_);
       }
     }
   }
 
-  proc bigint.bin(n: uint, k: integral) {
+  @deprecated(notes="bigint.bin method is deprecated - please use the standalone function :proc:`~BigInteger.bin`")
+  proc bigint.bin(const ref n: bigint, k: integral) {
+    BigInteger.bin(this, n, k);
+  }
+
+  proc bin(ref result: bigint, n: uint, k: integral) {
     if n >= 0 {
       const n_ = n.safeCast(c_ulong);
       const k_ = k.safeCast(c_ulong);
 
       if _local {
-        mpz_bin_uiui(this.mpz, n_, k_);
-
-      } else if this.localeId == chpl_nodeID {
-        mpz_bin_uiui(this.mpz, n_, k_);
-
+        mpz_bin_uiui(result.mpz, n_, k_);
+      } else if result.localeId == chpl_nodeID {
+        mpz_bin_uiui(result.mpz, n_, k_);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          mpz_bin_uiui(this.mpz, n_, k_);
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resultLoc) {
+          mpz_bin_uiui(result.mpz, n_, k_);
         }
       }
     } else {
-      this.bin(new bigint(n), k);
+      BigInteger.bin(result, new bigint(n), k);
     }
+  }
+
+  @deprecated(notes="bigint.bin method is deprecated - please use the standalone function :proc:`~BigInteger.bin`")
+  proc bigint.bin(n: uint, k: integral) {
+    BigInteger.bin(this, n, k);
   }
 
 
 
   // Fibonacci
-  proc bigint.fib(n: integral) {
+  proc fib(ref result: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
-      mpz_fib_ui(this.mpz, n_);
-
-    } else if this.localeId == chpl_nodeID {
-      mpz_fib_ui(this.mpz, n_);
-
+      mpz_fib_ui(result.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+      mpz_fib_ui(result.mpz, n_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_fib_ui(this.mpz, n_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        mpz_fib_ui(result.mpz, n_);
       }
     }
   }
 
-  proc bigint.fib2(ref fnsub1: bigint, n: integral) {
+  @deprecated(notes="bigint.fib method is deprecated - please use the standalone function :proc:`~BigInteger.fib`")
+  proc bigint.fib(n: integral) {
+    BigInteger.fib(this, n);
+  }
+
+  proc fib2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
-      mpz_fib2_ui(this.mpz, fnsub1.mpz, n_);
-
-    } else if this.localeId == chpl_nodeID && fnsub1.localeId == chpl_nodeID {
-      mpz_fib2_ui(this.mpz, fnsub1.mpz, n_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      mpz_fib2_ui(result.mpz, fnsub1.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+        // TODO: need to revisit this in relation to Cray/chapel-private#4628
         var fnsub1_ : bigint;
-
-        mpz_fib2_ui(this.mpz, fnsub1_.mpz, n_);
-
+        mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
+        fnsub1 = fnsub1_;
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var fnsub1_ : bigint;
+        mpz_fib2_ui(result.mpz, fnsub1_.mpz, n_);
         fnsub1 = fnsub1_;
       }
     }
   }
 
+  @deprecated(notes="bigint.fib2 method is deprecated - please use the standalone function :proc:`~BigInteger.fib2`")
+  proc bigint.fib2(ref fnsub1: bigint, n: integral) {
+    BigInteger.fib2(this, fnsub1, n);
+  }
 
+
+  proc lucnum(ref result: bigint, n: integral) {
+    const n_ = n.safeCast(c_ulong);
+    if _local {
+      mpz_lucnum_ui(result.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+      mpz_lucnum_ui(result.mpz, n_);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        mpz_lucnum_ui(result.mpz, n_);
+      }
+    }
+  }
 
   // Lucas Number
+  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum`")
   proc bigint.lucnum(n: integral) {
+    BigInteger.lucnum(this, n);
+  }
+
+  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral) {
     const n_ = n.safeCast(c_ulong);
 
     if _local {
-      mpz_lucnum_ui(this.mpz, n_);
-
-    } else if _local || this.localeId == chpl_nodeID {
-      mpz_lucnum_ui(this.mpz, n_);
-
+      mpz_lucnum2_ui(result.mpz, fnsub1.mpz, n_);
+    } else if result.localeId == chpl_nodeID {
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
+      var fnsub1_ : bigint;
+      mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
+      fnsub1 = fnsub1_;
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        mpz_lucnum_ui(this.mpz, n_);
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var fnsub1_ : bigint;
+        mpz_lucnum2_ui(result.mpz, fnsub1_.mpz, n_);
+        fnsub1 = fnsub1_;
       }
     }
   }
 
+  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucnum2`")
   proc bigint.lucnum2(ref fnsub1: bigint, n: integral) {
-    const n_ = n.safeCast(c_ulong);
-
-    if _local {
-      mpz_lucnum2_ui(this.mpz, fnsub1.mpz, n_);
-
-    } else if this.localeId == chpl_nodeID && fnsub1.localeId == chpl_nodeID {
-      mpz_lucnum2_ui(this.mpz, fnsub1.mpz, n_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var fnsub1_ : bigint;
-
-        mpz_lucnum2_ui(this.mpz, fnsub1_.mpz, n_);
-
-        fnsub1 = fnsub1_;
-      }
-    }
+    BigInteger.lucnum2(this, fnsub1, n);
   }
 
 
 
   // Bit operations
   proc bigint.popcount() : uint {
+    const t_ = this.localize();
     var ret: c_ulong;
 
-    if _local {
-      ret = mpz_popcount(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_popcount(this.mpz);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_popcount(t_.mpz);
-    }
+    ret = mpz_popcount(t_.mpz);
 
     return ret.safeCast(uint);
   }
 
   proc bigint.hamdist(const ref b: bigint) : uint {
+    const t_ = this.localize();
+    const b_ = b.localize();
     var ret: c_ulong;
 
-    if _local {
-      ret = mpz_hamdist(this.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      ret = mpz_hamdist(this.mpz, b.mpz);
-
-    } else {
-      const t_ = this;
-      const b_ = b;
-
-      ret = mpz_hamdist(t_.mpz, b_.mpz);
-    }
+    ret = mpz_hamdist(t_.mpz, b_.mpz);
 
     return ret.safeCast(uint);
   }
 
   pragma "last resort"
-  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
+  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
   proc bigint.scan0(starting_bit: integral) : uint {
     return this.scan0(startBitIdx = starting_bit);
   }
@@ -3791,26 +2873,17 @@ module BigInteger {
       :rtype: ``uint``
    */
   proc bigint.scan0(startBitIdx: integral): uint {
+    const t_ = this.localize();
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local {
-      ret = mpz_scan0(this.mpz, sb_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_scan0(this.mpz, sb_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_scan0(t_.mpz,   sb_);
-    }
+    ret = mpz_scan0(t_.mpz, sb_);
 
     return ret.safeCast(uint);
   }
 
   pragma "last resort"
-  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
+  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
   proc bigint.scan1(starting_bit: integral) : uint {
     return this.scan1(startBitIdx = starting_bit);
   }
@@ -3830,20 +2903,11 @@ module BigInteger {
       :rtype: ``uint``
    */
   proc bigint.scan1(startBitIdx: integral): uint {
+    const t_ = this.localize();
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
-    if _local {
-      ret = mpz_scan1(this.mpz, sb_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_scan1(this.mpz, sb_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_scan1(t_.mpz,   sb_);
-    }
+    ret = mpz_scan1(t_.mpz,   sb_);
 
     return ret.safeCast(uint);
   }
@@ -3906,20 +2970,11 @@ module BigInteger {
   }
 
   proc bigint.tstbit(bit_index: integral) : int {
+    var t_ = this.localize();
     const bi_ = bit_index.safeCast(c_ulong);
     var  ret: c_int;
 
-    if _local {
-      ret = mpz_tstbit(this.mpz, bi_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_tstbit(this.mpz, bi_);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_tstbit(t_.mpz, bi_);
-    }
+    ret = mpz_tstbit(t_.mpz, bi_);
 
     return ret.safeCast(int);
   }
@@ -3954,128 +3009,62 @@ module BigInteger {
     :type t: `integral`
   */
   proc bigint.fitsInto(type t: integral): bool {
-    if _local {
-      return fits_into(this.mpz, t);
-    } else if this.localeId == chpl_nodeID {
-      return fits_into(this.mpz, t);
-    } else {
-      var t_ = this;
-
-      return fits_into(t_.mpz, t);
-    }
+    var t_ = this.localize();
+    return fits_into(t_.mpz, t);
   }
 
-  deprecated "`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead"
+  @deprecated(notes="`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead")
   proc bigint.fits_ulong_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_ulong_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_ulong_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_ulong_p(t_.mpz);
-    }
-
+    ret = mpz_fits_ulong_p(t_.mpz);
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead"
+  @deprecated(notes="`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead")
   proc bigint.fits_slong_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_slong_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_slong_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_slong_p(t_.mpz);
-    }
-
+    ret = mpz_fits_slong_p(t_.mpz);
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead"
+  @deprecated(notes="`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead")
   proc bigint.fits_uint_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_uint_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_uint_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_uint_p(t_.mpz);
-    }
+    ret = mpz_fits_uint_p(t_.mpz);
 
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead"
+  @deprecated(notes="`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead")
   proc bigint.fits_sint_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_sint_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_sint_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_sint_p(t_.mpz);
-    }
-
+    ret = mpz_fits_sint_p(t_.mpz);
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead"
+  @deprecated(notes="`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead")
   proc bigint.fits_ushort_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_ushort_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_ushort_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_ushort_p(t_.mpz);
-    }
-
+    ret = mpz_fits_ushort_p(t_.mpz);
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead"
+  @deprecated(notes="`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead")
   proc bigint.fits_sshort_p() : int {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_fits_sshort_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_fits_sshort_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_fits_sshort_p(t_.mpz);
-    }
-
+    ret = mpz_fits_sshort_p(t_.mpz);
     return ret.safeCast(int);
   }
 
@@ -4084,8 +3073,8 @@ module BigInteger {
 
        bigint.even_p is deprecated, use bigint.isEven instead
   */
-  deprecated
-  "bigint.even_p is deprecated, use bigint.isEven instead"
+  @deprecated
+  ("bigint.even_p is deprecated, use bigint.isEven instead")
   proc bigint.even_p() : int {
     return this.isEven();
   }
@@ -4094,19 +3083,10 @@ module BigInteger {
     Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
    */
   proc bigint.isEven() : bool {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_even_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_even_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_even_p(t_.mpz);
-    }
+    ret = mpz_even_p(t_.mpz);
 
     if ret then
       return true;
@@ -4119,8 +3099,8 @@ module BigInteger {
 
        bigint.odd_p is deprecated, use bigint.isOdd instead
   */
-  deprecated
-  "bigint.odd_p is deprecated, use bigint.isOdd instead"
+  @deprecated
+  ("bigint.odd_p is deprecated, use bigint.isOdd instead")
   proc bigint.odd_p() : int {
     return this.isOdd();
   }
@@ -4129,19 +3109,10 @@ module BigInteger {
     Returns ``true`` if ``this`` is an odd number, ``false`` otherwise.
    */
   proc bigint.isOdd() : bool {
+    var t_ = this.localize();
     var ret: c_int;
 
-    if _local {
-      ret = mpz_odd_p(this.mpz);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_odd_p(this.mpz);
-
-    } else {
-      var t_ = this;
-
-      ret = mpz_odd_p(t_.mpz);
-    }
+    ret = mpz_odd_p(t_.mpz);
 
     if ret then
       return true;
@@ -4155,508 +3126,430 @@ module BigInteger {
   // 5.5 Arithmetic functions
   //
 
+  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_add(result.mpz, a.mpz, b.mpz);
+    }
+    else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_add(result.mpz, a_.mpz, b_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        mpz_add(result.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
   proc bigint.add(const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_add(this.mpz, a.mpz, b.mpz);
+    BigInteger.add(this, a, b);
+  }
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_add(this.mpz, a.mpz, b.mpz);
+  proc add(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      BigInteger.add(result, a, b:uint);
+    }
+    else {
+      const b_ = (0 - b).safeCast(c_ulong);
 
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      if _local {
+        mpz_sub_ui(result.mpz, a.mpz, b_);
+      }
+      else if result.localeId == chpl_nodeID {
         const a_ = a;
-        const b_ = b;
-
-        mpz_add(this.mpz, a_.mpz, b_.mpz);
+        mpz_sub_ui(result.mpz, a_.mpz, b_);
+      }
+      else {
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resultLoc) {
+          const a_ = a;
+          mpz_sub_ui(result.mpz, a_.mpz, b_);
+        }
       }
     }
   }
 
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
   proc bigint.add(const ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_add_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_add_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-    } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_sub_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_sub_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-    }
+    BigInteger.add(this, a, b);
   }
 
-  proc bigint.add(const ref a: bigint, b: uint) {
+  proc add(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
-
     if _local {
-      mpz_add_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_add_ui(this.mpz, a.mpz, b_);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      mpz_add_ui(result.mpz, a.mpz, b_);
+    }
+    else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_add_ui(result.mpz, a_.mpz, b_);
+    }
+    else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_add_ui(this.mpz, a_.mpz, b_);
+        mpz_add_ui(result.mpz, a_.mpz, b_);
       }
     }
   }
 
-  proc bigint.sub(const ref a: bigint, const ref b: bigint) {
+  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
+  proc bigint.add(const ref a: bigint, b: uint) {
+    BigInteger.add(this, a, b);
+  }
+
+  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_sub(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_sub(this.mpz, a.mpz, b.mpz);
-
+      mpz_sub(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_sub(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
-
-        mpz_sub(this.mpz, a_.mpz, b_.mpz);
+        mpz_sub(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
-  proc bigint.sub(const ref a: bigint, b: int) {
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, const ref b: bigint) {
+    BigInteger.sub(this, a, b);
+  }
+
+  proc sub(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_sub_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_sub_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_sub_ui(this.mpz, a_.mpz, b_);
-        }
-      }
+      BigInteger.sub(result, a, b:uint);
     } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_add_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_add_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_add_ui(this.mpz, a_.mpz, b_);
-        }
-      }
+      BigInteger.add(result, a, (0 - b):uint);
     }
   }
 
-  proc bigint.sub(const ref a: bigint, b: uint) {
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: int) {
+    BigInteger.sub(this, a, b);
+  }
+
+  proc sub(ref result:bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_sub_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_sub_ui(this.mpz, a.mpz, b_);
-
+      mpz_sub_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_sub_ui(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_sub_ui(this.mpz, a_.mpz, b_);
+        mpz_sub_ui(result.mpz, a_.mpz, b_);
       }
     }
   }
 
-  proc bigint.sub(a: int, const ref b: bigint) {
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(const ref a: bigint, b: uint) {
+    BigInteger.sub(this, a, b);
+  }
+
+  proc sub(ref result: bigint, a: int, const ref b: bigint) {
     if a >= 0 {
-      const a_ = a.safeCast(c_ulong);
-
-      if _local {
-        mpz_ui_sub(this.mpz, a_, b.mpz);
-
-      } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-        mpz_ui_sub(this.mpz, a_, b.mpz);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const b_ = b;
-
-          mpz_ui_sub(this.mpz, a_, b_.mpz);
-        }
-      }
+      BigInteger.sub(result, a:uint, b);
     } else {
       const a_ = (0 - a).safeCast(c_ulong);
 
       if _local {
-        mpz_add_ui(this.mpz, b.mpz, a_);
-        mpz_neg(this.mpz, this.mpz);
-
-      } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-        mpz_add_ui(this.mpz, b.mpz, a_);
-        mpz_neg(this.mpz, this.mpz);
-
+        mpz_add_ui(result.mpz, b.mpz, a_);
+        mpz_neg(result.mpz, result.mpz);
+      } else if result.localeId == chpl_nodeID {
+        const b_ = b;
+        mpz_add_ui(result.mpz, b_.mpz, a_);
+        mpz_neg(result.mpz, result.mpz);
       } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
+        const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resultLoc) {
           const b_ = b;
-
-          mpz_add_ui(this.mpz, b_.mpz, a_);
-          mpz_neg(this.mpz, this.mpz);
+          mpz_add_ui(result.mpz, b_.mpz, a_);
+          mpz_neg(result.mpz, result.mpz);
         }
       }
     }
   }
 
-  proc bigint.sub(a: uint, const ref b: bigint) {
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(a: int, const ref b: bigint) {
+    BigInteger.sub(this, a, b);
+  }
+
+  proc sub(ref result: bigint, a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
 
     if _local {
-      mpz_ui_sub(this.mpz, a_, b.mpz);
-
-    } else if this.localeId == chpl_nodeID && b.localeId == chpl_nodeID {
-      mpz_ui_sub(this.mpz, a_, b.mpz);
-
+      mpz_ui_sub(result.mpz, a_, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const b_ = b;
+      mpz_ui_sub(result.mpz, a_, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const b_ = b;
-
-        mpz_ui_sub(this.mpz, a_, b_.mpz);
+        mpz_ui_sub(result.mpz, a_, b_.mpz);
       }
     }
   }
 
-  proc bigint.mul(const ref a: bigint, const ref b: bigint) {
+  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
+  proc bigint.sub(a: uint, const ref b: bigint) {
+    BigInteger.sub(this, a, b);
+  }
+
+  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_mul(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_mul(this.mpz, a.mpz, b.mpz);
-
+      mpz_mul(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_mul(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
-
-        mpz_mul(this.mpz, a_.mpz, b_.mpz);
+        mpz_mul(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
-  proc bigint.mul(const ref a: bigint, b: int) {
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, const ref b: bigint) {
+    BigInteger.mul(this, a, b);
+  }
+
+  proc mul(ref result: bigint, const ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
 
     if _local {
-      mpz_mul_si(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_mul_si(this.mpz, a.mpz, b_);
-
+      mpz_mul_si(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_mul_si(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_mul_si(this.mpz, a_.mpz, b_);
+        mpz_mul_si(result.mpz, a_.mpz, b_);
       }
     }
   }
 
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
+  proc bigint.mul(const ref a: bigint, b: int) {
+    BigInteger.mul(this, a, b);
+  }
+
+  proc mul(ref result: bigint, const ref a: bigint, b: uint) {
+    const b_ = b.safeCast(c_long);
+
+    if _local {
+      mpz_mul_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_mul_ui(result.mpz, a_.mpz, b_);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        mpz_mul_ui(result.mpz, a_.mpz, b_);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
   proc bigint.mul(const ref a: bigint, b: uint) {
-    const b_ = b.safeCast(c_ulong);
+    BigInteger.mul(this, a, b);
+  }
 
+  proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_mul_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_mul_ui(this.mpz, a.mpz, b_);
-
+      mpz_addmul(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_addmul(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_mul_ui(this.mpz, a_.mpz, b_);
+        const b_ = b;
+        mpz_addmul(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
+
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
   proc bigint.addmul(const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_addmul(this.mpz, a.mpz, b.mpz);
+    BigInteger.addmul(this, a, b);
+  }
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_addmul(this.mpz, a.mpz, b.mpz);
-
+  proc addmul(ref result: bigint, const ref a: bigint, b: int) {
+    if b >= 0 {
+      BigInteger.addmul(result, a, b:uint);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-        const b_ = b;
-
-        mpz_addmul(this.mpz, a_.mpz, b_.mpz);
-      }
+      BigInteger.submul(result, a, (0 - b):uint);
     }
   }
 
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
   proc bigint.addmul(const ref a: bigint, b: int) {
-    if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_addmul_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-    } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_submul_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_submul_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_submul_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-    }
+    BigInteger.addmul(this, a, b);
   }
 
-  proc bigint.addmul(const ref a: bigint, b: uint) {
+  proc addmul(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_addmul_ui(this.mpz, a.mpz, b_);
-
+      mpz_addmul_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_addmul_ui(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_addmul_ui(this.mpz, a_.mpz, b_);
+        mpz_addmul_ui(result.mpz, a_.mpz, b_);
       }
     }
   }
 
-  proc bigint.submul(const ref a: bigint, const ref b: bigint) {
+  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`~BigInteger.addmul`")
+  proc bigint.addmul(const ref a: bigint, b: uint) {
+    BigInteger.addmul(this, a, b);
+  }
+
+  proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_submul(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_submul(this.mpz, a.mpz, b.mpz);
-
+      mpz_submul(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_submul(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
-
-        mpz_submul(this.mpz, a_.mpz, b_.mpz);
+        mpz_submul(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
-  proc bigint.submul(const ref a: bigint, b: int) {
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
+  proc bigint.submul(const ref a: bigint, const ref b: bigint) {
+    BigInteger.submul(this, a, b);
+  }
+
+  proc submul(ref result: bigint, const ref a: bigint, b: int) {
     if b >= 0 {
-      const b_ = b.safeCast(c_ulong);
-
-      if _local {
-        mpz_submul_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_submul_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_submul_ui(this.mpz, a_.mpz, b_);
-        }
-      }
+      BigInteger.submul(result, a, b:uint);
     } else {
-      const b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        mpz_addmul_ui(this.mpz, a.mpz, b_);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-
-          mpz_addmul_ui(this.mpz, a_.mpz, b_);
-        }
-      }
+      BigInteger.addmul(result, a, (0 - b):uint);
     }
   }
 
-  proc bigint.submul(const ref a: bigint, b: uint) {
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
+  proc bigint.submul(const ref a: bigint, b: int) {
+    BigInteger.submul(this, a, b);
+  }
+
+  proc submul(ref result: bigint, const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
-      mpz_submul_ui(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_submul_ui(this.mpz, a.mpz, b_);
-
+      mpz_submul_ui(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_submul_ui(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_submul_ui(this.mpz, a_.mpz, b_);
+        mpz_submul_ui(result.mpz, a_.mpz, b_);
       }
     }
   }
 
-  proc bigint.mul_2exp(const ref a: bigint, b: integral) {
+  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`~BigInteger.submul`")
+  proc bigint.submul(const ref a: bigint, b: uint) {
+    BigInteger.submul(this, a, b);
+  }
+
+  proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
-      mpz_mul_2exp(this.mpz, a.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_mul_2exp(this.mpz, a.mpz, b_);
-
+      mpz_mul_2exp(result.mpz, a.mpz, b_);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_mul_2exp(result.mpz, a_.mpz, b_);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_mul_2exp(this.mpz, a_.mpz, b_);
+        mpz_mul_2exp(result.mpz, a_.mpz, b_);
       }
     }
   }
 
+  @deprecated(notes="bigint.mul_2exp method is deprecated - please use the standalone function :proc:`~BigInteger.mul_2exp`")
+  proc bigint.mul_2exp(const ref a: bigint, b: integral) {
+    BigInteger.mul_2exp(this, a, b);
+  }
+
+  proc neg(ref result: bigint, const ref a: bigint) {
+    if _local {
+      mpz_neg(result.mpz, a.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_neg(result.mpz, a_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        mpz_neg(result.mpz, a_.mpz);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.neg method is deprecated - please use the standalone function :proc:`~BigInteger.neg`")
   proc bigint.neg(const ref a: bigint) {
+    BigInteger.neg(this, a);
+  }
+
+  proc abs(ref result: bigint, const ref a: bigint) {
     if _local {
-      mpz_neg(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_neg(this.mpz, a.mpz);
-
+      mpz_abs(result.mpz, a.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_abs(result.mpz, a_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-
-        mpz_neg(this.mpz, a_.mpz);
+        mpz_abs(result.mpz, a_.mpz);
       }
     }
   }
 
+  @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
   proc bigint.abs(const ref a: bigint) {
-    if _local {
-      mpz_abs(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_abs(this.mpz, a.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_abs(this.mpz, a_.mpz);
-      }
-    }
+    BigInteger.abs(this, a);
   }
 
   /*
@@ -4665,18 +3558,18 @@ module BigInteger {
        bigint.div_q using Round is deprecated, use bigint.divQ with round
        instead
   */
-  deprecated
-  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  @deprecated
+  ("bigint.div_q using Round is deprecated, use bigint.divQ with round instead")
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ(n, d, round.up);
+      BigInteger.divQ(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQ(n, d, round.zero);
+      BigInteger.divQ(this, n, d, round.zero);
     } else {
-      this.divQ(n, d, round.down);
+      BigInteger.divQ(this, n, d, round.down);
     }
   }
 
@@ -4686,70 +3579,74 @@ module BigInteger {
        bigint.div_q using Round is deprecated, use bigint.divQ with round
        instead
   */
-  deprecated
-  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  @deprecated
+  ("bigint.div_q using Round is deprecated, use bigint.divQ with round instead")
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ(n, d, round.up);
+      BigInteger.divQ(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQ(n, d, round.zero);
+      BigInteger.divQ(this, n, d, round.zero);
     } else {
-      this.divQ(n, d, round.down);
+      BigInteger.divQ(this, n, d, round.down);
     }
   }
 
   // 5.6 Division Functions
   // Note: Documentation on `denom: integral` version
-  proc bigint.divQ(const ref numer: bigint,
-                   const ref denom: bigint,
-                   param rounding = round.zero) {
+  proc divQ(ref result: bigint,
+            const ref numer: bigint,
+            const ref denom: bigint,
+            param rounding = round.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
 
+    inline proc helper(ref res, const ref n, const ref d, param rnd) {
+      select rnd {
+        when round.up   do mpz_cdiv_q(res.mpz, n.mpz,  d.mpz);
+        when round.down do mpz_fdiv_q(res.mpz, n.mpz,  d.mpz);
+        when round.zero do mpz_tdiv_q(res.mpz, n.mpz,  d.mpz);
+      }
+    }
+
     if _local {
-      select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              numer.localeId == chpl_nodeID &&
-              denom.localeId == chpl_nodeID {
-      select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
-      }
-
+      helper(result, numer, denom, rounding);
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer;
+      const denom_ = denom;
+      helper(result, numer_, denom_, rounding);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
         const denom_ = denom;
-
-        select rounding {
-          when round.up   do mpz_cdiv_q(this.mpz, numer_.mpz, denom_.mpz);
-          when round.down do mpz_fdiv_q(this.mpz, numer_.mpz, denom_.mpz);
-          when round.zero do mpz_tdiv_q(this.mpz, numer_.mpz, denom_.mpz);
-          }
+        helper(result, numer_, denom_, rounding);
       }
     }
   }
 
+  @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.divQ`")
+  proc bigint.divQ(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param rounding = round.zero) {
+    BigInteger.divQ(this, numer, denom, rounding);
+  }
+
+
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``this``.
+     ``result``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
 
      :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
+     :type numer: :record:`bigint`
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``, ``integral``
+     :type denom: :record:`bigint`, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4759,11 +3656,36 @@ module BigInteger {
      .. warning::
         If the denominator is zero, the program behavior is undefined.
   */
+  proc divQ(ref result: bigint,
+            const ref numer: bigint,
+            denom: integral,
+            param rounding = round.zero) {
+    BigInteger.divQ(result, numer, new bigint(denom), rounding);
+  }
+
+  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: :record:`bigint`, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.divQ`")
   proc bigint.divQ(const ref numer: bigint,
                              denom: integral,
                    param     rounding = round.zero) {
 
-    this.divQ(numer, new bigint(denom), rounding);
+    BigInteger.divQ(this, numer, denom, rounding);
   }
 
   /*
@@ -4772,18 +3694,18 @@ module BigInteger {
        bigint.div_r using Round is deprecated, use bigint.divR with round
        instead
   */
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  @deprecated
+  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR(n, d, round.up);
+      BigInteger.divR(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divR(n, d, round.zero);
+      BigInteger.divR(this, n, d, round.zero);
     } else {
-      this.divR(n, d, round.down);
+      BigInteger.divR(this, n, d, round.down);
     }
 
   }
@@ -4794,59 +3716,87 @@ module BigInteger {
        bigint.div_r using Round is deprecated, use bigint.divR with round
        instead
   */
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  @deprecated
+  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR(n, d, round.up);
+      BigInteger.divR(this, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divR(n, d, round.zero);
+      BigInteger.divR(this, n, d, round.zero);
     } else {
-      this.divR(n, d, round.down);
+      BigInteger.divR(this, n, d, round.down);
     }
   }
 
   // Note: documentation on `denom: integral` version
-  proc bigint.divR(const ref numer: bigint,
-                   const ref denom: bigint,
-                   param     rounding = round.zero) {
+  proc divR(ref result: bigint,
+            const ref numer: bigint,
+            const ref denom: bigint,
+            param rounding = round.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
 
-    if _local {
-      select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              numer.localeId == chpl_nodeID &&
-              denom.localeId == chpl_nodeID {
-      select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const numer_ = numer;
-        const denom_ = denom;
-
-        select rounding {
-          when round.up   do mpz_cdiv_r(this.mpz, numer_.mpz, denom_.mpz);
-          when round.down do mpz_fdiv_r(this.mpz, numer_.mpz, denom_.mpz);
-          when round.zero do mpz_tdiv_r(this.mpz, numer_.mpz, denom_.mpz);
-        }
+    inline proc helper(ref res, const ref n, const ref d, param rnd) {
+      select rnd {
+        when round.up   do mpz_cdiv_r(res.mpz, n.mpz, d.mpz);
+        when round.down do mpz_fdiv_r(res.mpz, n.mpz, d.mpz);
+        when round.zero do mpz_tdiv_r(res.mpz, n.mpz, d.mpz);
       }
     }
+
+    if _local {
+      helper(result, numer, denom, rounding);
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer;
+      const denom_ = denom;
+      helper(result, numer_, denom_, rounding);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const numer_ = numer;
+        const denom_ = denom;
+        helper(result, numer_, denom_, rounding);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.divR`")
+  proc bigint.divR(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param     rounding = round.zero) {
+    BigInteger.divR(this, numer, denom, rounding);
+  }
+
+  /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
+     ``result``.  The absolute value of the remainder will always be less than the
+     absolute value of the denominator (i.e. ``abs(result) < abs(denom)``).
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: :record:`bigint`, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  proc divR(ref result: bigint,
+            const ref numer: bigint,
+            denom: integral,
+            param rounding = round.zero) {
+    BigInteger.divR(result, numer, new bigint(denom), rounding);
   }
 
   /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
@@ -4854,10 +3804,10 @@ module BigInteger {
      absolute value of the denominator (i.e. ``abs(this) < abs(denom)``).
 
      :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
+     :type numer: :record:`bigint`
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``, ``integral``
+     :type denom: :record:`bigint`, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4867,10 +3817,11 @@ module BigInteger {
      .. warning::
         If the denominator is zero, the program behavior is undefined.
   */
+  @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.divR`")
   proc bigint.divR(const ref numer: bigint,
                              denom: integral,
                    param     rounding = round.zero) {
-    this.divR(numer, new bigint(denom), rounding);
+    BigInteger.divR(this, numer, denom, rounding);
   }
 
   /*
@@ -4879,19 +3830,19 @@ module BigInteger {
        bigint.div_qr using Round is deprecated, use bigint.divQR with round
        instead
   */
-  deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
+  @deprecated
+  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
                      param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQR(r, n, d, round.up);
+      BigInteger.divQR(this, r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQR(r, n, d, round.zero);
+      BigInteger.divQR(this, r, n, d, round.zero);
     } else {
-      this.divQR(r, n, d, round.down);
+      BigInteger.divQR(this, r, n, d, round.down);
     }
   }
 
@@ -4901,74 +3852,106 @@ module BigInteger {
        bigint.div_qr using Round is deprecated, use bigint.divQR with round
        instead
   */
-  deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
+  @deprecated
+  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
                      param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQR(r, n, d, round.up);
+      BigInteger.divQR(this, r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.divQR(r, n, d, round.zero);
+      BigInteger.divQR(this, r, n, d, round.zero);
     } else {
-      this.divQR(r, n, d, round.down);
+      BigInteger.divQR(this, r, n, d, round.down);
     }
   }
 
-  // Note: Documentation on `denom: integral` version
-  proc bigint.divQR(ref       remain: bigint,
-                    const ref numer: bigint,
-                    const ref denom: bigint,
-                    param     rounding = round.zero) {
+  proc divQR(ref       result: bigint,
+             ref       remain: bigint,
+             const ref numer: bigint,
+             const ref denom: bigint,
+             param     rounding = round.zero) {
     if (chpl_checkDivByZero) then
       if denom == 0 then
         halt("Attempt to divide by zero");
 
+    inline proc helper(ref res, ref rem, const ref n, const ref d, param rnd) {
+      select rnd {
+        when round.up do mpz_cdiv_qr(res.mpz, rem.mpz, n.mpz, d.mpz);
+        when round.down do mpz_fdiv_qr(res.mpz, rem.mpz, n.mpz, d.mpz);
+        when round.zero do mpz_tdiv_qr(res.mpz, rem.mpz, n.mpz, d.mpz);
+      }
+    }
+
     if _local {
-      select rounding {
-        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                     denom.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                       denom.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                       denom.mpz);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              remain.localeId == chpl_nodeID &&
-              numer.localeId == chpl_nodeID &&
-              denom.localeId == chpl_nodeID {
-      select rounding {
-        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                     denom.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                       denom.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
-                                       denom.mpz);
-      }
-
+      helper(result, remain, numer, denom, rounding);
+    } else if result.localeId == chpl_nodeID {
+      // TODO: need to revisit this in relation to Cray/chapel-private#4628
+      var   remain_ : bigint;
+      const numer_ = numer;
+      const denom_ = denom;
+      helper(result, remain_, numer_, denom_, rounding);
+      remain = remain_;
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var   remain_ = remain;
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        var   remain_ : bigint;
         const numer_ = numer;
         const denom_ = denom;
-
-        select rounding {
-          when round.up do mpz_cdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
-                                       denom_.mpz);
-          when round.down do mpz_fdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
-                                         denom_.mpz);
-          when round.zero do mpz_tdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
-                                         denom_.mpz);
-        }
-
+        helper(result, remain_, numer_, denom_, rounding);
         remain = remain_;
       }
     }
+  }
+
+  // Note: Documentation on `denom: integral` version
+  @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divQR`")
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                    const ref denom: bigint,
+                    param     rounding = round.zero) {
+    BigInteger.divQR(this, remain, numer, denom, rounding);
+  }
+
+  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
+     ``result``, and a remainder and storing it in ``remain``.  The quotient and
+     remainder will always satisfy ``numer = result*denom + remain`` after the
+     operation has finished.  The absolute value of the remainder will always be
+     less than the absolute value of the denominator (i.e. ``abs(result) <
+     abs(denom)``).
+
+     .. warning::
+        If ``result`` is also passed as the ``remain`` argument, the program
+        behavior is undefined.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
+
+     :arg remain: Stores the remainder of the division
+     :type remain: :record:`bigint`
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: :record:`bigint`, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  proc divQR(ref result: bigint,
+             ref remain: bigint,
+             const ref numer: bigint,
+             denom: integral,
+             param rounding = round.zero) {
+    BigInteger.divQR(result, remain, numer, new bigint(denom), rounding);
   }
 
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
@@ -4983,13 +3966,13 @@ module BigInteger {
         behavior is undefined.
 
      :arg remain: Stores the remainder of the division
-     :type remain: ``bigint``
+     :type remain: :record:`bigint`
 
      :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
+     :type numer: :record:`bigint`
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``, ``integral``
+     :type denom: :record:`bigint`, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4999,11 +3982,12 @@ module BigInteger {
      .. warning::
         If the denominator is zero, the program behavior is undefined.
   */
+  @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divQR`")
   proc bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
                               denom: integral,
                     param     rounding = round.zero) {
-    this.divQR(remain, numer, new bigint(denom), rounding);
+    BigInteger.divQR(this, remain, numer, denom, rounding);
   }
 
   /*
@@ -5012,26 +3996,29 @@ module BigInteger {
        bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with
        round instead
   */
-  deprecated
-  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
+  @deprecated
+  ("bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead")
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divQ2Exp(n, b, round.up);
+      BigInteger.divQ2Exp(this, n, b, round.up);
     } else if (rounding == ZERO) {
-      this.divQ2Exp(n, b, round.zero);
+      BigInteger.divQ2Exp(this, n, b, round.zero);
     } else {
-      this.divQ2Exp(n, b, round.down);
+      BigInteger.divQ2Exp(this, n, b, round.down);
     }
   }
 
   /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
-     ``this``.
+     ``result``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
 
      :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
+     :type numer: :record:`bigint`
 
      :arg exp: The exponent that 2 should be raised to before being used as the
                denominator of the division operation to be performed
@@ -5042,39 +4029,54 @@ module BigInteger {
                     ``zero`` if unspecified
      :type rounding: ``round``
    */
+  proc divQ2Exp(ref result: bigint,
+                const ref numer: bigint,
+                exp: integral,
+                param rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
+
+    inline proc helper(ref res, const ref n, e, param rnd) {
+      select rnd {
+        when round.up   do mpz_cdiv_q_2exp(res.mpz, n.mpz, e);
+        when round.down do mpz_fdiv_q_2exp(res.mpz, n.mpz, e);
+        when round.zero do mpz_tdiv_q_2exp(res.mpz, n.mpz, e);
+      }
+    }
+
+    if _local {
+      helper(result, numer, exp_, rounding);
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer;
+      helper(result, numer_, exp_, rounding);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const numer_ = numer;
+        helper(result, numer_, exp_, rounding);
+      }
+    }
+  }
+
+  /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+
+     :arg exp: The exponent that 2 should be raised to before being used as the
+               denominator of the division operation to be performed
+     :type exp: ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+   */
+  @deprecated(notes="bigint.divQ2Exp method is deprecated - please use the standalone function :proc:`~BigInteger.divQ2Exp`")
   proc bigint.divQ2Exp(const ref numer: bigint,
                                  exp: integral,
                        param     rounding = round.zero) {
-    const exp_ = exp.safeCast(mp_bitcnt_t);
-
-    if _local {
-      select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              numer.localeId == chpl_nodeID {
-      select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const numer_ = numer;
-
-        select rounding {
-          when round.up   do mpz_cdiv_q_2exp(this.mpz, numer_.mpz, exp_);
-          when round.down do mpz_fdiv_q_2exp(this.mpz, numer_.mpz, exp_);
-          when round.zero do mpz_tdiv_q_2exp(this.mpz, numer_.mpz, exp_);
-        }
-      }
-    }
+    BigInteger.divQ2Exp(this, numer, exp, rounding);
   }
 
   /*
@@ -5083,26 +4085,29 @@ module BigInteger {
        bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with
        round instead
   */
-  deprecated
-  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
+  @deprecated
+  ("bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead")
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.divR2Exp(n, b, round.up);
+      BigInteger.divR2Exp(this, n, b, round.up);
     } else if (rounding == ZERO) {
-      this.divR2Exp(n, b, round.zero);
+      BigInteger.divR2Exp(this, n, b, round.zero);
     } else {
-      this.divR2Exp(n, b, round.down);
+      BigInteger.divR2Exp(this, n, b, round.down);
     }
   }
 
   /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
-     ``this``.
+     ``result``.
+
+     :arg result: Where the result is stored
+     :type result: :record:`bigint`
 
      :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
+     :type numer: :record:`bigint`
 
      :arg exp: The exponent that 2 should be raised to before being used as the
                denominator of the division operation to be performed
@@ -5113,40 +4118,81 @@ module BigInteger {
                     ``zero`` if unspecified
      :type rounding: ``round``
    */
-  proc bigint.divR2Exp(const ref numer: bigint,
-                                 exp: integral,
-                       param     rounding = round.zero) {
+  proc divR2Exp(ref result: bigint,
+                const ref numer: bigint,
+                exp: integral,
+                param     rounding = round.zero) {
     const exp_ = exp.safeCast(mp_bitcnt_t);
 
+    inline proc helper(ref res, const ref n, e, param rnd) {
+      select rnd {
+        when round.up   do mpz_cdiv_r_2exp(res.mpz, n.mpz, e);
+        when round.down do mpz_fdiv_r_2exp(res.mpz, n.mpz, e);
+        when round.zero do mpz_tdiv_r_2exp(res.mpz, n.mpz, e);
+      }
+    }
+
     if _local {
-      select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
-      }
-
-    } else if this.localeId == chpl_nodeID && numer.localeId == chpl_nodeID {
-      select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
-      }
-
+      helper(result, numer, exp_, rounding);
+    } else if result.localeId == chpl_nodeID {
+      const numer_ = numer;
+      helper(result, numer_, exp_, rounding);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const numer_ = numer;
-
-        select rounding {
-          when round.up   do mpz_cdiv_r_2exp(this.mpz, numer_.mpz, exp_);
-          when round.down do mpz_fdiv_r_2exp(this.mpz, numer_.mpz, exp_);
-          when round.zero do mpz_tdiv_r_2exp(this.mpz, numer_.mpz, exp_);
-        }
+        helper(result, numer_, exp_, rounding);
       }
     }
   }
 
+  /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: :record:`bigint`
+
+     :arg exp: The exponent that 2 should be raised to before being used as the
+               denominator of the division operation to be performed
+     :type exp: ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+   */
+  @deprecated(notes="bigint.divR2Exp method is deprecated - please use the standalone function :proc:`~BigInteger.divR2Exp`")
+  proc bigint.divR2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    BigInteger.divR2Exp(this, numer, exp, rounding);
+  }
+
+
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
+
+     The result is stored in ``result``.
+
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_fdiv_r(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        mpz_fdiv_r(result.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
@@ -5156,25 +4202,60 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
+  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
   proc bigint.mod(const ref a: bigint, const ref b: bigint) {
-    if _local {
-      mpz_fdiv_r(this.mpz, a.mpz, b.mpz);
+    BigInteger.mod(this, a, b);
+  }
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
+  /* Computes the mod operator on the two arguments, defined as
+     ``mod(a, b) = a - b * floor(a / b)``.
 
-      mpz_fdiv_r(this.mpz, a.mpz, b.mpz);
+     If b is of an unsigned type, then
+     fewer conditionals will be evaluated at run time.
 
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+     The result is stored in ``result`` and returned as an ``int``.
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
+     The result is always >= 0 if `b` > 0.
+     It is an error if `b` == 0.
+  */
+  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int {
+    var b_ : c_ulong;
+    var rem: c_ulong;
+
+    inline proc helper(ref res, ref rem, const ref a, b) {
+      if _local {
+        rem = mpz_fdiv_r_ui(res.mpz, a.mpz, b_);
+      } else if res.localeId == chpl_nodeID {
         const a_ = a;
-        const b_ = b;
-
-        mpz_fdiv_r(this.mpz, a_.mpz, b_.mpz);
+        rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+      } else {
+        const resLoc = chpl_buildLocaleID(res.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", resLoc) {
+          const a_ = a;
+          rem = mpz_fdiv_r_ui(res.mpz, a_.mpz, b_);
+        }
       }
+    }
+
+    if isNonnegative(b) {
+      b_ = b.safeCast(c_ulong);
+      helper(result, rem, a, b_);
+      return rem.safeCast(int);
+    } else {
+      if b >= 0 then
+        b_ = b.safeCast(c_ulong);
+      else
+        b_ = (0 - b).safeCast(c_ulong);
+
+      helper(result, rem, a, b_);
+
+      if rem == 0
+        then return 0;
+      else if b < 0 {
+        result += b;
+        return rem.safeCast(int) + b;
+      } else
+        return rem.safeCast(int);
     }
   }
 
@@ -5189,52 +4270,9 @@ module BigInteger {
      The result is always >= 0 if `b` > 0.
      It is an error if `b` == 0.
   */
+  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
   proc bigint.mod(const ref a: bigint, b: integral) : int {
-    var b_ : c_ulong;
-    var rem: c_ulong;
-
-    if isNonnegative(b) {
-      b_ = b.safeCast(c_ulong);
-
-      if _local {
-        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-          rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-
-      return rem.safeCast(int);
-    } else {
-      if b >= 0 then
-        b_ = b.safeCast(c_ulong);
-      else
-        b_ = (0 - b).safeCast(c_ulong);
-
-      if _local {
-        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-        rem = mpz_fdiv_r_ui(this.mpz, a.mpz, b_);
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          const a_ = a;
-          rem = mpz_fdiv_r_ui(this.mpz, a_.mpz, b_);
-        }
-      }
-
-      if rem == 0
-        then return 0;
-      else if b < 0 {
-        this += b;
-        return rem.safeCast(int) + b;
-      } else
-        return rem.safeCast(int);
-    }
+    return BigInteger.mod(this, a, b);
   }
 
   // Comparison Functions
@@ -5251,7 +4289,7 @@ module BigInteger {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var b_ = b;
+        const b_ = b.localize();
 
         ret = mpz_cmp(this.mpz, b_.mpz);
       }
@@ -5413,85 +4451,91 @@ module BigInteger {
 
 
   // Logical and Bit Manipulation Functions
+  proc and(ref result: bigint, const ref a: bigint, const ref b: bigint) {
+    if _local {
+      mpz_and(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_and(result.mpz, a_.mpz, b_.mpz);
+    } else {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
+        const a_ = a;
+        const b_ = b;
+        mpz_and(result.mpz, a_.mpz, b_.mpz);
+      }
+    }
+  }
+
+  @deprecated(notes="bigint.and method is deprecated - please use the standalone function :proc:`~BigInteger.and`")
   proc bigint.and(const ref a: bigint, const ref b: bigint) {
+    BigInteger.and(this, a, b);
+  }
+
+  proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_and(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_and(this.mpz, a.mpz, b.mpz);
-
+      mpz_ior(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_ior(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
-
-        mpz_and(this.mpz, a_.mpz, b_.mpz);
+        mpz_ior(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
+  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`~BigInteger.ior`")
   proc bigint.ior(const ref a: bigint, const ref b: bigint) {
+    BigInteger.ior(this, a, b);
+  }
+
+  proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint) {
     if _local {
-      mpz_ior(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_ior(this.mpz, a.mpz, b.mpz);
-
+      mpz_xor(result.mpz, a.mpz, b.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      const b_ = b;
+      mpz_xor(result.mpz, a_.mpz, b_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
         const b_ = b;
-
-        mpz_ior(this.mpz, a_.mpz, b_.mpz);
+        mpz_xor(result.mpz, a_.mpz, b_.mpz);
       }
     }
   }
 
+  @deprecated(notes="bigint.xor method is deprecated - please use the standalone function :proc:`~BigInteger.xor`")
   proc bigint.xor(const ref a: bigint, const ref b: bigint) {
+    BigInteger.xor(this, a, b);
+  }
+
+
+  proc com(ref result: bigint, const ref a: bigint) {
     if _local {
-      mpz_xor(this.mpz, a.mpz, b.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              b.localeId    == chpl_nodeID {
-      mpz_xor(this.mpz, a.mpz, b.mpz);
-
+      mpz_com(result.mpz, a.mpz);
+    } else if result.localeId == chpl_nodeID {
+      const a_ = a;
+      mpz_com(result.mpz, a_.mpz);
     } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
+      const resultLoc = chpl_buildLocaleID(result.localeId, c_sublocid_any);
+      on __primitive("chpl_on_locale_num", resultLoc) {
         const a_ = a;
-        const b_ = b;
-
-        mpz_xor(this.mpz, a_.mpz, b_.mpz);
+        mpz_com(result.mpz, a_.mpz);
       }
     }
   }
 
+  @deprecated(notes="bigint.com method is deprecated - please use the standalone function :proc:`~BigInteger.com`")
   proc bigint.com(const ref a: bigint) {
-    if _local {
-      mpz_com(this.mpz, a.mpz);
-
-    } else if this.localeId == chpl_nodeID && a.localeId == chpl_nodeID {
-      mpz_com(this.mpz, a.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const a_ = a;
-
-        mpz_com(this.mpz, a_.mpz);
-      }
-    }
+    BigInteger.com(this, a);
   }
 
 
@@ -5607,7 +4651,67 @@ module BigInteger {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
+  record bigintWrapper {
+    pragma "no init"
+    var mpz: mpz_t;
+    var isOwned: bool;
+    proc init(a: mpz_t) {
+      mpz = a;
+      isOwned = false;
+    }
+
+    proc init(a: bigint) {
+      this.complete();
+      var mpz_struct = a.getImpl();
+      mpz_init(this.mpz);
+      chpl_gmp_get_mpz(this.mpz, a.localeId, mpz_struct);
+      isOwned = true;
+    }
+
+    proc deinit() {
+      if isOwned then
+        mpz_clear(this.mpz);
+    }
+  }
+
+  @chpldoc.nodoc
+  record __serializeHelper {
+    var buff: mpz_t;
+    var localeId: chpl_nodeID_t;
+  }
+
+  @chpldoc.nodoc
+  proc bigint.chpl__serialize() {
+    return new __serializeHelper(this.mpz, this.localeId);
+  }
+
+  @chpldoc.nodoc
+  proc type bigint.chpl__deserialize(data) {
+    var ret: bigint;
+    if data.localeId == chpl_nodeID {
+      mpz_set(ret.mpz, data.buff);
+    } else {
+      chpl_gmp_get_mpz(ret.mpz, data.localeId, data.buff[0]);
+    }
+    return ret;
+  }
+
+  @chpldoc.nodoc
+  inline proc bigint.localize() {
+    if _local {
+      const ret = new bigintWrapper(this.mpz);
+      return ret;
+    } else if this.localeId == chpl_nodeID {
+      const ret = new bigintWrapper(this.mpz);
+      return ret;
+    } else {
+      const ret = new bigintWrapper(this);
+      return ret;
+    }
+  }
+
+  @chpldoc.nodoc
   inline proc bigint.hash(): uint {
     var ret: uint = this > 0;
     if _local {

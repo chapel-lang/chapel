@@ -64,7 +64,7 @@ class Test {
 class AppendFromEmpty: Test {
   var _lst: testList;
 
-  override proc name() return "Append";
+  override proc name() do return "Append";
   override proc setup() { _lst.clear(); }
 
   override proc test() {
@@ -76,7 +76,7 @@ class InsertFront: Test {
   // Use a smaller value for N because InsertFront is a O(n**2) operation.
   var _lst: testList;
  
-  override proc name() return "InsertFront";
+  override proc name() do return "InsertFront";
   override proc setup() { _lst = createList(1); }
   override proc test() {
     while _lst.size < n1 do _lst.insert(0, (_lst.size & 127):byte);
@@ -86,7 +86,7 @@ class InsertFront: Test {
 class PopFromBack: Test {
   var _lst: testList;
 
-  override proc name() return "PopBack";
+  override proc name() do return "PopBack";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
     while !_lst.isEmpty() do _lst.pop();
@@ -96,7 +96,7 @@ class PopFromBack: Test {
 class PopFromFront: Test {
   var _lst: testList;
 
-  override proc name() return "PopFront";
+  override proc name() do return "PopFront";
   // Use a smaller value for N because PopFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
@@ -107,7 +107,7 @@ class PopFromFront: Test {
 class IterSerial: Test {
   var _lst: testList;
 
-  override proc name() return "IterSerial";
+  override proc name() do return "IterSerial";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
     for x in _lst do x += 1;
@@ -117,7 +117,7 @@ class IterSerial: Test {
 class IterParallel: Test {
   var _lst: testList;
 
-  override proc name() return "IterParallel";
+  override proc name() do return "IterParallel";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
     forall x in _lst do x += 1;
@@ -128,7 +128,7 @@ class RandomAccess1: Test {
   var _lst: testList;
   var _rnd: [0..#n0] int;
 
-  override proc name() return "RandomAccess1";
+  override proc name() do return "RandomAccess1";
   override proc setup() {
     _lst = createList(n0);
     // Set up a trace of random indices.
@@ -143,7 +143,7 @@ class RandomAccess1: Test {
 class Clear: Test {
   var _lst: testList;
 
-  override proc name() return "Clear";
+  override proc name() do return "Clear";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
     _lst.clear();

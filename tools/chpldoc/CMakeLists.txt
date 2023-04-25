@@ -14,12 +14,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-add_executable(chpldoc "chpldoc.cpp")
-set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
-target_sources(chpldoc PRIVATE arg.h arg.cpp arg-helpers.h arg-helpers.cpp)
-target_link_libraries(chpldoc ChplFrontend)
-target_include_directories(chpldoc PUBLIC
-                           ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
 
-add_dependencies(chpldoc ChplFrontend)
+
+# Write the COPYRIGHT file, or update the existing file if the
+# the $CHPL_HOME/COPYRIGHT file has been modified
+add_custom_command(
+  OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/COPYRIGHT
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../util/config/generate-copyright
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../
+          ${CMAKE_CURRENT_SOURCE_DIR}
+  DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/../../COPYRIGHT
+  COMMENT "writing COPYRIGHT file updates..."
+  VERBATIM)
+add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
+set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
+target_link_libraries(chpldoc ChplFrontend)
+target_include_directories(chpldoc PRIVATE
+                           ${CHPL_MAIN_INCLUDE_DIR}
+                           ${CHPL_INCLUDE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR})

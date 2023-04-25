@@ -1,4 +1,4 @@
-bug: arrays with negative stride don't work
+feature request: slicing using a negative stride should result in neg-stride array
 
 A variation on arrNegDom.future
 

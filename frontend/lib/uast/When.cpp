@@ -39,7 +39,7 @@ owned<When> When::build(Builder* builder, Location loc,
   AstList lst;
   const int numCaseExprs = caseExprs.size();
   const int numBodyStmts = stmts.size();
-  int bodyChildNum = -1;
+  int bodyChildNum = NO_CHILD;
 
   for (auto& ast : caseExprs) {
     lst.push_back(std::move(ast));

@@ -38,7 +38,7 @@ class VarLikeDecl : public NamedDecl {
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(AstTag tag, AstList children, int attributesChildNum,
+  VarLikeDecl(AstTag tag, AstList children, int attributeGroupChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,
@@ -46,7 +46,7 @@ class VarLikeDecl : public NamedDecl {
               Qualifier storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
-    : NamedDecl(tag, std::move(children), attributesChildNum, vis,
+    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
                 linkage,
                 linkageNameChildNum,
                 name),
@@ -63,6 +63,14 @@ class VarLikeDecl : public NamedDecl {
       CHPL_ASSERT(initExpressionChildNum <= 3);
     }
   }
+
+  VarLikeDecl(AstTag tag, Deserializer& des)
+    : NamedDecl(tag, des) {
+    storageKind_ = des.read<Qualifier>();
+    typeExpressionChildNum_ = des.read<int8_t>();
+    initExpressionChildNum_ = des.read<int8_t>();
+  }
+
 
   bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
@@ -117,10 +125,18 @@ class VarLikeDecl : public NamedDecl {
       return nullptr;
     }
   }
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+    ser.write(storageKind_);
+    ser.write(typeExpressionChildNum_);
+    ser.write(initExpressionChildNum_);
+  }
 };
 
 
 } // end namespace uast
+
 } // end namespace chpl
 
 #endif

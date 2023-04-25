@@ -50,13 +50,20 @@ class AList {
   bool empty() const;
 
   // add element(s) at beginning of list
+  // the withoutFlattening case disables the PRIM_ACTUALS_LIST flattening behavior.
   void insertAtHead(Expr* new_ast);
+  void insertAtHeadWithoutFlattening(Expr* new_ast);
 
   // add element(s) at end of list
+  // the withoutFlattening case disables the PRIM_ACTUALS_LIST flattening behavior.
   void insertAtTail(Expr* new_ast);
+  void insertAtTailWithoutFlattening(Expr* new_ast);
 
   // codegen list. Separator only used for C codegenning.
   GenRet codegen(const char* separator = ", ");
+ private:
+  void performInsertAtHead(Expr* new_ast);
+  void performInsertAtTail(Expr* new_ast);
 };
 
 #define for_alist(node, list)                                           \

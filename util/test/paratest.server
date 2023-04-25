@@ -39,7 +39,7 @@ $client_script = "$pwd/../util/test/paratest.client";
 $venv_check = "$pwd/../util/test/run-in-test-venv.bash python3 -c 'print(\"OK\")'";
 $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
-$futures_mode = 0;
+$futures_mode = 1;
 $filedist = 0;
 $dirs = "";
 $node_para = 1;                        # the number of tasks to run on each node
@@ -515,19 +515,20 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks] [-memleakslog f] [-multilocale-only] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks] [-memleakslog f] [-multilocale-only] [-no-futures] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
     print "    -env s     : s is a string of space separated env vars forwarded to each client\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
-    print "    -futures   : include .future tests (default is none).\n";
+    print "    -futures   : include .future tests (the default behavior).\n";
     print "    -futures-only : only run .future tests, not regular ones.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -memleaks  : pass -memleaks to start_test. \n";
     print "    -memleakslog f: pass -memleakslog to start_test; aggregate all output.\n";
     print "    -multilocale-only: pass -multilocale-only to start_test if comm!=none\n";
+    print "    -no-futures: skip over .future tests (default is '-futures').\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
     print "    -valgrind[exe]  : pass -valgrind or -valgrindexe to start_test.\n";
@@ -606,6 +607,8 @@ sub main {
             $futures_mode = 2;
         } elsif (/^-futures$/) {
             $futures_mode = 1;
+        } elsif (/^-no-futures$/) {
+            $futures_mode = 0;
         } elsif (/^-logfile$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {

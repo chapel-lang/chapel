@@ -21,7 +21,7 @@ interface chpl_Hashtable(HT) {
 
 my__hashtable implements chpl_Hashtable;
 
-proc my__hashtable.tableType type return _ddata(int);
+proc my__hashtable.tableType type do return _ddata(int);
 
 // We need to support assignment to 'table'.
 proc chpl_Hashtable.updateTable() {

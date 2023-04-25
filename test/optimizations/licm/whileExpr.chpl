@@ -37,7 +37,7 @@ proc nonGlobalVersion() {
 }
 
 proc inlinedNonGlobalVersion() {
-  var B = [10];
+  var B = [10, ];
   ref box = B[0];
 
   var i = 1;

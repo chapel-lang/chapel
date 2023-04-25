@@ -42,6 +42,22 @@ static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
           lhs.first_column <= rhs.first_column);
 }
 
+
+static bool checkNoDuplicateNamedActuals(const MaybeNamedActualList& actuals,
+                                         std::set<UniqueString>& duplicates) {
+  std::set<UniqueString> seen;
+  for (auto& actual : actuals) {
+    if (actual.name.isEmpty()) {
+      continue;
+    }
+    if (seen.count(actual.name) > 0) {
+      duplicates.insert(actual.name);
+    }
+    seen.insert(actual.name);
+  }
+  return duplicates.size() == 0;
+}
+
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // If there were no comments, there is nothing to do.
@@ -128,25 +144,64 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
-owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
+owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                               bool usedParens,
+                                               ParserExprList* toolspace,
+                                               MaybeNamedActualList* actuals) {
+
+  UniqueString fullName;
+  std::string tmpName;
+
+  // the firstIdentifier may be the name of the attribute of the first element
+  // of the toolspace. If so, we need to move it into the toolspace and get the
+  // name of the attribute from the last entry in the toolspace.
+  // e.g. @toolspace.attribute vs @attribute
+  if (toolspace == nullptr) {
+    toolspace = makeList();
+  }
+  if (actuals == nullptr) {
+    actuals = new MaybeNamedActualList();
+  }
+  if (toolspace->size() == 0) {
+    fullName = firstIdent->toIdentifier()->name();
+  } else {
+    tmpName = firstIdent->toIdentifier()->name().str();
+    for (auto& tool : *toolspace) {
+      tmpName += "." + tool->toIdentifier()->name().str();
+    }
+    fullName = UniqueString::get(context(), tmpName);
+  }
+
+  AstList actualsForReal;
+  std::vector<UniqueString> actualNames;
+  consumeNamedActuals(actuals, actualsForReal, actualNames);
+  auto node = Attribute::build(builder, convertLocation(loc), fullName,
+                               usedParens, std::move(actualsForReal),
+                               std::move(actualNames));
+  return node;
+}
+
+owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
 
   // There may be nothing to return.
-  if (!hasAttributeParts) {
+  if (!hasAttributeGroupParts) {
     return nullptr;
   }
 
-  // Create a local copy of the attributes we can move into the node.
-  auto pragmaCopy = attributeParts.pragmas
-      ? *(attributeParts.pragmas)
+  // Create a local copy of the attributeGroup we can move into the node.
+  auto pragmaCopy = attributeGroupParts.pragmas
+      ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
-  auto node = Attributes::build(builder, convertLocation(locationOfDecl),
+  auto attrList = consumeList(attributeGroupParts.attributeList);
+  auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
-                                attributeParts.isDeprecated,
-                                attributeParts.isUnstable,
-                                attributeParts.deprecationMessage,
-                                attributeParts.unstableMessage);
+                                attributeGroupParts.isDeprecated,
+                                attributeGroupParts.isUnstable,
+                                attributeGroupParts.deprecationMessage,
+                                attributeGroupParts.unstableMessage,
+                                std::move(attrList));
   return node;
 }
 
@@ -163,9 +218,9 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
       error(loc, "unknown pragma \"%s\".", strLit->value().c_str());
 
     // Initialize the pragma flags if needed.
-    auto& pragmas = attributeParts.pragmas;
+    auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas == nullptr) pragmas = new std::set<PragmaTag>();
-    hasAttributeParts = true;
+    hasAttributeGroupParts = true;
 
     // Always insert, even if PRAGMA_UNKNOWN.
     pragmas->insert(tag);
@@ -177,58 +232,180 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
   return ret;
 }
 
-void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  } else {
-    CHPL_ASSERT(!attributeParts.isDeprecated);
-    CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
+void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  bool usedParens,
+                                  ParserExprList* toolspace,
+                                  MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  // initialize the list if it wasn't already
+  auto& attrs = attributeGroupParts.attributeList;
+  if (attrs == nullptr) {
+    attrs = makeList();
   }
 
-  attributeParts.isDeprecated = true;
+  // do some special handling for unstable and deprecated, because they
+  // existed before the changes to allow general attributes
+  auto ident = firstIdent->toIdentifier();
+  if (ident->name()==USTR("unstable")) {
+    noteUnstable(loc, actuals);
+  } else if (ident->name()==USTR("deprecated")) {
+    noteDeprecation(loc, actuals);
+  } else if (ident->name()==USTR("stable")) {
+    noteStable(loc, actuals);
+  }
 
+  // check the actual names are not duplicates
+  if (actuals != nullptr) {
+    std::set<UniqueString> duplicates;
+    if (!checkNoDuplicateNamedActuals(*actuals, duplicates)) {
+      for (auto& duplicate : duplicates) {
+        error(loc, "repeated argument name '%s'", duplicate.c_str());
+      }
+    }
+  }
+
+  // make sure we don't put duplicate attributes (based on names) on one symbol
+  auto attr = buildAttribute(loc, ident, usedParens, toolspace, actuals);
+  for (auto& attribute : *attrs) {
+    if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
+      error(loc, "repeated attribute '%s'", attr->toAttribute()->name().c_str());
+    }
+  }
+  attrs = appendList(attrs, attr.release());
+}
+
+
+
+void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
+  }
+  attributeGroupParts.isDeprecated = true;
+  AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
+      }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "deprecated attribute arguments must be string literals for now");
+      }
+      // TODO: Decide how this interaction should work, if we want to continue
+      // supporting "message" or if we should adapt that field to match the
+      // argument names here
+      // For now, use the notes field, or assume if there's only one argument
+      // then it's the message
+      if (actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "deprecated attribute only accepts one unnamed argument");
+  }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.deprecationMessage = strLit->value();
+      attributeGroupParts.deprecationMessage = strLit->value();
     }
-
-    delete messageStr;
   }
 }
 
-void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  }
-  else {
-    CHPL_ASSERT(!attributeParts.isUnstable);
-    CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
-  }
+void ParserContext::noteStable(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
 
-  attributeParts.isUnstable = true;
-
-  if (messageStr) {
-    if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.unstableMessage = strLit->value();
+  if (attributeGroupParts.isUnstable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
+  // TODO: does it make sense to deprecate something that's stable? Shouldn't
+  // the stable attribute come off when it's marked deprecated?
+  if (attributeGroupParts.isDeprecated) {
+    error(loc, "cannot apply both deprecated and stable attributes to the same symbol");
+  }
+  attributeGroupParts.isStable = true;
+  if (actuals->size() > 1) {
+    error(loc, "stable attribute only accepts one argument");
+  }
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@stable' attribute only accepts 'since' or unnamed argument", actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "stable attribute arguments must be string literals for now");
+      }
     }
-
-    delete messageStr;
   }
 }
-void ParserContext::resetAttributePartsState() {
-  if (hasAttributeParts) {
-    auto& pragmas = attributeParts.pragmas;
+
+void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
+  attributeGroupParts.isUnstable = true;
+
+  AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "category").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "reason").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
+      }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "unstable attribute arguments must be string literals for now");
+      }
+     // use the reason field or assume if there's only one argument it's the message
+      if (actual.name == UniqueString::get(context(), "reason").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "unstable attribute only accepts one unnamed argument");
+  }
+  if (messageStr) {
+    if (auto strLit = messageStr->toStringLiteral()) {
+      attributeGroupParts.unstableMessage = strLit->value();
+    }
+  }
+}
+
+void ParserContext::resetAttributeGroupPartsState() {
+  if (hasAttributeGroupParts) {
+    auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeParts = { nullptr, false, false, UniqueString(), UniqueString() };
-    hasAttributeParts = false;
+    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    hasAttributeGroupParts = false;
   }
 
-  CHPL_ASSERT(attributeParts.pragmas == nullptr);
-  CHPL_ASSERT(!attributeParts.isDeprecated);
-  CHPL_ASSERT(!attributeParts.isUnstable);
-  CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
-  CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
-  CHPL_ASSERT(!hasAttributeParts);
+  CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+  CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
+  CHPL_ASSERT(!attributeGroupParts.isDeprecated);
+  CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isStable);
+  CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
 }
@@ -242,31 +419,31 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   // If statement is not a decl, we should not have built any, otherwise
   // it was and the counter got reset at some point before this.
-  CHPL_ASSERT(numAttributesBuilt == 0);
+  // CHPL_ASSERT(numAttributesBuilt == 0);
 
   if (cs.stmt && cs.stmt->isDecl()) {
 
-    // If a decl was produced then the attributes should have been reset.
+    // If a decl was produced then the attributeGroup should have been reset.
     // If they were _not_ reset, then it means that a deprecated statement
     // came before a pragma list.
     // TODO: Can we just make deprecated_stmt and pragma_ls alternates?
     // This solves that problem.
-    if (hasAttributeParts) {
-      CHPL_ASSERT(attributeParts.pragmas == nullptr);
-      CHPL_ASSERT(attributeParts.isDeprecated);
-      CHPL_ASSERT(attributeParts.isUnstable);
+    if (hasAttributeGroupParts) {
+      CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+      CHPL_ASSERT(attributeGroupParts.isDeprecated);
+      CHPL_ASSERT(attributeGroupParts.isUnstable);
       syntax(loc, "pragma list must come before deprecation statement.");
     }
 
   } else {
-    CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt) CHPL_ASSERT(hasAttributeParts);
+    // CHPL_ASSERT(numAttributesBuilt == 0);
+    if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
 
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
     // Clean up the attribute parts.
-    resetAttributePartsState();
+    resetAttributeGroupPartsState();
   }
 
   return ret;
@@ -296,7 +473,7 @@ void ParserContext::resetDeclStateOnError() {
 }
 
 void ParserContext::resetDeclState() {
-  this->resetAttributePartsState();
+  this->resetAttributeGroupPartsState();
   this->varDeclKind = Variable::VAR;
   this->hasNotedVarDeclKind = false;
   this->visibility = Decl::DEFAULT_VISIBILITY;
@@ -332,8 +509,8 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
 }
 
 
-ErroneousExpression* ParserContext::report(YYLTYPE loc, const ErrorBase* error) {
-  errors.push_back(context()->report(error));
+ErroneousExpression* ParserContext::report(YYLTYPE loc, owned<ErrorBase> error) {
+  context()->report(std::move(error));
   return ErroneousExpression::build(builder, convertLocation(loc)).release();
 }
 
@@ -343,7 +520,7 @@ ErroneousExpression* ParserContext::report(YYLTYPE loc, const ErrorBase* error) 
     va_start(vl, fmt); \
     auto reportLoc = p_context__->convertLocation(loc__); \
     auto result = p_context__->report(loc__, \
-        GeneralError::vbuild(context(), kind__, reportLoc, fmt__, vl)); \
+        GeneralError::vbuild(kind__, reportLoc, fmt__, vl)); \
     va_end(vl); \
     return result; \
   } while(false)
@@ -814,7 +991,45 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
 AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   if (fp.isBodyNonBlockExpression) CHPL_ASSERT(false && "Not handled!");
-  auto ret = buildLambda(location, fp);
+
+  clearComments(fp.comments);
+
+  AstNode* ret = nullptr;
+
+  if (fp.errorExpr != nullptr) {
+    ret = fp.errorExpr;
+    this->clearComments();
+    return ret;
+  }
+
+  owned<Block> body = consumeToBlock(location, fp.body);
+
+  // Own the recorded identifier to clean it up, but grab its location.
+  owned<Identifier> identName = toOwned(fp.name);
+  assert(identName.get());
+  auto identNameLoc = builder->getLocation(identName.get());
+  assert(!identNameLoc.isEmpty());
+
+  auto f = Function::build(builder, identNameLoc,
+                           toOwned(fp.attributeGroup),
+                           Decl::DEFAULT_VISIBILITY,
+                           Decl::DEFAULT_LINKAGE,
+                           /*linkageName*/ nullptr,
+                           UniqueString(),
+                           /*inline*/ false,
+                           /*override*/ false,
+                           fp.kind,
+                           /* receiver */ nullptr,
+                           fp.returnIntent,
+                           fp.throws,
+                           /*primaryMethod*/ false,
+                           /*parenless*/ false,
+                           this->consumeList(fp.formals),
+                           toOwned(fp.returnType),
+                           toOwned(fp.where),
+                           this->consumeList(fp.lifetime),
+                           std::move(body));
+  ret = f.release();
   return ret;
 }
 
@@ -823,14 +1038,14 @@ ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
                            PODUniqueString name,
                            AstNode* typeExpr,
                            AstNode* initExpr,
-                           bool consumeAttributes) {
-  auto attr = consumeAttributes ? buildAttributes(location) : nullptr;
+                           bool consumeAttributeGroup) {
+  auto attr = consumeAttributeGroup ? buildAttributeGroup(location) : nullptr;
   auto loc = convertLocation(location);
   auto node = Formal::build(builder, loc, std::move(attr), name, intent,
                             toOwned(typeExpr),
                             toOwned(initExpr));
   this->noteIsBuildingFormal(false);
-  if (consumeAttributes) resetAttributePartsState();
+  if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
 }
 
@@ -839,15 +1054,15 @@ ParserContext::buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                                  PODUniqueString name,
                                  AstNode* typeExpr,
                                  AstNode* initExpr,
-                                 bool consumeAttributes) {
-  auto attr = consumeAttributes ? buildAttributes(location) : nullptr;
+                                 bool consumeAttributeGroup) {
+  auto attr = consumeAttributeGroup ? buildAttributeGroup(location) : nullptr;
   auto loc = convertLocation(location);
   auto node = VarArgFormal::build(builder, loc, std::move(attr), name,
                                   intent,
                                   toOwned(typeExpr),
                                   toOwned(initExpr));
   this->noteIsBuildingFormal(false);
-  if (consumeAttributes) resetAttributePartsState();
+  if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
 }
 
@@ -902,7 +1117,7 @@ ParserContext::consumeFormalToAnonFormal(AstNode* ast) {
   CHPL_ASSERT(formal);
   CHPL_ASSERT(!formal->initExpression() && !formal->typeExpression());
   CHPL_ASSERT(!formal->name().isEmpty());
-  CHPL_ASSERT(!formal->attributes());
+  CHPL_ASSERT(!formal->attributeGroup());
   CHPL_ASSERT(formal->visibility() == Decl::DEFAULT_VISIBILITY);
 
   auto loc = builder->getLocation(formal);
@@ -989,16 +1204,14 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
   // Detect primary methods and create a receiver for them
   bool primaryMethod = false;
-  auto scope = currentScope();
   if (currentScopeIsAggregate()) {
     if (fp.receiver == nullptr) {
       auto loc = convertLocation(location);
       auto ths = UniqueString::get(context(), "this");
-      UniqueString cls = scope.name;
-      fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
+      fp.receiver = Formal::build(builder, loc, /*attributeGroup*/ nullptr,
                                   ths,
                                   fp.thisIntent,
-                                  Identifier::build(builder, loc, cls),
+                                  nullptr,
                                   nullptr).release();
       primaryMethod = true;
     }
@@ -1018,7 +1231,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // TODO: It would be nice to get both the location of the entire function
   // as well as the location of the symbol.
   auto f = Function::build(builder, identNameLoc,
-                           toOwned(fp.attributes),
+                           toOwned(fp.attributeGroup),
                            fp.visibility,
                            fp.linkage,
                            toOwned(fp.linkageNameExpr),
@@ -1081,11 +1294,11 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
     // TODO: Right now this location is the start of the function, and
     // it seems more natural for the location to be the symbol.
     auto f = Function::build(builder, identNameLoc,
-                             toOwned(fp.attributes),
+                             toOwned(fp.attributeGroup),
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             identName->name(),
+                             UniqueString(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,
@@ -1117,72 +1330,152 @@ ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
   return node.release();
 }
 
-// This is the weird one. I can't even parse what is happening here...
-/*
-1920 | TLSBR expr_ls TIN expr TRSBR type_level_expr
-1921     {
-1922       if ($2->argList.length != 1)
-1923         USR_FATAL($4, "invalid index expression");
-1924       $$ = new CallExpr("chpl__buildArrayRuntimeType",
-1925              new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
-1926              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
-1927     }
-*/
-AstNode*
-ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
-                                       YYLTYPE locIndexExprs,
-                                       ParserExprList* indexExprs,
-                                       AstNode* domainExpr,
-                                       AstNode* typeExpr) {
-  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+AstNode* ParserContext::sanitizeArrayType(YYLTYPE location, AstNode* arr) {
+  if (!arr->isArray()) return arr;
 
-  // Reconstruct usable location for 'consumeToBlock()'.
-  auto locTypeExpr = builder->getLocation(typeExpr);
-  YYLTYPE yyLocTypeExpr = {
-    .first_line = locTypeExpr.firstLine(),
-    .first_column = locTypeExpr.firstColumn(),
-    .last_line = locTypeExpr.lastLine(),
-    .last_column = locTypeExpr.lastColumn()
-  };
+  auto domainBody = std::move(builder->mutableRefToChildren(arr));
+  auto domain = Domain::build(builder, convertLocation(location),
+                              /*usedCurlyBraces*/ false,
+                              std::move(domainBody));
+  auto block = consumeToBlock(location, (AstNode*) nullptr);
 
-  auto node = BracketLoop::build(builder, convertLocation(location),
-                                 std::move(index),
-                                 toOwned(domainExpr),
-                                 /*withClause*/ nullptr,
-                                 BlockStyle::IMPLICIT,
-                                 consumeToBlock(yyLocTypeExpr, typeExpr),
-                                 /*isExpressionLevel*/ true);
-
-  return node.release();
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
 }
 
-AstNode*
-ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
-                              ParserExprList* domainExprs,
-                              AstNode* typeExpr) {
+// .chpl: '[]'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location) {
 
   // In some cases the 'domainExprs' may not exist (think array formal).
-  auto domainBody = domainExprs ? consumeList(domainExprs) : AstList();
+  auto domainBody = AstList();
 
-  // TODO: What if there is only a single expr that is a domain? Do we
-  // really want to build '{{...}}'?
   const bool usedCurlyBraces = false;
-  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+  auto domain = Domain::build(builder, convertLocation(location),
                               usedCurlyBraces,
                               std::move(domainBody));
 
-  // If 'typeExpr' is null, then the resulting block is empty.
-  auto block = consumeToBlock(location, typeExpr);
+  // Block is empty since we are just '[]'.
+  auto block = consumeToBlock(location, (AstNode*) nullptr);
 
-  auto node = BracketLoop::build(builder, convertLocation(location),
-                                 /*index*/ nullptr,
-                                 std::move(domain),
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[] int'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locRightBracket,
+                                             AstNode* bodyExpr) {
+
+  // In some cases the 'domainExprs' may not exist (think array formal).
+  auto domainBody = AstList();
+  auto locDomain = makeSpannedLocation(location, locRightBracket);
+
+  const bool usedCurlyBraces = false;
+  auto domain = Domain::build(builder, convertLocation(locDomain),
+                              usedCurlyBraces,
+                              std::move(domainBody));
+
+  auto block = consumeToBlock(location, bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIndexExprs,
+                                             ParserExprList* indexExprs,
+                                             AstNode* iterandExpr,
+                                             AstNode* bodyExpr) {
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+  auto locBodyExpr = locationFromChplLocation(bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                 std::move(index),
+                                 toOwned(iterandExpr),
                                  /*withClause*/ nullptr,
                                  BlockStyle::IMPLICIT,
-                                 std::move(block),
+                                 consumeToBlock(locBodyExpr, bodyExpr),
+                                 /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[i in 1..100] if i % 2 then i'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIndexExprs,
+                                             YYLTYPE locIf,
+                                             ParserExprList* indexExprs,
+                                             AstNode* iterandExpr,
+                                             AstNode* bodyIfCond,
+                                             AstNode* bodyIfExpr) {
+
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+  auto locBodyIfExpr = locationFromChplLocation(bodyIfExpr);
+  auto locCond = makeSpannedLocation(locIf, locBodyIfExpr);
+
+  auto cond = Conditional::build(builder, convertLocation(locCond),
+                                 toOwned(bodyIfCond),
+                                 BlockStyle::IMPLICIT,
+                                 consumeToBlock(locBodyIfExpr, bodyIfExpr),
                                  /*isExpressionLevel*/ true);
 
-  return node.release();
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                std::move(index),
+                                toOwned(iterandExpr),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                consumeToBlock(locCond, cond.release()),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[a, b, c] int' || '[0..100] doSomething()'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIterandExprs,
+                                             ParserExprList* iterandExprs,
+                                             AstNode* bodyExpr) {
+  owned<AstNode> iterand = nullptr;
+  auto iterExprs = consumeList(iterandExprs);
+  if (iterExprs.size() > 1) {
+    iterand = Domain::build(builder, convertLocation(locIterandExprs),
+                            /*usedCurlyBraces*/ false,
+                            std::move(iterExprs));
+  } else {
+    iterand = std::move(iterExprs[0]);
+  }
+
+  CHPL_ASSERT(iterand != nullptr);
+
+  // Go from 'chpl::Location' to 'YYLTYPE' for 'consumeToBlock'.
+  auto locBodyExpr = locationFromChplLocation(bodyExpr);
+  auto bodyBlock = consumeToBlock(locBodyExpr, bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(iterand),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(bodyBlock),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
 }
 
 AstNode* ParserContext::
@@ -1191,7 +1484,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
 
   if (isBuildingFormal) {
     auto node = Formal::build(builder, convertLocation(location),
-                              this->buildAttributes(location),
+                              this->buildAttributeGroup(location),
                               name,
                               Formal::DEFAULT_INTENT,
                               /*typeExpression*/ nullptr,
@@ -1199,7 +1492,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
     ret = node.release();
   } else {
     auto node = Variable::build(builder, convertLocation(location),
-                                this->buildAttributes(location),
+                                this->buildAttributeGroup(location),
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
@@ -1220,7 +1513,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
 AstNode* ParserContext::
 buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
   auto node = TupleDecl::build(builder, convertLocation(location),
-                               /*attributes*/ nullptr,
+                               /*attributeGroup*/ nullptr,
                                this->visibility,
                                this->linkage,
                                (TupleDecl::IntentOrKind) this->varDeclKind,
@@ -1235,7 +1528,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convLoc, /*attributes*/ nullptr,
+    return Variable::build(builder, convLoc, /*attributeGroup*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
@@ -1259,7 +1552,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
       }
     }
 
-    return TupleDecl::build(builder, convLoc, /*attributes*/ nullptr,
+    return TupleDecl::build(builder, convLoc, /*attributeGroup*/ nullptr,
                             Decl::DEFAULT_VISIBILITY,
                             Decl::DEFAULT_LINKAGE,
                             (TupleDecl::IntentOrKind) Variable::INDEX,
@@ -1634,6 +1927,10 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
+  auto attributeGroup = buildAttributeGroup(locFor);
+  if (attributeGroup != nullptr) {
+     resetAttributeGroupPartsState();
+  }
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
@@ -1641,7 +1938,9 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          blockStyle,
                          std::move(body),
                          /*isExpressionLevel*/ false,
-                         /*isParam*/ false);
+                         /*isParam*/ false,
+                         std::move(attributeGroup));
+
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1899,18 +2198,18 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport) {
 
 
 CommentsAndStmt ParserContext::
-buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                     owned<AstNode> expr,
                     VisibilityClause::LimitationKind limitationKind,
                     ParserExprList* limitations) {
 
   auto comments = gatherComments(location);
-  if (attributes && attributes->isDeprecated()) {
+  if (attributeGroup && attributeGroup->isDeprecated()) {
     error(location, "can't deprecate a forwarding statement.");
   }
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                      std::move(attributes),
+                                      std::move(attributeGroup),
                                       std::move(expr));
 
     return { .comments=comments, .stmt=node.release() };
@@ -1923,7 +2222,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
                                          std::move(limitationsList), false);
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    std::move(attributes),
+                                    std::move(attributeGroup),
                                     toOwned(visClause));
 
   return { .comments=comments, .stmt=node.release() };
@@ -1932,19 +2231,19 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
 CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
-                    owned<Attributes> attributes,
+                    owned<AttributeGroup> attributeGroup,
                     CommentsAndStmt cs) {
   CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();
   CHPL_ASSERT(decl);
-  CHPL_ASSERT(!decl->attributes());
+  CHPL_ASSERT(!decl->attributeGroup());
   // TODO: pattern for composing comments should be extracted to helper
   auto commentExprs = appendList(makeList(), cs.comments);
   auto comments = gatherCommentsFromList(commentExprs, location);
   delete commentExprs;
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    std::move(attributes),
+                                    std::move(attributeGroup),
                                     toOwned(cs.stmt),
                                     decl->visibility());
 
@@ -2095,9 +2394,9 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       }
     }
 
-    auto attributes = buildAttributes(locEverything);
+    auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
-                                  std::move(attributes),
+                                  std::move(attributeGroup),
                                   visibility,
                                   linkage,
                                   consumeList(vars));
@@ -2125,7 +2424,7 @@ ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
     .linkage=this->linkage,
     /* The linkage name must be set by the rule that uses these parts. */
     .linkageName=nullptr,
-    .attributes=this->buildAttributes(locStart).release(),
+    .attributeGroup=this->buildAttributeGroup(locStart).release(),
     .name=name,
     .tag=tag
   };
@@ -2219,14 +2518,14 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     CHPL_ASSERT(!parts.linkageName);
 
     decl = Class::build(builder, convertLocation(location),
-                        toOwned(parts.attributes),
+                        toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.name,
                         std::move(inheritIdentifier),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
-                         toOwned(parts.attributes),
+                         toOwned(parts.attributeGroup),
                          parts.visibility,
                          parts.linkage,
                          toOwned(parts.linkageName),
@@ -2238,7 +2537,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     CHPL_ASSERT(parts.linkage != Decl::EXPORT);
 
     decl = Union::build(builder, convertLocation(location),
-                        toOwned(parts.attributes),
+                        toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.linkage,
                         toOwned(parts.linkageName),
@@ -2531,7 +2830,7 @@ AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
   return buildFormal(location, Formal::Intent::TYPE, name,
                     /* typeExpr */ nullptr,
                     /* initExpr */ nullptr,
-                    /* consumeAttributes */ false);
+                    /* consumeAttributeGroup */ false);
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
@@ -2562,7 +2861,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
   const bool isFormalListPresent = formals != nullptr;
 
   auto node = Interface::build(builder, convertLocation(location),
-                               buildAttributes(location),
+                               buildAttributeGroup(location),
                                visibility,
                                name,
                                isFormalListPresent,
@@ -2709,4 +3008,15 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
     return finishStmt(
         CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location, cs.stmt));
   }
+}
+
+
+ParserExprList*
+ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
+                                          YYLTYPE* warnLoc) {
+  if (warnLoc != NULL) {
+    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc, cs.stmt);
+  }
+  this->clearComments();
+  return this->makeList(cs);
 }

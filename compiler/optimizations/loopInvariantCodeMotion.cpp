@@ -1327,4 +1327,5 @@ void loopInvariantCodeMotion(void) {
   fclose(maxTimeFile);
 #endif
 
+  gpuTransforms();
 }

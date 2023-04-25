@@ -57,9 +57,13 @@ class Foreach final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    /*isExpressionLevel*/ false) {
+                    /*isExpressionLevel*/ false,
+                    /*attributeGroup*/ NO_CHILD) {
 
   }
+
+  Foreach(Deserializer& des)
+    : IndexableLoop(asttags::Foreach, des) {}
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -82,6 +86,12 @@ class Foreach final : public IndexableLoop {
                               BlockStyle blockStyle,
                               owned<Block> body);
 
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Foreach);
 
 };
 

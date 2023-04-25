@@ -1,0 +1,3 @@
+outOfOrderCond.chpl:7: In initializer:
+outOfOrderCond.chpl:10: error: Field "x" initialized out of order
+outOfOrderCond.chpl:10: note: initialization of fields before .init() call must be in field declaration order

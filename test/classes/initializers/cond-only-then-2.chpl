@@ -1,4 +1,4 @@
-// Confirm that the compiler rejects a conditional with inconsistent
+// Confirm that the compiler accepts a conditional with different
 // use of field initializers
 
 record MyRec {

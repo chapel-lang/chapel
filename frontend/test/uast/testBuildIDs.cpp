@@ -142,6 +142,7 @@ static void test1() {
 static  void test2() {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
@@ -162,7 +163,7 @@ static  void test2() {
   }
 
   BuilderResult r = b->result();
-  assert(!r.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = r.singleModule();
   assert(0 == mod->name().compare("test"));
   //assert(r.astToLocation.size() == 5); // +1 module
@@ -248,6 +249,7 @@ static  void test2() {
 static void test3() {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
@@ -276,7 +278,7 @@ static void test3() {
   }
 
   BuilderResult r = b->result();
-  assert(!r.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = r.singleModule();
   //assert(r.astToLocation.size() == 7); // +1 module
   assert(mod->stmt(0)->isBlock());
@@ -312,6 +314,7 @@ static void test3() {
 static void test4() {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
@@ -344,7 +347,7 @@ static void test4() {
       ii.push_back(Identifier::build(b, dummyLoc, strA));
       ii.push_back(Identifier::build(b, dummyLoc, strB));
       ii.push_back(Identifier::build(b, dummyLoc, strC));
-      inner.push_back(Module::build(b, dummyLoc, /*attributes*/ nullptr,
+      inner.push_back(Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
                                     Decl::DEFAULT_VISIBILITY,
                                     strI,
                                     Module::DEFAULT_MODULE_KIND,
@@ -352,7 +355,7 @@ static void test4() {
     }
     inner.push_back(Identifier::build(b, dummyLoc, strX));
 
-    auto mod = Module::build(b, dummyLoc, /*attributes*/ nullptr,
+    auto mod = Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              strM,
                              Module::DEFAULT_MODULE_KIND,
@@ -362,7 +365,7 @@ static void test4() {
   }
 
   BuilderResult r = b->result();
-  assert(!r.numErrors());
+  assert(!guard.realizeErrors());
   auto modM = r.singleModule();
   //assert(r.astToLocation.size() == 6);
   assert(modM->stmt(0)->isModule());
@@ -435,6 +438,7 @@ static void test4() {
 static void test5() {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   const char* path = "path/to/file-name.sub.chpl";
   auto builder = Builder::createForTopLevelModule(ctx, path);
@@ -454,7 +458,7 @@ static void test5() {
   }
 
   BuilderResult r = b->result();
-  assert(!r.numErrors());
+  assert(!guard.realizeErrors());
   auto implicitMod = r.singleModule();
   assert(implicitMod->numStmts() == 1);
   assert(implicitMod->stmt(0)->isIdentifier());

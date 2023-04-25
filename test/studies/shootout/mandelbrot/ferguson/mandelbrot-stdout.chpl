@@ -48,7 +48,7 @@ proc main() {
     set(im,re8) = in_set8(im, re8);
   }
 
-  var f = openfd(1);
+  var f = new file(1);
   var w = f.writer(kind=iokind.native, locking=false);
   w.writef("P4\n%i %i\n", size, size);
  

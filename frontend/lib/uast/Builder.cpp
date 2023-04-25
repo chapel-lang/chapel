@@ -104,10 +104,6 @@ void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 
-void Builder::addError(const ErrorBase* e) {
-  this->errors_.push_back(e);
-}
-
 void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
@@ -115,7 +111,6 @@ void Builder::noteLocation(AstNode* ast, Location loc) {
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
-  this->postParseChecks();
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them
@@ -125,7 +120,6 @@ BuilderResult Builder::result() {
 
   BuilderResult ret(filepath_);
   ret.topLevelExpressions_.swap(topLevelExpressions_);
-  ret.errors_.swap(errors_);
   ret.idToAst_.swap(idToAst_);
   ret.idToLocation_.swap(idToLocation_);
   ret.commentIdToLocation_.swap(commentToLocation_);
@@ -134,11 +128,16 @@ BuilderResult Builder::result() {
 }
 
 bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
-  return asttags::isNamedDecl(tag) &&
-        (asttags::isFunction(tag) ||
-         asttags::isModule(tag) ||
-         asttags::isInterface(tag) ||
-         asttags::isTypeDecl(tag));
+  if (asttags::isNamedDecl(tag)) {
+    return (asttags::isFunction(tag) ||
+            asttags::isModule(tag) ||
+            asttags::isInterface(tag) ||
+            asttags::isTypeDecl(tag));
+  } else if (asttags::isExternBlock(tag)) {
+    return true;
+  }
+
+  return false;
 }
 
 // If the implicit module is needed, moves the statements in to it.
@@ -184,7 +183,7 @@ void Builder::createImplicitModuleIfNeeded() {
     stmts.swap(topLevelExpressions_);
     auto loc = Location(filepath_, 1, 1, 1, 1);
     auto ownedModule = Module::build(this, std::move(loc),
-                                     /*attributes*/ nullptr,
+                                     /*attributeGroup*/ nullptr,
                                      Decl::DEFAULT_VISIBILITY,
                                      inferredModuleName,
                                      Module::IMPLICIT,
@@ -194,11 +193,11 @@ void Builder::createImplicitModuleIfNeeded() {
 
     // emit warnings as needed
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
-      addError(ErrorImplicitFileModule::get(context(),
-            std::make_tuple(firstUseImportOrRequire, lastModule, implicitModule)));
+      CHPL_REPORT(context(), ImplicitFileModule,
+                  firstUseImportOrRequire, lastModule, implicitModule);
     } else if (nModules >= 1 && !containsOnlyModules) {
-      addError(ErrorImplicitFileModule::get(context(),
-            std::make_tuple(firstNonModule, lastModule, implicitModule)));
+      CHPL_REPORT(context(), ImplicitFileModule,
+                  firstNonModule, lastModule, implicitModule);
     }
   }
 }
@@ -299,9 +298,24 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (newScope) {
     // for scoping constructs, adjust the symbolPath and
     // then visit the defined symbol
-    UniqueString declName = ast->toNamedDecl()->name();
-    int repeat = 0;
+    UniqueString declName;
 
+    if (auto nd = ast->toNamedDecl()) {
+      declName = nd->name();
+    } else if (ast->isExternBlock()) {
+      declName = UniqueString::get(context_, "-externblock");
+    }
+
+    // For anonymous functions, just use the 'kind' as the name.
+    if (auto fn = ast->toFunction()) {
+      if (fn->isAnonymous()) {
+        assert(declName.isEmpty());
+        auto str = Function::kindToString(fn->kind());
+        declName = UniqueString::get(context_, str);
+      }
+    }
+
+    int repeat = 0;
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
       // it's already there, so increment the repeat counter
@@ -405,8 +419,7 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
   if (usedId != var->id()) {
-    addError(ErrorAmbiguousConfigName::get(context(),
-          std::make_tuple(configNameUsed, var, usedId)));
+    CHPL_REPORT(context(), AmbiguousConfigName, configNameUsed, var, usedId);
   }
 }
 
@@ -434,7 +447,7 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
         || configPair.first == possibleModule + var->name().str()) {
       // found a config that was set via cmd line
       // handle deprecations
-      if (auto attribs = var->attributes()) {
+      if (auto attribs = var->attributeGroup()) {
         if (attribs->isDeprecated()) {
           // TODO: Need proper message handling here
           std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
@@ -449,8 +462,8 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
 
-        addError(ErrorAmbiguousConfigSet::get(context(),
-              std::make_tuple(var, configMatched.first, configPair.first)));
+        CHPL_REPORT(context(), AmbiguousConfigSet,
+                    var, configMatched.first, configPair.first);
       }
       configMatched = configPair;
     }
@@ -495,12 +508,6 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
   path += var->name().str();
   path += ")";
   auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
-  // Propagate any parse errors from the dummy node to builder errors
-  if (parseResult.numErrors() > 0) {
-   for (const ErrorBase* error : parseResult.errors()) {
-     addError(error);
-   }
-  }
   auto mod = parseResult.singleModule();
   CHPL_ASSERT(mod);
   owned<AstNode> initNode;

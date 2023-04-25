@@ -1,7 +1,7 @@
 /* Write a matrix to filename */
 proc writeMatrix(fname, mat) where isCSArr(mat) {
   use IO;
-  var f = open(fname, iomode.cw);
+  var f = open(fname, ioMode.cw);
   var c = f.writer();
   var (m,n) = mat.shape;
   c.writeln(m);

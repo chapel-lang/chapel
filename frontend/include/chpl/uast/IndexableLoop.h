@@ -40,15 +40,24 @@ class IndexableLoop : public Loop {
                 int8_t withClauseChildNum,
                 BlockStyle blockStyle,
                 int loopBodyChildNum,
-                bool isExpressionLevel)
+                bool isExpressionLevel,
+                int attributeGroupChildNum)
     : Loop(tag, std::move(children), blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum, attributeGroupChildNum),
       indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
     CHPL_ASSERT(iterandChildNum >= 0);
+  }
+
+  IndexableLoop(AstTag tag, Deserializer& des)
+    : Loop(tag, des) {
+    indexChildNum_ = des.read<int8_t>();
+    iterandChildNum_ = des.read<int8_t>();
+    withClauseChildNum_ = des.read<int8_t>();
+    isExpressionLevel_ = des.read<bool>();
   }
 
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
@@ -124,6 +133,14 @@ class IndexableLoop : public Loop {
   */
   bool isExpressionLevel() const {
     return isExpressionLevel_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(indexChildNum_);
+    ser.write(iterandChildNum_);
+    ser.write(withClauseChildNum_);
+    ser.write(isExpressionLevel_);
   }
 
 };

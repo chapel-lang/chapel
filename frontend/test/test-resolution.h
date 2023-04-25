@@ -22,6 +22,7 @@
 
 #include "test-parsing.h"
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/QualifiedType.h"
 
 // forward declare classes and namespaces
@@ -45,5 +46,25 @@ QualifiedType resolveTypeOfXInit(Context* context,
 QualifiedType resolveQualifiedTypeOfX(Context* context, std::string program);
 
 const Type* resolveTypeOfX(Context* context, std::string program);
+
+const ResolvedExpression*
+resolvedExpressionForAst(Context* context, const AstNode* ast,
+                         const ResolvedFunction* inFn,
+                         bool scopeResolveOnly);
+
+// check that in method methodIdStr, the call with id callIdStr resolves
+// to a function with id calledFnIdStr.
+// if calledFnIdStr == "", expect no match (e.g. ambiguity)
+void testCall(const char* testName,
+              const char* program,
+              const char* methodIdStr,
+              const char* callIdStr,
+              const char* calledFnIdStr);
+
+const Variable* findVariable(const AstNode* ast, const char* name);
+const Variable* findVariable(const ModuleVec& vec, const char* name);
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
 
 #endif

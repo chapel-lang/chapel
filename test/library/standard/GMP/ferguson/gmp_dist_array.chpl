@@ -20,12 +20,12 @@ forall (x,i) in zip(B,D) {
 
 forall (x,i) in zip(C,D) {
   x = new bigint(i);
-  x.fac((10000 * i) : uint(32));
+  fac(x, (10000 * i) : uint(32));
 }
 
 forall (a,b,c) in zip(A,B,C) {
-  c.add(c,a);
-  c.add(c,b);
+  add(c, c, a);
+  add(c, c, b);
 }
 
 var sum = new bigint(0);
@@ -33,18 +33,18 @@ var sum = new bigint(0);
 for c in C {
   writeln(c.sizeInBase(10));
 
-  sum.add(sum, c);
+  add(sum, sum, c);
 }
 
 writeln(sum.sizeInBase(10));
 
 var modulus = new bigint("10000000000000000000000000000000000000000");
 
-modulus.nextprime(modulus);
+nextprime(modulus, modulus);
 
 writeln(modulus);
 
-sum.mod(sum, modulus);
+mod(sum, sum, modulus);
 
 writeln(sum);
 

@@ -31,9 +31,11 @@
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
 */
-@unstable "The GPU module is unstable and its interface is subject to change in the future."
+@unstable("The GPU module is unstable and its interface is subject to change in the future.")
 module GPU
 {
+  use CTypes;
+
   pragma "no doc"
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_write(const str : c_string) : void;
@@ -117,7 +119,7 @@ module GPU
 
   /*
     Prints 'msg' followed by the difference between 'stop' and 'start'. Meant to
-    print the time ellapsed between subsequent calls to 'gpuClock()'.
+    print the time elapsed between subsequent calls to 'gpuClock()'.
     To convert to seconds divide by 'gpuClocksPerSec()'
   */
   pragma "no doc"
@@ -131,5 +133,70 @@ module GPU
    */
   proc gpuClocksPerSec(devNum : int) {
     return chpl_gpu_device_clock_rate(devNum : int(32));
+  }
+
+  pragma "no doc"
+  type GpuAsyncCommHandle = c_void_ptr;
+
+  /*
+    Copy srcArr to dstArr, at least one array must be on a GPU; this function
+    can be used for either communication to or from the GPU
+
+    Returns a handle that can be passed to `waitGpuComm` to pause execution
+    until completion of this asynchronous transfer
+  */
+  pragma "no doc"
+  proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
+    where isArrayType(t1) && isArrayType(t2)
+  {
+    extern proc chpl_gpu_comm_async(dstArr : c_void_ptr, srcArr : c_void_ptr,
+       n : c_size_t) : c_void_ptr;
+
+    if(dstArr.size != srcArr.size) {
+      halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
+        "Sizes passed: ", dstArr.size, " and ", srcArr.size);
+    }
+    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
+      dstArr.size * numBytes(dstArr.eltType));
+  }
+
+  /*
+     Wait for communication to complete, the handle passed in should be from the return
+     value of a previous call to `asyncGpuComm`.
+  */
+  pragma "no doc"
+  proc gpuCommWait(gpuHandle : GpuAsyncCommHandle) {
+    extern proc chpl_gpu_comm_wait(stream : c_void_ptr);
+
+    chpl_gpu_comm_wait(gpuHandle);
+  }
+
+  /*
+     Synchronize threads within a GPU block.
+   */
+  inline proc syncThreads() {
+    __primitive("gpu syncThreads");
+  }
+
+  /*
+    Allocate block shared memory, enough to store ``size`` elements of
+    ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
+    although every thread in a block calls this procedure, the same shared array
+    is returned to all of them.
+
+    :arg eltType: the type of elements to allocate the array for.
+
+    :arg size: the number of elements in each GPU thread block's copy of the array.
+   */
+  inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
+    const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
+    return voidPtr : c_ptr(eltType);
+  }
+
+  /*
+    Set the block size for kernels launched on the GPU.
+   */
+  inline proc setBlockSize(blockSize: int) {
+    __primitive("gpu set blockSize", blockSize);
   }
 }

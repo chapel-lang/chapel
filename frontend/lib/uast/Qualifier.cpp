@@ -27,6 +27,7 @@ bool isGenericQualifier(Qualifier kind) {
     case Qualifier::UNKNOWN:            return true;
     case Qualifier::DEFAULT_INTENT:     return true;
     case Qualifier::CONST_INTENT:       return true;
+    case Qualifier::REF_MAYBE_CONST:    return true;
     case Qualifier::VAR:                return false;
     case Qualifier::CONST_VAR:          return false;
     case Qualifier::CONST_REF:          return false;
@@ -51,6 +52,7 @@ bool isConstQualifier(Qualifier kind) {
     case Qualifier::UNKNOWN:            return false;
     case Qualifier::DEFAULT_INTENT:     return false;
     case Qualifier::CONST_INTENT:       return true;
+    case Qualifier::REF_MAYBE_CONST:    return false;
     case Qualifier::VAR:                return false;
     case Qualifier::CONST_VAR:          return true;
     case Qualifier::CONST_REF:          return true;
@@ -70,12 +72,37 @@ bool isConstQualifier(Qualifier kind) {
   return false;
 }
 
+bool isImmutableQualifier(Qualifier kind) {
+  switch (kind) {
+    case Qualifier::UNKNOWN:            return false;
+    case Qualifier::DEFAULT_INTENT:     return false;
+    case Qualifier::CONST_INTENT:       return false;
+    case Qualifier::REF_MAYBE_CONST:    return false;
+    case Qualifier::VAR:                return false;
+    case Qualifier::CONST_VAR:          return true;
+    case Qualifier::CONST_REF:          return false;
+    case Qualifier::REF:                return false;
+    case Qualifier::IN:                 return false;
+    case Qualifier::CONST_IN:           return true;
+    case Qualifier::OUT:                return false;
+    case Qualifier::INOUT:              return false;
+    case Qualifier::PARAM:              return true;
+    case Qualifier::TYPE:               return true;
+    case Qualifier::TYPE_QUERY:         return true;
+    case Qualifier::INDEX:              return false;
+    case Qualifier::FUNCTION:           return true;
+    case Qualifier::PARENLESS_FUNCTION: return true;
+    case Qualifier::MODULE:             return true;
+  }
+  return false;
+}
 
 bool isRefQualifier(Qualifier kind) {
   switch (kind) {
     case Qualifier::UNKNOWN:            return false;
     case Qualifier::DEFAULT_INTENT:     return false;
     case Qualifier::CONST_INTENT:       return false;
+    case Qualifier::REF_MAYBE_CONST:    return true;
     case Qualifier::VAR:                return false;
     case Qualifier::CONST_VAR:          return false;
     case Qualifier::CONST_REF:          return true;
@@ -100,6 +127,7 @@ bool isInQualifier(Qualifier kind) {
     case Qualifier::UNKNOWN:            return false;
     case Qualifier::DEFAULT_INTENT:     return false;
     case Qualifier::CONST_INTENT:       return false;
+    case Qualifier::REF_MAYBE_CONST:    return false;
     case Qualifier::VAR:                return false;
     case Qualifier::CONST_VAR:          return false;
     case Qualifier::CONST_REF:          return false;
@@ -124,6 +152,7 @@ const char* qualifierToString(Qualifier intent) {
     case Qualifier::UNKNOWN:            return "<unknown-intent>";
     case Qualifier::DEFAULT_INTENT:     return "<default-intent>";
     case Qualifier::CONST_INTENT:       return "const";
+    case Qualifier::REF_MAYBE_CONST:    return "<ref-maybe-const>";
     case Qualifier::VAR:                return "var";
     case Qualifier::CONST_VAR:          return "<const-var>";
     case Qualifier::CONST_REF:          return "const ref";

@@ -1,0 +1,2 @@
+styleAndSetStyle2.chpl:5: warning: fileReader._style is unstable because it returns a type that is unstable
+styleAndSetStyle2.chpl:6: warning: fileReader._set_style is unstable because its purpose involves an unstable type

@@ -60,44 +60,21 @@
 #ifndef _PSM_CONTEXT_H
 #define _PSM_CONTEXT_H
 
-typedef
-struct psmi_context {
-
-	/* The following three member variables are used for sharing contexts among
-	   subcontexts and they have the following common properties:
-
-	   a. They are all initialized below HAL layer when the context is opened.
-	   b. If they are NULL that means no context is being shared among subcontexts,
-	   non-NULL means a context is being shared among some number of subcontexts.
-	   c. The initialization code is currently found in the gen1 hal instance.
-	*/
-
-	void *spio_ctrl;
-	void *tid_ctrl;
-	void *tf_ctrl;
-
-	/* end of shared context member variables. */
-
-	psmi_hal_hw_context psm_hw_ctxt;
-
-	psm2_ep_t ep;		/* psm ep handle */
-	psm2_epid_t epid;	/* psm integral ep id */
-	psm2_error_t status_lasterr;
-	time_t networkLostTime;
-} psmi_context_t;
 
 psm2_error_t
-psmi_context_open(const psm2_ep_t ep, long unit_id, long port,
-		  psm2_uuid_t const job_key,
-		  int64_t timeout_ns, psmi_context_t *context);
+psm3_context_open(const psm2_ep_t ep, long unit_id, long port, long addr_index,
+		  psm2_uuid_t const job_key, uint16_t network_pkey,
+		  int64_t timeout_ns);
 
-psm2_error_t psmi_context_close(psmi_context_t *context);
+psm2_error_t psm3_context_close(psm2_ep_t ep);
 
-/* Check status of context */
-psm2_error_t psmi_context_check_status(const psmi_context_t *context);
+// for use by HAL context_open to set CPU affinity consistent with
+// NIC NUMA location
+int
+psm3_context_set_affinity(psm2_ep_t ep, cpu_set_t nic_cpuset);
 
-psm2_error_t psmi_context_interrupt_set(psmi_context_t *context, int enable);
-int psmi_context_interrupt_isenabled(psmi_context_t *context);
+psm2_error_t psm3_context_interrupt_set(psm2_ep_t ep, int enable);
+int psm3_context_interrupt_isenabled(psm2_ep_t ep);
 
 /*
  * round robin contexts across HFIs, then

@@ -1,0 +1,2 @@
+BarriersModule.chpl:1: warning: The 'Barriers' module is deprecated, please use 'Collectives' instead
+BarriersModule.chpl:3: warning: The 'Barrier' type is deprecated, please use 'Collectives.barrier' instead

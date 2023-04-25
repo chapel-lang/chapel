@@ -6,7 +6,7 @@ record foo {
 
 proc test() {
   var D = {0..0};
-  var A: [D] foo = [new foo(0)];
+  var A: [D] foo = [new foo(0), ];
   writeln(A);
 
   manage D.unsafeAssign({0..1}, checks=true) as mgr do

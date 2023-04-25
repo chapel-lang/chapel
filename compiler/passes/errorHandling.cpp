@@ -26,6 +26,7 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "InitErrorHandling.h"
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
@@ -170,7 +171,10 @@ static AList castToErrorNilable(Symbol* error, SymExpr* &castedError);
 class ErrorHandlingVisitor final : public AstVisitorTraverse {
 
 public:
-  ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
+  InitErrorHandling*  state;
+
+  ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue,
+                              InitErrorHandling* _state);
 
   bool enterTryStmt  (TryStmt*   node) override;
   void exitTryStmt   (TryStmt*   node) override;
@@ -182,6 +186,9 @@ public:
   void exitForallStmt (ForallStmt* node) override;
   bool enterDeferStmt(DeferStmt* node) override;
   void exitDeferStmt (DeferStmt* node) override;
+
+  // Specifically for ensuring we track initializer state appropriately
+  bool enterCondStmt(CondStmt* node) override;
 
 private:
   struct TryInfo {
@@ -211,14 +218,18 @@ private:
                             BlockStmt* body);
   void exitForallLoop(Stmt* node);
 
+  void checkThrowingFuncInInit(CallExpr* node, bool insideTryStack);
+
   ErrorHandlingVisitor();
 };
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
-                                           LabelSymbol* _epilogue) {
+                                           LabelSymbol* _epilogue,
+                                           InitErrorHandling* _state) {
   deferDepth = 0;
   outError   = _outError;
   epilogue   = _epilogue;
+  state = _state;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -353,6 +364,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
+      checkThrowingFuncInInit(node, insideTry);
+
       SET_LINENO(node);
 
       VarSymbol* errorVar    = NULL;
@@ -442,6 +455,22 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SET_LINENO(node);
     node->replace(new SymExpr(info.errorVar));
   }
+
+  // If appropriate, advance the phase after we've done our other checks.
+  // This will allow us to check if the `this.init` or `super.init` call would
+  // throw (which shouldn't be allowed yet)
+  if (state != NULL) {
+    if (isInitStmt(node) == true) {
+      if (isResolvedThisInit(node) == true) {
+        state->completePhase1(node);
+      } else if (isResolvedSuperInit(node) == true) {
+        state->completePhase0(node);
+      }
+    } else if (state->isInitDone(node) == true) {
+      state->completePhase1(node);
+    }
+  }
+
   return true;
 }
 
@@ -588,6 +617,67 @@ bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
 
 void ErrorHandlingVisitor::exitDeferStmt(DeferStmt* node) {
   deferDepth--;
+}
+
+bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
+  if (state != NULL) {
+    InitErrorHandling* oldState = state;
+    InitErrorHandling* thenState = new InitErrorHandling(node, *state);
+    state = thenState;
+
+    node->thenStmt->accept(this);
+
+    if (node->elseStmt != NULL) {
+      InitErrorHandling* elseState = new InitErrorHandling(node, *oldState);
+      state = elseState;
+      node->elseStmt->accept(this);
+
+      // Handling during normalize should ensure that both branches result in
+      // the same final state
+      INT_ASSERT(thenState->currPhase() == elseState->currPhase());
+      thenState->merge(*elseState);
+      delete elseState;
+    }
+    state = oldState; // To ensure we don't strand the memory
+
+    state->merge(*thenState);
+    delete thenState;
+
+    return false; // Already handled, no need to traverse again
+  } else {
+    return true; // Normal behavior
+  }
+}
+
+void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
+                                                   bool insideTryStack) {
+  if (state != NULL) {
+    FnSymbol* fn = state->theFn();
+    INT_ASSERT(fn);
+
+    if (insideTryStack && node->tryTag != TRY_TAG_IN_TRYBANG) {
+      TryInfo info = tryStack.top();
+      if (info.tryStmt->tryBang()) {
+        if (info.tryStmt->_catches.length != 0) {
+          if (!state->isPhase2()) {
+            USR_FATAL_CONT(node,
+                           "cannot call a throwing function in a try! with catch clauses before phase 2");
+          }
+        }
+      } else {
+        if (!state->isPhase2() && fn->throwsError() == true) {
+          USR_FATAL_CONT(node,
+                         "cannot call a throwing function outside of a try! before phase 2");
+        }
+      }
+    } else {
+      if (!state->isPhase2() && node->tryTag != TRY_TAG_IN_TRYBANG &&
+          fn->throwsError() == true) {
+        USR_FATAL_CONT(node,
+                       "cannot call a throwing function outside of a try! before phase 2");
+      }
+    }
+  } // not in an initializer
 }
 
 
@@ -1336,8 +1426,21 @@ static void lowerErrorHandling(FnSymbol* fn)
     INT_ASSERT(epilogue); // throws requires an epilogue
   }
 
-  ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
+  InitErrorHandling* state = NULL;
+  if (fn->isInitializer() == true ||
+      fn->isCopyInit() == true) {
+    state = new InitErrorHandling(fn);
+  }
+
+  ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue,
+                                                      state);
   fn->accept(&visitor);
+
+  if (state != NULL) {
+    visitor.state->removeInitDone();
+    visitor.state = NULL;
+    delete state;
+  }
 }
 
 void lowerCheckErrorPrimitive()

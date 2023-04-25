@@ -43,6 +43,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
@@ -112,13 +113,15 @@ void printStatistics(const char* pass) {
     kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
     kCatchStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr;
+    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr +
+    nTemporaryConversionThunk;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr;
+    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr +
+    kTemporaryConversionThunk;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kDecoratedClassType;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -139,14 +142,14 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr);
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d  Thunk %9d\n",
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9d  Thunk %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6d  Thunk %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -482,10 +485,12 @@ Type* BaseAST::getWideRefType() {
 
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
+    case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
     case E_PrimitiveType:      return "PrimitiveType";
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";
     case E_AggregateType:      return "AggregateType";
+    case E_FunctionType:       return "FunctionType";
     case E_DecoratedClassType: return "DecoratedClassType";
     case E_ModuleSymbol:       return "ModuleSymbol";
     case E_VarSymbol:          return "VarSymbol";

@@ -518,57 +518,32 @@ all:
   11/15/22:
     - text: Optimize distributed rectangular domain creation (#21038)
       config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
-
-
+  01/18/23:
+    - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
+      config: chapcs
+    - text: Avoid loading CUDA module at each kernel launch (#21346)
+      config: gpu
+  01/19/23:
+    - text: Support for one locale per socket (#21057)
+      config: 16-node-xc, 16-node-cs-hdr
+  01/26/23:
+    - text: Fix topo/comm initialization sequence (#21427)
+      config: 16-node-xc, 16-node-cs-hdr
+  02/24/23:
+    - text: Fix default and const argument intents on tuples (#21665)
+      config: chapcs, 1-node-xc
+    - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
+      config: gpu
+  03/07/23:
+    - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
+      config: chapcs, 1-node-xc
+  03/14/23:
+    - text: Eliminate extra destructions when yielding tuples (#21887)
+      config: chapcs
+  03/16/23:
+    - text: Update GPU performance tests to not count launches in perf mode (#21891)
+      config: gpu
 # End all
-
-AllCompTime: &timecomp-base
-  11/09/14:
-    - disable the task table by default
-  01/17/16:
-    - add dead string literal elimination (#3120)
-  09/09/16:
-    - disable function resolution optimization (#4476)
-  09/14/16:
-    - re-enable function resolution optimization (#4517)
-  02/03/17:
-    - Fix parse slowdown (#5257)
-  02/07/17:
-    - Loop over Defs and Uses with SymbolSymExprs (#5285)
-  05/16/18:
-    - Faster 'fixStringLiteralInit' implementation (#9506)
-  05/23/18:
-    - Fix problems with tuples (#9572)
-  06/01/18:
-    - Represent if-expressions with IfExpr node instead of if-functions (#9649)
-  07/10/18:
-    - use isSubtype in preference to ':' in where clauses (#10143)
-    - Refactor codegenPrimitive, add limit to denormalize (#10187)
-  07/14/18:
-    - Improve the speed of codegenPrimitive (#10321)
-  10/05/18:
-    - Compiler error for dereferencing a nil value (#11238)
-  10/19/18:
-    - Fix compiler performance issues in nilChecking (#11396)
-  08/30/19:
-    - Add factory functions for string and bytes (#13914)
-  11/05/19:
-    - Remove standardModuleSet and all code involving it from the compiler (#14270)
-  11/20/19:
-    - Simplify visible function determination of use visibility (#14481)
-  02/19/20:
-    - Improve handling for tryResolve and errors to handle a bad init= (#14887)
-  03/03/20:
-    - Remove calls to getUserInstantiationPoint (#15051)
-  06/11/20:
-    - Fix split init of const variables and update lvalue errors (#15800)
-  02/17/21:
-    - GPU code generation (#17116)
-  02/25/21:
-    - Restore timing for makeBinary (#17253)
-    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
-  05/14/21:
-    - Resolve some issues with finding primary and secondary operator methods (#17684)
 
 allocate:
   06/11/20:
@@ -579,10 +554,18 @@ allocate:
 allocation:
   11/10/22:
     - weakPointer prototype implementation (#20918)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 arguments:
+  03/10/17:
+    - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
+
+arrayInitDeinitPerf:
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 arrayPerformance-1d:
   03/19/15:
@@ -622,10 +605,6 @@ arr-forall:
 array_iter:
   06/19/17:
     - Reduce amount of locking in associative array dsiAccess (#6244)
-
-arguments:
-  03/10/17:
-    - Three way refpair (#5561)
 
 assign.1024:
   01/22/15:
@@ -723,21 +702,19 @@ CoMD-elegant-aos:
   06/12/18:
     - Convert blocking calls in Spawn module to yielding non-blocking loops (#9507)
 
-compSampler-timecomp:
-  <<: *timecomp-base
-
 cg:
   09/20/16:
     - Strided Array Support in Sort/Search Modules (#4569)
   09/22/16:
     - Added overloaded compileErrors for Sort/Search (#4621)
+  01/18/23:
+    - Improvements for iterating over unbounded enum/bool ranges (#21332)
+  01/21/23:
+    - Simplify the implementation of chpl__first|lastForIter for bounded ranges (#21407)
 
 cg-a:
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
-
-cg-sparse-timecomp:
-  <<: *timecomp-base
 
 c-ray:
   10/11/16:
@@ -773,7 +750,6 @@ create-views:
   10/02/20:
     - Only reference count a distribution's domains (#16528)
 
-
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
@@ -785,6 +761,8 @@ dist-performance.cc:
     - Revert changes to `list._commonInitFromIterable` (#15943)
   12/16/20:
     - Distributed sort improvements (#16871)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
 
 dist-performance.ml-perf:
   07/01/20:
@@ -839,13 +817,10 @@ domainAssignment-similar: &domainAssign-base
 domainAssignment-dissimilar:
   <<: *domainAssign-base
 
-dgemm.128:
-  09/06/13:
-    - LICM bug fixes
+domEqualityPerf:
+  02/02/23:
+    - Deprecate Time.getCurrentTime (#21467)
 
-dgemm.64:
-  09/06/13:
-    - LICM bug fixes
 
 ep: &ep-base
   11/18/14:
@@ -957,9 +932,6 @@ fft:
     - Optimize all gets out of each Cyclic forall loop / leverage DR iterators (#13020)
   03/05/20:
     - Use simpler rule for deinit point (#15041)
-
-fft-timecomp:
-  <<: *timecomp-base
 
 forall-dom-range:
   01/22/15:
@@ -1132,6 +1104,8 @@ LCALS-raw-short: &lcals-base
     - Task intents to operate on fields of 'this' (#13840)
   09/10/19:
     - Restrict applicability of field intents (#14057)
+  02/14/23:
+    - LCALS perf back to normal (Cray/chapel-private#4228)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
@@ -1504,6 +1478,14 @@ memleaksfull:
     - Clean up unmanaged classes in a test (#19695)
   09/30/22:
     - Begin the effort of improving Chapel's first-class-function support (#20554)
+  02/21/23:
+    - IO Encoders/Decoders prototype (#21586)
+  02/23/23:
+    - QIO fix Free the mark stack if it has been allocated (#21662)
+  03/30/23:
+    - IO module error types cleanup (#22003)
+  03/31/23:
+    - Fix memory leaks in readAll tests (#22032)
 # End memleaksfull
 
 meteor:
@@ -1830,6 +1812,9 @@ revcomp: &revcomp-base
     - Improve const/ref this decorators (and update revcomp) (#14809)
   06/01/22:
     - Reduce uses of Math by automatically included modules (#19885)
+  03/07/23:
+    - Parallelize array.find() (#21750)
+
 revcomp-submitted:
   06/07/22:
     - Fix performance of list benchmark by making these helpers inlined (#19947)
@@ -2022,6 +2007,8 @@ testSerialReductions:
     - Merge ExternArr and friends into DefaultRectangular (#11893)
   07/15/20:
     - Enable parallel array init for all types (#16070)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 thread-ring:
   03/19/15:
@@ -2201,6 +2188,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Use LLVM ADTs to improve compile times (#19561)
   10/12/22:
     - Default to jemalloc for host allocator on most platforms (#20774)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
+  03/14/23:
+    - Eliminate extra destructions when yielding tuples (#21887)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2343,9 +2334,23 @@ arkouda: &arkouda-base
     - Closes 1935 Increase encode benchmark size (Bears-R-Us/arkouda#1936)
   12/02/22:
     - Create local copies of remote strings for encoding (Bears-R-Us/arkouda#1937)
+  12/18/22:
+    - Upgrade Arkouda release testing from 1.27.0 to 1.29.0 (#21257)
+  01/23/23:
+    - 2060 add pdarray data type and size to metric (Bears-R-Us/arkouda#2067)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
+  03/25/23:
+    - Add initial aggregation support for bigint (Bears-R-Us/arkouda#2290)
+  03/28/23:
+    - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
+  03/30/23:
+    - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
 
 
 arkouda-string:
+  <<: *arkouda-base
+arkouda-bigint:
   <<: *arkouda-base
 
 arkouda-comp:
@@ -2374,3 +2379,23 @@ arkouda-comp:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
   03/14/22:
     - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)
+  10/12/22:
+    - Default to jemalloc for host allocator on most platforms (#20774)
+  03/08/23:
+    - Yield tuples by value when appropriate (#21789)
+
+shoc-triad-bw-lg:
+  11/10/22:
+    - Ensure we time mem transfer in SHOC Triad (#20961)
+
+triadAodBw1:
+  02/28/23:
+    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
+
+sort:
+  02/24/23:
+    - Improve SHOC-Sort implementation (#21610)
+
+chplGPU:
+  03/25/23:
+    - Upstream changes

@@ -344,8 +344,8 @@ static const char *AMX_ErrorDesc(int errval) {
 
 extern int amx_Initialized;
 #define AMX_CHECKINIT() AMX_CHECK_ERR((!amx_Initialized),NOT_INIT)
-extern int AMX_Init();
-extern int AMX_Terminate();
+extern int AMX_Init(void);
+extern int AMX_Terminate(void);
 
 //------------------------------------------------------------------------------------
 // shared variables

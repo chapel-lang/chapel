@@ -1,7 +1,7 @@
 use IO;
 
 proc test1() {
-  var f = openmem();
+  var f = openMemFile();
 
   {
     var ch = f.writer(); // defaults to dynamic, text, locking
@@ -22,7 +22,7 @@ proc test1() {
 test1();
 
 proc test2() {
-  var f = openmem();
+  var f = openMemFile();
 
   {
     var ch = f.writer(); // defaults to dynamic, text, locking

@@ -11,7 +11,7 @@ var b: borrowed myClass = (new owned myClass(x = 9, y = 9.9)).borrow();
 writeln("a is initialized to: ", a);
 writeln("b is initialized to: ", b);
 
-var f = open("_test_freadClass.txt", iomode.cwr);
+var f = open("_test_freadClass.txt", ioMode.cwr);
 var writer = f.writer();
 writer.writeln(a);
 writer.close();

@@ -49,14 +49,14 @@ proc main() {
 
   const UpdateSpace: domain(1, indexType) = {0:indexType..#N_U};
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
   [i in TableSpace] T(i) = i;
 
   forall (_,r) in zip(myFakeLeader, RAStream()) do
     T(r & indexMask) ^= r;
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(T, UpdateSpace);
   printResults(validAnswer, execTime);

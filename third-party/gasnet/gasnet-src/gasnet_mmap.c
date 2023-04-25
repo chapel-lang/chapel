@@ -40,7 +40,7 @@
 #if defined(GASNETI_MMAP_OR_PSHM) && defined(GASNETI_USE_HUGETLBFS)
   #define gasneti_mmap_aligndown(sz) gasneti_mmap_aligndown_huge(sz)
   #define gasneti_mmap_alignup(sz)   gasneti_mmap_alignup_huge(sz)
-  #define gasneti_mmap_pagesize()    gasneti_mmap_pagesize_huge()
+  #define gasneti_mmap_pagesize()    gasneti_hugepagesize()
 #else
   #define gasneti_mmap_aligndown(sz) GASNETI_PAGE_ALIGNDOWN(sz)
   #define gasneti_mmap_alignup(sz) GASNETI_PAGE_ALIGNUP(sz)
@@ -85,25 +85,51 @@
   */
 
  #ifdef GASNETI_USE_HUGETLBFS
+  GASNETI_IDENT(gasneti_IdentString_Hugetlbfs, "$GASNetHugetlbfs: 1 $");
   #include <hugetlbfs.h>
-  /* Provide greater alignment than default: */
-  static uintptr_t gasneti_mmap_pagesize_huge() {
-     static long pagesz = 0;
-     if (!pagesz) {
-       pagesz = gethugepagesize();
-       gasneti_assert_uint(pagesz ,>=, GASNETI_PAGESIZE);
-       gasneti_assert_uint(pagesz % GASNETI_PAGESIZE ,==, 0);
-       char valstr[16];
-       GASNETI_TRACE_PRINTF(I, ("gethugepagesize() yields %s",
-                                 gasnett_format_number(pagesz, valstr, sizeof(valstr), 1)));
-     }
-     return pagesz;
+  static int _gasneti_use_hugetlbfs = -1;
+  static uintptr_t _gasneti_hugepagesize = 0;
+  static void _gasneti_hugepage_init(void) {
+    static int is_init = 0;
+
+    if (is_init) {
+      gasneti_sync_reads();
+    } else {
+      char valstr[16];
+      int dflt = getenv("HUGETLB_DEFAULT_PAGE_SIZE") ? 1 : 0; // intentionally not gasneti_getenv()
+      if (gasneti_getenv_yesno_withdefault("GASNET_USE_HUGEPAGES", dflt)) {
+        _gasneti_use_hugetlbfs = 1;
+        _gasneti_hugepagesize = gethugepagesize();
+        gasneti_assert_always(_gasneti_hugepagesize != 0);
+        gasneti_assert_always_uint(_gasneti_hugepagesize % GASNETI_PAGESIZE ,==, 0);
+        GASNETI_TRACE_PRINTF(I, ("gethugepagesize() yields %s",
+                                 gasnett_format_number(_gasneti_hugepagesize, valstr, sizeof(valstr), 1)));
+      } else {
+        _gasneti_use_hugetlbfs = 0;
+        _gasneti_hugepagesize = GASNETI_PAGESIZE;
+        GASNETI_TRACE_PRINTF(I, ("hugepage use disabled, using standard pages (%s)",
+                                 gasnett_format_number(_gasneti_hugepagesize, valstr, sizeof(valstr), 1)));
+      }
+      gasneti_sync_writes();
+      is_init = 1;
+    }
   }
+  size_t gasneti_use_hugetlbfs(void) {
+     if_pf (_gasneti_use_hugetlbfs < 0) _gasneti_hugepage_init();
+     gasneti_assert(_gasneti_use_hugetlbfs >= 0);
+     return _gasneti_use_hugetlbfs;
+  }
+  size_t gasneti_hugepagesize(void) {
+     if_pf (_gasneti_hugepagesize == 0) _gasneti_hugepage_init();
+     gasneti_assert(_gasneti_hugepagesize != 0);
+     return _gasneti_hugepagesize;
+  }
+
   static uintptr_t gasneti_mmap_aligndown_huge(uintptr_t sz) {
-     return GASNETI_ALIGNDOWN(sz, gasneti_mmap_pagesize_huge());
+     return GASNETI_ALIGNDOWN(sz, gasneti_hugepagesize());
   }
   static uintptr_t gasneti_mmap_alignup_huge(uintptr_t sz) {
-     return GASNETI_ALIGNUP(sz, gasneti_mmap_pagesize_huge());
+     return GASNETI_ALIGNUP(sz, gasneti_hugepagesize());
   }
  #endif
 
@@ -333,7 +359,8 @@ static const char *gasneti_pshm_makeunique(const char *unique) {
   gasneti_assert_uint(strlen(prefix) ,==, GASNETI_PSHM_PREFIX_LEN);
 
 #if defined(GASNETI_PSHM_FILE) && defined(GASNETI_USE_HUGETLBFS)
-  { const char *hugedir = hugetlbfs_find_path();
+  if (gasneti_use_hugetlbfs()) {
+    const char *hugedir = hugetlbfs_find_path();
     if (hugedir && !access(hugedir, R_OK|W_OK|X_OK)) {
       tmpdir = hugedir;
     }
@@ -507,30 +534,39 @@ extern xpmem_apid_t gasneti_xpmem_get(xpmem_segid_t segid) {
 
 #if defined(GASNETI_USE_HUGETLBFS)
 
-/* Apply the default hugepage size for mapping of the requested size.
+/* Apply the default hugepage size (if enabled) for mapping of the requested size.
  * The given size is adjusted for proper alignment and returned.
  */
-static uintptr_t huge_pagesz(void *addr, uintptr_t size) {
-  static long pagesz = 0;
-  if (!pagesz) pagesz = gethugepagesize();
+static uintptr_t maybe_huge_pagesz(void *addr, uintptr_t size) {
+  static uintptr_t pagesz = 0;
+  if (!pagesz) pagesz = gasneti_hugepagesize();
   gasneti_assert_uint((uintptr_t)addr % pagesz ,==, 0); /* alignment check */
   return GASNETI_ALIGNUP(size, pagesz);
 }
 
 extern void *gasneti_huge_mmap(void *addr, uintptr_t size) {
-  int fd = hugetlbfs_unlinked_fd();
-  const int mmap_flags = MAP_SHARED | (addr ? GASNETI_MMAP_FIXED_FLAG : GASNETI_MMAP_NOTFIXED_FLAG);
-  void *ptr = mmap(addr, huge_pagesz(addr, size), (PROT_READ|PROT_WRITE), mmap_flags, fd, 0);
+  int mmap_flags = MAP_SHARED | (addr ? GASNETI_MMAP_FIXED_FLAG : GASNETI_MMAP_NOTFIXED_FLAG);
+  int fd = -1;
 
-  int save_errno = errno;
-  (void) close(fd);
-  errno = save_errno;
+  if (gasneti_use_hugetlbfs()) {
+    fd = hugetlbfs_unlinked_fd();
+  } else {
+    mmap_flags |= GASNETI_MAP_ANONYMOUS;
+  }
+
+  void *ptr = mmap(addr, maybe_huge_pagesz(addr, size), (PROT_READ|PROT_WRITE), mmap_flags, fd, 0);
+
+  if (fd >= 0) {
+    int save_errno = errno;
+    (void) close(fd);
+    errno = save_errno;
+  }
 
   return ptr;
 }
 
 extern void gasneti_huge_munmap(void *addr, uintptr_t size) {
-  if (munmap(addr, huge_pagesz(addr, size)) != 0)
+  if (munmap(addr, maybe_huge_pagesz(addr, size)) != 0)
     gasneti_fatalerror("munmap("GASNETI_LADDRFMT",%"PRIuPTR") failed: %s\n",
                        GASNETI_LADDRSTR(addr), size, strerror(errno));
 }
@@ -583,7 +619,7 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
   /* create or open */
   #if defined(GASNETI_PSHM_FILE)
    #if defined(GASNETI_USE_HUGETLBFS)
-    segsize = huge_pagesz(segbase, segsize);
+    segsize = maybe_huge_pagesz(segbase, segsize);
    #endif
     fd = open(filename, flags, S_IRUSR | S_IWUSR);
   #elif defined(GASNETI_PSHM_POSIX)
@@ -1221,7 +1257,7 @@ GASNETI_IDENT(gasneti_IdentString_DefaultMaxSegsizeStr,
 /* return user-selected limit for the max segment size, as gleaned from several sources */
 const char *gasnet_max_segsize_str; // intentional tentative definition, to allow client override
 uint64_t gasnet_max_segsize;        // DEPRECATED: intentional tentative definition, to allow client override 
-uintptr_t gasneti_max_segsize() {
+uintptr_t gasneti_max_segsize(void) {
   static uintptr_t result = 0;
   uint64_t tmp;
   if (!result) {

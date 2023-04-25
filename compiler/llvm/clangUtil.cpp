@@ -30,6 +30,8 @@
 #include <cstring>
 #include <cstdio>
 #include <sstream>
+#include <fstream>
+#include <regex>
 
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
@@ -61,6 +63,7 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -108,6 +111,7 @@
 #include "llvmVer.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/clang-integration.h"
 
 #include "global-ast-vecs.h"
 
@@ -180,10 +184,6 @@ struct ClangInfo {
   std::vector<const char*> driverArgsCStrings;
 
   clang::CodeGenOptions codegenOptions;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
-  clang::TextDiagnosticPrinter* DiagClient;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags;
 
   clang::CompilerInstance *Clang;
 
@@ -229,10 +229,7 @@ ClangInfo::ClangInfo(
          clangCCArgs(std::move(clangCCArgsIn)),
          clangOtherArgs(std::move(clangOtherArgsIn)),
          clangLDArgs(std::move(clangLDArgsIn)),
-         codegenOptions(), diagOptions(nullptr),
-         DiagClient(nullptr),
-         DiagID(nullptr),
-         Diags(nullptr),
+         codegenOptions(),
          Clang(nullptr),
          Ctx(nullptr),
          cCodeGen(nullptr), cCodeGenAction(nullptr),
@@ -447,8 +444,8 @@ static void handleCallMacro(const IdentifierInfo* origID,
       actual2 = *tok;
   }
 
-  IdentifierInfo* formal1;
-  IdentifierInfo* formal2;
+  IdentifierInfo* formal1 = nullptr;
+  IdentifierInfo* formal2 = nullptr;
   count = 0;
   for (MacroInfo::param_iterator param = calledMacro->param_begin();
        param != calledMacro->param_end(); ++param) {
@@ -1322,7 +1319,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     CCodeGenConsumer()
       : ASTConsumer(),
         info(gGenInfo),
-        Diags(info->clangInfo->Diags.get()),
+        Diags(&info->clangInfo->Clang->getDiagnostics()),
         Builder(NULL),
         parseOnly(info->clangInfo->parseOnly),
         savedCtx(NULL)
@@ -1559,8 +1556,6 @@ static void finishClang(ClangInfo* clangInfo){
     // This should call Builder->Release()
     clangInfo->cCodeGen->HandleTranslationUnit(*clangInfo->Ctx);
   }
-  clangInfo->Diags.reset();
-  clangInfo->DiagID.reset();
 }
 
 static void deleteClang(ClangInfo* clangInfo){
@@ -1639,31 +1634,32 @@ void setupClang(GenInfo* info, std::string mainFile)
   initializeLlvmTargets();
   std::string triple = getConfiguredTargetTriple();
 
-  // Create a compiler instance to handle the actual work.
-  CompilerInstance* Clang = new CompilerInstance();
-  Clang->createDiagnostics();
-
-  clangInfo->diagOptions = new DiagnosticOptions();
-  clangInfo->DiagClient= new TextDiagnosticPrinter(errs(),&*clangInfo->diagOptions);
-  clangInfo->DiagID = new DiagnosticIDs();
-  DiagnosticsEngine* Diags = NULL;
-  Diags = new DiagnosticsEngine(
-      clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
-  if (usingGpuLocaleModel()) {
-    Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
-                               "unknown-cuda-version",
-                               diag::Severity::Ignored);
-  }
-  clangInfo->Diags = Diags;
-  clangInfo->Clang = Clang;
-
-  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *Diags);
-
-  //   SetInstallDir(argv, TheDriver);
-
   for (auto & arg : clangInfo->driverArgs) {
     clangInfo->driverArgsCStrings.push_back(arg.c_str());
   }
+
+  // Create a compiler instance to handle the actual work.
+  CompilerInstance* Clang = new CompilerInstance();
+  auto diagOptions =
+    chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+  Clang->setDiagnostics(&*clangDiags);
+
+  if (usingGpuLocaleModel()) {
+    clangDiags->setSeverityForGroup(diag::Flavor::WarningOrError,
+                                    "unknown-cuda-version",
+                                    diag::Severity::Ignored);
+  }
+  clangInfo->Clang = Clang;
+
+  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *clangDiags);
+
+  //   SetInstallDir(argv, TheDriver);
 
   std::unique_ptr<clang::driver::Compilation> C(
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
@@ -1679,7 +1675,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     //  2nd cc1 command is for the CPU
     for (auto &command : C->getJobs()) {
       bool isCC1 = false;
-      for (auto arg : command.getArguments()) {
+      for (const auto& arg : command.getArguments()) {
         if (0 == strcmp(arg, "-cc1")) {
           isCC1 = true;
           break;
@@ -1704,7 +1700,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
-    for ( auto a : job->getArguments() ) {
+    for ( const auto& a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
@@ -1720,12 +1716,12 @@ void setupClang(GenInfo* info, std::string mainFile)
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             job->getArguments(),
-            *Diags);
+            *clangDiags);
 #else
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             &job->getArguments().front(), (&job->getArguments().back())+1,
-            *Diags);
+            *clangDiags);
 #endif
 
   CompilerInvocation* CI = &Clang->getInvocation();
@@ -2350,11 +2346,10 @@ static bool isTargetCpuValid(const char* targetCpu) {
 // This could filter out more aggressively but we do need the
 // paths and defines for the runtime headers to work.
 static void addFilteredArgs(std::vector<std::string>& dst,
-                            std::vector<std::string>& src,
-                            bool parseOnly) {
+                            std::vector<std::string>& src) {
   bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
                0 == strcmp(CHPL_TARGET_COMPILER, "clang");
-  bool filter = parseOnly && !clang;
+  bool filter = !clang;
 
   if (filter) {
     for (size_t i = 0; i < src.size(); i++) {
@@ -2378,13 +2373,11 @@ static void addFilteredArgs(std::vector<std::string>& dst,
   }
 }
 
-// if just_parse_filename != NULL, it is a file
-// containing an extern block to parse only
-// (and in that setting there is no need to work with the runtime).
-void runClang(const char* just_parse_filename) {
-  bool parseOnly = (just_parse_filename != NULL);
-  static bool is_installed_fatal_error_handler = false;
-
+static void helpComputeClangArgs(std::string& clangCC,
+                                 std::string& clangCXX,
+                                 std::vector<std::string>& clangCCArgs,
+                                 std::vector<std::string>& clangOtherArg,
+                                 std::vector<std::string>& clangLDArgs) {
   // These warnings are _required_ to make sure the code Clang generates
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
@@ -2407,16 +2400,12 @@ void runClang(const char* just_parse_filename) {
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> split;
-  std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs;
-  std::vector<std::string> clangLDArgs;
-
-  // find the path to clang and clang++
-  std::string clangCC, clangCXX;
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  SmallVector<const char *, 0> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
     if (i == 0) {
@@ -2428,7 +2417,7 @@ void runClang(const char* just_parse_filename) {
     }
   }
   split.clear();
-  splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_CXX, Saver, split);
   if (split.size() > 0) {
     clangCXX = split[0];
   }
@@ -2458,7 +2447,7 @@ void runClang(const char* just_parse_filename) {
     expandInstallationPaths(args);
 
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
 
   // add a -I. so we can find headers named on command line in same dir
@@ -2544,8 +2533,44 @@ void runClang(const char* just_parse_filename) {
     std::vector<std::string> args;
     splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
+}
+
+void computeClangArgs(std::vector<std::string>& clangCCArgs) {
+  std::string clangCC, ignoredClangCXX;
+  std::vector<std::string> ignoredOtherArgs, ignoredLDArgs;
+
+  std::vector<std::string> gotCCArgs;
+
+  helpComputeClangArgs(clangCC, ignoredClangCXX,
+                       gotCCArgs,
+                       ignoredOtherArgs, ignoredLDArgs);
+
+  // append clangCC argument first
+  if (clangCC == "") {
+    clangCC = "clang";
+  }
+  clangCCArgs.push_back(clangCC);
+
+  // append the other arguments
+  clangCCArgs.insert(clangCCArgs.end(), gotCCArgs.begin(), gotCCArgs.end());
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
+void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
+  static bool is_installed_fatal_error_handler = false;
+
+  // find the path to clang and clang++
+  std::string clangCC, clangCXX;
+  std::vector<std::string> clangCCArgs;
+  std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangLDArgs;
+  helpComputeClangArgs(clangCC, clangCXX,
+                       clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
   if (usingGpuLocaleModel()) {
@@ -3000,7 +3025,7 @@ void LayeredValueTable::addValue(
 }
 
 void LayeredValueTable::addGlobalValue(
-    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned, ::Type* type) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -3009,7 +3034,7 @@ void LayeredValueTable::addGlobalValue(
 }
 
 void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
-  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
+  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned, gend.chplType);
 }
 
 void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
@@ -3127,6 +3152,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       ret.val = store->u.value;
       ret.isLVPtr = store->isLVPtr;
       ret.isUnsigned = store->isUnsigned;
+      ret.chplType = store->chplType;
       return ret;
     }
     if( store->u.cValueDecl ) {
@@ -3140,6 +3166,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       store->u.value = ret.val;
       store->isLVPtr = ret.isLVPtr;
       store->isUnsigned = ret.isUnsigned;
+
       return ret;
     }
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
@@ -3377,6 +3404,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (makeRef || t->isRef()) {
     ::Type* eltType = t->getValType();
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const refs
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -3384,6 +3412,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_DATA_CLASS)) {
     ::Type* eltType = getDataClassType(ts)->type;
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const C pointers
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -3827,9 +3856,48 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
-static void linkLibDevice() {
-  // We follow the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+static void linkBitCodeFile(const char *bitCodeFilePath) {
+  GenInfo* info = gGenInfo;
 
+  // load into new module
+  llvm::SMDiagnostic err;
+  auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
+                                 info->llvmContext);
+
+  // adjust it
+  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+  bcLib->setTargetTriple(Triple.getTriple());
+  bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+  // link
+  llvm::Linker::linkModules(*info->module, std::move(bcLib),
+                            llvm::Linker::Flags::LinkOnlyNeeded);
+}
+
+static std::string determineOclcVersionLib(std::string libPath) {
+  std::string result;
+
+  // Extract version number from CHPL_GPU_ARCH string (e.g. extract
+  // the 908 from "gfx908")
+  std::regex pattern("gfx(\\d+)");
+  std::cmatch match;
+  if (std::regex_search(CHPL_GPU_ARCH, match, pattern)) {
+    result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
+  } else {
+    USR_FATAL("Unable to determine oclc version from CHPL_GPU_ARCH");
+  }
+
+  // Ensure file exists (and can be opened)
+  std::ifstream file(result);
+  if(!file.good()) {
+    USR_FATAL("Unable to find or open ROCM device library file %s", result.c_str());
+  }
+
+  return result;
+}
+
+// See the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+static void linkGpuDeviceLibraries() {
   GenInfo* info = gGenInfo;
 
   // save external functions
@@ -3840,21 +3908,21 @@ static void linkLibDevice() {
     }
   }
 
-  // libdevice is a CUDA-specific thing
   if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
-    // load libdevice as a new module
-    llvm::SMDiagnostic err;
-    auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
-                                       info->llvmContext);
-    //
-    // adjust it
-    const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-    libdevice->setTargetTriple(Triple.getTriple());
-    libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
-
-    // link
-    llvm::Linker::linkModules(*info->module, std::move(libdevice),
-                              llvm::Linker::Flags::LinkOnlyNeeded);
+    linkBitCodeFile(CHPL_CUDA_LIBDEVICE_PATH);
+  } else {
+    // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
+    // on what these various libraries are.
+    auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
+    linkBitCodeFile((libPath + "/hip.bc").c_str());
+    linkBitCodeFile((libPath + "/ocml.bc").c_str());
+    linkBitCodeFile((libPath + "/ockl.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_unsafe_math_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
+    linkBitCodeFile(determineOclcVersionLib(libPath).c_str());
   }
 
   // internalize all functions that are not in `externals`
@@ -4044,6 +4112,30 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
+static void stripPtxDebugDirective(const std::string& artifactFilename) {
+  std::string line;
+  std::vector<std::string> lines;
+  std::string prefix = ".target";
+  std::string suffix = ", debug";
+  {
+    std::ifstream ptxFile(artifactFilename);
+    while (std::getline(ptxFile, line)) {
+      if (line.compare(0, prefix.size(), prefix) == 0 /* line.starts_with(".target") */ &&
+          line.compare(line.size() - suffix.size(), suffix.size(), suffix) == 0 /* line.ends_with(", debug") */) {
+        line.resize(line.size() - suffix.size());
+      }
+      lines.push_back(std::move(line));
+    }
+  }
+  {
+    std::ofstream ptxFile(artifactFilename);
+    for (const auto& line : lines) {
+      ptxFile << line << std::endl;
+    }
+  }
+
+}
+
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                                   const std::string& ptxObjectFilename,
                                   const std::string& fatbinFilename) {
@@ -4055,7 +4147,33 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     USR_FATAL("Command 'fatbinary' not found\n");
   }
 
+  std::string ptxasFlags = "";
+
+  if (fGpuPtxasEnforceOpt) {
+    // When --gpu-ptxas-enforce-opt is set and --fast is used,
+    // pass -O3 to ptxas even if -g is set. Clang's -g output
+    // produces code with debugging directives incompatible
+    // with -O3, so then strip those directives.
+
+    ptxasFlags = fFastFlag ? "-O3" : "-O0";
+    if (debugCCode) ptxasFlags += " -lineinfo";
+
+    // Kind of a hack; manually turn
+    //   .target sm_60, debug
+    // into
+    //   .target sm_60
+    // because we can't configure clang to not force
+    // full debug info.
+    if (debugCCode && fFastFlag) {
+      stripPtxDebugDirective(artifactFilename);
+    }
+  }
+
+  // avoid warning about not statically knowing the stack size when recursive
+  // functions are called from the kernel
+  ptxasFlags += " --suppress-stack-size-warning ";
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
+                       " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
                        ptxObjectFilename.c_str() +
                        " " + artifactFilename.c_str();
@@ -4393,7 +4511,7 @@ void makeBinaryLLVM(void) {
 
       auto artifactFileType = getCodeGenFileType();
 
-      linkLibDevice();
+      linkGpuDeviceLibraries();
 
       llvm::raw_fd_ostream outputArtifactFile(artifactFilename, error, flags);
 
@@ -4614,7 +4732,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     // Note: if we want to support GNU objdump, just need to use
-    // --dissasemble= instead of the LLVM flag --disassemble-symbols=
+    // --disassemble= instead of the LLVM flag --disassemble-symbols=
     // but this does not work with older GNU objdump versions.
     std::string disSymArg = "--disassemble-symbols=";
 
@@ -4625,17 +4743,17 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
-    for (auto name : names) {
-      printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
+    for (const auto& name : names) {
+      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
-      std::string arg = disSymArg; // e.g. --dissasemble=
+      std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
       cmd.push_back(dotOFile);
 
-      mysystem(cmd, "dissassemble a symbol",
+      mysystem(cmd, "disassemble a symbol",
                /* ignoreStatus */ true,
                /* quiet */ false);
     }

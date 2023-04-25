@@ -51,10 +51,16 @@ class DoWhile final : public Loop {
           int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum,
+           NO_CHILD /*attributeGroup*/),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
+
+  DoWhile(Deserializer& des)
+    : Loop(asttags::DoWhile, des) {
+      conditionChildNum_ = des.read<int>();
+    }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
@@ -96,6 +102,13 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(DoWhile);
 
 };
 

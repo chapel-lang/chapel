@@ -105,7 +105,7 @@ class ForceEAM : Force {
     this.potName = "EAM";
     var input_file = potDir + "/" + potFile;
     var fchan: file;
-    try! open(input_file, iomode.r);
+    try! open(input_file, ioMode.r);
 
     if (potType == "setfl") then eamReadSetfl(fchan);
     else if (potType == "funcfl") then eamReadFuncfl(fchan);

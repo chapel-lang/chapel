@@ -49,10 +49,15 @@ case $target in
 esac
 
 # With Qthreads, -v results in some lines of QTHREADS info we don't need.
+# We also don't need oversubscription status.
 case $tasks in
-  qthreads) grep -v '^QTHREADS' $2 > $2.tmp &&
+  qthreads) grep -v -e '^QTHREADS' -e '^oversubscribed' $2 > $2.tmp &&
             mv $2.tmp $2;;
 esac
+
+# Remove info related to running one locale per socket
+
+grep -v '^0: using socket' $2 > $2.tmp && mv $2.tmp $2
 
 # If we use the amudprun launcher, there's a path on the front of it.
 # If we use the aprun launcher, the depth (-d) value may vary, and also

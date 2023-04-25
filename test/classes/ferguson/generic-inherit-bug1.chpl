@@ -13,7 +13,7 @@ module Structure {
     type idxType;
     param stridable: bool;
 
-    proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
       writeln("in Parent(", rank, ") foo ", arg);
     }
     proc bar() {
@@ -66,7 +66,7 @@ module Impl {
   class Child : SubParent {
     var x:eltType;
     
-    override proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    override proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
       writeln("in Child(", rank, ") foo ", arg, " " , x);
     }
     override proc bar() {

@@ -1,0 +1,8 @@
+CHPL TEST PAR (find-checkPar.chpl:7): default rectangular domain standalone invoked on (0..7)
+5
+CHPL TEST PAR (find-checkPar.chpl:8): default rectangular domain standalone invoked on (0..7)
+(true, 2)
+CHPL TEST PAR (find-checkPar.chpl:9): default rectangular domain standalone invoked on (0..7)
+-1
+CHPL TEST PAR (find-checkPar.chpl:10): default rectangular domain standalone invoked on (0..7)
+(false, 2)

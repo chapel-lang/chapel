@@ -220,8 +220,21 @@ void queryArgsPrint(const std::tuple<Ts...>& tuple) {
 static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
-using QueryDependencyVec = std::vector<const QueryMapResultBase*>;
-using QueryErrorVec = std::vector<const ErrorBase*>;
+// Performance: this struct only contains a pointer and an additional bit
+// field. We could probably get away with storing `errorCollectionRoot`
+// in the last bit of the result pointer, and and thus reduce the overhead
+// of this struct.
+struct QueryDependency {
+  const QueryMapResultBase* query;
+  bool errorCollectionRoot;
+
+  QueryDependency(const QueryMapResultBase* query,
+                  bool errorCollectionRoot) :
+    query(query), errorCollectionRoot(errorCollectionRoot) {}
+};
+
+using QueryDependencyVec = std::vector<QueryDependency>;
+using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
@@ -232,25 +245,24 @@ class QueryMapResultBase {
   //  * if it is a previous revision, dependencies need to be checked
   //    and re-run if they are out of date.
   //  * if it is the current revision, the result can be reused
-  mutable RevisionNumber lastChecked;
+  mutable RevisionNumber lastChecked = -1;
   // lastChanged indicates the last revision in which the query result
   // has changed
-  mutable RevisionNumber lastChanged;
+  mutable RevisionNumber lastChanged = -1;
 
   mutable QueryDependencyVec dependencies;
+
+  // Whether or not errors from this query result have been shown to the
+  // user (they may not have been if some query checked for errors).
+  mutable bool emittedErrors = false;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
 
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
-                     QueryMapBase* parentQueryMap)
-    : lastChecked(lastChecked),
-      lastChanged(lastChanged),
-      dependencies(),
-      errors(),
-      parentQueryMap(parentQueryMap) {
-  }
+                     bool emittedErrors,
+                     QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
   virtual void markUniqueStringsInResult(Context* context) const = 0;
@@ -267,16 +279,17 @@ class QueryMapResult final : public QueryMapResultBase {
   //  * a default-constructed result
   QueryMapResult(QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs)
-    : QueryMapResultBase(-1, -1, parentQueryMap),
+    : QueryMapResultBase(-1, -1, false, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result() {
   }
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
+                 bool emittedErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)
-    : QueryMapResultBase(lastChecked, lastChanged, parentQueryMap),
+    : QueryMapResultBase(lastChecked, lastChanged, emittedErrors, parentQueryMap),
       tupleOfArgs(std::move(tupleOfArgs)),
       result(std::move(result)) {
   }

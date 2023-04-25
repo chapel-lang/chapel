@@ -45,6 +45,9 @@ class Delete final : public AstNode {
     : AstNode(asttags::Delete, std::move(children)) {
   }
 
+  Delete(Deserializer& des)
+    : AstNode(asttags::Delete, des) {}
+
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
@@ -82,6 +85,14 @@ class Delete final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Delete);
+
+
 };
 
 

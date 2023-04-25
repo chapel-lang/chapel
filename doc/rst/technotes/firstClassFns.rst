@@ -26,6 +26,12 @@ that they describe legacy syntax or semantics.
 New Syntax for Constructing Function Types
 ------------------------------------------
 
+.. warning::
+
+  New features added to support first-class functions may not be
+  supported by default. In order to use them, it may be necessary to
+  set the config param ``fcfsUseLegacyBehavior`` to ``false``.
+
 Function types may now be constructed using new syntax which mirrors
 the syntax for function definition.
 

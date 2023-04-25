@@ -68,6 +68,11 @@ class New : public AstNode {
     : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
+  New(Deserializer& des)
+    : AstNode(asttags::New, des) {
+        management_ = des.read<Management>();
+      }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
     const New* rhs = (const New*) other;
@@ -109,6 +114,13 @@ class New : public AstNode {
     return management_;
   }
 
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(management_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(New);
+
 };
 
 
@@ -132,6 +144,8 @@ struct stringify<uast::New::Management> {
 };
 
 /// \endcond
+
+DECLARE_SERDE_ENUM(uast::New::Management, uint8_t);
 
 } // end namespace chpl
 

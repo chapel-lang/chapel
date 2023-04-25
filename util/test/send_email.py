@@ -25,7 +25,6 @@ def main():
     args = _parse_args()
     _setup_logging(args.verbose)
     body = sys.stdin.read()
-
     # Send the email!
     send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host,
         args.smtp_user, args.smtp_password, args.smtp_password_file)

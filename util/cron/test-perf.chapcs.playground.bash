@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of disabling memory hooks at compile time
-GITHUB_USER=ronawho
-GITHUB_BRANCH=disable-mem-hooks
-SHORT_NAME=disable-mem-hooks
-START_DATE=06/02/22
+# Test perf of nested call temps for an '=' living to end of block
+GITHUB_USER=mppf
+GITHUB_BRANCH=issue-21001-option-2
+SHORT_NAME=temp-assign-lifetime
+START_DATE=02/15/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

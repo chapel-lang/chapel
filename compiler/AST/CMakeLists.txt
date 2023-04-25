@@ -56,6 +56,7 @@ set(SRCS
     primitive.cpp
     stmt.cpp
     symbol.cpp
+    TemporaryConversionThunk.cpp
     TransformLogicalShortCircuit.cpp
     TryStmt.cpp
     type.cpp
@@ -65,14 +66,4 @@ set(SRCS
     WhileDoStmt.cpp
     WhileStmt.cpp
    )
-# TODO: These three steps are standard among all the CMakeLists.txt files
-# that are subdirectories of compiler/, maybe factor out to a function in the
-# compiler/CMakeLists.txt?
-target_sources(chpl
-               PUBLIC
-               ${SRCS})
-get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set_property(SOURCE ${SRCS}
-             TARGET_DIRECTORY chpl
-             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
-             APPEND)
+add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

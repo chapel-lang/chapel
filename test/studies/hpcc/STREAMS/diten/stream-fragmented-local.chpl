@@ -40,9 +40,9 @@ proc main() {
       initVectors(B, C, ProblemSpace);
 
       for trial in 1..numTrials {
-        const startTime = getCurrentTime();
+        const startTime = timeSinceEpoch().totalSeconds();
         local do A = B + alpha * C;
-        allExecTime(here.id)(trial) = getCurrentTime() - startTime;
+        allExecTime(here.id)(trial) = timeSinceEpoch().totalSeconds() - startTime;
       }
 
       allValidAnswer(here.id) = verifyResults(A, B, C);

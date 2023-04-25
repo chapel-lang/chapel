@@ -917,6 +917,20 @@ static void addKnownWides() {
     //if (!typeCanBeWide(var)) continue;
     Symbol* defParent = var->defPoint->parentSymbol;
 
+    if (usingGpuLocaleModel()) {
+      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+        if (FnSymbol* fn = usedInOn(var)) {
+          debug(var, "GPU variable used in on-statement\n");
+          if (typeCanBeWide(var)) {
+            setWide(fn, var);
+          }
+          if (isRecord(var->type) && !canWidenRecord(var)) {
+            widenSubAggregateTypes(fn, var->type);
+          }
+        }
+      }
+    }
+
     //
     // FLAG_LOCALE_PRIVATE variables can be used within an on-statement without
     // needing to be wide.
@@ -2214,6 +2228,15 @@ static void fixAST() {
         SymExpr* rhs = toSymExpr(call->get(2));
         makeMatch(lhs, rhs);
         makeMatch(rhs, lhs);
+      }
+      else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+        // currently, we don't pass wide references to GPU kernels as we don't
+        // know how to handle them. This'll change
+        for_actuals (actual, call) {
+          if (hasSomeWideness(actual)) {
+            insertLocalTemp(actual);
+          }
+        }
       }
     }
   }

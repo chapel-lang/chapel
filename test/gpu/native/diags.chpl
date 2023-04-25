@@ -1,10 +1,10 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 use Memory.Diagnostics;
 
 writeln("Start");
 
-startVerboseGPU();
-startGPUDiagnostics();
+startVerboseGpu();
+startGpuDiagnostics();
 startVerboseMem();
 
 var A: [1..10] int = 1;
@@ -19,15 +19,15 @@ on here.gpus[0] {
 }
 
 stopVerboseMem();
-stopGPUDiagnostics();
-stopVerboseGPU();
+stopGpuDiagnostics();
+stopVerboseGpu();
 
 writeln(A);
 writeln("End");
 
 writeln("GPU diagnostics:");
-writeln(getGPUDiagnostics());
+writeln(getGpuDiagnostics());
 
-resetGPUDiagnostics();
+resetGpuDiagnostics();
 writeln("GPU diagnostics after reset:");
-writeln(getGPUDiagnostics());
+writeln(getGpuDiagnostics());

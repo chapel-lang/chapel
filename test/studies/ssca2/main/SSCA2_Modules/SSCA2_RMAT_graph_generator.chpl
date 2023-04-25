@@ -354,7 +354,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
       writeln ();
      if rmatEdgeGenFile != "" {
       writeln("writing edges to ", rmatEdgeGenFile);
-      const fl = open(rmatEdgeGenFile, iomode.cw);
+      const fl = open(rmatEdgeGenFile, ioMode.cw);
       const ch = fl.writer();
       for (ed, w) in zip(Edges, Edge_Weight) do
         ch.writeln (ed.start, " ", ed.end, " ", w);
@@ -485,7 +485,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
      writeln ();
      if rmatGraphConFile != "" {
       writeln("writing neighbor lists to ", rmatGraphConFile);
-      const fl = open(rmatGraphConFile, iomode.cw);
+      const fl = open(rmatGraphConFile, ioMode.cw);
       const ch = fl.writer();
       for (u, vx) in zip(G.vertices, G.Row) do
         for (v, w) in vx.neighborList do

@@ -82,8 +82,8 @@ proc masonExample(args: [] string, checkProj=true) throws {
 private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
 
   // parse lock and toml(examples dont make it to lock file)
-  const lock = open(projectHome + "/Mason.lock", iomode.r);
-  const toml = open(projectHome + "/Mason.toml", iomode.r);
+  const lock = open(projectHome + "/Mason.lock", ioMode.r);
+  const toml = open(projectHome + "/Mason.toml", ioMode.r);
   const lockFile = parseToml(lock);
   const tomlFile = parseToml(toml);
 
@@ -341,7 +341,7 @@ proc printAvailableExamples() {
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
     const toml = parseToml(toParse);
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");

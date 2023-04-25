@@ -4,3 +4,4 @@
 2
 1
 1 2 3 4 5
+writeNegStrideArray.chpl:2: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..5 by -1)

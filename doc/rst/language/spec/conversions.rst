@@ -119,14 +119,12 @@ where ``s <= t``.
    surprising behavior, this behavior is less problematic than the
    surprising behavior that comes from the above scenario.
 
-Any boolean type can be implicitly converted to any other boolean type,
-retaining the boolean value. Any boolean type can be implicitly
-converted to any integral type by representing ``false`` as 0 and
-``true`` as 1.
+A ``bool`` can be implicitly converted to any integral type by
+representing ``false`` as 0 and ``true`` as 1.
 
    *Rationale*.
 
-   We disallow implicit conversion of a boolean to a real, imaginary,
+   We disallow implicit conversion of a ``bool`` to a real, imaginary,
    or complex type because we expect that such conversions are most
    likely to be an unintended mistake by the programmer.
    Marking such cases as errors will draw the programmer’s attention
@@ -136,17 +134,17 @@ converted to any integral type by representing ``false`` as 0 and
 Legal implicit conversions with numeric and boolean types may thus be
 summarized as follows:
 
-==================== ================= ================= ================ ================= ================= ====================
-\                                                                  **Destination Type**
--------------------- -------------------------------------------------------------------------------------------------------------
-**Source Type**      bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
-bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s,t`
-uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`    all :math:`s,t`                     all :math:`s,t`
-int(\ :math:`s`)                       :math:`s \le t`   :math:`s \le t`  all :math:`s,t`                     all :math:`s,t`
-real(\ :math:`s`)                                                         :math:`s \le t`                     :math:`s \le t/2`
-imag(\ :math:`s`)                                                                           :math:`s \le t`   :math:`s \le t/2`
-complex(\ :math:`s`)                                                                                          :math:`s \le t`
-==================== ================= ================= ================ ================= ================= ====================
+==================== ================= ================ ================= ================= ====================
+\                                                **Destination Type**
+-------------------- -------------------------------------------------------------------------------------------
+**Source Type**      uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
+bool                 all :math:`t`     all :math:`t`
+uint(\ :math:`s`)    :math:`s \le t`   :math:`s < t`    all :math:`s,t`                     all :math:`s,t`
+int(\ :math:`s`)     :math:`s \le t`   :math:`s \le t`  all :math:`s,t`                     all :math:`s,t`
+real(\ :math:`s`)                                       :math:`s \le t`                     :math:`s \le t/2`
+imag(\ :math:`s`)                                                         :math:`s \le t`   :math:`s \le t/2`
+complex(\ :math:`s`)                                                                        :math:`s \le t`
+==================== ================= ================ ================= ================= ====================
 
 
 .. _Implicit_Compile_Time_Constant_Conversions:
@@ -575,14 +573,17 @@ type. Such a conversion does not change the value of the expression.
 Explicit Numeric Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Explicit conversions are allowed from any numeric type or boolean to
-bytes or string, and vice-versa.
+Explicit conversions are allowed from ``bool`` or any numeric type to
+``bytes`` or ``string``, and vice-versa.  When converting to ``bytes``
+or ``string`` the result will hold the string ``true`` or ``false``
+for a ``bool``, or a representation of the expression's numerical
+value in other cases.  When converting from a ``string`` or ``bytes``,
+the reverse occurs, converting the represented value into a numerical
+or ``bool`` value.  If the ``string``/``bytes`` does not represent a
+legal value of the given type, an ``IllegalArgumentError`` is thrown.
 
-When a ``bool`` is converted to a ``bool``, ``int`` or ``uint`` of equal
-or larger size, its value is zero-extended to fit the new
-representation. When a ``bool`` is converted to a smaller ``bool``,
-``int`` or ``uint``, its most significant bits are truncated (as
-appropriate) to fit the new representation.
+When a ``bool`` is converted to an ``int`` or ``uint``, ``false``
+converts to the value 0 and ``true`` to 1.
 
 When a ``int``, ``uint``, or ``real`` is converted to a ``bool``, the
 result is ``false`` if the number was equal to 0 and ``true`` otherwise.
@@ -693,7 +694,7 @@ When converting from an enum to a real, imaginary, or complex type,
 the value is first converted to the enum's underlying integer type and
 then to the target type.
 
-When converting from an enum to a boolean type, the value is first
+When converting from an enum to a ``bool``, the value is first
 converted to the enum's underlying integer type. If the result is
 zero, the value of the ``bool`` is ``false``; otherwise, it is
 ``true``.

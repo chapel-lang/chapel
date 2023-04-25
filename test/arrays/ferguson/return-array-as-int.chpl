@@ -9,4 +9,4 @@ proc NamedMatrix.setRowNames(rn:[]):int {
 }
 
 var a:NamedMatrix;
-a.setRowNames(["bla"]);
+a.setRowNames(["bla", ]);

@@ -1,5 +1,5 @@
 // Test that the array interface reads the correct bytes for all
-//  integer sizes, signs, and big&little endianness
+//  integer sizes, signs, and big&little endiannesses
 
 use IO;
 
@@ -24,12 +24,12 @@ testBinaryRead("./input/ti32le.bin", makeSignedArray(32), ioendian.little);
 testBinaryRead("./input/ti64le.bin", makeSignedArray(64), ioendian.little);
 
 proc testBinaryRead(path: string, expected_values, endian: ioendian = ioendian.native) {
-    var reader = openreader(path);
+    var reader = openReader(path);
     var values : expected_values.type;
 
     try {
-        var didRead = reader.readBinary(values, endian);
-        writeln(didRead, "\t", (&& reduce (values == expected_values)));
+        var numRead = reader.readBinary(values, endian);
+        writeln(numRead, "\t", (&& reduce (values == expected_values)));
     } catch e {
         writeln(e);
     }
@@ -49,7 +49,7 @@ proc makeUnsignedArray(param size = 8) {
     return a;
 }
 
-// 8 => [1, 2, 4, 8, 16, 32, 64]
+// 8 => [1, 2, 4, 8, 16, 32, 64] (omits last element)
 proc makeSignedArray(param size = 8) {
     var a : [0..#(size-1)] int(size);
     var x : int(size) = 1;

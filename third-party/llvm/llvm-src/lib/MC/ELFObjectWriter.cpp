@@ -549,8 +549,26 @@ void ELFWriter::writeSymbol(SymbolTableWriter &Writer, uint32_t StringIndex,
   uint64_t Size = 0;
 
   const MCExpr *ESize = MSD.Symbol->getSize();
-  if (!ESize && Base)
+  if (!ESize && Base) {
+    // For expressions like .set y, x+1, if y's size is unset, inherit from x.
     ESize = Base->getSize();
+
+    // For `.size x, 2; y = x; .size y, 1; z = y; z1 = z; .symver y, y@v1`, z,
+    // z1, and y@v1's st_size equals y's. However, `Base` is `x` which will give
+    // us 2. Follow the MCSymbolRefExpr assignment chain, which covers most
+    // needs. MCBinaryExpr is not handled.
+    const MCSymbolELF *Sym = &Symbol;
+    while (Sym->isVariable()) {
+      if (auto *Expr =
+              dyn_cast<MCSymbolRefExpr>(Sym->getVariableValue(false))) {
+        Sym = cast<MCSymbolELF>(&Expr->getSymbol());
+        if (!Sym->getSize())
+          continue;
+        ESize = Sym->getSize();
+      }
+      break;
+    }
+  }
 
   if (ESize) {
     int64_t Res;
@@ -1336,6 +1354,7 @@ bool ELFObjectWriter::shouldRelocateWithSymbol(const MCAssembler &Asm,
     // can update it.
     return true;
   case ELF::STB_GLOBAL:
+  case ELF::STB_GNU_UNIQUE:
     // Global ELF symbols can be preempted by the dynamic linker. The relocation
     // has to point to the symbol for a reason analogous to the STB_WEAK case.
     return true;

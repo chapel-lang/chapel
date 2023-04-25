@@ -6,7 +6,7 @@ module RunSPMDRawLoops {
    */
 
   use LCALSDataTypes;
-  use Timer, Barriers, RangeChunk;
+  use Timer, Collectives, RangeChunk;
 
   proc runSPMDRawLoops(loop_stats:[] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
@@ -46,7 +46,7 @@ module RunSPMDRawLoops {
             const eosvmax = loop_data.RealArray_scalars[3];
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -101,7 +101,7 @@ module RunSPMDRawLoops {
             const q_cut = loop_data.RealArray_scalars[3];
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -219,7 +219,7 @@ module RunSPMDRawLoops {
             const vnormq = 0.083333333333333333;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -319,7 +319,7 @@ module RunSPMDRawLoops {
             const half = 0.5;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -380,7 +380,7 @@ module RunSPMDRawLoops {
             const ireal = 0.0 + 1.0i;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -451,7 +451,7 @@ module RunSPMDRawLoops {
             var val = 0;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -483,7 +483,7 @@ module RunSPMDRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -512,7 +512,7 @@ module RunSPMDRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -540,7 +540,7 @@ module RunSPMDRawLoops {
             ref x2 = loop_data.RealArray_1D[4];
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -582,7 +582,7 @@ module RunSPMDRawLoops {
             var val = 0.0;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();
@@ -619,7 +619,7 @@ module RunSPMDRawLoops {
             var atomicH: [0..#64, 0..#64] atomic real;
 
             const nTasks = here.maxTaskPar;
-            var bar = new Barrier(nTasks);
+            var bar = new barrier(nTasks);
             var isamp = 0;
 
             ltimer.start();

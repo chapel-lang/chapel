@@ -92,7 +92,7 @@ extern bool fReportOptimizeForallUnordered;
 extern bool report_inlining;
 
 // Chapel Envs
-bool useDefaultEnv(std::string key);
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
@@ -145,6 +145,7 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_ROCM_PATH;
 extern const char* CHPL_GPU_CODEGEN;
 extern const char* CHPL_GPU_ARCH;
 
@@ -231,6 +232,8 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnIntUint;
 extern bool fWarnUnstable;
+extern bool fWarnUnstableStandard;
+extern bool fWarnUnstableInternal;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
@@ -259,6 +262,7 @@ extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
 extern char fGpuArch[16];
+extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];
@@ -285,12 +289,16 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoCompilerLibrary;
+extern bool fDynoResolve;
+extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoVerifySerialization;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fUseIOFormatters;
 
 namespace chpl {
   class Context;

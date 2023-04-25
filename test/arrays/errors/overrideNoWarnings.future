@@ -1,0 +1,6 @@
+feature request: '--no-warnings' should be overridable
+
+In the same way that `--fast --checks` turns on checks after `--fast`
+disables them, it seems that `--no-warnings` should permit specific
+warning classes to be re-enabled.  Yet this doesn't seem to happen
+today, the `--no-warnings` wins.

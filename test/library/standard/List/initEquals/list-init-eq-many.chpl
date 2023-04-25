@@ -36,9 +36,9 @@ proc initCopyFromList() {
 
   var a: list = x;
   writeln("a:", a.type:string, " = ", a);
-  var b: list(parSafe=false) = x;
+  var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
-  var c: list(parSafe=true) = x;
+  var c: list(parSafe=true, ?) = x;
   writeln("c:", c.type:string, " = ", c);
 
   var y:list(parSafe=true, int);
@@ -47,9 +47,9 @@ proc initCopyFromList() {
 
   var d: list = y;
   writeln("d:", d.type:string, " = ", d);
-  var e: list(parSafe=false) = y;
+  var e: list(parSafe=false, ?) = y;
   writeln("e:", e.type:string, " = ", e);
-  var f: list(parSafe=true) = y;
+  var f: list(parSafe=true, ?) = y;
   writeln("f:", f.type:string, " = ", f);
 
   // other forms
@@ -95,9 +95,9 @@ proc initCopyFromArray() {
 
   var a: list = x;
   writeln("a:", a.type:string, " = ", a);
-  var b: list(parSafe=false) = x;
+  var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
-  var c: list(parSafe=true) = x;
+  var c: list(parSafe=true, ?) = x;
   writeln("c:", c.type:string, " = ", c);
 
   var z:[1..2] int(8) = (1:int(8))..(2:int(8));
@@ -135,9 +135,9 @@ proc initCopyFromRange() {
 
   var a: list = x;
   writeln("a:", a.type:string, " = ", a);
-  var b: list(parSafe=false) = x;
+  var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
-  var c: list(parSafe=true) = x;
+  var c: list(parSafe=true, ?) = x;
   writeln("c:", c.type:string, " = ", c);
 
   var z = (1:int(8))..(2:int(8));
@@ -183,9 +183,9 @@ proc initCopyFromIter() {
   writeln("b:", b.type:string, " = ", b);
   var c:list = (1..2).these();
   writeln("c:", c.type:string, " = ", c);
-  var d:list(parSafe=false) = [i in 1..2] i;
+  var d:list(parSafe=false, ?) = [i in 1..2] i;
   writeln("d:", d.type:string, " = ", d);
-  var e:list(parSafe=true) = myIter();
+  var e:list(parSafe=true, ?) = myIter();
   writeln("e:", e.type:string, " = ", e);
 
   var j: list(int) = for i in 1..2 do i:int(8);

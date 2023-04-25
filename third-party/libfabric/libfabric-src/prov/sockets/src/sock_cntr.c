@@ -100,7 +100,7 @@ int sock_cntr_progress(struct sock_cntr *cntr)
 	if (cntr->domain->progress_mode == FI_PROGRESS_AUTO)
 		return 0;
 
-	fastlock_acquire(&cntr->list_lock);
+	ofi_mutex_lock(&cntr->list_lock);
 	for (entry = cntr->tx_list.next; entry != &cntr->tx_list;
 	     entry = entry->next) {
 		fid_entry = container_of(entry, struct fid_list_entry, entry);
@@ -121,7 +121,7 @@ int sock_cntr_progress(struct sock_cntr *cntr)
 			sock_pe_progress_ep_rx(cntr->domain->pe, rx_ctx->ep_attr);
 	}
 
-	fastlock_release(&cntr->list_lock);
+	ofi_mutex_unlock(&cntr->list_lock);
 	return 0;
 }
 
@@ -130,9 +130,9 @@ void sock_cntr_check_trigger_list(struct sock_cntr *cntr)
 	struct fi_deferred_work *work;
 	struct sock_trigger *trigger;
 	struct dlist_entry *entry;
-	int ret = 0;
+	ssize_t ret = 0;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	for (entry = cntr->trigger_list.next;
 	     entry != &cntr->trigger_list;) {
 
@@ -207,7 +207,7 @@ void sock_cntr_check_trigger_list(struct sock_cntr *cntr)
 			break;
 		}
 	}
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 }
 
 static uint64_t sock_cntr_read(struct fid_cntr *fid_cntr)
@@ -237,8 +237,8 @@ static int sock_cntr_add(struct fid_cntr *fid_cntr, uint64_t value)
 	cntr = container_of(fid_cntr, struct sock_cntr, cntr_fid);
 
 	pthread_mutex_lock(&cntr->mut);
-	new_val = ofi_atomic_add32(&cntr->value, value);
-	ofi_atomic_set32(&cntr->last_read_val, new_val);
+	new_val = ofi_atomic_add32(&cntr->value, (int32_t) value);
+	ofi_atomic_set32(&cntr->last_read_val, (int32_t) new_val);
 	if (ofi_atomic_get32(&cntr->num_waiting))
 		pthread_cond_broadcast(&cntr->cond);
 	if (cntr->signal)
@@ -256,8 +256,8 @@ static int sock_cntr_set(struct fid_cntr *fid_cntr, uint64_t value)
 	cntr = container_of(fid_cntr, struct sock_cntr, cntr_fid);
 
 	pthread_mutex_lock(&cntr->mut);
-	new_val = ofi_atomic_set32(&cntr->value, value);
-	ofi_atomic_set32(&cntr->last_read_val, new_val);
+	new_val = ofi_atomic_set32(&cntr->value, (int32_t) value);
+	ofi_atomic_set32(&cntr->last_read_val, (int32_t) new_val);
 	if (ofi_atomic_get32(&cntr->num_waiting))
 		pthread_cond_broadcast(&cntr->cond);
 	if (cntr->signal)
@@ -274,7 +274,7 @@ static int sock_cntr_adderr(struct fid_cntr *fid_cntr, uint64_t value)
 	cntr = container_of(fid_cntr, struct sock_cntr, cntr_fid);
 
 	pthread_mutex_lock(&cntr->mut);
-	ofi_atomic_add32(&cntr->err_cnt, value);
+	ofi_atomic_add32(&cntr->err_cnt, (int32_t) value);
 	if (!cntr->err_flag)
 		cntr->err_flag = 1;
 	pthread_cond_signal(&cntr->cond);
@@ -291,7 +291,7 @@ static int sock_cntr_seterr(struct fid_cntr *fid_cntr, uint64_t value)
 
 	cntr = container_of(fid_cntr, struct sock_cntr, cntr_fid);
 	pthread_mutex_lock(&cntr->mut);
-	ofi_atomic_set32(&cntr->err_cnt, value);
+	ofi_atomic_set32(&cntr->err_cnt, (int32_t) value);
 	if (!cntr->err_flag)
 		cntr->err_flag = 1;
 	pthread_cond_signal(&cntr->cond);
@@ -338,7 +338,7 @@ static int sock_cntr_wait(struct fid_cntr *fid_cntr, uint64_t threshold,
 			ret = sock_cntr_progress(cntr);
 			pthread_mutex_lock(&cntr->mut);
 		} else {
-			ret = fi_wait_cond(&cntr->cond, &cntr->mut, remaining_ms);
+			ret = ofi_wait_cond(&cntr->cond, &cntr->mut, (int) remaining_ms);
 		}
 
 		uint64_t curr_ms = ofi_gettime_ms();
@@ -437,8 +437,8 @@ static int sock_cntr_close(struct fid *fid)
 	pthread_mutex_unlock(&cntr->mut);
 
 	pthread_mutex_destroy(&cntr->mut);
-	fastlock_destroy(&cntr->list_lock);
-	fastlock_destroy(&cntr->trigger_lock);
+	ofi_mutex_destroy(&cntr->list_lock);
+	ofi_mutex_destroy(&cntr->trigger_lock);
 
 	pthread_cond_destroy(&cntr->cond);
 	ofi_atomic_dec32(&cntr->domain->ref);
@@ -571,7 +571,7 @@ int sock_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	}
 
 	pthread_mutex_init(&_cntr->mut, NULL);
-	fastlock_init(&_cntr->list_lock);
+	ofi_mutex_init(&_cntr->list_lock);
 
 	ofi_atomic_initialize32(&_cntr->ref, 0);
 	ofi_atomic_initialize32(&_cntr->err_cnt, 0);
@@ -584,7 +584,7 @@ int sock_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	dlist_init(&_cntr->rx_list);
 
 	dlist_init(&_cntr->trigger_list);
-	fastlock_init(&_cntr->trigger_lock);
+	ofi_mutex_init(&_cntr->trigger_lock);
 
 	_cntr->cntr_fid.fid.fclass = FI_CLASS_CNTR;
 	_cntr->cntr_fid.fid.context = context;

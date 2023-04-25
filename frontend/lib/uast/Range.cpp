@@ -55,8 +55,8 @@ owned<Range> Range::build(Builder* builder, Location loc,
                           owned<AstNode> lowerBound,
                           owned<AstNode> upperBound) {
   AstList lst;
-  int8_t lowerBoundChildNum = -1;
-  int8_t upperBoundChildNum = -1;
+  int8_t lowerBoundChildNum = NO_CHILD;
+  int8_t upperBoundChildNum = NO_CHILD;
 
   if (lowerBound.get() != nullptr) {
     lowerBoundChildNum = lst.size();

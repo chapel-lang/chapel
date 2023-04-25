@@ -23,6 +23,7 @@ proc testAssocArrayAPI(X: []) {
   // Test generic aspects of arrays
   writeln("eltType is: ", X.eltType: string);
   writeln("idxType is: ", X.idxType: string);
+  writeln("fullIdxType is: ", X.fullIdxType: string);
   writeln("rank is: ", X.rank);
   writeln();
 
@@ -114,6 +115,8 @@ proc testAssocArrayAPI(X: []) {
   // Test collection interface
   writeln("is empty: ", X.isEmpty());
   var Y = X;
+  var idx: X.idxType;
+  writeln("find 10.6: ", X.find(X["ten"], idx), ", ", idx);
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
   writeln("equals diff: ", X.equals(Z));

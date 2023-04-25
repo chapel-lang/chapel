@@ -19,6 +19,6 @@ writeln("AA (element) eltType domain ", element.domain);
 
 iter ITR() { if numLocales < 0 then yield 555; }
 
-var BB = for idx in ITR() do [idx];
+var BB = for idx in ITR() do [idx, ];
 compilerWarning(BB.type:string);
 writeln(BB.domain);

@@ -111,6 +111,14 @@ gex_Event_t gasnete_get_nb(
                     size_t nbytes,
                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
+  if (nbytes > gasnetc_max_rma_size) {
+    // Use get_nbi within an access region when too large for a single xfer.
+    gasnete_begin_nbi_accessregion(0, 1 GASNETI_THREAD_PASS);
+      gasneti_assert_zeroret( gasnete_get_nbi(tm, dest, rank, src, nbytes,
+                                              flags GASNETI_THREAD_PASS) );
+    return gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
+  }
+
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
   op->ofi.type = OFI_TYPE_EGET;
   if (gasnetc_rdma_get(dest, tm, rank, src, nbytes,
@@ -134,6 +142,18 @@ gex_Event_t gasnete_put_nb(
                     size_t nbytes, gex_Event_t *lc_opt,
                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
+  if (nbytes > gasnetc_max_rma_size) {
+    // Use put_nbi within an access region when too large for a single xfer.
+    const int alc = gasneti_leaf_is_pointer(lc_opt);
+    gasnete_begin_nbi_accessregion(0, 1 GASNETI_THREAD_PASS);
+      gasneti_assert_zeroret( gasnete_put_nbi(tm, rank, dest, src, nbytes,
+                                              alc ? GEX_EVENT_GROUP : lc_opt, flags
+                                              GASNETI_THREAD_PASS) );
+    gex_Event_t ev = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
+    if (alc) *lc_opt = gex_Event_QueryLeaf(ev, GEX_EC_LC);
+    return ev;
+  }
+
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
   op->ofi.type = OFI_TYPE_EPUT;
 
@@ -269,10 +289,6 @@ int gasnete_put_nbi(
   Barriers:
   =========
 */
-
-// Must override the default barrier selection until we've resolved
-//   Bug 4427 - ofi-conduit failures with RDMADISSEM barrier
-#define GASNETE_BARRIER_DEFAULT "AMDISSEM"
 
 /* use reference implementation of barrier */
 #define GASNETI_GASNET_EXTENDED_REFBARRIER_C 1

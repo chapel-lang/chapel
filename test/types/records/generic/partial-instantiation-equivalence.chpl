@@ -2,8 +2,8 @@ record R {
   param x, y;
 }
 
-type Rx = R(x=1);
-type Ry = R(y=1);
+type Rx = R(x=1, ?);
+type Ry = R(y=1, ?);
 
 writeln("Rx == Rx: ", Rx == Rx);
 writeln("Rx == Ry: ", Rx == Ry);

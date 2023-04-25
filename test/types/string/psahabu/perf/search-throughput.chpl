@@ -44,7 +44,7 @@ else {
   rfindNeedle = "whale":dataType;
 }
 
-var mobyFile = open(sourcePath, iomode.r);
+var mobyFile = open(sourcePath, ioMode.r);
 var mobyReader = mobyFile.reader();
 
 var Passage: [1..n] dataType;

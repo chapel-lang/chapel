@@ -145,7 +145,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
   create_and_analyze_graph(Pairs);
 
   t.stop();
-  var days = t.elapsed(TimeUnits.hours) / 24.0;
+  var days = t.elapsed() / (60.0 * 60.0 * 24.0);
   var m = 1000000.0;
   if timing {
     writeln("processed ", nlines, " lines in ", t.elapsed(), " s ");
@@ -196,7 +196,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
       } catch e: BadFormatError {
         if verbose then
             stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", errorToString(e.err));
+              logfile.offset(), " : ", e._msg);
 
         // read over something else
         got = logfile.readf("%~jt", empty);
@@ -255,7 +255,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openreader(fname);
+    var logfile = openReader(fname);
     process_json(logfile, fname, Pairs);
   }
 }
@@ -264,7 +264,7 @@ proc process_json(fname: string, ref Pairs)
 record Triple {
   var from: int(32);
   var to: int(32);
-  proc weight return 1:int(32);
+  proc weight do return 1:int(32);
 }
 
 

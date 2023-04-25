@@ -202,8 +202,31 @@ static void test3() {
   assert(!id3a.contains(id2));
   assert(!id3a.contains(id2a));
   assert(!id3a.contains(id3));
+}
 
+static void checkFromString(Context* context, ID id) {
+  auto str = id.str();
+  ID got = ID::fromString(context, str.c_str());
+  assert(id == got);
+}
 
+static void test4() {
+  Context ctx;
+  Context* context = &ctx;
+
+  ID id1 = ID(UniqueString::get(context, "IO"), -1, -1);
+  ID id1a = ID(UniqueString::get(context, "IO"), 5, -1);
+  ID id2 = ID(UniqueString::get(context, "IO.open"), -1, -1);
+  ID id2a = ID(UniqueString::get(context, "IO.open"), 7, -1);
+  ID id3 = ID(UniqueString::get(context, "IO.openHelper"), -1, -1);
+  ID id3a = ID(UniqueString::get(context, "IO.openHelper"), 12, -1);
+
+  checkFromString(context, id1);
+  checkFromString(context, id1a);
+  checkFromString(context, id2);
+  checkFromString(context, id2a);
+  checkFromString(context, id3);
+  checkFromString(context, id3a);
 }
 
 
@@ -211,6 +234,7 @@ int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }

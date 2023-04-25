@@ -1,0 +1,18 @@
+─── error in redefinition-def-with-public-use.chpl:6 [Redefinition] ───
+  'a' has multiple definitions.
+  It was first defined here:
+      |
+    6 |   var a: real;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined through the 'use' statement here:
+      |
+    5 |   public use Lib1;
+      |              ⎺⎺⎺⎺
+      |
+  Leading to the definition here:
+      |
+    2 |   var a: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+

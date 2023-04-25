@@ -1,4 +1,4 @@
-@unstable "Class TestUnstableClass is unstable, use C2"
+@unstable("Class TestUnstableClass is unstable, use C2")
 class TestUnstableClass {
   var x: int;
 

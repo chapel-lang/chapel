@@ -41,25 +41,19 @@ for i in 1..15 {
 }
 
 var A: [1..fac.size] (int, FacInt);
-for key in fac {
-  A[key] = (key, fac[key]);
+for item in zip(fac.keys(), fac.values()) {
+  A[item(0)] = item;
 }
 writeln(sorted(A));
 
-var B: [1..fac.size] (int, FacInt);
-for item in fac.items() {
-  B[item(0)] = item;
+var B: [1..fac.size] FacInt;
+for (val, i) in zip(fac.values(), 1..) {
+  B[i] = val;
 }
 writeln(sorted(B));
 
-var C: [1..fac.size] FacInt;
-for (val, i) in zip(fac.values(), 1..) {
-  C[i] = val;
+var C: [1..fac.size] (int, FacInt);
+for key in fac.keys() {
+  C[key] = (key, fac[key]);
 }
 writeln(sorted(C));
-
-var D: [1..fac.size] (int, FacInt);
-for key in fac.keys() {
-  D[key] = (key, fac[key]);
-}
-writeln(sorted(D));

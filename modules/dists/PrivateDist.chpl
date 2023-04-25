@@ -84,13 +84,13 @@ class Private: BaseDist {
   }
 
   // acts like a singleton
-  proc dsiClone() return _to_unmanaged(this);
+  proc dsiClone() do return _to_unmanaged(this);
 
-  proc trackDomains() param return false;
+  proc trackDomains() param do return false;
 
-  override proc dsiTrackDomains()    return false;
+  override proc dsiTrackDomains() do    return false;
 
-  override proc singleton() param return true;
+  override proc singleton() param do return true;
 }
 
 class PrivateDom: BaseRectangularDom {
@@ -121,12 +121,12 @@ class PrivateDom: BaseRectangularDom {
                                     initElts=initElts);
   }
 
-  proc dsiNumIndices return numLocales;
-  override proc dsiLow return 0;
-  override proc dsiAlignedLow return 0;
-  override proc dsiHigh return numLocales-1;
-  override proc dsiAlignedHigh return numLocales-1;
-  override proc dsiStride return 0;
+  proc dsiNumIndices do return numLocales;
+  override proc dsiLow do return 0;
+  override proc dsiAlignedLow do return 0;
+  override proc dsiHigh do return numLocales-1;
+  override proc dsiAlignedHigh do return numLocales-1;
+  override proc dsiStride do return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
 
@@ -142,12 +142,12 @@ class PrivateDom: BaseRectangularDom {
     halt("cannot reassign private domain");
   }
 
-  override proc dsiRequiresPrivatization() param return true;
-  override proc linksDistribution() param return false;
+  override proc dsiRequiresPrivatization() param do return true;
+  override proc linksDistribution() param do return false;
 
-  override proc dsiLinksDistribution() return false;
+  override proc dsiLinksDistribution() do return false;
 
-  proc dsiGetPrivatizeData() return 0;
+  proc dsiGetPrivatizeData() do return 0;
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
@@ -155,13 +155,13 @@ class PrivateDom: BaseRectangularDom {
                                     dist=dist);
   }
 
-  proc dsiGetReprivatizeData() return 0;
+  proc dsiGetReprivatizeData() do return 0;
 
   proc dsiReprivatize(other, reprivatizeData) { }
 
-  proc dsiMember(i) return (0 <= i && i <= numLocales-1);
+  proc dsiMember(i) do return (0 <= i && i <= numLocales-1);
 
-  override proc dsiMyDist() return dist;
+  override proc dsiMyDist() do return dist;
 }
 
 private proc checkCanMakeDefaultValue(type eltType) param {
@@ -256,11 +256,11 @@ override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
   }
 }
 
-override proc PrivateArr.dsiGetBaseDom() return dom;
+override proc PrivateArr.dsiGetBaseDom() do return dom;
 
-override proc PrivateArr.dsiRequiresPrivatization() param return true;
+override proc PrivateArr.dsiRequiresPrivatization() param do return true;
 
-proc PrivateArr.dsiGetPrivatizeData() return 0;
+proc PrivateArr.dsiGetPrivatizeData() do return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
   return new unmanaged PrivateArr(toPrivatize=this);
@@ -280,7 +280,7 @@ proc PrivateArr.dsiAccess(i: idxType) ref {
   }
 }
 
-proc PrivateArr.dsiAccess(i: 1*idxType) ref
+proc PrivateArr.dsiAccess(i: 1*idxType) ref do
   return dsiAccess(i(0));
 
 proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {

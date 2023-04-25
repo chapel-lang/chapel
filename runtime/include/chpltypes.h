@@ -74,8 +74,17 @@ typedef bool chpl_bool;
 #endif
 
 static inline void* c_pointer_return(void* x) { return x; }
+// TODO: Return a const void* and remove the const-discarding cast, here as well
+// as in the GPU runtime versions.
+// This is currently not possible as our C backend does not consistently respect
+// constness and would generate code that discards the const qualifier.
+// Constness is casted away here because we still need to accept a const
+// argument to get pointers to const Chapel variables; preventing mutation of
+// pointed-to const variables is enforced before this point.
+// Anna, April 2023.
+static inline void* c_pointer_return_const(const void* x) { return (void*)x; }
 static inline ptrdiff_t c_pointer_diff(void* a, void* b, ptrdiff_t eltSize) {
-  return (((unsigned char*)a) - ((unsigned char*)b))/eltSize;
+  return (((unsigned char*)a) - ((unsigned char*)b)) / eltSize;
 }
 
 // This allocation of bits is arbitrary.

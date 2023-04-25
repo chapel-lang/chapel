@@ -19,11 +19,13 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -32,16 +34,20 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
+#include "chpl/util/version-info.h"
+#include "chpl/util/filtering.h"
 
 #include "../util/filesystem_help.h"
 
 #include <cstdio>
+#include <regex>
 #include <set>
 #include <string>
 #include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 namespace chpl {
 namespace parsing {
@@ -57,7 +63,8 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string error;
   const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
+    // TODO does this need to be stored in FileContents?
+    context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -96,32 +103,260 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
+// <7F>HPECHPL
+#define LIBRARY_MAGIC (uint64_t)0x4C5048434550487F
+#define LIBRARY_VERSION_MAJOR 0
+#define LIBRARY_VERSION_MINOR 1
+
+static UniqueString cleanLocalPath(Context* context, UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
+  }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(context, str);
+}
+
+//
+// The library file format (whitespace not significant):
+// <magic number, uint64_t>
+// <library version, major, int>
+// <library version, minor, int>
+// <chpl version, major, int>
+// <chpl version, minor, int>
+// <chpl version, update, int>
+//
+// <user/std module descriptor, std::string>
+//
+// N:<number of BuilderResult entries, uint64_t>
+//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
+//
+// M:<string cache size, uint64_t>
+//   0..M-1: <id i, int><string length, uint32_t><string, const char*>
+//
+// 0..N-1: <BuilderResult for file path i, BuilderResult>
+//
+void LibraryFile::generate(Context* context,
+                           std::vector<UniqueString> paths,
+                           std::string outFileName,
+                           bool isUser) {
+  std::ofstream myFile;
+  myFile.open(outFileName, std::ios::out | std::ios::trunc | std::ios::binary);
+  chpl::Serializer ser(myFile);
+
+  ser.write(LIBRARY_MAGIC);
+  ser.write(LIBRARY_VERSION_MAJOR);
+  ser.write(LIBRARY_VERSION_MINOR);
+
+  // Write out the version of the 'chpl' compiler generating this file
+  ser.write(getMajorVersion());
+  ser.write(getMinorVersion());
+  ser.write(getUpdateVersion());
+
+  // TODO: Currently a boolean, but might be useful to represent internal
+  // or package modules separately someday.
+  if (isUser) {
+    ser.write(std::string("USER"));
+  } else {
+    // Currently assuming that this is the mode where we generate the entire
+    // standard library.
+    ser.write(std::string("STANDARD"));
+  }
+
+  // Number of files we expect to serialize in this library
+  ser.write((uint64_t)paths.size());
+
+  std::vector<std::pair<std::string, std::string>> data;
+  uint64_t offset = 0;
+
+  // Use the same serializer so that we can build up a unified cache of
+  // UniqueStrings for this library file.
+  //
+  // Store all the text in a stringstream to be written out after the cache
+  // is written.
+  std::stringstream ss;
+  chpl::Serializer builderSer(ss);
+  for (auto path : paths) {
+    path = cleanLocalPath(context, path);
+    UniqueString empty;
+    auto& result = parseFileToBuilderResult(context, path, empty);
+    ss.str(std::string()); // clear for this iteration
+    result.serialize(builderSer);
+
+    const auto& str = ss.str();
+    data.push_back({path.str(), str});
+
+    // write the filename and the offset for the header
+    ser.write(path.str());
+    ser.write(offset);
+    offset += str.size();
+  }
+
+  const auto& stringCache = builderSer.stringCache();
+
+  // TODO: Can we avoid serializing the ID here if we sort the cache and
+  // write it in order, allowing the deserialization process to infer the ID?
+  ser.write((uint32_t)stringCache.size());
+  for (const auto& kv : stringCache) {
+    const auto& pair = kv.second;
+    ser.write(pair.first); // unique ID in this table
+    ser.write((uint32_t)pair.second); // string size
+    if (pair.second > 0) {
+      // string data
+      ser.os().write(kv.first, pair.second);
+    }
+  }
+
+  // Finally, write the saved strings from serializing a BuilderResult
+  for (const auto& pair : data) {
+    ser.os().write(pair.second.c_str(), pair.second.size());
+  }
+}
+
+LibraryFile::LibraryFile(Context* context, UniqueString libPath)
+: path_(libPath) {
+  std::ifstream myFile;
+  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
+  chpl::Deserializer des(context, myFile);
+
+  // Some basic validation
+  CHPL_ASSERT(LIBRARY_MAGIC == des.read<uint64_t>());
+  CHPL_ASSERT(LIBRARY_VERSION_MAJOR == des.read<int>());
+  CHPL_ASSERT(LIBRARY_VERSION_MINOR == des.read<int>());
+
+  // Currently no checking is done for 'chpl' version
+  std::ignore = des.read<int>(); // major version
+  std::ignore = des.read<int>(); // minor version
+  std::ignore = des.read<int>(); // update version
+
+  // Is this a user module, or a standard module?
+  const auto kind = des.read<std::string>();
+  CHPL_ASSERT(kind == "USER" || kind == "STANDARD");
+  isUser_ = (kind == "USER");
+
+  // Number of builder result entries
+  const auto num = des.read<uint64_t>();
+
+  // Read in the table of '.chpl' filenames and their offsets in the file
+  std::vector<std::pair<std::string, uint64_t>> offsetsTable;
+  for (uint64_t i = 0; i < num; i++) {
+    auto path = des.read<std::string>();
+    auto offset = des.read<uint64_t>();
+    offsetsTable.push_back({path, offset});
+  }
+
+  // Read unique strings
+  {
+    const uint64_t size = des.read<uint32_t>();
+    cache_.resize(size);
+    for (uint64_t i = 0; i < size; i++) {
+      int id = des.read<int>();
+      auto len = des.read<uint32_t>();
+      if (len > 0) {
+        // TODO: Can we save some memory allocations by doing this read while
+        // we're trying to create the unique c-string?
+        auto buf = (char*)malloc(len+1);
+        des.is().read(buf, len);
+        buf[len] = '\0';
+
+        auto unique = des.context()->uniqueCString(buf, len);
+        cache_[id] = {(size_t)len, unique};
+
+        free(buf);
+      }
+    }
+  }
+
+  // Offsets are relative to the start of the actual data, so the first entry
+  // should have an offset of 0.
+  const auto dataStart = myFile.tellg();
+
+  for (const auto& pair : offsetsTable) {
+    std::streamoff off = pair.second;
+    auto ustr = UniqueString::get(context, pair.first);
+    offsets_[ustr] = dataStart + off;
+  }
+}
+
+const LibraryFile&
+loadLibraryFile(Context* context, UniqueString libPath) {
+  QUERY_BEGIN(loadLibraryFile, context, libPath);
+
+  LibraryFile result(context, libPath);
+
+  return QUERY_END(result);
+}
+
+void registerFilePathsInLibrary(Context* context, UniqueString& libPath) {
+  const auto& lib = loadLibraryFile(context, libPath);
+  for (const auto& entry : lib.offsets()) {
+    context->setLibraryForFilePath(entry.first, libPath);
+  }
+}
+
+static BuilderResult
+loadBuilderResultFromFile(Context* context, UniqueString path,
+                          UniqueString libPath) {
+
+  const auto& lib = loadLibraryFile(context, libPath);
+
+  std::ifstream myFile;
+  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
+  myFile.seekg(lib.offsets().at(path));
+
+  Deserializer des(context, myFile, lib.stringCache());
+  auto result = BuilderResult::deserialize(des);
+
+  return result;
+}
+
 const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
   QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
 
-  // Run the fileText query to get the file contents
-  const FileContents& contents = fileText(context, path);
-  const std::string& text = contents.text();
-  const ErrorBase* error = contents.error();
   BuilderResult result(path);
-
-  if (error == nullptr) {
-    // if there was no error reading the file, proceed to parse
-    auto parser = helpMakeParser(context, parentSymbolPath);
-    const char* pathc = path.c_str();
-    const char* textc = text.c_str();
-    BuilderResult tmpResult = parser.parseString(pathc, textc);
+  UniqueString libPath;
+  if (context->pathHasLibrary(path, libPath)) {
+    auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
     result.swap(tmpResult);
-    BuilderResult::updateFilePaths(context, result);
   } else {
-    // Error should have already been reported in the fileText query.
-    // Just record an error here as well so follow-ons are clear
-    BuilderResult::appendError(result, error);
+    // Run the fileText query to get the file contents
+    const FileContents& contents = fileText(context, path);
+    const std::string& text = contents.text();
+    const ErrorBase* error = contents.error();
+
+    if (error == nullptr) {
+      // if there was no error reading the file, proceed to parse
+      auto parser = helpMakeParser(context, parentSymbolPath);
+      const char* pathc = path.c_str();
+      const char* textc = text.c_str();
+      BuilderResult tmpResult = parser.parseString(pathc, textc);
+      result.swap(tmpResult);
+      BuilderResult::updateFilePaths(context, result);
+    }
   }
 
   return QUERY_END(result);
+}
+
+// TODO: can't make this a query because can't store the uast::BuilderResult&
+//       as a query result. Might be some template specialization magic we
+//       can do to support this use case, but for now, this will just end up
+//       reporting errors to the caller query.
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath) {
+  auto& result = parseFileToBuilderResult(context, path, parentSymbolPath);
+  if (result.numTopLevelExpressions() == 0) return result;
+
+  checkBuilderResult(context, path, result);
+  return result;
 }
 
 // parses whatever file exists that contains the passed ID and returns it
@@ -184,13 +419,8 @@ const ModuleVec& parse(Context* context, UniqueString path,
   QUERY_BEGIN(parse, context, path, parentSymbolPath);
 
   // Get the result of parsing
-  const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                    parentSymbolPath);
-
-  // Report any errors encountered to the context.
-  for (auto& e : p.errors())
-    if (e != nullptr)
-      context->report(e);
+  const BuilderResult& p = parseFileToBuilderResultAndCheck(context, path,
+                                                            parentSymbolPath);
 
   // Compute a vector of Modules
   ModuleVec result;
@@ -397,26 +627,48 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
+static bool
+filePathIsInInternalModule(Context* context, UniqueString filePath) {
+  UniqueString prefix = internalModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
+
+static bool
+filePathIsInBundledModule(Context* context, UniqueString filePath) {
+  UniqueString prefix = bundledModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
+
+static bool
+filePathIsInStandardModule(Context* context, UniqueString filePath) {
+  UniqueString prefix1 = bundledModulePath(context);
+  if (prefix1.isEmpty()) return false;
+  auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
+  auto prefix2 = UniqueString::getConcat(context, prefix1.c_str(), concat);
+  return filePath.startsWith(prefix2);
+}
+
 bool idIsInInternalModule(Context* context, ID id) {
-  UniqueString internal = internalModulePath(context);
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(internal);
-  }
-  return false;
+  return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
-  UniqueString modules = bundledModulePath(context);
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(modules);
-  }
-  return false;
+  return found && filePathIsInBundledModule(context, filePath);
+}
+
+bool idIsInStandardModule(Context* context, ID id) {
+  UniqueString filePath;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  return found && filePathIsInStandardModule(context, filePath);
 }
 
 static const bool& fileExistsQuery(Context* context, std::string path) {
@@ -448,6 +700,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
   } else {
     // Check the module search path for the module.
     std::string check;
+    std::set<ID> seenModules;
 
     for (auto path : moduleSearchPath(context)) {
       check = path.str();
@@ -466,20 +719,22 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       check += ".chpl";
 
       if (hasFileText(context, check) || fileExistsQuery(context, check)) {
-        auto filePath = UniqueString::get(context, check);
+        auto filePath = cleanLocalPath(context, UniqueString::get(context, check));
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
+          if (seenModules.find(mod->id()) != seenModules.end()) continue;
+
           if (mod->name() == name) {
             result = mod;
             break;
           } else {
-            // TODO: is the error what we need in this case?
-            // What does the production compiler do?
+            // TODO: Production compiler does not emit this error, keep it?
             context->error(mod, "In use/imported file, module name %s "
                                 "does not match file name %s.chpl",
                                 mod->name().c_str(),
                                 name.c_str());
+            seenModules.insert(mod->id());
           }
         }
       }
@@ -611,16 +866,23 @@ const AstNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
 }
 
+// TODO: could many of these get-property-of-ID queries
+// be combined to save space?
+
 static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr) {
-    result = ast->tag();
-  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
-    result = asttags::Record;
+  if (!id.isFabricatedId()) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      result = ast->tag();
+    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
+      result = asttags::Record;
+    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+      result = asttags::Class;
+    }
   }
 
   return QUERY_END(result);
@@ -649,7 +911,70 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 }
 
 bool idIsParenlessFunction(Context* context, ID id) {
-  return idIsParenlessFunctionQuery(context, id);
+  return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
+}
+
+bool idIsFunction(Context* context, ID id) {
+  // Functions always have their own ID symbol scope,
+  // and if it's not a function, we can return false
+  // without doing further work.
+  if (id.postOrderId() != -1) {
+    return false;
+  }
+
+  AstTag tag = idToTag(context, id);
+  return asttags::isFunction(tag);
+}
+
+static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
+
+  bool result = false;
+
+  if (!id.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, id)) {
+      if (auto decl = ast->toDecl()) {
+        auto visibility = decl->visibility();
+        switch (visibility) {
+          case Decl::DEFAULT_VISIBILITY:
+          case Decl::PUBLIC:
+            result = false;
+            break;
+          case Decl::PRIVATE:
+            result = true;
+            break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsPrivateDecl(Context* context, ID id) {
+  return idIsPrivateDeclQuery(context, id);
+}
+
+static const bool& idIsMethodQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsMethodQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isFunction(tag)) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      if (auto fn = ast->toFunction()) {
+        result = fn->isMethod();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsMethod(Context* context, ID id) {
+  return idIsFunction(context, id) && idIsMethodQuery(context, id);
 }
 
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
@@ -905,6 +1230,31 @@ ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
   return fieldIdWithNameQuery(context, typeDeclId, fieldName);
 }
 
+static const bool&
+aggregateUsesForwardingQuery(Context* context, ID typeDeclId) {
+  QUERY_BEGIN(aggregateUsesForwardingQuery, context, typeDeclId);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Check for a ForwardingDecl
+      if (child->isForwardingDecl()) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool aggregateUsesForwarding(Context* context, ID typeDeclId) {
+  return aggregateUsesForwardingQuery(context, typeDeclId);
+}
+
 void setConfigSettings(Context* context, ConfigSettingsList keys) {
   QUERY_STORE_INPUT_RESULT(configSettings, context, keys);
 }
@@ -919,6 +1269,263 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+void setAttributeToolNames(Context* context, AttributeToolNamesList toolNames) {
+  QUERY_STORE_INPUT_RESULT(AttributeToolNames, context, toolNames);
+}
+
+const AttributeToolNamesList& AttributeToolNames(Context *context) {
+  QUERY_BEGIN_INPUT(AttributeToolNames, context);
+
+  // return empty AttributeToolNamesList if not already set
+
+  AttributeToolNamesList result;
+  return QUERY_END(result);
+}
+
+const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
+  const uast::AttributeGroup* ret = nullptr;
+  if (id.isEmpty()) return ret;
+
+  auto ast = parsing::idToAst(context, id);
+  if (ast && ast->isDecl()) {
+    auto decl = ast->toDecl();
+    ret = decl->attributeGroup();
+  }
+
+  return ret;
+}
+
+//
+// TODO: The below queries on AST could be made into methods, and the
+// 'anyParentMatches' and 'firstParentMatch' could be made into
+// utility functions (not sure where those live).
+//
+
+static const AstNode*
+firstParentMatch(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  if (id.isEmpty()) return nullptr;
+  auto ast = idToAst(context, id);
+  auto p = parentAst(context, ast);
+  if (!ast || !p) return nullptr;
+  for (; p != nullptr; p = parentAst(context, p))
+    if (f(context, p))
+      return p;
+  return nullptr;
+}
+
+static bool
+anyParentMatches(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  auto p = firstParentMatch(context, id, f);
+  return p != nullptr;
+}
+
+static bool isAstDeprecated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->isDeprecated();
+}
+
+static bool isAstUnstable(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->isUnstable();
+}
+
+static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_COMPILER_GENERATED);
+}
+
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
+static bool
+isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInStandardModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+}
+
+static bool
+isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInInternalModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+}
+
+// Skip if any parent is deprecated (we want to show deprecation messages
+// in unstable symbols, since they'll likely live a long time). Also skip
+// if we are in a compiler-generated thing.
+static bool
+shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
+  return isAstCompilerGenerated(context, ast) ||
+         isAstDeprecated(context, ast);
+}
+
+// Skip if any parent is marked deprecated or unstable. We don't want to
+// worry about throwing unstable mentions in deprecated symbols, because
+// deprecated things are likely to be removed soon.
+static bool
+shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
+  return isAstUnstable(context, ast)                  ||
+         isAstDeprecated(context, ast)                ||
+         isAstCompilerGenerated(context, ast)         ||
+         isAstSuppressedStandardModule(context, ast)  ||
+         isAstSuppressedInternalModule(context, ast);
+}
+
+static std::string
+createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is deprecated";
+  return ret;
+}
+
+static std::string
+createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is unstable";
+  return ret;
+}
+
+static bool
+deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  if (!attributes) return false;
+
+  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                      attributes->isDeprecated();
+  if (!isDeprecated) return false;
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
+
+  auto storedMsg = attributes->deprecationMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultDeprecationMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  msg = removeSphinxMarkup(msg);
+
+  CHPL_ASSERT(msg.size() > 0);
+  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  return true;
+}
+
+static bool const&
+deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(deprecationWarningForIdQuery, context, idMention, idTarget);
+  bool ret = deprecationWarningForIdImpl(context, idMention, idTarget);
+  return QUERY_END(ret);
+}
+
+static bool
+unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  if (!attributes) return false;
+
+  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
+                    attributes->isUnstable();
+  if (!isUnstable) return false;
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
+
+  auto storedMsg = attributes->unstableMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultUnstableMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  msg = removeSphinxMarkup(msg);
+
+  CHPL_ASSERT(msg.size() > 0);
+  CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);
+  return true;
+}
+
+static bool const&
+unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(unstableWarningForIdQuery, context, idMention, idTarget);
+  bool ret = unstableWarningForIdImpl(context, idMention, idTarget);
+  return QUERY_END(ret);
+}
+
+static bool
+isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
+                                ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr) return false;
+  if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+
+  auto p = firstParentMatch(context, idMention, isAstFormal);
+  if (!p) return false;
+
+  // Confirm the type is a receiver. TODO: Is this enough?
+  auto rcv = p->toFormal();
+  if (rcv->name() != USTR("this")) return false;
+
+  return true;
+}
+
+void
+reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+
+  // Nothing to do, symbol is not deprecated.
+  if (!attr || !attr->isDeprecated()) return;
+
+  // Don't warn for 'this' formals with deprecated types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
+    return;
+  }
+
+  deprecationWarningForIdQuery(context, idMention, idTarget);
+}
+
+static bool
+isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr || !attr->isUnstable()) return false;
+
+  auto flag = CompilerFlags::WARN_UNSTABLE;
+  if (idIsInInternalModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
+  } else if (idIsInStandardModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
+  }
+
+  return isCompilerFlagSet(context, flag);
+}
+
+void
+reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
+  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
+
+  // Don't warn for 'this' formals with unstable types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning)) return;
+
+  unstableWarningForIdQuery(context, idMention, idTarget);
+}
 
 } // end namespace parsing
 } // end namespace chpl

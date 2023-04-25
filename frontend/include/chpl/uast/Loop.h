@@ -35,14 +35,20 @@ namespace uast {
 class Loop: public AstNode {
  protected:
   Loop(asttags::AstTag tag, AstList children, BlockStyle blockStyle,
-       int loopBodyChildNum)
-    : AstNode(tag, std::move(children)),
+       int loopBodyChildNum, int attributeGroupChildNum)
+    : AstNode(tag, std::move(children), attributeGroupChildNum),
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum) {
 
     CHPL_ASSERT(0 <= loopBodyChildNum_ &&
            loopBodyChildNum_ < (int) children_.size());
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
+  }
+
+  Loop(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    blockStyle_ = des.read<BlockStyle>();
+    loopBodyChildNum_ = des.read<int>();
   }
 
   bool loopContentsMatchInner(const Loop* other) const {
@@ -103,6 +109,12 @@ class Loop: public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(blockStyle_);
+    ser.write(loopBodyChildNum_);
   }
 };
 

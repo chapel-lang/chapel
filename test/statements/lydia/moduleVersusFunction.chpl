@@ -43,9 +43,9 @@ proc method() {
   }
   if verbose {
     writeln ("Module level access took ",
-             t1.elapsed(TimeUnits.milliseconds)/1000);
+             t1.elapsed());
     writeln ("Method level access took ",
-             t2.elapsed(TimeUnits.milliseconds)/1000);
+             t2.elapsed());
   }
 }
 

@@ -38,7 +38,7 @@
 namespace chpl {
 namespace resolution {
 
-typedef enum {
+enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,
   /** Use default values when determining field type. */
@@ -48,7 +48,7 @@ typedef enum {
      for all other fields. This policy is useful when determining the
      genericity of individual fields. */
   USE_DEFAULTS_OTHER_FIELDS
-} DefaultsPolicy;
+};
 
 /**
   An untyped function signature. This is really just the part of a function
@@ -114,6 +114,7 @@ class UntypedFnSignature {
   bool isMethod_; // in that case, formals[0] is the receiver
   bool isTypeConstructor_;
   bool isCompilerGenerated_;
+  bool throws_;
   uast::asttags::AstTag idTag_; // concrete tag for ID
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -126,6 +127,7 @@ class UntypedFnSignature {
                      bool isMethod,
                      bool isTypeConstructor,
                      bool isCompilerGenerated,
+                     bool throws,
                      uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -135,6 +137,7 @@ class UntypedFnSignature {
       isMethod_(isMethod),
       isTypeConstructor_(isTypeConstructor),
       isCompilerGenerated_(isCompilerGenerated),
+      throws_(throws),
       idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
@@ -152,6 +155,7 @@ class UntypedFnSignature {
                         bool isMethod,
                         bool isTypeConstructor,
                         bool isCompilerGenerated,
+                        bool throws,
                         uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -164,6 +168,7 @@ class UntypedFnSignature {
                                        bool isMethod,
                                        bool isTypeConstructor,
                                        bool isCompilerGenerated,
+                                       bool throws,
                                        uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -184,6 +189,7 @@ class UntypedFnSignature {
            isMethod_ == other.isMethod_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            isCompilerGenerated_ == other.isCompilerGenerated_ &&
+           throws_ == other.throws_ &&
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -261,6 +267,11 @@ class UntypedFnSignature {
   /** Returns true if this is a method */
   bool isMethod() const {
     return isMethod_;
+  }
+
+  /** Returns true if this function throws */
+  bool throws() const {
+    return throws_;
   }
 
   /** Returns the number of formals */
@@ -409,11 +420,17 @@ class CallInfo {
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr);
 
+  /** Construct a CallInfo by adding a method receiver argument to
+      the passed CallInfo. */
+  static CallInfo createWithReceiver(const CallInfo& ci,
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
+
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.
 
-      Sets 'actuals' and 'hasQuesionArg'.
+      Sets 'actuals' and 'hasQuestionArg'.
 
       If actualIds is not 'nullptr', then the toID value of each actual is
       pushed to that array.
@@ -428,7 +445,7 @@ class CallInfo {
 
 
   /** return the name of the called thing */
-  UniqueString name() const { return name_; }
+  const UniqueString name() const { return name_; }
 
   /** return the type of the called thing */
   types::QualifiedType calledType() const { return calledType_; }
@@ -485,6 +502,10 @@ class CallInfo {
 };
 
 
+using PoiCallIdFnIds = std::set<std::pair<ID, ID>>;
+using PoiRecursiveCalls = std::set<std::pair<const TypedFnSignature*,
+                                             const PoiScope*>>;
+
 /**
   Contains information about symbols available from point-of-instantiation
   in order to implement caching of instantiations.
@@ -506,8 +527,15 @@ class PoiInfo {
   // Tracking how calls using POI were resolved.
   // This is a set of pairs of (Call ID, Function ID).
   // This includes POI calls from functions called in this Function,
-  // transitively
-  std::set<std::pair<ID, ID>> poiFnIdsUsed_;
+  // transitively, unless they are recursive (being resolved)
+  // in which case they go into recursiveFnsUsed_.
+  PoiCallIdFnIds poiFnIdsUsed_;
+
+  // Tracking recursive calls not analyzed
+  // (because queries cannot be recursive).
+  // This PoiInfo should be considered to include the
+  // PoiInfo from resolving each signature+poi scope in this list.
+  PoiRecursiveCalls recursiveFnsUsed_;
 
  public:
   // default construct a PoiInfo
@@ -531,12 +559,14 @@ class PoiInfo {
   /** set resolved */
   void setResolved(bool resolved) { resolved_ = resolved; }
 
-  // TODO callers copy and store this elsewhere, do we return as is? change the
-  // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
-  // poiFnIdsUsed.end()) ?
-  const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
+  const PoiCallIdFnIds& poiFnIdsUsed() const {
     return poiFnIdsUsed_;
   }
+
+  const PoiRecursiveCalls& recursiveFnsUsed() const {
+    return recursiveFnsUsed_;
+  }
+
 
   void addIds(ID a, ID b) {
     poiFnIdsUsed_.emplace(a, b);
@@ -547,17 +577,23 @@ class PoiInfo {
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
     return a.resolved_ == b.resolved_ &&
            a.poiScope_ == b.poiScope_ &&
-           a.poiFnIdsUsed_ == b.poiFnIdsUsed_;
+           a.poiFnIdsUsed_ == b.poiFnIdsUsed_ &&
+           a.recursiveFnsUsed_ == b.recursiveFnsUsed_;
   }
 
   void swap(PoiInfo& other) {
     std::swap(resolved_, other.resolved_);
     std::swap(poiScope_, other.poiScope_);
     poiFnIdsUsed_.swap(other.poiFnIdsUsed_);
+    recursiveFnsUsed_.swap(other.recursiveFnsUsed_);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
   void accumulate(const PoiInfo& addPoiInfo);
+
+  // accumulate PoiInfo from a recursive call into this PoiInfo
+  void accumulateRecursive(const TypedFnSignature* signature,
+                           const PoiScope* poiScope);
 
   // return true if 'this' represents a resolved function that can
   // be reused given the PoiInfo for a not-yet-resolved function in 'check'.
@@ -593,6 +629,10 @@ class PoiInfo {
     for (auto const &elt : poiFnIdsUsed_) {
       elt.first.mark(context);
       elt.second.mark(context);
+    }
+    for (auto const &elt : recursiveFnsUsed_) {
+      context->markPointer(elt.first);
+      context->markPointer(elt.second);
     }
   }
 
@@ -971,6 +1011,14 @@ class MostSpecificCandidates {
     return emptyDueToAmbiguity;
   }
 
+  /**
+    Returns 'true' if any candidate was found, including
+    if there was no best candidate due to ambiguity.
+   */
+  bool foundCandidates() const {
+    return isAmbiguous() || !isEmpty();
+  }
+
   bool operator==(const MostSpecificCandidates& other) const {
     for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])
@@ -1020,6 +1068,8 @@ class CallResolutionResult {
   PoiInfo poiInfo_;
 
  public:
+  CallResolutionResult() {}
+
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
     : exprType_(std::move(exprType)) {
@@ -1030,7 +1080,8 @@ class CallResolutionResult {
                        PoiInfo poiInfo)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
-      poiInfo_(std::move(poiInfo)) {
+      poiInfo_(std::move(poiInfo))
+  {
   }
 
   /** get the most specific candidates for return-intent overloading */
@@ -1068,20 +1119,20 @@ class ResolvedParamLoop;
 /**
 
   This type represents an associated action (for use within a
-  ResolvedExpression)
+  ResolvedExpression).
 
  */
 class AssociatedAction {
  public:
   enum Action {
-    ASSIGN,       // = from the same type
-    ASSIGN_OTHER, // = from other type
+    ASSIGN,       // same type or different type assign
     COPY_INIT,    // init= from same type
     INIT_OTHER,   // init= from other type
     DEFAULT_INIT,
     DEINIT,
     ITERATE,      // aka "these"
     NEW_INIT,
+    REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
   };
 
  private:
@@ -1103,8 +1154,10 @@ class AssociatedAction {
   }
   /** Returns which action this represents */
   Action action() const { return action_; }
+
   /** Return which function is called to help with the action */
   const TypedFnSignature* fn() const { return fn_; }
+
   /** Return the ID is associated with the action */
   const ID& id() const { return id_; }
 
@@ -1224,7 +1277,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto a : associatedActions_) {
+    for (const auto& a : associatedActions_) {
       a.mark(context);
     }
     context->markPointer(paramLoop_);
@@ -1246,9 +1299,10 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
-  // TODO: replace this with a hashtable or at least
-  // something that doesn't have to start at 0
-  std::vector<ResolvedExpression> vec;
+  // This map is generally accessed with operator[] to default-construct a new
+  // ResolvedExpression if none exists for an ID. at() is used instead only
+  // when const-ness is required.
+  std::unordered_map<int, ResolvedExpression> map;
 
  public:
   /** prepare to resolve the contents of the passed symbol */
@@ -1260,42 +1314,35 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
-  ResolvedExpression& byIdExpanding(const ID& id) {
-    auto postorder = id.postOrderId();
-    CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
-    CHPL_ASSERT(0 <= postorder);
-    if ((size_t) postorder < vec.size()) {
-      // OK
-    } else {
-      vec.resize(postorder+1);
-    }
-    return vec[postorder];
-  }
-  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
-    return byIdExpanding(ast->id());
-  }
-
+  /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
-        0 <= postorder && (size_t) postorder < vec.size())
+        0 <= postorder && (map.count(postorder) > 0))
       return true;
 
     return false;
   }
-  bool hasAst(const uast::AstNode* ast) const {
-    return ast != nullptr && hasId(ast->id());
-  }
-
   ResolvedExpression& byId(const ID& id) {
-    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
     CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map.at(postorder);
+  }
+  const ResolvedExpression* byIdOrNull(const ID& id) const {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &map.at(postorder);
+    }
+    return nullptr;
+  }
+
+  /* AST query functions */
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
@@ -1303,44 +1350,28 @@ class ResolutionResultByPostorderID {
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
   }
-  ResolvedExpression* byIdOrNull(const ID& id) {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  const ResolvedExpression* byIdOrNull(const ID& id) const {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
-    return byIdOrNull(ast->id());
-  }
   const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
     return byIdOrNull(ast->id());
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
     return symbolId == other.symbolId &&
-           vec == other.vec;
+           map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
     symbolId.swap(other.symbolId);
-    vec.swap(other.vec);
+    map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
     symbolId.mark(context);
-    for (auto const &elt : vec) {
-      elt.mark(context);
+    for (auto const &elt : map) {
+      // mark ResolvedExpressions
+      elt.second.mark(context);
     }
   }
 };
@@ -1428,6 +1459,9 @@ class ResolvedFunction {
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
   }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return resolutionById_.byAstOrNull(ast);
+  }
 
   const ID& id() const {
     return signature_->id();
@@ -1514,7 +1548,10 @@ class FormalActualMap {
 };
 
 /** ResolvedFields represents the fully resolved fields for a
-    class/record/union/tuple type. */
+    class/record/union/tuple type.
+
+    It also stores the result of computing the types of 'forwarding' statements.
+ */
 class ResolvedFields {
   struct FieldDetail {
     UniqueString name;
@@ -1546,18 +1583,34 @@ class ResolvedFields {
       declId.mark(context);
       type.mark(context);
     }
-
-    /*
-    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-      name.stringify(ss, stringKind);
-      //TODO: determine the proper way to do this
-      //decl.stringify(ss, stringKind);
-      type.stringify(ss, stringKind);
-    }*/
+  };
+  struct ForwardingDetail {
+    ID forwardingStmt;
+    types::QualifiedType receiverType;
+    ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
+     : forwardingStmt(std::move(forwardingStmt)),
+       receiverType(std::move(receiverType)) {
+    }
+    bool operator==(const ForwardingDetail& other) const {
+      return forwardingStmt == other.forwardingStmt &&
+             receiverType == other.receiverType;
+    }
+    bool operator!=(const ForwardingDetail& other) const {
+      return !(*this == other);
+    }
+    void swap(ForwardingDetail& other) {
+      forwardingStmt.swap(other.forwardingStmt);
+      receiverType.swap(other.receiverType);
+    }
+    void mark(Context* context) const {
+      forwardingStmt.mark(context);
+      receiverType.mark(context);
+    }
   };
 
   const types::CompositeType* type_ = nullptr;
   std::vector<FieldDetail> fields_;
+  std::vector<ForwardingDetail> forwarding_;
 
   // Summary information that is computed after the field types are known
   bool isGeneric_ = false;
@@ -1577,6 +1630,10 @@ class ResolvedFields {
     fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
   }
 
+  void addForwarding(ID forwardingId, types::QualifiedType receiverType) {
+    forwarding_.push_back(ForwardingDetail(forwardingId, receiverType));
+  }
+
   void finalizeFields(Context* context);
 
   /** Returns true if this is a generic type */
@@ -1589,30 +1646,51 @@ class ResolvedFields {
     return isGeneric_ && allGenericFieldsHaveDefaultValues_;
   }
 
+  /** Returns the number of fields represented here */
   int numFields() const {
     return fields_.size();
   }
 
+  /** Returns the field name for the i'th field */
   UniqueString fieldName(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].name;
   }
+  /** Returns 'true' if the i'th field has a default value */
   bool fieldHasDefaultValue(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].hasDefaultValue;
   }
+  /** Returns the i'th field's declaration ID */
   ID fieldDeclId(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].declId;
   }
+  /** Returns the type of the i'th field */
   types::QualifiedType fieldType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].type;
   }
 
+  /** Returns the number of 'forwarding' statements */
+  int numForwards() const {
+    return forwarding_.size();
+  }
+  /** Returns the ID of the i'th 'forwarding' statement */
+  const ID& forwardingStmt(int i) const {
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].forwardingStmt;
+  }
+  /** Returns the type that the i'th 'forwarding' statement forwards to */
+  const types::QualifiedType& forwardingToType(int i) const {
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].receiverType;
+  }
+
   bool operator==(const ResolvedFields& other) const {
     return type_ == other.type_ &&
            fields_ == other.fields_ &&
+           forwarding_ == other.forwarding_ &&
            isGeneric_ == other.isGeneric_ &&
            allGenericFieldsHaveDefaultValues_ ==
              other.allGenericFieldsHaveDefaultValues_;
@@ -1623,6 +1701,7 @@ class ResolvedFields {
   void swap(ResolvedFields& other) {
     std::swap(type_, other.type_);
     fields_.swap(other.fields_);
+    forwarding_.swap(other.forwarding_);
     std::swap(isGeneric_, other.isGeneric_);
     std::swap(allGenericFieldsHaveDefaultValues_,
               other.allGenericFieldsHaveDefaultValues_);
@@ -1633,6 +1712,9 @@ class ResolvedFields {
   }
   void mark(Context* context) const {
     for (auto const &elt : fields_) {
+      elt.mark(context);
+    }
+    for (auto const &elt : forwarding_) {
       elt.mark(context);
     }
     context->markPointer(type_);
@@ -1663,7 +1745,7 @@ class ResolvedParamLoop {
     }
 
     void mark(Context* context) const {
-      for (auto postorder : loopBodies_) {
+      for (const auto& postorder : loopBodies_) {
         postorder.mark(context);
       }
       context->markPointer(loop_);
@@ -1747,7 +1829,7 @@ namespace std {
 template<> struct hash<chpl::resolution::DefaultsPolicy>
 {
   size_t operator()(const chpl::resolution::DefaultsPolicy& key) const {
-    return key;
+    return (size_t) key;
   }
 };
 

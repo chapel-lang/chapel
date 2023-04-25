@@ -1,0 +1,5 @@
+perfkeys: Write Time:, Read Time:
+files: large_binary_io.dat
+graphkeys: Write Time, Read Time
+ylabel: Time (seconds)
+graphtitle: Repeated Large Binary IO (n=10000)

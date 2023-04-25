@@ -145,7 +145,7 @@ proc main() {
   // Declare the distributed array that holds the same number of elements
   // as all of the files involved combined.
   const bbox = {0..#numElements};
-  const blockDom = newBlockDom(bbox);
+  const blockDom = Block.createDomain(bbox);
   var blockArr: [blockDom] eltType;
 
   // Read the files into the distributed array

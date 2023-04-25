@@ -1,4 +1,4 @@
-use LowLevelMove;
+use MemMove;
 
 class C { }
 record R {
@@ -51,7 +51,7 @@ proc test1c() {
   var A = D.buildArray(R, initElts=false);
 
   moveInitialize(A[2], new R(2));
-  explicitDeinit(A[2]);
+  MemMove.destroy(A[2]);
 }
 test1c();
 
@@ -85,7 +85,7 @@ proc test2c() {
   var c = new FieldNoinitDefaultInitializer();
 
   moveInitialize(c.A[2], new R(2));
-  explicitDeinit(c.A[2]);
+  MemMove.destroy(c.A[2]);
 }
 test2c();
 
@@ -122,6 +122,6 @@ proc test3c() {
   var c = new FieldNoinitUserInitializer();
 
   moveInitialize(c.A[2], new R(2));
-  explicitDeinit(c.A[2]);
+  MemMove.destroy(c.A[2]);
 }
 test3c();

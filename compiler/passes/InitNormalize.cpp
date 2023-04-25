@@ -94,6 +94,7 @@ InitNormalize::InitNormalize(CondStmt* cond, const InitNormalize& curr) {
   mPrevBlockType = curr.mPrevBlockType;
   mBlockType     = curr.mBlockType;
   mThisAsParent  = curr.mThisAsParent;
+  mImplicitFields = curr.mImplicitFields;
 }
 
 InitNormalize::InitNormalize(LoopStmt* loop, const InitNormalize& curr) {

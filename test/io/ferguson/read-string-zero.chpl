@@ -16,7 +16,7 @@ var f = openTempFile();
   var r = f.reader(kind=iokind.native);
 
   var s:string;
-  var got = r.readstring(s, str.numBytes);
+  var got = r.readString(s, str.numBytes);
 
   assert(got);
   writeln("readstring read a string with length ", s.numBytes);

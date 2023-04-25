@@ -660,7 +660,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
   // successfully return file
   if err_out == 0 {
-    return openfd(fdOut):tcpConn;
+    return new file(fdOut):tcpConn;
   }
   var localSync$: sync c_short;
   // create event pending state
@@ -686,7 +686,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
     if retval & EV_TIMEOUT != 0 {
       throw createSystemError(ETIMEDOUT, "accept() timed out");
     }
-    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    var elapsedTime = (t.elapsed()*1_000_000):c_long;
     // try accept again
     err_out = sys_accept(socketFd, client_addr, fdOut);
     if err_out != 0 {
@@ -698,7 +698,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       if timeout.tv_sec:c_long != -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
         // timer didn't elapsed
-        if totalTimeout > t.elapsed(TimeUnits.microseconds) {
+        if totalTimeout > (t.elapsed()*1_000_000) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
           timeout.tv_sec = remainingSeconds:time_t;
@@ -708,7 +708,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       }
     }
   }
-  return openfd(fdOut):tcpConn;
+  return new file(fdOut):tcpConn;
 }
 
 proc tcpListener.accept(timeout: real): tcpConn throws {
@@ -855,7 +855,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
   }
   if err_out == 0 {
     setBlocking(socketFd, true);
-    return openfd(socketFd):tcpConn;
+    return new file(socketFd):tcpConn;
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
@@ -878,7 +878,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     throw createSystemError(err_out,"connect() failed");
   }
   setBlocking(socketFd, true);
-  return openfd(socketFd):tcpConn;
+  return new file(socketFd):tcpConn;
 }
 
 proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
@@ -1076,7 +1076,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       c_free(buffer);
       throw createSystemError(ETIMEDOUT, "recv timed out");
     }
-    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    var elapsedTime = (t.elapsed()*1_000_000):c_long;
     err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
@@ -1085,7 +1085,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       }
       if timeout.tv_sec:c_long == -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
-        if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+        if totalTimeout >= (t.elapsed()*1_000_000) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
           timeout.tv_sec = remainingSeconds:time_t;
@@ -1188,7 +1188,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     if retval & EV_TIMEOUT != 0 {
       throw createSystemError(ETIMEDOUT, "send timed out");
     }
-    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    var elapsedTime = (t.elapsed()*1_000_000):c_long;
     err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
@@ -1196,7 +1196,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       }
       if timeout.tv_sec:c_long == -1 {
         var totalTimeout = timeout.tv_sec:c_long*1000000 + timeout.tv_usec:c_long;
-        if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+        if totalTimeout >= (t.elapsed()*1_000_000) {
           const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
           const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
           timeout.tv_sec = remainingSeconds:time_t;

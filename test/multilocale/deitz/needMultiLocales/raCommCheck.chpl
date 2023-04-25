@@ -87,7 +87,7 @@ proc main() {
   //
   [i in TableSpace] T(i) = i;
 
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -104,7 +104,7 @@ proc main() {
       T(r & indexMask) ^= r;
   stopCommDiagnostics();
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
 
   var Diagnostics = getCommDiagnostics();
   writeln("Locale: (gets, puts, forks, fast forks, non-blocking forks)");

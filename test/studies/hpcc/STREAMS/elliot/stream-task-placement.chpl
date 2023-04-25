@@ -44,11 +44,11 @@ proc main() {
   }
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     forall (a, b, c) in zip(A, B, C) {
       a = b + alpha * c;
     }
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

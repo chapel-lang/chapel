@@ -1,5 +1,5 @@
 use IO;
 
 var style = defaultIOStyleInternal();
-var f = openmem(style);
+var f = openMemFile(style);
 f.close();

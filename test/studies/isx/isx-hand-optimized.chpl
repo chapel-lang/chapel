@@ -15,7 +15,7 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (AllLocalesBarriers), and timers (Time).
 //
 use BlockDist, AllLocalesBarriers, Time;
 

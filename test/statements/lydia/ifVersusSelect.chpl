@@ -49,9 +49,9 @@ else
   writeln("Verification failed");
 
 if (verbose) {
-  writeln("If/else branching took ", t1.elapsed(TimeUnits.milliseconds)/1000,
+  writeln("If/else branching took ", t1.elapsed(),
           " seconds");
-  writeln("Select branching took ", t2.elapsed(TimeUnits.milliseconds)/1000,
+  writeln("Select branching took ", t2.elapsed(),
           " seconds");
 }
 

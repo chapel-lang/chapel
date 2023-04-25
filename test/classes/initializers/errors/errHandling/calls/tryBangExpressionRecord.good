@@ -1,0 +1,4 @@
+(x = 8)
+uncaught Error: value too large
+  tryBangExpressionRecord.chpl:5: thrown here
+  tryBangExpressionRecord.chpl:22: uncaught here

@@ -9,7 +9,7 @@ proc go() {
 
   writeln(t);
   printarr(c_ptrTo(t[0]), 10);
-  printarr(c_ptrTo(t):c_ptr(c_int), 10);
+  printarr(c_ptrTo(t):c_void_ptr:c_ptr(c_int), 10);
 }
 
 go();

@@ -23,7 +23,7 @@ var LBR = if useStrings then "[" else b"[";
 var RBR = if useStrings then "]" else b"]";
 
 proc testBasic() throws {
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     w.write(fiveSquare);
@@ -36,7 +36,7 @@ proc testBasic() throws {
 }
 
 proc testFailure() {
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     w.write(fiveSquare);
@@ -60,7 +60,7 @@ proc testFailure() {
 }
 
 proc testJSON() {
-  var f = openmem();
+  var f = openMemFile();
   param quote = if useStrings then '"' else b"\"";
   {
     var w = f.writer();
@@ -95,7 +95,7 @@ proc testJSON() {
 }
 
 proc testWhitespace() {
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     const str = "   [5   ]";
@@ -116,7 +116,7 @@ proc testWhitespace() {
 
 proc testSpeculative() {
   param comma = if useStrings then "," else b",";
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     w.write(LBR);
@@ -140,7 +140,7 @@ proc testSpeculative() {
 }
 
 proc testNewline() {
-  var f = openmem();
+  var f = openMemFile();
   const numSpaces = 5;
   const start = "start";
   {

@@ -56,10 +56,10 @@ const init2arr: ArrType2; // TODO: = 5555;
 // declare our varaibles //
 
 var b0:  bool;
-var b8:  bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
+
+
+
+
 
 var i8:  int(8);
 var i16: int(16);
@@ -88,7 +88,7 @@ var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
-var rng2: range(uint(8), BoundedRangeType.boundedNone, true);
+var rng2: range(uint(8), boundKind.neither, true);
 var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;
@@ -186,10 +186,10 @@ proc test(arg) {
 }
 
 test(b0);
-test(b8);
-test(b16);
-test(b32);
-test(b64);
+
+
+
+
 test(i8);
 test(i16);
 test(i32);

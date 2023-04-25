@@ -105,10 +105,9 @@ echo ""
 if [ $LINT -eq 1 ]; then
     # Check for tabs.
     echo "Checking for tabs"
-    output=$($CHPL_HOME/util/devel/lookForTabs)
+    $CHPL_HOME/util/devel/lookForTabs
     if [ $? -ne 0 ] ; then
         echo "Found tabs :-("
-        echo $output
         exit 1
     fi
 
@@ -116,10 +115,9 @@ if [ $LINT -eq 1 ]; then
     # Need to clean up all of the trailing spaces before adding this
     # Check for trailing spaces
     echo "Checking for trailing spaces"
-    output=$($CHPL_HOME/util/devel/lookForTrailingSpaces)
+    $CHPL_HOME/util/devel/lookForTrailingSpaces
     if [ $? -ne 0 ] ; then
        echo "Found trailing spaces :-("
-        echo $output
        exit 1
     fi
 

@@ -39,10 +39,6 @@ writeln("=== at the module level ===");
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -70,10 +66,6 @@ var arr2: ArrType2;
 var s$: sync int;
 begin with (
 ref b0,
-ref b8,
-ref b16,
-ref b32,
-ref b64,
 ref u8,
 ref u16,
 ref u32,
@@ -103,10 +95,6 @@ ref arr2,
   writeln("in begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -133,10 +121,6 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -169,10 +153,6 @@ s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -205,10 +185,6 @@ proc test() {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -236,10 +212,6 @@ var arr2: ArrType2;
 var s$: sync int;
 begin with (
 ref b0,
-ref b8,
-ref b16,
-ref b32,
-ref b64,
 ref u8,
 ref u16,
 ref u32,
@@ -269,10 +241,6 @@ ref arr2,
   writeln("in begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -299,10 +267,6 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -335,10 +299,6 @@ s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -374,10 +334,6 @@ begin {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -405,10 +361,6 @@ var arr2: ArrType2;
 var s$: sync int;
 begin with (
 ref b0,
-ref b8,
-ref b16,
-ref b32,
-ref b64,
 ref u8,
 ref u16,
 ref u32,
@@ -438,10 +390,6 @@ ref arr2,
   writeln("in begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -468,10 +416,6 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -504,10 +448,6 @@ s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -545,10 +485,6 @@ cobegin {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -576,10 +512,6 @@ var arr2: ArrType2;
 var s$: sync int;
 begin with (
 ref b0,
-ref b8,
-ref b16,
-ref b32,
-ref b64,
 ref u8,
 ref u16,
 ref u32,
@@ -609,10 +541,6 @@ ref arr2,
   writeln("in begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -639,10 +567,6 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -675,10 +599,6 @@ s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -714,10 +634,6 @@ coforall iiiii in 1..3 {
 // Can be placed in any scope.
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -745,10 +661,6 @@ var arr2: ArrType2;
 var s$: sync int;
 begin with (
 ref b0,
-ref b8,
-ref b16,
-ref b32,
-ref b64,
 ref u8,
 ref u16,
 ref u32,
@@ -778,10 +690,6 @@ ref arr2,
   writeln("in begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);
@@ -808,10 +716,6 @@ writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -844,10 +748,6 @@ s$.readFE();
 writeln("after begin");
 // write out all the variables
 writeln("b0", " ", b0);
-writeln("b8", " ", b8);
-writeln("b16", " ", b16);
-writeln("b32", " ", b32);
-writeln("b64", " ", b64);
 writeln("u8", " ", u8);
 writeln("u16", " ", u16);
 writeln("u32", " ", u32);

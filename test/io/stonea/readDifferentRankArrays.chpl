@@ -3,7 +3,7 @@ use IO;
 var A: [1..2] string;
 var B: [1..2, 1..2] string;
 
-var infile = open("readDifferentRankArrays.dat", iomode.r);
+var infile = open("readDifferentRankArrays.dat", ioMode.r);
 var f = infile.reader();
 
 f.readf("%ht", A);

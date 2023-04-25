@@ -41,7 +41,7 @@ param INF = 2**31 - 1;
 proc main {
   use Time;
   var numNodes: int(32);
-  var f = open(infileName, iomode.r);
+  var f = open(infileName, ioMode.r);
   var r = f.reader();
   var inputTimer, outputTimer, computeTimer, totalTimer: stopwatch;
 
@@ -83,7 +83,7 @@ proc main {
   computeTimer.stop();
 
   outputTimer.start();
-  var outf = open(outfileName, iomode.cw);
+  var outf = open(outfileName, ioMode.cw);
   var w = outf.writer();
   w.writeln(numNodes);
   writeln("writing nodes");

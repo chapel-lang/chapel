@@ -26,6 +26,7 @@ class DecoratedClassType;
 class EnumType;
 class ConstrainedType;
 class PrimitiveType;
+class FunctionType;
 
 class ArgSymbol;
 class EnumSymbol;
@@ -59,6 +60,7 @@ class CondStmt;
 class GotoStmt;
 class DeferStmt;
 class ForallStmt;
+class TemporaryConversionThunk;
 class TryStmt;
 class ForwardingStmt;
 class CatchStmt;
@@ -91,6 +93,9 @@ public:
   // Switched to a more robust naming convention that avoids this issue.
   //
 
+  virtual bool   enterThunk          (TemporaryConversionThunk* node) = 0;
+  virtual void   exitThunk           (TemporaryConversionThunk* node) = 0;
+
   //
   // The sub-classes of Type
   //
@@ -104,6 +109,7 @@ public:
   virtual void   exitEnumType        (EnumType*          node) = 0;
   virtual void   visitConstrainedType(ConstrainedType*   node) = 0;
   virtual void   visitPrimType       (PrimitiveType*     node) = 0;
+  virtual void   visitFunctionType   (FunctionType*      node) = 0;
 
   //
   // The sub-classes of Symbol

@@ -1,1 +1,1 @@
-bad_return.chpl:1: error: return statement is not in a function or iterator
+bad_return.chpl:1: error: 'return' is not allowed outside of a procedure or an iterator

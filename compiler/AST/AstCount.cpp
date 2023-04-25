@@ -64,6 +64,13 @@ bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
 void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
+bool AstCount::enterThunk(TemporaryConversionThunk* node) {
+  return true;
+}
+
+void AstCount::exitThunk(TemporaryConversionThunk* node) {
+}
+
 
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;
@@ -83,6 +90,10 @@ void AstCount::exitEnumType(EnumType* node) {
 
 void AstCount::visitPrimType(PrimitiveType* node) {
   numPrimitiveType++;
+}
+
+void AstCount::visitFunctionType(FunctionType* node) {
+  numFunctionType++;
 }
 
 void AstCount::visitConstrainedType(ConstrainedType* node) {

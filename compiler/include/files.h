@@ -54,9 +54,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
 void ensureTmpDirExists();
-const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
-void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
@@ -85,6 +83,7 @@ bool isChplSource(const char* filename);
 bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
+bool isDynoLib(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename, const char* modFilename);
 void assertSourceFilesFound();

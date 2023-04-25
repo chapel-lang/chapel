@@ -1,3 +1,3 @@
-./ArrayTest.chpl:1: In function 'testArray':
-./ArrayTest.chpl:5: warning: creating a 'new borrowed' type is deprecated
+ArrayTest.chpl:1: In function 'testArray':
+ArrayTest.chpl:5: warning: creating a 'new borrowed' type is deprecated
   testBorrowed.chpl:9: called as testArray(type t = borrowed T)

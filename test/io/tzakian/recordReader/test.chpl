@@ -5,11 +5,11 @@ use RecordParser, IO;
 config const no_mmap=false;
 var hints=ioHintSet.empty;
 if no_mmap {
-  hints = ioHintSet.noMmap;
+  hints = ioHintSet.mmap(false);
 }
 
-var f = open("input1.txt", iomode.rw);
-var ff = open("input2_beer.txt", iomode.rw, hints=hints);
+var f = open("input1.txt", ioMode.rw);
+var ff = open("input2_beer.txt", ioMode.rw, hints=hints);
 var fr = f.reader();
 var ffr = ff.reader();
 

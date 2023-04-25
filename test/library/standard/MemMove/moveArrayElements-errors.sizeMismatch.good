@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: Destination and source specify a different number of elements to move: 5 vs. 6
+  moveArrayElements-errors.chpl:nnnn: thrown here
+  moveArrayElements-errors.chpl:nnnn: uncaught here

@@ -70,7 +70,7 @@
     */
      proc main(){
 
-        var inFile = open(inputFile, iomode.r);
+        var inFile = open(inputFile, ioMode.r);
         var reader = inFile.reader();
         processes = reader.read(int);
         D = {0..(processes-1)};
@@ -180,7 +180,7 @@
 
     /* Writes the leader to the user specified file. */
     proc printLeader() {
-        var outfile = open(outputFile, iomode.cw);
+        var outfile = open(outputFile, ioMode.cw);
         var writer = outfile.writer();
         writer.writeln("Leader: ", processSet[0]!.leaderId);
         writeln("Leader: ", processSet[0]!.leaderId);

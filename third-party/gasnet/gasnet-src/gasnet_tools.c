@@ -1592,7 +1592,7 @@ extern void gasneti_argv_from_system(int **pargc, char ****pargv) {
  #endif
 }
 
-extern const char *gasneti_exe_name() {
+extern const char *gasneti_exe_name(void) {
   static char exename[PATH_MAX] = { 0 };
   if (*exename) return exename;
   static int *argc = 0; 

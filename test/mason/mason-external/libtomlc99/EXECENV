@@ -1,1 +1,20 @@
-../../EXECENV
+#!/usr/bin/env python3
+
+import os, tempfile
+
+# Install spack to a tmp (and hopefully short) dir since spack breaks with
+# paths longer than ~100 chars: https://github.com/spack/spack/issues/22548.
+# Note that this creates a unique subdir so concurrent mason-external tests
+# don't conflict. A side benefit is that `CHPL_TEST_TMP_DIR` is generally a
+# `/tmp` directory so should save some time for configs that run out NFS/Lustre
+mason_tmp_dir = tempfile.mkdtemp(prefix="mason_home_", dir=os.getenv('CHPL_TEST_TMP_DIR', None))
+
+# Ensure mason in PATH
+print('PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH')
+
+# Mason envs
+print('MASON_HOME={}'.format(mason_tmp_dir))
+# Note, this registry should only ever be used by mason update tests
+print('MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry')
+print('MASON_OFFLINE=false')
+print('SPACK_ROOT={}/spack'.format(mason_tmp_dir))

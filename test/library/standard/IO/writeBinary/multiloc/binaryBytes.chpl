@@ -1,7 +1,7 @@
 use IO;
 
 on Locales[0] {
-    var w = open("./bb.bin", iomode.cw).writer();
+    var w = open("./bb.bin", ioMode.cw).writer();
 
     on Locales[1] {
         var d = heapAllocatedBytes(5);

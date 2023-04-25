@@ -20,6 +20,7 @@
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -52,7 +53,7 @@ static const char* tagToString(const AstNode* ast) {
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
+resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly) {
   if (!(ast->isLoop() || ast->isBlock())) {
@@ -65,25 +66,25 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
         if (parentAst->isModule()) {
           if (scopeResolveOnly) {
             const auto& byId = scopeResolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
+            return byId.byAstOrNull(ast);
           } else {
             const auto& byId = resolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
+            return byId.byAstOrNull(ast);
           }
         } else if (auto parentFn = parentAst->toFunction()) {
           auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
           if (inFn && inFn->signature()->untyped() == untyped) {
-            return &inFn->resolutionById().byAst(ast);
+            return inFn->byAstOrNull(ast);
           } else {
             if (scopeResolveOnly) {
               auto rFn = scopeResolveFunction(context, parentFn->id());
-              return &rFn->resolutionById().byAst(ast);
+              return rFn->byAstOrNull(ast);
             } else {
               auto typed = typedSignatureInitial(context, untyped);
               if (!typed->needsInstantiation()) {
                 auto rFn = resolveFunction(context, typed, nullptr);
-                return &rFn->resolutionById().byAst(ast);
+                return rFn->byAstOrNull(ast);
               }
             }
           }
@@ -92,9 +93,15 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
     }
   }
 
-  if (inFn != nullptr && inFn->id() != ast->id() &&
-      inFn->id().contains(ast->id())) {
-    return &inFn->byAst(ast);
+  if (ast->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a nested Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it separately.
+    return nullptr;
+  }
+
+  if (inFn != nullptr && inFn->id() != ast->id()) {
+    return inFn->byAstOrNull(ast);
   }
   return nullptr;
 }
@@ -129,7 +136,7 @@ computeAndPrintStuff(Context* context,
 
   int beforeCount = context->numQueriesRunThisRevision();
   const ResolvedExpression* r =
-    resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
+    resolvedExpressionForAstInteractive(context, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific()) {
@@ -183,7 +190,8 @@ static void usage(int argc, char** argv) {
          "  --scope only performs scope resolution\n"
          "  --trace enables query tracing\n"
          "  --time <outputFile> outputs query timing information to outputFile\n"
-         "  --searchPath <path> adds to the module search path\n",
+         "  --searchPath <path> adds to the module search path\n"
+         "  --warn-unstable turns on unstable warnings\n",
          argv[0]);
 }
 
@@ -210,6 +218,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
+  bool warnUnstable = false;
   const char* timing = nullptr;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
@@ -234,22 +243,28 @@ int main(int argc, char** argv) {
       i++;
     } else if (0 == strcmp(argv[i], "--brief")) {
       brief = true;
+    } else if (0 == strcmp(argv[i], "--warn-unstable")) {
+      warnUnstable = true;
     } else {
       files.push_back(argv[i]);
     }
   }
 
-  if (enableStdLib) {
-    if (const char* chpl_home_env  = getenv("CHPL_HOME")) {
-      chpl_home = chpl_home_env;
-      printf("CHPL_HOME is set, so setting up search paths\n");
-    } else {
-      printf("--std only works when CHPL_HOME is set\n");
-      exit(1);
-    }
+  if (const char* chpl_home_env = getenv("CHPL_HOME")) {
+    chpl_home = chpl_home_env;
+    printf("# CHPL_HOME is set, so using it\n");
+  } else {
+    printf("# CHPL_HOME not set so running without one\n");
   }
 
-  Context context(chpl_home);
+  if (enableStdLib && chpl_home.empty()) {
+    printf("--std only works when CHPL_HOME is set\n");
+    exit(1);
+  }
+
+  Context::Configuration config;
+  config.chplHome = chpl_home;
+  Context context(config);
   Context* ctx = &context;
   context.setDetailedErrorOutput(!brief);
 
@@ -266,6 +281,10 @@ int main(int argc, char** argv) {
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
     if (timing) ctx->beginQueryTimingTrace(timing);
+
+    CompilerFlags flags;
+    flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
+    setCompilerFlags(ctx, std::move(flags));
 
     setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 

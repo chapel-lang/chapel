@@ -15,10 +15,10 @@ forall key in inputArr with
 
 // agg.flush(); // agg doesn't live outside the forall so can't flush here
 
-var ch = openwriter("mapOutput.txt");
+var ch = openWriter("mapOutput.txt");
 
 var first = true;
 for key in dm1.keys() { // won't be great perf but that's okay for now
-  ch.writeln(key, "=", dm1.getValue(key)); // TODO: different syntax for access?
+  ch.writeln(key, "=", dm1(key)); // TODO: different syntax for access?
 }
 ch.close();

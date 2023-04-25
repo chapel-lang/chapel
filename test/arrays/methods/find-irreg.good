@@ -1,0 +1,26 @@
+Looking for 3.4 in 1.2 3.4
+Found it at true
+Looking for 5.6 in 1.2 3.4
+Didn't find it
+Looking for 1.2 in 1.2 3.4
+Found it at false
+Looking for 9.0 in 5.6 7.8 9.0
+Found it at blue
+Looking for 10.11 in 5.6 7.8 9.0
+Didn't find it
+Looking for 5.6 in 5.6 7.8 9.0
+Found it at red
+Looking for 0.0 in 5.6 7.8 9.0
+Didn't find it
+Looking for 7.8 in 5.6 7.8 9.0
+Found it at green
+Looking for GREEN in RED BLUE GREEN
+Found it at green
+Looking for YELLOW in RED BLUE GREEN
+Didn't find it
+Looking for BLUE in RED BLUE GREEN
+Found it at blue
+Looking for VIOLET in RED BLUE GREEN
+Didn't find it
+Looking for RED in RED BLUE GREEN
+Found it at red

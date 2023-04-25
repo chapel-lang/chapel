@@ -1,5 +1,5 @@
 module TestUnstableModule {
-  @unstable "Outer is unstable"
+  @unstable("Outer is unstable")
   module Outer {
     var y: bool;
 

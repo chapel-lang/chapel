@@ -24,7 +24,17 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 
+#include "llvm/ADT/StringExtras.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Process.h"
+
+// LLVM 13 introduced SHA256. Use that if it is available.
+#if LLVM_VERSION_MAJOR >= 13
+#include "llvm/Support/SHA256.h"
+#else
+#include "llvm/Support/SHA1.h"
+#endif
 
 #include <cerrno>
 
@@ -57,6 +67,10 @@ static std::string my_strerror(int errno_) {
   if (rc != 0)
     strncpy(errbuf, "<unknown error>", sizeof(errbuf));
   return std::string(errbuf);
+}
+
+static std::error_code errorCodeFromCError(int err) {
+  return std::error_code(err, std::generic_category());
 }
 
 /*
@@ -97,6 +111,8 @@ bool closefile(FILE* fp, const char* path, std::string& errorOut) {
   return true;
 }
 
+// TODO: Should this produce an llvm::MemoryBuffer?
+// TODO: Should this return std::error_code?
 bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
   FILE* fp = openfile(path, "r", errorOut);
   if (!fp) {
@@ -129,20 +145,43 @@ bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
   return closefile(fp, path, errorOut);
 }
 
+std::error_code writeFile(const char* path, const std::string& data) {
+  FILE* fp = fopen(path, "w");
+  if (fp == nullptr) {
+    return errorCodeFromCError(errno);
+  }
+
+  size_t got = fwrite(data.data(), 1, data.size(), fp);
+  if (got != data.size()) {
+    int err = ferror(fp);
+    if (err == 0) err = EIO;
+    fclose(fp);
+    return errorCodeFromCError(errno);
+  }
+
+  int closeval = fclose(fp);
+  if (closeval != 0) {
+    return errorCodeFromCError(errno);
+  }
+
+  return std::error_code();
+}
+
+
 bool fileExists(const char* path) {
   struct stat s;
   int err = stat(path, &s);
   return err == 0;
 }
 
-
-std::error_code deleteDir(std::string dirname) {
+std::error_code deleteDir(const llvm::Twine& dirname) {
   // LLVM 5 added remove_directories
   return llvm::sys::fs::remove_directories(dirname, false);
 }
 
-std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
-  std::string tmpdirprefix = std::string(getTempDir()) + "/" + dirPrefix;
+std::error_code makeTempDir(llvm::StringRef prefix,
+                            std::string& tmpDirPathOut) {
+  std::string tmpdirprefix = std::string(getTempDir()) + "/" + prefix.str();
   std::string tmpdirsuffix = ".deleteme-XXXXXX";
 
   struct passwd* passwdinfo = getpwuid(geteuid());
@@ -176,7 +215,7 @@ std::error_code makeTempDir(std::string dirPrefix, std::string& tmpDirPathOut) {
   return std::error_code();
 }
 
-std::error_code ensureDirExists(std::string dirname) {
+std::error_code ensureDirExists(const llvm::Twine& dirname) {
   return llvm::sys::fs::create_directories(dirname);
 }
 
@@ -194,7 +233,7 @@ std::error_code currentWorkingDir(std::string& path_out) {
   }
 }
 
-std::error_code makeDir(std::string dirpath, bool makeParents) {
+std::error_code makeDir(const llvm::Twine& dirpath, bool makeParents) {
   using namespace llvm::sys::fs;
   if (makeParents) {
     return create_directories(dirpath, true, perms::all_all);
@@ -208,8 +247,76 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
-bool isSameFile(const char* path1, const char* path2) {
+bool isSameFile(const llvm::Twine& path1, const llvm::Twine& path2) {
   return llvm::sys::fs::equivalent(path1, path2);
+}
+
+std::string fileHashToHex(const HashFileResult& hash) {
+  return llvm::toHex(hash, /* lower case */ false);
+}
+
+llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
+  FILE* fp = fopen(path.str().c_str(), "r");
+  if (!fp) {
+    return errorCodeFromCError(errno);
+  }
+
+#if LLVM_VERSION_MAJOR >= 13
+  llvm::SHA256 hasher;
+#else
+  llvm::SHA1 hasher;
+#endif
+
+  uint8_t buf[256];
+  while (true) {
+    size_t got = fread(buf, 1, sizeof(buf), fp);
+    if (got > 0) {
+      hasher.update(llvm::ArrayRef<uint8_t>(buf, got));
+    } else {
+      int err = ferror(fp);
+      if (err != 0) {
+        fclose(fp);
+        return errorCodeFromCError(err);
+      }
+      // otherwise, end of file reached
+      break;
+    }
+  }
+
+  fclose(fp);
+
+  // In LLVM 15, SHA256::final returns a std::array.
+  // In LLVM 14 an earlier, it returns a StringRef.
+#if LLVM_VERSION_MAJOR >= 15
+  return hasher.final();
+#else
+  HashFileResult result;
+  llvm::StringRef s = hasher.final();
+  CHPL_ASSERT(s.size() == sizeof(HashFileResult));
+  memcpy(&result, s.data(), sizeof(HashFileResult));
+  return result;
+#endif
+
+}
+
+std::error_code copyModificationTime(const llvm::Twine& srcPath,
+                                     const llvm::Twine& dstPath) {
+  std::error_code err;
+  llvm::sys::fs::file_status status;
+  err = llvm::sys::fs::status(srcPath, status);
+  if (err) {
+    return err;
+  }
+  auto time = status.getLastModificationTime();
+  //std::cout << "Copying time from " << time.time_since_epoch().count() << "\n";
+  int fd = 0;
+  err = llvm::sys::fs::openFileForWrite(dstPath, fd,
+                                        llvm::sys::fs::CD_OpenExisting);
+  if (!err) {
+    err = llvm::sys::fs::setLastAccessAndModificationTime(fd, time);
+    llvm::sys::Process::SafelyCloseFileDescriptor(fd);
+  }
+  return err;
 }
 
 

@@ -1,0 +1,11 @@
+(1..10 by -3)(3..9) = 7 4 
+(1..10 by -3)(3..8) = 7 4 
+(1..10 by -3)(3..7) = 7 4 
+(1..10 by -3)(3..6) = 4 
+(1..265 by 131)(1..233) = 1 132 
+(1..11 by -3)(3..8 by -3) = 8 5 
+(1..10 by 3)(1..9 by -3) = 
+(1..16 by 3)(1..15 by -2) = 1 7 13 
+test_range_index3.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..11 by -3 with 3..8 by -3
+test_range_index3.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..10 by 3 with 1..9 by -3
+test_range_index3.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..16 by 3 with 1..15 by -2

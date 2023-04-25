@@ -1,7 +1,7 @@
 use IO;
 
 // readAll can pick up where other string-reader methods left off:
-var ch = openreader("./jab.txt");
+var ch = openReader("./jab.txt");
 const line1 = ch.readLine(string);
 const line2 = ch.readLine(string);
 const remaining = ch.readAll(string);

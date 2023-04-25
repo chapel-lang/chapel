@@ -505,6 +505,7 @@ static void fsDestructureIndex(ForallStmt* fs, AList& fIterVars,
   } else if (isCallExpr(index)) {
     // We need to create an index variable and go from there.
     VarSymbol* idxVar = createAndAddIndexVar(fIterVars, idxNum);
+    idxVar->removeFlag(FLAG_INSERT_AUTO_DESTROY);
     destructureIndices(fs->loopBody(), index, new SymExpr(idxVar), false);
 
   } else if (DefExpr* def = toDefExpr(index)) {
@@ -634,8 +635,6 @@ static void checkIndicesForall(BaseAST* indices) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered, bool serialOK)
 {
-  checkControlFlow(body, "forall statement");
-
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndicesForall(indices);

@@ -24,10 +24,10 @@
 
 #include "astutil.h"
 #include "CatchStmt.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
-#include "firstClassFunctions.h"
 #include "iterator.h"
 #include "stmt.h"
 #include "stlUtil.h"

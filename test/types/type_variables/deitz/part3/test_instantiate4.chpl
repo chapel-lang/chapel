@@ -2,7 +2,7 @@ module M1 {
   class C {
     type t;
     var y : t;
-    proc bar()
+    proc bar() do
       return foo(y);
   }
 }
@@ -14,7 +14,7 @@ module M2 {
     var x : int = 3;
   }
 
-  proc foo(r : R)
+  proc foo(r : R) do
     return r.x * 2;
 
   proc main() {

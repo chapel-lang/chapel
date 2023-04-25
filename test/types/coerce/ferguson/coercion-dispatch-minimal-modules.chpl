@@ -5,13 +5,13 @@
 
 // support methods, for --minimal-modules
 
-inline operator :(x: int(?w), type t)
+inline operator :(x: int(?w), type t) do
     return __primitive(c"cast", t, x);
-inline operator :(x: uint(?w), type t)
+inline operator :(x: uint(?w), type t) do
     return __primitive(c"cast", t, x);
 
-proc chpl__autoCopy(x:uint(?w)) return x;
-proc chpl__initCopy(x:uint(?w)) return x;
+proc chpl__autoCopy(x:uint(?w)) do return x;
+proc chpl__initCopy(x:uint(?w)) do return x;
 proc chpl__initCopy(x:R) { return x; }
 proc chpl__autoDestroy(r:R) { }
 
@@ -87,22 +87,22 @@ proc bok(x:uint(?w), y:uint(w)) {
 }
 
 
-proc asSigned(type t) type where t == int(8) return int(8);
-proc asSigned(type t) type where t == int(16) return int(16);
-proc asSigned(type t) type where t == int(32) return int(32);
-proc asSigned(type t) type where t == int(64) return int(64);
-proc asSigned(type t) type where t == uint(8) return int(8);
-proc asSigned(type t) type where t == uint(16) return int(16);
-proc asSigned(type t) type where t == uint(32) return int(32);
-proc asSigned(type t) type where t == uint(64) return int(64);
-proc asUnsigned(type t) type where t == int(8) return uint(8);
-proc asUnsigned(type t) type where t == int(16) return uint(16);
-proc asUnsigned(type t) type where t == int(32) return uint(32);
-proc asUnsigned(type t) type where t == int(64) return uint(64);
-proc asUnsigned(type t) type where t == uint(8) return uint(8);
-proc asUnsigned(type t) type where t == uint(16) return uint(16);
-proc asUnsigned(type t) type where t == uint(32) return uint(32);
-proc asUnsigned(type t) type where t == uint(64) return uint(64);
+proc asSigned(type t) type where t == int(8) do return int(8);
+proc asSigned(type t) type where t == int(16) do return int(16);
+proc asSigned(type t) type where t == int(32) do return int(32);
+proc asSigned(type t) type where t == int(64) do return int(64);
+proc asSigned(type t) type where t == uint(8) do return int(8);
+proc asSigned(type t) type where t == uint(16) do return int(16);
+proc asSigned(type t) type where t == uint(32) do return int(32);
+proc asSigned(type t) type where t == uint(64) do return int(64);
+proc asUnsigned(type t) type where t == int(8) do return uint(8);
+proc asUnsigned(type t) type where t == int(16) do return uint(16);
+proc asUnsigned(type t) type where t == int(32) do return uint(32);
+proc asUnsigned(type t) type where t == int(64) do return uint(64);
+proc asUnsigned(type t) type where t == uint(8) do return uint(8);
+proc asUnsigned(type t) type where t == uint(16) do return uint(16);
+proc asUnsigned(type t) type where t == uint(32) do return uint(32);
+proc asUnsigned(type t) type where t == uint(64) do return uint(64);
 
 record R {
   var x;

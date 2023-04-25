@@ -61,12 +61,72 @@
 #include <arpa/inet.h>		/* ipv4addr */
 #include <stdlib.h>		/* malloc/free */
 #include <psm_netutils.h>
+#ifdef PSM_VERBS
+#include <infiniband/verbs.h>
+#endif
+
+/* Easy way to ignore the OK_NO_PROGRESS case */
+PSMI_ALWAYS_INLINE(psm2_error_t psmi_err_only(psm2_error_t err))
+{
+	if (err > PSM2_OK_NO_PROGRESS)
+		return err;
+	else
+		return PSM2_OK;
+}
+
+PSMI_ALWAYS_INLINE(int psmi_bare_netaddr128_cmp(psmi_bare_netaddr128_t a, psmi_bare_netaddr128_t b))
+{
+	if (a.hi < b.hi)
+		return -1;
+	if (a.hi > b.hi)
+		return 1;
+	if (a.lo < b.lo)
+		return -1;
+	if (a.lo == b.lo)
+		return 0;
+	return 1;
+}
+
+// for internal use only, use naddr128_cmp and subnet128_cmp instead (below)
+PSMI_ALWAYS_INLINE(int psmi_qual_netaddr128_cmp(psmi_naddr128_t a, psmi_naddr128_t b))
+{
+	int ret;
+	if (a.fmt < b.fmt)
+		return -1;
+	if (a.fmt > b.fmt)
+		return 1;
+	ret = psmi_bare_netaddr128_cmp(a.bare, b.bare);
+	if (ret)
+		return ret;
+	if (a.prefix_len < b.prefix_len)
+		return -1;
+	if (a.prefix_len > b.prefix_len)
+		return 1;
+	return 0;
+}
+
+PSMI_ALWAYS_INLINE(int psmi_naddr128_cmp(psmi_naddr128_t a, psmi_naddr128_t b))
+{
+	return psmi_qual_netaddr128_cmp(a, b);
+}
+
+PSMI_ALWAYS_INLINE(int psmi_subnet128_cmp(psmi_subnet128_t a, psmi_subnet128_t b))
+{
+	return psmi_qual_netaddr128_cmp(a, b);
+}
+
+/*
+ * See psm_netutils.h for epid_addr_fmt defines, we need those to
+ * be accessed within the HAL, so we can't define them here because
+ * this file requires psm_user.h which can't be used inside the HAL
+ * because the HAL makes use of malloc/free directly
+ */
 
 /*
  * Endpoint 'id' hash table, with iterator interface
  */
-struct psmi_epid_table {
-	struct psmi_epid_tabentry *table;
+struct psm3_epid_table {
+	struct psm3_epid_tabentry *table;
 	int tabsize;
 	int tabsize_used;
 	pthread_mutex_t tablock;
@@ -74,22 +134,22 @@ struct psmi_epid_table {
 /*
  * Endpoint address hash table
  */
-struct psmi_epid_tabentry {
+struct psm3_epid_tabentry {
 	void *entry;
 	uint64_t key;
 	psm2_ep_t ep;
 	psm2_epid_t epid;
 };
 
-extern struct psmi_epid_table psmi_epid_table;
+extern struct psm3_epid_table psm3_epid_table;
 #define EPADDR_DELETED	((void *)-1)	/* tag used to mark deleted entries */
 
-psm2_error_t psmi_epid_init();
-psm2_error_t psmi_epid_fini();
-void *psmi_epid_lookup(psm2_ep_t ep, psm2_epid_t epid);
-void *psmi_epid_remove(psm2_ep_t ep, psm2_epid_t epid);
-void psmi_epid_remove_all(psm2_ep_t ep);
-psm2_error_t psmi_epid_add(psm2_ep_t ep, psm2_epid_t epid, void *entry);
+psm2_error_t psm3_epid_init();
+psm2_error_t psm3_epid_fini();
+void *psm3_epid_lookup(psm2_ep_t ep, psm2_epid_t epid);
+void *psm3_epid_remove(psm2_ep_t ep, psm2_epid_t epid);
+void psm3_epid_remove_all(psm2_ep_t ep);
+psm2_error_t psm3_epid_add(psm2_ep_t ep, psm2_epid_t epid, void *entry);
 #define PSMI_EP_HOSTNAME    ((psm2_ep_t) -1)	/* Special endpoint handle we use
 						 * to register hostnames */
 #define PSMI_EP_CROSSTALK   ((psm2_ep_t) -2)	/* Second special endpoint handle
@@ -99,21 +159,129 @@ struct psmi_eptab_iterator {
 	int i;			/* last index looked up */
 	psm2_ep_t ep;
 };
-void psmi_epid_itor_init(struct psmi_eptab_iterator *itor, psm2_ep_t ep);
-void *psmi_epid_itor_next(struct psmi_eptab_iterator *itor);
-void psmi_epid_itor_fini(struct psmi_eptab_iterator *itor);
+void psm3_epid_itor_init(struct psmi_eptab_iterator *itor, psm2_ep_t ep);
+void *psm3_epid_itor_next(struct psmi_eptab_iterator *itor);
+void psm3_epid_itor_fini(struct psmi_eptab_iterator *itor);
 
-uint64_t psmi_epid_version(psm2_epid_t epid);
+/* These functions build the local epid */
+// for typical job which includes IPS inter-node comms
+psm2_epid_t psm3_epid_pack_ib(uint16_t lid, uint32_t qp_num,
+	psmi_naddr128_t addr);
+// IPv4 Ethernet (RoCE or UDP/TCP)
+// for RoCE context is QPN (24b), for UDP/TCP it's primary socket number (16b)
+psm2_epid_t psm3_epid_pack_ipv4(psmi_naddr128_t ipv4_addr,
+				psmi_eth_proto_t pprotocol,
+				uint32_t context, uint16_t aux_sock);
+// IPv6 Ethernet (RoCE or UDP/TCP)
+// for RoCE context is QPN (24b), for UDP/TCP it's primary socket number (16b)
+psm2_epid_t psm3_epid_pack_ipv6(psmi_naddr128_t ipv6_addr,
+				psmi_eth_proto_t protocol,
+				uint32_t context, uint16_t aux_sock);
+
+// for a shm-only job (1 node job)
+psm2_epid_t psm3_epid_pack_shm(const psm2_uuid_t unique_job_key);
+
+// for a self-only job (1 proc job)
+psm2_epid_t psm3_epid_pack_self(void);
+
+// for internal self-test of epid/epaddr hash and lookup
+psm2_epid_t psm3_epid_pack_diag(int val);
+
+// These functions extract fields/information from the epid
+uint8_t psm3_epid_addr_fmt(psm2_epid_t epid);
+psmi_eth_proto_t psm3_epid_protocol(psm2_epid_t epid);
+psm2_nid_t psm3_epid_nid(psm2_epid_t epid);
+const char *psm3_subnet_epid_subset_fmt(psmi_subnet128_t subnet, int bufno);
+psmi_subnet128_t psm3_epid_subnet(psm2_epid_t epid);
+uint8_t psm3_epid_prefix_len(psm2_epid_t epid);
+uint64_t psm3_epid_port(psm2_epid_t epid);
+uint64_t psm3_epid_context(psm2_epid_t epid);
+#ifdef PSM_SOCKETS
+uint16_t psm3_epid_aux_socket(psm2_epid_t epid);
+#endif
+void psm3_epid_get_av(psm2_epid_t epid, uint16_t *lid, psmi_gid128_t *gid);
+uint32_t psm3_epid_get_rem_addr(psm2_epid_t epid);
+uint16_t psm3_epid_lid(psm2_epid_t epid);
+uint64_t psm3_epid_hash(psm2_epid_t epid);
+
+psm2_nid_t psm3_build_nid(uint8_t unit, psmi_naddr128_t addr, unsigned lid);
+
+// compare subnets based on comparison rules for given addr_fmt
+// This considers whether routing is possible and PSM3_ALLOW_ROUTERS is set
+int psm3_subnets_match(psmi_subnet128_t a, psmi_subnet128_t b);
+
+// for some formats the epid only has a subset of the subnet, compare
+// just the subset available in epid
+int psm3_subnets_match_epid(psmi_subnet128_t subnet, psm2_epid_t epid);
+
+#ifdef PSM_SOCKETS
+// manage sockaddr fundamentals
+int psm3_sockaddr_cmp(struct sockaddr_in6 *a, struct sockaddr_in6 *b);
+// build an AF_INET6 sockaddr
+// can be for a IPv4 (GID ::ffff:<ipaddr>) or IPv6 style GID
+void psm3_build_sockaddr(struct sockaddr_in6 *in6, uint16_t port,
+				uint64_t gid_hi, uint64_t gid_lo,
+				uint32_t scope_id);
+void psm3_epid_build_sockaddr(struct sockaddr_in6 *in6, psm2_epid_t epid,
+				uint32_t scope_id);
+void psm3_epid_build_aux_sockaddr(struct sockaddr_in6 *in6, psm2_epid_t epid,
+				uint32_t scope_id);
+#endif
+int psm3_epid_cmp_internal(psm2_epid_t a, psm2_epid_t b);
+int psm3_epid_zero_internal(psm2_epid_t a);
+psm2_epid_t psm3_epid_zeroed_internal(void);
+
+// NID is just a special subset of epid values where context/subctxt/qp_num == 0
+// so we can use the epid function to cmp and clear a psm2_nid_t
+PSMI_ALWAYS_INLINE(int psm3_nid_cmp_internal(psm2_nid_t a, psm2_nid_t b))
+{
+	return psm3_epid_cmp_internal(a, b);
+}
+
+PSMI_ALWAYS_INLINE(int psm3_nid_zero_internal(psm2_nid_t a))
+{
+	return psm3_epid_zero_internal(a);
+}
+
+PSMI_ALWAYS_INLINE(psm2_nid_t psm3_nid_zeroed_internal(void))
+{
+	return psm3_epid_zeroed_internal();
+}
+
+#define PSMI_EPID_LEN (sizeof(uint64_t)*3) // in bytes
+psm2_epid_t psm3_epid_pack_words(uint64_t w0, uint64_t w1, uint64_t w2);
+uint64_t psm3_epid_w0(psm2_epid_t epid);
+uint64_t psm3_epid_w1(psm2_epid_t epid);
+uint64_t psm3_epid_w2(psm2_epid_t epid);
+
 
 /*
  * Hostname manipulation
  */
-char *psmi_gethostname(void);
-const char *psmi_epaddr_fmt_addr(psm2_epid_t epid);
-const char *psmi_epaddr_get_hostname(psm2_epid_t epid);
-const char *psmi_epaddr_get_name(psm2_epid_t epid);
-psm2_error_t psmi_epid_set_hostname(uint64_t nid, const char *hostname,
+char *psm3_gethostname(void);
+const char *psm3_epid_fmt_internal(psm2_epid_t epid, int bufno);
+const char *psm3_epid_fmt_context(psm2_epid_t epid, int bufno);
+const char *psm3_epid_fmt_nid(psm2_epid_t epid, int bufno);
+const char *psm3_epid_fmt_addr(psm2_epid_t epid, int bufno);
+const char *psm3_epid_fmt_subnet(psm2_epid_t epid, int bufno);
+const char *psm3_epid_str_addr_fmt(psm2_epid_t epid);
+const char *psm3_epid_str_protocol(psm2_epid_t epid);
+const char *psm3_epaddr_get_hostname(psm2_epid_t epid, int bufno);
+const char *psm3_epaddr_get_name(psm2_epid_t epid, int bufno);
+psm2_error_t psm3_epid_set_hostname(psm2_nid_t nid, const char *hostname,
 				   int overwrite);
+const char *psm3_nid_fmt(psm2_nid_t nid, int bufno);
+
+#ifdef PSM_VERBS
+const char *psm3_ibv_gid_fmt(union ibv_gid gid, int bufno);
+int psm3_nonzero_gid(const union ibv_gid *gid);
+#endif
+
+/* PSM3_IDENTIFY output */
+
+void psm3_print_rank_identify(void);
+void psm3_print_ep_identify(psm2_ep_t ep);
+
 
 /*
  * Memory allocation, use macros only.
@@ -126,7 +294,7 @@ psm2_error_t psmi_epid_set_hostname(uint64_t nid, const char *hostname,
  *   psmi_realloc(ep, memtype, ptr, newsize)
  *   psmi_memalign(ep, memtype, alignment, size)
  *   psmi_calloc(ep, memtype, elemsz, numelems)
- *   psmi_strdup(ep, memtype, ptr)
+ *   psmi_strdup(ep, ptr)
  *   psmi_free(ptr)
  *
  */
@@ -138,10 +306,12 @@ typedef enum psmi_memtype {
 	DESCRIPTORS,		/* For tracking send/recv descriptors */
 	UNEXPECTED_BUFFERS,	/* For tracking unexpected recv buffers */
 	STATS,			/* For tracking stats-related allocs */
+#if defined(PSM_VERBS) || defined(PSM_SOCKETS)
 #ifdef RNDV_MOD
 	// TBD, should we just tabulate this into PER_PEER_ENDPOINT
 	// maybe once debugged we should consolidate?
 	PEER_RNDV,			/* for tracking Rendezvous per RC QP resources */
+#endif
 #endif
 } psmi_memtype_t;
 
@@ -163,30 +333,32 @@ struct psmi_stats_malloc {
 	int64_t m_undefined_max;
 	int64_t m_stats_total;
 	int64_t m_stats_max;
+#if defined(PSM_VERBS) || defined(PSM_SOCKETS)
 #ifdef RNDV_MOD
 	int64_t m_peerrndv_total;
 	int64_t m_peerrndv_max;
 #endif
+#endif
 };
 
-extern struct psmi_stats_malloc psmi_stats_memory;
+extern struct psmi_stats_malloc psm3_stats_memory;
 
-void psmi_mem_stats_register(void);
+void psm3_mem_stats_register(void);
 
-void *psmi_malloc_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t sz,
+void *psm3_malloc_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t sz,
 			   const char *curloc);
-void *psmi_realloc_internal(psm2_ep_t ep, psmi_memtype_t mt, void *ptr,
+void *psm3_realloc_internal(psm2_ep_t ep, psmi_memtype_t mt, void *ptr,
 			    size_t newSz, const char *curloc);
-void *psmi_memalign_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t alignment,
+void *psm3_memalign_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t alignment,
 			     size_t sz, const char *curloc);
-void *psmi_calloc_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t num,
+void *psm3_calloc_internal(psm2_ep_t ep, psmi_memtype_t mt, size_t num,
 			   size_t sz, const char *curloc);
-void *psmi_strdup_internal(psm2_ep_t ep, const char *string, const char *curloc);
+void *psm3_strdup_internal(psm2_ep_t ep, const char *string, const char *curloc);
 
-void MOCKABLE(psmi_free_internal)(void *ptr, const char *curLoc);
-MOCK_DCL_EPILOGUE(psmi_free_internal);
+void MOCKABLE(psm3_free_internal)(void *ptr, const char *curLoc);
+MOCK_DCL_EPILOGUE(psm3_free_internal);
 
-size_t psmi_malloc_usable_size_internal(void *ptr, const char *curLoc);
+size_t psm3_malloc_usable_size_internal(void *ptr, const char *curLoc);
 
 #ifdef PSM_HEAP_DEBUG
 /* During heap debug code, we can sprinkle function calls:
@@ -210,15 +382,15 @@ void psmi_heapdebug_finalize(void);
 
 #endif
 
-#define psmi_strdup(ep, string) psmi_strdup_internal(ep, string, PSMI_CURLOC)
+#define psmi_strdup(ep, string) psm3_strdup_internal(ep, string, PSMI_CURLOC)
 #define psmi_calloc(ep, mt, nelem, elemsz) \
-	psmi_calloc_internal(ep, mt, nelem, elemsz, PSMI_CURLOC)
-#define psmi_malloc(ep, mt, sz) psmi_malloc_internal(ep, mt, sz, PSMI_CURLOC)
-#define psmi_realloc(ep, mt, ptr, nsz) psmi_realloc_internal(ep, mt, ptr, nsz, PSMI_CURLOC)
+	psm3_calloc_internal(ep, mt, nelem, elemsz, PSMI_CURLOC)
+#define psmi_malloc(ep, mt, sz) psm3_malloc_internal(ep, mt, sz, PSMI_CURLOC)
+#define psmi_realloc(ep, mt, ptr, nsz) psm3_realloc_internal(ep, mt, ptr, nsz, PSMI_CURLOC)
 #define psmi_memalign(ep, mt, al, sz) \
-	psmi_memalign_internal(ep, mt, al, sz, PSMI_CURLOC)
-#define psmi_free(ptr)	psmi_free_internal(ptr, PSMI_CURLOC)
-#define psmi_malloc_usable_size(ptr) psmi_malloc_usable_size_internal(ptr, PSMI_CURLOC)
+	psm3_memalign_internal(ep, mt, al, sz, PSMI_CURLOC)
+#define psmi_free(ptr)	psm3_free_internal(ptr, PSMI_CURLOC)
+#define psmi_malloc_usable_size(ptr) psm3_malloc_usable_size_internal(ptr, PSMI_CURLOC)
 #ifndef PSM_IS_TEST
 #define malloc(sz)        _use_psmi_malloc_instead_of_plain_malloc
 #define realloc(ptr,nsz)  _use_psmi_realloc_instead_of_plain_realloc
@@ -232,18 +404,18 @@ void psmi_heapdebug_finalize(void);
 #define malloc_usable_size(ptr) _use_psmi_malloc_usable_size_instead_of_plain_malloc_usable_size
 #endif /* PSM_IS_TEST */
 
-void psmi_log_memstats(psmi_memtype_t type, int64_t nbytes);
+void psm3_log_memstats(psmi_memtype_t type, int64_t nbytes);
 
 /*
  * Parse int parameters
  * -1 -> parse error
  */
-long psmi_parse_str_long(const char *str);
+long psm3_parse_str_long(const char *str);
 
 /*
  * Parsing int parameters set in string tuples.
  */
-int psmi_parse_str_tuples(const char *str, int ntup, int *vals);
+int psm3_parse_str_tuples(const char *str, int ntup, int *vals);
 
 /*
  * Resource Limiting based on PSM memory mode.
@@ -264,17 +436,19 @@ struct psmi_rlimit_mpool {
 		uint32_t obj_max;
 	} mode[PSMI_MEMMODE_NUM];
 };
-psm2_error_t psmi_parse_mpool_env(const psm2_mq_t mq, int level,
+psm2_error_t psm3_parse_mpool_env(const psm2_mq_t mq, int level,
 				 const struct psmi_rlimit_mpool *rlim,
 				 uint32_t *valo, uint32_t *chunkszo);
-int psmi_parse_memmode(void);
-int psmi_parse_identify(void);
-unsigned psmi_parse_senddma(void);
-unsigned psmi_parse_rdmamode(void);
-#ifdef PSM_CUDA
+int psm3_parse_memmode(void);
+int psm3_parse_identify(void);
+#ifdef PSM_HAVE_REG_MR
+unsigned psm3_parse_senddma(void);
+#endif
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 unsigned psmi_parse_gpudirect(void);
-unsigned psmi_parse_gpudirect_send_limit(void);
-unsigned psmi_parse_gpudirect_recv_limit(void);
+unsigned psmi_parse_gpudirect_rdma_send_limit(int force);
+unsigned psmi_parse_gpudirect_rdma_recv_limit(int force);
+unsigned psmi_parse_gpudirect_rv_gpu_cache_size(int reload);
 #endif
 
 /*
@@ -309,21 +483,21 @@ union psmi_envvar_val {
 #define PSMI_ENVVAR_VAL_NO  ((union psmi_envvar_val) 0)
 
 int
-MOCKABLE(psmi_getenv)(const char *name, const char *descr, int level,
+MOCKABLE(psm3_getenv)(const char *name, const char *descr, int level,
 		int type, union psmi_envvar_val defval,
 		union psmi_envvar_val *newval);
-MOCK_DCL_EPILOGUE(psmi_getenv);
-int psmi_parse_val_pattern(const char *env, int def, int def_syntax);
+MOCK_DCL_EPILOGUE(psm3_getenv);
+int psm3_parse_val_pattern(const char *env, int def, int def_syntax);
 /*
  * Misc functionality
  */
-uintptr_t psmi_getpagesize(void);
-uint64_t psmi_cycles_left(uint64_t start_cycles, int64_t timeout_ns);
-uint32_t psmi_get_ipv4addr();
-void psmi_syslog(psm2_ep_t ep, int to_console, int level,
+long int psm3_rand(long int seed);
+uintptr_t psm3_getpagesize(void);
+uint64_t psm3_cycles_left(uint64_t start_cycles, int64_t timeout_ns);
+void psm3_syslog(psm2_ep_t ep, int to_console, int level,
 		 const char *format, ...);
-void *psmi_memcpyo(void *dst, const void *src, size_t n);
-uint32_t psmi_crc(unsigned char *buf, int len);
+void *psm3_memcpyo(void *dst, const void *src, size_t n);
+uint32_t psm3_crc(unsigned char *buf, int len);
 
 /*
  * Internal CPUID detection
@@ -355,18 +529,18 @@ uint32_t psmi_crc(unsigned char *buf, int len);
 /*
  * Global model so we can tune defaults better for specific cpu's
  */
-extern uint32_t psmi_cpu_model;
+extern uint32_t psm3_cpu_model;
 
 /*
  * Diagnostics, all in psm_diags.c
  */
-int psmi_diags(void);
+int psm3_diags(void);
 
 /*
  * Multiple Endpoints
  */
-extern int psmi_multi_ep_enabled;
-void psmi_multi_ep_init();
+extern int psm3_multi_ep_enabled;
+void psm3_multi_ep_init();
 
 #ifdef PSM_FI
 /*
@@ -380,6 +554,7 @@ void psmi_multi_ep_init();
  *	PSM3_FI_X - for each fault type: num:denom:seed
  *			fault num/denom of events, seed random for reproducing
  *		recvlost - discard packet on receive before processing
+ *		recvpart - partial packet receive in TCP
  *		rq_lkey - RQ WQE with bad lkey
  *		rc_rdma_lkey - User RC SQ WQE with bad lkey
  *		rc_rdma_rkey - User RC SQ WQE with bad rkey
@@ -387,18 +562,22 @@ void psmi_multi_ep_init();
  *		rv_rdma_rkey - RV SQ WQE with bad rkey
  *		sq_lkey - SQ WQE with bad lkey
  *		sendlost - discard packet on send before sending
+ *		sendpart - partial packet send in TCP
+ *		sendfull - report no resources on send (pio_flush)
+ *		sendfullctrl - report no resources on send ctrl message
+ *		sendfullcb - report no resources ctrl msg retry timer callback
  *		reg_mr - register MR failure (ENOMEM)
  *		nonpri_reg_mr - non-priority register MR failure (ENOMEM)
  *		pri_reg_mr - priority register MR failure (ENOMEM)
  *		gdrmmap - GPU gdrcopy pin and mmap failure
  */
-int psmi_faultinj_enabled;	/* use macro to test */
-int psmi_faultinj_verbose;	/* use IS_FAULT macro to test */
-int psmi_faultinj_sec_rail;	/* faults only on secondary rails or EPs */
+extern int psm3_faultinj_enabled; /* use macro to test */
+extern int psm3_faultinj_verbose; /* use IS_FAULT macro to test */
+extern int psm3_faultinj_sec_rail;/* faults only on secondary rails or EPs */
 
-struct psmi_faultinj_spec {
-	STAILQ_ENTRY(psmi_faultinj_spec) next;
-	char spec_name[PSMI_FAULTINJ_SPEC_NAMELEN];
+struct psm3_faultinj_spec {
+	STAILQ_ENTRY(psm3_faultinj_spec) next;
+	char spec_name[PSM3_FAULTINJ_SPEC_NAMELEN];
 
 	uint64_t num_faults;
 	uint64_t num_calls;
@@ -409,50 +588,53 @@ struct psmi_faultinj_spec {
 	long int initial_seed;
 };
 
-#define PSMI_FAULTINJ_ENABLED()	(!!psmi_faultinj_enabled)
-#define PSMI_FAULTINJ_ENABLED_EP(ep)	(PSMI_FAULTINJ_ENABLED() \
-		&& (!psmi_faultinj_sec_rail || ((ep)->mctxt_master != (ep))))
+#define PSM3_FAULTINJ_ENABLED()	(!!psm3_faultinj_enabled)
+#define PSM3_FAULTINJ_ENABLED_EP(ep)	(PSM3_FAULTINJ_ENABLED() \
+		&& (!psm3_faultinj_sec_rail || ((ep)->mctxt_master != (ep))))
 
-int psmi_faultinj_is_fault(struct psmi_faultinj_spec *fi); // use macro instead
-#define PSMI_FAULTINJ_IS_FAULT(fi, fmt, ...) \
-	(psmi_faultinj_is_fault(fi)? \
-			psmi_faultinj_verbose? \
-				(printf("%s: injecting fault: %s" fmt "\n", hfi_get_mylabel(), fi->spec_name, ##__VA_ARGS__), fflush(stdout), 1) \
+// callers must use macro, this declaration is only for use by macro
+int psm3_faultinj_is_fault(struct psm3_faultinj_spec *fi, psm2_ep_t ep);
+#define PSM3_FAULTINJ_IS_FAULT(fi, ep, fmt, ...) \
+	(psm3_faultinj_is_fault(fi, ep)? \
+			psm3_faultinj_verbose? \
+				(printf("%s: injecting fault: %s" fmt "\n", psm3_get_mylabel(), fi->spec_name, ##__VA_ARGS__), fflush(stdout), 1) \
 				: 1 \
 			: 0)
 
-void psmi_faultinj_init();
-void psmi_faultinj_fini();
-struct psmi_faultinj_spec *psmi_faultinj_getspec(const char *spec_name,
+void psm3_faultinj_init();
+void psm3_faultinj_fini();
+struct psm3_faultinj_spec *psm3_faultinj_getspec(const char *spec_name,
 						 const char *help,
 						 int num, int denom);
-#define PSMI_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)	\
-	static struct psmi_faultinj_spec *var;			\
-	if_pf(PSMI_FAULTINJ_ENABLED() && (var) == NULL)			\
-	    (var) = psmi_faultinj_getspec((spec_name), (help), (num), (denom));
+#define PSM3_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)	\
+	static struct psm3_faultinj_spec *var;			\
+	if_pf(PSM3_FAULTINJ_ENABLED() && (var) == NULL)			\
+	    (var) = psm3_faultinj_getspec((spec_name), (help), (num), (denom));
 
 #else
-#define PSMI_FAULTINJ_ENABLED()	0
-#define PSMI_FAULTINJ_ENABLED_EP(ep)	0
-#define PSMI_FAULTINJ_IS_FAULT(fi, fmt, ...) 0
-#define PSMI_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)
+#define PSM3_FAULTINJ_ENABLED()	0
+#define PSM3_FAULTINJ_ENABLED_EP(ep)	0
+#define PSM3_FAULTINJ_IS_FAULT(fi, ep, fmt, ...) 0
+#define PSM3_FAULTINJ_STATIC_DECL(var, spec_name, help, num, denom)
 #endif /* #ifdef PSM_FI */
 /*
  * PSM core component set/get options
  */
-psm2_error_t psmi_core_setopt(const void *core_obj, int optname,
+psm2_error_t psm3_core_setopt(const void *core_obj, int optname,
 			     const void *optval, uint64_t optlen);
 
-psm2_error_t psmi_core_getopt(const void *core_obj, int optname,
+psm2_error_t psm3_core_getopt(const void *core_obj, int optname,
 			     void *optval, uint64_t *optlen);
 
 /*
  * PSM AM component set/get options
  */
-psm2_error_t psmi_am_setopt(const void *am_obj, int optname,
+psm2_error_t psm3_am_setopt(const void *am_obj, int optname,
 			   const void *optval, uint64_t optlen);
 
-psm2_error_t psmi_am_getopt(const void *am_obj, int optname,
+psm2_error_t psm3_am_getopt(const void *am_obj, int optname,
 			   void *optval, uint64_t *optlen);
 
+/* touch the pages, with a 32 bit read */
+void psm3_touch_mmap(void *m, size_t bytes);
 #endif /* _PSMI_UTILS_H */

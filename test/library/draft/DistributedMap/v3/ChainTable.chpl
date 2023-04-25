@@ -1,391 +1,262 @@
 
-// A fork of ChapelHashtable that uses chaining to resolve collisions instead of linear probing
-
 module ChainTable {
+  private use CTypes;
 
-    use ChapelBase, DSIUtil;
-    private use CTypes;
+  const defaultInitialCapacity : uint = 16;
 
-    const defaultInitialCapacity : uint = 32;
-    param numLocalBucketSlots : uint = 2;
+  const loadFactorGrowThreshold : real = 1.5,
+      loadFactorShrinkThreshold: real = 0.125;
 
-    const loadFactorGrowThreshold : real = 1.5,
-          loadFactorShrinkThreshold: real = 0.125;
+  // a hash-table implementation composed of a list of buckets (linked-lists of entries)
+  record chainTable {
+    type keyType;
+    type valType;
 
-    // ----------------------------------------------------
-    // Component data structures for Bucket implementation
-    // ----------------------------------------------------
+    var numBuckets : uint;
+    var numEntries : atomic uint;
 
-    // empty needs to be 0 so memset 0 sets it
-    //   (this happens in _ddata_allocate_noinit in _allocateData)
-    enum entryStatus { empty=0, full, deleted };
+    var numStaticManagers: atomic uint;
+    var isRehashing: atomic bool;
 
-    // an entry in the hash table
-    record rawTableEntry {
-        type keyType;
-        type valType;
+    var bucketDom = {0..<numBuckets};
+    var buckets: [bucketDom] Bucket(keyType, valType);
 
-        var key: keyType;
-        var val: valType;
+    proc init(type keyType, type valType, initialCapacity = defaultInitialCapacity) {
+      if isDomainType(keyType) then
+          compilerError("Values of 'domain' type do not support hash functions yet", 2);
 
-        var status: entryStatus = entryStatus.empty;
-        inline proc isFull() {
-            return this.status == entryStatus.full;
-        }
+      this.keyType = keyType;
+      this.valType = valType;
+      this.numBuckets = initialCapacity;
+      this.complete();
+      this.numEntries.write(0);
     }
 
-    // a linked-list node which holds a hashtable entry
-    class ChainedTableEntry {
-        type keyType;
-        type valType;
-        var entry : rawTableEntry(keyType, valType);
-        var next : owned ChainedTableEntry(keyType, valType)?;
-
-        proc appendToTail(idx: uint) : uint {
-            if this.next != nil {
-                return this.next!.appendToTail(idx + 1);
-            } else {
-                this.next = new owned ChainedTableEntry(keyType, valType);
-                return idx;
-            }
-        }
+    // determine if the map has an entry for the given key
+    //  if so, return (true, bucket index, index within the bucket)
+    //  otherwise, return (false, bucket index, 0)
+    proc getFullSlotFor(key: keyType) : (bool, (uint, uint)) {
+        var bucket_idx = this._bucketIdx(key);
+        var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
+        return (has_key, (bucket_idx, chain_idx));
     }
 
-    enum bucketInitState { uninit=0, initialized };
-
-    // a bucket for holding hashtable entries that all correspond the the same hash
-    //
-    // some small number of entries are stored in a local tuple, and the remainder
-    //  are stored on the heap in a linked list
-    //
-    // this type provides an interface for finding and modifying entries in the
-    //  bucket. Modifications are done by reference using the 'this()' accessor
-    record Bucket {
-        type keyType;
-        type valType;
-
-        // store some number of local entries to reduce # of cache misses when load factor is low
-        var localEntries: numLocalBucketSlots*rawTableEntry(keyType, valType);
-
-        // store the remainder of the entries in a linked list on the heap
-        var chainHead: owned ChainedTableEntry(keyType, valType)?;
-
-        var initState : bucketInitState = bucketInitState.uninit;
-        inline proc isInit() {
-            return this.initState == bucketInitState.initialized;
-        }
-
-        proc init(type keyType, type valType) {
-            this.keyType = keyType;
-            this.valType = valType;
-            this.chainHead = nil;
-            this.initState = bucketInitState.initialized;
-        }
-
-        proc clear() {
-            for i in 0..numLocalBucketSlots do this.localEntries[i].status = entryStatus.deleted;
-            this.chainHead = nil;
-        }
-
-        // determine if this bucket has a 'full' entry with the given key.
-        //  if so, return (true, idx of the slot)
-        //  otherwise, return (false, 0)
-        proc findIndexOf(key: keyType) : (bool, uint) {
-            for (e, idx) in zip(this._allEntries(), 0..) {
-                if e.isFull() && keysMatch(e.key, key) then return (true, idx);
-            }
-            return (false, 0);
-        }
-
-        // return the index of the next open slot
-        proc firstAvailableIndex() : uint {
-            for (e, idx) in zip(this._allEntries(), 0..) {
-                if !e.isFull() then return idx;
-            }
-            // none of the existing slots are empty or deleted,
-            //  so add one to the end of the linked list and return its index
-            if this.chainHead == nil {
-                this.chainHead = new owned ChainedTableEntry(this.keyType, this.valType);
-                return numLocalBucketSlots;
-            } else {
-                return this.chainHead!.appendToTail(numLocalBucketSlots + 1);
-            }
-        }
-
-        // return a reference to the entry at the given index
-        proc this(idx: uint) ref {
-            if idx < numLocalBucketSlots {
-                ref entry = this.localEntries[idx];
-                return entry;
-            } else {
-                var cnt = numLocalBucketSlots;
-                var h = this.chainHead.borrow();
-                while h != nil {
-                    if cnt == idx {
-                        ref entry = h!.entry;
-                        return entry;
-                    }
-                    h = h!.next.borrow();
-                    cnt += 1;
-                }
-                halt("Bucket index out of bounds!");
-            }
-        }
-
-        // Iterate over of all of the Bucket's entries
-        //  yield the local entries first, then those in the linked list
-        iter _allEntries() ref : rawTableEntry(this.keyType, this.valType) {
-            for i in 0..<numLocalBucketSlots {
-                ref entry = this.localEntries[i];
-                yield entry;
-            }
-
-            var h = this.chainHead.borrow();
-            while h != nil {
-                ref entry = h!.entry;
-                yield entry;
-                h = h!.next.borrow(); // could be nil
-            }
-        }
+    // return the indices for a given key
+    //  if an entry is already present for the key, return (bucket index, its index within the bucket)
+    //  otherwise, return (bucket index, next open index in the bucket)
+    proc getSlotFor(key: keyType) : (uint, uint) {
+        var bucket_idx = this._bucketIdx(key);
+        var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
+        return if has_key
+            then (bucket_idx, chain_idx)
+            else (bucket_idx, this.buckets[bucket_idx].firstAvailableIndex());
     }
 
-    // --------------------------
-    // Hash Table Implementation
-    // --------------------------
+    // copy a key-value pair into a slot with the given indices
+    proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
+        use MemMove;
 
-    record chainTable {
-        type keyType;
-        type valType;
+        ref entry = this.buckets[bucket_idx][chain_idx];
+        if entry.status != entryStatus.full then this.numEntries.add(1);
 
-        var numBuckets : uint;
-        var numEntries : uint;
-
-        var numStaticManagers: atomic uint;
-        var isRehashing: atomic bool;
-
-        var buckets: _ddata(Bucket(keyType, valType));
-
-        proc init(type keyType, type valType, initialCapacity = defaultInitialCapacity) {
-            if isDomainType(keyType) then
-                compilerError("Values of 'domain' type do not support hash functions yet", 2);
-
-            this.keyType = keyType;
-            this.valType = valType;
-            this.numBuckets = initialCapacity / numLocalBucketSlots;
-            this.numEntries = 0;
-
-            this.buckets = (if this.numBuckets == 0
-                then nil
-                else _allocateData(this.numBuckets, Bucket(this.keyType, this.valType))
-            );
-        }
-
-        proc deinit() {
-            if this.buckets != nil {
-                _ddata_free(this.buckets, this.numBuckets);
-            }
-        }
-
-        // determine if the map has an entry for the given key
-        //  if so, return (true, bucket index, index within the bucket)
-        //  otherwise, return (false, bucket index, 0)
-        proc getFullSlotFor(key: keyType) : (bool, (uint, uint)) {
-            var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
-            return (has_key, (bucket_idx, chain_idx));
-        }
-
-        // return the indices for a given key
-        //  if an entry is already present for the key, return (bucket index, its index within the bucket)
-        //  otherwise, return (bucket index, next open index in the bucket)
-        proc getSlotFor(key: keyType) : (uint, uint) {
-            var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
-            return if has_key
-                then (bucket_idx, chain_idx)
-                else (bucket_idx, this.buckets[bucket_idx].firstAvailableIndex());
-        }
-
-        // copy a key-value pair into a slot with the given indices
-        proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
-            use MemMove;
-
-            ref entry = this.buckets[bucket_idx][chain_idx];
-
-            select entry.status {
-                when entryStatus.full do _deinitSlot(entry);
-                when entryStatus.empty do this.numEntries += 1;
-                when entryStatus.deleted do this.numEntries += 1;
-            }
-
-            entry.status = entryStatus.full;
-            moveInitialize(entry.key, key);
-            moveInitialize(entry.val, val);
-        }
-
-        // copy a key-value pair out of a slot with the given indices
-        proc remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
-            use MemMove;
-
-            ref entry = this.buckets[bucket_idx][chain_idx];
-
-            key = moveFrom(entry.key);
-            val = moveFrom(entry.val);
-            entry.status = entryStatus.deleted;
-
-            this.numEntries -= 1;
-        }
-
-        // for each bucket, mark the local entries as deleted, and free the linked list
-        proc clear() {
-            for i in 0..<this.numBuckets {
-                this.buckets[i].clear();
-            }
-        }
-
-        iter items() ref : rawTableEntry(this.keyType, this.valType) {
-            for bIdx in 0..<this.numBuckets do
-                if this.buckets[bIdx].isInit() then
-                    for entry in this.buckets[bIdx]._allEntries() do
-                        if entry.isFull() then
-                            yield entry;
-        }
-
-        proc __incrementStaticCount() {
-            this.numStaticManagers.fetchAdd(1);
-        }
-
-        proc __decrementStaticCount() {
-            this.numStaticManagers.fetchSub(1);
-        }
-
-        // TODO: the context manager should wrap the distributed map's lock around this
-        proc __maybeResize() {
-            var expectedNumManagers = this.numStaticManagers.read();
-            do {
-                if expectedNumManagers > 0 then return;
-            } while !this.numStaticManagers.compareExchange(expectedNumManagers, 0);
-
-            if this._loadFactor() > loadFactorGrowThreshold {
-                if !isRehashing.testAndSet() {
-                    this.__rehash(this.numBuckets * 2);
-                    this.isRehashing.clear();
-                }
-            }
-        }
-
-        // replace the current array of buckets with a new array of different size
-        proc __rehash(newNumBuckets: uint) {
-            if newNumBuckets == 0 then halt("cannot rehash into zero buckets");
-            var newBuckets = _allocateData(newNumBuckets, Bucket(this.keyType, this.valType));
-
-            for i in 0..this.numBuckets {
-                if this.buckets[i].isInit() {
-                    for e in this.buckets[i]._allEntries() {
-                        if e.isFull() {
-                            const new_bucket_idx = chpl__defaultHashWrapper(e.key):uint & (newNumBuckets - 1);
-
-                            if !newBuckets[new_bucket_idx].isInit()
-                                then newBuckets[new_bucket_idx] = new Bucket(this.keyType, this.valType);
-
-                            const chain_idx = newBuckets[new_bucket_idx].firstAvailableIndex();
-                            ref entry = newBuckets[new_bucket_idx][chain_idx];
-                            entry.key = e.key;
-                            entry.val = e.val;
-                            entry.status = entryStatus.full;
-                        }
-                    }
-                }
-            }
-
-            if this.buckets != nil then _ddata_free(this.buckets, this.numBuckets);
-
-            this.buckets = newBuckets;
-            this.numBuckets = newNumBuckets;
-        }
-
-        proc _bucketIdx(key: keyType) : uint {
-            const idx = chpl__defaultHashWrapper(key):uint & (this.numBuckets - 1);
-            if !this.buckets[idx].isInit() then this.buckets[idx] = new Bucket(this.keyType, this.valType);
-            return idx;
-        }
-
-        inline proc _loadFactor() : real {
-            return (this.numEntries : real) / ((this.numBuckets * numLocalBucketSlots): real);
-        }
+        entry.status = entryStatus.full;
+        moveInitialize(entry.key, key);
+        moveInitialize(entry.val, val);
     }
 
-    private proc keysMatch(key1: ?t, key2: t) {
-      if isArrayType(key2.type) {
-        return (key1.equals(key2));
-      } else {
-        return key1 == key2;
+    // copy a key-value pair out of a slot with the given indices,
+    //  leaving the slot empty
+    proc remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
+      use MemMove;
+
+      ref entry = this.buckets[bucket_idx][chain_idx];
+
+      key = moveFrom(entry.key);
+      val = moveFrom(entry.val);
+      entry.status = entryStatus.deleted;
+
+      this.numEntries.sub(1);
+    }
+
+
+    // yield references to all the full entries in the map
+    iter items() ref : rawTableEntry(this.keyType, this.valType) {
+      for bucket in this.buckets do
+          for entry in bucket.allEntries() do
+            if entry.isFull() then
+              yield entry;
+    }
+
+    // move the current entries into a new array of buckets with the given size
+    proc __rehash(newNumBuckets: uint) {
+      use MemMove;
+
+      var newBucketDom = {0..<newNumBuckets},
+          newBuckets : [newBucketDom] Bucket(this.keyType, this.valType);
+
+      for bucket in this.buckets {
+        for entry in bucket.allEntries() {
+          if entry.isFull() {
+            var new_idx = chpl__defaultHashWrapper(entry.key):uint & (newNumBuckets - 1);
+            var bucket_idx = newBuckets[new_idx].firstAvailableIndex();
+
+            ref e = newBuckets[new_idx][bucket_idx];
+            e.key = entry.key;
+            e.val = entry.val;
+            e.status = entryStatus.full;
+          }
+        }
+      }
+
+      this.bucketDom = newBucketDom;
+      this.buckets = newBuckets;
+      this.numBuckets = newNumBuckets;
+    }
+
+    proc __incrementStaticCount() {
+      this.numStaticManagers.add(1);
+    }
+
+    proc __decrementStaticCount() {
+      this.numStaticManagers.sub(1);
+    }
+
+    proc __maybeResize() {
+      var expectedNumManagers = this.numStaticManagers.read();
+      do {
+        if expectedNumManagers > 0 then return;
+      } while !this.numStaticManagers.compareExchange(expectedNumManagers, 0);
+
+      if this._loadFactor() > loadFactorGrowThreshold {
+        if !isRehashing.testAndSet() {
+          this.__rehash(this.numBuckets * 2);
+          this.isRehashing.clear();
+        }
       }
     }
 
-    // ------------------------
-    // Memory Helper Functions
-    // ------------------------
-
-    private proc _allocateData(size:uint, type tableEltType) {
-        if size == 0 then
-            halt("attempt to allocate hashtable with size 0");
-
-        var callPostAlloc: bool;
-        var ret = _ddata_allocate_noinit(tableEltType,
-                                        size,
-                                        callPostAlloc);
-
-        var initMethod = init_elts_method(size, tableEltType);
-
-        const sizeofElement = _ddata_sizeof_element(ret);
-
-        // The memset call below needs to be able to set _array records.
-        // But c_ptrTo on an _array will return a pointer to
-        // the first element, which messes up the shallowCopy/shallowSwap code
-        //
-        // As a workaround, this function just returns a pointer to the argument,
-        // whether or not it is an array.
-        inline proc ptrTo(ref x) {
-            return c_pointer_return(x);
-        }
-
-        select initMethod {
-            when ArrayInit.noInit {
-                // do nothing
-            }
-            when ArrayInit.serialInit {
-                for slot in 0..#size {
-                    c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
-                }
-            }
-            when ArrayInit.parallelInit {
-                // This should match the 'these' iterator in terms of idx->task
-                forall slot in 0..#size {
-                    c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
-                }
-            }
-            otherwise {
-                halt("ArrayInit.heuristicInit should have been made concrete");
-            }
-        }
-
-        if callPostAlloc {
-            _ddata_allocate_postalloc(ret, size);
-        }
-
-        return ret;
+    inline proc _bucketIdx(key: keyType) : uint {
+      return chpl__defaultHashWrapper(key):uint & (this.numBuckets - 1);
     }
 
-    private proc _typeNeedsDeinit(type t) param {
-        return __primitive("needs auto destroy", t);
+    inline proc _loadFactor() : real {
+      return (this.numEntries.read() : real) / (this.numBuckets: real);
     }
-    private proc _deinitSlot(ref aSlot: rawTableEntry) {
-        if _typeNeedsDeinit(aSlot.key.type) {
-            chpl__autoDestroy(aSlot.key);
-        }
-        if _typeNeedsDeinit(aSlot.val.type) {
-            chpl__autoDestroy(aSlot.val);
-        }
+  }
+
+  // a linked-list of entries
+  record Bucket {
+    type keyType;
+    type valType;
+
+    var head: owned ChainTableEntry(keyType, valType)?;
+
+    // determine if this bucket has a 'full' entry with the given key.
+    //  if so, return (true, idx of the slot)
+    //  otherwise, return (false, 0)
+    proc findIndexOf(key: keyType) : (bool, uint) {
+      for (e, idx) in zip(this.allEntries(), 0..) do
+        if e.isFull() && keysMatch(e.key, key) then return (true, idx);
+
+      return (false, 0);
     }
+
+    // return the index of the next open slot
+    // create a new slot if none are open
+    proc firstAvailableIndex() : uint {
+      for (e, idx) in zip(this.allEntries(), 0..) {
+        if !e.isFull() then return idx;
+      }
+
+      // none of the existing slots are empty or deleted,
+      //  so add one to the end of the linked list and return its index
+      if this.head == nil {
+        this.head = new owned ChainTableEntry(this.keyType, this.valType);
+        return 0;
+      } else {
+        return this.head!.appendToTail(1);
+      }
+    }
+
+    // return a reference to the entry at the given index
+    proc this(idx: uint) ref {
+      var cnt = 0,
+          h = this.head.borrow();
+
+      while h != nil {
+        if cnt == idx {
+          ref entry = h!.entry;
+          return entry;
+        }
+        h = h!.next.borrow();
+        cnt += 1;
+      }
+      halt("Bucket index out of bounds!");
+    }
+
+    // yield references to all the entries in the linked list
+    iter allEntries() ref : rawTableEntry(this.keyType, this.valType) {
+      var h = this.head.borrow();
+      while h != nil {
+        ref entry = h!.entry;
+        yield entry;
+        h = h!.next.borrow();
+      }
+    }
+  }
+
+  // A linked-list node with a key-value entry and pointer to next node
+  class ChainTableEntry {
+    type keyType;
+    type valType;
+
+    var entry: rawTableEntry(keyType, valType);
+    var next: owned ChainTableEntry(keyType, valType)?;
+
+    // allocate a new entry on the heap
+    proc init(type keyType, type valType) {
+      this.keyType = keyType;
+      this.valType = valType;
+
+      this.entry = new rawTableEntry(keyType, valType);
+      this.next = nil;
+    }
+
+    // add a new entry to the tail of this linked list and return its index
+    proc appendToTail(idx: int): int {
+      if this.next == nil {
+        this.next = new owned ChainTableEntry(keyType, valType);
+        return idx;
+      } else {
+        return this.next!.appendToTail(idx + 1);
+      }
+    }
+  }
+
+  // a key-value pair
+  //  when zero-initialized, this record will have an 'entryStatus' of 'empty'
+  record rawTableEntry {
+    type keyType;
+    type valType;
+
+    var key: keyType;
+    var val: valType;
+
+    var status: entryStatus = entryStatus.empty;
+    inline proc isFull() {
+      return this.status == entryStatus.full;
+    }
+  }
+
+  enum entryStatus { empty=0, full, deleted };
+
+  // ------------------- helpers -------------------
+
+  private proc keysMatch(key1: ?t, key2: t): bool {
+    if isArrayType(key2.type) {
+      return (key1.equals(key2));
+    } else {
+      return key1 == key2;
+    }
+  }
 }

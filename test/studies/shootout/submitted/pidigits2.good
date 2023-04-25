@@ -1,5 +1,17 @@
 pidigits2.chpl:30: In iterator 'genDigits':
+pidigits2.chpl:51: warning: bigint.addmul method is deprecated - please use the standalone function addmul
+  pidigits2.chpl:18: called as genDigits(numDigits: int(64))
+pidigits2.chpl:30: In iterator 'genDigits':
+pidigits2.chpl:58: warning: bigint.mul method is deprecated - please use the standalone function mul
+  pidigits2.chpl:18: called as genDigits(numDigits: int(64))
+pidigits2.chpl:30: In iterator 'genDigits':
+pidigits2.chpl:59: warning: bigint.add method is deprecated - please use the standalone function add
+  pidigits2.chpl:18: called as genDigits(numDigits: int(64))
+pidigits2.chpl:30: In iterator 'genDigits':
 pidigits2.chpl:60: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+  pidigits2.chpl:18: called as genDigits(numDigits: int(64))
+pidigits2.chpl:30: In iterator 'genDigits':
+pidigits2.chpl:66: warning: bigint.submul method is deprecated - please use the standalone function submul
   pidigits2.chpl:18: called as genDigits(numDigits: int(64))
 3141592653	:10
 5897932384	:20

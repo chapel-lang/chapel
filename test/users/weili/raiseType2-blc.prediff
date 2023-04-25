@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# remove the unstable number and specifics of candidates
+
+grep error $2 > $2.tmp
+mv $2.tmp $2

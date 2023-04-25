@@ -1,8 +1,8 @@
 module m1 {
-  deprecated "m1.asdf"
+  @deprecated(notes="m1.asdf")
   var asdf = 1;
 
-  deprecated "m1.foo"
+  @deprecated(notes="m1.foo")
   proc foo() {
     writeln("In foo");
   }

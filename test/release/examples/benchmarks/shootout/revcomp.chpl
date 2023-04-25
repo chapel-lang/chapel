@@ -11,7 +11,7 @@ config param columns = 61;
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
-  const consoleIn = openfd(0),
+  const consoleIn = new file(0),
         stdinNoLock = consoleIn.reader(locking=false);
 
   var data: [1..consoleIn.size] uint(8),
@@ -40,8 +40,8 @@ proc main(args: [] string) {
       process(data, start, idx-2);
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 

@@ -124,6 +124,9 @@ static void test9() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 static void test10() {
@@ -135,6 +138,9 @@ static void test10() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 int main() {

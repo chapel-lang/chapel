@@ -72,7 +72,7 @@ proc main(args: [] string) {
 }
 
 proc readData(infileName:string, A: [] real(32), nx: int,ny: int, nz: int) {
-  var f = open(infileName, iomode.r);
+  var f = open(infileName, ioMode.r);
   var r = f.reader(kind=ionative);
   r.read(A);
   r.close();
@@ -81,7 +81,7 @@ proc readData(infileName:string, A: [] real(32), nx: int,ny: int, nz: int) {
 
 proc outputData(outfileName: string, ANext: [] real(32),
                 nx: int, ny: int, nz: int) {
-  var f = open(outfileName, iomode.cw);
+  var f = open(outfileName, ioMode.cw);
   var w = f.writer(kind=ionative);
   var size = (nx*ny*nz):int(32);
   w.write(size);

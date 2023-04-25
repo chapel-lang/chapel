@@ -1,0 +1,4 @@
+arrayFieldOfSharedGenericClassType.chpl:7: In initializer:
+arrayFieldOfSharedGenericClassType.chpl:5: warning: creating an array with element type shared column
+arrayFieldOfSharedGenericClassType.chpl:5: error: array element type cannot currently be generic
+  arrayFieldOfSharedGenericClassType.chpl:17: called as table.init(param entries = 4)

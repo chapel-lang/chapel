@@ -1,8 +1,8 @@
-@unstable "This function is unstable"
+@unstable("This function is unstable")
 proc TestUnstableProc(x: bool) {
   if (x == true) {
     writeln("What's up!");
-  } 
+  }
   else {
     writeln("Hey!");
   }

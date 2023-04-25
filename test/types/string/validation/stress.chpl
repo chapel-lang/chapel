@@ -11,11 +11,11 @@
 
 use IO;
 
-var f = open("UTF8-test.txt", mode=iomode.rw);
+var f = open("UTF8-test.txt", mode=ioMode.rw);
 var chan = f.reader();
 
 var b: bytes;
-while chan.readbytes(b) {
+while chan.readAll(b) {
   writeln(b.decode(policy=decodePolicy.replace));
 }
 chan.close();

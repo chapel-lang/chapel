@@ -1,4 +1,4 @@
-use IO, List, Barriers;
+use IO, List, Collectives;
 
 config const numRounds = 20;
 
@@ -39,7 +39,7 @@ var canFinishTurn: sync int = 0;
 
 
 // Our main parallel simulation loop for the monkeys
-var bar = new Barrier(numMonkeys);
+var bar = new barrier(numMonkeys);
 coforall monkey in Monkeys {
   for 1..numRounds {
     // Process any items that are in our list of current items

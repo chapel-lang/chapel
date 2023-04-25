@@ -24,7 +24,7 @@ proc main {
 
   if compareTimes {
     writeln("chpl wrote ", arrsize, " elements ", ntrials, " times in ",
-            t.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            t.elapsed(), " seconds");
     c_trial();
   }
 }

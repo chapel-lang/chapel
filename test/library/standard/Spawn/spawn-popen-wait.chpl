@@ -52,7 +52,7 @@ while sub.stdout.readLine(line) {
       writeln("writing to ", signalFile);
     }
     signaled = true;
-    var f = open(signalFile, iomode.cw);
+    var f = open(signalFile, ioMode.cw);
     var ch = f.writer();
     ch.writeln();
     ch.close();

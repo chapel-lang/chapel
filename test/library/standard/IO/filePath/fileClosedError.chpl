@@ -1,6 +1,6 @@
 use IO;
 
-var f = open("./test.txt", iomode.r);
+var f = open("./test.txt", ioMode.r);
 f.close();
 
 try {

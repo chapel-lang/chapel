@@ -41,6 +41,11 @@ class Literal : public AstNode {
     CHPL_ASSERT(value_ != nullptr);
   }
 
+  Literal(AstTag tag, Deserializer& des)
+    : AstNode(tag, des), value_(types::Param::deserialize(des)) {
+    assert(value_ != nullptr);
+  }
+
   bool literalContentsMatchInner(const Literal* other) const {
     return this->value_ == other->value_;
   }
@@ -56,6 +61,11 @@ class Literal : public AstNode {
    */
   const types::Param* param() const {
     return value_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    value_->serialize(ser);
   }
 };
 

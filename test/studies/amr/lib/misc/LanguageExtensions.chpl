@@ -1,4 +1,4 @@
-proc main {
+private proc main {
   var T = (1,5,-2);
   writeln("T   = ", T);
   writeln("T+1 = ", T+1);

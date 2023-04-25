@@ -9,7 +9,7 @@ module Application {
   proc main {
     var A = [10,11], B = [2,3];
     record SimulatedForallExpr {
-      proc this(idx) return A[idx]*B[idx];
+      proc this(idx) do return A[idx]*B[idx];
     }
     writeln(plusReduce(new SimulatedForallExpr()));
   }

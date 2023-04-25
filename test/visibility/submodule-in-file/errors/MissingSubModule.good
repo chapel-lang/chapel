@@ -1,3 +1,2 @@
-MissingSubModule.chpl:1: In module 'MissingSubModule':
 MissingSubModule.chpl:2: error: cannot find included submodule
 MissingSubModule.chpl:2: note: expected file at path 'MissingSubModule/MissingSubModule.chpl'

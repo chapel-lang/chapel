@@ -4,18 +4,19 @@ var f: file;
 
 try {
   try {
-    f = open("foo", iomode.cw);
-    f.check();
+    f = open("foo", ioMode.cw);
+    if (!f.isOpen()) {
+      writeln("There was a problem with the file");
+    }
     writeln(f.path);
     f.close();
   } catch e: SystemError {
     writeln("open error:  " + e.details);  
   }
-  try {
-    f.check();
+  if (!f.isOpen()) {
+    writeln("File was closed successfully");
+  } else {
     writeln("You shouldn't see this");
-  } catch e: SystemError {
-    writeln("Task failed successfully");  
   }
 } catch {
   halt("catchall");

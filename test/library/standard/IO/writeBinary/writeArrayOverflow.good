@@ -1,0 +1,2 @@
+caught: UnexpectedEofError: short read or write
+caught: EofError: end of file

@@ -1,4 +1,4 @@
 import Regex;
 
-var myre=Regex.compile("hello[0-9]");
+var myre = new Regex.regex("hello[0-9]");
 if myre.match("hello0") then writeln("Yes!");

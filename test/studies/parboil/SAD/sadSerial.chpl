@@ -63,7 +63,7 @@ proc main(args:[] string) {
 
 
 proc loadImage(filename: string) {
-  var f = open(filename, iomode.r);
+  var f = open(filename, ioMode.r);
   var r = f.reader(kind=ionative);
   var width, height: uint(16);
 
@@ -99,13 +99,13 @@ proc SAD_TYPE_CT(n) {
   }
 }
 
-proc SAD_TYPE_1_IX(imageSize) return 0;
-proc SAD_TYPE_2_IX(imageSize) return imageSize * MAX_POS_PADDED;
-proc SAD_TYPE_3_IX(imageSize) return imageSize * (3 * MAX_POS_PADDED);
-proc SAD_TYPE_4_IX(imageSize) return imageSize * (5 * MAX_POS_PADDED);
-proc SAD_TYPE_5_IX(imageSize) return imageSize * (9 * MAX_POS_PADDED);
-proc SAD_TYPE_6_IX(imageSize) return imageSize * (17 * MAX_POS_PADDED);
-proc SAD_TYPE_7_IX(imageSize) return imageSize * (25 * MAX_POS_PADDED);
+proc SAD_TYPE_1_IX(imageSize) do return 0;
+proc SAD_TYPE_2_IX(imageSize) do return imageSize * MAX_POS_PADDED;
+proc SAD_TYPE_3_IX(imageSize) do return imageSize * (3 * MAX_POS_PADDED);
+proc SAD_TYPE_4_IX(imageSize) do return imageSize * (5 * MAX_POS_PADDED);
+proc SAD_TYPE_5_IX(imageSize) do return imageSize * (9 * MAX_POS_PADDED);
+proc SAD_TYPE_6_IX(imageSize) do return imageSize * (17 * MAX_POS_PADDED);
+proc SAD_TYPE_7_IX(imageSize) do return imageSize * (25 * MAX_POS_PADDED);
 
 proc SAD_TYPE_IX(n, imageSize) {
   select n {
@@ -153,7 +153,7 @@ proc write_subblocks(w, subblockArray: [] uint(16),
 }
 
 proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var w = f.writer(kind=ionative);
   const mbs = width*height;
   const rowInds = [0, 1, height/2 - 1, height/2, height - 2, height - 1];

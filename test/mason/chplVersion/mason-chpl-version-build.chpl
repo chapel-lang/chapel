@@ -6,7 +6,7 @@ use IO;
 proc main() {
 
   
-  const toml = open("Mason.toml", iomode.cw);
+  const toml = open("Mason.toml", ioMode.cw);
   var s      = toml.writer();
 
   s.writeln();
@@ -19,7 +19,7 @@ proc main() {
 
   toml.close();
 
-  const lock = open("Mason.lock", iomode.cw);
+  const lock = open("Mason.lock", ioMode.cw);
   var w      = lock.writer();
 
   w.writeln();

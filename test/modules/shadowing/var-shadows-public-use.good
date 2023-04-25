@@ -1,2 +1,4 @@
-var-shadows-public-use.chpl:7: error: symbol x is multiply defined
-var-shadows-public-use.chpl:2: note: also defined here
+var-shadows-public-use.chpl:5: In module 'N':
+var-shadows-public-use.chpl:7: error: 'x' has multiple definitions
+var-shadows-public-use.chpl:6: note: redefined through the 'use' statement here
+var-shadows-public-use.chpl:2: note: leading to the definition here

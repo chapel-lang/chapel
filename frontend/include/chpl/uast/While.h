@@ -50,9 +50,14 @@ class While final : public Loop {
         BlockStyle blockStyle,
         int loopBodyChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum, NO_CHILD /*attributeGroup*/),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
+  }
+
+  While(Deserializer& des)
+    : Loop(asttags::While, des) {
+    conditionChildNum_ = des.read<int8_t>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -95,6 +100,13 @@ class While final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(While);
 
 };
 

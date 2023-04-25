@@ -58,19 +58,24 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  TaskVar(AstList children, int attributesChildNum, UniqueString name,
+  TaskVar(AstList children, int attributeGroupChildNum, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
           int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::TaskVar, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     Decl::DEFAULT_VISIBILITY,
                     Decl::DEFAULT_LINKAGE,
-                    /*linkageNameChildNum*/ -1,
+                    /*linkageNameChildNum*/ NO_CHILD,
                     name,
                     (Qualifier)((int)intent),
                     typeExpressionChildNum,
                     initExpressionChildNum) {
+  }
+
+  TaskVar(Deserializer& des)
+      : VarLikeDecl(asttags::TaskVar, des) {
+
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -88,7 +93,7 @@ class TaskVar final : public VarLikeDecl {
   ~TaskVar() override = default;
 
   static owned<TaskVar> build(Builder* builder, Location loc,
-                              owned<Attributes> attributes,
+                              owned<AttributeGroup> attributeGroup,
                               UniqueString name,
                               TaskVar::Intent intent,
                               owned<AstNode> typeExpression,
@@ -99,10 +104,21 @@ class TaskVar final : public VarLikeDecl {
   */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TaskVar);
+
 };
+
+// DECLARE_SERDE_ENUM(uast::TaskVar::Intent, uint8_t);
 
 
 } // end namespace uast
+
+
+
 } // end namespace chpl
 
 #endif

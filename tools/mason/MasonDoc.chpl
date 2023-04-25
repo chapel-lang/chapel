@@ -37,7 +37,7 @@ proc masonDoc(args: [] string) throws {
     const projectHome = getProjectHome(cwd, tomlName);
     const tomlPath = projectHome + "/" + tomlName;
 
-    const toParse = open(projectHome + "/" + tomlName, iomode.r);
+    const toParse = open(projectHome + "/" + tomlName, ioMode.r);
     var tomlFile = parseToml(toParse);
 
     const projectName = tomlFile["brick"]!["name"]!.s;

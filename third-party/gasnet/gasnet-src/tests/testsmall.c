@@ -7,23 +7,26 @@
  * Terms of use are as specified in license.txt
  */
 
+
+#include <gasnetex.h>
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  #include <gasnet_mk.h>
+#endif
+
 int numprocs;
-int maxsz = 0;
+size_t maxsz = 0;
+
 #ifndef TEST_SEGSZ
   #define TEST_SEGSZ_EXPR (2*(uintptr_t)alignup(maxsz,PAGESZ))
 #endif
 #include "test.h"
-
-#if GASNET_HAVE_MK_CLASS_MULTIPLE
-  #include <gasnet_mk.h>
-#endif
 
 #define GASNET_HEADNODE 0
 #define PRINT_LATENCY 0
 #define PRINT_THROUGHPUT 1
 
 typedef struct {
-	int datasize;
+	size_t datasize;
 	int iters;
 	uint64_t time;
 } stat_struct_t;
@@ -62,7 +65,7 @@ char *msgbuf;
 #define print_stat \
   GASNETT_TRACE_SETSOURCELINE(__FILE__,__LINE__), _print_stat
 
-void _init_stat(stat_struct_t *st, int sz)
+void _init_stat(stat_struct_t *st, size_t sz)
 {
 	st->iters = 0;
 	st->datasize = sz;
@@ -79,19 +82,19 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 {
 	switch (operation) {
 	case PRINT_LATENCY:
-		printf("%c: %2i - %10i byte : %7i iters,"
+		printf("%c: %2i - %10li byte : %7i iters,"
 			   " latency %10i us total, %9.3f us ave. (%s)\n",
                         TEST_SECTION_NAME(),
-			myproc, st->datasize, st->iters, (int) st->time,
+			myproc, (long) st->datasize, st->iters, (int) st->time,
 			((double)st->time) / st->iters,
 			name);
 		fflush(stdout);
 		break;
 	case PRINT_THROUGHPUT:
-		printf((unitsMB?"%c: %2i - %10i byte : %7i iters, throughput %11.6f MB/sec (%s)\n":
-                                "%c: %2i - %10i byte : %7i iters, throughput %11.3f KB/sec (%s)\n"),
+		printf((unitsMB?"%c: %2i - %10li byte : %7i iters, throughput %11.6f MB/sec (%s)\n":
+                                "%c: %2i - %10li byte : %7i iters, throughput %11.3f KB/sec (%s)\n"),
                         TEST_SECTION_NAME(),
-			myproc, st->datasize, st->iters,
+			myproc, (long) st->datasize, st->iters,
 			((int)st->time == 0 ? 0.0 :
                         (1000000.0 * st->datasize * st->iters / 
                           (unitsMB?(1024.0*1024.0):1024.0)) / ((int)st->time)),
@@ -104,7 +107,7 @@ void _print_stat(int myproc, stat_struct_t *st, const char *name, int operation)
 }
 
 
-void roundtrip_test(int iters, int nbytes)
+void roundtrip_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -153,7 +156,7 @@ void roundtrip_test(int iters, int nbytes)
 	}	
 }
 
-void oneway_test(int iters, int nbytes)
+void oneway_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -203,7 +206,7 @@ void oneway_test(int iters, int nbytes)
 }
 
 
-void roundtrip_nbi_test(int iters, int nbytes)
+void roundtrip_nbi_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -256,7 +259,7 @@ void roundtrip_nbi_test(int iters, int nbytes)
 
 }
 
-void oneway_nbi_test(int iters, int nbytes)
+void oneway_nbi_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -308,7 +311,7 @@ void oneway_nbi_test(int iters, int nbytes)
 }
 
 
-void roundtrip_nb_test(int iters, int nbytes)
+void roundtrip_nb_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -361,7 +364,7 @@ void roundtrip_nb_test(int iters, int nbytes)
 
 }
 
-void oneway_nb_test(int iters, int nbytes)
+void oneway_nb_test(int iters, size_t nbytes)
 {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
@@ -428,12 +431,14 @@ void oneway_nb_test(int iters, int nbytes)
 
 int main(int argc, char **argv)
 {
-    int min_payload, max_payload;
+    size_t min_payload = 1;
+    size_t max_payload;
+    size_t max_step = 0;
     void *myseg;
     void *alloc = NULL;
     int arg;
     int iters = 0;
-    int j;
+    size_t j;
     int firstlastmode = 0;
     int fullduplexmode = 0;
     int crossmachinemode = 0;
@@ -476,6 +481,14 @@ int main(int argc, char **argv)
       } else if (!strcmp(argv[arg], "-s")) {
         skipwarmup = 1;
         ++arg;
+      } else if (!strcmp(argv[arg], "-minsz")) {
+        ++arg;
+        if (argc > arg) { min_payload = gasnett_parse_int(argv[arg], 1); arg++; }
+        else help = 1;
+      } else if (!strcmp(argv[arg], "-max-step")) {
+        ++arg;
+        if (argc > arg) { max_step = gasnett_parse_int(argv[arg], 1); arg++; }
+        else help = 1;
 #if GASNET_HAVE_MK_CLASS_CUDA_UVA
       // UNDOCUMENTED
       } else if (!strcmp(argv[arg], "-cuda-uva")) {
@@ -513,9 +526,12 @@ int main(int argc, char **argv)
 
     if (argc > arg) { iters = atoi(argv[arg]); arg++; }
     if (!iters) iters = 1000;
-    if (argc > arg) { maxsz = atoi(argv[arg]); arg++; }
+    if (argc > arg) { maxsz = gasnett_parse_int(argv[arg],1); arg++; }
     if (!maxsz) maxsz = 2048; /* 2 KB default */
     if (argc > arg) { TEST_SECTION_PARSE(argv[arg]); arg++; }
+
+    max_payload = maxsz;
+    if (!max_step) max_step = maxsz;
 
     /* get SPMD info (needed for segment size) */
     myproc = gex_TM_QueryRank(myteam);
@@ -534,14 +550,15 @@ int main(int argc, char **argv)
                "  The -a option enables full-duplex mode, where all nodes send.\n"
                "  The -c option enables cross-machine pairing, default is nearest neighbor.\n"
                "  The -f option enables 'first/last' mode, where the first/last\n"
-               "   nodes communicate with each other, while all other nodes sit idle.\n");
+               "   nodes communicate with each other, while all other nodes sit idle.\n"
+               "  The '-minsz N' option sets the minimum transfer size tested (default is 1).\n"
+               "  The '-max-step N' option selects the maximum step between transfer sizes,\n"
+               "    which by default advance by doubling until maxsz is reached.\n"
+              );
     if (help || argc > arg) test_usage();
 
-    min_payload = 1;
-    max_payload = maxsz;
-
     if (max_payload < min_payload) {
-      ERR("maxsz must be >= %i\n",min_payload);
+      ERR("maxsz must be >= %li\n",(long) min_payload);
       test_usage();
     }
 
@@ -634,14 +651,14 @@ int main(int argc, char **argv)
         }
         assert(((uintptr_t)msgbuf) % PAGESZ == 0);
         if (myproc == 0) 
-          MSG("Running %i iterations of %s%s%snon-bulk %s%s%s with local addresses %sside the segment for sizes: %i...%i\n", 
+          MSG("Running %i iterations of %s%s%snon-bulk %s%s%s with local addresses %sside the segment for sizes: %li...%li\n", 
           iters, 
           (firstlastmode ? "first/last " : ""),
           (fullduplexmode ? "full-duplex ": ""),
           (crossmachinemode ? "cross-machine ": ""),
           doputs?"put":"", (doputs&&dogets)?"/":"", dogets?"get":"",
           insegment ? "in" : "out", 
-          min_payload, max_payload);
+          (long) min_payload, (long) max_payload);
         BARRIER();
 
         if (iamsender && !skipwarmup) { /* pay some warm-up costs */
@@ -665,26 +682,36 @@ int main(int argc, char **argv)
 
         BARRIER();
 
-        /* Double payload at each iter, but include max_payload which may not be power-of-2 */
-        #define NEXT_SZ(sz) (MIN(sz*2,max_payload)+(sz==max_payload))
+        // Double payload at each iter, subject to max_step
+        // but include max_payload which may not otherwise be visited
+        #define ADVANCE(sz) do {                           \
+                size_t step = MIN(max_step, sz);           \
+                if (!sz) {                                 \
+                  sz = 1;                                  \
+                } else if (sz < max_payload && sz+step > max_payload) { \
+                  sz = max_payload;                        \
+                } else {                                   \
+                  sz += step;                              \
+                }                                          \
+          } while (0)
 
 	if (TEST_SECTION_BEGIN_ENABLED()) 
-        for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_test(iters, j); 
+        for (j = min_payload; j <= max_payload && j > 0; ) { roundtrip_test(iters, j); ADVANCE(j); }
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-        for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; ) { oneway_test(iters, j); ADVANCE(j); }
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_nbi_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; ) { roundtrip_nbi_test(iters, j); ADVANCE(j); }
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_nbi_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; ) { oneway_nbi_test(iters, j); ADVANCE(j); }
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  roundtrip_nb_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; ) { roundtrip_nb_test(iters, j); ADVANCE(j); }
 
   	if (TEST_SECTION_BEGIN_ENABLED()) 
-  	for (j = min_payload; j <= max_payload && j > 0; j = NEXT_SZ(j))  oneway_nb_test(iters, j);
+        for (j = min_payload; j <= max_payload && j > 0; ) { oneway_nb_test(iters, j); ADVANCE(j); }
 
         BARRIER();
         if (alloc) test_free(alloc);

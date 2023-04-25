@@ -55,7 +55,7 @@ extern uint32_t AMUDP_SocketBuffer_max;
 extern uint32_t AMUDP_MaxRequestTimeout_us;
 extern uint32_t AMUDP_InitialRequestTimeout_us;
 extern uint32_t AMUDP_RequestTimeoutBackoff;
-extern void AMUDP_InitRetryCache();
+extern void AMUDP_InitRetryCache(void);
 
 #ifndef AMUDP_TIMEOUTS_CHECKED_EACH_POLL
 #define AMUDP_TIMEOUTS_CHECKED_EACH_POLL            1  /* number of timeout values we check upon each poll */

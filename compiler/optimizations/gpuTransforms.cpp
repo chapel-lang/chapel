@@ -69,7 +69,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
-        if (!var->isParameter() && var != gVoid) {
+        if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
               continue;
@@ -303,12 +303,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
   }
 
   if (visitedFns.count(blk->getFunction()) != 0) {
-    if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
-      return true; // allow `halt` to be potentially called recursively
-    } else {
-      reportNotGpuizable(fn, "function is recursive");
-      return false;
-    }
+    return true; // allow recursive functions
   }
 
   visitedFns.insert(blk->getFunction());
@@ -456,6 +451,7 @@ class GpuKernel {
   std::vector<Symbol*> kernelActuals_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
+  std::vector<CallExpr*> callExprsInBody_;
 
   public:
   SymExpr* blockSize_;
@@ -467,7 +463,13 @@ class GpuKernel {
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
+  // Has a side effect of removing the block size primitive from the loop
+  // and the (future) outlined function.
+  void handleAndRemoveBlockSize(CForLoop *loop);
   void populateBody(CForLoop *loop, FnSymbol *outlinedFunction);
+  // Has a side effect of modifying the original loop body, replacing
+  // calls to GPU-only primitives with dummy values and errors.
+  void replaceDisallowedPrimitives();
   void normalizeOutlinedFunction();
   void finalize();
 
@@ -484,8 +486,10 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , blockSize_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
-  populateBody(gpuLoop.loop(), fn_);
   normalizeOutlinedFunction();
+  handleAndRemoveBlockSize(gpuLoop.loop());
+  populateBody(gpuLoop.loop(), fn_);
+  replaceDisallowedPrimitives();
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -606,8 +610,25 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
+void GpuKernel::handleAndRemoveBlockSize(CForLoop *loop) {
+  for_alist(node, loop->body) {
+    collectCallExprs(node, callExprsInBody_);
+  }
+
+  for_vector(CallExpr, callExpr, callExprsInBody_) {
+    if (callExpr->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
+      if (blockSize_ != nullptr) {
+        USR_FATAL(callExpr, "Can only set GPU block size once per GPU-eligible loop.");
+      }
+      blockSize_ = toSymExpr(callExpr->get(1));
+      callExpr->remove();
+    }
+  }
+}
+
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
   std::set<Symbol*> handledSymbols;
+
   for_alist(node, loop->body) {
     bool copyNode = true;
     std::vector<SymExpr*> symExprsInBody;
@@ -617,11 +638,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     collectDefExprs(node, defExprsInBody);
 
     CallExpr* call = toCallExpr(node);
-    if(call && call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
-        blockSize_ = toSymExpr(call->get(1));
-        call->remove();
-        copyNode = false;
-    } else if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
+    if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       // The outlined kernel can only be executed on the GPU so there's no need
       // to copy it over. Note: not all device functions are kernels so this does
       // not ensure that this assertion won't work its way into functions
@@ -635,7 +652,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       DefExpr* newDef = def->copy();
       this->copyMap_.put(def->sym, newDef->sym);
 
-      outlinedFunction->insertAtTail(newDef);
+      outlinedFunction->insertBeforeEpilogue(newDef);
     }
     else {
       // We also need to copy any defs that appear in blocks.
@@ -644,7 +661,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       for_vector(DefExpr, def, defExprsInBody) {
         DefExpr* newDef = def->copy();
         this->copyMap_.put(def->sym, newDef->sym);
-        outlinedFunction->insertAtTail(newDef);
+        outlinedFunction->insertBeforeEpilogue(newDef);
       }
 
       for_vector(SymExpr, symExpr, symExprsInBody) {
@@ -717,12 +734,47 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     }
 
     if (copyNode) {
-      outlinedFunction->insertAtTail(node->copy());
+      outlinedFunction->insertBeforeEpilogue(node->copy());
     }
   }
 
   update_symbols(outlinedFunction->body, &copyMap_);
 }
+
+static const std::unordered_map<PrimitiveTag, const char*>
+gpuPrimitivesDisallowedOnHost = {
+  { PRIM_GPU_BLOCKIDX_X, "getBlockIdxX" },
+  { PRIM_GPU_BLOCKIDX_Y, "getBlockIdxY" },
+  { PRIM_GPU_BLOCKIDX_Z, "getBlockIdxZ" },
+  { PRIM_GPU_BLOCKDIM_X, "getBlockDimX" },
+  { PRIM_GPU_BLOCKDIM_Y, "getBlockDimY" },
+  { PRIM_GPU_BLOCKDIM_Z, "getBlockDimZ" },
+  { PRIM_GPU_THREADIDX_X, "getThreadIdxX" },
+  { PRIM_GPU_THREADIDX_Y, "getThreadIdxY" },
+  { PRIM_GPU_THREADIDX_Z, "getThreadIdxZ" },
+  { PRIM_GPU_GRIDDIM_X, "getGridDimX" },
+  { PRIM_GPU_GRIDDIM_Y, "getGridDimY" },
+  { PRIM_GPU_GRIDDIM_Z, "getGridDimZ" },
+};
+
+void GpuKernel::replaceDisallowedPrimitives() {
+  for_vector(CallExpr, callExpr, callExprsInBody_) {
+    if (!callExpr->isPrimitive()) continue;
+    auto tagIt = gpuPrimitivesDisallowedOnHost.find(callExpr->primitive->tag);
+    if (tagIt == gpuPrimitivesDisallowedOnHost.end()) continue;
+
+    auto errorMsg = new_CStringSymbol(astr("operation not allowed outside of GPU: ",
+                                           tagIt->second));
+    // Expecting AST:
+    //   (move call_tmp (call 'gpu prim'))
+    // Want:
+    //   (call 'rt_error' c"Operation not allowed")
+    //   (move call_tmp 0)
+    callExpr->parentExpr->insertBefore(new CallExpr(PRIM_RT_ERROR, errorMsg));
+    callExpr->replace(new SymExpr(new_IntSymbol(0)));
+  }
+}
+
 
 void GpuKernel::normalizeOutlinedFunction() {
   normalize(fn_);
@@ -767,6 +819,9 @@ void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
     fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
     fn->addFlag(FLAG_GPU_CODEGEN);
+  } else {
+    // this function has already been handled
+    return;
   }
 
   errorForOuterVarAccesses(fn);
@@ -911,13 +966,6 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
-  if (usingGpuLocaleModel() && getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-    // TODO: the AMD GPU prototype is not currently in a state
-    // where gpuTransforms can be applied. Do not apply them
-    // for the time being.
-    return;
-  }
-
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
   }

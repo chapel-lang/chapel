@@ -48,5 +48,5 @@ proc runTest(D, alpha: real) {
     a = alpha * b;
   }
   timer.stop();
-  return timer.elapsed(TimeUnits.milliseconds);
+  return timer.elapsed()*1_000;
 }

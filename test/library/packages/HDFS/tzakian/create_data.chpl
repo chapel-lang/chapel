@@ -17,7 +17,7 @@ writeln(int_stream.next());
 writeln(int_stream.next());
 
 
-var fl = open("output.txt", iomode.cw);
+var fl = open("output.txt", ioMode.cw);
 
 config const num_records = 80;
 

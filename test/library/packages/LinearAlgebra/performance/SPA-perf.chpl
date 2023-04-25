@@ -149,11 +149,11 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
   return C;
 
   /* Cleaner startIdx accessor */
-  proc _array.IR ref return this._value.dom.startIdx;
+  proc _array.IR ref do return this._value.dom.startIdx;
   /* Cleaner idx accessor */
-  proc _array.JC ref return this._value.dom.idx;
+  proc _array.JC ref do return this._value.dom.idx;
   /* Cleaner data accessor */
-  proc _array.NUM ref return this._value.data;
+  proc _array.NUM ref do return this._value.data;
 
 }
 

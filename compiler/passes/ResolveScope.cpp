@@ -282,6 +282,7 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -830,12 +831,9 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-      outerMod->generateDeprecationWarning(call);
-    }
-
-    if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-      outerMod->generateUnstableWarning(call);
+    if (!fDynoScopeResolve) {
+      outerMod->maybeGenerateDeprecationWarning(call);
+      outerMod->maybeGenerateUnstableWarning(call);
     }
 
     const char* rhsName = getNameFrom(call->get(2));

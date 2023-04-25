@@ -34,6 +34,7 @@
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/query-impl.h"
@@ -72,7 +73,12 @@ bool fPrintEnvHelp = false;
 bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
+bool fWarnUnknownAttributeToolname = true;
 
+std::vector<UniqueString> usingAttributeToolNames;
+std::vector<std::string> usingAttributeToolNamesStr;
+
+Context* gContext;
 
 
 static const int indentPerDepth = 3;
@@ -106,6 +112,34 @@ void driverSetHelpTrue(const ArgumentDescription* desc, const char* unused) {
 static
 void setHome(const ArgumentDescription* desc, const char* arg) {
   CHPL_HOME = std::string(arg);
+}
+
+/*
+  Because the context is not setup during argument processing, it will not work
+  to use UniqueString::get() to get the UniqueString for the toolnames. So we
+  temporarily store the names as strings during arg processing and then promote
+  them to unique strings here.
+*/
+static void promoteAttributeToolNameStrToUniqueString() {
+  for (auto toolName : usingAttributeToolNamesStr) {
+    UniqueString name = UniqueString::get(gContext, toolName);
+    usingAttributeToolNames.push_back(name);
+  }
+  usingAttributeToolNamesStr.clear();
+}
+
+/*
+  this function is called when a toolname is passed through the command line
+  with the --using-attribute-toolname flag. It is called each time the flag is
+  found in the command line, which may be multiple. These toolnames will then
+  be treated as known to the compiler and we won't warn about them. We store
+  them as strings temporarily because the context is not setup prior to argument
+  processing.
+*/
+static void addUsingAttributeToolNameStr(const ArgumentDescription* desc,
+                                         const char* arg) {
+  std::string name = std::string(arg);
+  usingAttributeToolNamesStr.push_back(name);
 }
 
 #define DRIVER_ARG_COPYRIGHT \
@@ -152,7 +186,10 @@ ArgumentDescription docs_arg_desc[] = {
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
+ {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
+ {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolNameStr},
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
+
  DRIVER_ARG_HELP,
  DRIVER_ARG_HELP_ENV,
  DRIVER_ARG_HELP_SETTINGS,
@@ -170,7 +207,7 @@ static void printStuff(const char* argv0, void* mainAddr) {
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = chpl::getVersion(developer);
+    std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;
@@ -234,9 +271,35 @@ or
 
    import $MODULE;)RAW";
 
+
+static void checkKnownAttributes(const AttributeGroup* attrs) {
+  // TODO: we need a way to get all the toolspaced attributes for chpldoc, or
+  // any tool, in one go. That will allow us to check for any unrecognized
+  // attributes.
+  for (auto attr : attrs->children()) {
+    if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
+      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
+        // ignore, it's a known attribute
+      } else {
+        // process the Error about unknown Attribute
+        std::string msg = "Unknown attribute '";
+        msg += attr->toAttribute()->name().c_str();
+        msg += "'";
+        auto loc = locateId(gContext, attr->id());
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
+        gContext->report(std::move(err));
+      }
+      // warning about other attribute toolnames is handled by the dyno library
+    }
+  }
+}
+
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributes()) {
-    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
+  if (auto attrs = e->attributeGroup()) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext, "chpldoc.nodoc"));
+    if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
+      return true;
+    }
   }
   return false;
 }
@@ -465,7 +528,7 @@ static char* checkProjectVersion(char* projectVersion) {
   } else {
     std::cerr << "error: Invalid version format: "
               << projectVersion << " due to: " << error << std::endl;
-    exit(1);
+    clean_exit(1);
   }
   return NULL;
 }
@@ -987,13 +1050,7 @@ struct RstSignatureVisitor {
       assert(typeExpr);
 
       if (auto ident = typeExpr->toIdentifier()) {
-        if (ident->name() == "_channel") {
-          // TODO: remove this once the channel rename to fileReader
-          // etc is complete and channel is removed
-          os_ << "channel";
-        } else {
-          os_ << ident->name().str();
-        }
+        os_ << ident->name().str();
       } else {
         os_ << "(";
         typeExpr->traverse(*this);
@@ -1293,8 +1350,8 @@ struct RstResultBuilder {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
       auto loc = br->commentToLocation(lastComment);
-      auto err = GeneralError::get(context_, ErrorBase::WARNING, loc, errMsg);
-      context_->report(err);
+      auto err = GeneralError::get(ErrorBase::WARNING, loc, errMsg);
+      context_->report(std::move(err));
     }
     // TODO: The presence of these node exceptions means we're probably missing
     //  something from the old implementation
@@ -1330,7 +1387,7 @@ struct RstResultBuilder {
   }
 
   void showUnstableWarning(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isUnstable()) {
         int commentShift = 0;
           if (indentComment) {
@@ -1346,7 +1403,7 @@ struct RstResultBuilder {
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
         if (comment && !comment->str().empty() &&
@@ -1456,7 +1513,7 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
-    if (auto attrs = m->attributes()) {
+    if (auto attrs = m->attributeGroup()) {
       if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
         includedByDefault = true;
       }
@@ -1488,8 +1545,8 @@ struct RstResultBuilder {
             // process the warning about comments
             auto br = parseFileContainingIdToBuilderResult(context_, m->id());
             auto loc = br->commentToLocation(lastComment);
-            auto err = GeneralError::get(context_, GeneralError::WARNING, loc, errMsg);
-            context_->report(err);
+            auto err = GeneralError::get(GeneralError::WARNING, loc, errMsg);
+            context_->report(std::move(err));
           }
           if (!synopsis.empty()) {
             indentStream(os_, 1 * indentPerDepth);
@@ -1626,7 +1683,7 @@ struct RstResultBuilder {
       }
       showComment(md, true);
 
-      if (auto attrs = md->attributes()) {
+      if (auto attrs = md->attributeGroup()) {
         if (attrs->isDeprecated() && !textOnly_) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
@@ -1722,6 +1779,11 @@ struct GatherModulesVisitor {
         modules.insert(mod->id());
       }
     }
+  }
+
+  bool enter(const AttributeGroup* node ) {
+    checkKnownAttributes(node);
+    return false;
   }
 
   bool enter(const AstNode* n) {
@@ -2052,6 +2114,38 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   }
 }
 
+class ChpldocErrorHandler : public Context::ErrorHandler {
+ private:
+  std::vector<owned<ErrorBase>> reportedErrors;
+
+ public:
+  void report(Context* context, const ErrorBase* error) override {
+    reportedErrors.push_back(error->clone());
+  }
+
+  size_t numErrors() const {
+    return reportedErrors.size();
+  }
+
+  void printAndExitIfError(Context* context) {
+    // TODO: handle errors better, don't rely on parse query to emit them
+    // per @mppf: if dyno-chpldoc wants to quit on an error, it should
+    // configure Context::reportError to have a custom function that does so.
+    bool fatal = false;
+    for (auto& e : reportedErrors) {
+    // just display the error messages right now, see TODO above
+      if (e->kind() == ErrorBase::Kind::ERROR ||
+          e->kind() == ErrorBase::Kind::SYNTAX) {
+            fatal = true;
+      }
+      Context::defaultReportError(context, e.get());
+    }
+    if (fatal) {
+      clean_exit(1);
+    }
+    reportedErrors.clear();
+  }
+};
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
@@ -2085,12 +2179,25 @@ int main(int argc, char** argv) {
   processUsedModules_ = args.processUsedModules;
 
 
-  Context context(CHPL_HOME);
-  Context *ctx = &context;
-  ctx->setDetailedErrorOutput(false);
-  auto chplEnv = ctx->getChplEnv();
+  Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  config.toolName = "chpldoc";
+  Context context(config);
+  gContext = &context;
+  auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
+  gContext->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
+  gContext->setDetailedErrorOutput(false);
+  auto chplEnv = gContext->getChplEnv();
   assert(!chplEnv.getError() && "not handling chplenv errors yet");
-
+  // set any attribute toolnames we processed earlier and clear the local list.
+  promoteAttributeToolNameStrToUniqueString();
+  chpl::parsing::setAttributeToolNames(gContext, usingAttributeToolNames);
+  usingAttributeToolNames.clear();
+  chpl::CompilerFlags flags;
+  flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
+            fWarnUnknownAttributeToolname);
+  // Set the compilation flags all at once using a query.
+  chpl::setCompilerFlags(gContext, flags);
   // This is the final location for the output format (e.g. the html files.).
   std::string docsOutputDir;
   if (args.outputDir.length() > 0) {
@@ -2102,12 +2209,10 @@ int main(int argc, char** argv) {
   // Root of the sphinx project and generated rst files. If
   // --docs-save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  std::string doctmpdirname;
   if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
-    makeTempDir("chpldoc-", doctmpdirname);
-    docsSphinxDir = doctmpdirname;
+    docsSphinxDir = gContext->tmpDir();
   }
 
   // Make the intermediate dir and output dir.
@@ -2143,7 +2248,7 @@ int main(int argc, char** argv) {
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
   auto chplModulePath = (it != chplEnv->end()) ? it->second : "";
-  setupModuleSearchPaths(ctx,
+  setupModuleSearchPaths(gContext,
                          CHPL_HOME,
                          false, //minimal modules
                          chplEnv->at("CHPL_LOCALE_MODEL"),
@@ -2156,44 +2261,29 @@ int main(int argc, char** argv) {
                          {}, //prependStandardModulePaths,
                          {}, //cmdLinePaths
                          args.files);
-  GatherModulesVisitor gather(ctx);
+  GatherModulesVisitor gather(gContext);
   printStuff(argv[0], (void*)main);
   // evaluate all the files and gather the modules
   for (auto cpath : args.files) {
-    UniqueString path = UniqueString::get(ctx, cpath);
+    UniqueString path = UniqueString::get(gContext, cpath);
     UniqueString emptyParent;
 
     std::vector<UniqueString> paths;
     size_t location = cpath.rfind("/");
-    paths.push_back(UniqueString::get(ctx,"./"));
+    paths.push_back(UniqueString::get(gContext,"./"));
     if (location != std::string::npos) {
-      paths.push_back(UniqueString::get(ctx, cpath.substr(0, location + 1)));
+      paths.push_back(UniqueString::get(gContext, cpath.substr(0, location + 1)));
     }
-    setModuleSearchPath(ctx, paths);
+    setModuleSearchPath(gContext, paths);
 
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
     // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
-                                                                  path,
-                                                                  emptyParent);
+    const BuilderResult& builderResult =
+      parseFileToBuilderResultAndCheck(gContext, path, emptyParent);
 
-    if (builderResult.numErrors() > 0) {
-      // TODO: handle errors better, don't rely on parse query to emit them
-      // per @mppf: if dyno-chpldoc wants to quit on an error, it should
-      // configure Context::reportError to have a custom function that does so.
-      bool fatal = false;
-      for (auto e : builderResult.errors()) {
-      // just display the error messages right now, see TODO above
-        if (e->kind() == ErrorBase::Kind::ERROR ||
-            e->kind() == ErrorBase::Kind::SYNTAX) {
-              fatal = true;
-        }
-        context.report(e);
-      }
-      if (fatal) {
-        return 1;
-      }
+    if (erroHandler->numErrors() > 0) {
+      erroHandler->printAndExitIfError(gContext);
     }
     // gather all the top level and used/imported/included module IDs
     for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
@@ -2207,19 +2297,19 @@ int main(int argc, char** argv) {
   }
 
   for (auto id : gather.modules) {
-    if (auto& r = rstDoc(ctx, id)) {
+    if (auto& r = rstDoc(gContext, id)) {
         // given a module ID we can get the path to the file that we parsed
         UniqueString filePath;
         UniqueString parentSymbol;
-        ctx->filePathForId(id, filePath, parentSymbol);
-        std::string moduleName = id.symbolName(ctx).str();
+        gContext->filePathForId(id, filePath, parentSymbol);
+        std::string moduleName = id.symbolName(gContext).str();
         std::string parentPath;
-        auto pathVec = id.expandSymbolPath(ctx, id.symbolPath());
+        auto pathVec = id.expandSymbolPath(gContext, id.symbolPath());
         // remove last entry
         pathVec.pop_back();
         for (auto path : pathVec) {
           for (int i = 0; i <= path.second; i++) {
-            if (path.first != id.symbolName(ctx)) {
+            if (path.first != id.symbolName(gContext)) {
               parentPath += unescapeStringId(path.first.str()) + "/";
             }
           }
@@ -2235,6 +2325,9 @@ int main(int argc, char** argv) {
         r->outputModule(outdir, moduleName, indentPerDepth);
      }
    }
+
+  // chpldoc-specific warnings could've been issued, make sure they're printed.
+  erroHandler->printAndExitIfError(gContext);
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,

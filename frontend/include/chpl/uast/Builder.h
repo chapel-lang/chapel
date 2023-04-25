@@ -55,7 +55,6 @@ class Builder final {
   UniqueString filepath_;
   UniqueString startingSymbolPath_;
   AstList topLevelExpressions_;
-  std::vector<const ErrorBase*> errors_;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
@@ -80,7 +79,6 @@ class Builder final {
   void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
                    declaredHereT& duplicates);
-  void postParseChecks();
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -102,11 +100,6 @@ class Builder final {
     This is called by the parser.
    */
   void addToplevelExpression(owned<AstNode> e);
-
-  /**
-    Save an error.
-   */
-  void addError(const ErrorBase*);
 
   /**
     Record the location of an AST element.

@@ -1,0 +1,3 @@
+testAddSet.chpl:16: warning: 'Map.set' is deprecated. Please use 'Map.replace' instead.
+testAddSet.chpl:20: warning: 'Map.set' is deprecated. Please use 'Map.replace' instead.
+{1: -1}

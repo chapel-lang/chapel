@@ -1,5 +1,4 @@
 fileReader
-fileReader(native,false)
+fileReader(native,false,nothing)
 fileWriter
-fileWriter(native,false)
-channel
+fileWriter(native,false,nothing)

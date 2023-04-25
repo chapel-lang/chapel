@@ -9,7 +9,7 @@ const filePathAbsolute = absPath(filePathRelative);
 proc doTests(somepath: string) {
   var f : file;
   try {
-    f = open(somepath, iomode.r);
+    f = open(somepath, ioMode.r);
   } catch {
     writeln('Failed to open file!');
     return;

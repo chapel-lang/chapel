@@ -97,7 +97,7 @@ static mpool_t ips_am_msg_pool;
 #define calc_optimal_num_reply_slots(nslots) (((nslots)*2 / 3) + 1)
 
 psm2_error_t
-MOCKABLE(ips_proto_am_init)(struct ips_proto *proto,
+MOCKABLE(psm3_ips_proto_am_init)(struct ips_proto *proto,
 		  int num_send_slots,
 		  uint32_t imm_size,
 		  struct ips_proto_am *proto_am)
@@ -116,7 +116,7 @@ MOCKABLE(ips_proto_am_init)(struct ips_proto *proto,
 	 * number of request send buffers would be awkward, as they have no
 	 * knowledge of the subdivision of the memory into separate mempools for
 	 * requests and replies. It's an internal concern at this point. */
-	if ((err = ips_scbctrl_init(&proto->ep->context,
+	if ((err = psm3_ips_scbctrl_init(proto->ep,
 				    num_req_slots,
 				    num_req_slots,
 				    imm_size,
@@ -126,7 +126,7 @@ MOCKABLE(ips_proto_am_init)(struct ips_proto *proto,
 				    &proto_am->scbc_request)))
 		goto fail;
 
-	if ((err = ips_scbctrl_init(&proto->ep->context,
+	if ((err = psm3_ips_scbctrl_init(proto->ep,
 				    num_rep_slots,
 				    num_rep_slots,
 				    imm_size,
@@ -142,26 +142,26 @@ MOCKABLE(ips_proto_am_init)(struct ips_proto *proto,
 		ips_am_outoforder_q.head.next = NULL;
 		ips_am_outoforder_q.tail = &ips_am_outoforder_q.head;
 
-		psmi_getenv("PSM3_AM_MAX_OOO_MSGS",
+		psm3_getenv("PSM3_AM_MAX_OOO_MSGS",
 			"Maximum number of OOO Active Messages to queue before dropping.",
 			PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 			(union psmi_envvar_val)1024, &max_msgs);
 
-		ips_am_msg_pool = psmi_mpool_create(
+		ips_am_msg_pool = psm3_mpool_create(
 				sizeof(struct ips_am_message),
 				32, max_msgs.e_uint, 0, UNDEFINED, NULL, NULL);
 	}
 fail:
 	return err;
 }
-MOCK_DEF_EPILOGUE(ips_proto_am_init);
+MOCK_DEF_EPILOGUE(psm3_ips_proto_am_init);
 
-psm2_error_t ips_proto_am_fini(struct ips_proto_am *proto_am)
+psm2_error_t psm3_ips_proto_am_fini(struct ips_proto_am *proto_am)
 {
-	ips_scbctrl_fini(&proto_am->scbc_request);
-	ips_scbctrl_fini(&proto_am->scbc_reply);
+	psm3_ips_scbctrl_fini(&proto_am->scbc_request);
+	psm3_ips_scbctrl_fini(&proto_am->scbc_reply);
 	if (ips_am_msg_pool != NULL) {
-		psmi_mpool_destroy(ips_am_msg_pool);
+		psm3_mpool_destroy(ips_am_msg_pool);
 		ips_am_msg_pool = NULL;
 	}
 
@@ -170,7 +170,7 @@ psm2_error_t ips_proto_am_fini(struct ips_proto_am *proto_am)
 
 /* Fill in AM capabilities parameters */
 psm2_error_t
-ips_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters)
+psm3_ips_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters)
 {
 	int max_nargs = min(1 << IPS_AM_HDR_NARGS_BITS, PSMI_AM_MAX_ARGS);
 	int max_payload =
@@ -229,14 +229,14 @@ am_short_reqrep(ips_scb_t *scb, struct ips_epaddr *ipsaddr,
 			size_t arg_payload_len =
 			    sizeof(psm2_amarg_t) * (nargs - IPS_AM_HDR_NARGS);
 
-			psmi_mq_mtucpy((void *)bufp,
+			psm3_mq_mtucpy((void *)bufp,
 				       &args[IPS_AM_HDR_NARGS],
 				       arg_payload_len);
 			bufp += arg_payload_len;
 			scb->payload_size = arg_payload_len;
 
 			if (src != NULL && len > 0) {
-				psmi_mq_mtucpy((void *)bufp, src, len);
+				psm3_mq_mtucpy((void *)bufp, src, len);
 				scb->payload_size += len;
 			}
 
@@ -258,7 +258,7 @@ am_short_reqrep(ips_scb_t *scb, struct ips_epaddr *ipsaddr,
 		   1 << IPS_AM_HDR_LEN_BITS bytes of packed payload. */
 		psmi_assert(len > 0);
 
-		psmi_mq_mtucpy(&scb->ips_lrh.
+		psm3_mq_mtucpy(&scb->ips_lrh.
 			       data[IPS_AM_HDR_NARGS - hdr_qwords], src, len);
 		scb->payload_size = 0;
 		psmi_assert(len <= (1 << IPS_AM_HDR_LEN_BITS));
@@ -268,7 +268,7 @@ am_short_reqrep(ips_scb_t *scb, struct ips_epaddr *ipsaddr,
 		if (ips_scb_buffer(scb) == NULL) /* Just attach the buffer */
 			ips_scb_buffer(scb) = src;
 		else /* May need to re-xmit user data, keep it around */
-			psmi_mq_mtucpy(ips_scb_buffer(scb), src, len);
+			psm3_mq_mtucpy(ips_scb_buffer(scb), src, len);
 
 		psmi_assert(pad_bytes < (1 << IPS_AM_HDR_LEN_BITS));
 		scb->payload_size = len + pad_bytes;
@@ -277,8 +277,9 @@ am_short_reqrep(ips_scb_t *scb, struct ips_epaddr *ipsaddr,
 
 send_scb:
 	ips_scb_opcode(scb) = opcode;
-	scb->ips_lrh.khdr.kdeth0 = ipsaddr->msgctl->am_send_seqnum++;
-	ips_proto_flow_enqueue(flow, scb);
+	scb->ips_lrh.khdr.kdeth0 = __cpu_to_le32(ipsaddr->msgctl->am_send_seqnum);
+	ipsaddr->msgctl->am_send_seqnum++;
+	psm3_ips_proto_flow_enqueue(flow, scb);
 	flow->flush(flow, NULL);
 
 	return PSM2_OK;
@@ -312,7 +313,7 @@ ips_am_scb_init(ips_scb_t *scb, uint8_t handler, int nargs,
 }
 
 psm2_error_t
-ips_am_short_request(psm2_epaddr_t epaddr,
+psm3_ips_am_short_request(psm2_epaddr_t epaddr,
 		     psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		     void *src, size_t len, int flags,
 		     psm2_am_completion_fn_t completion_fn,
@@ -336,7 +337,7 @@ ips_am_short_request(psm2_epaddr_t epaddr,
 		/* len + pad_bytes + overflow_args */
 		PSMI_BLOCKUNTIL(epaddr->ptlctl->ep,
 				err,
-				((scb = ips_scbctrl_alloc(
+				((scb = psm3_ips_scbctrl_alloc(
 				      &proto_am->scbc_request,
 				      1,
 				      len + pad_bytes + arg_sz,
@@ -344,7 +345,7 @@ ips_am_short_request(psm2_epaddr_t epaddr,
 	} else {
 		PSMI_BLOCKUNTIL(epaddr->ptlctl->ep,
 				err,
-				((scb = ips_scbctrl_alloc_tiny(
+				((scb = psm3_ips_scbctrl_alloc_tiny(
 				      &proto_am->scbc_request)) != NULL));
 	}
 
@@ -368,7 +369,7 @@ ips_am_short_request(psm2_epaddr_t epaddr,
 }
 
 psm2_error_t
-ips_am_short_reply(psm2_am_token_t tok,
+psm3_ips_am_short_reply(psm2_am_token_t tok,
 		   psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		   void *src, size_t len, int flags,
 		   psm2_am_completion_fn_t completion_fn, void *completion_ctxt)
@@ -385,10 +386,10 @@ ips_am_short_reply(psm2_am_token_t tok,
 		return PSM2_AM_INVALID_REPLY;
 	}
 
-	psmi_assert(ips_scbctrl_avail(&proto_am->scbc_reply));
+	psmi_assert(psm3_ips_scbctrl_avail(&proto_am->scbc_reply));
 
 	if ((nargs << 3) + len <= (IPS_AM_HDR_NARGS << 3)) {
-		scb = ips_scbctrl_alloc_tiny(&proto_am->scbc_reply);
+		scb = psm3_ips_scbctrl_alloc_tiny(&proto_am->scbc_reply);
 	} else {
 		int payload_sz = (nargs << 3);
 
@@ -398,7 +399,7 @@ ips_am_short_reply(psm2_am_token_t tok,
 		    IPS_SCB_FLAG_ADD_BUFFER : 0;
 
 		scb =
-		    ips_scbctrl_alloc(&proto_am->scbc_reply, 1, payload_sz,
+		    psm3_ips_scbctrl_alloc(&proto_am->scbc_reply, 1, payload_sz,
 				      scb_flags);
 	}
 
@@ -507,8 +508,8 @@ ips_proto_am_handle_outoforder_queue()
 		if (prev->next == NULL)
 			ips_am_outoforder_q.tail = prev;
 
-		psmi_mq_sysbuf_free(msg->proto_am->proto->mq, msg->payload);
-		psmi_mpool_put(msg);
+		psm3_mq_sysbuf_free(msg->proto_am->proto->mq, msg->payload);
+		psm3_mpool_put(msg);
 
 		msg = prev->next;
 	}
@@ -524,7 +525,7 @@ ips_proto_am_queue_msg(struct ips_am_message *msg)
 	ips_am_outoforder_q.tail = msg;
 }
 
-int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
+int psm3_ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 {
 	struct ips_message_header *p_hdr = rcv_ev->p_hdr;
 	struct ips_epaddr *ipsaddr = rcv_ev->ipsaddr;
@@ -544,7 +545,7 @@ int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 	 * ips_proto_is_expected_or_nak() can not be called in this case.
 	 */
 	if (_get_proto_hfi_opcode(p_hdr) == OPCODE_AM_REQUEST &&
-	    !ips_scbctrl_avail(&proto_am->scbc_reply))
+	    !psm3_ips_scbctrl_avail(&proto_am->scbc_reply))
 		return IPS_RECVHDRQ_CONTINUE;
 
 	if (!ips_proto_is_expected_or_nak(rcv_ev))
@@ -563,7 +564,7 @@ int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 		uint32_t paylen = ips_recvhdrq_event_paylen(rcv_ev);
 
 		psmi_assert(paylen == 0 || payload);
-		msg = psmi_mpool_get(ips_am_msg_pool);
+		msg = psm3_mpool_get(ips_am_msg_pool);
 		if (unlikely(msg == NULL)) {
 			/* Out of memory, drop the packet. */
 			flow->recv_seq_num.psn_num =
@@ -571,7 +572,7 @@ int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 				rcv_ev->proto->psn_mask;
 			return IPS_RECVHDRQ_BREAK;
 		}
-		msg_payload = psmi_mq_sysbuf_alloc(
+		msg_payload = psm3_mq_sysbuf_alloc(
 				proto_am->proto->mq,
 				ips_recvhdrq_event_paylen(rcv_ev));
 		if (unlikely(msg_payload == NULL)) {
@@ -579,7 +580,7 @@ int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 			flow->recv_seq_num.psn_num =
 				(flow->recv_seq_num.psn_num - 1) &
 				rcv_ev->proto->psn_mask;
-			psmi_mpool_put(msg);
+			psm3_mpool_put(msg);
 			return IPS_RECVHDRQ_BREAK;
 		}
 
@@ -613,6 +614,6 @@ int ips_proto_am(struct ips_recvhdrq_event *rcv_ev)
 	    (flow->flags & IPS_FLOW_FLAG_GEN_BECN))
 		ips_proto_send_ack((struct ips_recvhdrq *)rcv_ev->recvq, flow);
 
-	ips_proto_process_ack(rcv_ev);
+	psm3_ips_proto_process_ack(rcv_ev);
 	return ret;
 }

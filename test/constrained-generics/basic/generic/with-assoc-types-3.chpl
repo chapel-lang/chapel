@@ -43,7 +43,7 @@ proc show(cgName: string, cgArg, atName: string, atArg) {
 record RT1 {
   var  xx: int;
   type GT;
-  proc AT type return int;
+  proc AT type do return int;
 }
 private
 proc reqFun(cgArg: RT1)            : void { show("RT1", cgArg); }
@@ -70,7 +70,7 @@ RT2 implements IFC1;
 record RT3 {
   var  xx: int;
   type GT;
-  proc AT type return GT;
+  proc AT type do return GT;
 }
 private
 proc reqFun(cgArg: RT3)                 : void { show("RT3", cgArg); }
@@ -84,7 +84,7 @@ RT3 implements IFC1;
 record RT4 {
   var  xx: int;
   type GT;
-  proc AT type return this.type;
+  proc AT type do return this.type;
 }
 private
 proc reqFun(cgArg: RT4)                   : void { show("RT4", cgArg); }
@@ -99,7 +99,7 @@ RT4 implements IFC1;
 // RV1: associated type is concrete
 record RV1 {
   var  xx;
-  proc AT type return int;
+  proc AT type do return int;
 }
 private
 proc reqFun(cgArg: RV1)            : void { show("RV1", cgArg); }
@@ -112,7 +112,7 @@ RV1 implements IFC1;
 // RV3: like RV1, assoc type is computed to be the type of the generic var field
 record RV3 {
   var  xx;
-  proc AT type return xx.type;
+  proc AT type do return xx.type;
 }
 private
 proc reqFun(cgArg: RV3)                 : void { show("RV3", cgArg); }
@@ -125,7 +125,7 @@ RV3 implements IFC1;
 // RV4: like RV1, assoc type is this.type
 record RV4 {
   var  xx;
-  proc AT type return this.type;
+  proc AT type do return this.type;
 }
 private
 proc reqFun(cgArg: RV4)                   : void { show("RV4", cgArg); }
@@ -142,7 +142,7 @@ RV4 implements IFC1;
 record RTX1 {
   var  xx: int;
   type GT;
-  proc AT type return int;
+  proc AT type do return int;
   param PP;
 }
 private
@@ -171,7 +171,7 @@ RTX2 implements IFC1;
 record RTX3 {
   var  xx: int;
   type GT;
-  proc AT type return GT;
+  proc AT type do return GT;
   param PP;
 }
 private
@@ -186,7 +186,7 @@ RTX3 implements IFC1;
 record RTX4 {
   var  xx: int;
   type GT;
-  proc AT type return this.type;
+  proc AT type do return this.type;
   param PP;
 }
 private
@@ -200,7 +200,7 @@ RTX4 implements IFC1;
 // RVX1: associated type is concrete
 record RVX1 {
   var  xx;
-  proc AT type return int;
+  proc AT type do return int;
   param PP;
 }
 private
@@ -214,7 +214,7 @@ RVX1 implements IFC1;
 // RVX3: like RVX1, assoc type is computed to be the type of the generic var field
 record RVX3 {
   var  xx;
-  proc AT type return xx.type;
+  proc AT type do return xx.type;
   param PP;
 }
 private
@@ -227,7 +227,7 @@ RVX3 implements IFC1;
 // RVX4: like RVX1, assoc type is this.type
 record RVX4 {
   var  xx;
-  proc AT type return this.type;
+  proc AT type do return this.type;
   param PP;
 }
 private

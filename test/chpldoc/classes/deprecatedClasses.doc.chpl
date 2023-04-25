@@ -1,48 +1,48 @@
 // Checks basic deprecated declarations of classes
-deprecated class X {
+@deprecated class X {
   // Also fields, methods, and type methods
-  deprecated var a: int;
-  deprecated proc foo() { }
-  deprecated proc type bar() {}
+  @deprecated var a: int;
+  @deprecated proc foo() { }
+  @deprecated proc type bar() {}
 }
 
-deprecated "Y is deprecated, use Z instead" class Y {
+@deprecated(notes="Y is deprecated, use Z instead") class Y {
   // Also fields, methods, and type methods
-  deprecated "field a is deprecated" var a: int;
-  deprecated "method foo is deprecated" proc foo() { }
-  deprecated "type method bar is deprecated" proc type bar() {}
+  @deprecated(notes="field a is deprecated") var a: int;
+  @deprecated(notes="method foo is deprecated") proc foo() { }
+  @deprecated(notes="type method bar is deprecated") proc type bar() {}
 }
 
 class Z {
   // Checks deprecated fields, methods and type methods in an undeprecated class
-  deprecated var a: int;
-  deprecated "method foo is deprecated" proc foo() { }
-  deprecated proc type bar() { }
+  @deprecated var a: int;
+  @deprecated(notes="method foo is deprecated") proc foo() { }
+  @deprecated proc type bar() { }
 }
 
 // Checks interaction with documentation
 /* There was documentation of this symbol */
-deprecated class A {
+@deprecated class A {
   // Also fields, methods, and type methods
 
   /* There was documentation of this field */
-  deprecated var a: int;
+  @deprecated var a: int;
   /* There was documentation of this method */
-  deprecated proc foo() { }
+  @deprecated proc foo() { }
   /* There was documentation of this type method */
-  deprecated proc type bar() {}
+  @deprecated proc type bar() {}
 }
 
 /* This symbol also was documented */
-deprecated "B is deprecated, use C instead" class B {
+@deprecated(notes="B is deprecated, use C instead") class B {
   // Also fields, methods, and type methods
 
   /* There was documentation of this field */
-  deprecated "field a is deprecated" var a: int;
+  @deprecated(notes="field a is deprecated") var a: int;
   /* There was documentation of this method */
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   /* There was documentation of this type method */
-  deprecated "type method bar is deprecated" proc type bar() {}
+  @deprecated(notes="type method bar is deprecated") proc type bar() {}
 }
 
 class C {
@@ -50,36 +50,36 @@ class C {
   // when the deprecated symbols are also documented
 
   /* There was documentation of this field */
-  deprecated var a: int;
+  @deprecated var a: int;
   /* There was documentation of this method */
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   /* There was documentation of this type method */
-  deprecated proc type bar() { }
+  @deprecated proc type bar() { }
 }
 
 // Checks interaction when documentation mentions deprecation in some form
 /* This symbol is deprecated */
-deprecated class D {
+@deprecated class D {
   // Also fields, methods, and type methods
 
   /* This symbol is deprecated */
-  deprecated var a: int;
+  @deprecated var a: int;
   /* This symbol is deprecated */
-  deprecated proc foo() { }
+  @deprecated proc foo() { }
   /* This symbol is deprecated */
-  deprecated proc type bar() {}
+  @deprecated proc type bar() {}
 }
 
 /* This symbol is also deprecated, please use F instead */
-deprecated "E is deprecated, use F instead" class E {
+@deprecated(notes="E is deprecated, use F instead") class E {
   // Also fields, methods, and type methods
 
   /* This symbol is also deprecated, unfortunately */
-  deprecated "field a is deprecated" var a: int;
+  @deprecated(notes="field a is deprecated") var a: int;
   /* This symbol is also deprecated, unfortunately */
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   /* This symbol is also deprecated, unfortunately */
-  deprecated "type method bar is deprecated" proc type bar() {}
+  @deprecated(notes="type method bar is deprecated") proc type bar() {}
 }
 
 class F {
@@ -88,43 +88,43 @@ class F {
   // mentions deprecation
 
   /* This symbol is also deprecated, unfortunately */
-  deprecated var a: int;
+  @deprecated var a: int;
   /* This symbol is deprecated */
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   /* This symbol is deprecated */
-  deprecated proc type bar() { }
+  @deprecated proc type bar() { }
 }
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
 pragma "no doc"
-deprecated class G {
+@deprecated class G {
   // Also fields, methods, and type methods
   pragma "no doc"
-  deprecated var a: int;
+  @deprecated var a: int;
   pragma "no doc"
-  deprecated proc foo() { }
+  @deprecated proc foo() { }
   pragma "no doc"
-  deprecated proc type bar() {}
+  @deprecated proc type bar() {}
 }
 
 pragma "no doc"
-deprecated "H is deprecated, use I instead" class H {
+@deprecated(notes="H is deprecated, use I instead") class H {
   // Also fields, methods, and type methods
   pragma "no doc"
-  deprecated "field a is deprecated" var a: int;
+  @deprecated(notes="field a is deprecated") var a: int;
   pragma "no doc"
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   pragma "no doc"
-  deprecated "type method bar is deprecated" proc type bar() {}
+  @deprecated(notes="type method bar is deprecated") proc type bar() {}
 }
 
 class I {
   // Checks deprecated fields, methods and type methods in an undeprecated class
   pragma "no doc"
-  deprecated var a: int;
+  @deprecated var a: int;
   pragma "no doc"
-  deprecated "method foo is deprecated" proc foo() { }
+  @deprecated(notes="method foo is deprecated") proc foo() { }
   pragma "no doc"
-  deprecated proc type bar() { }
+  @deprecated proc type bar() { }
 }

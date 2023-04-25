@@ -26,8 +26,9 @@ namespace uast {
 
 
 owned<Array> Array::build(Builder* builder, Location loc,
-                          AstList exprs) {
-  Array* ret = new Array(std::move(exprs));
+                          AstList exprs, bool trailingComma,
+                          bool associative) {
+  Array* ret = new Array(std::move(exprs), trailingComma, associative);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

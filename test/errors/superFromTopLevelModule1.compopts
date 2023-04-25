@@ -1,2 +1,0 @@
---dyno --detailed-errors # superFromTopLevelModule1-detailed.good
---dyno --no-detailed-errors # superFromTopLevelModule1-brief.good

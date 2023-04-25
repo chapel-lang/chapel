@@ -41,8 +41,8 @@ record padded {
 }
 
 // Create arrays and warmup / init RAD cache
-var A = newBlockArr(1..numTasks*2, padded(atomic int));
-var B = newBlockArr(1..numTasks*2, padded(int));
+var A = Block.createArray(1..numTasks*2, padded(atomic int));
+var B = Block.createArray(1..numTasks*2, padded(int));
 for loc in Locales do on loc {
   coforall tid in 1..numTasks*2 {
     A[tid].val.write(0);

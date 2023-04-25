@@ -27,16 +27,16 @@ module ChapelTaskID {
     __primitive("=", a, b);
   }
 
-  inline operator ==(a: chpl_taskID_t, b: chpl_taskID_t)
+  inline operator ==(a: chpl_taskID_t, b: chpl_taskID_t) do
     return __primitive("==", a, b);
 
-  inline operator !=(a: chpl_taskID_t, b: chpl_taskID_t)
+  inline operator !=(a: chpl_taskID_t, b: chpl_taskID_t) do
     return __primitive("!=", a, b);
 
-  inline operator :(x: chpl_taskID_t, type t: int(64))
+  inline operator :(x: chpl_taskID_t, type t: int(64)) do
     return __primitive("cast", t, x);
 
-  inline operator :(x: chpl_taskID_t, type t: uint(64))
+  inline operator :(x: chpl_taskID_t, type t: uint(64)) do
     return __primitive("cast", t, x);
 
 }

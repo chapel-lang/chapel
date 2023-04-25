@@ -1,9 +1,9 @@
-use Barriers;
+use Collectives;
 
 config const nTasks = 4;
 config const printSpinCount = false;
 
-proc check(b: Barrier) {
+proc check(b: barrier) {
   coforall i in 1..nTasks {
     if i < nTasks {
       b.notify();
@@ -24,8 +24,6 @@ proc check(b: Barrier) {
   }
 }
 
-var b = new Barrier(nTasks, BarrierType.Atomic);
-var sb = new Barrier(nTasks, BarrierType.Sync);
+var b = new barrier(nTasks);
 
 check(b);
-check(sb);

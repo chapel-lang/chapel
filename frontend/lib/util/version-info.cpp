@@ -26,7 +26,7 @@ namespace chpl {
 
 extern const char* GIT_SHA;
 
-const char* gitSHA() {
+const char* getCommitHash() {
   return GIT_SHA;
 }
 
@@ -51,21 +51,17 @@ std::string getMajorMinorVersion() {
   return version;
 }
 
-std::string getVersion(bool developer) {
+std::string getVersion() {
   std::string ret;
   ret = std::to_string(getMajorVersion()) + "." +
         std::to_string(getMinorVersion()) + "." +
         std::to_string(getUpdateVersion());
   if (!CHPL_OFFICIAL_RELEASE) {
-    ret += " pre-release (" + std::string(getBuildVersion(developer)) + ")";
+    ret += " pre-release (" + std::string(getCommitHash()) + ")";
   } else {
-    // It's is an official release.
-    // Try to decide whether or not to include the BUILD_VERSION
-    // based on its string length. A short git sha is 10 characters.
-    std::string build = std::string(getBuildVersion(developer));
-    if (build.length() > 2 && !developer) {
-      // assume it is a sha, so don't include it
-    } else if (build.compare("0") == 0) {
+    // It's is an official release, don't include git sha in this case.
+    std::string build = std::string(CHPL_BUILD_VERSION);
+    if (build.compare("0") == 0) {
       // no need to append a .0
     } else {
       // include the BUILD_VERSION contents to add e.g. a .1
@@ -79,12 +75,5 @@ bool getIsOfficialRelease() {
   return CHPL_OFFICIAL_RELEASE;
 }
 
-const char* getBuildVersion(bool developer) {
-  if (!CHPL_OFFICIAL_RELEASE || developer) {
-    return gitSHA();
-  } else {
-    return CHPL_BUILD_VERSION;
-  }
-}
 
 } // namespace chpl

@@ -35,7 +35,7 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     // TODO: Want:
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
@@ -44,7 +44,7 @@ proc main() {
       a = b + alpha * c;
     }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

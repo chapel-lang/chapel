@@ -1,3 +1,8 @@
+//
+// This test produces an error about outer variables, which is correct as
+// we do not support closures today.
+//
+
 var compose = lambda(f: func(int,int), g: func(int,int)): func(int,int) {
     var res = lambda(x:int): int { return g(f(x)); };
     return res;

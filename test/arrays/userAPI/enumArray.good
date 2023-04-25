@@ -2,6 +2,7 @@ enum array
 ----------------
 eltType is: real(64)
 idxType is: color
+fullIdxType is: 2*color
 rank is: 2
 
 size is: 25
@@ -85,8 +86,8 @@ local subdomains:
 {red..blue, yellow..violet}
 
 is empty: false
-head: 1.8
-tail: 25.8
+find last again: true: (blue, violet)
+count last: 1
 equals same: true
 equals diff: false
 
@@ -125,6 +126,7 @@ strided enum array
 ----------------
 eltType is: real(64)
 idxType is: color
+fullIdxType is: 2*color
 rank is: 2
 
 size is: 16
@@ -199,8 +201,8 @@ local subdomains:
 {red..violet by 2, red..violet by 2}
 
 is empty: false
-head: 1.8
-tail: 16.8
+find last again: true: (violet, violet)
+count last: 1
 equals same: true
 equals diff: false
 

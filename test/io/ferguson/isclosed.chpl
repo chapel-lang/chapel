@@ -2,7 +2,7 @@ use IO;
 
 config const fileName = "test.txt";
 
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
 var w = f.writer();
 

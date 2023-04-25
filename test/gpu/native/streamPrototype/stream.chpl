@@ -4,12 +4,24 @@
 //
 use Time, Types /*, Random */;
 
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 //
 // Use shared user module for computing HPCC problem sizes
 //
 use HPCCProblemSize;
+
+proc verifyLaunches() {
+  use ChplConfig;
+  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 12 else 16;
+  const actual = getGpuDiagnostics()[0].kernel_launch;
+  assert(actual == expected,
+         "observed ", actual, " launches instead of ", expected);
+}
+
+config param useForeach = true;
+config const useGpuDiags = true;
+config const SI = true;
 
 //
 // The number of vectors and element type of those vectors
@@ -58,7 +70,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  startGPUDiagnostics();
+  if useGpuDiags then startGpuDiagnostics();
   on here.gpus[0] {
     //
     // ProblemSpace describes the index set for the three vectors.  It
@@ -79,7 +91,7 @@ proc main() {
     var execTime: [1..numTrials] real;                 // an array of timings
 
     for trial in 1..numTrials {                        // loop over the trials
-      const startTime = getCurrentTime();              // capture the start time
+      const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
       //
       // The main loop: Iterate over the vectors A, B, and C in a
@@ -87,17 +99,23 @@ proc main() {
       // Compute the multiply-add on b and c, storing the result to a.
       //
       // This forall loop will be offloaded onto the GPU.
-      forall (a, b, c) in zip(A, B, C) do
-        a = b + alpha * c;
+      if useForeach then
+        foreach (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
+      else
+        forall (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
 
-      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+      execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
     const validAnswer = verifyResults(A, B, C);        // verify...
     printResults(validAnswer, execTime);               // ...and print the results
   }
-  stopGPUDiagnostics();
-  writeln(getGPUDiagnostics());
+  if useGpuDiags {
+    stopGpuDiagnostics();
+    verifyLaunches();
+  }
 }
 
 //
@@ -182,7 +200,7 @@ proc verifyResults(A, B, C) {
 }
 
 //
-// Print out success/failure, the timings, and the GB/s value
+// Print out success/failure, the timings, and the throughput
 //
 proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
@@ -209,7 +227,14 @@ proc printResults(successful, execTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
-    writeln("Performance (GB/s) = ", GBPerSec);
+    if SI {
+      const GBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
+      writeln("Performance (GB/s) = ", GBPerSec);
+    } else {
+      const GiBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) / (1<<30):real;
+      writeln("Performance (GiB/s) = ", GiBPerSec);
+    }
   }
 }

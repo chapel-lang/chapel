@@ -50,7 +50,7 @@ proc solveBoard(inout board: [] int) {
 
 proc main() {
   var board: [1..9, 1..9] int;
-  var boardData = open(inputfile, iomode.r).reader();
+  var boardData = open(inputfile, ioMode.r).reader();
 
   // Read the board from the input file
 

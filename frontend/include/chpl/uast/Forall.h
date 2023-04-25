@@ -58,7 +58,12 @@ class Forall final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    isExpressionLevel) {
+                    isExpressionLevel,
+                    NO_CHILD /*attributeGroup*/) {
+  }
+
+  Forall(Deserializer& des)
+    : IndexableLoop(asttags::Forall, des) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -82,6 +87,12 @@ class Forall final : public IndexableLoop {
                              BlockStyle blockStyle,
                              owned<Block> body,
                              bool isExpressionLevel);
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Forall);
 
 };
 

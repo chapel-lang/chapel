@@ -107,8 +107,8 @@ module List {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
-        compilerWarning("which now means class type with generic management");
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("list element type cannot currently be generic");
       // In the future we might support it if the list is not default-inited
@@ -900,17 +900,17 @@ module List {
       return result;
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
       append(other);
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: [?d] eltType) lifetime this < other {
       append(other);
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
       append(other);
     }
@@ -1795,6 +1795,15 @@ module List {
       }
 
       _leave();
+    }
+
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type eltType, param parSafe : bool, r: fileReader) {
+      this.init(eltType, parSafe);
+      try! readThis(r);
     }
 
     /*

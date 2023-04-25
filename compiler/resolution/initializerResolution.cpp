@@ -23,6 +23,7 @@
 #include "AggregateType.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "CatchStmt.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
@@ -36,6 +37,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
@@ -170,7 +172,41 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
     body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
     body->insertAtTail(new CallExpr(PRIM_SETCID, initTemp));
   }
-  body->insertAtTail(innerInit);
+
+  if (initFn->throwsError()) {
+    fn->throwsErrorInit();
+    BlockStmt* tryBody = new BlockStmt(innerInit);
+
+    const char* errorName = astr("e");
+    BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
+    VarSymbol* error = new VarSymbol(errorName);
+    DefExpr* errorDef = new DefExpr(error);
+
+    // recreate body of CatchStmt::cleanup() so that it can be well formed (for
+    // now)
+    VarSymbol* casted = newTemp();
+    Expr* castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
+    DefExpr* castedDef = new DefExpr(casted, castedCurrent);
+    Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
+    Expr* toOwned = new CallExpr(PRIM_NEW,
+                                 new CallExpr(new SymExpr(dtOwned->symbol),
+                                              nonNilC));
+    errorDef->init = toOwned;
+    catchBody->insertAtHead(errorDef);
+    catchBody->insertAtHead(castedDef);
+
+    CallExpr* rethrow = new CallExpr(PRIM_THROW,
+                                     new SymExpr(error));
+    catchBody->insertAtTail(rethrow);
+
+    TryStmt* tryInit = new TryStmt(false, tryBody,
+                                   new BlockStmt(CatchStmt::build(errorName,
+                                                                  catchBody)));
+    body->insertAtTail(tryInit);
+
+  } else {
+    body->insertAtTail(innerInit);
+  }
 
   if (type->hasPostInitializer() == true) {
     body->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
@@ -258,6 +294,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   VarSymbol* tmp = newTemp("initTemp", rootType);
   CallExpr* call = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
+  call->tryTag = newExpr->tryTag;
 
   insertNamedInstantiationInfo(newExpr, call, at);
 

@@ -2,30 +2,30 @@
 
 # Note, this is not run all as root, so use sudo where needed
 
-sudo apt-get update
+sudo apt-get update # hide
 
 # homebrew recommends installing this
-sudo apt-get install -y build-essential
+sudo apt-get install -y build-essential # hide
 # many of these are in build-essential
-sudo apt-get install -y gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config
+sudo apt-get install -y gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config # hide
 
-export NONINTERACTIVE=1
+export NONINTERACTIVE=1 # hide
 
 # install homebrew
-NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" #hide
 
 # make sure homebrew commands are available in future logins
-echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.bashrc
-echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.bash_profile
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.bashrc #hide
+echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.bash_profile #hide
 
 # and right now
-eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)" #hide
 
 # recommended by homebrew
-brew install gcc
+brew install gcc #hide
 
 # install some dependencies in homebrew
-brew install cmake python gmp llvm@14
+brew install cmake python gmp llvm@14 #unsudo
 
 # we could use Homebrew's gcc if that becomes important in the future:
 # # link the homebrew-installed gcc-* to gcc

@@ -59,15 +59,18 @@ class ForwardingDecl final : public Decl {
 
 private:
   ForwardingDecl(AstList children, Decl::Visibility visibility,
-                 int attributesChildNum)
-    : Decl(asttags::ForwardingDecl, std::move(children), attributesChildNum,
+                 int attributeGroupChildNum)
+    : Decl(asttags::ForwardingDecl, std::move(children), attributeGroupChildNum,
                 visibility,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1
+                /*linkageNameChildNum*/ NO_CHILD
                 ) {
 
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
+
+  ForwardingDecl(Deserializer& des)
+    : Decl(asttags::ForwardingDecl, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ForwardingDecl* lhs = (const ForwardingDecl*) this;
@@ -80,7 +83,7 @@ private:
   }
 
   int exprChildNum() const {
-    return this->attributesChildNum() + 1;
+    return this->attributeGroupChildNum() + 1;
   }
 
  public:
@@ -88,11 +91,11 @@ private:
 
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Attributes> attributes,
+                                     owned<AttributeGroup> attributeGroup,
                                      owned<AstNode> expr);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Attributes> attributes,
+                                     owned<AttributeGroup> attributeGroup,
                                      owned<AstNode> expr,
                                      Decl::Visibility visibility);
 
@@ -107,6 +110,13 @@ private:
       return nullptr;
     }
   }
+
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ForwardingDecl);
+
 };
 
 

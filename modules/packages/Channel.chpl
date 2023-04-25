@@ -276,8 +276,8 @@ module Channel {
     var recvIdx = 0;
     var count = 0;
     var closed = false;
-    var sendWaiters : WaiterQueue;
-    var recvWaiters : WaiterQueue;
+    var sendWaiters : owned WaiterQueue;
+    var recvWaiters : owned WaiterQueue;
     var lock$ = new _LockWrapper();
 
     proc init(type elt, size = 0) {

@@ -37,9 +37,9 @@ owned<Manage> Manage::build(Builder* builder, Location loc,
                             AstList managers,
                             BlockStyle blockStyle,
                             AstList stmts) {
-  int managerExprChildNum = -1;
+  int managerExprChildNum = NO_CHILD;
   const int numManagerExprs = managers.size();
-  int bodyChildNum = -1;
+  int bodyChildNum = NO_CHILD;
   const int numBodyStmts = stmts.size();
   AstList children;
 

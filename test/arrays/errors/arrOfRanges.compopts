@@ -1,0 +1,5 @@
+                                     # arrOfRanges.good
+--warn-array-of-range                # arrOfRanges.good
+--no-warn-array-of-range             # arrOfRanges-nowarning.good
+--no-warnings                        # arrOfRanges-nowarning.good
+--devel --no-warnings                # arrOfRanges-nowarning.good

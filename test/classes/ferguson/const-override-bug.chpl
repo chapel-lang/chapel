@@ -1,6 +1,6 @@
 class myLocale {
   
-  proc name return chpl_name() : string;
+  proc name do return chpl_name() : string;
 
   proc chpl_name() : string {
     use HaltWrappers only ;
@@ -16,8 +16,8 @@ class myAbstractLocaleModel : myLocale {
 class myNumaDomain : myAbstractLocaleModel {
   const myname: string;
 
-  override proc name return myname;
-  proc chpl_name() return name;
+  override proc name do return myname;
+  proc chpl_name() do return name;
 
   proc init() {
     myname = "test";

@@ -5,7 +5,7 @@ var D = createDom({1..10});
 
 
 var A: [D] int;
-var B = newCyclicArr({1..10}, int);
+var B = Cyclic.createArray({1..10}, int);
 
 // A is a static candidate, and will pass the static check
 // B is a dynamic candidate that'll fail dynamic check, in that case, we want

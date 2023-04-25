@@ -1,0 +1,3 @@
+uncaught KeyNotFoundError: key '3' not found
+  MapTest.chpl:39: thrown here
+  MapTest.chpl:39: uncaught here

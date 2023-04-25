@@ -97,6 +97,21 @@ UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
   return UniqueString::get(context, s);
 }
 
+ID ID::fabricateId(Context* context,
+                   ID parentSymbolId,
+                   UniqueString name,
+                   FabricatedIdKind kind) {
+
+  auto newSymPath = UniqueString::getConcat(context,
+                                            parentSymbolId.symbolPath().c_str(),
+                                            ".",
+                                            name.c_str());
+  auto newId = ID(newSymPath, (int) kind, 0);
+  CHPL_ASSERT(newId.isFabricatedId());
+  CHPL_ASSERT(newId.fabricatedIdKind() == kind);
+  return newId;
+}
+
 ID ID::parentSymbolId(Context* context) const {
   if (postOrderId_ >= 0) {
     // Create an ID with postorder id -1 instead
@@ -158,6 +173,8 @@ int ID::compare(const ID& other) const {
 
   // if that wasn't different, compare the id
   return this->postOrderId() - other.postOrderId();
+
+  // numChildIds_ is intentionally not compared
 }
 
 std::vector<std::pair<UniqueString,int>>
@@ -263,5 +280,29 @@ std::string ID::str() const {
   stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
   return ss.str();
 }
+
+ID ID::fromString(Context* context, const char* idStr) {
+  if (idStr == nullptr || idStr[0] == '\0') {
+    return ID();
+  }
+
+  int atPos = 0;
+  for (atPos = 0; idStr[atPos]; atPos++) {
+    if (idStr[atPos] == '@')
+      break;
+  }
+
+  // compute the path part (not counting the '@' part)
+  auto symPath = UniqueString::get(context, idStr, atPos);
+
+  int postorder = -1;
+
+  if (idStr[atPos] == '@') {
+    postorder = std::stoi(&idStr[atPos+1]);
+  }
+
+  return ID(symPath, postorder, /* num child IDs */ -1);
+}
+
 
 } // end namespace chpl

@@ -3,7 +3,7 @@ use Memory.Diagnostics;
 
 config type t = string;
 
-var r = compile("(a+)(b+)(c+)":t);
+var r = new regex("(a+)(b+)(c+)":t);
 
 {
   writeln("Search no capture");

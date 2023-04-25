@@ -10,7 +10,7 @@ module m1 {
     var myBuckets = new Buckets();
   }
 
-  proc physicalMemory3(arg:locale) return 0;
+  proc physicalMemory3(arg:locale) do return 0;
 }
 
 module m2 {

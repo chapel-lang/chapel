@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 use BitOps;
 
 config const verbose = false;
@@ -13,8 +13,12 @@ proc main() {
     const r = 0..0;
 
     proc check(A, s) {
-      if getGPUDiagnostics()[0].kernel_launch !=1 then
-        writeln(s + " didn't result in kernel launch");
+      stopGpuDiagnostics();
+      const nLaunch = getGpuDiagnostics()[0].kernel_launch;
+
+      if nLaunch !=1 then
+        writeln(s + " didn't result in correct number of kernel launches. " +
+                nLaunch:string + " launches detected.");
       else if verbose then
         writeln(s + " resulted in kernel launch");
 
@@ -24,20 +28,21 @@ proc main() {
       else if verbose then
         writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
 
-      resetGPUDiagnostics();
+      resetGpuDiagnostics();
+      startGpuDiagnostics();
     }
 
-    startGPUDiagnostics();
+    startGpuDiagnostics();
 
     foreach i in r do R[0] = clz(arg); R[1] = clz(arg); check(R, "clz");
     foreach i in r do R[0] = ctz(arg); R[1] = ctz(arg); check(R, "ctz");
 
-    foreach i in r do R[0] = popcount(arg); R[1] = popcount(arg); check(R, "popcount");
+    foreach i in r do R[0] = popCount(arg); R[1] = popCount(arg); check(R, "popCount");
     foreach i in r do R[0] = parity(arg); R[1] = parity(arg); check(R, "parity");
 
     foreach i in r do R[0] = rotl(arg,2); R[1] = rotl(arg,2); check(R, "rotl");
     foreach i in r do R[0] = rotr(arg,2); R[1] = rotr(arg,2); check(R, "rotr");
 
-    stopGPUDiagnostics();
+    stopGpuDiagnostics();
   }
 }

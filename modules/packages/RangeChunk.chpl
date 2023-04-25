@@ -54,15 +54,13 @@ module RangeChunk {
     Mod
   }
   private use RemElems;
-  private use BoundedRangeType;
-
 
   /*
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a range. The remainders will be distributed according to ``remPol``.
   */
-  iter chunks(r: range(?RT, bounded, ?S), numChunks: integral,
-              remPol: RemElems = Thru): range(RT, bounded, S) {
+  iter chunks(r: range(?RT, boundKind.both, ?S), numChunks: integral,
+              remPol: RemElems = Thru): range(RT, boundKind.both, S) {
     foreach (startOrder, endOrder) in chunksOrder(r, numChunks, remPol) {
       const start = r.orderToIndex(startOrder);
       const end = r.orderToIndex(endOrder);
@@ -76,8 +74,9 @@ module RangeChunk {
      Returns the ``idx`` chunk of range ``r`` as a range. The remainders will be
      distributed according to ``remPol``.
   */
-  proc chunk(r: range(?RT, bounded, ?S), numChunks: integral, idx: integral,
-             remPol: RemElems = Thru): range(RT, bounded, S) {
+  proc chunk(r: range(?RT, boundKind.both, ?S),
+             numChunks: integral, idx: integral,
+             remPol: RemElems = Thru): range(RT, boundKind.both, S) {
     const (startOrder, endOrder) = chunkOrder(r, numChunks, idx, remPol);
     const start = r.orderToIndex(startOrder);
     const end = r.orderToIndex(endOrder);
@@ -99,8 +98,8 @@ module RangeChunk {
   //       0    1    2    3    0      1      2     3
   //  4. For a desired tid 2, the following chunks are emitted
   //      (5,6) (13,14)
-  iter blockCyclicChunks(r: range(?t, boundedType=BoundedRangeType.bounded,
-                         ?strided), blockSize: integral, tid: integral,
+  iter blockCyclicChunks(r: range(?t, boundKind.both, ?strided),
+                         blockSize: integral, tid: integral,
                          nTasks: integral) {
     if (tid >= nTasks) then
       halt("Parameter tid must be < nTasks " +
@@ -139,7 +138,7 @@ module RangeChunk {
      Iterates through chunks ``0`` to ``numChunks - 1`` of range ``r``, emitting each
      as a 0-based order tuple. The remainders will be distributed according to ``remPol``.
   */
-  iter chunksOrder(r: range(?RT, bounded, ?), numChunks: integral,
+  iter chunksOrder(r: range(?RT, boundKind.both, ?), numChunks: integral,
                    remPol: RemElems = Thru): 2*RT {
     if r.sizeAs(RT) == 0 || numChunks <= 0 then
       return;
@@ -177,7 +176,8 @@ module RangeChunk {
      Returns the ``idx`` chunk of range ``r`` as a 0-based order tuple. The remainders
      will be distributed according to ``remPol``.
   */
-  proc chunkOrder(r: range(?RT, bounded, ?), numChunks: integral, idx: integral,
+  proc chunkOrder(r: range(?RT, boundKind.both, ?),
+                  numChunks: integral, idx: integral,
                   remPol: RemElems = Thru): 2*RT {
     if r.sizeAs(RT) == 0 || numChunks <= 0 || idx < 0 || idx >= numChunks then
       return (1: RT, 0: RT);

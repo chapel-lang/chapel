@@ -27,7 +27,16 @@ These arguments can be passed positionally or by using named expressions and
 the names of fields. In order to support partial instantiations of generic
 types the language allows for arguments to be omitted from the type constructor
 call. The resulting instantiation will have its own type constructor that
-accepts arguments for the remaining generic fields. For example:
+accepts arguments for the remaining generic fields.
+
+In order to make it clear that the result is a generic type, and to avoid
+confusion when an argument is accidentally missing from a type
+constructor, code should indicate that it is making a partial
+instantiation with a trailing ``?`` argument. Otherwise, the compiler
+will issue a warning or error. The meaning of ``?`` in this context is
+discussed further below.
+
+For example:
 
 .. code-block:: chapel
 
@@ -40,11 +49,11 @@ accepts arguments for the remaining generic fields. For example:
   type A = R; // 'A' is simply an alias for the generic type 'R'
 
   // B's type constructor accepts two arguments for fields 'Y' and 'p'
-  type B = R(int); // instantiate field 'X'
+  type B = R(int, ?); // instantiate field 'X'
   writeln(B:string); // "R(int(64))"
 
   // C's type constructor accepts one argument for field 'Y'
-  type C = B(p=5); // instantiate field 'p'
+  type C = B(p=5, ?); // instantiate field 'p'
   writeln(C:string); // "R(int(64),p=5)"
 
   // D is a fully instantiated type and has no type constructor
@@ -151,8 +160,8 @@ a fully-generic type:
   }
 
   writeln(isGeneric(R));            // true
-  writeln(isGeneric(R(int)));       // true
-  writeln(isGeneric(R(p=42)));      // true
+  writeln(isGeneric(R(int,?)));     // true
+  writeln(isGeneric(R(p=42, ?)));   // true
   writeln(isGeneric(R(string, 5))); // false
 
 Users may also query individual fields to determine whether the field has
@@ -165,8 +174,8 @@ been instantiated by comparing the field against ``?``:
     param p : int;
   }
 
-  type A = R(int);
-  
+  type A = R(int, ?);
+
   // '?' can be used to compare against either type or param fields
   writeln(A.T == ?); // false
   writeln(A.p == ?); // true
@@ -187,14 +196,14 @@ instantiated:
 
   proc printInstantiated(type T) {
     writeln("type = ", T:string);
-    for param i in 1..numFields(T) {
+    for param i in 0..<numFields(T) {
       param name : string = getFieldName(T, i);
       writeln("  field ", name, " = ", isFieldBound(T, name));
     }
   }
 
   printInstantiated(R);
-  printInstantiated(R(U=real));
+  printInstantiated(R(U=real, ?));
 
 
 This program outputs:
@@ -231,7 +240,7 @@ generic management of class types.
   }
 
   proc intC type {
-    return C(int)?;
+    return C(int, ?)?;
   }
 
   // Declare two variables with the same instantiation of 'C' but with different management
@@ -250,6 +259,6 @@ generic management of class types.
   }
 
   // For these calls, 'T' will be a partial instantiation
-  var q = make(C(int), 1);
-  var r = make(C(real), 2);
+  var q = make(C(int, ?), 1);
+  var r = make(C(real, ?), 2);
 

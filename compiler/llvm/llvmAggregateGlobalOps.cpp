@@ -719,7 +719,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 #if HAVE_LLVM_VER >= 150
         Type* DstTy = oldStore->getType();
 #else
-        Type* origDstTy = oldStore->getValueOperand()->getType();
+        Type* origDstTy = oldStore->getPointerOperand()->getType();
         Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
 #endif
         Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);

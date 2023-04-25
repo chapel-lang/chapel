@@ -32,7 +32,7 @@ var infile: file;
 var reader: fileReader(iokind.dynamic, true);
 
 if initFromFile {
-  infile = open(filename, iomode.r);
+  infile = open(filename, ioMode.r);
   reader = infile.reader();
 }
 

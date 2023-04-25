@@ -212,6 +212,8 @@ def find_system_llvm_config():
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
         paths.append("llvm-config" + vers)
+        # this format is used by Alpine Linux
+        paths.append("llvm" + vers + "-config")
         if homebrew_prefix:
             # look for homebrew install of LLVM
             paths.append(homebrew_prefix +
@@ -372,18 +374,26 @@ def get_system_llvm_clang(lang):
         clang = os.path.join(bindir, clang_name)
 
         if not os.path.exists(clang):
-            # also try /usr/bin/clang since some OSes use that
-            # for the clang package
-            usr_bin = "/usr/bin"
-            clang2 = os.path.join(usr_bin, clang_name);
-            if os.path.exists(clang2):
-                llvm_config = find_system_llvm_config()
-                # check that clang --version matches llvm-config --version
-                clangv = run_command([clang2, '--version']).strip()
-                llvmv = run_command([llvm_config, '--version']).strip()
+            # try /usr/bin/clang-<version> or /usr/bin/clang
+            # since some OSes use that for the clang package
+            paths = [ ]
 
-                if llvmv in clangv:
-                    clang = clang2
+            usr_bin = "/usr/bin"
+            llvm_config = find_system_llvm_config()
+            llvm_version, ignored_err = check_llvm_config(llvm_config)
+
+            paths.append(os.path.join(usr_bin, clang_name + "-" + llvm_version))
+            paths.append(os.path.join(usr_bin, clang_name))
+
+            for clang2 in paths:
+                if os.path.exists(clang2):
+                    # check that clang --version matches llvm-config --version
+                    clangv = run_command([clang2, '--version']).strip()
+                    llvmv = run_command([llvm_config, '--version']).strip()
+
+                    if llvmv in clangv:
+                        clang = clang2
+                        break
 
     return clang
 
@@ -804,10 +814,12 @@ def get_host_compile_args():
 
     return (bundled, system)
 
-# returns (bundled, system) args for 'make'
-# to link 'chpl' with LLVM
+# returns (bundled, system, static_or_dynamic)
+#  * bundled and system are lists of args for 'make' to link 'chpl' with LLVM
+#  * static_or_dynamic is "static" for static linking or "dynamic"
+#    for dynamic linking or None for unknown
 @memoize
-def get_host_link_args():
+def compute_host_link_settings():
     bundled = [ ]
     system = [ ]
 
@@ -841,7 +853,7 @@ def get_host_link_args():
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':
-        return (bundled, system)
+        return (bundled, system, None)
 
     # only use LLVMSupport for CHPL_LLVM=none
     if llvm_val == 'none':
@@ -920,6 +932,23 @@ def get_host_link_args():
         else:
             warning("included llvm not built yet")
 
+    static_dynamic = "static"
+    if llvm_dynamic:
+        static_dynamic = "dynamic"
+
+    return (bundled, system, static_dynamic)
+
+# returns whether LLVM and clang will be linked dynamically, statically,
+# or it is unknown, by returning "dynamic" or "static" or None.
+@memoize
+def get_static_dynamic():
+    bundled, system, static_dynamic = compute_host_link_settings()
+    return static_dynamic
+
+# returns (bundled, system) args for 'make' to link 'chpl' with LLVM
+@memoize
+def get_host_link_args():
+    bundled, system, static_dynamic = compute_host_link_settings()
     return (bundled, system)
 
 # Return the isysroot argument provided by get_clang_basic_args, if any

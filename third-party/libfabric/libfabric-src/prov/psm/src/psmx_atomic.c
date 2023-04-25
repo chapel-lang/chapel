@@ -49,16 +49,16 @@
  *	args[1].u64	req
  */
 
-static fastlock_t psmx_atomic_lock;
+static ofi_spin_t psmx_atomic_lock;
 
 void psmx_atomic_init(void)
 {
-	fastlock_init(&psmx_atomic_lock);
+	ofi_spin_init(&psmx_atomic_lock);
 }
 
 void psmx_atomic_fini(void)
 {
-	fastlock_destroy(&psmx_atomic_lock);
+	ofi_spin_destroy(&psmx_atomic_lock);
 }
 
 #define CASE_INT_TYPE(FUNC,...) \
@@ -119,10 +119,10 @@ void psmx_atomic_fini(void)
 			int i; \
 			TYPE *d = (dst); \
 			TYPE *r = (res); \
-			fastlock_acquire(&psmx_atomic_lock); \
+			ofi_spin_lock(&psmx_atomic_lock); \
 			for (i=0; i<(cnt); i++) \
 				r[i] = d[i]; \
-			fastlock_release(&psmx_atomic_lock); \
+			ofi_spin_unlock(&psmx_atomic_lock); \
 		} while (0)
 
 #define PSMX_ATOMIC_WRITE(dst,src,cnt,OP,TYPE) \
@@ -130,10 +130,10 @@ void psmx_atomic_fini(void)
 			int i; \
 			TYPE *d = (dst); \
 			TYPE *s = (src); \
-			fastlock_acquire(&psmx_atomic_lock); \
+			ofi_spin_lock(&psmx_atomic_lock); \
 			for (i=0; i<cnt; i++) \
 				OP(d[i],s[i]); \
-			fastlock_release(&psmx_atomic_lock); \
+			ofi_spin_unlock(&psmx_atomic_lock); \
 		} while (0)
 
 #define PSMX_ATOMIC_READWRITE(dst,src,res,cnt,OP,TYPE) \
@@ -142,12 +142,12 @@ void psmx_atomic_fini(void)
 			TYPE *d = (dst); \
 			TYPE *s = (src); \
 			TYPE *r = (res); \
-			fastlock_acquire(&psmx_atomic_lock); \
+			ofi_spin_lock(&psmx_atomic_lock); \
 			for (i=0; i<(cnt); i++) {\
 				r[i] = d[i]; \
 				OP(d[i],s[i]); \
 			} \
-			fastlock_release(&psmx_atomic_lock); \
+			ofi_spin_unlock(&psmx_atomic_lock); \
 		} while (0)
 
 #define PSMX_ATOMIC_CSWAP(dst,src,cmp,res,cnt,CMP_OP,TYPE) \
@@ -157,13 +157,13 @@ void psmx_atomic_fini(void)
 			TYPE *s = (src); \
 			TYPE *c = (cmp); \
 			TYPE *r = (res); \
-			fastlock_acquire(&psmx_atomic_lock); \
+			ofi_spin_lock(&psmx_atomic_lock); \
 			for (i=0; i<(cnt); i++) { \
 				r[i] = d[i]; \
 				if (c[i] CMP_OP d[i]) \
 					d[i] = s[i]; \
 			} \
-			fastlock_release(&psmx_atomic_lock); \
+			ofi_spin_unlock(&psmx_atomic_lock); \
 		} while (0)
 
 #define PSMX_ATOMIC_MSWAP(dst,src,cmp,res,cnt,TYPE) \
@@ -173,12 +173,12 @@ void psmx_atomic_fini(void)
 			TYPE *s = (src); \
 			TYPE *c = (cmp); \
 			TYPE *r = (res); \
-			fastlock_acquire(&psmx_atomic_lock); \
+			ofi_spin_lock(&psmx_atomic_lock); \
 			for (i=0; i<(cnt); i++) { \
 				r[i] = d[i]; \
 				d[i] = (s[i] & c[i]) | (d[i] & ~c[i]); \
 			} \
-			fastlock_release(&psmx_atomic_lock); \
+			ofi_spin_unlock(&psmx_atomic_lock); \
 		} while (0)
 
 static int psmx_atomic_do_write(void *dest, void *src,

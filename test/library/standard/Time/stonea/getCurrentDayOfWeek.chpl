@@ -1,14 +1,14 @@
 use Time;
 
-var day = getCurrentDayOfWeek():Day;
+var weekday = getCurrentDayOfWeek():day;
 
-select day {
-    when Day.sunday do writeln("Sunday");
-    when Day.monday do writeln("Monday");
-    when Day.tuesday do writeln("Tuesday");
-    when Day.wednesday do writeln("Wednesday");
-    when Day.thursday do writeln("Thursday");
-    when Day.friday do writeln("Friday");
-    when Day.saturday do writeln("Saturday");
+select weekday {
+    when day.sunday do writeln("Sunday");
+    when day.monday do writeln("Monday");
+    when day.tuesday do writeln("Tuesday");
+    when day.wednesday do writeln("Wednesday");
+    when day.thursday do writeln("Thursday");
+    when day.friday do writeln("Friday");
+    when day.saturday do writeln("Saturday");
 }
 

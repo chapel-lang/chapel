@@ -33,7 +33,7 @@ config const n00 = numLocales * n00perLocale;
 config const elemsPerCore = 1024; // or 65536
 config const numCores = if perf then here.maxTaskPar else 4;
 
-proc myRound(arg) return (arg+0.5):int;
+proc myRound(arg) do return (arg+0.5):int;
 
 config const n11 = numLocales * numCores * elemsPerCore;
 config const n22 = myRound(sqrt(n11));

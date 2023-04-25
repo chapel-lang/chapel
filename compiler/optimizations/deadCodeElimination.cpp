@@ -459,8 +459,6 @@ void deadCodeElimination() {
     cleanupAfterTypeRemoval();
   }
 
-  gpuTransforms();
-
   // Emit string literals. This too could be its own pass but
   // for now it is convenient to do it here. It could happen any time
   // after dead string literal elimination and code generation.

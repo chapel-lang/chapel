@@ -1,0 +1,7 @@
+arrOfRanges.chpl:3: warning: please note that this is a 1-element array of ranges; if that was your intention, add a trailing comma or recompile with '--no-warn-array-of-range' to avoid this warning; if it wasn't, you may want to use a range instead
+1..10
+1..10
+1..10
+1..10
+1..10
+1..10

@@ -5,7 +5,7 @@ proc main(args: [] string) {
   const infile = base + ".in";
   const outfile = base + ".out";
 
-  copyFile(infile, outfile);
+  copy(infile, outfile, permissions=false);
 
   var sub = spawn(["diff", infile, outfile]);
   sub.communicate();

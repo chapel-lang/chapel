@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.29.0
+        export CHPL_HOME=~/chapel-1.30.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -294,7 +294,6 @@ CHPL_TARGET_CPU
         haswell         bdver3
         broadwell       bdver4
         skylake
-        knl
         =========== ================ ================
 
    These values are defined to be the same as in GCC 7:

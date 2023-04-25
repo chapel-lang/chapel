@@ -342,12 +342,12 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 
   if (parent != nullptr) {
-    for (auto id : frame->initedOuterVars) {
+    for (const auto& id : frame->initedOuterVars) {
       if (parent->addToInitedVars(id)) {
         recordInitializationOrder(parent, id);
       }
     }
-    for (auto id : frame->deinitedVars) {
+    for (const auto& id : frame->deinitedVars) {
       if (frame->declaredVars.count(id) == 0) {
         parent->deinitedVars.insert(id);
       }
@@ -373,7 +373,7 @@ static bool isRecordLike(const Type* t) {
 }
 
 static bool typeNeedsInitDeinitCall(const Type* t) {
-  if (t->isUnknownType() || t->isErroneousType()) {
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
     // can't do anything with these
     return false;
   } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
@@ -395,6 +395,8 @@ static bool typeNeedsInitDeinitCall(const Type* t) {
 
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+  // Type variables do not need default init.
+  if (ast->storageKind() == Qualifier::TYPE) return;
 
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
@@ -463,7 +465,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                compositeType->instantiatedFromCompositeType() != nullptr) {
       // pass generic type and param fields by the name
       auto subs = compositeType->sortedSubstitutions();
-      for (auto pair : subs) {
+      for (const auto& pair : subs) {
         const ID& id = pair.first;
         const QualifiedType& qt = pair.second;
         UniqueString fname = parsing::fieldIdToName(context, id);
@@ -477,8 +479,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                  resolver.poiScope);
+    auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
     ResolvedExpression& opR = rv.byAst(ast);
     resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
                                           AssociatedAction::DEFAULT_INIT,
@@ -490,13 +491,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
-
-  if (lhsType.type() == rhsType.type() &&
-      !typeNeedsInitDeinitCall(lhsType.type())) {
-     // TODO: we should resolve it anyway
-     return;
-  }
-
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -507,12 +501,19 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                        AssociatedAction::ASSIGN,
-                                        ast->id());
+
+  auto op = ast->toOpCall();
+  if (op != nullptr && op->op() == USTR("=")) {
+    // if the syntax shows a '=' call, resolve that into the assign
+    resolver.handleResolvedCall(opR, ast, ci, c);
+  } else {
+    // otherwise, add an associated action
+    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                          AssociatedAction::ASSIGN,
+                                          ast->id());
+  }
 }
 
 void CallInitDeinit::resolveCopyInit(const AstNode* ast,
@@ -536,8 +537,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -606,8 +606,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                        getTypeGenericity(context, rhsType) != Type::CONCRETE;
       // resolve a copy init and a deinit to deinit the temporary
       if (lhsGenUnk || rhsGenUnk) {
-        // TODO: this should not happen
-        printf("Warning: should not be reached\n");
+        CHPL_ASSERT(false && "should not be reached");
       } else {
         resolveCopyInit(ast, rhsAst, lhsType, rhsType,
                         /* forMoveInit */ true,
@@ -637,7 +636,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * a Return or Yield
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
-  if (op != nullptr&& op->op() == USTR("=")) {
+  if (op != nullptr && op->op() == USTR("=")) {
     rhsAst = op->actual(1);
   } else if (auto vd = ast->toVarLikeDecl()) {
     rhsAst = vd->initExpression();
@@ -711,8 +710,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
@@ -741,6 +739,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
+  bool isCatchVariable = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -771,6 +770,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
+  // Errors in Catch statements will be instantiated by the throwing function
+  // in the Try block
+  auto parent = parsing::parentAst(context, ast);
+  if (parent && parent->isCatch()) {
+    auto catchNode = parent->toCatch();
+    CHPL_ASSERT(ast == catchNode->error());
+    isCatchVariable = true;
+  }
+
   if (handledFormal) {
     // already handled above
   } else if (splitInited) {
@@ -792,7 +800,11 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-
+  } else if (isCatchVariable) {
+    // initialized from the throw that activates this Catch
+    ID id = ast->id();
+    frame->addToInitedVars(id);
+    frame->localsAndDefers.push_back(id);
   } else {
     // default init it
     // not inited here and not split-inited, so default-initialize it
@@ -829,7 +841,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
 
   if (splitInited) {
-    // if initializating a variable, update localsAndDefers or initedOuterVars
+    // if initializing a variable, update localsAndDefers or initedOuterVars
     ID lhsId = refersToId(lhsAst, rv);
     recordInitializationOrder(frame, lhsId);
   }
@@ -862,7 +874,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
   // update initedVars if it is initializing a variable
   bool splitInited = processSplitInitOut(ast, actual, splitInitedVars, rv);
   if (splitInited && isValue(actualType.kind())) {
-    // if initializating a variable, update localsAndDefers or initedOuterVars
+    // if initializing a variable, update localsAndDefers or initedOuterVars
     ID actualId = refersToId(actual, rv);
     recordInitializationOrder(frame, actualId);
 
@@ -978,7 +990,7 @@ void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* elseFrame = currentElseFrame();
 
   // process end-of-block deinits in then/else blocks and then propagate
-  if (!thenFrame->returnsOrThrows) {
+  if (thenFrame && !thenFrame->returnsOrThrows) {
     processDeinitsAndPropagate(thenFrame, frame, rv);
   }
   if (elseFrame && !elseFrame->returnsOrThrows) {
@@ -1026,25 +1038,6 @@ void callInitDeinit(Resolver& resolver) {
   if (auto nd = resolver.symbol->toNamedDecl()) {
     symName = nd->name();
   }
-
-  printf("\nSplit Init Report for '%s':\n", symName.c_str());
-  for (auto varId : splitInitedVars) {
-    auto ast = parsing::idToAst(resolver.context, varId);
-    if (ast) {
-      if (auto vd = ast->toVarLikeDecl()) {
-        printf("  Split initing '%s' with ID %s\n",
-               vd->name().c_str(), vd->id().str().c_str());
-      }
-    }
-  }
-  printf("\n");
-
-  printf("\nCopy Elision Report for '%s':\n", symName.c_str());
-  for (auto id : elidedCopyFromIds) {
-    printf("  Copy eliding ID %s\n",
-           id.str().c_str());
-  }
-  printf("\n");
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);

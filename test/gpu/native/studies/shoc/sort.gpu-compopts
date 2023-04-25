@@ -1,0 +1,1 @@
+result.chpl --gpu-block-size=128 --main-module=sort

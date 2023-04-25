@@ -15,7 +15,7 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time, Barriers, DSIUtil;
+  use SSCA2_compilation_config_params, Time, Collectives, DSIUtil;
 
   var sw : stopwatch;
 
@@ -331,7 +331,7 @@ module SSCA2_kernels
             BCaux[s].path_count$.writeXF(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        var barrier = new barrier(numLocales);
 
         coforall loc in Locales with (ref remaining, ref barrier) do on loc {
           var ALhere = Active_Level[here.id]!;

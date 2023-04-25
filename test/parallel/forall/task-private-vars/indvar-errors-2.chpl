@@ -1,5 +1,5 @@
 
-proc useit(ARG1, ARG2) return ARG2;
+proc useit(ARG1, ARG2) do return ARG2;
 
 const idx1 = 1101;   // intentionally the same names as ind vars below
 const idx2 = 1102;

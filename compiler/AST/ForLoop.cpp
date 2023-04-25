@@ -416,6 +416,8 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   // but doing so causes problems in lowerIterators.
   retval->mIsForExpr        = mIsForExpr;
 
+  retval->userLabel         = userLabel;
+
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
 

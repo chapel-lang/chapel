@@ -1,7 +1,7 @@
 use IO;
 
 var filename = "openreaderLimited.txt";
-var f = open(filename, iomode.r);
+var f = open(filename, ioMode.r);
 var readCh = f.reader();
 var readRes: string;
 readCh.readLine(readRes, stripNewline=true);

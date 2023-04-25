@@ -190,8 +190,8 @@ class VarScopeVisitor {
   void enterAst(const uast::AstNode* ast);
   void exitAst(const uast::AstNode* ast);
 
-  bool enter(const VarLikeDecl* ast, RV& rv);
-  void exit(const VarLikeDecl* ast, RV& rv);
+  bool enter(const NamedDecl* ast, RV& rv);
+  void exit(const NamedDecl* ast, RV& rv);
 
   bool enter(const OpCall* ast, RV& rv);
   void exit(const OpCall* ast, RV& rv);
@@ -210,6 +210,9 @@ class VarScopeVisitor {
 
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);
+
+  bool enter(const uast::Conditional* node, RV& rv);
+  void exit(const uast::Conditional* node, RV& rv);
 
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
@@ -254,6 +257,10 @@ struct VarFrame {
 
 
   // ----- variables declared here for use in particular subclasses
+
+  // TODO: These probably can't store ID because, for a variable
+  // declared within a param for loop, we want to have a different
+  // variable for each iteration, rather than considering them all the same.
 
   // for split init and copy elision:
   // which variables are declared here in a way that allows split init?

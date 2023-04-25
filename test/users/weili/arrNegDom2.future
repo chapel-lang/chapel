@@ -1,4 +1,5 @@
-bug: arrays with negative stride don't work
+feature request: array.reindex() when passed arg(s) with negative stride(s)
 
-A variation on arrNegDom.future
+When running array.reindex() on range(s) with negative stride(s),
+the resulting array's domain should have negative stride(s).
 

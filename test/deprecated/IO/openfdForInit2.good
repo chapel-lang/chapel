@@ -1,0 +1,1 @@
+openfdForInit2.chpl:3: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead

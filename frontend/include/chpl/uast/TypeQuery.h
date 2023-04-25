@@ -52,10 +52,12 @@ class TypeQuery final : public NamedDecl {
 
  private:
   TypeQuery(UniqueString name)
-    : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE,
-                /* attributesChildNum */ -1, name) {
+    : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE, name) {
     CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
+
+  TypeQuery(Deserializer& des)
+    : NamedDecl(asttags::TypeQuery, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;
@@ -72,6 +74,12 @@ class TypeQuery final : public NamedDecl {
 
   static owned<TypeQuery> build(Builder* builder, Location loc,
                                 UniqueString name);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TypeQuery);
 };
 
 

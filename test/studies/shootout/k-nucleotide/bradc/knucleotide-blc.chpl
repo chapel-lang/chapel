@@ -13,7 +13,7 @@ config param tableSize = 2**16,
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const consoleIn = openfd(0),
+  const consoleIn = new file(0),
         fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
@@ -59,7 +59,7 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (k,v) in freqs.items() do (v,k);
+  var arr = for (k,v) in zip(freqs.keys(), freqs.values()) do (v,k);
 
   // print the array, sorted by decreasing frequency
   for (f, s) in sorted(arr, reverseComparator) do
@@ -95,7 +95,7 @@ proc calculate(data, param nclSize) {
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock$.readFE();        // acquire lock
-    for (k,v) in myFreqs.items() do
+    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
       freqs[k] += v;
     lock$.writeEF(true)  ; // release lock
   }

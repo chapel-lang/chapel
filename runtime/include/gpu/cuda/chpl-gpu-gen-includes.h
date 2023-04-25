@@ -26,6 +26,8 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+// this variable is added by the compiler. See codegenGpuGlobals.
+extern __device__ c_nodeid_t chpl_nodeID;
 
 // General TODO
 // This file is included in the application executable only. It mirrors
@@ -51,23 +53,26 @@ __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
   return 0;
 }
 
+__device__ static inline c_nodeid_t get_chpl_nodeID(void) {
+  return chpl_nodeID;
+}
+
 // TODO Rest of the functions are relatively boilerplate once we have everything
 __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 {
   chpl_localeID_t localeID;
-  localeID = {0,chpl_task_getRequestedSubloc()};
+  localeID = {get_chpl_nodeID() ,chpl_task_getRequestedSubloc()};
   return localeID;
 }
 
 __device__ static inline void* c_pointer_return(void* x) { return x; }
+__device__ static inline void* c_pointer_return_const(const void* x) {
+  return (void*)x;
+}
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
   return loc;
-}
-
-__device__ static inline c_nodeid_t get_chpl_nodeID(void) {
-  return 0;
 }
 
 __device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
@@ -105,6 +110,33 @@ __device__ __host__ static inline void chpl_gpu_printTimeDelta(
 {
   printf("%s%u\n", msg, end - start);
 }
+
+__device__ static inline void chpl_gpu_force_sync() {
+  // Using __syncThreads() directly causes issues when compiling programs with
+  // --fast.  It's likely due to an issue with clang discussed here:
+  // https://github.com/llvm/llvm-project/issues/58626
+  asm volatile("bar.sync 0;" : : : "memory");
+}
+
+__host__ static inline void chpl_gpu_force_sync() {
+  chpl_internal_error("chpl_gpu_force_sync called from host");
+}
+
+__device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __nvvm_read_ptx_sreg_tid_x(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __nvvm_read_ptx_sreg_tid_y(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __nvvm_read_ptx_sreg_tid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __nvvm_read_ptx_sreg_ctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __nvvm_read_ptx_sreg_ctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __nvvm_read_ptx_sreg_ctaid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __nvvm_read_ptx_sreg_ntid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __nvvm_read_ptx_sreg_ntid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __nvvm_read_ptx_sreg_ntid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __nvvm_read_ptx_sreg_nctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __nvvm_read_ptx_sreg_nctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __nvvm_read_ptx_sreg_nctaid_z(); }
 
 #endif // HAS_GPU_LOCALE
 

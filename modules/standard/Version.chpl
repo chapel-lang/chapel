@@ -143,7 +143,7 @@ module Version {
     interpretation that it represents a pre-release of the official
     release.
   */
-  deprecated "sourceVersion is deprecated, please use versionValue instead."
+  @deprecated(notes="sourceVersion is deprecated, please use versionValue instead.")
   type sourceVersion = versionValue;
 
   /*
@@ -158,7 +158,7 @@ module Version {
     :type commit: `string`
     :returns: A new version value of type :type:`sourceVersion`.
   */
-  deprecated "createVersion is deprecated, please use 'new versionValue()' instead."
+  @deprecated(notes="createVersion is deprecated, please use 'new versionValue()' instead.")
   proc createVersion(param major: int,
                      param minor: int,
                      param update: int = 0,

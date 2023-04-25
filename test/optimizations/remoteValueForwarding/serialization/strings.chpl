@@ -18,7 +18,7 @@ proc print(const msg : string) {
 proc main() {
   const localStr = "loc " * n;
 
-  on Locales.tail() {
+  on Locales.last {
     startCommDiagnostics();
     for s in globalStr {
       if s == "z" then halt();
@@ -27,7 +27,7 @@ proc main() {
   }
   print("global const string");
 
-  on Locales.tail() {
+  on Locales.last {
     startCommDiagnostics();
     for s in localStr {
       if s == "z" then halt();
@@ -42,7 +42,7 @@ proc main() {
   // utilize a fixed-size buffer within the serialized data to avoid GET-ing
   // the remote buffer.
   startCommDiagnostics();
-  on Locales.tail() {
+  on Locales.last {
     for s in shortStr {
       if s == "z" then halt();
     }

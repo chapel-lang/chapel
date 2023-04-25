@@ -25,7 +25,7 @@ module Spam {
       {
         const Space = {0..#16};
         var A: [Space] int = Space;
-        var distA = newBlockArr(Space, int);
+        var distA = Block.createArray(Space, int);
         distA = A;
 
         sliceAndDice(getRoutineName(), getLineNumber(), A);
@@ -36,7 +36,7 @@ module Spam {
       {
         const Space = {1..4, 1..4};
         var A: [Space] int = [(i,j) in Space] (i-1)*4 + j;
-        var distA = newBlockArr(Space, int);
+        var distA = Block.createArray(Space, int);
         distA = A;
 
         sliceAndDice(getRoutineName(), getLineNumber(), A);

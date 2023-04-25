@@ -9,8 +9,8 @@ dnl -*- m4 -*-
 define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
-define([GASNET_RELEASE_VERSION_MAJOR_D],[2022])
-define([GASNET_RELEASE_VERSION_MINOR_D],[9])
+define([GASNET_RELEASE_VERSION_MAJOR_D],[2023])
+define([GASNET_RELEASE_VERSION_MINOR_D],[2])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
@@ -20,7 +20,7 @@ define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[19])
+define([GASNETT_SPEC_VERSION_MINOR_D],[20])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -326,6 +326,11 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                           [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-overflow"])
     GASNET_TRY_WNO_FLAG([$1],[$3-Wno-format-truncation],
                           [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-format-truncation"])
+
+    ifelse(GASNETI_C_OR_CXX([$1]),[C],[  # CC and MPI_CC only.  Not desired for CXX
+      GASNET_TRY_WNO_FLAG([$1],[$3-Wno-strict-prototypes],
+                          [DEVWARN_[$1]FLAGS="$DEVWARN_[$1]FLAGS $3-Wno-strict-prototypes"])
+    ])
   fi
 
   # compiler-specific global warning disables
@@ -4179,7 +4184,21 @@ if test "$enabled_ofi" = yes; then
               rc = fi_getinfo(FI_VERSION(FI_MAJOR_VERSION,FI_MINOR_VERSION),
                               0, 0, 0, 0, 0);
             }], [ : ], [ have_ofi=no; GASNET_ERR_SAVE() ] )
-
+    if test "$have_ofi" = yes; then
+      GASNET_TRY_CACHE_EXTRACT_EXPR(for libfabric version code, ofi_version,[
+        #include <rdma/fabric.h>
+        #ifndef FI_REVISION_VERSION /* first appears in 1.10.0 */
+          #define FI_REVISION_VERSION 0
+        #endif
+      ],[(FI_MAJOR_VERSION*10000 + FI_MINOR_VERSION*100 + FI_REVISION_VERSION)],[ofi_version])
+      AC_MSG_CHECKING(for libfabric 1.5.0 or newer)
+      if test "$ofi_version" -ge 10500; then
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+        have_ofi=no
+      fi
+    fi
     GASNET_POPVAR(CFLAGS)
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
@@ -4203,7 +4222,9 @@ if test "$enabled_ofi" = yes; then
     CONDUIT_SPAWNER
 
     ofi_provider=""
-    ofi_define_mr_scalable="no" # tri-state: "no" omits "#define", forcing runtime selection
+    ofi_define_mr_virt_addr="no" # tri-state: "no" omits "#define", forcing runtime selection
+    ofi_define_mr_prov_key="no" # tri-state: "no" omits "#define", forcing runtime selection
+    ofi_define_use_av_map="no" # tri-state: "no" omits "#define", forcing runtime selection
     ofi_single_provider="yes"
     detected_ofi_provider=""
     ofi_use_thread_domain=0
@@ -4243,31 +4264,54 @@ if test "$enabled_ofi" = yes; then
             ofi_provider="$aliased_ofi_provider"
         fi
     fi
+    ofi_floor=0
     case "$ofi_provider" in
         psm2)
-            ofi_define_mr_scalable=1
+            ofi_define_mr_virt_addr=0
+            ofi_define_mr_prov_key=0
+            ofi_define_use_av_map=0
             ofi_use_thread_domain=1
         ;;
         cxi)
-            ofi_define_mr_scalable=1
+            ofi_define_mr_virt_addr=0
+            ofi_define_mr_prov_key=0
+            ofi_define_use_av_map=0
             ofi_use_multi_cq=1
             ofi_retry_recvmsg=1
         ;;
         gni)
-            ofi_define_mr_scalable=0
+            ofi_define_mr_virt_addr=1
+            ofi_define_mr_prov_key=1
+            ofi_define_use_av_map=0
+            ofi_floor=11400
         ;;
         verbs\;ofi_rxm)
-            ofi_define_mr_scalable=0
+            ofi_define_mr_virt_addr=1
+            ofi_define_mr_prov_key=1
+            ofi_define_use_av_map=0
+            if test "$GASNET_PLATFORM" = crayex; then
+              ofi_floor=11100
+            else
+              ofi_floor=11200
+            fi
         ;;
         tcp\;ofi_rxm)
-            ofi_define_mr_scalable=1
+            ofi_define_mr_virt_addr=0
+            ofi_define_mr_prov_key=0
+            ofi_define_use_av_map=0
+            ofi_floor=11500
         ;;
         udp\;ofi_rxd)
-            ofi_define_mr_scalable=1
+            ofi_define_mr_virt_addr=0
+            ofi_define_mr_prov_key=0
+            ofi_define_use_av_map=0
             ofi_retry_recvmsg=1
+            ofi_floor=10700
         ;;
         sockets)
-            ofi_define_mr_scalable=1
+            ofi_define_mr_virt_addr=0
+            ofi_define_mr_prov_key=0
+            ofi_define_use_av_map=0
         ;;
         default|generic|"")  # NOTE: "default" is deprecated and can be removed when Spack packaging drops 2022.3.0
             if test -n "$ofi_provider"; then
@@ -4308,20 +4352,93 @@ Runtime provider feature detection and conservative defaults will be used except
     GASNET_IF_ENABLED_WITH_AUTO(ofi-retry-recvmsg, [Indicates if the conduit should allow for retry of fi_recvmsg calls (advanced users only)],
                  [ofi_retry_recvmsg="1"], [ofi_retry_recvmsg="0"], [])
 
-    GASNET_IF_ENABLED_WITH_AUTO(ofi-mr-scalable, [Indicates if the conduit should statically compile FI_MR_SCALABLE support into ofi-conduit (advanced users only)],
-                 [ofi_define_mr_scalable="1"], [ofi_define_mr_scalable="0"], [])
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-mr-virt-addr, [Indicates if the conduit should statically compile FI_MR_VIRT_ADDR support into ofi-conduit (advanced users only)],
+                 [ofi_define_mr_virt_addr="1"], [ofi_define_mr_virt_addr="0"],
+                 [if test x$enable_ofi_mr_virt_addr = xdynamic; then
+                    : # undocumented explict request for dynamic behavior
+                    ofi_define_mr_virt_addr=no
+                  fi
+                 ])
+
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-mr-prov-key, [Indicates if the conduit should statically compile FI_MR_PROV_KEY support into ofi-conduit (advanced users only)],
+                 [ofi_define_mr_prov_key="1"], [ofi_define_mr_prov_key="0"],
+                 [if test x$enable_ofi_mr_prov_key = xdynamic; then
+                    : # undocumented explict request for dynamic behavior
+                    ofi_define_mr_prov_key=no
+                  fi
+                 ])
+
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-mr-scalable, [DEPRECATED],
+      [ if test -n "${enable_ofi_mr_virt_addr+set}${enable_ofi_mr_prov_key+set}"; then
+          GASNET_MSG_WARN([DEPRECATED option --enable-ofi-mr-scalable has been IGNORED due to use of one or more --(en|dis)able-ofi-mr-* options])
+        else
+          GASNET_MSG_WARN([option --enable-ofi-mr-scalable is DEPRECATED])
+          ofi_define_mr_virt_addr="0"; ofi_define_mr_prov_key="0"
+        fi
+      ],
+      [ if test -n "${enable_ofi_mr_virt_addr+set}${enable_ofi_mr_prov_key+set}"; then
+          GASNET_MSG_WARN([DEPRECATED option --disable-ofi-mr-scalable has been IGNORED due to use of one or more --(en|dis)able-ofi-mr-* options])
+        else
+          GASNET_MSG_WARN([option --disable-ofi-mr-scalable is DEPRECATED])
+          ofi_define_mr_virt_addr="1"; ofi_define_mr_prov_key="1"
+        fi
+      ],
+      [])
+
+    # For separate enable/disable documentation:
+    AC_ARG_ENABLE(ofi-av-map,GASNET_OPTION_HELP(enable-ofi-av-map,
+                  [Include conduit support for FI_AV_MAP, excluding FI_AV_TABLE (advanced users only)]))
+    AC_ARG_ENABLE(ofi-av-map,GASNET_OPTION_HELP(disable-ofi-av-map,
+                  [Include conduit support for FI_AV_TABLE, excluding FI_AV_MAP (advanced users only)]))
+    # Real work (w/o docs)
+    pushdef([GASNET_SUPPRESSHELP],1)
+    GASNET_IF_ENABLED_WITH_AUTO(ofi-av-map, [N/A],
+                 [ofi_define_use_av_map="1"], [ofi_define_use_av_map="0"],
+                 [if test x$enable_ofi_use_av_map = xdynamic; then
+                    : # undocumented explict request for dynamic behavior
+                    ofi_define_use_av_map=no
+                  fi
+                 ])
+    popdef([GASNET_SUPPRESSHELP])
+
     # Inform the user that settings were autodetected
-    if test -n "$detected_ofi_provider" && test "$ofi_define_mr_scalable" != "no"; then
+    if test -n "$detected_ofi_provider" \
+       && test "$ofi_define_use_av_map" != "no" \
+       && test "$ofi_define_mr_virt_addr" != "no" \
+       && test "$ofi_define_mr_prov_key" != "no"; then
         GASNET_MSG_WARN([
 The $detected_ofi_provider OFI provider was detected on your system and the ofi-conduit has been
 configured for that provider. If that is not your desired provider, override this by using the
 --with-ofi-provider=<provider name> configure flag. See the ofi-conduit README for details.])
     fi
 
-    if test "$ofi_define_mr_scalable" != "no"; then
-        AC_DEFINE_UNQUOTED(GASNETC_OFI_HAS_MR_SCALABLE, [((int)$ofi_define_mr_scalable)])
-    fi
+    # Check provider-specific version *after* any $detected_ofi_provider message
+    #
+    # REMINDER: per-provider floors are documented in ofi-conduit/README
+    # and also enforced in ofi-conduit/gasnet_ofi.c:gasnetc_ofi_init()
+    GASNET_IF_ENABLED_NOHELP(allow-untrusted-ofi-provider, [:], [
+        if test $ofi_version -ne 0; then  # NOTE: ofi_floor==0 if no floor is to be enforced
+          AC_MSG_CHECKING([for provider-specific minimum libfabric version])
+          if test $ofi_version -ge $ofi_floor; then
+            AC_MSG_RESULT([yes])
+          else
+            have="$(expr $ofi_version / 10000).$(expr $ofi_version / 100 % 100).$(expr $ofi_version % 100)"
+            want="$(expr $ofi_floor / 10000).$(expr $ofi_floor / 100 % 100).$(expr $ofi_floor % 100)"
+            AC_MSG_RESULT([no - provider '$ofi_provider' is untrusted in libfabric version $have (minimum trusted version is $want).])
+            have_ofi=no
+          fi
+        fi
+      ])
 
+    if test "$ofi_define_mr_virt_addr" != "no"; then
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_HAS_MR_VIRT_ADDR_CONFIGURE, ["$ofi_define_mr_virt_addr"])
+    fi
+    if test "$ofi_define_mr_prov_key" != "no"; then
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_HAS_MR_PROV_KEY_CONFIGURE, ["$ofi_define_mr_prov_key"])
+    fi
+    if test "$ofi_define_use_av_map" != "no"; then
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_AV_MAP_CONFIGURE, ["$ofi_define_use_av_map"])
+    fi
     AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_THREAD_DOMAIN, [$ofi_use_thread_domain])
     AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_MULTI_CQ, [$ofi_use_multi_cq])
     AC_DEFINE_UNQUOTED(GASNETC_OFI_RETRY_RECVMSG, [$ofi_retry_recvmsg])
@@ -5916,8 +6033,15 @@ case "$target_os" in
 
     # Darwin 11 (MacOSX Lion) and newer use address-space randomization by default
     # But -no_pie is ignored (with a warning) on aarch64
+    # and on x86_64 starting with Darwin 21
     tmp_ver=`expr "$target_os" : 'darwin\([[0-9]]*\)' 2>/dev/null`
-    if test $target_cpu != aarch64 && expr $tmp_ver \>= 11 >/dev/null; then
+    if test $target_cpu = aarch64; then
+      : # not supported for this arch
+    elif expr $tmp_ver \< 11 >/dev/null; then
+      : # too old
+    elif expr $tmp_ver \>= 21 >/dev/null; then
+      : # too new
+    else
       NOASLR_LDFLAGS="${dash_Wl}-no_pie"
     fi
   ;;

@@ -116,6 +116,8 @@ static int gasnetc_init( gex_Client_t            *client_p,
   /* Now enable tracing of all the following steps */
   gasneti_trace_init(argc, argv);
 
+  gasneti_nodemapInit(gasneti_spawner->Exchange, NULL, 0, 0);
+
   /* bootstrap the nodes for ofi conduit */
   int ret = gasnetc_ofi_init();
   if (GASNET_OK != ret)
@@ -127,8 +129,6 @@ static int gasnetc_init( gex_Client_t            *client_p,
   }
 
   gasneti_assert_zeroret(gasnetc_exit_init());
-
-  gasneti_nodemapInit(gasneti_spawner->Exchange, NULL, 0, 0);
 
   #if GASNET_PSHM
   gasneti_pshm_init(gasneti_bootstrapSNodeBroadcast, 0);

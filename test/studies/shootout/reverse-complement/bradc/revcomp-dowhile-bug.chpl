@@ -11,10 +11,10 @@ const table = createTable();    // create the table of code complements
 
 proc main(args: [] string) {
   use IO;
-  const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-        stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdinBin = (new file(0)).reader(iokind.native, locking=false,
+                                        hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+    stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                     hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
   var bufLen = 8 * 1024,
       bufDom = {0..<bufLen},

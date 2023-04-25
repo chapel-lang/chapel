@@ -117,7 +117,7 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
           it, method,
           filterIntoSet<FieldDeclSet>(filterFields_, record->fields()));
       // Capture info on all fields in our set
-      for (auto field : it->second)
+      for (const auto& field : it->second)
         recordField(sm, field);
     }
     auto& fieldsNotUsedYet = it->second;
@@ -199,7 +199,7 @@ static size_t runMemberExprsMatcher(clang::tooling::ToolExecutor* ex,
 
   size_t errCount = 0;
 
-  for (auto it : useMap) {
+  for (const auto& it : useMap) {
     const PrintInfo& methodInfo = infoMap.at(it.first);
 
     for (const void* fieldNotUsed : it.second) {

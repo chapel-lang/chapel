@@ -132,6 +132,11 @@ def run_tests(tests):
     else:
         os.environ["CHPL_TEST_SINGLES"] = "1"
 
+    if args.respect_notests:
+        os.environ["CHPL_TEST_NOTESTS"] = "0"
+    else:
+        os.environ["CHPL_TEST_NOTESTS"] = "1"
+
     for test in files:
         test_file(test)
 
@@ -1481,7 +1486,12 @@ def parser_setup():
             help=help_all("<prefix> to remove from tests in jUnit report"))
     # respect skipifs
     parser.add_argument("-respect-skipifs", "--respect-skipifs",
-            action="store_true", dest="respect_skipifs")
+            action="store_true", dest="respect_skipifs",
+            help="respect '.skipif' files even when testing individual files")
+    # respect notests
+    parser.add_argument("-respect-notests", "--respect-notests",
+            action="store_true", dest="respect_notests",
+            help="respect '.notest' files even when testing individual files")
     # extra help
     parser.add_argument("-help", action="help", help=argparse.SUPPRESS)
     parser.add_argument("--help-all", action="help",
