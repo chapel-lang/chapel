@@ -3319,7 +3319,7 @@ inline proc fileWriter.unlock() {
 }
 
 @chpldoc.nodoc
-private inline proc offsetHelper(ref fileRW) {
+private inline proc offsetHelper(fileRW) {
   var ret:int(64);
   on fileRW._home {
     if fileRW.locking then try! fileRW.lock();
@@ -3540,7 +3540,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
 }
 
 @chpldoc.nodoc
-private inline proc markHelper(ref fileRW) throws {
+private inline proc markHelper(fileRW) throws {
   const offset = fileRW.offset();
   const err = qio_channel_mark(false, fileRW._channel_internal);
 
