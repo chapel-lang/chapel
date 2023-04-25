@@ -386,20 +386,20 @@ module CTypes {
     // emit warning for C strict aliasing violations
     if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
       compilerWarning(
-          "Casting c_ptr to a pointer of non-equivalent, non-char "
-          + "element type ('" + x.type:string + "' -> '" + t:string +
-          "') can cause undefined behavior.");
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptr to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
   pragma "no doc"
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
     // emit warning for C strict aliasing violations
-    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
       compilerWarning(
-          "Casting c_ptrConst to a pointer of non-equivalent, non-char "
-          + "element type ('" + x.type:string + "' -> '" + t:string +
-          "') can cause undefined behavior.");
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptrConst to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
@@ -407,21 +407,21 @@ module CTypes {
   // makes the casting extraneous, it is needed for strict aliasing warnings
   pragma "no doc"
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptr) {
-    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
       compilerWarning(
-          "Casting c_ptrConst to a pointer of non-equivalent, non-char "
-          + "element type ('" + x.type:string + "' -> '" + t:string +
-          "') can cause undefined behavior.");
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptrConst to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
   pragma "no doc"
   inline operator c_ptr.:(x:c_ptr, type t:c_ptrConst) {
-    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
       compilerWarning(
-          "Casting c_ptr to a pointer of non-equivalent, non-char "
-          + "element type ('" + x.type:string + "' -> '" + t:string +
-          "') can cause undefined behavior.");
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptr to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
     }
     return __primitive("cast", t, x);
   }
