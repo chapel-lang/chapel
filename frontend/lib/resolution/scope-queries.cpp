@@ -135,7 +135,7 @@ struct GatherDecls {
   bool atFieldLevel = false;
 
   GatherDecls(const AstNode* parentAst) {
-    if (parentAst && parentAst->isAggregateDecl()) {
+    if (parentAst && (parentAst->isAggregateDecl() || parentAst->isInterface())) {
       atFieldLevel = true;
     }
   }
