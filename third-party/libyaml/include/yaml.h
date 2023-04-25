@@ -501,6 +501,7 @@ typedef struct yaml_event_s {
 
 } yaml_event_t;
 
+
 /**
  * Create the STREAM-START event.
  *
