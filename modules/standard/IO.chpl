@@ -3544,11 +3544,20 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   }
 }
 
+@chpldoc.nodoc
+private inline proc markHelper(ref fileRW) throws {
+  const offset = fileRW.offset();
+  const err = qio_channel_mark(false, fileRW._channel_internal);
+
+  if err then
+    throw createSystemError(err);
+
+  return offset;
+}
 
 /*
    *Mark* a fileReader - that is, save the current offset of the fileReader
-   on its *mark stack*. This function can only be called on a fileReader
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileReader offsets. For any fileReader offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3566,6 +3575,12 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       calling :proc:`fileReader.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileReader has ``locking==true``, :proc:`fileReader.mark` should be
+   called only once the fileReader has been locked with
+   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
+   :proc:`fileReader.unlock` until after the mark has been committed with
+   :proc:`fileReader.commit` or reverted with :proc:`fileReader.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3576,20 +3591,11 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
-proc fileReader.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileReader.mark() throws do return markHelper(this);
 
 /*
    *Mark* a fileWriter - that is, save the current offset of the fileWriter
-   on its *mark stack*. This function can only be called on a fileWriter
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileWriter offsets. For any fileWriter offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3607,6 +3613,12 @@ proc fileReader.mark() throws where this.locking == false {
       calling :proc:`fileWriter.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileWriter has ``locking==true``, :proc:`fileWriter.mark` should be
+   called only once the fileWriter has been locked with
+   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
+   :proc:`fileWriter.unlock` until after the mark has been committed with
+   :proc:`fileWriter.commit` or reverted with :proc:`fileWriter.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3617,15 +3629,7 @@ proc fileReader.mark() throws where this.locking == false {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
-proc fileWriter.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileWriter.mark() throws do return markHelper(this);
 
 /*
    Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
@@ -3847,14 +3851,9 @@ proc fileWriter._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
+@deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
 proc fileReader._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -3871,14 +3870,9 @@ proc fileReader._mark() throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
+@deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
 proc fileWriter._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -6105,7 +6099,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
   var numRead:int;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    this._mark();
+    this.mark();
     param newLineChar = 0x0A;
     var got: int;
     var i = a.domain.lowBound;
@@ -6271,7 +6265,7 @@ proc fileReader.readLine(ref s: string,
     var foundNewline = false;
     // use the fileReader's buffering to compute how many bytes/codepoints
     // we are reading
-    this._mark();
+    this.mark();
     while !foundNewline {
       // read a single codepoint
       err = qio_channel_read_char(false, this._channel_internal, chr);
@@ -6354,7 +6348,7 @@ proc fileReader.readLine(ref b: bytes,
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
     var nBytes: int = 0;
     // use the fileReader's buffering to compute how many bytes we are reading
-    this._mark();
+    this.mark();
     var got : int;
     var err: errorCode = 0;
     var foundNewline = false;
@@ -6939,7 +6933,7 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
     if i-1 == d.high {
       var has_more = false;
 
-      this._mark();
+      this.mark();
       got = qio_channel_read_byte(false, this._channel_internal);
       has_more = (got >= 0);
       this._revert();
@@ -11431,9 +11425,9 @@ iter fileReader.matches(re:regex(?), param captures=0,
   param nret = captures+1;
   var ret:nret*regexMatch;
 
-  // TODO should be try not try!  ditto try! _mark() below
+  // TODO should be try not try!  ditto try! mark() below
   try! lock();
-  on this._home do try! _mark();
+  on this._home do try! mark();
 
   while go && i < maxmatches {
     on this._home {
