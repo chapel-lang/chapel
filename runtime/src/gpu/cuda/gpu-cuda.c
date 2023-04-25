@@ -84,6 +84,17 @@ static void chpl_gpu_ensure_context() {
   }
 }
 
+extern c_nodeid_t chpl_nodeID;
+
+// we can put this logic in chpl-gpu.c. However, it needs to execute
+// per-context/module. That's currently too low level for that layer.
+static void chpl_gpu_impl_set_globals(CUmodule module) {
+  CUdeviceptr ptr;
+  size_t glob_size;
+  CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+  assert(glob_size == sizeof(c_nodeid_t));
+  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+}
 
 void chpl_gpu_impl_init() {
   int         num_devices;
@@ -107,12 +118,25 @@ void chpl_gpu_impl_init() {
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
     CUDA_CALL(cuCtxPushCurrent(context));
-    chpl_gpu_cuda_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    // load the module and setup globals within
+    CUmodule module = chpl_gpu_load_module(chpl_gpuBinary);
+    chpl_gpu_impl_set_globals(module);
+    chpl_gpu_cuda_modules[i] = module;
     CUDA_CALL(cuCtxPopCurrent(&context));
 
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
+
+    // TODO can we refactor some of this to chpl-gpu to avoid duplication
+    // between runtime layers?
+    CUDA_CALL(cuCtxSetCurrent(context));
+    CUdeviceptr ptr;
+    size_t glob_size;
+    CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, chpl_gpu_cuda_modules[i],
+                                "chpl_nodeID"));
+    assert(glob_size == sizeof(c_nodeid_t));
+    chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
   }
 }
 

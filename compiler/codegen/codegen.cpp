@@ -2514,6 +2514,10 @@ static void embedGpuCode() {
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
 }
+
+static void codegenGpuGlobals() {
+  genGlobalInt("chpl_nodeID", 0, false);
+}
 #endif
 
 // Do this for GPU and then do for CPU
@@ -2652,6 +2656,11 @@ static void codegenPartTwo() {
   if ( gCodegenGPU == false ) {
     codegen_config();
   }
+#ifdef HAVE_LLVM
+  else {
+    codegenGpuGlobals();
+  }
+#endif
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
