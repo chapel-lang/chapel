@@ -263,12 +263,11 @@ is possible to disable the lock (for performance reasons) by passing
 methods - in particular those beginning with the underscore - should only be
 called on locked fileReaders or fileWriters.  With these methods, it is possible
 to get or set the fileReader or fileWriter style, or perform I/O "transactions"
-(see :proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
-methods, e.g., first lock the fileWriter with :proc:`fileWriter.lock`, call the
-methods you need, then unlock the fileWriter with :proc:`fileWriter.unlock`.
-Note that in the future, we may move to alternative ways of calling these
-functions that guarantee that they are not called on a fileReader or fileWriter
-without the appropriate locking.
+(see :proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
+fileWriter with :proc:`fileWriter.lock`, call the methods you need, then unlock
+the fileWriter with :proc:`fileWriter.unlock`. Note that in the future, we may
+move to alternative ways of calling these functions that guarantee that they
+are not called on a fileReader or fileWriter without the appropriate locking.
 
 Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
@@ -3347,7 +3346,7 @@ proc fileReader.offset():int(64) do return offsetHelper(this);
 
 /*
    Return the current offset of a fileWriter.
-   
+
    If ``locking==false``, the fileWriter will call :proc:`fileWriter.lock`
    before getting the offset and call :proc:`fileWriter.unlock` after.
 
@@ -3385,8 +3384,8 @@ proc fileReader.advance(amount:int(64)) throws {
    Move a fileWriter offset forward.
 
    This function will write ``amount`` zeros - or some other data if it is
-   stored in the fileWriter's buffer, for example with :proc:`fileWriter._mark`
-   and :proc:`fileWriter._revert`.
+   stored in the fileWriter's buffer, for example with :proc:`fileWriter.mark`
+   and :proc:`fileWriter.revert`.
 
    :throws EofError: If EOF is reached before the offset can be advanced by the
                       requested number of bytes.
