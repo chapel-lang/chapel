@@ -506,10 +506,10 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateInitCopySignature(context, compType);
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
-    } else if (type->isDomainType()) {
-      result = generateDomainMethod(context, type->toDomainType(), name);
-    } else if (type->isArrayType()) {
-      result = generateArrayMethod(context, type->toArrayType(), name);
+    } else if (auto domainType = type->toDomainType()) {
+      result = generateDomainMethod(context, domainType, name);
+    } else if (auto arrayType = type->toArrayType()) {
+      result = generateArrayMethod(context, arrayType, name);
     } else {
       CHPL_ASSERT(false && "Not implemented yet!");
     }
