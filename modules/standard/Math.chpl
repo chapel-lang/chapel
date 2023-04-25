@@ -101,6 +101,18 @@ module Math {
     return chpl_erfc(x);
   }
 
+  /* Multiply by an integer power of 2.
+     Returns x * 2**n.
+     */
+  inline proc ldexp(x:real(64), n:int(32)):real(64) {
+    return chpl_ldexp(x, n);
+  }
+
+  inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    return chpl_ldexp(x, n);
+  }
+
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
