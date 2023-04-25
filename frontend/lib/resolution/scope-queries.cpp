@@ -135,7 +135,7 @@ struct GatherDecls {
   bool atFieldLevel = false;
 
   GatherDecls(const AstNode* parentAst) {
-    if (parentAst && parentAst->isAggregateDecl()) {
+    if (parentAst && (parentAst->isAggregateDecl() || parentAst->isInterface())) {
       atFieldLevel = true;
     }
   }
@@ -725,6 +725,7 @@ bool LookupHelper::doLookupInReceiverScopes(
 
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
+  bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   // create a config that doesn't search receiver scopes parent scopes
@@ -745,6 +746,14 @@ bool LookupHelper::doLookupInReceiverScopes(
     }
 
     got |= doLookupInScope(rcvScope, {}, name, newConfig);
+
+    if (onlyInnermost && got) {
+      if (trace) {
+        // pop the receiver scope
+        traceCurPath->pop_back();
+      }
+      return got;
+    }
 
     // also check receiver parent scopes
     if (checkParents) {
@@ -777,6 +786,8 @@ bool LookupHelper::doLookupInReceiverScopes(
           // pop the parent scope
           traceCurPath->pop_back();
         }
+
+        if (onlyInnermost && got) return got;
 
         // stop if we reach a module
         if (isModule(cur->tag()) && !goPastModules)
