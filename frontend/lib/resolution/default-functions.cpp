@@ -131,10 +131,8 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
       }
     }
   } else if (type->isArrayType()) {
-    if (parenless) {
-      if (name == "domain" || name == "eltType") {
-        return true;
-      }
+    if (name == "domain" || name == "eltType") {
+      return true;
     }
   }
 
