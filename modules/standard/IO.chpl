@@ -3634,42 +3634,52 @@ proc fileWriter.mark() throws do return markHelper(this);
 /*
    Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileReader offset unchanged.  This function can only be
-   called on a fileReader with ``locking==false``.
+   previous fileReader offset unchanged.
+
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.revert() where this.locking == false {
+inline proc fileReader.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Abort an *I/O transaction*. See :proc:`fileWriter.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileWriter offset unchanged.  This function can only be
-   called on a fileWriter with ``locking==false``.
+   previous fileWriter offset unchanged.
+
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.revert() where this.locking == false {
+inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileReader.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileReader offset to the popped offset.  This function can
-   only be called on a fileReader with ``locking==false``.
+   set the fileReader offset to the popped offset.
 
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.commit() where this.locking == false {
+inline proc fileReader.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileWriter.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileWriter offset to the popped offset.  This function can
-   only be called on a fileWriter with ``locking==false``.
+   set the fileWriter offset to the popped offset.
 
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.commit() where this.locking == false {
+inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -3882,8 +3892,9 @@ proc fileWriter._mark() throws {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._revert is deprecated - please use :proc:`fileReader.revert` instead")
 inline proc fileReader._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3893,8 +3904,9 @@ inline proc fileReader._revert() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._revert is deprecated - please use :proc:`fileWriter.revert` instead")
 inline proc fileWriter._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3904,8 +3916,9 @@ inline proc fileWriter._revert() {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._commit is deprecated - please use :proc:`fileReader.commit` instead")
 inline proc fileReader._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 /*
@@ -3915,8 +3928,9 @@ inline proc fileReader._commit() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._commit is deprecated - please use :proc:`fileWriter.commit` instead")
 inline proc fileWriter._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 // TODO -- come up with better names for these
@@ -6112,7 +6126,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         var err:errorCode = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(a : [] uint(8))");
       }
@@ -6124,7 +6138,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode, "line longer than maxSize in fileReader.readLine(a : [] uint(8))");
         }
       }
@@ -6135,7 +6149,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
     }
     numRead = i - a.domain.lowBound;
     if i == a.domain.lowBound && got < 0 then err = (-got):errorCode;
-    this._commit();
+    this.commit();
   }
 
   if !err {
@@ -6274,7 +6288,7 @@ proc fileReader.readLine(ref s: string,
         break;
       } else if err {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
       }
       nCodepoints += 1;
@@ -6286,14 +6300,14 @@ proc fileReader.readLine(ref s: string,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                "line longer than maxSize in fileReader.readLine(ref s: string)");
         }
       }
     }
     var endOffset = this._offset();
-    this._revert();
+    this.revert();
     var nBytes:int = endOffset - this._offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
@@ -6360,7 +6374,7 @@ proc fileReader.readLine(ref b: bytes,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         err = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
         break;
@@ -6374,13 +6388,13 @@ proc fileReader.readLine(ref b: bytes,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                    "line longer than maxSize in fileReader.readLine(ref b: bytes)");
         }
       }
     }
-    this._revert();
+    this.revert();
     // now, nBytes includes the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -6936,7 +6950,7 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
       this.mark();
       got = qio_channel_read_byte(false, this._channel_internal);
       has_more = (got >= 0);
-      this._revert();
+      this.revert();
 
       if has_more {
         const sz = qio_channel_get_size(this._channel_internal);
@@ -11479,7 +11493,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
     if ! error then yield ret;
     i += 1;
   }
-  _commit();
+  commit();
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;
