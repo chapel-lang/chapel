@@ -1,10 +1,10 @@
 use DistributedList;
-use Barriers;
+use Collectives;
 
 config const numTasks = 5,
              numAppendsPerTask = 5;
 
-var b = new Barrier(numTasks),
+var b = new barrier(numTasks),
     dl = new distributedList(int);
 
 coforall tid in 0..#numTasks with (ref dl) {
