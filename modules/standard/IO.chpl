@@ -3322,9 +3322,9 @@ inline proc fileWriter.unlock() {
 private inline proc offsetHelper(fileRW) {
   var ret:int(64);
   on fileRW._home {
-    if fileRW.locking then try! fileRW.lock();
+    if !fileRW.locking then try! fileRW.lock();
     ret = qio_channel_offset_unlocked(fileRW._channel_internal);
-    if fileRW.locking then try! fileRW.unlock();
+    if !fileRW.locking then fileRW.unlock();
   }
   return ret;
 }
@@ -3332,13 +3332,14 @@ private inline proc offsetHelper(fileRW) {
 /*
    Return the current offset of a fileReader.
 
-   .. warning::
+   If ``locking==false``, the fileReader will call :proc:`fileReader.lock`
+   before getting the offset and call :proc:`fileReader.unlock` after.
 
-      If the fileReader can be used by multiple tasks, take care
-      when doing operations that rely on the fileReader's current offset.
-      To prevent race conditions, first lock the fileReader with
-      :proc:`fileReader.lock`, do the operations with :proc:`fileReader._offset`
-      instead, then unlock it with :proc:`fileReader.unlock`.
+   If ``locking==true`` and the fileReader can be used by multiple tasks, take
+   care when doing operations that rely on the fileReader's current offset. To
+   prevent race conditions, lock the fileReader with :proc:`fileReader.lock`
+   before calling :proc:`fileReader.offset`, then unlock it afterwards with
+   :proc:`fileReader.unlock`.
 
    :returns: the current offset of the fileReader
  */
@@ -3346,14 +3347,15 @@ proc fileReader.offset():int(64) do return offsetHelper(this);
 
 /*
    Return the current offset of a fileWriter.
+   
+   If ``locking==false``, the fileWriter will call :proc:`fileWriter.lock`
+   before getting the offset and call :proc:`fileWriter.unlock` after.
 
-   .. warning::
-
-      If the fileWriter can be used by multiple tasks, take care
-      when doing operations that rely on the fileWriter's current offset.
-      To prevent race conditions, first lock the fileWriter with
-      :proc:`fileWriter.lock`, do the operations with :proc:`fileWriter._offset`
-      instead, then unlock it with :proc:`fileWriter.unlock`.
+   If ``locking==true`` and the fileWriter can be used by multiple tasks, take
+   care when doing operations that rely on the fileWriter's current offset. To
+   prevent race conditions, lock the fileWriter with :proc:`fileWriter.lock`
+   before calling :proc:`fileWriter.offset`, then unlock it afterwards with
+   :proc:`fileWriter.unlock`.
 
    :returns: the current offset of the fileWriter
  */
