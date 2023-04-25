@@ -30,6 +30,7 @@ FRONTEND_TYPES_SRCS = \
   ClassTypeDecorator.cpp \
   ComplexType.cpp \
   CompositeType.cpp \
+  DomainType.cpp \
   EnumType.cpp \
   ErroneousType.cpp \
   ImagType.cpp \

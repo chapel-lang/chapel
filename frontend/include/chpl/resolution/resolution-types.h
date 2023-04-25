@@ -423,7 +423,8 @@ class CallInfo {
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */
   static CallInfo createWithReceiver(const CallInfo& ci,
-                                     types::QualifiedType receiverType);
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -444,7 +445,7 @@ class CallInfo {
 
 
   /** return the name of the called thing */
-  UniqueString name() const { return name_; }
+  const UniqueString name() const { return name_; }
 
   /** return the type of the called thing */
   types::QualifiedType calledType() const { return calledType_; }

@@ -377,13 +377,15 @@ CallInfo CallInfo::create(Context* context,
 }
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
-                                      QualifiedType receiverType) {
+                                      QualifiedType receiverType,
+                                      UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
 
-  return CallInfo(ci.name_, receiverType,
+  auto name = rename.isEmpty() ? ci.name_ : rename;
+  return CallInfo(name, receiverType,
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,

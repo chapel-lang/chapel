@@ -140,16 +140,20 @@ const CompositeType* helpGetTypeForDecl(Context* context,
                               insnFromBct, std::move(filteredSubs));
 
   } else if (auto r = ad->toRecord()) {
-    const RecordType* insnFromRec = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto rec = instantiatedFrom->toRecordType())
-        insnFromRec = rec;
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
+    if (r->id().symbolPath() == "ChapelDomain._domain") {
+      ret = DomainType::getGenericDomainType(context);
+    } else {
+      const RecordType* insnFromRec = nullptr;
+      if (instantiatedFrom != nullptr) {
+        if (auto rec = instantiatedFrom->toRecordType())
+          insnFromRec = rec;
+        else
+          CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
 
-    ret = RecordType::get(context, r->id(), r->name(),
-                          insnFromRec, std::move(filteredSubs));
+      ret = RecordType::get(context, r->id(), r->name(),
+                            insnFromRec, std::move(filteredSubs));
+    }
 
   } else if (auto u = ad->toUnion()) {
     const UnionType* insnFromUni = nullptr;
@@ -649,6 +653,30 @@ static bool helpComputeReturnType(Context* context,
       } else {
         // return a ref
         result = QualifiedType(QualifiedType::REF, ft.type());
+      }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+      auto dt = sig->formalType(0).type()->toDomainType();
+
+      if (untyped->name() == "idxType") {
+        result = dt->idxType();
+      } else if (untyped->name() == "rank") {
+        result = dt->rank();
+      } else if (untyped->name() == "stridable") {
+        result = dt->stridable();
+      } else if (untyped->name() == "parSafe") {
+        result = dt->parSafe();
+      } else if (untyped->name() == "isRectangular") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else if (untyped->name() == "isAssociative") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+        auto type = BoolType::get(context, 0);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
+        return true;
       }
       return true;
     } else {
