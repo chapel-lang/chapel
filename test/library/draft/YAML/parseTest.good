@@ -1,0 +1,11 @@
+"value"
+3.14
+YamlTypeError: YAML Type Error: cannot convert value to int
+YamlKeyError: YAML Key Error: key not found
+!my_tag
+[1, 2, 3]
+the newlines in this string will
+be retained when parsed ...
+3.3
+the newlines in this string will be removed when parsed ...
+{"true": true, "false": false}

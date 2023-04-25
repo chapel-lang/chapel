@@ -11,8 +11,6 @@ enum ScalarType {
 }
 
 class YamlValue {
-  var tag: string = "";
-
   /* index into a YAML mapping by string */
   proc this(key: string): borrowed YamlValue throws {
     throw new YamlKeyError("indexing not supported");
@@ -33,31 +31,35 @@ class YamlValue {
     throw new YamlKeyError("size not supported");
   }
 
-  proc asString(): string throws {
+  proc tag: string {
+    return "";
+  }
+
+  proc asString(strict: bool = false): string throws {
     throw new YamlTypeError("cannot convert to string");
   }
 
-  proc asBytes(): bytes throws {
+  proc asBytes(strict: bool = false): bytes throws {
     throw new YamlTypeError("cannot convert to bytes");
   }
 
-  proc asReal(strict: bool): real throws {
+  proc asReal(strict: bool = false): real throws {
     throw new YamlTypeError("cannot convert to real");
   }
 
-  proc asInt(strict: bool): int throws {
+  proc asInt(strict: bool = false): int throws {
     throw new YamlTypeError("cannot convert to int");
   }
 
-  proc asBool(): bool throws {
+  proc asBool(strict: bool = false): bool throws {
     throw new YamlTypeError("cannot convert to bool");
   }
 
-  proc asMapOf(type valueType): map(string, valueType) throws {
+  proc asMapOf(type valType): map(string, valType) throws {
     throw new YamlTypeError("cannot convert to map");
   }
 
-  proc asListOf(type valueType): map(string, valueType) throws {
+  proc asListOf(type t): list(t) throws {
     throw new YamlTypeError("cannot convert to list");
   }
 
@@ -103,30 +105,53 @@ class YamlScalar: YamlValue {
     } else if rawValue.startsWith("!") {
       const (typeTag, _, value) = rawValue.partition(" ");
       this.yamlType = ScalarType.UserDefined;
-      this.userType = typeTag;
+      this.userType = typeTag[1..];
       this.value = value;
     } else {
       this.yamlType = ScalarType.Implicit;
       if rawValue.startsWith("|") then
-        this.value = rawValue[1..];
+        this.value = rawValue[1..].dedent().strip();
       else if rawValue.startsWith(">") then
-        this.value = rawValue[1..].replace("\n", "");
+        this.value = rawValue[1..].dedent().strip().replace("\n", " ");
       else
         this.value = rawValue;
     }
   }
 
-  override proc asString(): string {
+  override proc tag: string {
+    if this.yamlType == ScalarType.UserDefined then
+      return "!" + this.userType;
+    else
+      return "";
+  }
+
+  override proc asString(strict: bool = false): string throws {
+    if strict && (
+        yamlType != ScalarType.YamlStr ||
+        yamlType != ScalarType.Implicit
+    ) then
+        throw new YamlTypeError("cannot convert value to string");
+
     return value;
   }
 
-  override proc asBytes(): bytes {
+  override proc asBytes(strict: bool = false): bytes throws {
+    if strict && (
+        yamlType != ScalarType.YamlBinary ||
+        yamlType != ScalarType.YamlStr ||
+        yamlType != ScalarType.Implicit
+    ) then
+        throw new YamlTypeError("cannot convert value to bytes");
+
     return value: bytes;
   }
 
-  override proc asReal(strict: bool): real throws {
-    if yamlType == ScalarType.YamlInt && strict then
-      throw new error("cannot convert '!!int' value to real");
+  override proc asReal(strict: bool = false): real throws {
+    if strict && (
+        yamlType != ScalarType.YamlFloat ||
+        yamlType != ScalarType.Implicit
+    ) then
+        throw new YamlTypeError("cannot convert value to real");
 
     try {
       return value : real;
@@ -135,9 +160,12 @@ class YamlScalar: YamlValue {
     }
   }
 
-  override proc asInt(strict: bool): int throws {
-    if yamlType == ScalarType.YamlFloat && strict then
-      throw new error("cannot convert '!!float' value to int");
+  override proc asInt(strict: bool = false): int throws {
+    if strict && (
+        yamlType != ScalarType.YamlInt ||
+        yamlType != ScalarType.Implicit
+    ) then
+        throw new YamlTypeError("cannot convert value to int");
 
     try {
       return value : int;
@@ -146,9 +174,15 @@ class YamlScalar: YamlValue {
     }
   }
 
- override proc asBool(): bool throws {
-    if value == "On" then return true;
-    if value == "Off" then return false;
+ override proc asBool(strict: bool = false): bool throws {
+    if strict && (
+        yamlType != ScalarType.YamlInt ||
+        yamlType != ScalarType.Implicit
+    ) then
+        throw new YamlTypeError("cannot convert value to bool");
+
+    if value == "Yes" then return true;
+    if value == "No" then return false;
     throw new YamlTypeError("cannot convert to bool");
   }
 
@@ -173,7 +207,6 @@ class YamlScalar: YamlValue {
   }
 }
 
-
 class YamlSequence: YamlValue {
   var sequence: list(owned YamlValue);
 
@@ -190,7 +223,7 @@ class YamlSequence: YamlValue {
   override proc asListOf(type t): list(t) throws {
     var l = new list(t);
     for s in sequence do l.append(s: t);
-    return new list(t);
+    return l;
   }
 
   proc init() {
@@ -246,7 +279,7 @@ class YamlMapping: YamlValue {
     return mapping.size;
   }
 
-  override proc asMap(type valType): map(string, valType) throws {
+  override proc asMapOf(type valType): map(string, valType) throws {
     var m = new map(string, valType);
     for k in mapping.keys() do m.add(k, mapping[k]: valType);
     return m;
@@ -285,7 +318,7 @@ class YamlAlias: YamlValue {
   var alias: string;
 
   proc init(alias: string) {
-    this.alias = alias;
+    this.alias = alias[1..];
   }
 
   @chpldoc.nodoc
@@ -319,3 +352,18 @@ class YamlKeyError: Error {
     return "YAML Key Error: " + super.message();
   }
 }
+
+inline operator :(x:YamlValue, type t:string) throws do
+  return x.asString();
+
+inline operator :(x:YamlValue, type t:bytes) throws do
+  return x.asBytes();
+
+inline operator :(x:YamlValue, type t:real) throws do
+  return x.asReal();
+
+inline operator :(x:YamlValue, type t:int) throws do
+  return x.asInt();
+
+inline operator :(x:YamlValue, type t:bool) throws do
+  return x.asBool();

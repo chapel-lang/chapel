@@ -62,10 +62,8 @@ iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReade
   var event: yaml_event_t;
   c_memset(c_ptrTo(event):c_void_ptr, 0, c_sizeof(yaml_event_t));
 
-  inline proc finish() {
+  inline proc finish() do
     yaml_event_delete(c_ptrTo(event));
-    return;
-  }
 
   while true {
     // parse until the next event
@@ -81,8 +79,8 @@ iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReade
       }
       when E_STREAM_END {
         if e_stop != E_STREAM_END then
-          writeln("wrong closing event. Expected ", e_stop", got E_STREAM_END");
-        finish();
+          writeln("wrong closing event. Expected ", e_stop, " got E_STREAM_END");
+        finish(); return;
       }
       when E_DOCUMENT_START {
         for e in parseUntilEvent(E_DOCUMENT_END, parser, reader) {
@@ -91,8 +89,8 @@ iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReade
       }
       when E_DOCUMENT_END {
         if e_stop != E_DOCUMENT_END then
-          writeln("wrong closing event. Expected ", e_stop", got E_DOCUMENT_END");
-        finish();
+          writeln("wrong closing event. Expected ", e_stop, " got E_DOCUMENT_END");
+        finish(); return;
       }
       when E_ALIAS {
         reader.seek((event.start_mark.idx:int)..);
@@ -111,8 +109,8 @@ iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReade
       }
       when E_SEQUENCE_END {
         if e_stop != E_SEQUENCE_END then
-          writeln("wrong closing event. Expected ", e_stop", got E_SEQUENCE_END");
-        finish();
+          writeln("wrong closing event. Expected ", e_stop, " got E_SEQUENCE_END");
+        finish(); return;
       }
       when E_MAPPING_START {
         var mapping = new YamlMapping(),
@@ -135,16 +133,16 @@ iter parseUntilEvent(e_stop: c_int, ref parser: yaml_parser_t, reader: fileReade
       }
       when E_MAPPING_END {
         if e_stop != E_MAPPING_END then
-          writeln("wrong closing event. Expected ", e_stop", got E_MAPPING_END");
-        finish();
+          writeln("wrong closing event. Expected ", e_stop, " got E_MAPPING_END");
+        finish(); return;
       }
       when E_NO_EVENT {
-        finish();
+        finish(); return;
       }
       otherwise {
         yaml_event_delete(c_ptrTo(event));
         writeln("Unexpected YAML event");
-        finish();
+        finish(); return;
       }
     }
     yaml_event_delete(c_ptrTo(event));

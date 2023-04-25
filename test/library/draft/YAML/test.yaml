@@ -1,30 +1,24 @@
-receipt:     Oz-Ware Purchase Invoice
-date:        2012-08-06
-customer:
-    first_name:   Dorothy
-    family_name:  Gale
-
-items:
-    - part_no:   A4786
-      descrip:   Water Bucket (Filled)
-      price:     !!float 1.47
-      quantity:  4
-
-    - part_no:   E1628
-      descrip:   High Heeled "Ruby" Slippers
-      size:      8
-      price:     133.7
-      quantity:  1
---- # doc 2
-bill-to:
-    street: |
-            123 Tornado Alley
-            Suite 16
-    city:   East Centerville
-    state:  KS
-
-specialDelivery:  >
-    Follow the Yellow Brick
-    Road to the Emerald City.
-    Pay no attention to the
-    man behind the curtain.
+--- # document 1
+field: "value"
+typed_field: !!float 3.14
+other_typed_field: !!str hello
+a_general_tag: !my_tag value
+nested_map: &with_an_alias_tag
+  list_of_numbers:
+    - 1
+    - 2
+    - 3
+  multi_line_string: |
+    the newlines in this string will
+    be retained when parsed ...
+  other_stuff:
+    quoted_string: "abcdef"
+    ref_to_alias: *with_an_alias_tag
+--- # document 2
+other_list: [1.1, 2.2, 3.3, 4,4]
+other_multi_line: >
+  the newlines
+  in this string
+  will be removed
+  when parsed ...
+booleans_in_yaml: {"true": Yes, "false": No}
