@@ -34,8 +34,10 @@ def skipif():
         if key == 'CHPL_LAUNCHER' and value != 'slurm-srun':
             skipReason = "CHPL_LAUNCHER != slurm-srun"
     # Verify environment variables
-    output = runCmd("printenv")
-    for line in output.splitlines():
+    output = runCmd("printenv -0")
+    for line in output.split("\0"):
+        if len(line) == 0:
+            continue
         (key, value) = line.split('=',1)
         if key == 'CHPL_RT_LOCALES_PER_NODE' and value != 1:
             skipReason = "CHPL_RT_LOCALES_PER_NODE != 1"
