@@ -1,2 +1,2 @@
 sliceWithUnbounded.chpl:8: error: halt reached - array slice out of bounds
-note: slice index was 1.. by -2 align 0 but array bounds are 1..10
+note: slice index was 1.. by -2 but array bounds are 1..10

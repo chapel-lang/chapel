@@ -10,7 +10,7 @@ isEmpty()        = false
 lowBound         = (1, 0)
 highBound        = (5, 4)
 stride           = (1, 1)
-alignment        = (1, 0)
+alignment        = (0, 0)
 first            = (1, 0)
 last             = (5, 4)
 low              = (1, 0)
@@ -59,7 +59,7 @@ isEmpty()        = true
 lowBound         = (1, 1)
 highBound        = (0, 0)
 stride           = (1, 1)
-alignment        = (1, 1)
+alignment        = (0, 0)
 
 strided 2D domain
 ------------
