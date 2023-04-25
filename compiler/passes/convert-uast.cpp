@@ -3786,6 +3786,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::EnumType:   return convertEnumType(qt);
     case typetags::FunctionType:   return convertFunctionType(qt);
 
+    case typetags::ArrayType: return dtUnknown;
     case typetags::BasicClassType:   return convertBasicClassType(qt);
     case typetags::DomainType:   return dtUnknown;
     case typetags::RecordType:   return convertRecordType(qt);

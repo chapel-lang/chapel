@@ -18,6 +18,7 @@
  */
 
 #include "test-resolution.h"
+#include "test-minimal-modules.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -28,43 +29,13 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static std::string DomainModule =
-R"""(
-module ChapelDomain {
-  record _domain {
-    var _pid: int;
-    var _instance;
-    var _unowned:bool;
-  }
-
-  proc type _domain.static_type(param rank : int, type idxType=int, param stridable: bool = false) type {
-    return __primitive("static domain type", rank, idxType, stridable);
-  }
-
-  proc type _domain.static_type(type idxType, param parSafe: bool = true) type {
-    return __primitive("static domain type", idxType, parSafe);
-  }
-
-  proc computeIndexType(arg: domain) type {
-    if arg.isRectangular() {
-      if arg.rank == 1 then return arg.idxType;
-      else return arg.rank*arg.idxType;
-    } else {
-      return arg.idxType;
-    }
-  }
-
-  iter _domain.these() {
-    var ret : computeIndexType(this);
-    yield ret;
-  }
-
-  // Prove that fields and methods on '_domain' work
-  proc _domain.pid() {
-    return _pid;
-  }
+static QualifiedType findVarType(const Module* m,
+                                 const ResolutionResultByPostorderID& rr,
+                                 std::string name) {
+  const Variable* var = findOnlyNamed(m, name)->toVariable();
+  assert(var != nullptr);
+  return rr.byAst(var).type();
 }
-)""";
 
 static void testRectangular(std::string domainType,
                                   int rank,
@@ -119,48 +90,23 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  const Variable* d = findOnlyNamed(m, "d")->toVariable();
-  QualifiedType dType = rr.byAst(d).type();
+  QualifiedType dType = findVarType(m, rr, "d");
 
-  const Variable* fullIndex = findOnlyNamed(m, "fullIndex")->toVariable();
-  QualifiedType fullIndexType = rr.byAst(fullIndex).type();
+  QualifiedType fullIndexType = findVarType(m, rr, "fullIndex");
 
-  {
-    const Variable* r = findOnlyNamed(m, "r")->toVariable();
-    assert(rr.byAst(r).type().param()->toIntParam()->value() == rank);
-  }
+  assert(findVarType(m, rr, "r").param()->toIntParam()->value() == rank);
 
-  {
-    const Variable* ig = findOnlyNamed(m, "ig")->toVariable();
-    const Variable* i = findOnlyNamed(m, "i")->toVariable();
-    assert(rr.byAst(ig).type() == rr.byAst(i).type());
-  }
+  assert(findVarType(m, rr, "ig") == findVarType(m, rr, "i"));
 
-  {
-    const Variable* s = findOnlyNamed(m, "s")->toVariable();
-    assert(rr.byAst(s).type().param()->toBoolParam()->value() == stridable);
-  }
+  assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == stridable);
 
-  {
-    const Variable* rk = findOnlyNamed(m, "rk")->toVariable();
-    assert(rr.byAst(rk).type().param()->toBoolParam()->value() == true);
-  }
+  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == true);
 
-  {
-    const Variable* ak = findOnlyNamed(m, "ak")->toVariable();
-    assert(rr.byAst(ak).type().param()->toBoolParam()->value() == false);
-  }
+  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == false);
 
-  {
-    const Variable* p = findOnlyNamed(m, "p")->toVariable();
-    assert(rr.byAst(p).type().type() == IntType::get(context, 0));
-  }
+  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
-  {
-    const Variable* z = findOnlyNamed(m, "z")->toVariable();
-    auto res = rr.byAst(z);
-    assert(res.type().type() == fullIndexType.type());
-  }
+  assert(findVarType(m, rr, "z").type() == fullIndexType.type());
 
   {
     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
@@ -243,41 +189,21 @@ module M {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  const Variable* d = findOnlyNamed(m, "d")->toVariable();
-  QualifiedType dType = rr.byAst(d).type();
+  QualifiedType dType = findVarType(m, rr, "d");
 
-  const Variable* i = findOnlyNamed(m, "i")->toVariable();
-  auto fullIndexType = rr.byAst(i).type();
-  {
-    const Variable* ig = findOnlyNamed(m, "ig")->toVariable();
-    assert(rr.byAst(ig).type() == fullIndexType);
-  }
+  auto fullIndexType = findVarType(m, rr, "i");
+  assert(findVarType(m, rr, "ig") == fullIndexType);
 
-  {
-    const Variable* s = findOnlyNamed(m, "s")->toVariable();
-    assert(rr.byAst(s).type().param()->toBoolParam()->value() == parSafe);
-  }
+  assert(findVarType(m, rr, "s").param()->toBoolParam()->value() == parSafe);
 
-  {
-    const Variable* rk = findOnlyNamed(m, "rk")->toVariable();
-    assert(rr.byAst(rk).type().param()->toBoolParam()->value() == false);
-  }
+  assert(findVarType(m, rr, "rk").param()->toBoolParam()->value() == false);
 
-  {
-    const Variable* ak = findOnlyNamed(m, "ak")->toVariable();
-    assert(rr.byAst(ak).type().param()->toBoolParam()->value() == true);
-  }
+  assert(findVarType(m, rr, "ak").param()->toBoolParam()->value() == true);
 
-  {
-    const Variable* p = findOnlyNamed(m, "p")->toVariable();
-    assert(rr.byAst(p).type().type() == IntType::get(context, 0));
-  }
+  assert(findVarType(m, rr, "p").type() == IntType::get(context, 0));
 
-  {
-    const Variable* z = findOnlyNamed(m, "z")->toVariable();
-    auto res = rr.byAst(z);
-    assert(res.type().type() == fullIndexType.type());
-  }
+  assert(findVarType(m, rr, "z").type() == fullIndexType.type());
+
   {
     const Variable* g_ret = findOnlyNamed(m, "g_ret")->toVariable();
     auto res = rr.byAst(g_ret);

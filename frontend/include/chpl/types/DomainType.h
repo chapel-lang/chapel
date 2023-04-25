@@ -157,4 +157,12 @@ template<> struct stringify<chpl::types::DomainType::Kind> {
 /// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
+namespace std {
+  template <> struct hash<chpl::types::DomainType::Kind> {
+    size_t operator()(const chpl::types::DomainType::Kind& kind) const {
+      return (size_t) kind;
+    }
+  };
+} // end namespace std
+
 #endif

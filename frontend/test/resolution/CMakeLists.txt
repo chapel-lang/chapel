@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+comp_unit_test(testArrays)
 comp_unit_test(testCallInitDeinit)
 comp_unit_test(testCanPass)
 comp_unit_test(testCatch)

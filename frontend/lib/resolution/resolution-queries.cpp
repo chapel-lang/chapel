@@ -879,6 +879,15 @@ static Type::Genericity getFieldsGenericity(Context* context,
     }
 
     return combined;
+  } else if (auto at = ct->toArrayType()) {
+    auto dt = getTypeGenericityIgnoring(context, at->domainType(), ignore);
+    auto et = getTypeGenericityIgnoring(context, at->eltType(), ignore);
+
+    if (dt != Type::CONCRETE || et != Type::CONCRETE) {
+      return Type::GENERIC;
+    } else {
+      return Type::CONCRETE;
+    }
   }
 
   // Some testing code creates CompositeType with empty IDs.

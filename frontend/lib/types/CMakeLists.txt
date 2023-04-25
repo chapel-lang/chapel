@@ -19,6 +19,7 @@ target_sources(ChplFrontend-obj
                PRIVATE
 
                AnyType.cpp
+               ArrayType.cpp
                BasicClassType.cpp
                BoolType.cpp
                BuiltinType.cpp
