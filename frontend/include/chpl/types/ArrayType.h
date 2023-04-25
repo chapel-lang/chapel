@@ -60,6 +60,9 @@ class ArrayType final : public CompositeType {
                     const ArrayType* instantiatedFrom,
                     SubstitutionsMap subs);
 
+  static const ID domainId;
+  static const ID eltTypeId;
+
  public:
 
   /** Return the generic array type */
@@ -70,7 +73,7 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& eltType);
 
   const QualifiedType domainType() const {
-    auto it = subs_.find(ID(UniqueString(), 0, 0));
+    auto it = subs_.find(domainId);
     if (it != subs_.end()) {
       return it->second;
     } else {
@@ -79,7 +82,7 @@ class ArrayType final : public CompositeType {
   }
 
   const QualifiedType eltType() const {
-    auto it = subs_.find(ID(UniqueString(), 1, 0));
+    auto it = subs_.find(eltTypeId);
     if (it != subs_.end()) {
       return it->second;
     } else {

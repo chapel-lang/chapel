@@ -26,6 +26,8 @@
 namespace chpl {
 namespace types {
 
+const ID ArrayType::domainId = ID(UniqueString(), 0, 0);
+const ID ArrayType::eltTypeId = ID(UniqueString(), 1, 0);
 
 void ArrayType::stringify(std::ostream& ss,
                            chpl::StringifyKind stringKind) const {
@@ -71,8 +73,8 @@ ArrayType::getArrayType(Context* context,
                         const QualifiedType& domainType,
                         const QualifiedType& eltType) {
   SubstitutionsMap subs;
-  subs.emplace(ID(UniqueString(), 0, 0), domainType);
-  subs.emplace(ID(UniqueString(), 1, 0), eltType);
+  subs.emplace(ArrayType::domainId, domainType);
+  subs.emplace(ArrayType::eltTypeId, eltType);
   auto name = UniqueString::get(context, "_array");
   auto id = getArrayID(context);
   auto instantiatedFrom = getGenericArrayType(context);
