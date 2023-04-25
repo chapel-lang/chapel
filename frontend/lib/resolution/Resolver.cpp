@@ -977,7 +977,7 @@ static const Type* computeVarArgTuple(Resolver& resolver,
       auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
                                    /* isThis */ false, /* isInit */ false);
       QualifiedType elt = QualifiedType(newKind, typePtr);
-      typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
+      typePtr = TupleType::getStarTuple(context, paramSize, elt);
     }
   }
 
@@ -1149,8 +1149,10 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
           // if we aren't inferring from the init expr, clear initExprT
           // so it is not used below.
           initExprT = QualifiedType();
-          if (isTypeOrParam && isField) {
-            // a type or param field with initExpr is still generic, e.g.
+
+          if (isTypeOrParam && isFieldOrFormal && typeExprT == QualifiedType()) {
+            // a type or param field with initExpr is still generic, if
+            // it doesn't already have a type-expr, e.g.
             // record R { type t = int; }
             // if that behavior is requested with defaultsPolicy == IGNORE_DEFAULTS
             typeExprT = QualifiedType(QualifiedType::TYPE,

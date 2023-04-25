@@ -1544,7 +1544,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -2505,6 +2505,15 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
+  if (ci.name() == USTR("*") && ci.numActuals() == 2) {
+    auto first = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (first.isParam() && first.type()->isIntType() &&
+        second.isType()) {
+      return TupleType::getStarTuple(context, first, second);
+    }
+  }
+
   if (auto t = getManagedClassType(context, astForErr, ci)) {
     return t;
   }
@@ -2635,6 +2644,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
+  // TODO: This should be the QualifiedType in case of type methods
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
@@ -3089,7 +3099,9 @@ CallResolutionResult resolveFnCall(Context* context,
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
-  if (ci.calledType().kind() == QualifiedType::TYPE) {
+  // Note: currently type constructors are not implemented as methods
+  if (ci.calledType().kind() == QualifiedType::TYPE &&
+      ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
@@ -3237,7 +3249,10 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
                                           QualifiedType implicitReceiver) {
   return !ci.isMethodCall() &&
          !ci.isOpCall() &&
-         implicitReceiver.type() != nullptr;
+         implicitReceiver.type() != nullptr &&
+         // Assuming ci.name().isEmpty()==true implies a primitive call.
+         // TODO: Add some kind of 'isPrimitive()' to CallInfo
+         !ci.name().isEmpty();
 }
 
 CallResolutionResult resolveCall(Context* context,
