@@ -119,6 +119,7 @@ third-party-c2chapel-venv: FORCE
 test-venv: third-party-test-venv
 
 chpldoc: third-party-chpldoc-venv
+	@cd third-party && $(MAKE) llvm
 	cd compiler && $(MAKE) chpldoc
 	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
