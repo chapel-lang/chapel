@@ -3023,7 +3023,9 @@ operator :(r: range(?), type t: range(?)) {
 
     if x.hasLowBound() then
       ret += x.lowBound:string;
+
     ret += "..";
+
     if x.hasHighBound() {
       // handle the special case of an empty range with a singleton idxType
       if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
@@ -3032,36 +3034,17 @@ operator :(r: range(?), type t: range(?)) {
         ret += x.highBound:string;
       }
     }
+
     if x.stride != 1 {
       ret += " by " + x.stride:string;
 
-      var alignCheckRange = x;
-      alignCheckRange.normalizeAlignment();
-
+      if x.stride != -1 && x.aligned && ! x.isNaturallyAligned() then
       // Write out the alignment only if it differs from natural alignment.
       // We take alignment modulo the stride for consistency.
-      if !(alignCheckRange.isNaturallyAligned()) then
-        ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
+       ret += " align " + x.chpl_intToIdx(
+                  chpl__mod(chpl__idxToInt(x.alignment), x.stride)):string;
     }
     return ret;
-  }
-
-  pragma "no doc"
-  proc ref range.normalizeAlignment()
-  {
-    if stridable && !aligned {
-      _alignment =
-        if isBoundedRange(this) then
-          (if stride > 0 then _low else _high)
-        else if bounds == boundKind.low then
-          _low
-        else if bounds == boundKind.high then
-          _high
-        else
-          0;
-      // could verify that we succeeded:
-      //assert(isNaturallyAligned());
-    }
   }
 
 

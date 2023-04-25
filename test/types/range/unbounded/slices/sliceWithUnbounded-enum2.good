@@ -4,5 +4,5 @@
 2.0 4.0 6.0
 3.0 5.0
 2.0 4.0 6.0
-sliceWithUnbounded-enum2.chpl:13: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (orange..violet by -2 align 1)
+sliceWithUnbounded-enum2.chpl:13: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (orange..violet by -2 align orange)
 sliceWithUnbounded-enum2.chpl:17: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (orange..indigo by -2)
