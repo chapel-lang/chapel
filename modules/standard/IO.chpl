@@ -3318,6 +3318,17 @@ inline proc fileWriter.unlock() {
   }
 }
 
+@chpldoc.nodoc
+private inline proc offsetHelper(ref fileRW) {
+  var ret:int(64);
+  on fileRW._home {
+    if fileRW.locking then try! fileRW.lock();
+    ret = qio_channel_offset_unlocked(fileRW._channel_internal);
+    if fileRW.locking then try! fileRW.unlock();
+  }
+  return ret;
+}
+
 /*
    Return the current offset of a fileReader.
 
@@ -3331,15 +3342,7 @@ inline proc fileWriter.unlock() {
 
    :returns: the current offset of the fileReader
  */
-proc fileReader.offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
-  }
-  return ret;
-}
+proc fileReader.offset():int(64) do return offsetHelper(this);
 
 /*
    Return the current offset of a fileWriter.
@@ -3354,15 +3357,7 @@ proc fileReader.offset():int(64) {
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
-  }
-  return ret;
-}
+proc fileWriter.offset():int(64) do return offsetHelper(this);
 
 /*
    Move a fileReader offset forward.
@@ -3827,24 +3822,18 @@ proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
    For a ``fileReader`` locked with :proc:`fileReader.lock`, return the offset
    of that fileReader.
  */
+@deprecated(notes="fileReader._offset is deprecated - please use :proc:`fileReader.offset` instead")
 proc fileReader._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
    For a fileWriter locked with :proc:`fileWriter.lock`, return the offset
    of that fileWriter.
  */
+@deprecated(notes="fileWriter._offset is deprecated - please use :proc:`fileWriter.offset` instead")
 proc fileWriter._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
@@ -6306,9 +6295,9 @@ proc fileReader.readLine(ref s: string,
         }
       }
     }
-    var endOffset = this._offset();
+    var endOffset = this.offset();
     this.revert();
-    var nBytes:int = endOffset - this._offset();
+    var nBytes:int = endOffset - this.offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
