@@ -580,23 +580,18 @@ module ChapelRange {
   proc range.stride param where !stridable do return 1 : strType;
 
   /* Returns the range's alignment. */
-  inline proc range.alignment where stridable do return chpl_intToIdx(_alignment);
-  pragma "no doc"
-  proc range.alignment where !stridable && hasLowBound() do return low;
-  pragma "no doc"
-  proc range.alignment do return chpl_intToIdx(0);
+  inline proc range.alignment where !hasParamAlignment() do
+    return chpl_intToIdx(if stridable then _alignment else 0);
+  @chpldoc.nodoc proc range.alignment param where hasParamAlignment() do return
+    if isEnum(idxType) then chpl__orderToEnum(0, idxType) else 0: idxType;
+
+  @chpldoc.nodoc proc range.hasParamAlignment() param do return
+    !stridable && (isIntegral(idxType) || isEnum(idxType) || isBool(idxType));
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
   inline proc range.aligned where stridable do return _aligned;
-
-  pragma "no doc"
-  proc range.aligned param
-    where !stridable && (bounds == boundKind.both || bounds == boundKind.low)
-    do return true;
-  pragma "no doc"
-  proc range.aligned param do
-    return false; /* !stridable && (boundKind.high || boundKind.neither) */
+  @chpldoc.nodoc proc range.aligned param where !stridable do return true;
 
 
   //################################################################################
@@ -808,51 +803,23 @@ module ChapelRange {
   /* Returns ``true`` if this range is naturally aligned, ``false``
      otherwise. */
   proc range.isNaturallyAligned()
-    where stridable && bounds == boundKind.both
-  {
+    where stridable && bounds != boundKind.neither
+  do if  bounds == boundKind.both {
     // If the stride is positive, we must be aligned on the low bound.
     if stride > 0 then return this.alignedLowAsInt == _low;
     // If the stride is negative, we must be aligned on the high bound.
     if stride < 0 then return this.alignedHighAsInt == _high;
     // stride == 0: ???
     return false;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned() param
-    where !stridable && bounds == boundKind.both
-  {
-    return true;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where !stridable && bounds == boundKind.low
-  {
-    return this.alignedLowAsInt == _low;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where stridable && bounds == boundKind.low
-  {
+  } else if bounds == boundKind.low {
     return stride > 0 && this.alignedLowAsInt == _low;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned() param
-    where bounds == boundKind.neither ||
-          !stridable && bounds == boundKind.high
-  {
-    return false;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where stridable && bounds == boundKind.high
-  {
+  } else if bounds == boundKind.high {
     return stride < 0 && this.alignedHighAsInt == _high;
   }
+
+  @chpldoc.nodoc proc range.isNaturallyAligned() param
+    where !stridable || bounds == boundKind.neither
+    do return !stridable;
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
