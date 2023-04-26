@@ -1,0 +1,8 @@
+gammas.chpl:4: warning: In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the Math module to call it
+gammas.chpl:5: warning: In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the Math module to call it
+gammas.chpl:9: warning: In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the Math module to call it
+gammas.chpl:10: warning: In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the Math module to call it
+true
+true
+true
+true
