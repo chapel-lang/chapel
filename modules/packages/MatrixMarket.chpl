@@ -218,7 +218,7 @@ class MMReader {
      var pctflag = false;
      while !pctflag {
        var percentfound:string;
-       var offset = fin.offset();
+       var offset = fin.chpl_offset();
        fin.readLine(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...

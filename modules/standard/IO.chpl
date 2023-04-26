@@ -3317,13 +3317,22 @@ inline proc fileWriter.unlock() {
   }
 }
 
+/*
+  A compile-time parameter to control the behavior of :proc:`fileReader.offset` and :proc:`fileWriter.offset`
+
+  When 'false', the deprecated behavior is used (i.e., calling 'lock'/'unlock' before getting the offset)
+
+  When 'true', the new behavior is used (i.e., no lock is automatically aquired)
+*/
+config param fileOffsetWithoutLocking = false;
+
 @chpldoc.nodoc
-private inline proc offsetHelper(fileRW) {
+private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
   var ret:int(64);
   on fileRW._home {
-    if !fileRW.locking then try! fileRW.lock();
+    if doDeprecatedLocking then try! fileRW.lock();
     ret = qio_channel_offset_unlocked(fileRW._channel_internal);
-    if !fileRW.locking then fileRW.unlock();
+    if doDeprecatedLocking then fileRW.unlock();
   }
   return ret;
 }
@@ -3331,34 +3340,58 @@ private inline proc offsetHelper(fileRW) {
 /*
    Return the current offset of a fileReader.
 
-   If ``locking==false``, the fileReader will call :proc:`fileReader.lock`
-   before getting the offset and call :proc:`fileReader.unlock` after.
+   The fileReader will call :proc:`fileReader.lock` before getting the offset
+   and call :proc:`fileReader.unlock` after.
 
-   If ``locking==true`` and the fileReader can be used by multiple tasks, take
-   care when doing operations that rely on the fileReader's current offset. To
-   prevent race conditions, lock the fileReader with :proc:`fileReader.lock`
-   before calling :proc:`fileReader.offset`, then unlock it afterwards with
+   :returns: the current offset of the fileReader
+ */
+@deprecated(notes="The variant of :proc:`fileReader.offset` that automatically aquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the apprioatiate locking calls where necessary to opt in to the new behavior")
+proc fileReader.offset():int(64) where !fileOffsetWithoutLocking do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileReader.
+
+   If the fileReader can be used by multiple tasks, take care when doing
+   operations that rely on the fileReader's current offset. To prevent race
+   conditions, lock the fileReader with :proc:`fileReader.lock` before calling
+   :proc:`fileReader.offset`, then unlock it afterwards with
    :proc:`fileReader.unlock`.
 
    :returns: the current offset of the fileReader
  */
-proc fileReader.offset():int(64) do return offsetHelper(this);
+proc fileReader.offset():int(64) where fileOffsetWithoutLocking do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
    Return the current offset of a fileWriter.
 
-   If ``locking==false``, the fileWriter will call :proc:`fileWriter.lock`
-   before getting the offset and call :proc:`fileWriter.unlock` after.
+   The fileWriter will call :proc:`fileWriter.lock` before getting the offset
+   and call :proc:`fileWriter.unlock` after.
 
-   If ``locking==true`` and the fileWriter can be used by multiple tasks, take
-   care when doing operations that rely on the fileWriter's current offset. To
-   prevent race conditions, lock the fileWriter with :proc:`fileWriter.lock`
-   before calling :proc:`fileWriter.offset`, then unlock it afterwards with
+   :returns: the current offset of the fileWriter
+ */
+@deprecated(notes="The variant of :proc:`fileWriter.offset` that automatically aquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileWriter.offset` with the apprioatiate locking calls where necessary to opt in to the new behavior")
+proc fileWriter.offset():int(64) where !fileOffsetWithoutLocking do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileWriter.
+
+   If the fileWriter can be used by multiple tasks, take care when doing
+   operations that rely on the fileWriter's current offset. To prevent race
+   conditions, lock the fileWriter with :proc:`fileWriter.lock` before calling
+   :proc:`fileWriter.offset`, then unlock it afterwards with
    :proc:`fileWriter.unlock`.
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64) do return offsetHelper(this);
+proc fileWriter.offset():int(64) where fileOffsetWithoutLocking do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
    Move a fileReader offset forward.
@@ -3542,7 +3575,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
 
 @chpldoc.nodoc
 private inline proc markHelper(fileRW) throws {
-  const offset = fileRW.offset();
+  const offset = fileRW.chpl_offset();
   const err = qio_channel_mark(false, fileRW._channel_internal);
 
   if err then
@@ -5905,7 +5938,9 @@ proc stringify(const args ...?k):string {
 
       w.write((...args));
 
-      var offset = w.offset();
+      try! w.lock();
+      var offset = w.chpl_offset();
+      w.unlock();
 
       var buf = c_malloc(uint(8), offset+1);
 
@@ -6296,9 +6331,9 @@ proc fileReader.readLine(ref s: string,
         }
       }
     }
-    var endOffset = this.offset();
+    var endOffset = this.chpl_offset();
     this.revert();
-    var nBytes:int = endOffset - this.offset();
+    var nBytes:int = endOffset - this.chpl_offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -11112,7 +11147,9 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
       } catch { /* ignore deferred close error */ }
     }
     try w.writef(fmt, (...args));
-    offset = w.offset();
+    try! w.lock();
+    offset = w.chpl_offset();
+    w.unlock();
 
     // close error is thrown instead of ignored
     try w.close();
