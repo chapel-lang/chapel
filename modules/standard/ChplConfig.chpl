@@ -151,4 +151,8 @@ module ChplConfig {
   pragma "no doc"
   param CHPL_GPU_MEM_STRATEGY:string;
   CHPL_GPU_MEM_STRATEGY = __primitive("get compiler variable", "CHPL_GPU_MEM_STRATEGY");
+
+  pragma "no doc"
+  param CHPL_GPU_CODEGEN:string;
+  CHPL_GPU_CODEGEN = __primitive("get compiler variable", "CHPL_GPU_CODEGEN");
 }

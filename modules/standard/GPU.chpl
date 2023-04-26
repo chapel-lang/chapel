@@ -199,4 +199,29 @@ module GPU
   inline proc setBlockSize(blockSize: int) {
     __primitive("gpu set blockSize", blockSize);
   }
+
+  pragma "no doc"
+  proc canAccessPeer(loc1 : locale, loc2 : locale) : bool {
+    extern proc chpl_gpu_can_access_peer(i : c_int, j : c_int) : bool;
+
+    if(!loc1.isGpu() || !loc2.isGpu()) then
+      halt("Non GPU locale passed to 'canAccessPeer'");
+    const ref loc1Gpu = try! loc1._instance : unmanaged GPULocale;
+    const ref loc2Gpu = try! loc2._instance : unmanaged GPULocale;
+
+    return chpl_gpu_can_access_peer(loc1Gpu.sid, loc2Gpu.sid);
+  }
+
+  pragma "no doc"
+  proc setPeerAccess(loc1 : locale, loc2 : locale, shouldEnable : bool) {
+    extern proc chpl_gpu_set_peer_access(
+      i : c_int, j : c_int, shouldEnable : bool) : void;
+
+    if(!loc1.isGpu() || !loc2.isGpu()) then
+      halt("Non GPU locale passed to 'canAccessPeer'");
+    const ref loc1Gpu = try! loc1._instance : unmanaged GPULocale;
+    const ref loc2Gpu = try! loc2._instance : unmanaged GPULocale;
+
+    chpl_gpu_set_peer_access(loc1Gpu.sid, loc2Gpu.sid, shouldEnable);
+  }
 }
