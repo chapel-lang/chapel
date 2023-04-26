@@ -3320,7 +3320,7 @@ inline proc fileWriter.unlock() {
 /*
   A compile-time parameter to control the behavior of :proc:`fileReader.offset`
   and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
-  :param:`fileWriting.locking` is true.
+  :param:`fileWriter.locking` is true.
 
   When 'false', the deprecated behavior is used (i.e., calling
   ``lock``/``unlock`` before getting the offset)
@@ -3350,8 +3350,8 @@ private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
    :returns: the current offset of the fileReader
  */
 @deprecated(notes="The variant of :proc:`fileReader.offset` that automatically aquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the apprioatiate locking calls where necessary to opt in to the new behavior")
-proc fileReader.offset():int(64) 
-  where this.locking == true && !fileOffsetWithoutLocking 
+proc fileReader.offset():int(64)
+  where this.locking == true && !fileOffsetWithoutLocking
   do return offsetHelper(this, true);
 
 /*
@@ -3366,7 +3366,7 @@ proc fileReader.offset():int(64)
    :returns: the current offset of the fileReader
  */
 proc fileReader.offset():int(64)
-  where this.locking == false || 
+  where this.locking == false ||
         (this.locking == true && fileOffsetWithoutLocking)
   do return offsetHelper(this, false);
 
@@ -3399,7 +3399,7 @@ proc fileWriter.offset():int(64)
    :returns: the current offset of the fileWriter
  */
 proc fileWriter.offset():int(64)
-  where this.locking == false || 
+  where this.locking == false ||
         (this.locking == true && fileOffsetWithoutLocking)
   do return offsetHelper(this, false);
 
