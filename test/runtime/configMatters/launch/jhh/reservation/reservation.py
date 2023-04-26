@@ -34,13 +34,10 @@ def skipif():
         if key == 'CHPL_LAUNCHER' and value != 'slurm-srun':
             skipReason = "CHPL_LAUNCHER != slurm-srun"
     # Verify environment variables
-    output = runCmd("printenv")
-    for line in output.splitlines():
-        (key, value) = line.split('=',1)
-        if key == 'CHPL_RT_LOCALES_PER_NODE' and value != 1:
-            skipReason = "CHPL_RT_LOCALES_PER_NODE != 1"
-        if key == 'SLURM_HINT' and value == 'nomultithread':
-            skipReason = "SLURM_HINT == nomultithread"
+    if os.environ.get('CHPL_RT_LOCALES_PER_NODE', None) != '1':
+        skipReason = "CHPL_RT_LOCALES_PER_NODE != 1"
+    if os.environ.get('SLURM_HINT') == 'nomultithread':
+        skipReason = "SLURM_HINT == nomultithread"
 
 class SrunTests(unittest.TestCase):
     @classmethod
