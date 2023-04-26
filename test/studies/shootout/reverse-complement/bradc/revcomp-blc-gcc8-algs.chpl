@@ -254,10 +254,9 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     foreach i in inds {
       if buff[i] == '>'.toByte() {
         ltLoc = i;
-        return true;
       }
     }
-    return false;
+    return ltLoc != max(int);
   } else if searchAlg == For {
     for i in inds {
       if buff[i] == '>'.toByte() {
