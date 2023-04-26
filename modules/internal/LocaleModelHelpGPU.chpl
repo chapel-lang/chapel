@@ -28,7 +28,6 @@ module LocaleModelHelpGPU {
   pragma "no doc"
   config param debugGPULocale = false;
 
-
   //////////////////////////////////////////
   //
   // utilities

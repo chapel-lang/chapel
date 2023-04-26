@@ -26,7 +26,7 @@ module ChapelGpuSupport {
   config const debugGpu = false;
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
-     GPUs */
+     GPUs that are eligible for peer-to-peer access within each locale. */
   pragma "no doc"
   config const enableGpuP2P = false;
 

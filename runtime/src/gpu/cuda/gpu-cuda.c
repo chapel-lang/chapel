@@ -489,18 +489,19 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
-bool chpl_gpu_can_access_peer(int dev1, int dev2) {
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
   int p2p;
-  cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev1], chpl_gpu_devices[dev2]);
+  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev1],
+    chpl_gpu_devices[dev2]));
   return p2p != 0;
 }
 
-void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_switch_context(dev1);
   if(enable) {
-    cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0);
+    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
   } else {
-    cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]);
+    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]));
   }
 }
 

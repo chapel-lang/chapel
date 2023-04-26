@@ -127,7 +127,7 @@ proc checkNumAccessEnabled(valFromChpl) {
   select ChplConfig.CHPL_GPU_CODEGEN {
     when "cuda" do checkNumAccessEnabled_cuda(valFromChpl);
     when "rocm" do checkNumAccessEnabled_rocm(valFromChpl);
-    otherwise do assertFalse("Update test to check for new runtime lib");
+    otherwise do compilerError("Update test to check for new runtime lib");
   }
 }
 
