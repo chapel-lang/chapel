@@ -368,9 +368,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* The `date` that is `ordinal` days from 1-1-0001 */
   proc type date.createFromOrdinal(ordinal: int) {
-    if ord < 0 || ord > 1+date.max.toOrdinal() then
-      halt("ordinal (", ord, ") out of range");
-    const (y,m,d) = ordToYmd(ord);
+    if ordinal < 0 || ordinal > 1+date.max.toOrdinal() then
+      halt("ordinal (", ordinal, ") out of range");
+    const (y,m,d) = ordToYmd(ordinal);
     return new date(y,m,d);
   }
 
