@@ -4611,8 +4611,10 @@ void makeBinaryLLVM(void) {
     cargs += clangInfo->clangCCArgs[i];
   }
 
-  std::string gpuArgs = generateClangGpuLangArgs();
-  gpuArgs += " -Wno-unknown-cuda-version";
+  std::string gpuArgs = "";
+  if (usingGpuLocaleModel()) {
+    gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
+  }
 
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
