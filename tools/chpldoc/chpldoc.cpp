@@ -278,7 +278,15 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   // attributes.
   for (auto attr : attrs->children()) {
     if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
-      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
+      static const char * knownAttrs[] = {"chpldoc.nodoc", "chpldoc.hideType"};
+      bool known = false;
+      for (const auto& knownAttr : knownAttrs) {
+        if (attr->toAttribute()->name() ==
+            UniqueString::get(gContext, knownAttr)) {
+          known = true;
+        }
+      }
+      if (known) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -343,6 +351,17 @@ static bool isNoWhereDoc(const Function* f) {
   if (auto attrs = f->attributeGroup())
     if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
       return true;
+  return false;
+}
+
+static bool isHideType(const Decl* e) {
+  if (auto attrs = e->attributeGroup()) {
+    auto attr = attrs->getAttributeNamed(
+        UniqueString::get(gContext, "chpldoc.hideType"));
+    if (attr) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -1556,14 +1575,22 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Class* c) {
     if (isNoDoc(c) || c->visibility() == chpl::uast::Decl::PRIVATE) return {};
     if (textOnly_) os_ << "Class: ";
-    show("class", c);
+    if (isHideType(c)) {
+      show("type", c);
+    } else {
+      show("class", c);
+    }
     visitChildren(c);
     return getResult(true);
   }
 
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
-    show("enum", e);
+    if (isHideType(e)) {
+      show("type", e);
+    } else {
+      show("enum", e);
+    }
     visitChildren(e);
     return getResult(true);
   }
@@ -1796,7 +1823,11 @@ struct RstResultBuilder {
 
   owned<RstResult> visit(const Record* r) {
     if (isNoDoc(r)) return {};
-    show("record", r);
+    if (isHideType(r)) {
+      show("type", r);
+    } else {
+      show("record", r);
+    }
     visitChildren(r);
     return getResult(true);
   }
