@@ -277,10 +277,10 @@ module ProtobufProtocolSupport {
     }
 
     proc messageAppendBase(val, ch:writingChannel) throws {
-     var initialOffset = ch.offset();
+     var initialOffset = ch.chpl_offset();
      ch.mark();
      val._serialize(ch);
-     var currentOffset = ch.offset();
+     var currentOffset = ch.chpl_offset();
      ch.revert();
      unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
      val._serialize(ch);
@@ -522,11 +522,11 @@ module ProtobufProtocolSupport {
       param protoValueType: string, ch:writingChannel) throws {
       for (key, value) in zip(val.keys(), val.values()) {
         tagAppend(fieldNumber, lengthDelimited, ch);
-        var initialOffset = ch.offset();
+        var initialOffset = ch.chpl_offset();
         ch.mark();
         protoFieldAppendHelper(key, 1, protoKeyType, ch);
         protoFieldAppendHelper(value, 2, protoValueType, ch);
-        var currentOffset = ch.offset();
+        var currentOffset = ch.chpl_offset();
         ch.revert();
         unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
         protoFieldAppendHelper(key, 1, protoKeyType, ch);
@@ -738,12 +738,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         uint64AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -753,11 +753,11 @@ module ProtobufProtocolSupport {
 
     proc uint64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(uint(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = uint64ConsumeBase(ch);
         returnList.append(val);
       }
@@ -768,12 +768,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         uint32AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -783,11 +783,11 @@ module ProtobufProtocolSupport {
 
     proc uint32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(uint(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = uint32ConsumeBase(ch);
         returnList.append(val);
       }
@@ -798,12 +798,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         int64AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -813,11 +813,11 @@ module ProtobufProtocolSupport {
 
     proc int64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = int64ConsumeBase(ch);
         returnList.append(val);
       }
@@ -828,12 +828,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         int32AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -843,11 +843,11 @@ module ProtobufProtocolSupport {
 
     proc int32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = int32ConsumeBase(ch);
         returnList.append(val);
       }
@@ -867,11 +867,11 @@ module ProtobufProtocolSupport {
 
     proc boolRepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(bool);
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = boolConsumeBase(ch);
         returnList.append(val);
       }
@@ -882,12 +882,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         sint64AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -897,11 +897,11 @@ module ProtobufProtocolSupport {
 
     proc sint64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = sint64ConsumeBase(ch);
         returnList.append(val);
       }
@@ -912,12 +912,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         sint32AppendBase(val, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -927,11 +927,11 @@ module ProtobufProtocolSupport {
 
     proc sint32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = sint32ConsumeBase(ch);
         returnList.append(val);
       }
@@ -981,11 +981,11 @@ module ProtobufProtocolSupport {
 
     proc fixed32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(uint(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = fixed32ConsumeBase(ch);
         returnList.append(val);
       }
@@ -1005,11 +1005,11 @@ module ProtobufProtocolSupport {
 
     proc fixed64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(uint(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = fixed64ConsumeBase(ch);
         returnList.append(val);
       }
@@ -1029,11 +1029,11 @@ module ProtobufProtocolSupport {
 
     proc floatRepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(real(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = floatConsumeBase(ch);
         returnList.append(val);
       }
@@ -1053,11 +1053,11 @@ module ProtobufProtocolSupport {
 
     proc doubleRepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(real(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = doubleConsumeBase(ch);
         returnList.append(val);
       }
@@ -1077,11 +1077,11 @@ module ProtobufProtocolSupport {
 
     proc sfixed64RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(64));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = sfixed64ConsumeBase(ch);
         returnList.append(val);
       }
@@ -1101,11 +1101,11 @@ module ProtobufProtocolSupport {
 
     proc sfixed32RepeatedConsume(ch: readingChannel) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(int(32));
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = sfixed32ConsumeBase(ch);
         returnList.append(val);
       }
@@ -1116,12 +1116,12 @@ module ProtobufProtocolSupport {
       if valList.isEmpty() then return;
 
       tagAppend(fieldNumber, lengthDelimited, ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
       ch.mark();
       for val in valList {
         enumAppendBase(val:uint, ch);
       }
-      var currentOffset = ch.offset();
+      var currentOffset = ch.chpl_offset();
       ch.revert();
       unsignedVarintAppend((currentOffset-initialOffset):uint, ch);
       for val in valList {
@@ -1131,11 +1131,11 @@ module ProtobufProtocolSupport {
 
     proc enumRepeatedConsume(ch: readingChannel, type enumType) throws {
       var (payloadLength, _) = unsignedVarintConsume(ch);
-      var initialOffset = ch.offset();
+      var initialOffset = ch.chpl_offset();
 
       var returnList: list(enumType);
       while true {
-        if (ch.offset() - initialOffset) >= payloadLength then break;
+        if (ch.chpl_offset() - initialOffset) >= payloadLength then break;
         var val = enumConsumeBase(ch);
         returnList.append(val:enumType);
       }
