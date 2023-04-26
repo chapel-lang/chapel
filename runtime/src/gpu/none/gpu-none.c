@@ -128,11 +128,11 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
-  return chpl_mem_alloc(size, 0, 0, 0);
+  return chpl_malloc(size);
 }
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
-  chpl_mem_free(0, 0, 0);
+  chpl_free(memAlloc);
 }
 
 void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
