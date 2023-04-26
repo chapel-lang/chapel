@@ -1,14 +1,14 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 on here.gpus[0] {
   var A: [1..n] int;
 
-  startGPUDiagnostics();
+  startGpuDiagnostics();
   A = 1;
-  stopGPUDiagnostics();
+  stopGpuDiagnostics();
 
   writeln(A);
 }
 
-assert(getGPUDiagnostics().kernel_launch == 1);
+assert(getGpuDiagnostics().kernel_launch == 1);
