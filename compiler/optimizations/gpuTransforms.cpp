@@ -908,13 +908,15 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   //   run the existing loop on the CPU
   // }
   //
-  // Normally, We put the CPU block as the else block. If we are not doung GPU
+  // Normally, We put the CPU block as the else block. If we are not doing GPU
   // codegen, we put it as an anonymous block right after the conditional. This
   // will make sure that we call the runtime support as if there's a GPU, yet
   // still executing the loop always.
 
+  BlockStmt* cpuBlock = new BlockStmt();
   BlockStmt* gpuBlock = new BlockStmt();
 
+  // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
   gpuBlock->insertAtTail(gpuCall);
@@ -922,16 +924,19 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
                                     new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
                                     new_IntSymbol(0));
-  CondStmt* cond = new CondStmt(condExpr, gpuBlock);
+
+  // we can't add elseStmt later on
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock,
+                                doGpuCodegen() ? cpuBlock : NULL);
+
+  // first, make sure the conditional is in place
   gpuLoop.loop()->insertBefore(cond);
 
-  BlockStmt* cpuBlock = new BlockStmt();
+  // then relocate the loop
   cpuBlock->insertAtHead(gpuLoop.loop()->remove());
 
-  if (doGpuCodegen()) {
-    cond->elseStmt = cpuBlock;
-  }
-  else {
+  // if not doing codegen, just add cpuBlock after the conditional
+  if (!doGpuCodegen()) {
     cond->insertAfter(cpuBlock);
   }
 }
