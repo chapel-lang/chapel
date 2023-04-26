@@ -303,11 +303,17 @@ bool GpuizableLoop::hasIllegalGotos() {
     if (!isDefinedInTheLoop(gotoStmt->gotoTarget(), this->loop_)) {
       Expr* cur = gotoStmt->gotoTarget()->defPoint;
       while (cur) {
-        if (!isDefExpr(cur)) return true;
-        if (cur == this->loop_) return false;
+        if (cur == this->loop_) {
+          return false;
+        }
+        if (!isDefExpr(cur)) {
+          reportNotGpuizable(cur, "cannot handle this break/continue/return");
+          return true;
+        }
 
         cur = cur->prev;
       }
+      reportNotGpuizable(cur, "cannot handle this break/continue/return");
       return true;
     }
   }
@@ -768,7 +774,8 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
 
       for (auto gotoStmt = breaksInNode.begin() ;
            gotoStmt != breaksInNode.end() ; gotoStmt++) {
-        (*gotoStmt)->replace(new CallExpr(PRIM_RETURN, gVoid));
+        (*gotoStmt)->replace(new GotoStmt(GOTO_RETURN,
+                                          outlinedFunction->getEpilogueLabel()));
       }
       outlinedFunction->insertBeforeEpilogue(node);
     }
