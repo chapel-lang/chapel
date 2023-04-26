@@ -354,7 +354,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The date that is `timestamp` seconds from the epoch */
-  proc type date.createFromTimestamp(timestamp) {
+  proc type date.createFromTimestamp(timestamp: real) {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timeDelta(seconds=sec, microseconds=us);
@@ -366,8 +366,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return date.createFromOrdinal(ord);
   }
 
-  /* The `date` that is `ord` days from 1-1-0001 */
-  proc type date.createFromOrdinal(ord) {
+  /* The `date` that is `ordinal` days from 1-1-0001 */
+  proc type date.createFromOrdinal(ordinal: int) {
     if ord < 0 || ord > 1+date.max.toOrdinal() then
       halt("ordinal (", ord, ") out of range");
     const (y,m,d) = ordToYmd(ord);
@@ -1188,7 +1188,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* The `dateTime` that is `ordinal` days from 1-1-0001 */
-  proc type dateTime.createFromOrdinal(ordinal) {
+  proc type dateTime.createFromOrdinal(ordinal: int) {
     return dateTime.combine(date.createFromOrdinal(ordinal), new time());
   }
 
