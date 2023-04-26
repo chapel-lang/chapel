@@ -3322,8 +3322,8 @@ inline proc fileWriter.unlock() {
   and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
   :param:`fileWriter.locking` is true.
 
-  When 'false', the deprecated behavior is used (i.e., calling
-  ``lock``/``unlock`` before getting the offset)
+  When 'false', the deprecated behavior is used (i.e., the method acquires a
+  lock internally before getting the offset)
 
   When 'true', the new behavior is used (i.e., no lock is automatically
   aquired)
