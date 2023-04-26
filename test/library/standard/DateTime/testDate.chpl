@@ -41,18 +41,18 @@ proc test_date_ordinal_conversions() {
                     (1945,11,12,710347)] {
     var d1 = new date(y, m, d);
     assert(n == d1.toOrdinal());
-    var fromord = date.fromOrdinal(n);
+    var fromord = date.createFromOrdinal(n);
     assert(d1 == fromord);
   }
 
   for year in MINYEAR..MAXYEAR by 7 {
     var d = new date(year, 1, 1);
     var n = d.toOrdinal();
-    var d2 = date.fromOrdinal(n);
+    var d2 = date.createFromOrdinal(n);
     assert(d == d2);
 
     if year > 1 {
-      d = date.fromOrdinal(n-1);
+      d = date.createFromOrdinal(n-1);
       d2 = new date(year-1, 12, 31);
       assert(d == d2);
       assert(d2.toOrdinal() == n-1);
@@ -69,7 +69,7 @@ proc test_date_ordinal_conversions() {
       for day in 1..md {
         var d = new date(year, month, day);
         assert(d.toOrdinal() == n);
-        assert(d == date.fromOrdinal(n));
+        assert(d == date.createFromOrdinal(n));
         n += 1;
       }
     }
@@ -79,21 +79,21 @@ proc test_date_ordinal_conversions() {
 proc test_date_extreme_ordinals() {
   var a = date.min;
   var aord = a.toOrdinal();
-  var b = date.fromOrdinal(aord);
+  var b = date.createFromOrdinal(aord);
   assert(a == b);
 
   b = a + new timeDelta(days=1);
   assert(b.toOrdinal() == aord + 1);
-  assert(b == date.fromOrdinal(aord+1));
+  assert(b == date.createFromOrdinal(aord+1));
 
   a = date.max;
   aord = a.toOrdinal();
-  b = date.fromOrdinal(aord);
+  b = date.createFromOrdinal(aord);
   assert(a == b);
 
   b = a - new timeDelta(days=1);
   assert(b.toOrdinal() == aord - 1);
-  assert(b == date.fromOrdinal(aord - 1));
+  assert(b == date.createFromOrdinal(aord - 1));
 }
 
 proc test_date_computations() {
@@ -133,7 +133,7 @@ proc test_date_fromtimestamp() {
   var delta = d1 - unixEpoch.getDate();
   var ts = delta.days * 60 * 60 * 24 + delta.seconds;
 
-  var d = date.fromTimestamp(ts);
+  var d = date.createFromTimestamp(ts);
   assert(d.year == year);
   assert(d.month == month);
   assert(d.day == day);
@@ -145,7 +145,7 @@ proc test_date_today() {
     tday = date.today();
     var delta = tday - unixEpoch.getDate();
     var ts = delta.days * 60 * 60 * 24 + delta.seconds;
-    tdayAgain = date.fromTimestamp(ts);
+    tdayAgain = date.createFromTimestamp(ts);
     if tday == tdayAgain then
       break;
   }
