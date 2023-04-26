@@ -263,12 +263,11 @@ is possible to disable the lock (for performance reasons) by passing
 methods - in particular those beginning with the underscore - should only be
 called on locked fileReaders or fileWriters.  With these methods, it is possible
 to get or set the fileReader or fileWriter style, or perform I/O "transactions"
-(see :proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
-methods, e.g., first lock the fileWriter with :proc:`fileWriter.lock`, call the
-methods you need, then unlock the fileWriter with :proc:`fileWriter.unlock`.
-Note that in the future, we may move to alternative ways of calling these
-functions that guarantee that they are not called on a fileReader or fileWriter
-without the appropriate locking.
+(see :proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
+fileWriter with :proc:`fileWriter.lock`, call the methods you need, then unlock
+the fileWriter with :proc:`fileWriter.unlock`. Note that in the future, we may
+move to alternative ways of calling these functions that guarantee that they
+are not called on a fileReader or fileWriter without the appropriate locking.
 
 Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
@@ -3319,50 +3318,94 @@ inline proc fileWriter.unlock() {
 }
 
 /*
-   Return the current offset of a fileReader.
+  A compile-time parameter to control the behavior of :proc:`fileReader.offset`
+  and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
+  :param:`fileWriter.locking` is true.
 
-   .. warning::
+  When 'false', the deprecated behavior is used (i.e., the method acquires a
+  lock internally before getting the offset)
 
-      If the fileReader can be used by multiple tasks, take care
-      when doing operations that rely on the fileReader's current offset.
-      To prevent race conditions, first lock the fileReader with
-      :proc:`fileReader.lock`, do the operations with :proc:`fileReader._offset`
-      instead, then unlock it with :proc:`fileReader.unlock`.
+  When 'true', the new behavior is used (i.e., no lock is automatically
+  aquired)
+*/
+config param fileOffsetWithoutLocking = false;
 
-   :returns: the current offset of the fileReader
- */
-proc fileReader.offset():int(64) {
+@chpldoc.nodoc
+private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
   var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
+  on fileRW._home {
+    if doDeprecatedLocking then try! fileRW.lock();
+    ret = qio_channel_offset_unlocked(fileRW._channel_internal);
+    if doDeprecatedLocking then fileRW.unlock();
   }
   return ret;
 }
 
 /*
+   Return the current offset of a fileReader.
+
+   The fileReader will call :proc:`fileReader.lock` before getting the offset
+   and call :proc:`fileReader.unlock` after.
+
+   :returns: the current offset of the fileReader
+ */
+@deprecated(notes="The variant of :proc:`fileReader.offset` that automatically aquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the apprioatiate locking calls where necessary to opt in to the new behavior")
+proc fileReader.offset():int(64)
+  where this.locking == true && !fileOffsetWithoutLocking
+  do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileReader.
+
+   If the fileReader can be used by multiple tasks, take care when doing
+   operations that rely on the fileReader's current offset. To prevent race
+   conditions, lock the fileReader with :proc:`fileReader.lock` before calling
+   :proc:`fileReader.offset`, then unlock it afterwards with
+   :proc:`fileReader.unlock`.
+
+   :returns: the current offset of the fileReader
+ */
+proc fileReader.offset():int(64)
+  where this.locking == false ||
+        (this.locking == true && fileOffsetWithoutLocking)
+  do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
+
+/*
    Return the current offset of a fileWriter.
 
-   .. warning::
-
-      If the fileWriter can be used by multiple tasks, take care
-      when doing operations that rely on the fileWriter's current offset.
-      To prevent race conditions, first lock the fileWriter with
-      :proc:`fileWriter.lock`, do the operations with :proc:`fileWriter._offset`
-      instead, then unlock it with :proc:`fileWriter.unlock`.
+   The fileWriter will call :proc:`fileWriter.lock` before getting the offset
+   and call :proc:`fileWriter.unlock` after.
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
-  }
-  return ret;
-}
+@deprecated(notes="The variant of :proc:`fileWriter.offset` that automatically aquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileWriter.offset` with the apprioatiate locking calls where necessary to opt in to the new behavior")
+proc fileWriter.offset():int(64)
+  where this.locking == true && !fileOffsetWithoutLocking
+  do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileWriter.
+
+   If the fileWriter can be used by multiple tasks, take care when doing
+   operations that rely on the fileWriter's current offset. To prevent race
+   conditions, lock the fileWriter with :proc:`fileWriter.lock` before calling
+   :proc:`fileWriter.offset`, then unlock it afterwards with
+   :proc:`fileWriter.unlock`.
+
+   :returns: the current offset of the fileWriter
+ */
+proc fileWriter.offset():int(64)
+  where this.locking == false ||
+        (this.locking == true && fileOffsetWithoutLocking)
+  do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
    Move a fileReader offset forward.
@@ -3388,8 +3431,8 @@ proc fileReader.advance(amount:int(64)) throws {
    Move a fileWriter offset forward.
 
    This function will write ``amount`` zeros - or some other data if it is
-   stored in the fileWriter's buffer, for example with :proc:`fileWriter._mark`
-   and :proc:`fileWriter._revert`.
+   stored in the fileWriter's buffer, for example with :proc:`fileWriter.mark`
+   and :proc:`fileWriter.revert`.
 
    :throws EofError: If EOF is reached before the offset can be advanced by the
                       requested number of bytes.
@@ -3544,11 +3587,20 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   }
 }
 
+@chpldoc.nodoc
+private inline proc markHelper(fileRW) throws {
+  const offset = fileRW.chpl_offset();
+  const err = qio_channel_mark(false, fileRW._channel_internal);
+
+  if err then
+    throw createSystemError(err);
+
+  return offset;
+}
 
 /*
    *Mark* a fileReader - that is, save the current offset of the fileReader
-   on its *mark stack*. This function can only be called on a fileReader
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileReader offsets. For any fileReader offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3566,6 +3618,12 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       calling :proc:`fileReader.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileReader has ``locking==true``, :proc:`fileReader.mark` should be
+   called only once the fileReader has been locked with
+   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
+   :proc:`fileReader.unlock` until after the mark has been committed with
+   :proc:`fileReader.commit` or reverted with :proc:`fileReader.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3576,20 +3634,11 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
-proc fileReader.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileReader.mark() throws do return markHelper(this);
 
 /*
    *Mark* a fileWriter - that is, save the current offset of the fileWriter
-   on its *mark stack*. This function can only be called on a fileWriter
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileWriter offsets. For any fileWriter offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3607,6 +3656,12 @@ proc fileReader.mark() throws where this.locking == false {
       calling :proc:`fileWriter.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileWriter has ``locking==true``, :proc:`fileWriter.mark` should be
+   called only once the fileWriter has been locked with
+   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
+   :proc:`fileWriter.unlock` until after the mark has been committed with
+   :proc:`fileWriter.commit` or reverted with :proc:`fileWriter.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3617,55 +3672,57 @@ proc fileReader.mark() throws where this.locking == false {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
-proc fileWriter.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileWriter.mark() throws do return markHelper(this);
 
 /*
    Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileReader offset unchanged.  This function can only be
-   called on a fileReader with ``locking==false``.
+   previous fileReader offset unchanged.
+
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.revert() where this.locking == false {
+inline proc fileReader.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Abort an *I/O transaction*. See :proc:`fileWriter.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileWriter offset unchanged.  This function can only be
-   called on a fileWriter with ``locking==false``.
+   previous fileWriter offset unchanged.
+
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.revert() where this.locking == false {
+inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileReader.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileReader offset to the popped offset.  This function can
-   only be called on a fileReader with ``locking==false``.
+   set the fileReader offset to the popped offset.
 
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.commit() where this.locking == false {
+inline proc fileReader.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileWriter.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileWriter offset to the popped offset.  This function can
-   only be called on a fileWriter with ``locking==false``.
+   set the fileWriter offset to the popped offset.
 
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.commit() where this.locking == false {
+inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -3813,24 +3870,18 @@ proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
    For a ``fileReader`` locked with :proc:`fileReader.lock`, return the offset
    of that fileReader.
  */
+@deprecated(notes="fileReader._offset is deprecated - please use :proc:`fileReader.offset` instead")
 proc fileReader._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
    For a fileWriter locked with :proc:`fileWriter.lock`, return the offset
    of that fileWriter.
  */
+@deprecated(notes="fileWriter._offset is deprecated - please use :proc:`fileWriter.offset` instead")
 proc fileWriter._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
@@ -3847,14 +3898,9 @@ proc fileWriter._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
+@deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
 proc fileReader._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -3871,14 +3917,9 @@ proc fileReader._mark() throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
+@deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
 proc fileWriter._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -3888,8 +3929,9 @@ proc fileWriter._mark() throws {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._revert is deprecated - please use :proc:`fileReader.revert` instead")
 inline proc fileReader._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3899,8 +3941,9 @@ inline proc fileReader._revert() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._revert is deprecated - please use :proc:`fileWriter.revert` instead")
 inline proc fileWriter._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3910,8 +3953,9 @@ inline proc fileWriter._revert() {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._commit is deprecated - please use :proc:`fileReader.commit` instead")
 inline proc fileReader._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 /*
@@ -3921,8 +3965,9 @@ inline proc fileReader._commit() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._commit is deprecated - please use :proc:`fileWriter.commit` instead")
 inline proc fileWriter._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 // TODO -- come up with better names for these
@@ -5907,7 +5952,9 @@ proc stringify(const args ...?k):string {
 
       w.write((...args));
 
-      var offset = w.offset();
+      try! w.lock();
+      var offset = w.chpl_offset();
+      w.unlock();
 
       var buf = c_malloc(uint(8), offset+1);
 
@@ -6105,7 +6152,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
   var numRead:int;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    this._mark();
+    this.mark();
     param newLineChar = 0x0A;
     var got: int;
     var i = a.domain.lowBound;
@@ -6118,7 +6165,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         var err:errorCode = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(a : [] uint(8))");
       }
@@ -6130,7 +6177,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode, "line longer than maxSize in fileReader.readLine(a : [] uint(8))");
         }
       }
@@ -6141,7 +6188,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
     }
     numRead = i - a.domain.lowBound;
     if i == a.domain.lowBound && got < 0 then err = (-got):errorCode;
-    this._commit();
+    this.commit();
   }
 
   if !err {
@@ -6271,7 +6318,7 @@ proc fileReader.readLine(ref s: string,
     var foundNewline = false;
     // use the fileReader's buffering to compute how many bytes/codepoints
     // we are reading
-    this._mark();
+    this.mark();
     while !foundNewline {
       // read a single codepoint
       err = qio_channel_read_char(false, this._channel_internal, chr);
@@ -6280,7 +6327,7 @@ proc fileReader.readLine(ref s: string,
         break;
       } else if err {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
       }
       nCodepoints += 1;
@@ -6292,15 +6339,15 @@ proc fileReader.readLine(ref s: string,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                "line longer than maxSize in fileReader.readLine(ref s: string)");
         }
       }
     }
-    var endOffset = this._offset();
-    this._revert();
-    var nBytes:int = endOffset - this._offset();
+    var endOffset = this.chpl_offset();
+    this.revert();
+    var nBytes:int = endOffset - this.chpl_offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -6354,7 +6401,7 @@ proc fileReader.readLine(ref b: bytes,
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
     var nBytes: int = 0;
     // use the fileReader's buffering to compute how many bytes we are reading
-    this._mark();
+    this.mark();
     var got : int;
     var err: errorCode = 0;
     var foundNewline = false;
@@ -6366,7 +6413,7 @@ proc fileReader.readLine(ref b: bytes,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         err = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
         break;
@@ -6380,13 +6427,13 @@ proc fileReader.readLine(ref b: bytes,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                    "line longer than maxSize in fileReader.readLine(ref b: bytes)");
         }
       }
     }
-    this._revert();
+    this.revert();
     // now, nBytes includes the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -6939,10 +6986,10 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
     if i-1 == d.high {
       var has_more = false;
 
-      this._mark();
+      this.mark();
       got = qio_channel_read_byte(false, this._channel_internal);
       has_more = (got >= 0);
-      this._revert();
+      this.revert();
 
       if has_more {
         const sz = qio_channel_get_size(this._channel_internal);
@@ -11114,7 +11161,9 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
       } catch { /* ignore deferred close error */ }
     }
     try w.writef(fmt, (...args));
-    offset = w.offset();
+    try! w.lock();
+    offset = w.chpl_offset();
+    w.unlock();
 
     // close error is thrown instead of ignored
     try w.close();
@@ -11431,9 +11480,9 @@ iter fileReader.matches(re:regex(?), param captures=0,
   param nret = captures+1;
   var ret:nret*regexMatch;
 
-  // TODO should be try not try!  ditto try! _mark() below
+  // TODO should be try not try!  ditto try! mark() below
   try! lock();
-  on this._home do try! _mark();
+  on this._home do try! mark();
 
   while go && i < maxmatches {
     on this._home {
@@ -11485,7 +11534,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
     if ! error then yield ret;
     i += 1;
   }
-  _commit();
+  commit();
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;

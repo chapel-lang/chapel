@@ -247,7 +247,7 @@ module Subprocess {
     pragma "no doc"
     proc _stop_stdin_buffering() {
       if this.stdin_buffering && this.stdin_pipe {
-        this.stdin_channel._commit();
+        this.stdin_channel.commit();
         this.stdin_buffering = false; // Don't commit again on close again
       }
     }
@@ -580,7 +580,7 @@ module Subprocess {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin_channel._mark();
+        err = ret.stdin_channel.mark();
         if err {
           ret.spawn_error = err; return ret;
         }
