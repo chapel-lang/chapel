@@ -2572,9 +2572,7 @@ void runClang(const char* just_parse_filename) {
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
-    //generateClangGpuLangArgs(clangOtherArgs);
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
-    //clangOtherArgs.push_back(generateClangGpuLangArgs());
 
     std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
     clangOtherArgs.push_back(gpuArch);
