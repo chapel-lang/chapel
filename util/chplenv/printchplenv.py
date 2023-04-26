@@ -46,6 +46,7 @@ from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import unittest
 from sys import stdout, path
 
 from chplenv import *
@@ -482,6 +483,9 @@ def parse_args():
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
 
+    #[hidden]
+    parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
+
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -491,6 +495,16 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
+    # can find and exit.
+    if options.do_unit_tests:
+      this_dir = os.path.realpath(os.path.dirname(__file__))
+      test_loader = unittest.TestLoader()
+      test_suite = test_loader.discover(this_dir, pattern="*.py")
+      test_runner = unittest.TextTestRunner()
+      test_runner.run(test_suite)
+      exit(1)
 
     # Handle --all flag
     if options.all:
