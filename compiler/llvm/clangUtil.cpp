@@ -2344,18 +2344,20 @@ static bool isTargetCpuValid(const char* targetCpu) {
   }
 }
 
-static void generateClangGpuArgs(std::vector<std::string>& args) {
+static std::string generateClangGpuLangArgs() {
+  std::string args = "";
   if (usingGpuLocaleModel()) {
-    args.push_back("-x");
+    args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        args.push_back("cuda");
+        args += "cuda";
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
-        args.push_back("hip");
+        args += "hip";
         break;
     }
   }
+  return args;
 }
 
 // If we are parsing an extern block with clang, we might
@@ -2570,7 +2572,9 @@ void runClang(const char* just_parse_filename) {
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
-    generateClangGpuArgs(clangOtherArgs);
+    //generateClangGpuLangArgs(clangOtherArgs);
+    splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
+    //clangOtherArgs.push_back(generateClangGpuLangArgs());
 
     std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
     clangOtherArgs.push_back(gpuArch);
@@ -4584,20 +4588,14 @@ void makeBinaryLLVM(void) {
     cargs += clangInfo->clangCCArgs[i];
   }
 
-  std::vector<std::string> gpuArgsVec;
-  std::string gpuArgs;
-  generateClangGpuArgs(gpuArgsVec);
-  for( size_t i = 0; i < gpuArgsVec.size(); ++i ) {
-    gpuArgs += " ";
-    gpuArgs += gpuArgsVec[i];
-  }
+  std::string gpuArgs = generateClangGpuLangArgs();
   gpuArgs += " -Wno-unknown-cuda-version";
 
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      std::string cmd = clangCC + gpuArgs + " -c -o " + objFilename + " " +
+      std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
                         inputFilename + " " + cargs;
 
       mysystem(cmd.c_str(), "Compile C File");
