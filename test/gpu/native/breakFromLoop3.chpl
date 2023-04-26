@@ -5,7 +5,7 @@ on here.gpus[0] {
   label outer for j in 1..3 {
     foreach i in 0..10 {
       assertOnGpu();  // expect this to fail at compile time
-      if i==3 then break outer;
+      if i==3 then continue outer;
       A[i] += i;
     }
   }

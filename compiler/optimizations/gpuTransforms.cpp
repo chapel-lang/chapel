@@ -182,6 +182,8 @@ public:
       loopIndices_.end();
   }
 
+  bool isOwnContinue(GotoStmt* g) const;
+
 private:
   bool determineIfShouldErrorIfNotGpuizable();
   bool evaluateLoop();
@@ -300,21 +302,17 @@ bool GpuizableLoop::hasIllegalGotos() {
   collectGotoStmts(this->loop_, gotoStmts);
 
   for_vector (GotoStmt, gotoStmt, gotoStmts) {
-    if (!isDefinedInTheLoop(gotoStmt->gotoTarget(), this->loop_)) {
-      Expr* cur = gotoStmt->gotoTarget()->defPoint;
-      while (cur) {
-        if (cur == this->loop_) {
-          return false;
-        }
-        if (!isDefExpr(cur)) {
-          reportNotGpuizable(cur, "cannot handle this break/continue/return");
-          return true;
-        }
-
-        cur = cur->prev;
-      }
-      reportNotGpuizable(cur, "cannot handle this break/continue/return");
+    if (gotoStmt->gotoTag == GOTO_BREAK || gotoStmt->gotoTag == GOTO_RETURN) {
+      // probably should be INT_FATAL: we should have captured this way earlier
+      reportNotGpuizable(gotoStmt, "break and return disallows execution on GPU");
       return true;
+
+    }
+    if (!isOwnContinue(gotoStmt)) {
+      if (!isDefinedInTheLoop(gotoStmt->gotoTarget(), loop())) {
+        reportNotGpuizable(gotoStmt, "continue statement refers to an outer loop");
+        return true;
+      }
     }
   }
 
@@ -458,6 +456,19 @@ void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
     USR_PRINT(ast, "%s", msg);
     USR_STOP();
   }
+}
+
+bool GpuizableLoop::isOwnContinue(GotoStmt* g) const {
+  if (g->gotoTag == GOTO_CONTINUE) {
+    if (loop()->continueLabelGet() == g->gotoTarget())
+      return true;
+  }
+  else {
+    // TODO this is an error that should be captured earlier in compilation and
+    // globally (not just for GPU locale model)
+    INT_FATAL(g, "break/return should not appear in order-independent loops");
+  }
+  return false;
 }
 
 // ----------------------------------------------------------------------------
@@ -659,13 +670,13 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
 
   for_alist(node, loop->body) {
     bool copyNode = true;
+    int continuesToReturn = 0;
+
     std::vector<SymExpr*> symExprsInBody;
     collectSymExprs(node, symExprsInBody);
 
     std::vector<DefExpr*> defExprsInBody;
     collectDefExprs(node, defExprsInBody);
-
-    std::set<GotoStmt*> breaksInNode;
 
     CallExpr* call = toCallExpr(node);
     if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
@@ -757,9 +768,8 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
               addKernelArgument(sym);
             }
           } else if (GotoStmt* gotoStmt = toGotoStmt(symExpr->parentExpr)) {
-            // this node has a goto in it
-            if (!isDefinedInTheLoop(sym, loop)) {
-              breaksInNode.insert(gotoStmt);
+            if (gpuLoop.isOwnContinue(gotoStmt)) {
+              continuesToReturn += 1;
             }
           } else {
             INT_FATAL("Unexpected symbol expression");
@@ -769,15 +779,23 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     }
 
     if (copyNode) {
-      Expr* nodeOriginal = node->copy();
-      node->replace(nodeOriginal);
+      auto newNode = node->copy();
 
-      for (auto gotoStmt = breaksInNode.begin() ;
-           gotoStmt != breaksInNode.end() ; gotoStmt++) {
-        (*gotoStmt)->replace(new GotoStmt(GOTO_RETURN,
-                                          outlinedFunction->getEpilogueLabel()));
+      if (continuesToReturn > 0) {
+        int handled = 0;
+        for_exprs_postorder(e, newNode) {
+          if (GotoStmt* gotoStmt = toGotoStmt(e)) {
+            if (gotoStmt->gotoTag == GOTO_CONTINUE) {
+              e->replace(new GotoStmt(GOTO_RETURN,
+                                      outlinedFunction->getEpilogueLabel()));
+              handled += 1;
+              if (handled == continuesToReturn) break;
+            }
+          }
+        }
       }
-      outlinedFunction->insertBeforeEpilogue(node);
+
+      outlinedFunction->insertBeforeEpilogue(newNode);
     }
   }
 

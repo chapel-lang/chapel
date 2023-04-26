@@ -5,7 +5,7 @@ on here.gpus[0] {
   foreach i in 0..10 {
     assertOnGpu();
     for j in 1..3 {
-      if j == 3 then break;
+      if j == 3 then continue;
       A[i] += i;
     }
   }
