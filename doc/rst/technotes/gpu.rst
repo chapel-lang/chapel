@@ -303,6 +303,14 @@ improvements in the future.
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
 
+Using C Interoperability
+~~~~~~~~~~~~~~~~~~~~~~~~
+C interoperability on the host side is supported. However, GPU programming
+implies C++ linkage. To handle that, the Chapel compiler compiles the ``.c``
+files passed via the command line and/or ``require`` statements with ``clang -x
+[cuda|hip]``. This implies that some C features may fail to compile if they are
+not supported by the above ``clang`` compilation.
+
 Further Information
 -------------------
 * Please refer to issues with `GPU Support label
