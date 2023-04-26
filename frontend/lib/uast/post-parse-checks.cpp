@@ -195,8 +195,9 @@ enum class ControlFlowModifier {
   BLOCKS,
 };
 
-// The six node types that most mess with control flow are:
+// The seven node types that most mess with control flow are:
 //   * "forall statement"
+//   * "foreach statement"
 //   * "coforall statement"
 //   * "on statement"
 //   * "begin statement"
@@ -206,8 +207,8 @@ enum class ControlFlowModifier {
 static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
                                             const Return* ctrl) {
   if (node->isFunction()) return ControlFlowModifier::ALLOWS;
-  if (node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+  if (node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   return ControlFlowModifier::NONE;
@@ -225,8 +226,8 @@ static ControlFlowModifier nodeAllowsYield(const AstNode* node,
 static ControlFlowModifier nodeAllowsBreak(const AstNode* node,
                                            const Break* ctrl) {
   if (node->isFunction() || // functions block break
-      node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+      node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   if (auto target = ctrl->target()) {
