@@ -56,6 +56,11 @@ class IdAndFlags {
     /** A non-function or a function without parentheses */
     NOT_PARENFUL_FUNCTION = 32,
     // note: if adding something here, also update flagsToString
+    /** A method declaration */
+    METHOD = 64,
+    /** Something other than a method declaration */
+    NOT_METHOD = 128,
+    // note: if adding something here, also update flagsToString
   };
   /** A bit-set of the flags defined in the above enum */
   using Flags = uint16_t;
@@ -71,7 +76,7 @@ class IdAndFlags {
 
  public:
   IdAndFlags(ID id, uast::Decl::Visibility vis,
-             bool isMethodOrField, bool isParenfulFunction)
+             bool isMethodOrField, bool isMethod, bool isParenfulFunction)
     : id_(std::move(id)) {
     // setup the flags
     Flags flags = 0;
@@ -89,6 +94,13 @@ class IdAndFlags {
       flags |= METHOD_FIELD;
     } else {
       flags |= NOT_METHOD_FIELD;
+      flags |= NOT_METHOD;
+    }
+    if (isMethod) {
+      flags |= METHOD;
+      flags |= METHOD_FIELD;
+    } else {
+      flags |= NOT_METHOD;
     }
     if (isParenfulFunction) {
       flags |= PARENFUL_FUNCTION;
@@ -123,6 +135,9 @@ class IdAndFlags {
   }
   bool isMethodOrField() const {
     return (flags_ & METHOD_FIELD) != 0;
+  }
+  bool isMethod() const {
+    return (flags_ & METHOD) != 0;
   }
   bool isParenfulFunction() const {
     return (flags_ & PARENFUL_FUNCTION) != 0;
@@ -165,15 +180,15 @@ class OwnedIdsWithName {
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id, uast::Decl::Visibility vis,
-                   bool isMethodOrField, bool isParenfulFunction)
-    : idv_(IdAndFlags(std::move(id), vis, isMethodOrField, isParenfulFunction)),
+                   bool isMethodOrField, bool isMethod, bool isParenfulFunction)
+    : idv_(IdAndFlags(std::move(id), vis, isMethodOrField, isMethod, isParenfulFunction)),
       flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
       moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
   void appendIdAndFlags(ID id, uast::Decl::Visibility vis,
-                        bool isMethodOrField, bool isParenfulFunction) {
+                        bool isMethodOrField, bool isMethod, bool isParenfulFunction) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
@@ -182,7 +197,7 @@ class OwnedIdsWithName {
       // from idv_.
     }
     auto idv = IdAndFlags(std::move(id), vis,
-                          isMethodOrField, isParenfulFunction);
+                          isMethodOrField, isMethod, isParenfulFunction);
     // add the id passed
     moreIdvs_->push_back(std::move(idv));
     // update the flags
@@ -372,10 +387,10 @@ class BorrowedIdsWithName {
 
   static llvm::Optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
-                     bool isMethodOrField, bool isParenfulFunction,
+                     bool isMethodOrField, bool isMethod, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,
                      IdAndFlags::Flags excludeFlags) {
-    auto idAndVis = IdAndFlags(id, vis, isMethodOrField, isParenfulFunction);
+    auto idAndVis = IdAndFlags(id, vis, isMethodOrField, isMethod, isParenfulFunction);
     if (isIdVisible(idAndVis, filterFlags, excludeFlags)) {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, excludeFlags);
@@ -387,11 +402,12 @@ class BorrowedIdsWithName {
   createWithToplevelModuleId(ID id) {
     auto vis = uast::Decl::Visibility::PUBLIC;
     bool isMethodOrField = false;
+    bool isMethod = false;
     bool isParenfulFunction = false;
     IdAndFlags::Flags filterFlags = 0;
     IdAndFlags::Flags excludeFlags = 0;
     auto maybeIds = createWithSingleId(std::move(id), vis,
-                                       isMethodOrField, isParenfulFunction,
+                                       isMethodOrField, isMethod, isParenfulFunction,
                                        filterFlags, excludeFlags);
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
@@ -956,6 +972,11 @@ enum {
     Skip shadow scopes (for private use)
    */
   LOOKUP_SKIP_SHADOW_SCOPES = 1024,
+
+  /**
+    Include methods in the search results (they are excluded by default).
+   */
+  LOOKUP_METHODS = 2048,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */

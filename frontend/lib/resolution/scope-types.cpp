@@ -39,6 +39,9 @@ std::string IdAndFlags::flagsToString(Flags flags) {
   if ((flags & PARENFUL_FUNCTION) != 0)     ret += "parenful-fn ";
   if ((flags & NOT_PARENFUL_FUNCTION) != 0) ret += "!parenful-fn ";
 
+  if ((flags & METHOD) != 0)     ret += "method ";
+  if ((flags & NOT_METHOD) != 0) ret += "!method ";
+
   return ret;
 }
 
@@ -184,6 +187,7 @@ void Scope::addBuiltin(UniqueString name) {
                     OwnedIdsWithName(ID(),
                                      uast::Decl::PUBLIC,
                                      /*isMethodOrField*/ false,
+                                     /*isMethod*/ false,
                                      /*isParenfulFunction*/ false));
 }
 

@@ -75,6 +75,16 @@ static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
   return false;
 }
 
+static bool isMethod(const AstNode* d, bool atFieldLevel) {
+  if (d != nullptr) {
+    if (auto fn = d->toFunction()) {
+      return atFieldLevel || fn->isMethod();
+    }
+  }
+
+  return false;
+}
+
 static bool isParenfulFunction(const AstNode* d) {
   if (d != nullptr) {
     if (auto fn = d->toFunction()) {
@@ -100,12 +110,14 @@ static void gather(DeclMap& declared,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
                                            isMethodOrField(d, atFieldLevel),
+                                           isMethod(d, atFieldLevel),
                                            isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
     val.appendIdAndFlags(d->id(), visibility,
                          isMethodOrField(d, atFieldLevel),
+                         isMethod(d, atFieldLevel),
                          isParenfulFunction(d));
   }
 }
@@ -458,7 +470,8 @@ struct LookupHelper {
                              UniqueString name,
                              bool onlyInnermost,
                              bool skipPrivateVisibilities,
-                             bool onlyMethodsFields);
+                             bool onlyMethodsFields,
+                             bool includeMethods);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -526,6 +539,7 @@ bool LookupHelper::doLookupInImportsAndUses(
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -576,6 +590,9 @@ bool LookupHelper::doLookupInImportsAndUses(
         if (onlyMethodsFields) {
           newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
         }
+        if (includeMethods) {
+          newConfig |= LOOKUP_METHODS;
+        }
         if (checkExternBlocks) {
           newConfig |= LOOKUP_EXTERN_BLOCKS;
         }
@@ -612,11 +629,13 @@ bool LookupHelper::doLookupInImportsAndUses(
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
         bool isMethodOrField = false; // target must be module/enum, not method
+        bool isMethod = false; // target must be module/enum, not method
         bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
+                                                  isMethod,
                                                   isParenfulFunction,
                                                   filterFlags,
                                                   excludeFilter);
@@ -651,7 +670,8 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
                                          bool skipPrivateVisibilities,
-                                         bool onlyMethodsFields) {
+                                         bool onlyMethodsFields,
+                                         bool includeMethods) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -668,6 +688,10 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyMethodsFields) {
         newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+      }
+
+      if (includeMethods) {
+        newConfig |= LOOKUP_METHODS;
       }
 
       if (trace) {
@@ -829,6 +853,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
     if (externBlockContainsName(context, exbId, name)) {
       // note that this extern block can match 'name'
       bool isMethodOrField = false; // not possible in an extern block
+      bool isMethod = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
@@ -840,6 +865,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
         BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
+                                                isMethod,
                                                 isParenfulFunction,
                                                 filterFlags,
                                                 excludeFlags);
@@ -896,6 +922,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
@@ -905,6 +932,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
   if (onlyMethodsFields) {
     curFilter |= IdAndFlags::METHOD_FIELD;
+  } else if (!includeMethods) {
+    curFilter |= IdAndFlags::NOT_METHOD;
   }
   // Note: curFilter can only represent combinations of positive flags;
   // if it extended, it might no longer be possible to represent
@@ -1010,7 +1039,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     got |= doLookupInAutoModules(scope, name,
                                  onlyInnermost,
                                  skipPrivateVisibilities,
-                                 onlyMethodsFields);
+                                 onlyMethodsFields,
+                                 includeMethods);
     if (onlyInnermost && got) return true;
   }
 

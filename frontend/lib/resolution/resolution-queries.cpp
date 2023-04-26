@@ -222,7 +222,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
-    result = resolvedStmt.byId(id).type();
+    if (resolvedStmt.hasId(id)) {
+      result = resolvedStmt.byId(id).type();
+    } else {
+      // fall back to default value
+      result = QualifiedType();
+    }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
@@ -2700,6 +2705,9 @@ considerCompilerGeneratedCandidates(Context* context,
   CHPL_ASSERT(tfs);
 
   // check if the initial signature matches
+  if (tfs->id().symbolPath() == "broken.R") {
+    debuggerBreakHere();
+  }
   auto faMap = FormalActualMap(tfs->untyped(), ci);
   if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
     return;
@@ -2753,6 +2761,10 @@ lookupCalledExpr(Context* context,
 
   if (ci.isMethodCall()) {
     config |= LOOKUP_ONLY_METHODS_FIELDS;
+  }
+
+  if (ci.isOpCall()) {
+    config |= LOOKUP_METHODS;
   }
 
   UniqueString name = ci.name();
