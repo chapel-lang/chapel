@@ -1673,10 +1673,6 @@ static void setGPUFlags() {
                " This may impact debuggability. To suppress this warning,"
                " compile with --no-checks explicitly");
 
-      // That warning above is a white lie for CHPL_GPU_CODEGEN=none. In that
-      // mode, we still enable checks. It can help with debugging. I chose to
-      // keep issuing the warning to make things as close to actual GPU codegen
-      // as possible. Also, that warning appears in a ton of .good files.
       // if (doGpuCodegen()) { needs chpl_nodeID fix
         fNoChecks = true;
         fNoNilChecks    = true;
