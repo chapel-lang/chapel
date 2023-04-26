@@ -302,18 +302,12 @@ bool GpuizableLoop::hasIllegalGotos() {
   collectGotoStmts(this->loop_, gotoStmts);
 
   for_vector (GotoStmt, gotoStmt, gotoStmts) {
-    if (gotoStmt->gotoTag == GOTO_BREAK || gotoStmt->gotoTag == GOTO_RETURN) {
-      // probably should be INT_FATAL: we should have captured this way earlier
-      reportNotGpuizable(gotoStmt, "break and return disallows execution on GPU");
-      return true;
+    if (isOwnContinue(gotoStmt)) continue;
+    if (isDefinedInTheLoop(gotoStmt->gotoTarget(), loop())) continue;
 
-    }
-    if (!isOwnContinue(gotoStmt)) {
-      if (!isDefinedInTheLoop(gotoStmt->gotoTarget(), loop())) {
-        reportNotGpuizable(gotoStmt, "continue statement refers to an outer loop");
-        return true;
-      }
-    }
+    // hopefully break/return will already have been blocked at parse time
+    reportNotGpuizable(gotoStmt, "continue statement refers to an outer loop");
+    return true;
   }
 
   return false;
@@ -462,11 +456,6 @@ bool GpuizableLoop::isOwnContinue(GotoStmt* g) const {
   if (g->gotoTag == GOTO_CONTINUE) {
     if (loop()->continueLabelGet() == g->gotoTarget())
       return true;
-  }
-  else {
-    // TODO this is an error that should be captured earlier in compilation and
-    // globally (not just for GPU locale model)
-    INT_FATAL(g, "break/return should not appear in order-independent loops");
   }
   return false;
 }
