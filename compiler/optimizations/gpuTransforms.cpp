@@ -171,6 +171,8 @@ class GpuizableLoop {
   std::vector<Symbol*> lowerBounds_;
   bool shouldErrorIfNotGpuizable_;
 
+  std::vector<CallExpr*> gpuAssertions_; // should this be a single CallExpr* ?
+
 public:
   GpuizableLoop(BlockStmt* blk);
 
@@ -183,6 +185,10 @@ public:
     return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
       loopIndices_.end();
   }
+
+  void addGpuAssertion(CallExpr* call);
+  void relocateGpuAssertions();
+
 
 private:
   bool determineIfShouldErrorIfNotGpuizable();
@@ -426,6 +432,28 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
+void GpuizableLoop::addGpuAssertion(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_ASSERT_ON_GPU));
+
+  if (gpuAssertions_.size() > 0) {
+    USR_WARN(loop(), "This loop contains multiple 'assertOnGpu()' calls");
+  }
+  gpuAssertions_.push_back(call);
+}
+
+void GpuizableLoop::relocateGpuAssertions() {
+  bool movedOne = false;
+  for_vector(CallExpr, call, gpuAssertions_) {
+    if (movedOne) {
+      call->remove();
+    }
+    else {
+      loop()->insertBefore(call->remove());
+      movedOne = true;
+    }
+  }
+}
+
 void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
   if(this->shouldErrorIfNotGpuizable_) {
     USR_FATAL_CONT(loop_, "Loop containing assertOnGpu() is not eligible for execution on a GPU");
@@ -447,7 +475,7 @@ void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
 //    - Passes in any variables that are declared outside of the loop as
 //      parameters to this new function.
 class GpuKernel {
-  const GpuizableLoop &gpuLoop;
+  GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
   std::vector<Symbol*> kernelActuals_;
@@ -458,7 +486,7 @@ class GpuKernel {
   public:
   SymExpr* blockSize_;
 
-  GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
+  GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
   FnSymbol* fn() const { return fn_; }
   const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
@@ -482,7 +510,7 @@ class GpuKernel {
   Symbol* addLocalVariable(Symbol* symInLoop);
 };
 
-GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
+GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
   , blockSize_(nullptr)
@@ -650,6 +678,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       // a slight optimization.
       copyNode = false;
 
+      gpuLoop.addGpuAssertion(call);
       loop->insertBefore(node->remove());
     }
     else if (DefExpr* def = toDefExpr(node)) {
@@ -941,7 +970,7 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   }
 }
 
-static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
+static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
   SET_LINENO(gpuLoop.loop());
 
   // Construction of the GpuKernel will create the outlined function
@@ -963,6 +992,7 @@ static void outlineGPUKernels() {
         GpuizableLoop gpuLoop(loop);
         if (gpuLoop.isEligible()) {
           outlineEligibleLoop(fn, gpuLoop);
+          gpuLoop.relocateGpuAssertions();
         }
       }
     }
