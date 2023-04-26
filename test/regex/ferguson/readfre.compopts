@@ -1,2 +1,2 @@
--st=string
--st=bytes
+-st=string -sfileOffsetWithoutLocking=true
+-st=bytes -sfileOffsetWithoutLocking=true
