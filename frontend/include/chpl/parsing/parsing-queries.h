@@ -214,6 +214,33 @@ void setModuleSearchPath(Context* context,
                          std::vector<UniqueString> searchPath);
 
 /**
+  Return a list of paths to be prepended to the internal module path. This is
+  likely to be empty unless set using --prepend-internal-module-dir
+*/
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context);
+
+/**
+  Set a list of paths to be prepended to the internal module path. This is
+  typically set using the compiler flag --prepend-internal-module-dir
+*/
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
+  Return a list of paths to be prepended to the standard module path. This is
+  likely to be empty unless set using --prepend-standard-module-dir
+*/
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context);
+
+
+/**
+  Set a list of paths to be prepended to the standard module path. This is
+  typically set using the compiler flag --prepend-standard-module-dir
+*/
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
   Return the current internal module path, i.e. CHPL_HOME/modules/internal/
  */
 UniqueString internalModulePath(Context* context);

@@ -1317,6 +1317,18 @@ void Visitor::visit(const Continue* node) {
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
   if (modules.isEmpty()) return true;
+  // check for prepended internal module paths that may have come in from
+  // the command line flag --prepend-internal-module-dir
+  auto prependedIntPaths = chpl::parsing::prependedInternalModulePath(context);
+  for (auto& path : prependedIntPaths) {
+    if (filepath.startsWith(path)) return false;
+  }
+  // check for prepended standard module paths that may have come in from
+  // the command line flag --prepend-standard-module-dir
+  auto prependedStdPaths = chpl::parsing::prependedStandardModulePath(context);
+  for (auto& path : prependedStdPaths) {
+    if (filepath.startsWith(path)) return false;
+  }
   bool ret = !filepath.startsWith(modules);
   return ret;
 }
