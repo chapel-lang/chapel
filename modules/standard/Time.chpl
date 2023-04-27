@@ -348,19 +348,29 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return unixEpoch.getDate() + td;
   }
 
-  /* The date that is `timestamp` seconds from the epoch */
+  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'date.createFromTimestamp' instead")
   proc type date.fromTimestamp(timestamp) {
+    return date.createFromTimestamp(timestamp);
+  }
+
+  /* The date that is `timestamp` seconds from the epoch */
+  proc type date.createFromTimestamp(timestamp: real) {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timeDelta(seconds=sec, microseconds=us);
     return unixEpoch.getDate() + td;
   }
 
-  /* The `date` that is `ord` days from 1-1-0001 */
+  @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
   proc type date.fromOrdinal(ord) {
-    if ord < 0 || ord > 1+date.max.toOrdinal() then
-      halt("ordinal (", ord, ") out of range");
-    const (y,m,d) = ordToYmd(ord);
+    return date.createFromOrdinal(ord);
+  }
+
+  /* The `date` that is `ordinal` days from 1-1-0001 */
+  proc type date.createFromOrdinal(ordinal: int) {
+    if ordinal < 0 || ordinal > 1+date.max.toOrdinal() then
+      halt("ordinal (", ordinal, ") out of range");
+    const (y,m,d) = ordToYmd(ordinal);
     return new date(y,m,d);
   }
 
@@ -554,7 +564,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Operators on date values */
   pragma "no doc"
   operator date.+(d: date, t: timeDelta): date {
-    return date.fromOrdinal(d.toOrdinal() + t.days);
+    return date.createFromOrdinal(d.toOrdinal() + t.days);
   }
 
   pragma "no doc"
@@ -564,7 +574,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   pragma "no doc"
   operator date.-(d: date, t: timeDelta): date {
-    return date.fromOrdinal(d.toOrdinal() - t.days);
+    return date.createFromOrdinal(d.toOrdinal() - t.days);
   }
 
   pragma "no doc"
@@ -1129,14 +1139,25 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return unixEpoch + td;
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch */
+  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
   proc type dateTime.fromTimestamp(timestamp: real) {
-    return dateTime.fromTimestamp(timestamp, nil);
+    return dateTime.createFromTimestamp(timestamp, nil);
+  }
+
+  @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
+  proc type dateTime.fromTimestamp(timestamp: real,
+                                   in tz: shared Timezone?) {
+    return dateTime.createFromTimestamp(timestamp, tz);
+  }
+
+  /* The `dateTime` that is `timestamp` seconds from the epoch */
+  proc type dateTime.createFromTimestamp(timestamp: real) {
+    return dateTime.createFromTimestamp(timestamp, nil);
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch */
   @unstable("tz is unstable; its type may change in the future")
-  proc type dateTime.fromTimestamp(timestamp: real,
+  proc type dateTime.createFromTimestamp(timestamp: real,
                                    in tz: shared Timezone?) {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
@@ -1146,19 +1167,29 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
                           minute=lt.tm_min,     second=lt.tm_sec,
                           microsecond=t(1));
     } else {
-      var dt = dateTime.utcFromTimestamp(timestamp);
+      var dt = dateTime.createUtcFromTimestamp(timestamp);
       return (dt + tz!.utcOffset(dt)).replace(tz=tz);
     }
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
+  @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
   proc type dateTime.utcFromTimestamp(timestamp) {
+    return dateTime.createUtcFromTimestamp(timestamp);
+  }
+
+  /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
+  proc type dateTime.createUtcFromTimestamp(timestamp) {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
+  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'dateTime.createFromOrdinal' instead")
   proc type dateTime.fromOrdinal(ordinal) {
-    return dateTime.combine(date.fromOrdinal(ordinal), new time());
+    return dateTime.createFromOrdinal(ordinal);
+  }
+
+  /* The `dateTime` that is `ordinal` days from 1-1-0001 */
+  proc type dateTime.createFromOrdinal(ordinal: int) {
+    return dateTime.combine(date.createFromOrdinal(ordinal), new time());
   }
 
   /* Form a `dateTime` value from a given `date` and `time` */
@@ -1521,7 +1552,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return dateTime.combine(date.fromOrdinal(dt.getDate().toOrdinal()+adddays),
+    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1562,7 +1593,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       subDays += 1;
       newhour += 24;
     }
-    return dateTime.combine(date.fromOrdinal(dt.getDate().toOrdinal()-subDays),
+    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));

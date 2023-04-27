@@ -51,7 +51,7 @@ module CheckHttpSetOpt {
     curl_easy_getinfo(getCurlHandle(urlreader), CURLINFO_FILETIME,
 		      c_ptrTo(time));
 
-    writeln("Remote Time ", dateTime.utcFromTimestamp(time));
+    writeln("Remote Time ", dateTime.createUtcFromTimestamp(time));
 
     stderr.flush();
     stdout.flush();
