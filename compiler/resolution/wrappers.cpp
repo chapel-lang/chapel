@@ -2268,6 +2268,12 @@ static FnSymbol* promotionWrap(FnSymbol* fn,
     resolveSignature(retval);
 
     addCache(promotionsCache, promotion.fn, promotion.wrapperFn, &promotion.subs);
+  } else {
+    // Because we have to generate the deprecation/unstable warnings when the
+    // promotion wrapper is created to avoid duplicate warnings, we want to also
+    // generate the warnings when we re-use the cached version
+    promotion.fn->maybeGenerateDeprecationWarning(info.call);
+    promotion.fn->maybeGenerateUnstableWarning(info.call);
   }
 
   addSetIteratorShape(promotion, info.call);
