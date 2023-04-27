@@ -2371,6 +2371,12 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   FnSymbol*  retval     = promotion.wrapperFn;
   FnSymbol*  fn         = promotion.fn;
 
+  // Check against the deprecation/unstable warning here, otherwise we either:
+  // A. won't generate the warning or
+  // B. will generate it too many times
+  fn->maybeGenerateDeprecationWarning(info.call);
+  fn->maybeGenerateUnstableWarning(info.call);
+
   BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
                                        fastFollowerChecks);
   retval->insertAtTail(loop);
