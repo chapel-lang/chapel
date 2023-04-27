@@ -129,6 +129,32 @@ module Math {
     return chpl_acosh(z);
   }
 
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc asin(x: real(64)): real(64) {
+    return chpl_asin(x);
+  }
+
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc asin(x : real(32)): real(32) {
+    return chpl_asin(x);
+  }
+
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(64)): complex(64) {
+    return chpl_asin(z);
+  }
+
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(128)): complex(128) {
+    return chpl_asin(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
