@@ -77,8 +77,8 @@ proc main {
     writeln((A1, A2));
   }
   { writeln("Ranges");
-    var r1 = 1..20 by 2;
-    var r2 = 1..10 by -1;
+    var r1 = ( 1..20 by 2  ) : range(strides=strideKind.any);
+    var r2 = ( 1..10 by -1 ) : range(strides=strideKind.any);
     writeln((r1, r2));
     swap(r1, r2);
     writeln((r1, r2));

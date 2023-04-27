@@ -49,7 +49,7 @@ proc test_readahead(size:int, const reverse:bool, const misses:int) {
   }
 
   on Locales[1] {
-    var r = 0..#size by -1;
+    var r = ( 0..#size by -1 ): range(strides=strideKind.any);
     if reverse == false then
       r = 0..#size;
 

@@ -911,14 +911,43 @@ static Symbol* substitutionForField(Symbol* field, SymbolMap& subs) {
   return retval;
 }
 
-// Deprecated by Vass in 1.31: given `range(boundedType=...),
-// redirect it to `range(bounds=...)`, with a deprecation warning.
+static void replaceStridesWithStridableSE(SymExpr* se) {
+  if      (se->symbol() == gTrue)  se->replace(new SymExpr(gStrideAny));
+  else if (se->symbol() == gFalse) se->replace(new SymExpr(gStrideOne));
+  else INT_FATAL(se, "need to handle a non-param boolean");
+}
+
+// Deprecated by Vass in 1.31: with a deprecation warning, redirect
+// `range(boundedType=...)` or `range(stridable=...)` to
+// `range(bounds=...)`      or `range(strides=...)`;
+// `rect dom or arr class(stridable=...)` to `(strides=...)`
 static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
                                    Symbol*& field) {
-  if (!strcmp(ne->name, "boundedType") && at->symbol->hasFlag(FLAG_RANGE)) {
+  if ((!strcmp(ne->name, "boundedType") || !strcmp(ne->name, "stridable"))
+      && at->symbol->hasFlag(FLAG_RANGE))
+  {
+   if (!strcmp(ne->name, "boundedType")) {
     USR_WARN(ne,
       "range.boundedType is deprecated; please use '.bounds' instead");
-    field = at->getField("bounds", false);
+    field = at->getField("bounds");
+   }
+   else { // "stridable"
+#if 0 //RSDW
+    USR_WARN(ne,
+      "range.stridable is deprecated; please use '.strides' instead");
+#endif
+    field = at->getField("strides");
+    replaceStridesWithStridableSE(toSymExpr(ne->actual));
+   }
+  } else if (!strcmp(ne->name, "stridable")) {
+    if (AggregateType* base = baseRectDsiParent(at)) {
+#if 0 //RSDW
+      USR_WARN(ne,
+            "domain.stridable is deprecated; please use '.strides' instead");
+#endif
+      field = base->getField("strides");
+      replaceStridesWithStridableSE(toSymExpr(ne->actual));
+    }
   }
 }
 
@@ -1198,6 +1227,31 @@ static Type* resolveFieldTypeForInstantiation(Symbol* field, CallExpr* call, con
   return ret;
 }
 
+static bool hasStrideFieldToAdjust(TypeSymbol* ts) {
+  if (ts->hasFlag(FLAG_RANGE)) return true;
+  if (!strcmp(ts->name, "BaseRectangularDom") ||
+      !strcmp(ts->name, "BaseArrOverRectangularDom"))
+    return ts->getModule()->modTag == MOD_INTERNAL;
+  return false;
+}
+
+// Deprecated by Vass in 1.31: given `range(..., aBoolValue)`,
+// redirect it to `range(..., boundKind.one|any)`, with a deprecation warning.
+static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
+                                   Symbol* field, Symbol*& val) {
+  if (hasStrideFieldToAdjust(at->symbol) && !strcmp(field->name, "strides")
+      && (val->type == dtBool)) {
+#if 0 //RSDW
+    USR_WARN(call, "%s(..., s) is deprecated when s is a boolean;"
+             " please use values of the type 'enum strideKind' for s instead",
+             at->symbol->hasFlag(FLAG_RANGE) : "range" : "domain");
+#endif
+    if (val == gTrue) val = gStrideAny;
+    else if (val == gFalse) val = gStrideOne;
+    else INT_FATAL(call, "need to handle a non-param boolean");
+  }
+}
+
 static void checkTypesForInstantiation(AggregateType* at, CallExpr* call, const char* callString, Symbol* field, Symbol* val) {
   const char* typeSignature = at->typeSignature;
   if (field->hasFlag(FLAG_PARAM)) {
@@ -1274,6 +1328,7 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
         if (val != gUninstantiated) {
           retval->genericField = index;
 
+          checkRangeDeprecations(this, call, field, val);  // may update 'val'
           checkTypesForInstantiation(this, call, callString, field, val);
 
           retval = retval->getInstantiation(val, index, insnPoint);
@@ -2156,6 +2211,131 @@ bool AggregateType::isFieldInThisClass(const char* name) const {
   return retval;
 }
 
+
+// support for deprecation by Vass in 1.31 to implement #17131
+// here through addRangeDeprecationClone(...)
+
+// Return the parent class if it is BaseRectangularDom or
+// BaseArrOverRectangularDom, otherwise return nil.
+AggregateType* baseRectDsiParent(AggregateType* ag) {
+  if (ag->aggregateTag != AGGREGATE_CLASS)
+    return nullptr;
+
+  while (AggregateType* parentAG = ag->dispatchParents.n == 0 ?
+           nullptr : ag->dispatchParents.v[0])
+  {
+    TypeSymbol* psym = parentAG->symbol;
+
+    if (psym->hasFlag(FLAG_OBJECT_CLASS))
+      return nullptr;
+
+    if (   (!strcmp(psym->name, "BaseArrOverRectangularDom") ||
+            !strcmp(psym->name, "BaseRectangularDom")         )
+        && psym->getModule()->modTag == MOD_INTERNAL)
+      return parentAG;
+
+    ag = parentAG; // continue searching
+  }
+
+  return nullptr;  // dummy
+}
+
+
+// Traverse parents until we get to class BaseRectangularDom or
+// BaseArrOverRectangularDom, then return its field 'strides'.
+static Symbol* stridesFieldOfBaseRectParent(AggregateType* ag) {
+  if (AggregateType* parent = baseRectDsiParent(ag))
+    return parent->getField("strides");
+  else
+    return nullptr;
+}
+
+// Returns stridesFieldOfBaseRectParent() if 'use' is in the context
+// of a DSI class
+Symbol* stridesFieldInDsiContext(Expr* use) {
+  if (TypeSymbol* parentSym = toTypeSymbol(use->parentSymbol))
+    if (AggregateType* ag = toAggregateType(parentSym->type))
+      return stridesFieldOfBaseRectParent(ag);
+  return nullptr;
+}
+
+AggregateType* dsiTypeBeingConstructed(CallExpr* parentCall) {
+  if (SymExpr* callee = toSymExpr(parentCall->baseExpr))
+    if (TypeSymbol* calleeTS = toTypeSymbol(callee->symbol()))
+      if (AggregateType* calleeAG =
+          toAggregateType(canonicalClassType(calleeTS->type)))
+        return baseRectDsiParent(calleeAG);
+  return nullptr;
+}
+
+// Same as baseRectDsiParent(), plus returns 'ag'
+// if it is BaseRectangularDom or BaseArrOverRectangularDom,
+static AggregateType* baseRectDsiParentOrSelf(AggregateType* ag) {
+  TypeSymbol* psym = ag->symbol;
+  if (   (!strcmp(psym->name, "BaseArrOverRectangularDom") ||
+          !strcmp(psym->name, "BaseRectangularDom")         )
+      && psym->getModule()->modTag == MOD_INTERNAL)
+    return ag;
+  else
+    return baseRectDsiParent(ag);
+}
+
+// Replaces all uses of stridesFml2 with sblFormal.
+static void replaceStridesWithStridableArg(ArgSymbol* stridesFml2,
+                                           ArgSymbol* sblFormal, bool isBase) {
+  if (isBase) {
+    // For BaseRectangularDom and BaseArrOverRectangularDom, there must be
+    // a single use of stridesFml2 in a call(":", stridesFml2, strideKind).
+    // We replace it with a call("chpl_strideKind", sblFormal).
+    SymExpr* use = stridesFml2->getSingleUse();
+    CallExpr* parent = toCallExpr(use->parentExpr);
+    INT_ASSERT(use, parent->isNamedAstr(astrScolon));
+    parent->replace(new CallExpr("chpl_strideKind", sblFormal));
+
+  } else {
+    for_SymbolSymExprs(se, stridesFml2) {
+      SymExpr* replSE = new SymExpr(sblFormal);
+      // if 'chpl_stridable(strides)', replace all of it with 'stridable'
+      // if 'strides=strides', replace it with 'stridable=stridable'
+      CallExpr* pCall = toCallExpr(se->parentExpr);
+      NamedExpr* pNamed = toNamedExpr(se->parentExpr);
+      if (pCall != nullptr && pCall->isNamed("chpl_stridable"))
+        pCall->replace(replSE);
+      else if (pNamed != nullptr && !strcmp(pNamed->name, "strides"))
+        pNamed->replace(new NamedExpr("stridable", replSE));
+      else
+        se->replace(replSE);
+    }
+  }
+}
+
+// Supports deprecation by Vass in 1.31 to implement #17131:
+// for BaseRectangularDom, BaseArrOverRectangularDom, and their children,
+// given fn1=init(..., strides, ...), adds fn2=init(..., stridable:bool, ...).
+static void addRangeDeprecationClone(AggregateType* base, AggregateType* cur,
+                                     FnSymbol* fn1) {
+  // the position of the 'stride' field
+  int stridesPos = strcmp(base->symbol->name, "BaseRectangularDom") ? 10 : 5;
+  ArgSymbol* stridesFml1 = fn1->getFormal(stridesPos);
+
+  // something is unexpected, bail out
+  if (strcmp(stridesFml1->name, "strides") ||
+      stridesFml1->type != gStrideAny->type ) return;
+
+  FnSymbol* fn2 = fn1->copy();
+  fn1->defPoint->insertAfter(new DefExpr(fn2));
+
+  ArgSymbol* stridesFml2 = fn2->getFormal(stridesPos);
+  INT_ASSERT(!strcmp(stridesFml2->name, "strides") &&
+             stridesFml2->type == gStrideAny->type);
+
+  // replace 'strides' with 'stridable' throughout
+  ArgSymbol* sblFormal = new ArgSymbol(INTENT_PARAM, "stridable", dtBool);
+  stridesFml2->defPoint->replace(new DefExpr(sblFormal));
+  replaceStridesWithStridableArg(stridesFml2, sblFormal, base==cur);
+  cur->methods.add(fn2);
+}
+
 void AggregateType::buildDefaultInitializer() {
   if (builtDefaultInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
@@ -2207,6 +2387,10 @@ void AggregateType::buildDefaultInitializer() {
         checkUseBeforeDefs(fn);
 
         methods.add(fn);
+
+        if (AggregateType* base = baseRectDsiParentOrSelf(this))
+          addRangeDeprecationClone(base, this, fn);
+
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }

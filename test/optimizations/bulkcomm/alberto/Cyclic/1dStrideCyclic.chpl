@@ -1,6 +1,7 @@
 use CyclicDist;
 
 config const n=10;
+assert(n > 0); // relied upon in the cast 'n:uint'
 const S = {1..n};
 const BDom: domain(1) dmapped Cyclic(startIdx=S.low)=S;
 //const BDist = new dmap(new Block(boundingBox=S));
@@ -55,8 +56,8 @@ if (Dom2.size == Dom1.size)
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
-Dom1 = {1..n by n};
-Dom2 = {1..n by 2*n};
+Dom1 = {1..n by n:uint};
+Dom2 = {1..n by 2*n:uint};
 writeln("Example 4: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
 if (Dom2.size == Dom1.size)
 {
@@ -74,8 +75,8 @@ if (Dom2.size == Dom1.size)
 	for (a,b) in zip(A[Dom1],B[Dom2]) do if (a!=b) then {writeln("ERROR!!!!");}
 }
 
-Dom1 = {2..n by n};
-Dom2 = {2..n by 2*n};
+Dom1 = {2..n by n:uint};
+Dom2 = {2..n by 2*n:uint};
 writeln("Example 6: B",Dom2,"(",Dom2.size,") = A",Dom1,"(",Dom1.size,")");
 if (Dom2.size == Dom1.size)
 {

@@ -1,5 +1,5 @@
 Error Caught in Array Others Diff Dim
-AssertionError: assert failed - First element is of type [domain(3,int(64),false)] real(64) and Second is of type [domain(2,int(64),false)] real(64)
+AssertionError: assert failed - First element is of type [domain(3,int(64),one)] real(64) and Second is of type [domain(2,int(64),one)] real(64)
 ================================================================================
 Error Caught in Array Others Equal 1D
 AssertionError: Both Array are equal
@@ -53,7 +53,7 @@ First larger element in second tuple(3*int(64)) is at index 2:
 
 ================================================================================
 Error Caught in tuple list
-AssertionError: assert failed - First element is of type [domain(1,int(64),false)] int(64) and Second is of type 2*int(64)
+AssertionError: assert failed - First element is of type [domain(1,int(64),one)] int(64) and Second is of type 2*int(64)
 ================================================================================
 Error Caught in Unequal length String
 AssertionError: assert failed - Strings are not of same length

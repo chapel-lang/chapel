@@ -154,6 +154,9 @@ void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);
+// support for deprecation by Vass in 1.31 to implement #17131
+bool replacedStridable(CallExpr* parentCall, const char* name,
+                       UnresolvedSymExpr* use);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

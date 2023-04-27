@@ -2725,7 +2725,7 @@ void Resolver::exit(const Range* range) {
       DefaultsPolicy::USE_DEFAULTS);
   CHPL_ASSERT(resolvedFields.fieldName(0) == "idxType");
   CHPL_ASSERT(resolvedFields.fieldName(1) == "bounds");
-  CHPL_ASSERT(resolvedFields.fieldName(2) == "stridable");
+  CHPL_ASSERT(resolvedFields.fieldName(2) == "strides");
 
   // Determine index type, either via inference or by using the default.
   QualifiedType idxType;

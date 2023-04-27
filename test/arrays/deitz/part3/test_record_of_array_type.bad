@@ -1,1 +1,1 @@
-test_record_of_array_type.chpl:3: error: cannot default initialize 'x' because field 't' of type '[domain(1,int(64),false)] real(64)' does not have enough information to be default initialized
+test_record_of_array_type.chpl:3: error: cannot default initialize 'x' because field 't' of type '[domain(1,int(64),one)] real(64)' does not have enough information to be default initialized

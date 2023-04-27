@@ -1012,6 +1012,13 @@ static AggregateType* getReceiverClassType(FnSymbol* fn) {
   return nullptr;
 }
 
+static bool isDsiNewRectangularDom(FnSymbol* fn) {
+  if (!strcmp(fn->name, "dsiNewRectangularDom"))
+    if (AggregateType* recv = getReceiverClassType(fn))
+      return isDistImplType(recv);
+  return false;
+}
+
 static void findFunctionsProbablyMatching(TypeToNameToFns & map,
                                           FnSymbol* theFn,
                                           AggregateType* ct,
@@ -1265,6 +1272,9 @@ static void checkMethodsOverride() {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
+               if (isDsiNewRectangularDom(fn)) {
+                // allow, for deprecation by Vass in 1.31 to implement #17131
+               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword present but "
                                     "no superclass method matches signature "
                                     "to override",
@@ -1276,7 +1286,7 @@ static void checkMethodsOverride() {
                   FnSymbol* pfn = matches[0];
                   printMismatchNote(pfn, fn);
                 }
-
+               }
               } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword required for method "
                                    "matching signature of superclass method",
