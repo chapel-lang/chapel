@@ -251,6 +251,9 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     return ltLoc != max(int);
     
   } else if searchAlg == Foreach {
+    // this requires reduce intents. The solution here is potentially race-y.
+    // Making it use a `for` instead of `foreach` results in what looks like an
+    // infinite loop. This mode is commented out in the compopts
     foreach i in inds {
       if buff[i] == '>'.toByte() {
         ltLoc = i;
