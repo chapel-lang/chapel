@@ -28,6 +28,7 @@
 
 #ifdef HAVE_LLVM
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
@@ -35,6 +36,7 @@
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
+#include "clang/Frontend/TextDiagnosticBuffer.h"
 #include "clang/Frontend/TextDiagnosticPrinter.h"
 #include "clang/Serialization/ASTReader.h"
 
@@ -258,9 +260,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     }
 
     auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
-    auto diagClient =
-        new clang::TextDiagnosticPrinter(llvm::errs(), &*diagOptions);
-
+    auto diagClient = new clang::TextDiagnosticBuffer();
     auto clangDiags =
       clang::CompilerInstance::createDiagnostics(diagOptions.release(),
                                                  diagClient,
@@ -279,6 +279,21 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
       context->error(externBlockId, "error running clang on extern block");
+
+      // save Clang errors warnings to context
+      // all warnings should be treated as errors
+      CHPL_ASSERT(diagClient->getNumWarnings() == 0);
+      for (auto it = diagClient->err_begin(); it != diagClient->err_end();
+           it++) {
+        const clang::SourceLocation sourceLoc = (*it).first;
+        const clang::SourceManager& sm = Clang->getSourceManager();
+        const Location externErrorLoc = Location(
+            UniqueString::get(context, sm.getFilename(sourceLoc).str()),
+            sm.getExpansionLineNumber(sourceLoc),
+            sm.getExpansionColumnNumber(sourceLoc));
+        context->error(externErrorLoc, "error: %s", (*it).second.c_str());
+      }
+
       ok = false;
     }
 
