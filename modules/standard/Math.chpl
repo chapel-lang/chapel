@@ -103,6 +103,32 @@ module Math {
     return chpl_acos(z);
   }
 
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
+  inline proc acosh(x: real(64)): real(64) {
+    return chpl_acosh(x);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
+  inline proc acosh(x : real(32)): real(32) {
+    return chpl_acosh(x);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(64)): complex(64) {
+    return chpl_acosh(z);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(128)): complex(128) {
+    return chpl_acosh(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);

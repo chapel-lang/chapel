@@ -310,35 +310,71 @@ module AutoMath {
   }
 
 
-  /* Returns the inverse hyperbolic cosine of the argument `x`.
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc acosh(x: real(64)): real(64) {
+    return chpl_acosh(x);
+  }
 
-     It is an error if `x` is less than 1.
-  */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc acosh(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_acosh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acosh(x: real(64)): real(64);
+    return acosh(x);
+  }
 
-  /* Returns the inverse hyperbolic cosine of the argument `x`.
-
-     It is an error if `x` is less than 1.
-  */
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(x : real(32)): real(32) {
+    return chpl_acosh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc acoshf(x: real(32)): real(32);
     return acoshf(x);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(64)): complex(64) {
+    return chpl_acosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacoshf(z: complex(64)): complex(64);
     return cacoshf(z);
   }
 
-  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(128)): complex(128) {
+    return chpl_acosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacosh(z: complex(128)): complex(128);
