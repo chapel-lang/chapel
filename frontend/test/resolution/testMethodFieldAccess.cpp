@@ -717,12 +717,13 @@ static void testExample5a() {
                   proc r.foo { }
                   foo; // is this referring to the int or the parenless method?
                        // 1.29 refers to the local variable
+                       // Should it be ambiguous?
                 }
               }
            )"""",
            "M.test",
            "M.test@4",
-           "" /* ambiguity */);
+           "M.test@3" /* match 1.29 behavior */);
 }
 
 static void testExample6() {
@@ -1049,12 +1050,13 @@ static void testExample20() {
                   foo; // does it call the method or non-method?
                        // 1.29 calls A.r.method.foo
                        // (the non-method)
+                       // Should it be ambiguous?
                 }
               }
            )"""",
            "A.test",
            "A.test@2",
-           "" /* ambiguity error */);
+           "A.test.foo#1" /* match 1.29 behavior */);
 }
 
 int main() {

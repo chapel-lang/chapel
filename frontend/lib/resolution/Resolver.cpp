@@ -2289,6 +2289,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       return;
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
+      result.setIsPrimitive(true);
       result.setToId(id);
       result.setType(type);
       return;
@@ -2316,6 +2317,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       }
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+      ResolvedExpression& r = byPostorder.byAst(ident);
       if (!scopeResolveOnly) {
         // resolve a parenless call
         std::vector<CallInfoActual> actuals;
@@ -2331,21 +2333,32 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                                                 inScope, poiScope,
                                                 methodReceiverType());
           // save the most specific candidates in the resolution result
-          ResolvedExpression& r = byPostorder.byAst(ident);
           handleResolvedCall(r, ident, ci, c);
         } else {
           // as above, but don't consider method scopes
           auto c = resolveGeneratedCall(context, ident, ci,
                                         inScope, poiScope);
           // save the most specific candidates in the resolution result
-          ResolvedExpression& r = byPostorder.byAst(ident);
           handleResolvedCall(r, ident, ci, c);
         }
+      } else {
+        // Possibly a "compatibility hack" with production: we haven't checked
+        // whether the call is valid, but the production scope resolver doesn't
+        // care and assumes `ident` points to this parenless function. Setting
+        // the toId also helps determine if this is a method call and should
+        // have `this` inserted, as well as wehther or not to turn this
+        // into a parenless call.
+        validateAndSetToId(r, ident, id);
       }
       return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
-      return;
+      // Possibly a "compatibility hack" with production: we haven't checked
+      // whether the call is valid, but the production scope resolver doesn't
+      // care and assumes `ident` points to this function. Setting
+      // the toId also helps determine if this is a method call
+
+      // Fall through to validateAndSetToId
     }
 
     validateAndSetToId(result, ident, id);
