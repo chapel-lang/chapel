@@ -27,15 +27,15 @@ GPU_TYPES = {
 
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
     if suggestNone:
-        msg += " You can use the 'none' GPU layer by setting "
-        msg += "'CHPL_GPU_CODEGEN=none'."
+        msg += " To avoid this issue, you can have GPU code run on the CPU "
+        msg += "by setting 'CHPL_GPU_CODEGEN=none'."
 
     if allowExempt and os.environ.get('CHPLENV_GPU_REQ_ERRS_AS_WARNINGS'):
         warning(msg)
         return
 
     if allowExempt:
-        msg += " You can turn this error into a warning by setting "
+        msg += " To turn this error into a warning set "
         msg += "CHPLENV_GPU_REQ_ERRS_AS_WARNINGS."
     error(msg)
 

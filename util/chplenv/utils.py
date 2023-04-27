@@ -124,8 +124,8 @@ def _split_ver_str(ver_str):
 
 def is_ver_in_range(versionStr, minimumStr, maximumStr):
     """Assume that version, minimum, and maximum are version strings consisting
-    of integers separated by spaces. Ensure that version is withint the
-    (inclusive) bounds: [minimumStr, maximumStr]."""
+    of integers separated by periods. Ensure that version is within the
+    bounds: [minimumStr, maximumStr); non upper-bound is non inclusive."""
 
     version = _split_ver_str(versionStr)
     minimum = _split_ver_str(minimumStr)
