@@ -77,6 +77,32 @@ module Math {
   /* 1/sqrt(2) */
   param recipr_sqrt_2 = 0.70710678118654752440;
 
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc acos(x: real(64)): real(64) {
+    return chpl_acos(x);
+  }
+
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc acos(x : real(32)): real(32) {
+    return chpl_acos(x);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(64)): complex(64) {
+    return chpl_acos(z);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(128)): complex(128) {
+    return chpl_acos(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
