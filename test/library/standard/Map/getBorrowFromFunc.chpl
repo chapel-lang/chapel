@@ -8,7 +8,7 @@ class C	{
 var m: map(string, shared C);
 
 // original test used `this` accessor
-// which is invalid for non-default initilaizable classes on an empty slot
+// which is invalid for non-default initializable classes on an empty slot
 // correctly throws an error in this case
 // m["hi"] = new shared C(42);
 
