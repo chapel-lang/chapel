@@ -1261,6 +1261,7 @@ class ResolvedExpression {
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
+           isPrimitive_ == other.isPrimitive_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -1272,6 +1273,7 @@ class ResolvedExpression {
   void swap(ResolvedExpression& other) {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
+    std::swap(isPrimitive_, other.isPrimitive_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
