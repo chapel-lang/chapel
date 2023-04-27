@@ -206,10 +206,10 @@ module GPU
 
     if(!loc1.isGpu() || !loc2.isGpu()) then
       halt("Non GPU locale passed to 'canAccessPeer'");
-    const ref loc1Gpu = try! loc1._instance : unmanaged GPULocale;
-    const ref loc2Gpu = try! loc2._instance : unmanaged GPULocale;
+    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
+    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
 
-    return chpl_gpu_can_access_peer(loc1Gpu.sid, loc2Gpu.sid);
+    return chpl_gpu_can_access_peer(loc1Sid, loc2Sid);
   }
 
   pragma "no doc"
@@ -219,9 +219,9 @@ module GPU
 
     if(!loc1.isGpu() || !loc2.isGpu()) then
       halt("Non GPU locale passed to 'canAccessPeer'");
-    const ref loc1Gpu = try! loc1._instance : unmanaged GPULocale;
-    const ref loc2Gpu = try! loc2._instance : unmanaged GPULocale;
+    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
+    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
 
-    chpl_gpu_set_peer_access(loc1Gpu.sid, loc2Gpu.sid, shouldEnable);
+    chpl_gpu_set_peer_access(loc1Sid, loc2Sid, shouldEnable);
   }
 }
