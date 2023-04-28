@@ -67,6 +67,8 @@ proc main() {
 
 
 proc computeTwiddles(W) {
+  use Math;
+
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 
