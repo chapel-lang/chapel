@@ -599,21 +599,37 @@ module AutoMath {
   }
 
 
-  /* Returns the arc tangent of the ratio of the two arguments.
+  // When removing this deprecated function, be sure to remove chpl_atan2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc atan2(y: real(64), x: real(64)): real(64) {
+    return chpl_atan2(y, x);
+  }
 
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc atan2(y: real(64), x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_atan2(y: real(64), x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atan2(y: real(64), x: real(64)): real(64);
+    return atan2(y, x);
+  }
 
-  /* Returns the arc tangent of the two arguments.
-
-     This is equivalent to
-     the arc tangent of `y` / `x` except that the signs of `y`
-     and `x` are used to determine the quadrant of the result. */
+  // When removing this deprecated function, be sure to remove chpl_atan2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan2(y : real(32), x: real(32)): real(32) {
+    return chpl_atan2(y, x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atan2(y : real(32), x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc atan2f(y: real(32), x: real(32)): real(32);

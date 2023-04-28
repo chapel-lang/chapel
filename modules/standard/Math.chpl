@@ -195,6 +195,24 @@ module Math {
     return chpl_atan(z);
   }
 
+  /* Returns the arc tangent of the ratio of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
+  inline proc atan2(y: real(64), x: real(64)): real(64) {
+    return chpl_atan2(y, x);
+  }
+
+  /* Returns the arc tangent of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
+  inline proc atan2(y : real(32), x: real(32)): real(32) {
+    return chpl_atan2(y, x);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
