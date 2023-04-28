@@ -274,6 +274,10 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
 
     CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
+    // Disables "# errors generated" message to stderr from ExecuteAction.
+    // (as well as carets for error locations, which we are excluding anyways)
+    Clang->getDiagnosticOpts().ShowCarets = false;
+
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
     // run action and capture results
