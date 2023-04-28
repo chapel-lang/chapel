@@ -283,14 +283,16 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
       // save Clang errors warnings to context
       // all warnings should be treated as errors
       CHPL_ASSERT(diagClient->getNumWarnings() == 0);
+      const clang::SourceManager& sm = Clang->getSourceManager();
       for (auto it = diagClient->err_begin(); it != diagClient->err_end();
            it++) {
-        const clang::SourceLocation sourceLoc = (*it).first;
-        const clang::SourceManager& sm = Clang->getSourceManager();
-        const Location externErrorLoc = Location(
-            UniqueString::get(context, sm.getFilename(sourceLoc).str()),
-            sm.getExpansionLineNumber(sourceLoc),
-            sm.getExpansionColumnNumber(sourceLoc));
+        // get "presumed" location to report correct line number in .chpl file
+        // using #line directives
+        const clang::PresumedLoc presumedLoc = sm.getPresumedLoc((*it).first);
+        assert(presumedLoc.isValid());
+        const auto externErrorLoc =
+            Location(UniqueString::get(context, presumedLoc.getFilename()),
+                     presumedLoc.getLine(), presumedLoc.getColumn());
         context->error(externErrorLoc, "error: %s", (*it).second.c_str());
       }
 
