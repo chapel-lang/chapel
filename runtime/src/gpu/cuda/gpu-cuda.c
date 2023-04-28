@@ -43,6 +43,7 @@
 extern const char* chpl_gpuBinary;
 
 static CUcontext *chpl_gpu_primary_ctx;
+static CUdevice  *chpl_gpu_devices;
 
 // array indexed by device ID (we load the same module once for each GPU).
 static CUmodule *chpl_gpu_cuda_modules;
@@ -63,8 +64,8 @@ static bool chpl_gpu_has_context() {
   }
 }
 
-static void chpl_gpu_ensure_context() {
-  CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
+static void chpl_gpu_switch_context(int deviceId) {
+  CUcontext next_context = chpl_gpu_primary_ctx[deviceId];
 
   if (!chpl_gpu_has_context()) {
     CUDA_CALL(cuCtxPushCurrent(next_context));
@@ -96,6 +97,10 @@ static void chpl_gpu_impl_set_globals(CUmodule module) {
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
 }
 
+static void chpl_gpu_ensure_context() {
+  chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
+}
+
 void chpl_gpu_impl_init() {
   int         num_devices;
 
@@ -105,6 +110,7 @@ void chpl_gpu_impl_init() {
   CUDA_CALL(cuDeviceGetCount(&num_devices));
 
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
+  chpl_gpu_devices = chpl_malloc(sizeof(CUdevice)*num_devices);
   chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
@@ -126,6 +132,7 @@ void chpl_gpu_impl_init() {
 
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
+    chpl_gpu_devices[i] = device;
     chpl_gpu_primary_ctx[i] = context;
 
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
@@ -480,6 +487,22 @@ size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
 
 unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
+}
+
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+  int p2p;
+  CUDA_CALL(cuDeviceCanAccessPeer(&p2p, chpl_gpu_devices[dev1],
+    chpl_gpu_devices[dev2]));
+  return p2p != 0;
+}
+
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
+  chpl_gpu_switch_context(dev1);
+  if(enable) {
+    CUDA_CALL(cuCtxEnablePeerAccess(chpl_gpu_primary_ctx[dev2], 0));
+  } else {
+    CUDA_CALL(cuCtxDisablePeerAccess(chpl_gpu_primary_ctx[dev2]));
+  }
 }
 
 #endif // HAS_GPU_LOCALE

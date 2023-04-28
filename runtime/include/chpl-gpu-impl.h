@@ -61,6 +61,9 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr);
 // TODO do we really need to expose this?
 size_t chpl_gpu_impl_get_alloc_size(void* ptr);
 
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2);
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable);
+
 #ifdef __cplusplus
 }
 #endif
