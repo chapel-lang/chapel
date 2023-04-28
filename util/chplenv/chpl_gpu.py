@@ -5,7 +5,7 @@ import json
 import chpl_locale_model
 import chpl_llvm
 import re
-from utils import error, memoize, run_command, which, is_ver_in_range
+from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
     return _validate_cuda_version_impl()
@@ -188,9 +188,9 @@ def _validate_cuda_version_impl():
         match = re.search(r'\d+\.\d+\.\d+', txt)
         if match:
             cudaVersion = match.group()
-
+    cudaVersion = None
     if cudaVersion is None:
-        _reportMissingGpuReq("Unable to determine CUDA version")
+        _reportMissingGpuReq("Unable to determine CUDA version.")
         return False
 
     if not is_ver_in_range(cudaVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
@@ -212,15 +212,15 @@ def _validate_rocm_version_impl():
     chpl_rocm_path = get_sdk_path('rocm')
     files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
         '%s/.info/version-libs' % chpl_rocm_path]
+
     version_filename = None
     for fname in files_to_try:
-       print(fname)
        if os.path.exists(fname):
            version_filename = fname
            break
 
     if version_filename is None:
-        _reportMissingGpuReq("Unable to determine ROCm version")
+        _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
     rocmVersion = open(version_filename).read()
