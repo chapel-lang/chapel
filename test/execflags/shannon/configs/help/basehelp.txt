@@ -21,6 +21,7 @@ Built-in config vars:
                      memLeaksLog: string
                   memLeaksByDesc: string
                         debugGpu: bool 
+                    enableGpuP2P: bool 
  defaultHashTableResizeThreshold: real(64) 
                       numLocales: int(64)
 
