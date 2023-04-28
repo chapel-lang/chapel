@@ -2331,7 +2331,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
     }
     bool targetCpuValid = false;
     auto ptr = tgt->createMCSubtargetInfo(triple, "", "");
-    targetCpuValid = ptr->isCPUStringValid(CHPL_TARGET_BACKEND_CPU);
+    targetCpuValid = ptr->isCPUStringValid(CHPL_LLVM_TARGET_CPU);
     delete ptr;
 
     return targetCpuValid;
@@ -2492,18 +2492,18 @@ static void helpComputeClangArgs(std::string& clangCC,
   // Add specialization flags
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
-      CHPL_TARGET_BACKEND_CPU != NULL &&
+      CHPL_LLVM_TARGET_CPU != NULL &&
       CHPL_TARGET_CPU_FLAG[0] != '\0' &&
-      CHPL_TARGET_BACKEND_CPU[0] != '\0' &&
+      CHPL_LLVM_TARGET_CPU[0] != '\0' &&
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
+      0 != strcmp(CHPL_LLVM_TARGET_CPU, "none") &&
+      0 != strcmp(CHPL_LLVM_TARGET_CPU, "unknown")) {
 
     // Check that the requested CPU is valid
-    bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
+    bool targetCpuValid = isTargetCpuValid(CHPL_LLVM_TARGET_CPU);
     if (!targetCpuValid) {
       USR_WARN("Unknown target CPU %s -- not specializing",
-               CHPL_TARGET_BACKEND_CPU);
+               CHPL_LLVM_TARGET_CPU);
       std::string triple = getConfiguredTargetTriple();
       USR_PRINT("To see available CPU types, run "
                 "%s --target=%s --print-supported-cpus",
@@ -2513,7 +2513,7 @@ static void helpComputeClangArgs(std::string& clangCC,
       std::string march = "-m";
       march += CHPL_TARGET_CPU_FLAG;
       march += "=";
-      march += CHPL_TARGET_BACKEND_CPU;
+      march += CHPL_LLVM_TARGET_CPU;
       clangCCArgs.push_back(march);
     }
   }

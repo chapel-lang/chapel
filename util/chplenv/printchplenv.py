@@ -90,7 +90,6 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
-    ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU_CODEGEN', COMPILER | NOPATH),
     ChapelEnv('  CHPL_GPU_RUNTIME', RUNTIME | NOPATH, 'gpu'),
@@ -127,6 +126,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_TARGET_CPU', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
@@ -249,7 +249,7 @@ def compute_internal_values():
     # in an argument like -march e.g. for gcc-4.7: 'ivybridge' -> 'core-avx-i'
     backend_info = chpl_cpu.get('target', map_to_compiler=True)
     ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
-    ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
+    ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
