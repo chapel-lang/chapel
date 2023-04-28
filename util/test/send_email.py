@@ -64,7 +64,7 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
         logging.debug('Opening connection to: {0}'.format(smtp_host))
         try:
             if smtp_user:
-                smtp = smtplib.SMTP(smtp_host,465)
+                smtp = smtplib.SMTP(smtp_host,25)
                 logging.debug('Login with user={0}'.format(smtp_user))
                 smtp.starttls()
                 smtp.login(smtp_user, _get_smtp_password(smtp_user, smtp_password, smtp_password_file))
