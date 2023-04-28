@@ -175,6 +175,26 @@ module Math {
     return chpl_asinh(z);
   }
 
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: real(64)): real(64) {
+    return chpl_atan(x);
+  }
+
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x : real(32)): real(32) {
+    return chpl_atan(x);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(64)): complex(64) {
+    return chpl_atan(z);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(128)): complex(128) {
+    return chpl_atan(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
