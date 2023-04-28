@@ -138,7 +138,7 @@ void chpl_gpu_impl_init(int* num_devices) {
   deviceClockRates = chpl_malloc(sizeof(int)*loc_num_devices);
 
   int i;
-  for (i=0 ; i<num_devices ; i++) {
+  for (i=0 ; i<loc_num_devices ; i++) {
     hipDevice_t device;
     hipCtx_t context;
 
