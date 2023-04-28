@@ -41,7 +41,7 @@ AC_DEFUN([_FI_CHECK_PACKAGE_HEADER], [
     fi_check_package_header_happy="no"
     AS_IF([test "$3" = "/usr" || test "$3" = "/usr/local"],
            [ # try as is...
-            AC_VERBOSE([looking for header without includes])
+            AC_MSG_NOTICE([looking for header without includes])
             AC_CHECK_HEADERS([$2], [fi_check_package_header_happy="yes"], [])
             AS_IF([test "$fi_check_package_header_happy" = "no"],
                   [# no go on the as is - reset the cache and try again
@@ -91,7 +91,7 @@ AC_DEFUN([_FI_CHECK_PACKAGE_LIB], [
                   test "$fi_check_package_libdir" = "/usr" || \
                   test "$fi_check_package_libdir" = "/usr/local"],
                [ # try as is...
-                AC_VERBOSE([looking for library without search path])
+                AC_MSG_NOTICE([looking for library without search path])
                 AC_CHECK_LIB([$2], [$3],
                         [fi_check_package_lib_happy="yes"],
                         [fi_check_package_lib_happy="no"], [$4])
@@ -105,7 +105,7 @@ AC_DEFUN([_FI_CHECK_PACKAGE_LIB], [
                [AS_IF([test "$fi_check_package_libdir" != ""],
                     [$1_LDFLAGS="$$1_LDFLAGS -L$fi_check_package_libdir/lib64"
                      LDFLAGS="$LDFLAGS -L$fi_check_package_libdir/lib64"
-                     AC_VERBOSE([looking for library in lib64])
+                     AC_MSG_NOTICE([looking for library in lib64])
                      AC_CHECK_LIB([$2], [$3],
                                [fi_check_package_lib_happy="yes"],
                                [fi_check_package_lib_happy="no"], [$4])
@@ -119,7 +119,7 @@ AC_DEFUN([_FI_CHECK_PACKAGE_LIB], [
                [AS_IF([test "$fi_check_package_libdir" != ""],
                     [$1_LDFLAGS="$$1_LDFLAGS -L$fi_check_package_libdir/lib"
                      LDFLAGS="$LDFLAGS -L$fi_check_package_libdir/lib"
-                     AC_VERBOSE([looking for library in lib])
+                     AC_MSG_NOTICE([looking for library in lib])
                      AC_CHECK_LIB([$2], [$3],
                                [fi_check_package_lib_happy="yes"],
                                [fi_check_package_lib_happy="no"], [$4])

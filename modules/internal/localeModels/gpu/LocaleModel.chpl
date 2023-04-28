@@ -27,7 +27,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-@unstable("GPU support is a prototype in this version of Chapel. As such, the interface is unstable and expected to change in the forthcoming releases.")
+@unstable("The GPU locale interface is unstable and expected to change in the forthcoming releases")
 module LocaleModel {
 
   public use LocaleModelHelpGPU;
@@ -214,8 +214,8 @@ module LocaleModel {
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
     override proc chpl_localeid() {
-      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid);
+      return try! chpl_buildLocaleID((parent._value:LocaleModel)._node_id:chpl_nodeID_t,
+                                     sid);
     }
     override proc chpl_name() {
       return try! (parent._value:LocaleModel).local_name + "-GPU" + sid:string;

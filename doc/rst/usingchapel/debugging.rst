@@ -9,15 +9,18 @@ experimental settings to enable task monitoring and memory tracking.
 
 .. contents::
 
---------------
-Running in gdb
---------------
+-------------------
+Running in gdb/lldb
+-------------------
 
-The compiler-generated executable has a ``--gdb`` flag that can be used
-to launch the program within a ``gdb`` session.  A similar flag, ``--lldb``,
-exists to launch the program within a ``lldb`` session. For best results, make
-sure that your program has been compiled using the chpl compiler's
-``-g`` flag.
+The compiler-generated executable has a ``--gdb`` flag that can be used to
+launch the program within a ``gdb`` session.  A similar flag, ``--lldb``,
+exists to launch the program within a ``lldb`` session. For best results, you
+should follow `Best Known Configuration`_ to build Chapel and build your
+application.
+
+Running in gdb/lldb with a launcher
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When using almost any launcher, you can launch ``gdb`` by setting the
 environment variable ``CHPL_COMM_USE_GDB`` when running the program.
@@ -45,10 +48,73 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
-The utility of this feature depends greatly on your familiarity with
-the Chapel generated code.  However, if your program is crashing or
-running into a runtime error, you can often determine where that is
-taking place by looking at a stack trace within ``gdb``.
+------------------------
+Best Known Configuration
+------------------------
+
+The current best practice for debugging Chapel source code is to use the C
+backend and use a series of flags to improve the debuggability of the generated
+executable. This can be done in two steps.
+
+1) Build the compiler with ``CHPL_TARGET_COMPILER`` set to ``gnu``:
+
+   .. code-block:: bash
+
+        CHPL_TARGET_COMPILER=gnu make
+
+2) Build the executable from Chapel source code:
+
+   .. code-block:: bash
+
+        chpl -g --target-compiler=gnu --savec <dir> --preserve-inlined-line-numbers --no-munge-user-idents <source_file>
+
+For more details on these settings, read the rest of this section.
+
+Building the Compiler
+~~~~~~~~~~~~~~~~~~~~~
+
+For best results while debugging, we recommend building the compiler with
+``CHPL_TARGET_COMPILER`` set to ``gnu`` (or ``clang`` if on Mac). See
+:ref:`readme-chplenv` for more information on building the compiler.
+
+With two invocations of the build command, both backends can be built. First
+execute ``make`` (which uses the LLVM backend by default) and then execute
+``CHPL_TARGET_COMPILER=gnu make``. This will keep the default as LLVM and allow
+switching to the C backend as needed for debugging. This can be done for a
+particular invocation of the compiler with ``chpl --target-compiler=gnu ...``.
+
+Building the Application
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following flags can be useful for making the generated C more amenable to
+debugging.
+
+  ===================================  =========================================
+  Flag                                 Description
+  ===================================  =========================================
+  ``-g``                               Generate debug symbols in the executable
+  ``--target-compiler=gnu``            Target the C backend
+  ``--savec <dir>``                    Write out the generated C to a given
+                                       directory
+  ``--preserve-inlined-line-numbers``  When code gets inlined (e.g. replacing a
+                                       function call with the function body)
+                                       maintain the filename and line number
+                                       information of the original function
+                                       call.
+  ``--no-munge-user-idents``           Don't munge user identifiers (e.g.
+                                       variable or function names). Munging
+                                       typically prevents conflicts with
+                                       identifiers in external code but makes
+                                       debugging harder.
+  ===================================  =========================================
+
+Notes on munging
+''''''''''''''''
+
+The utility of using a debugger with Chapel depends greatly on your familiarity
+with the Chapel generated code.  However, if your program is crashing or running
+into a runtime error, you can often determine where that is taking place by
+looking at a stack trace within ``gdb``.
 
 When debugging Chapel, it is useful to know that in generating its code,
 the Chapel compiler renames user identifiers.  By default, the Chapel
@@ -64,11 +130,12 @@ where the compiler has further renamed the variable).  If the
 ``--no-munge-user-idents`` flag is used, ``p`` *name* or
 ``p`` *name*\ ``<TAB>`` should work in most cases.
 
+See :ref:`more-munging-info` for more information on munging.
+
 Over time, we plan to improve our ability to debug the generated C
 code for a Chapel program.  If you find yourself debugging the
 generated code a lot and need help or have requests for better
 support, please let us know so that we can prioritize accordingly.
-
 
 -------------------------------
 Tracking and Reporting on Tasks
@@ -89,7 +156,6 @@ tasks are at which source locations.  This is only supported with
 
 Note that task tracking adds a fair amount of runtime overhead to
 task-parallel programs.
-
 
 -------------------------------------------
 Configuration Constants for Tracking Memory

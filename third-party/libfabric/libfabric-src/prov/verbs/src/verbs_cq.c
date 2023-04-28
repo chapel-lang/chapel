@@ -37,6 +37,22 @@
 
 #include "fi_verbs.h"
 
+
+enum ibv_wc_opcode vrb_wr2wc_opcode(enum ibv_wr_opcode wr)
+{
+	static enum ibv_wc_opcode wc[] = {
+		[IBV_WR_RDMA_WRITE] = IBV_WC_RDMA_WRITE,
+		[IBV_WR_RDMA_WRITE_WITH_IMM] = IBV_WC_RDMA_WRITE,
+		[IBV_WR_SEND] = IBV_WC_SEND,
+		[IBV_WR_SEND_WITH_IMM] = IBV_WC_SEND,
+		[IBV_WR_RDMA_READ] = IBV_WC_RDMA_READ,
+		[IBV_WR_ATOMIC_CMP_AND_SWP] = IBV_WC_COMP_SWAP,
+		[IBV_WR_ATOMIC_FETCH_AND_ADD] = IBV_WC_FETCH_ADD,
+	};
+
+	return (wr < ARRAY_SIZE(wc)) ? wc[wr] : IBV_WC_SEND;
+}
+
 static void vrb_cq_read_context_entry(struct ibv_wc *wc, void *buf)
 {
 	struct fi_cq_entry *entry = buf;
@@ -103,7 +119,7 @@ vrb_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry,
 
 	cq = container_of(cq_fid, struct vrb_cq, util_cq.cq_fid);
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	if (slist_empty(&cq->saved_wc_list))
 		goto err;
 
@@ -114,7 +130,7 @@ vrb_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry,
 	api_version = cq->util_cq.domain->fabric->fabric_fid.api_version;
 
 	slist_entry = slist_remove_head(&cq->saved_wc_list);
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 
 	wce = container_of(slist_entry, struct vrb_wc_entry, entry);
 
@@ -141,7 +157,7 @@ vrb_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry,
 	ofi_buf_free(wce);
 	return 1;
 err:
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 	return -FI_EAGAIN;
 }
 
@@ -151,10 +167,9 @@ vrb_poll_events(struct vrb_cq *_cq, int timeout)
 	int ret, rc;
 	void *context;
 	struct pollfd fds[2];
-	char data;
 
 	fds[0].fd = _cq->channel->fd;
-	fds[1].fd = _cq->signal_fd[0];
+	fds[1].fd = fd_signal_get(&_cq->signal);
 
 	fds[0].events = fds[1].events = POLLIN;
 
@@ -173,14 +188,12 @@ vrb_poll_events(struct vrb_cq *_cq, int timeout)
 		rc--;
 	}
 	if (fds[1].revents & POLLIN) {
-		do {
-			ret = read(fds[1].fd, &data, 1);
-		} while (ret > 0);
+		fd_signal_reset(&_cq->signal);
 		ret = -FI_EAGAIN;
 		rc--;
 	}
 	if (rc) {
-		VERBS_WARN(FI_LOG_CQ, "Unknown poll error: check revents\n");
+		VRB_WARN(FI_LOG_CQ, "Unknown poll error: check revents\n");
 		return -FI_EOTHER;
 	}
 
@@ -229,9 +242,10 @@ vrb_cq_sread(struct fid_cq *cq, void *buf, size_t count, const void *cond,
 int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 {
 	struct vrb_context *ctx;
+	struct vrb_ep *ep;
 	int ret;
 
-	assert(fastlock_held(&cq->util_cq.cq_lock));
+	assert(ofi_genlock_held(&cq->util_cq.cq_lock));
 	do {
 		ret = ibv_poll_cq(cq->cq, 1, wc);
 		if (ret <= 0)
@@ -239,25 +253,36 @@ int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 
 		ctx = (struct vrb_context *) (uintptr_t) wc->wr_id;
 		wc->wr_id = (uintptr_t) ctx->user_ctx;
-		if (ctx->flags & FI_TRANSMIT) {
+		if (ctx->op_queue == VRB_OP_SQ) {
+			ep = ctx->ep;
+			assert(ep);
+			assert(!slist_empty(&ep->sq_list));
+			assert(ep->sq_list.head == &ctx->entry);
+			(void) slist_remove_head(&ep->sq_list);
 			cq->credits++;
-			ctx->ep->sq_credits++;
-		}
+			ep->sq_credits++;
 
-		if (wc->status) {
-			if (ctx->flags & FI_RECV)
-				wc->opcode |= IBV_WC_RECV;
-			else
-				wc->opcode &= ~IBV_WC_RECV;
-		}
-		if (ctx->srx) {
-			fastlock_acquire(&ctx->srx->ctx_lock);
+			/* workaround incorrect opcode reported by verbs */
+			wc->opcode = vrb_wr2wc_opcode(ctx->sq_opcode);
 			ofi_buf_free(ctx);
-			fastlock_release(&ctx->srx->ctx_lock);
+
+		} else if (ctx->op_queue == VRB_OP_RQ) {
+			ep = ctx->ep;
+			assert(ep);
+			assert(!slist_empty(&ep->rq_list));
+			assert(ep->rq_list.head == &ctx->entry);
+			(void) slist_remove_head(&ep->rq_list);
+			if (wc->status)
+				wc->opcode = IBV_WC_RECV;
+			ofi_buf_free(ctx);
+
 		} else {
+			assert(ctx->op_queue == VRB_OP_SRQ);
+			wc->opcode = IBV_WC_RECV;
+			ofi_mutex_lock(&ctx->srx->ctx_lock);
 			ofi_buf_free(ctx);
+			ofi_mutex_unlock(&ctx->srx->ctx_lock);
 		}
-
 	} while (wc->wr_id == VERBS_NO_COMP_FLAG);
 
 	return ret;
@@ -267,7 +292,7 @@ int vrb_save_wc(struct vrb_cq *cq, struct ibv_wc *wc)
 {
 	struct vrb_wc_entry *wce;
 
-	assert(fastlock_held(&cq->util_cq.cq_lock));
+	assert(ofi_genlock_held(&cq->util_cq.cq_lock));
 	wce = ofi_buf_alloc(cq->wce_pool);
 	if (!wce) {
 		FI_WARN(&vrb_prov, FI_LOG_CQ,
@@ -285,7 +310,7 @@ static void vrb_flush_cq(struct vrb_cq *cq)
 	struct ibv_wc wc;
 	ssize_t ret;
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	while (1) {
 		ret = vrb_poll_cq(cq, &wc);
 		if (ret <= 0)
@@ -294,7 +319,7 @@ static void vrb_flush_cq(struct vrb_cq *cq)
 		vrb_save_wc(cq, &wc);
 	};
 
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 }
 
 void vrb_cleanup_cq(struct vrb_ep *ep)
@@ -319,7 +344,7 @@ static ssize_t vrb_cq_read(struct fid_cq *cq_fid, void *buf, size_t count)
 
 	cq = container_of(cq_fid, struct vrb_cq, util_cq.cq_fid);
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 
 	for (i = 0; i < count; i++) {
 		if (!slist_empty(&cq->saved_wc_list)) {
@@ -343,7 +368,7 @@ static ssize_t vrb_cq_read(struct fid_cq *cq_fid, void *buf, size_t count)
 		if (wc.status) {
 			wce = ofi_buf_alloc(cq->wce_pool);
 			if (!wce) {
-				cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+				ofi_genlock_unlock(&cq->util_cq.cq_lock);
 				return -FI_ENOMEM;
 			}
 			memset(wce, 0, sizeof(*wce));
@@ -356,7 +381,7 @@ static ssize_t vrb_cq_read(struct fid_cq *cq_fid, void *buf, size_t count)
 		cq->read_entry(&wc, (char *)buf + i * cq->entry_size);
 	}
 
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 	return i ? i : (ret < 0 ? ret : -FI_EAGAIN);
 }
 
@@ -372,14 +397,10 @@ vrb_cq_strerror(struct fid_cq *eq, int prov_errno, const void *err_data,
 int vrb_cq_signal(struct fid_cq *cq)
 {
 	struct vrb_cq *_cq;
-	char data = '0';
 
 	_cq = container_of(cq, struct vrb_cq, util_cq.cq_fid);
 
-	if (write(_cq->signal_fd[1], &data, 1) != 1) {
-		VERBS_WARN(FI_LOG_CQ, "Error signalling CQ\n");
-		return -errno;
-	}
+	fd_signal_set(&_cq->signal);
 
 	return 0;
 }
@@ -391,11 +412,11 @@ int vrb_cq_trywait(struct vrb_cq *cq)
 	int ret = -FI_EAGAIN, rc;
 
 	if (!cq->channel) {
-		VERBS_WARN(FI_LOG_CQ, "No wait object object associated with CQ\n");
+		VRB_WARN(FI_LOG_CQ, "No wait object object associated with CQ\n");
 		return -FI_EINVAL;
 	}
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	if (!slist_empty(&cq->saved_wc_list))
 		goto out;
 
@@ -411,7 +432,7 @@ int vrb_cq_trywait(struct vrb_cq *cq)
 
 	rc = ibv_req_notify_cq(cq->cq, 0);
 	if (rc) {
-		VERBS_WARN(FI_LOG_CQ, "ibv_req_notify_cq error: %d\n", ret);
+		VRB_WARN(FI_LOG_CQ, "ibv_req_notify_cq error: %d\n", ret);
 		ret = -errno;
 		goto out;
 	}
@@ -427,7 +448,7 @@ int vrb_cq_trywait(struct vrb_cq *cq)
 
 	ret = FI_SUCCESS;
 out:
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 	return ret;
 }
 
@@ -499,24 +520,24 @@ static int vrb_cq_close(fid_t fid)
 	/* Since an RX CQ and SRX context can be destroyed in any order,
 	 * and the XRC SRQ references the RX CQ, we must destroy any
 	 * XRC SRQ using this CQ before destroying the CQ. */
-	fastlock_acquire(&cq->xrc.srq_list_lock);
+	ofi_mutex_lock(&cq->xrc.srq_list_lock);
 	dlist_foreach_container_safe(&cq->xrc.srq_list, struct vrb_srq_ep,
 				     srq_ep, xrc.srq_entry, srq_ep_temp) {
 		ret = vrb_xrc_close_srq(srq_ep);
 		if (ret) {
-			fastlock_release(&cq->xrc.srq_list_lock);
+			ofi_mutex_unlock(&cq->xrc.srq_list_lock);
 			return -ret;
 		}
 	}
-	fastlock_release(&cq->xrc.srq_list_lock);
+	ofi_mutex_unlock(&cq->xrc.srq_list_lock);
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	while (!slist_empty(&cq->saved_wc_list)) {
 		entry = slist_remove_head(&cq->saved_wc_list);
 		wce = container_of(entry, struct vrb_wc_entry, entry);
 		ofi_buf_free(wce);
 	}
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 
 	ofi_bufpool_destroy(cq->wce_pool);
 	ofi_bufpool_destroy(cq->ctx_pool);
@@ -527,19 +548,15 @@ static int vrb_cq_close(fid_t fid)
 			return -ret;
 	}
 
-	if (cq->signal_fd[0]) {
-		ofi_close_socket(cq->signal_fd[0]);
-	}
-	if (cq->signal_fd[1]) {
-		ofi_close_socket(cq->signal_fd[1]);
-	}
+	if (cq->wait_obj != FI_WAIT_NONE)
+		fd_signal_free(&cq->signal);
 
 	ofi_cq_cleanup(&cq->util_cq);
 
 	if (cq->channel)
 		ibv_destroy_comp_channel(cq->channel);
 
-	fastlock_destroy(&cq->xrc.srq_list_lock);
+	ofi_mutex_destroy(&cq->xrc.srq_list_lock);
 	free(cq);
 	return 0;
 }
@@ -592,18 +609,18 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		break;
 	default:
 		ret = -FI_ENOSYS;
-		goto err4;
+		goto err2;
 	}
 
 	if (attr->flags & FI_AFFINITY) {
 		if (attr->signaling_vector < 0 ||
 		    attr->signaling_vector > domain->verbs->num_comp_vectors)  {
 
-			VERBS_WARN(FI_LOG_CQ,
+			VRB_WARN(FI_LOG_CQ,
 				   "Invalid value for the CQ attribute signaling_vector: %d\n",
 				   attr->signaling_vector);
 			ret = -FI_EINVAL;
-			goto err4;
+			goto err2;
 		}
 		comp_vector = attr->signaling_vector;
 	}
@@ -612,7 +629,7 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		cq->channel = ibv_create_comp_channel(domain->verbs);
 		if (!cq->channel) {
 			ret = -errno;
-			VERBS_WARN(FI_LOG_CQ,
+			VRB_WARN(FI_LOG_CQ,
 				   "Unable to create completion channel\n");
 			goto err2;
 		}
@@ -621,14 +638,10 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 		if (ret)
 			goto err3;
 
-		if (socketpair(AF_UNIX, SOCK_STREAM, 0, cq->signal_fd)) {
+		if (fd_signal_init(&cq->signal)) {
 			ret = -errno;
 			goto err3;
 		}
-
-		ret = fi_fd_nonblock(cq->signal_fd[0]);
-		if (ret)
-			goto err4;
 	}
 
 	size = attr->size ? attr->size : VERBS_DEF_CQ_SIZE;
@@ -646,24 +659,24 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 			       comp_vector);
 	if (!cq->cq) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_CQ, "Unable to create verbs CQ\n");
-		goto err4;
+		VRB_WARN(FI_LOG_CQ, "Unable to create verbs CQ\n");
+		goto err3;
 	}
 
 	if (cq->channel) {
 		ret = ibv_req_notify_cq(cq->cq, 0);
 		if (ret) {
-			VERBS_WARN(FI_LOG_CQ,
+			VRB_WARN(FI_LOG_CQ,
 				   "ibv_req_notify_cq failed\n");
-			goto err5;
+			goto err4;
 		}
 	}
 
 	ret = ofi_bufpool_create(&cq->wce_pool, sizeof(struct vrb_wc_entry),
 				16, 0, VERBS_WCE_CNT, 0);
 	if (ret) {
-		VERBS_WARN(FI_LOG_CQ, "Failed to create wce_pool\n");
-		goto err5;
+		VRB_WARN(FI_LOG_CQ, "Failed to create wce_pool\n");
+		goto err4;
 	}
 
 	cq->flags |= attr->flags;
@@ -689,17 +702,17 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 	case FI_CQ_FORMAT_TAGGED:
 	default:
 		ret = -FI_ENOSYS;
-		goto err6;
+		goto err5;
 	}
 
 	ret = ofi_bufpool_create(&cq->ctx_pool, sizeof(struct fi_context),
 				 16, 0, size, OFI_BUFPOOL_NO_TRACK);
 	if (ret)
-		goto err6;
+		goto err5;
 
 	slist_init(&cq->saved_wc_list);
 	dlist_init(&cq->xrc.srq_list);
-	fastlock_init(&cq->xrc.srq_list_lock);
+	ofi_mutex_init(&cq->xrc.srq_list_lock);
 
 	ofi_atomic_initialize32(&cq->nevents, 0);
 
@@ -707,13 +720,10 @@ int vrb_cq_open(struct fid_domain *domain_fid, struct fi_cq_attr *attr,
 
 	*cq_fid = &cq->util_cq.cq_fid;
 	return 0;
-err6:
-	ofi_bufpool_destroy(cq->wce_pool);
 err5:
-	ibv_destroy_cq(cq->cq);
+	ofi_bufpool_destroy(cq->wce_pool);
 err4:
-	ofi_close_socket(cq->signal_fd[0]);
-	ofi_close_socket(cq->signal_fd[1]);
+	ibv_destroy_cq(cq->cq);
 err3:
 	if (cq->channel)
 		ibv_destroy_comp_channel(cq->channel);

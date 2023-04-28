@@ -215,7 +215,7 @@ source files in the repository.
      - Doc name in Sidebar
      - Source file(s)
    * - COMPILING AND RUNNING CHAPEL
-     - Docs for Contributors--> Compiler Library API Docs
+     - Docs for Contributors--> Frontend Library API Docs
      - doc/rst/developer/compiler-internals/*
 
 

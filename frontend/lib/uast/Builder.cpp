@@ -128,11 +128,16 @@ BuilderResult Builder::result() {
 }
 
 bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
-  return asttags::isNamedDecl(tag) &&
-        (asttags::isFunction(tag) ||
-         asttags::isModule(tag) ||
-         asttags::isInterface(tag) ||
-         asttags::isTypeDecl(tag));
+  if (asttags::isNamedDecl(tag)) {
+    return (asttags::isFunction(tag) ||
+            asttags::isModule(tag) ||
+            asttags::isInterface(tag) ||
+            asttags::isTypeDecl(tag));
+  } else if (asttags::isExternBlock(tag)) {
+    return true;
+  }
+
+  return false;
 }
 
 // If the implicit module is needed, moves the statements in to it.
@@ -293,8 +298,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (newScope) {
     // for scoping constructs, adjust the symbolPath and
     // then visit the defined symbol
-    UniqueString declName = ast->toNamedDecl()->name();
-    int repeat = 0;
+    UniqueString declName;
+
+    if (auto nd = ast->toNamedDecl()) {
+      declName = nd->name();
+    } else if (ast->isExternBlock()) {
+      declName = UniqueString::get(context_, "-externblock");
+    }
 
     // For anonymous functions, just use the 'kind' as the name.
     if (auto fn = ast->toFunction()) {
@@ -305,6 +315,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
 
+    int repeat = 0;
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
       // it's already there, so increment the repeat counter

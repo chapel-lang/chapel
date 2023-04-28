@@ -57,8 +57,8 @@
 #define _PTL_FWD_AMSH_H
 
 /* Symbol in am ptl */
-extern struct ptl_ctl_init psmi_ptl_amsh;
+extern struct ptl_ctl_init psm3_ptl_amsh;
 
-extern int psmi_shm_mq_rv_thresh;
+extern int psm3_shm_mq_rv_thresh;
 
 #endif

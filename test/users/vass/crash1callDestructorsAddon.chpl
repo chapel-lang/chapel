@@ -88,7 +88,7 @@ class DimensionalDom : BaseRectangularDom {
   var dist; // not reprivatized
 
   // convenience
-  proc rangeT  type  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT  type  return range(idxType, boundKind.both, stridable);
   proc domainT type  return domain(rank, idxType, stridable);
   proc indexT  type  return dist.indexT;
 

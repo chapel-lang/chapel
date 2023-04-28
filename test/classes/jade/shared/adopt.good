@@ -3,7 +3,7 @@ test adopt of unmanaged
 test adopt of owned
 nil | owned A?
 {x = 0, y = 0} | shared A?
-test adopt ownership transfer to shared object
+test assign to shared
 {x = 2, y = 3} | unmanaged A
 {x = 2, y = 3} | shared A
 {x = 2, y = 3} | shared A

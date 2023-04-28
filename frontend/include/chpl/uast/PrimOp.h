@@ -54,4 +54,12 @@ DECLARE_SERDE_ENUM(uast::PrimitiveTag, uint16_t);
 
 } // end namespace chpl
 
+namespace std {
+  template <> struct hash<chpl::uast::PrimitiveTag> {
+    size_t operator()(const chpl::uast::PrimitiveTag& tag) const {
+      return (size_t) tag;
+    }
+  };
+} // end namespace std
+
 #endif

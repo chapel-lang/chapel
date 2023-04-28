@@ -676,7 +676,7 @@ proc Block.getChunk(inds, locid) {
   // Vass 2023-03: the chunk should really be computed as:
   //   const chunk = inds[locDist(locid).myChunk];
   // because we are looking for a subset of 'inds'.
-  // I did not make this change because it slightly bumps comm counts in:
+  // I did not make this change because it would slightly bump comm counts in:
   //   distributions/robust/arithmetic/performance/multilocale/assignReindex
   //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
@@ -1322,7 +1322,7 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable))
+override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
 {
   //
   // For the default rectangular array, this function changes the data

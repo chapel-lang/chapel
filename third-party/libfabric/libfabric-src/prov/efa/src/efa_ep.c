@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2017-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
+ * Copyright (c) 2017-2022 Amazon.com, Inc. or its affiliates. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,14 +38,13 @@
 #include <infiniband/efadv.h>
 #define EFA_CQ_PROGRESS_ENTRIES 500
 
-static int efa_generate_qkey()
+static int efa_generate_rdm_connid()
 {
 	struct timeval tv;
-	struct timezone tz;
 	uint32_t val;
 	int err;
 
-	err = gettimeofday(&tv, &tz);
+	err = gettimeofday(&tv, NULL);
 	if (err) {
 		EFA_WARN(FI_LOG_EP_CTRL, "Cannot gettimeofday, err=%d.\n", err);
 		return 0;
@@ -80,10 +79,10 @@ static int efa_ep_destroy_qp(struct efa_qp *qp)
 	return err;
 }
 
-static int efa_ep_modify_qp_state(struct efa_qp *qp, enum ibv_qp_state qp_state,
-				  int attr_mask)
+static int efa_ep_modify_qp_state(struct efa_ep *ep, struct efa_qp *qp,
+				  enum ibv_qp_state qp_state, int attr_mask)
 {
-	struct ibv_qp_attr attr = {};
+	struct ibv_qp_attr attr = { 0 };
 
 	attr.qp_state = qp_state;
 
@@ -94,7 +93,7 @@ static int efa_ep_modify_qp_state(struct efa_qp *qp, enum ibv_qp_state qp_state,
 		attr.qkey = qp->qkey;
 
 	if (attr_mask & IBV_QP_RNR_RETRY)
-		attr.rnr_retry = rxr_env.rnr_retry;
+		attr.rnr_retry = ep->rnr_retry;
 
 	return -ibv_modify_qp(qp->ibv_qp, &attr, attr_mask);
 
@@ -104,22 +103,22 @@ static int efa_ep_modify_qp_rst2rts(struct efa_ep *ep, struct efa_qp *qp)
 {
 	int err;
 
-	err = efa_ep_modify_qp_state(qp, IBV_QPS_INIT,
+	err = efa_ep_modify_qp_state(ep, qp, IBV_QPS_INIT,
 				     IBV_QP_STATE | IBV_QP_PKEY_INDEX |
 				     IBV_QP_PORT | IBV_QP_QKEY);
 	if (err)
 		return err;
 
-	err = efa_ep_modify_qp_state(qp, IBV_QPS_RTR, IBV_QP_STATE);
+	err = efa_ep_modify_qp_state(ep, qp, IBV_QPS_RTR, IBV_QP_STATE);
 	if (err)
 		return err;
 
 	if (ep->util_ep.type != FI_EP_DGRAM &&
 	    efa_ep_support_rnr_retry_modify(&ep->util_ep.ep_fid))
-		return efa_ep_modify_qp_state(qp, IBV_QPS_RTS,
+		return efa_ep_modify_qp_state(ep, qp, IBV_QPS_RTS,
 			IBV_QP_STATE | IBV_QP_SQ_PSN | IBV_QP_RNR_RETRY);
 
-	return efa_ep_modify_qp_state(qp, IBV_QPS_RTS,
+	return efa_ep_modify_qp_state(ep, qp, IBV_QPS_RTS,
 				      IBV_QP_STATE | IBV_QP_SQ_PSN);
 }
 
@@ -129,7 +128,7 @@ static int efa_ep_create_qp_ex(struct efa_ep *ep,
 {
 	struct efa_domain *domain;
 	struct efa_qp *qp;
-	struct efadv_qp_init_attr efa_attr = {};
+	struct efadv_qp_init_attr efa_attr = { 0 };
 	int err;
 
 	domain = ep->domain;
@@ -153,7 +152,7 @@ static int efa_ep_create_qp_ex(struct efa_ep *ep,
 	}
 
 	qp->ibv_qp_ex = ibv_qp_to_qp_ex(qp->ibv_qp);
-	qp->qkey = efa_generate_qkey();
+	qp->qkey = (init_attr_ex->qp_type == IBV_QPT_UD) ? EFA_DGRAM_CONNID: efa_generate_rdm_connid();
 	err = efa_ep_modify_qp_rst2rts(ep, qp);
 	if (err)
 		goto err_destroy_qp;
@@ -229,14 +228,20 @@ err:
 
 static void efa_ep_destroy(struct efa_ep *ep)
 {
+	int err;
+
 	if (ep->self_ah)
 		ibv_destroy_ah(ep->self_ah);
 
 	efa_ep_destroy_qp(ep->qp);
 	fi_freeinfo(ep->info);
 	free(ep->src_addr);
-	if (ofi_endpoint_close(&ep->util_ep))
-		FI_WARN(&efa_prov, FI_LOG_EP_CTRL, "Unable to close util EP\n");
+	if (ep->util_ep_initialized) {
+		err = ofi_endpoint_close(&ep->util_ep);
+		if (err)
+			FI_WARN(&efa_prov, FI_LOG_EP_CTRL, "Unable to close util EP\n");
+	}
+
 	free(ep);
 }
 
@@ -411,7 +416,6 @@ int efa_ep_create_self_ah(struct efa_ep *ep, struct ibv_pd *ibv_pd)
 static int efa_ep_enable(struct fid_ep *ep_fid)
 {
 	struct ibv_qp_init_attr_ex attr_ex = { 0 };
-	const struct fi_info *efa_info;
 	struct ibv_pd *ibv_pd;
 	struct efa_ep *ep;
 	int err;
@@ -435,33 +439,27 @@ static int efa_ep_enable(struct fid_ep *ep_fid)
 		return -FI_ENOCQ;
 	}
 
-	efa_info = efa_get_efa_info(ep->info->domain_attr->name);
-	if (!efa_info) {
-		EFA_INFO(FI_LOG_EP_CTRL, "Unable to find matching efa_info\n");
-		return -FI_EINVAL;
-	}
-
 	if (ep->scq) {
 		attr_ex.cap.max_send_wr = ep->info->tx_attr->size;
 		attr_ex.cap.max_send_sge = ep->info->tx_attr->iov_limit;
-		attr_ex.send_cq = ep->scq->ibv_cq;
+		attr_ex.send_cq = ibv_cq_ex_to_cq(ep->scq->ibv_cq_ex);
 		ibv_pd = ep->scq->domain->ibv_pd;
 	} else {
-		attr_ex.send_cq = ep->rcq->ibv_cq;
+		attr_ex.send_cq = ibv_cq_ex_to_cq(ep->rcq->ibv_cq_ex);
 		ibv_pd = ep->rcq->domain->ibv_pd;
 	}
 
 	if (ep->rcq) {
 		attr_ex.cap.max_recv_wr = ep->info->rx_attr->size;
 		attr_ex.cap.max_recv_sge = ep->info->rx_attr->iov_limit;
-		attr_ex.recv_cq = ep->rcq->ibv_cq;
+		attr_ex.recv_cq = ibv_cq_ex_to_cq(ep->rcq->ibv_cq_ex);
 	} else {
-		attr_ex.recv_cq = ep->scq->ibv_cq;
+		attr_ex.recv_cq = ibv_cq_ex_to_cq(ep->scq->ibv_cq_ex);
 	}
 
-	attr_ex.cap.max_inline_data = ep->domain->ctx->inline_buf_size;
+	attr_ex.cap.max_inline_data = ep->domain->device->efa_attr.inline_buf_size;
 
-	if (ep->domain->type == EFA_DOMAIN_RDM) {
+	if (EFA_EP_TYPE_IS_RDM(ep->domain->info)) {
 		attr_ex.qp_type = IBV_QPT_DRIVER;
 		attr_ex.comp_mask = IBV_QP_INIT_ATTR_PD | IBV_QP_INIT_ATTR_SEND_OPS_FLAGS;
 		attr_ex.send_ops_flags = IBV_QP_EX_WITH_SEND;
@@ -469,6 +467,7 @@ static int efa_ep_enable(struct fid_ep *ep_fid)
 			attr_ex.send_ops_flags |= IBV_QP_EX_WITH_RDMA_READ;
 		attr_ex.pd = ibv_pd;
 	} else {
+		assert(EFA_EP_TYPE_IS_DGRAM(ep->domain->info));
 		attr_ex.qp_type = IBV_QPT_UD;
 		attr_ex.comp_mask = IBV_QP_INIT_ATTR_PD;
 		attr_ex.pd = ibv_pd;
@@ -527,7 +526,7 @@ static void efa_ep_progress_internal(struct efa_ep *ep, struct efa_cq *efa_cq)
 	struct util_cq *cq;
 	struct fi_cq_tagged_entry cq_entry[EFA_CQ_PROGRESS_ENTRIES];
 	struct fi_cq_tagged_entry *temp_cq_entry;
-	struct fi_cq_err_entry cq_err_entry;
+	struct fi_cq_err_entry cq_err_entry = {0};
 	fi_addr_t src_addr[EFA_CQ_PROGRESS_ENTRIES];
 	uint64_t flags;
 	int i;
@@ -546,14 +545,14 @@ static void efa_ep_progress_internal(struct efa_ep *ep, struct efa_cq *efa_cq)
 	if (OFI_UNLIKELY(ret < 0)) {
 		if (OFI_UNLIKELY(ret != -FI_EAVAIL)) {
 			EFA_WARN(FI_LOG_CQ, "no error available errno: %ld\n", ret);
-			efa_eq_write_error(&ep->util_ep, FI_EOTHER, ret);
+			efa_eq_write_error(&ep->util_ep, FI_EIO, FI_EFA_ERR_DGRAM_CQ_READ);
 			return;
 		}
 
 		err = efa_cq_readerr(&cq->cq_fid, &cq_err_entry, flags);
 		if (OFI_UNLIKELY(err < 0)) {
 			EFA_WARN(FI_LOG_CQ, "unable to read error entry errno: %ld\n", err);
-			efa_eq_write_error(&ep->util_ep, FI_EOTHER, err);
+			efa_eq_write_error(&ep->util_ep, FI_EIO, cq_err_entry.prov_errno);
 			return;
 		}
 
@@ -594,7 +593,7 @@ void efa_ep_progress(struct util_ep *ep)
 	rcq = efa_ep->rcq;
 	scq = efa_ep->scq;
 
-	fastlock_acquire(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
 
 	if (rcq)
 		efa_ep_progress_internal(efa_ep, rcq);
@@ -602,7 +601,7 @@ void efa_ep_progress(struct util_ep *ep)
 	if (scq && scq != rcq)
 		efa_ep_progress_internal(efa_ep, scq);
 
-	fastlock_release(&ep->lock);
+	ofi_mutex_unlock(&ep->lock);
 }
 
 static struct fi_ops_atomic efa_ep_atomic_ops = {
@@ -622,68 +621,66 @@ static struct fi_ops_atomic efa_ep_atomic_ops = {
 	.compwritevalid = fi_no_atomic_compwritevalid,
 };
 
-int efa_ep_open(struct fid_domain *domain_fid, struct fi_info *info,
+int efa_ep_open(struct fid_domain *domain_fid, struct fi_info *user_info,
 		struct fid_ep **ep_fid, void *context)
 {
 	struct efa_domain *domain;
-	const struct fi_info *fi;
+	const struct fi_info *prov_info;
 	struct efa_ep *ep;
 	int ret;
 
 	domain = container_of(domain_fid, struct efa_domain,
 			      util_domain.domain_fid);
 
-	if (!info || !info->ep_attr || !info->domain_attr ||
-	    strncmp(domain->ctx->ibv_ctx->device->name, info->domain_attr->name,
-		    strlen(domain->ctx->ibv_ctx->device->name))) {
+	if (!user_info || !user_info->ep_attr || !user_info->domain_attr ||
+	    strncmp(domain->device->ibv_ctx->device->name, user_info->domain_attr->name,
+		    strlen(domain->device->ibv_ctx->device->name))) {
 		EFA_INFO(FI_LOG_DOMAIN, "Invalid info->domain_attr->name\n");
 		return -FI_EINVAL;
 	}
 
-	fi = efa_get_efa_info(info->domain_attr->name);
-	if (!fi) {
-		EFA_INFO(FI_LOG_DOMAIN, "Unable to find matching efa_info\n");
-		return -FI_EINVAL;
-	}
+	prov_info = efa_domain_get_prov_info(domain, user_info->ep_attr->type);
+	assert(prov_info);
 
-	if (info->ep_attr) {
-		ret = ofi_check_ep_attr(&efa_util_prov, info->fabric_attr->api_version, fi, info);
+	assert(user_info->ep_attr);
+	ret = ofi_check_ep_attr(&efa_util_prov, user_info->fabric_attr->api_version, prov_info, user_info);
+	if (ret)
+		return ret;
+
+	if (user_info->tx_attr) {
+		ret = ofi_check_tx_attr(&efa_prov, prov_info->tx_attr,
+					user_info->tx_attr, user_info->mode);
 		if (ret)
 			return ret;
 	}
 
-	if (info->tx_attr) {
-		ret = ofi_check_tx_attr(&efa_prov, fi->tx_attr,
-					info->tx_attr, info->mode);
+	if (user_info->rx_attr) {
+		ret = ofi_check_rx_attr(&efa_prov, prov_info, user_info->rx_attr, user_info->mode);
 		if (ret)
 			return ret;
 	}
 
-	if (info->rx_attr) {
-		ret = ofi_check_rx_attr(&efa_prov, fi, info->rx_attr, info->mode);
-		if (ret)
-			return ret;
-	}
-
-	ep = efa_ep_alloc(info);
+	ep = efa_ep_alloc(user_info);
 	if (!ep)
 		return -FI_ENOMEM;
 
-	ret = ofi_endpoint_init(domain_fid, &efa_util_prov, info, &ep->util_ep,
+	ret = ofi_endpoint_init(domain_fid, &efa_util_prov, user_info, &ep->util_ep,
 				context, efa_ep_progress);
 	if (ret)
 		goto err_ep_destroy;
 
+	ep->util_ep_initialized = true;
+
 	ret = ofi_bufpool_create(&ep->send_wr_pool,
 		sizeof(struct efa_send_wr) +
-		info->tx_attr->iov_limit * sizeof(struct ibv_sge),
+		user_info->tx_attr->iov_limit * sizeof(struct ibv_sge),
 		16, 0, 1024, 0);
 	if (ret)
 		goto err_ep_destroy;
 
 	ret = ofi_bufpool_create(&ep->recv_wr_pool,
 		sizeof(struct efa_recv_wr) +
-		info->rx_attr->iov_limit * sizeof(struct ibv_sge),
+		user_info->rx_attr->iov_limit * sizeof(struct ibv_sge),
 		16, 0, 1024, 0);
 	if (ret)
 		goto err_send_wr_destroy;
@@ -691,14 +688,33 @@ int efa_ep_open(struct fid_domain *domain_fid, struct fi_info *info,
 	ep->domain = domain;
 	ep->xmit_more_wr_tail = &ep->xmit_more_wr_head;
 	ep->recv_more_wr_tail = &ep->recv_more_wr_head;
+	ep->rnr_retry = rxr_env.rnr_retry;
 
-	if (info->src_addr) {
+	if (user_info->src_addr) {
 		ep->src_addr = (void *)calloc(1, EFA_EP_ADDR_LEN);
 		if (!ep->src_addr) {
 			ret = -FI_ENOMEM;
 			goto err_recv_wr_destroy;
 		}
-		memcpy(ep->src_addr, info->src_addr, info->src_addrlen);
+		memcpy(ep->src_addr, user_info->src_addr, user_info->src_addrlen);
+	}
+
+	if (ep->domain->hmem_info[FI_HMEM_CUDA].initialized) {
+		/*
+		 * Set the default to required. NCCL plugin requires p2p, but
+		 * does not call setopt for this option in older NCCL plugin
+		 * versions.
+		 */
+		ep->hmem_p2p_opt = FI_HMEM_P2P_REQUIRED;
+	} else if (ep->domain->hmem_info[FI_HMEM_NEURON].initialized) {
+		/* Neuron requires p2p and supports no other modes. */
+		ep->hmem_p2p_opt = FI_HMEM_P2P_REQUIRED;
+	} else if (ep->domain->hmem_info[FI_HMEM_SYNAPSEAI].initialized) {
+		/* SynapseAI requires p2p and supports no other modes. */
+		ep->hmem_p2p_opt = FI_HMEM_P2P_REQUIRED;
+	} else {
+		/* no hmem devices, disable p2p */
+		ep->hmem_p2p_opt = FI_HMEM_P2P_DISABLED;
 	}
 
 	*ep_fid = &ep->util_ep.ep_fid;

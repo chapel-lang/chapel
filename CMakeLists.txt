@@ -27,18 +27,22 @@ if (CMAKE_VERSION VERSION_LESS 3.20)
                   release. You have ${CMAKE_VERSION}")
 endif()
 
+# generate the compile_commands.json compilation database
+# tools like the fieldsUsed linter require this
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 30)
+set(CHPL_MINOR_VERSION 31)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
-set(CHPL_OFFICIAL_RELEASE true)
+set(CHPL_OFFICIAL_RELEASE false)
 
 ### END config.h version value setting - configured_prefix set below ###
 
@@ -135,6 +139,7 @@ set(CHPL_RE2_IS_OVERRIDDEN CACHE INTERNAL "Description")
 set(CHPL_LLVM_VERSION CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_C CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_CXX CACHE INTERNAL "Description")
+set(CHPL_LLVM_STATIC_DYNAMIC CACHE INTERNAL "Description")
 set(CHPL_RUNTIME_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_LAUNCHER_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_COMPILER_SUBDIR CACHE INTERNAL "Description")

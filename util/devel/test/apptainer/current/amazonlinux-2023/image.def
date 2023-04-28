@@ -1,0 +1,14 @@
+BootStrap: docker
+From: amazonlinux:2023
+
+
+%files
+    ../../provision-scripts/* /provision-scripts/
+
+%post
+    /provision-scripts/dnf-deps.sh
+    # this installs clang 14 / llvm 14
+    dnf -y install clang clang-devel llvm-devel
+
+%runscript
+    ../../provision-scripts/run.sh

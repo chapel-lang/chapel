@@ -66,22 +66,40 @@ static void tcpx_init_env(void)
 	size_t tx_size;
 	size_t rx_size;
 
+	/* Checked in util code */
 	fi_param_define(&tcpx_prov, "iface", FI_PARAM_STRING,
 			"Specify interface name");
 
 	fi_param_define(&tcpx_prov,"port_low_range", FI_PARAM_INT,
 			"define port low range");
-
 	fi_param_define(&tcpx_prov,"port_high_range", FI_PARAM_INT,
 			"define port high range");
+	fi_param_get_int(&tcpx_prov, "port_high_range", &port_range.high);
+	fi_param_get_int(&tcpx_prov, "port_low_range", &port_range.low);
+
+	if (port_range.high > TCPX_PORT_MAX_RANGE)
+		port_range.high = TCPX_PORT_MAX_RANGE;
+
+	if (port_range.low < 0 || port_range.high < 0 ||
+	    port_range.low > port_range.high) {
+		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,"User provided "
+			"port range invalid. Ignoring. \n");
+		port_range.low  = 0;
+		port_range.high = 0;
+	}
 
 	fi_param_define(&tcpx_prov,"tx_size", FI_PARAM_SIZE_T,
 			"define default tx context size (default: %zu)",
 			tcpx_default_tx_size);
-
 	fi_param_define(&tcpx_prov,"rx_size", FI_PARAM_SIZE_T,
 			"define default rx context size (default: %zu)",
 			tcpx_default_rx_size);
+	if (!fi_param_get_size_t(&tcpx_prov, "tx_size", &tx_size)) {
+		tcpx_default_tx_size = tx_size;
+	}
+	if (!fi_param_get_size_t(&tcpx_prov, "rx_size", &rx_size)) {
+		tcpx_default_rx_size = rx_size;
+	}
 
 	fi_param_define(&tcpx_prov, "nodelay", FI_PARAM_BOOL,
 			"overrides default TCP_NODELAY socket setting");
@@ -103,29 +121,6 @@ static void tcpx_init_env(void)
 	fi_param_get_int(&tcpx_prov, "prefetch_rbuf_size",
 			 &tcpx_prefetch_rbuf_size);
 	fi_param_get_size_t(&tcpx_prov, "zerocopy_size", &tcpx_zerocopy_size);
-
-	fi_param_get_int(&tcpx_prov, "port_high_range", &port_range.high);
-	fi_param_get_int(&tcpx_prov, "port_low_range", &port_range.low);
-
-	if (port_range.high > TCPX_PORT_MAX_RANGE)
-		port_range.high = TCPX_PORT_MAX_RANGE;
-
-	if (port_range.low < 0 || port_range.high < 0 ||
-	    port_range.low > port_range.high) {
-		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,"User provided "
-			"port range invalid. Ignoring. \n");
-		port_range.low  = 0;
-		port_range.high = 0;
-	}
-
-	if (!fi_param_get_size_t(&tcpx_prov, "tx_size", &tx_size)) {
-		tcpx_default_tx_size = tx_size;
-	}
-
-	if (!fi_param_get_size_t(&tcpx_prov, "rx_size", &rx_size)) {
-		tcpx_default_rx_size = rx_size;
-	}
-
 }
 
 static void fi_tcp_fini(void)

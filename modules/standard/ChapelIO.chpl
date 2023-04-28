@@ -728,22 +728,16 @@ module ChapelIO {
 
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
+  // Follows operator :(range, string)
   pragma "no doc"
   proc range.writeThis(f) throws
   {
-    // a range with a more normalized alignment
-    // a separate variable so 'this' can be const
-    var alignCheckRange = this;
-    if f.writing {
-      alignCheckRange.normalizeAlignment();
-    }
-
-    if (boundedType == BoundedRangeType.bounded ||
-        boundedType == BoundedRangeType.boundedLow) then
+    if hasLowBound() then
       f.write(lowBound);
+
     f._writeLiteral("..");
-    if (boundedType == BoundedRangeType.bounded ||
-        boundedType == BoundedRangeType.boundedHigh) {
+
+    if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);
@@ -751,16 +745,17 @@ module ChapelIO {
         f.write(highBound);
       }
     }
+
     if stride != 1 {
       f._writeLiteral(" by ");
       f.write(stride);
-    }
 
+      if stride != -1 && aligned && ! isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
-    if ! alignCheckRange.isNaturallyAligned() && aligned {
       f._writeLiteral(" align ");
       f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
+      }
     }
   }
 
@@ -792,10 +787,10 @@ module ChapelIO {
   }
 
   proc range.init(type idxType = int,
-                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param bounds : boundKind = boundKind.both,
                   param stridable : bool = false,
                   reader: fileReader(?)) {
-    this.init(idxType, boundedType, stridable);
+    this.init(idxType, bounds, stridable);
 
     // TODO:
     // The alignment logic here is pretty tricky, so fall back on the

@@ -42,7 +42,6 @@
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
 
 #include <pwd.h>
 #include <unistd.h>
@@ -65,6 +64,7 @@ char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
 std::string ldflags;
+bool ccwarnings = false;
 
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
@@ -116,24 +116,26 @@ void ensureDirExists(const char* dirname, const char* explanation) {
   }
 }
 
-const char* makeTempDir(const char* dirPrefix) {
- std::string tmpDirPath;
- if (auto err = chpl::makeTempDir(std::string(dirPrefix), tmpDirPath)) {
-  USR_FATAL(NULL, "%s", err.message().c_str());
- }
+static const char* makeTempDir() {
+ std::string tmpDirPath = gContext->tmpDir();
+ ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
+
  return astr(tmpDirPath.c_str());
 }
 
 void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
-      tmpdirname = makeTempDir("chpl-");
-      intDirName = tmpdirname;
+    if (intDirName == NULL) {
+      intDirName = makeTempDir();
     }
   } else {
     if (intDirName != saveCDir) {
       intDirName = saveCDir;
       ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      if (0 != strcmp(makeTempDir(), saveCDir)) {
+        // expected gContext to have been constructed with saveCDir
+        INT_FATAL("misconfiguration with temp dir");
+      }
     }
   }
 }
@@ -146,40 +148,6 @@ void deleteDir(const char* dirname) {
               err.message().c_str());
   }
 }
-
-
-void deleteTmpDir() {
-  static int inDeleteTmpDir = 0; // break infinite recursion
-
-  if (inDeleteTmpDir) {
-    return;
-  }
-  inDeleteTmpDir = 1;
-
-#ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
-    if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
-        strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL("tmp directory name looks fishy");
-    }
-    deleteDir(tmpdirname);
-    tmpdirname = NULL;
-  }
-  if (doctmpdirname != NULL) {
-    if (strlen(doctmpdirname) < 1 ||
-        strchr(doctmpdirname, '*') != NULL ||
-        strcmp(doctmpdirname, "//") == 0) {
-      INT_FATAL("doc tmp directory name looks fishy");
-    }
-    deleteDir(doctmpdirname);
-    doctmpdirname = NULL;
-  }
-#endif
-
-  inDeleteTmpDir = 0;
-}
-
 
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
@@ -725,16 +693,15 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   // Compiler flags for each deliverable.
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
   if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
-            "$(SHARED_LIB_CFLAGS)",
-            includedirs.c_str(),
-            ccflags.c_str());
-  } else {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
-            includedirs.c_str(),
-            ccflags.c_str());
+    fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
+  fprintf(makefile.fptr, "%s %s%s\n",
+          includedirs.c_str(),
+          ccflags.c_str(),
+          // We only need to compute and store dependencies if --savec is used
+          (saveCDir[0] ? " $(DEPEND_CFLAGS)" : ""));
 
   // Linker flags for each deliverable.
   const char* lmode = "";
@@ -847,6 +814,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
+
+  // We only need to compute and store dependencies if --savec is used
+  if (saveCDir[0]) {
+    fprintf(makefile.fptr, "DEPENDS = output/*.d\n\n");
+    fprintf(makefile.fptr, "-include $(DEPENDS)\n");
+  }
 
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);

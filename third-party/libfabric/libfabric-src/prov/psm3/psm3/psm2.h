@@ -103,8 +103,8 @@ extern "C" {
  * an object (or handle) instantiated to support sending and receiving messages
  * to other endpoints.  In order to prevent PSM2 from being tied to a particular
  * parallel model (such as SPMD), control over the parallel layout of endpoints
- * is retained by the user.  Opening endpoints (@ref psm2_ep_open) and
- * connecting endpoints to enable communication (@ref psm2_ep_connect) are two
+ * is retained by the user.  Opening endpoints (@ref psm3_ep_open) and
+ * connecting endpoints to enable communication (@ref psm3_ep_connect) are two
  * decoupled mechanisms.  Users that do not dynamically change the number of
  * endpoints beyond parallel startup will probably lump both mechanisms
  * together at startup.  Users that wish to manipulate the location and number
@@ -113,14 +113,14 @@ extern "C" {
  *
  * As a side effect, this greater flexibility forces the user to cope with a
  * two-stage initialization process.  In the first stage of opening an endpoint
- * (@ref psm2_ep_open), a user obtains an opaque handle to the endpoint and a
+ * (@ref psm3_ep_open), a user obtains an opaque handle to the endpoint and a
  * globally distributable endpoint identifier (@ref psm2_epid_t).  Prior to the
- * second stage of connecting endpoints (@ref psm2_ep_connect), a user must
+ * second stage of connecting endpoints (@ref psm3_ep_connect), a user must
  * distribute all relevent endpoint identifiers through an out-of-band
  * mechanism.  Once the endpoint identifiers are successfully distributed to
  * all processes that wish to communicate, the user
  * connects all endpoint identifiers to the locally opened endpoint
- * (@ref psm2_ep_connect).  In connecting the endpoints, the user obtains an
+ * (@ref psm3_ep_connect).  In connecting the endpoints, the user obtains an
  * opaque endpoint address (@ref psm2_epaddr_t), which is required for all PSM
  * communication primitives.
  *
@@ -189,12 +189,12 @@ extern "C" {
  * parameter.
  *
  * @li @b Global error handling captures errors for functions where a
- * particular endpoint cannot be identified or for @ref psm2_ep_open, where
+ * particular endpoint cannot be identified or for @ref psm3_ep_open, where
  * errors (if any) occur before the endpoint is opened.
  *
  * Error handling is controlled by registering error handlers (@ref
- * psm2_error_register_handler).  The global error handler can
- * be set at any time (even before @ref psm2_init), whereas a per-endpoint error
+ * psm3_error_register_handler).  The global error handler can
+ * be set at any time (even before @ref psm3_init), whereas a per-endpoint error
  * handler can be set as soon as a new endpoint is successfully created.  If a
  * per-endpoint handle is not registered, the per-endpoint handler inherits
  * from the global error handler at time of open.
@@ -211,7 +211,7 @@ extern "C" {
  *
  * The No-op PSM2 error handler bypasses all error handling functionality and
  * always returns the error to the user.  The user can then use @ref
- * psm2_error_get_string to obtain a generic string from an error code (compared
+ * psm3_error_get_string to obtain a generic string from an error code (compared
  * to a more detailed error message available through registering of error
  * handlers).
  *
@@ -231,7 +231,7 @@ extern "C" {
  * require shared-memory communications, @b PSM3_DEVICES can be specified as @c
  * self, @c hfi.  Similarly, for shared-memory only jobs, the @c hfi device
  * can be disabled.  It is up to the user to ensure that the endpoint ids
- * passed in @ref psm2_ep_connect do not require a device that has been
+ * passed in @ref psm3_ep_connect do not require a device that has been
  * explicitly disabled by the user.  In some instances, enabling only the
  * devices that are required may improve performance.
  *
@@ -272,7 +272,7 @@ typedef struct psm2_ep *psm2_ep_t;
  * @ingroup mq
  *
  * Handle returned to the user when a new Matched queue is created (@ref
- * psm2_mq_init).  */
+ * psm3_mq_init).  */
 typedef struct psm2_mq *psm2_mq_t;
 
 /*! @defgroup init PSM2 Initialization and Maintenance
@@ -288,15 +288,15 @@ typedef struct psm2_mq *psm2_mq_t;
 enum psm2_error {
 	/*! Interface-wide "ok", guaranteed to be 0. */
 	PSM2_OK = 0,
-	/*! No events progressed on @ref psm2_poll (not fatal) */
+	/*! No events progressed on @ref psm3_poll (not fatal) */
 	PSM2_OK_NO_PROGRESS = 1,
 	/*! Error in a function parameter */
 	PSM2_PARAM_ERR = 3,
 	/*! PSM2 ran out of memory */
 	PSM2_NO_MEMORY = 4,
-	/*! PSM2 has not been initialized by @ref psm2_init */
+	/*! PSM2 has not been initialized by @ref psm3_init */
 	PSM2_INIT_NOT_INIT = 5,
-	/*! API version passed in @ref psm2_init is incompatible */
+	/*! API version passed in @ref psm3_init is incompatible */
 	PSM2_INIT_BAD_API_VERSION = 6,
 	/*! PSM2 Could not set affinity */
 	PSM2_NO_AFFINITY = 7,
@@ -314,11 +314,14 @@ enum psm2_error {
 	/*! PSM2 is finalized */
 	PSM2_IS_FINALIZED = 13,
 
+	/*! TCP data send is successful */
+	PSM2_TCP_DATA_SENT = 14,
+
 	/*! Endpoint was closed */
 	PSM2_EP_WAS_CLOSED = 20,
 	/*! PSM2 Could not find an OPA Unit */
 	PSM2_EP_NO_DEVICE = 21,
-	/*! User passed a bad unit or port number */
+	/*! User passed a bad unit or port number or address index */
 	PSM2_EP_UNIT_NOT_FOUND = 22,
 	/*! Failure in initializing endpoint */
 	PSM2_EP_DEVICE_FAILURE = 23,
@@ -427,7 +430,7 @@ typedef enum psm2_path_res psm2_path_res_t;
  *                                the loaded library.
  *
  * @pre The user has not called any other PSM2 library call except @ref
- *      psm2_error_register_handler to register a global error handler.
+ *      psm3_error_register_handler to register a global error handler.
  *
  * @post Depending on the environment variable @ref PSM3_MULTI_EP being set and
  * 	 its contents, support for opening multiple endpoints is either enabled
@@ -445,26 +448,26 @@ typedef enum psm2_path_res psm2_path_res_t;
    	// In this example, we want to handle our own errors before doing init,
    	// since we don't want a fatal error if OPA is not found.
    	// Note that @ref psm2_error_register_handler
-   	// (and @ref psm2_get_capability_mask)
+   	// (and @ref psm3_get_capability_mask)
    	// are the only function that can be called before @ref psm2_init
 
    	int try_to_initialize_psm() {
    	    int verno_major = PSM2_VERNO_MAJOR;
    	    int verno_minor = PSM2_VERNO_MINOR;
 
-   	    int err = psm2_error_register_handler(NULL,  // Global handler
+   	    int err = psm3_error_register_handler(NULL,  // Global handler
    	                                 PSM2_ERRHANDLER_NO_HANDLER); // return errors
    	    if (err) {
    	       fprintf(stderr, "Couldn't register global handler: %s\n",
-   	   	          psm2_error_get_string(err));
+   	   	          psm3_error_get_string(err));
    	       return -1;
    	    }
 
-   	    err = psm2_init(&verno_major, &verno_minor);
+   	    err = psm3_init(&verno_major, &verno_minor);
    	    if (err || verno_major > PSM2_VERNO_MAJOR) {
    	       if (err)
    	         fprintf(stderr, "PSM3 initialization failure: %s\n",
-   	                 psm2_error_get_string(err));
+   	                 psm3_error_get_string(err));
    	     else
    	         fprintf(stderr, "PSM3 loaded an unexpected/unsupported "
    	                         "version (%d.%d)\n", verno_major, verno_minor);
@@ -473,18 +476,18 @@ typedef enum psm2_path_res psm2_path_res_t;
 
    	    // We were able to initialize PSM2 but will defer all further error
    	    // handling since most of the errors beyond this point will be fatal.
-   	    int err = psm2_error_register_handler(NULL,  // Global handler
+   	    int err = psm3_error_register_handler(NULL,  // Global handler
    	                                          PSM2_ERRHANDLER_PSM_HANDLER);
    	    if (err) {
    	       fprintf(stderr, "Couldn't register global errhandler: %s\n",
-   	   	          psm2_error_get_string(err));
+   	   	          psm3_error_get_string(err));
    	       return -1;
    	    }
    	    return 1;
    	}
    @endcode
  */
-psm2_error_t psm2_init(int *api_verno_major, int *api_verno_minor);
+psm2_error_t psm3_init(int *api_verno_major, int *api_verno_minor);
 
 /*! @brief PSM2 capabilities definitions
  *
@@ -500,7 +503,7 @@ psm2_error_t psm2_init(int *api_verno_major, int *api_verno_minor);
  * @param[in] req_cap_mask Requested capabilities are given as bit field.
  *
  * @returns internal capabilities bit field ANDed with a requested bit mask */
-uint64_t psm2_get_capability_mask(uint64_t req_cap_mask);
+uint64_t psm3_get_capability_mask(uint64_t req_cap_mask);
 
 /** @brief Finalize PSM2 interface
  *
@@ -510,7 +513,7 @@ uint64_t psm2_get_capability_mask(uint64_t req_cap_mask);
  * psm2_init.
  *
  * @returns PSM2_OK Always returns @c PSM2_OK */
-psm2_error_t psm2_finalize(void);
+psm2_error_t psm3_finalize(void);
 
 /** @brief Error handling opaque token
  *
@@ -533,7 +536,7 @@ typedef struct psm2_error_token *psm2_error_token_t;
  *                         PSM2_ERRSTRING_MAXLEN.
  * @param[in] token Opaque PSM2 token associated with the particular event that
  *		    generated the error.  The token can be used to extract the
- *		    error string and can be passed to @ref psm2_error_defer to
+ *		    error string and can be passed to @ref psm3_error_defer to
  *		    defer any remaining or unhandled error handling to PSM.
  *
  * @post If the error handler returns, the error returned is propagated to the
@@ -577,7 +580,7 @@ typedef psm2_error_t(*psm2_ep_errhandler_t) (psm2_ep_t ep,
  * called before @ref psm2_init
  */
 psm2_error_t
-psm2_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandler);
+psm3_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandler);
 
 /** @brief PSM2 deferred error handler
  *
@@ -592,7 +595,7 @@ psm2_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandler)
  *
  * @post The function may or may not return depending on the error
  */
-psm2_error_t psm2_error_defer(psm2_error_token_t err_token);
+psm2_error_t psm3_error_defer(psm2_error_token_t err_token);
 
 /** @brief Get generic error string from error
  *
@@ -604,7 +607,7 @@ psm2_error_t psm2_error_defer(psm2_error_token_t err_token);
  *
  * @param[in] error PSM2 error
  */
-const char *psm2_error_get_string(psm2_error_t error);
+const char *psm3_error_get_string(psm2_error_t error);
 
 /** @brief Option key/pair structure
  *
@@ -623,18 +626,20 @@ struct psm2_optkey {
 
 /** @brief Endpoint ID
  *
- * Integral type of size 8 bytes that can be used by the user to globally
+ * Integral type of size 24 bytes that can be used by the user to globally
  * identify a successfully opened endpoint.  Although the contents of the
  * endpoint id integral type remains opaque to the user, unique network id and
- * OPA port number can be extracted using @ref psm2_epid_nid and @ref
- * psm2_epid_context.
+ * context within node (aka port) can be extracted using @ref psm3_epid_nid
+ * and @ref psm3_epid_context.
  */
-typedef uint64_t psm2_epid_t;
+typedef struct {
+	uint64_t w[3];
+} psm2_epid_t;
 
 /** @brief Endpoint Address (opaque)
  *
  * Remote endpoint addresses are created when the user binds an endpoint ID
- * to a particular endpoint handle using @ref psm2_ep_connect.  A given endpoint
+ * to a particular endpoint handle using @ref psm3_ep_connect.  A given endpoint
  * address is only guaranteed to be valid over a single endpoint.
  */
 typedef struct psm2_epaddr *psm2_epaddr_t;
@@ -648,26 +653,61 @@ typedef struct psm2_epaddr *psm2_epaddr_t;
  */
 typedef uuid_t psm2_uuid_t;
 
-/** @brief Get Endpoint identifier's Unique Network ID */
-uint64_t psm2_epid_nid(psm2_epid_t epid);
+/** @brief Network ID
+ *
+ * A type of epid that can be used by the user to globally
+ * identify a NIC within a given node.  This may be extracted from an
+ * Endpoint ID by using @ref psm3_epid_nid
+ */
+typedef psm2_epid_t psm2_nid_t;
+
+#if 0
+/** @brief Get Endpoint identifier's Unique Network ID
+ */
+psm2_nid_t psm3_epid_nid(psm2_epid_t epid);
 
 /** @brief Get Endpoint identifier's OPA context number */
-uint64_t psm2_epid_context(psm2_epid_t epid);
+uint64_t psm3_epid_context(psm2_epid_t epid);
+#endif // 0
 
 /** @brief Get Endpoint identifier's OPA port (deprecated, use
- * @ref psm2_epid_context instead) */
-uint64_t psm2_epid_port(psm2_epid_t epid);
+ * @ref psm3_epid_context instead) */
+uint64_t psm3_epid_port(psm2_epid_t epid);
 
-/** @brief List the number of available OPA units
+/** @brief Compare Endpoint identifiers */
+int psm3_epid_cmp(psm2_epid_t a, psm2_epid_t b);
+
+/** @brief Simple hex format of Endpoint identifier, bufno = 0 or 1 */
+const char *psm3_epid_fmt(psm2_epid_t epid, int bufno);
+
+/** @brief Compare Endpoint identifier to zero/empty */
+int psm3_epid_zero(psm2_epid_t a);
+
+/** @brief Zero out Endpoint identifier */
+psm2_epid_t psm3_epid_zeroed(void);
+
+/** @brief Compare Network identifiers */
+int psm3_nid_cmp(psm2_nid_t a, psm2_nid_t b);
+
+/** @brief Format of Network identifier, bufno = 0 or 1 */
+const char *psm2_nid_fmt(psm2_nid_t nid, int bufno);
+
+/** @brief Compare Network identifier to zero/empty */
+int psm3_nid_zero(psm2_nid_t a);
+
+/** @brief Zero out Network identifier */
+psm2_nid_t psm3_nid_zeroed(void);
+
+/** @brief List the number of available units (NIC devices)
  *
- * Function used to determine the number of locally available OPA units.
- * For @c N units, valid unit numbers in @ref psm2_ep_open are @c 0 to @c N-1.
+ * Function used to determine the number of locally available units (NICs).
+ * For @c N units, valid unit numbers in @ref psm3_ep_open are @c 0 to @c N-1.
  *
  * @returns PSM2_OK unless the user has not called @ref psm2_init
  */
-psm2_error_t psm2_ep_num_devunits(uint32_t *num_units);
+psm2_error_t psm3_ep_num_devunits(uint32_t *num_units);
 
-/* Affinity modes for the affinity member of struct psm2_ep_open_opts */
+/* Affinity modes for the affinity member of struct psm3_ep_open_opts */
 #define PSM2_EP_OPEN_AFFINITY_SKIP     0	/**< Disable setting affinity */
 #define PSM2_EP_OPEN_AFFINITY_SET      1	/**< Enable setting affinity unless
 					  already set */
@@ -682,12 +722,12 @@ psm2_error_t psm2_ep_num_devunits(uint32_t *num_units);
  *
  * These options are available for opening a PSM2 endpoint.  Each is
  * individually documented and setting each option to -1 or passing NULL as the
- * options parameter in @ref psm2_ep_open instructs PSM2 to use
+ * options parameter in @ref psm3_ep_open instructs PSM2 to use
  * implementation-defined defaults.
  *
- * Each option is documented in @ref psm2_ep_open
+ * Each option is documented in @ref psm3_ep_open
  */
-struct psm2_ep_open_opts {
+struct psm3_ep_open_opts {
 	int64_t timeout;	/**< timeout in nanoseconds to open device */
 	int unit;		/**< OPA Unit ID to open on */
 	int affinity;		/**< How PSM2 should set affinity */
@@ -695,6 +735,7 @@ struct psm2_ep_open_opts {
 	int sendbufs_num;	/**< Preallocated send buffers */
 	uint64_t network_pkey;	/**< Network Protection Key (v1.01) */
 	int port;		/**< IB port to use (1 to N) */
+	int addr_index;		/**< address index within port to use (0 to N) */
 	int outsl;		/**< IB SL to use when sending pkts */
 	uint64_t service_id;	/* IB Service ID to use for endpoint */
 	psm2_path_res_t path_res_type;	/* Path resolution type */
@@ -708,11 +749,11 @@ struct psm2_ep_open_opts {
  * adapter.  The returned endpoint handle is required in all PSM2 communication
  * operations, as PSM2 can manage communication over multiple endpoints.  An
  * opened endpoint has no global context until the user connects the endpoint
- * to other global endpoints by way of @ref psm2_ep_connect.  All local endpoint
+ * to other global endpoints by way of @ref psm3_ep_connect.  All local endpoint
  * handles are globally identified by endpoint IDs (@ref psm2_epid_t) which are
  * also returned when an endpoint is opened.  It is assumed that the user can
  * provide an out-of-band mechanism to distribute the endpoint IDs in order to
- * establish connections between endpoints (@ref psm2_ep_connect for more
+ * establish connections between endpoints (@ref psm3_ep_connect for more
  * information).
  *
  * @param[in] unique_job_key Endpoint key, to uniquely identify the endpoint in
@@ -721,8 +762,8 @@ struct psm2_ep_open_opts {
  *                           enough to prevent duplicate keys over the same set
  *                           of endpoints (see comments below).
  *
- * @param[in] opts Open options of type @ref psm2_ep_open_opts
- *                 (see @ref psm2_ep_open_opts_get_defaults).
+ * @param[in] opts Open options of type @ref psm3_ep_open_opts
+ *                 (see @ref psm3_ep_open_opts_get_defaults).
  *
  * @param[out] ep User-supplied storage to return a pointer to the newly
  *                created endpoint.  The returned pointer of type @ref psm2_ep_t
@@ -771,7 +812,7 @@ struct psm2_ep_open_opts {
  *                       this parameter should be set to
  *                       PSM2_EP_OPEN_PKEY_DEFAULT.
  *
- * @warning By default, PSM2 limits the user to calling @ref psm2_ep_open only
+ * @warning By default, PSM2 limits the user to calling @ref psm3_ep_open only
  * once per process and subsequent calls will fail. In order to enable creation
  * of multiple endoints per process, one must properly set the environment variable
  * @ref PSM3_MULTI_EP before calling @ref psm2_init.
@@ -788,12 +829,12 @@ struct psm2_ep_open_opts {
     	                             psm2_epid_t *epid, // output endpoint identifier
     	                             int unit)  // unit of our choice
     	{
-    	   struct psm2_ep_open_opts epopts;
+    	   struct psm3_ep_open_opts epopts;
     	   psm2_uuid_t job_uuid;
     	   char *c;
 
     	   // Let PSM2 assign its default values to the endpoint options.
-    	   psm2_ep_open_opts_get_defaults(&epopts);
+    	   psm3_ep_open_opts_get_defaults(&epopts);
 
     	   // We want a stricter timeout and a specific unit
     	   epopts.timeout = 15*1e9;  // 15 second timeout
@@ -801,6 +842,8 @@ struct psm2_ep_open_opts {
     	                             // choose the unit for us.
     	   epopts.port = port;	// We want a specific unit, <= 0 would let PSM
     	                             // choose the port for us.
+    	   epopts.addr_index = index;	// We want a specific address, <= 0 would let PSM
+    	                             // choose the address for us.
     	   // We've already set affinity, don't let PSM2 do so if it wants to.
     	   if (epopts.affinity == PSM2_EP_OPEN_AFFINITY_SET)
     	      epopts.affinity = PSM2_EP_OPEN_AFFINITY_SKIP;
@@ -817,31 +860,31 @@ struct psm2_ep_open_opts {
     	   }
 
     	   // Assume we don't want to handle errors here.
-    	   psm2_ep_open(job_uuid, &epopts, ep, epid);
+    	   psm3_ep_open(job_uuid, &epopts, ep, epid);
     	   return 1;
     	}
    @endcode
  */
 psm2_error_t
-psm2_ep_open(const psm2_uuid_t unique_job_key,
-	    const struct psm2_ep_open_opts *opts, psm2_ep_t *ep,
+psm3_ep_open(const psm2_uuid_t unique_job_key,
+	    const struct psm3_ep_open_opts *opts, psm2_ep_t *ep,
 	    psm2_epid_t *epid);
 
 /** @brief Endpoint open default options.
  *
  * Function used to initialize the set of endpoint options to their default
- * values for use in @ref psm2_ep_open.
+ * values for use in @ref psm3_ep_open.
  *
  * @param[out] opts Endpoint Open options.
  *
  * @warning For portable operation, users should always call this function
- * prior to calling @ref psm2_ep_open.
+ * prior to calling @ref psm3_ep_open.
  *
  * @return PSM2_OK If result could be updated
  * @return PSM2_INIT_NOT_INIT If psm has not been initialized.
  */
 psm2_error_t
-psm2_ep_open_opts_get_defaults(struct psm2_ep_open_opts *opts);
+psm3_ep_open_opts_get_defaults(struct psm3_ep_open_opts *opts);
 
 /** @brief Endpoint shared memory query
  *
@@ -858,7 +901,7 @@ psm2_ep_open_opts_get_defaults(struct psm2_ep_open_opts *opts);
  * @return PSM2_EPID_UNKNOWN If the epid is not recognized
  */
 psm2_error_t
-psm2_ep_epid_share_memory(psm2_ep_t ep, psm2_epid_t epid, int *result);
+psm3_ep_epid_share_memory(psm2_ep_t ep, psm2_epid_t epid, int *result);
 
 /** @brief Close endpoint
  * @param[in] ep PSM2 endpoint handle
@@ -875,16 +918,16 @@ psm2_ep_epid_share_memory(psm2_ep_t ep, psm2_epid_t epid, int *result);
  * @return PSM2_EP_CLOSE_TIMEOUT Endpoint could not be successfully closed
  *                              within timeout.
  */
-psm2_error_t psm2_ep_close(psm2_ep_t ep, int mode, int64_t timeout);
+psm2_error_t psm3_ep_close(psm2_ep_t ep, int mode, int64_t timeout);
 
-#define PSM2_EP_CLOSE_GRACEFUL	0	/**< Graceful mode in @ref psm2_ep_close */
-#define PSM2_EP_CLOSE_FORCE	1	/**< Forceful mode in @ref psm2_ep_close */
+#define PSM2_EP_CLOSE_GRACEFUL	0	/**< Graceful mode in @ref psm3_ep_close */
+#define PSM2_EP_CLOSE_FORCE	1	/**< Forceful mode in @ref psm3_ep_close */
 
 /** @brief Provide mappings for network id to hostname
  *
  * Since PSM2 does not assume or rely on the availability of an external
  * networkid-to-hostname mapping service, users can provide one or more of
- * these mappings.  The @ref psm2_map_nid_hostname function allows a list of
+ * these mappings.  The @ref psm3_map_nid_hostname function allows a list of
  * network ids to be associated to hostnames.
  *
  * This function is not mandatory for correct operation but may allow PSM2 to
@@ -892,15 +935,15 @@ psm2_error_t psm2_ep_close(psm2_ep_t ep, int mode, int64_t timeout);
  * otherwise only be identified by their network id.
  *
  * @param[in] num Number elements in @c nid and @c hostnames arrays
- * @param[in] nids User-provided array of network ids (i.e. OPA LIDs),
- *                 should be obtained by calling @ref psm2_epid_nid on each
+ * @param[in] nids User-provided array of network ids
+ *                 should be obtained by calling @ref psm3_epid_nid on each
  *                 epid.
  * @param[in] hostnames User-provided array of hostnames (array of
  *                      NUL-terimated strings) where each hostname index
  *                      maps to the provided nid hostname.
  *
  * @warning Duplicate nids may be provided in the input @c nids array, only
- *          the first corresponding hostname will be remembered.
+ *          the last corresponding hostname will be remembered.
  *
  * @pre The user may or may not have already provided a hostname mappings.
  * @post The user may free any dynamically allocated memory passed to the
@@ -908,7 +951,7 @@ psm2_error_t psm2_ep_close(psm2_ep_t ep, int mode, int64_t timeout);
  *
  */
 psm2_error_t
-psm2_map_nid_hostname(int num, const uint64_t *nids, const char **hostnames);
+psm3_map_nid_hostname(int num, const psm2_nid_t *nids, const char **hostnames);
 
 /** @brief Connect one or more remote endpoints to a local endpoint
  *
@@ -975,7 +1018,7 @@ psm2_map_nid_hostname(int num, const uint64_t *nids, const char **hostnames);
  * @post If unsuccessful, the user can query the return status of each
  *       individual remote endpoint in @c array_of_errors.
  *
- * @post The user can call into @ref psm2_ep_connect many times with the same
+ * @post The user can call into @ref psm3_ep_connect many times with the same
  *       endpoint ID and the function is guaranteed to return the same output
  *       parameters.
  *
@@ -1005,7 +1048,7 @@ psm2_map_nid_hostname(int num, const uint64_t *nids, const char **hostnames);
    	    if (all_epaddrs == NULL)
    	        return -1;
 
-   	    psm2_ep_connect(ep, numep, array_of_epid,
+   	    psm3_ep_connect(ep, numep, array_of_epid,
    	                   NULL, // We want to connect all epids, no mask needed
    	                   errors,
    	                   all_epaddrs,
@@ -1017,7 +1060,7 @@ psm2_map_nid_hostname(int num, const uint64_t *nids, const char **hostnames);
    @endcode
  */
 psm2_error_t
-psm2_ep_connect(psm2_ep_t ep, int num_of_epid, const psm2_epid_t *array_of_epid,
+psm3_ep_connect(psm2_ep_t ep, int num_of_epid, const psm2_epid_t *array_of_epid,
 		   const int *array_of_epid_mask, psm2_error_t *array_of_errors,
 		   psm2_epaddr_t *array_of_epaddr, int64_t timeout);
 
@@ -1026,10 +1069,10 @@ psm2_ep_connect(psm2_ep_t ep, int num_of_epid, const psm2_epid_t *array_of_epid,
 * Function to non-collectively disconnect a connection to a set of endpoint
 * addresses and free the endpoint addresses. After disconnecting, the
 * application cannot send messages to the remote processes and PSM2 is
-* restored back to the state before calling psm2_ep_connect. The application
-* must call psm2_ep_connect to establish the connections again.
+* restored back to the state before calling psm3_ep_connect. The application
+* must call psm3_ep_connect to establish the connections again.
 *
-* This function is equivalent to calling psm2_ep_disconnect2() with mode ==
+* This function is equivalent to calling psm3_ep_disconnect2() with mode ==
 * PSM2_EP_DISCONNECT_GRACEFUL.
 *
 * @param[in] ep PSM2 endpoint handle
@@ -1041,7 +1084,7 @@ psm2_ep_connect(psm2_ep_t ep, int num_of_epid, const psm2_epid_t *array_of_epid,
 * @param[in] array_of_epaddr User-allocated array that contains num_of_epaddr
 *                            valid endpoint addresses. Each endpoint address (or
 *                            epaddr) has been obtained through a previous
-*                            psm2_ep_connect call.
+*                            psm3_ep_connect call.
 *
 * @param[in] array_of_epaddr_mask User-allocated array that contains
 *                                 num_of_epaddr integers. This array of masks
@@ -1069,7 +1112,7 @@ psm2_ep_connect(psm2_ep_t ep, int num_of_epid, const psm2_epid_t *array_of_epid,
 *                    waits until all endpoints have been successfully
 *                    disconnected or until an error is detected.
 *
-* @pre You have established the connections with previous psm2_ep_connect calls.
+* @pre You have established the connections with previous psm3_ep_connect calls.
 *
 * @post If the disconnect is successful, the corresponding epaddr in
 *       array_of_epaddr is reset to NULL pointer.
@@ -1095,7 +1138,7 @@ int disconnect_endpoints(psm2_ep_t ep, int num_epaddr,
         (psm2_error_t *)calloc(num_epaddr, sizeof(psm2_error_t));
     if (errors == NULL)
         return -1;
-    psm2_ep_disconnect(
+    psm3_ep_disconnect(
         ep, num_epaddr, array_of_epaddr,
         NULL, // We want to disconnect all epaddrs, no mask needed,
         errors,
@@ -1105,7 +1148,7 @@ int disconnect_endpoints(psm2_ep_t ep, int num_epaddr,
 }
 @endcode
 */
-psm2_error_t psm2_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
+psm2_error_t psm3_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
 				psm2_epaddr_t *array_of_epaddr,
 				const int *array_of_epaddr_mask,
 				psm2_error_t *array_of_errors, int64_t timeout);
@@ -1115,8 +1158,8 @@ psm2_error_t psm2_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
 * Function to non-collectively disconnect a connection to a set of endpoint
 * addresses and free the endpoint addresses. After disconnecting, the
 * application cannot send messages to the remote processes and PSM2 is
-* restored back to the state before calling psm2_ep_connect. The application
-* must call psm2_ep_connect to establish the connections again.
+* restored back to the state before calling psm3_ep_connect. The application
+* must call psm3_ep_connect to establish the connections again.
 *
 * @param[in] ep PSM2 endpoint handle
 *
@@ -1127,7 +1170,7 @@ psm2_error_t psm2_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
 * @param[in] array_of_epaddr User-allocated array that contains num_of_epaddr
 *                            valid endpoint addresses. Each endpoint address (or
 *                            epaddr) has been obtained through a previous
-*                            psm2_ep_connect call.
+*                            psm3_ep_connect call.
 *
 * @param[in] array_of_epaddr_mask User-allocated array that contains
 *                                 num_of_epaddr integers. This array of masks
@@ -1158,7 +1201,7 @@ psm2_error_t psm2_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
 *                    disconnected or until an error is detected. Supplying a
 *                    negative value here sets the disconnection mode to "force".
 *
-* @pre You have established the connections with previous psm2_ep_connect calls.
+* @pre You have established the connections with previous psm3_ep_connect calls.
 *
 * @post If the disconnect is successful, the corresponding epaddr in
 *       array_of_epaddr is reset to NULL pointer.
@@ -1184,7 +1227,7 @@ int disconnect_endpoints(psm2_ep_t ep, int num_epaddr,
         (psm2_error_t *)calloc(num_epaddr, sizeof(psm2_error_t));
     if (errors == NULL)
         return -1;
-    psm2_ep_disconnect2(
+    psm3_ep_disconnect2(
         ep, num_epaddr, array_of_epaddr,
         NULL, // We want to disconnect all epaddrs, no mask needed,
         errors,
@@ -1195,14 +1238,14 @@ int disconnect_endpoints(psm2_ep_t ep, int num_epaddr,
 }
 @endcode
 */
-psm2_error_t psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
+psm2_error_t psm3_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 				psm2_epaddr_t *array_of_epaddr,
 				const int *array_of_epaddr_mask,
 				psm2_error_t *array_of_errors,
 				int mode, int64_t timeout);
 
-#define PSM2_EP_DISCONNECT_GRACEFUL	PSM2_EP_CLOSE_GRACEFUL   /**< Graceful mode in @ref psm2_ep_disconnect2 */
-#define PSM2_EP_DISCONNECT_FORCE	PSM2_EP_CLOSE_FORCE   /**< Forceful mode in @ref psm2_ep_disconnect2 */
+#define PSM2_EP_DISCONNECT_GRACEFUL	PSM2_EP_CLOSE_GRACEFUL   /**< Graceful mode in @ref psm3_ep_disconnect2 */
+#define PSM2_EP_DISCONNECT_FORCE	PSM2_EP_CLOSE_FORCE   /**< Forceful mode in @ref psm3_ep_disconnect2 */
 
 /** @brief Ensure endpoint communication progress
  *
@@ -1227,11 +1270,11 @@ psm2_error_t psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
  * @returns PSM2_OK_NO_PROGRESS Polling did not yield any communication progress
  *
  */
-psm2_error_t psm2_poll(psm2_ep_t ep);
+psm2_error_t psm3_poll(psm2_ep_t ep);
 
 /** @brief Set a user-determined ep address label.
  *
- * @param[in] epaddr Endpoint address, obtained from @ref psm2_ep_connect
+ * @param[in] epaddr Endpoint address, obtained from @ref psm3_ep_connect
  * @param[in] epaddr_label_string User-allocated string to print when
  *                   identifying endpoint in error handling or other verbose
  *                   printing.  The NULL-terminated string must be allocated by
@@ -1239,25 +1282,25 @@ psm2_error_t psm2_poll(psm2_ep_t ep);
  *                   users do not explicitly set a label for each endpoint,
  *                   endpoints will identify themselves as hostname:port.
  */
-void psm2_epaddr_setlabel(psm2_epaddr_t epaddr,
+void psm3_epaddr_setlabel(psm2_epaddr_t epaddr,
 			 const char *epaddr_label_string);
 
 /** @brief Set a user-determined ep address context.
  *
- * @param[in] epaddr Endpoint address, obtained from @ref psm2_ep_connect
+ * @param[in] epaddr Endpoint address, obtained from @ref psm3_ep_connect
  * @param[in] ctxt   Opaque user defined state to associate with an endpoint
  *                   address. This state can be retrieved via
- *                   @ref psm2_epaddr_getctxt.
+ *                   @ref psm3_epaddr_getctxt.
  */
 void
-psm2_epaddr_setctxt(psm2_epaddr_t epaddr, void *ctxt);
+psm3_epaddr_setctxt(psm2_epaddr_t epaddr, void *ctxt);
 
 /** @brief Get the user-determined ep address context. Users can associate an
- *  opaque context with each endpoint via @ref psm2_epaddr_setctxt.
+ *  opaque context with each endpoint via @ref psm3_epaddr_setctxt.
  *
- * @param[in] epaddr Endpoint address, obtained from @ref psm2_ep_connect.
+ * @param[in] epaddr Endpoint address, obtained from @ref psm3_ep_connect.
  */
-void *psm2_epaddr_getctxt(psm2_epaddr_t epaddr);
+void *psm3_epaddr_getctxt(psm2_epaddr_t epaddr);
 
 /* Below are all component specific options. The component object for each of
  * the options is also specified.
@@ -1302,7 +1345,7 @@ void *psm2_epaddr_getctxt(psm2_epaddr_t epaddr);
    */
 
 /* PSM2_COMPONENT_MQ options (deprecates psm2_mq_set|getopt) */
-/* MQ options that can be set in psm2_mq_init and psm2_{set,get}_opt */
+/* MQ options that can be set in psm3_mq_init and psm2_{set,get}_opt */
 #define PSM2_MQ_OPT_RNDV_IB_SZ       0x301
   /**< [@b uint32_t ] Size at which to start enabling rendezvous
    * messaging for OPA messages (if unset, defaults to values
@@ -1394,7 +1437,7 @@ void *psm2_epaddr_getctxt(psm2_epaddr_t epaddr);
  *
  */
 psm2_error_t
-psm2_setopt(psm2_component_t component, const void *component_obj,
+psm3_setopt(psm2_component_t component, const void *component_obj,
 	   int optname, const void *optval, uint64_t optlen);
 
 /** @brief Get an option for a PSM2 component
@@ -1423,7 +1466,7 @@ psm2_setopt(psm2_component_t component, const void *component_obj,
  *
  */
 psm2_error_t
-psm2_getopt(psm2_component_t component, const void *component_obj,
+psm3_getopt(psm2_component_t component, const void *component_obj,
 	   int optname, void *optval, uint64_t *optlen);
 
 /** @brief Datatype for end-point information */
@@ -1446,7 +1489,7 @@ typedef struct psm2_epconn {
  *
  * Function to query PSM2 for end-point information. This allows retrieval of
  * end-point information in cases where the caller does not have access to the
- * results of psm2_ep_open().  In the default single-rail mode PSM2 will use
+ * results of psm3_ep_open().  In the default single-rail mode PSM2 will use
  * a single endpoint. If either multi-rail mode or multi-endpoint mode is
  * enabled, PSM2 will use multiple endpoints.
  *
@@ -1461,14 +1504,14 @@ typedef struct psm2_epconn {
  * @returns PSM2_PARAM_ERR if input num_if_epinfo is less than or equal to zero.
  * @returns PSM2_EP_WAS_CLOSED if PSM2 end-point is closed or does not exist.
  */
-psm2_error_t psm2_ep_query(int *num_of_epinfo, psm2_epinfo_t *array_of_epinfo);
+psm2_error_t psm3_ep_query(int *num_of_epinfo, psm2_epinfo_t *array_of_epinfo);
 
 /** @brief Query PSM2 for end-point connections.
  *
  * Function to query PSM2 for end-point connections. This allows retrieval of
  * end-point connections in cases where the caller does not have access to the
- * results of psm2_ep_connect().  The epid values can be found using
- * psm2_ep_query() so that each PSM2 process can determine its own epid. These
+ * results of psm3_ep_connect().  The epid values can be found using
+ * psm3_ep_query() so that each PSM2 process can determine its own epid. These
  * values can then be distributed across the PSM2 process so that each PSM
  * process knows the epid for all other PSM2 processes.
  *
@@ -1481,12 +1524,12 @@ psm2_error_t psm2_ep_query(int *num_of_epinfo, psm2_epinfo_t *array_of_epinfo);
  * @returns PSM2_EP_WAS_CLOSED if PSM2 end-point is closed or does not exist.
  * @returns PSM2_EPID_UNKNOWN if the epid value is not known to PSM.
  */
-psm2_error_t psm2_ep_epid_lookup(psm2_epid_t epid, psm2_epconn_t *epconn);
+psm2_error_t psm3_ep_epid_lookup(psm2_epid_t epid, psm2_epconn_t *epconn);
 
 /** @brief Query given PSM2 end-point for its connections.
  *
  * The need for this function comes with 'multi-ep' feature.
- * Function is similar to (@ref psm2_ep_epid_lookup).
+ * Function is similar to (@ref psm3_ep_epid_lookup).
  * It differs in that an extra parameter which identifies
  * the end-point [ep] must be provided which limits the lookup to that single ep.
  *
@@ -1495,7 +1538,7 @@ psm2_error_t psm2_ep_epid_lookup(psm2_epid_t epid, psm2_epconn_t *epconn);
  * @returns PSM2_EPID_UNKNOWN if the [epid] value is not known to PSM.
  * @returns PSM2_PARAM_ERR if output [epconn] is NULL.
  */
-psm2_error_t psm2_ep_epid_lookup2(psm2_ep_t ep, psm2_epid_t epid, psm2_epconn_t *epconn);
+psm2_error_t psm3_ep_epid_lookup2(psm2_ep_t ep, psm2_epid_t epid, psm2_epconn_t *epconn);
 
 /** @brief Get PSM2 epid for given epaddr.
  *
@@ -1505,7 +1548,7 @@ psm2_error_t psm2_ep_epid_lookup2(psm2_ep_t ep, psm2_epid_t epid, psm2_epconn_t 
  * @returns PSM2_OK indicates success.
  * @returns PSM2_PARAM_ERR if input [epaddr] or output [epid] is NULL.
  */
-psm2_error_t psm2_epaddr_to_epid(psm2_epaddr_t epaddr, psm2_epid_t *epid);
+psm2_error_t psm3_epaddr_to_epid(psm2_epaddr_t epaddr, psm2_epid_t *epid);
 
 /*! @} */
 
@@ -1518,7 +1561,7 @@ psm2_error_t psm2_epaddr_to_epid(psm2_epaddr_t epaddr, psm2_epid_t *epid);
  * Note that calling the function:
  *
  @code{.c}
- psm2_error_t psm2_info_query(psm2_info_query_t, void *out,
+ psm2_error_t psm3_info_query(psm2_info_query_t, void *out,
                               size_t nargs, psm2_info_query_arg_t []);
  @endcode
  *
@@ -1569,67 +1612,23 @@ typedef enum psm2_info_query_et
                      contexts..  */
 	PSM2_INFO_QUERY_NUM_CONTEXTS,
 
-/*! Required input arguments: 2
-   1.  type: psm2_mq_t, description: the mq that is associated with the
-       connection for which configuration information is wanted.
-       (use: psm2_info_query_arg_t.mq).
-   2.  type: psm2_epaddr_t, description: the ep address that is
-       associated with the connection for which configuration
-       information is wanted (use: psm2_info_query_arg_t.epaddr).
-   Output parameter: uint32_t, description: a bit mask containing bits defining the configuration.
-   see psm2_info_query_config for a description of the bits. */
-	PSM2_INFO_QUERY_CONFIG,
+/*! removed QUERY_CONFIG, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_CONFIG,
 
-/*! Required input arguments: 3
-   1.  type: psm2_mq_t, description: the mq that is associated with the
-       connection for which the msg size query information is wanted.
-       (use: psm2_info_query_arg_t.mq).
-   2.  type: psm2_epaddr_t, description: the ep address that is
-       associated with the connection for which the msg size query
-       information is wanted (use: psm2_info_query_arg_t.epaddr).
-   3.  type: enum psm2_info_query_thresh_et, the specific msg size query.
-       (use: psm2_info_query_arg_t.mstq).
+/*! removed QUERY_THRESH, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_THRESH,
 
-       Output parameter: uint32_t, description: the message size threshold. */
-	PSM2_INFO_QUERY_THRESH,
+/*! removed QUERY_DEVICE_NAME, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_DEVICE_NAME,
 
-/*! Required input arguments: 3
-   1.  type: psm2_mq_t, description: the mq that is associated with the
-       connection for which the device name is wanted.
-       (use: psm2_info_query_arg_t.mq).
-   2.  type: psm2_epaddr_t, description: the ep address that is
-       associated with the connection for which device name is wanted.
-       (use: psm2_info_query_arg_t.epaddr).
-   3.  type: size_t, the length of the output buffer that will recieve
-       the device name (use: psm2_info_query_arg_t.length).
-       Output parameter: char *, description: the device name. */
-	PSM2_INFO_QUERY_DEVICE_NAME,
+/*! removed QUERY_MTU, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_MTU,
 
-/*! Required input arguments: 2
-   1.  type: psm2_mq_t, description: the mq that is associated with the
-       connection for which the mtu is wanted (use: psm2_info_query_arg_t.mq).
-   2.  type: psm2_epaddr_t, description: the ep address that is
-       associated with the connection for which mtu is wanted.
-       (use: psm2_info_query_arg_t.epaddr).
-       Output parameter: uint32_t, description: the mtu. */
+/*! removed QUERY_LINK_SPEED, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_LINK_SPEED,
 
-	PSM2_INFO_QUERY_MTU,
-
-/*! Required input arguments: 2
-   1.  type: psm2_mq_t, description: the mq that is associated with the
-       connection for which the link speed is wanted (use:
-       psm2_info_query_arg_t.mq).
-   2.  type: psm2_epaddr_t, description: the ep address that is
-       associated with the connection for which link speed is wanted.
-       (use: psm2_info_query_arg_t.epaddr).
-       Output parameter: uint32_t, description: the link speed. */
-	PSM2_INFO_QUERY_LINK_SPEED,
-
-/*! Required input arguments: 1
-   1.  type: size_t, description: the length of the output buffer to receive
-       the network type (use: psm2_info_query_arg_t.length).
-       Output parameter: char*, description: the network type. */
-	PSM2_INFO_QUERY_NETWORK_TYPE,
+/*! removed QUERY_NETWORK_TYPE, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_NETWORK_TYPE,
 
 /*! Required input arguments 0
     Output parameter: uint32_t*, description: a bit mask of the features in libpsm2.
@@ -1644,97 +1643,85 @@ typedef enum psm2_info_query_et
        Output parameter: char*, description: name of the device. */
 	PSM2_INFO_QUERY_UNIT_NAME,
 
+/*! removed QUERY_DEVICE_UNIT_SYS_PATH, but kept placeholder to retain values in enum */
+	PSM2_WAS_INFO_QUERY_UNIT_SYS_PATH,
+
 /*! Required input arguments: 2
-   1.  type: uint32_t, description: unit number for which the device
-       name is wanted.
+   1.  type: uint32_t, description: unit number for which the pci bus is wanted.
 	   (use: psm2_info_query_arg_t.unit).
-   2.  type: size_t, description: the length of the output buffer
-       that will recieve the sysfs path.
+   2.  type: size_t, description: the length of the output buffer that will
+       recieve the pci bus array which must be the size of 4x uint32_t.
 	   (use: psm2_info_query_arg_t.length).
-       Output parameter: char *, description: the sysfs path. */
-	PSM2_INFO_QUERY_UNIT_SYS_PATH,
+       Output parameter: uint32_t[4], description: the pci bus in BDF Notation
+       with PCI Domain: { Domain, Bus, Device, Function } */
+	PSM2_INFO_QUERY_UNIT_PCI_BUS,
+
+/*! Required input arguments 4
+   1.  type: uint32_t, description: the unit # of the device you want to
+       identify.
+   2.  type: uint32_t, description: the port for which name is
+       desired (use: psm2_info_query_arg_t.port).
+   3.  type: uint32_t, description: the address index for which name is
+       desired (use: psm2_info_query_arg_t.addr_index).
+   4.  type: size_t, description: the length of the output buffer that will
+       receive the subnet name.
+       Output parameter: char*, description: name of the subnet for the device. */
+	PSM2_INFO_QUERY_UNIT_SUBNET_NAME,
+
+/*! Required input arguments: 2
+   1.  type: uint32_t, description: unit number for which the pci bus is wanted.
+	   (use: psm2_info_query_arg_t.unit).
+   2.  type: size_t, description: the length of the output buffer that will
+       recieve the device ID, Device Version, Vendor ID, or Driver.
+	   (use: psm2_info_query_arg_t.length).
+       Output parameter: char *, description:
+	   the device id: "0x1592"    cat /sys/class/infiniband/irdma0/device/device
+	   the device version: "0x02" cat /sys/class/infiniband/irdma0/device/revision
+	   the vendor id: "0x8086"    cat /sys/class/infiniband/irdma0/device/vendor
+	   the driver: "ice"          basename `realpath /sys/class/infiniband/irdma0/device/driver` */
+	PSM2_INFO_QUERY_UNIT_DEVICE_ID,
+	PSM2_INFO_QUERY_UNIT_DEVICE_VERSION,
+	PSM2_INFO_QUERY_UNIT_VENDOR_ID,
+	PSM2_INFO_QUERY_UNIT_DRIVER,
+
+/*! Required input arguments: 2
+   1.  type: uint32_t, description: the unit for which speed is
+       desired (use: psm2_info_query_arg_t.unit).
+   2.  type: uint32_t, description: the port for which speed is
+       desired (use: psm2_info_query_arg_t.port).
+   Output parameter: uint64_t, description: port speed in bits per sec (bps) */
+	PSM2_INFO_QUERY_PORT_SPEED,
+
+/*! Required input arguments 0
+   Output parameter: uint32_t*, description: the number of addresses per port */
+	PSM2_INFO_QUERY_NUM_ADDR_PER_UNIT,
+
+/*! Required input arguments 4
+   1.  type: uint32_t, description: the unit # of the device you want to
+       identify (use: psm2_info_query_arg_t.unit).
+   2.  type: uint32_t, description: the port for which name is
+       desired (use: psm2_info_query_arg_t.port).
+   3.  type: uint32_t, description: the address index for which name is
+       desired (use: psm2_info_query_arg_t.addr_index).
+   4.  type: size_t, description: the length of the output buffer that will
+       receive the device name.
+       Output parameter: char*, description: name of the device's address. */
+	PSM2_INFO_QUERY_UNIT_ADDR_NAME,
+
 
 	PSM2_INFO_QUERY_LAST, /* must appear last, and the info query
 				 constants are used as an index. */
 } psm2_info_query_t;
 
-/** @brief Enumeration for info query config
- */
-enum psm2_info_query_config
-{
-	/*! The following three are 'main configs': */
-	PSM2_INFO_QUERY_CONFIG_IPS      = (1 << 0),
-	PSM2_INFO_QUERY_CONFIG_AMSH     = (1 << 1),
-	PSM2_INFO_QUERY_CONFIG_SELF     = (1 << 2),
-
-	/*! The following three are sub-configs of
-           the IPS main config: */
-
-	PSM2_INFO_QUERY_CONFIG_CUDA     = (1 << 3),
-	PSM2_INFO_QUERY_CONFIG_PIO      = (1 << 4),
-	PSM2_INFO_QUERY_CONFIG_DMA      = (1 << 5),
-
-	/*! The following is a sub-config of IPS & CUDA
-           main config: */
-
-	PSM2_INFO_QUERY_CONFIG_GDR_COPY = (1 << 6),
-};
-
-/** @brief Enumeration info query thresholds
- */
-enum psm2_info_query_thresh_et
-{
-/*! This is the start of the thresh queries for IPS config: */
-	PSM2_INFO_QUERY_THRESH_IPS_START,
-
-/*! Not shown here are the specific queries supported by the CUDA
-   and GDR_COPY, sub-configs.
-
-   But, those configs will need to include threshold queries in case the
-   config includes them.
-
-   Note that for the case of gdr_copy the thresholds varies for the case
-   of the memory is gpu memory or not. */
-
-/*! The following threshold queres are supported for the IPS config
-   only. */
-
-/*! The PSM2_INFO_QUERY_THRESH_IPS_PIO_DMA threshold query indicates at
-   what message size the send transport transitions from PIO to DMA.
-
-   Note that this threshold query may be meaningless if PIO or DMA is
-   disabled. */
-	PSM2_INFO_QUERY_THRESH_IPS_PIO_DMA = PSM2_INFO_QUERY_THRESH_IPS_START,
-/*! Messages with messages sizes less than or equal to the tiny threshold
-   will be sent by tiny message. */
-	PSM2_INFO_QUERY_THRESH_IPS_TINY,
-/*! Messages with messages sizes greater than tiny, but less than or equal
-   to frag size will be sent by short message. */
-	PSM2_INFO_QUERY_THRESH_IPS_PIO_FRAG_SIZE,
-	PSM2_INFO_QUERY_THRESH_IPS_DMA_FRAG_SIZE,
-/*! Messages that are greater than the frag_size, but less than RNDV will
-   be sent by eager message.
-   Messages with messages sizes greater than or equal to RNDV will be
-   sent by the rendezvous protocol message. */
-	PSM2_INFO_QUERY_THRESH_IPS_RNDV,
-	PSM2_INFO_QUERY_THRESH_IPS_END = PSM2_INFO_QUERY_THRESH_IPS_RNDV,
-
-/*! Not shown here are the specific thresh queries supported by AMSH and
-   SELF configs: */
-	PSM2_INFO_QUERY_THRESH_AMSH_START,
-	PSM2_INFO_QUERY_THRESH_AMSH_END = PSM2_INFO_QUERY_THRESH_AMSH_START,
-
-	PSM2_INFO_QUERY_THRESH_SELF_START,
-	PSM2_INFO_QUERY_THRESH_SELF_END = PSM2_INFO_QUERY_THRESH_SELF_START,
-};
-
 enum psm2_info_query_feature_mask
 {
 	/*! The following bit means that the libpsm2 _can_ support cuda.
 	    If the PSM2_INFO_QUERY_FEATURE_MASK request is made and
-	    the PSM2_INFO_QUERY_FEATURE_CUDA bit is not present, thne cuda
+	    the PSM2_INFO_QUERY_FEATURE_CUDA bit is not present, then cuda
             is not supported. */
 	PSM2_INFO_QUERY_FEATURE_CUDA      = (1 << 0),
+	/* Intel ONEAPI Level-zero support for Intel GPU */
+	PSM2_INFO_QUERY_FEATURE_ONEAPI    = (1 << 1),
 };
 
 /** @brief Union for info query arg type
@@ -1743,10 +1730,10 @@ typedef union psm2_info_query_arg
 {
 	uint32_t                       unit;
 	uint32_t                       port;
+	uint32_t                       addr_index;
 	size_t                         length;
 	psm2_mq_t                      mq;
 	psm2_epaddr_t                  epaddr;
-	enum psm2_info_query_thresh_et mstq;
 } psm2_info_query_arg_t;
 
 /** @brief PSM2 info query
@@ -1767,7 +1754,7 @@ typedef union psm2_info_query_arg
  * @retval PSM2_OK The out buffer has successfully been written with the
  * result of the query.
  */
-psm2_error_t psm2_info_query(psm2_info_query_t, void *out,
+psm2_error_t psm3_info_query(psm2_info_query_t, void *out,
 			     size_t nargs, psm2_info_query_arg_t []);
 
 /*! @} */

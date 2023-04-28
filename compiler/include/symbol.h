@@ -168,11 +168,12 @@ public:
 
   std::string deprecationMsg;
   const char* getDeprecationMsg() const;
-  void generateDeprecationWarning(Expr* context);
+  void maybeGenerateDeprecationWarning(Expr* context);
+
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
-  void generateUnstableWarning(Expr* context);
+  void maybeGenerateUnstableWarning(Expr* context);
 
   const char* getSanitizedMsg(std::string msg) const;
 

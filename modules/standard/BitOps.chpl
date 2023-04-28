@@ -50,8 +50,19 @@ module BitOps {
     :returns: the number of 1 bits set in `x` as `x.type`
     :rtype: `x.type`
    */
+  @deprecated(notes="popcount is deprecated - please use :proc:`popCount` instead")
   inline proc popcount(x: integral) {
-    return BitOps_internal.popcount(x);
+    return popCount(x);
+  }
+
+  /*
+    Find the population count of `x`.
+
+    :returns: the number of 1 bits set in `x` as `x.type`
+    :rtype: `x.type`
+   */
+  inline proc popCount(x: integral) {
+    return BitOps_internal.popCount(x);
   }
 
   /*
@@ -246,7 +257,7 @@ private module BitOps_internal {
     return BitOps_internal.ctz(x:uint(bits)):int(bits);
   }
 
-  inline proc popcount(x: uint(?bits)) {
+  inline proc popCount(x: uint(?bits)) {
     // the select will be folded out at compile time.
     select bits {
       when 64 do
@@ -263,12 +274,12 @@ private module BitOps_internal {
         // NOTE: this actually cant happen with how the integer types are setup
         //       right now - leaving it here for the future when we support
         //       >64bit types
-        compilerError("popcount is not supported for that bit width.");
+        compilerError("popCount is not supported for that bit width.");
     }
   }
 
-  inline proc popcount(x: int(?bits)) {
-    return BitOps_internal.popcount(x:uint(bits)):int(bits);
+  inline proc popCount(x: int(?bits)) {
+    return BitOps_internal.popCount(x:uint(bits)):int(bits);
   }
 
   inline proc parity(x: uint(?bits)) {

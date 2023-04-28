@@ -160,10 +160,8 @@ void VisibilityStmt::validateRenamed() {
                        it->second);
       }
 
-      if (!fDynoCompilerLibrary) {
-        if (sym->hasFlag(FLAG_DEPRECATED)) {
-          sym->generateDeprecationWarning(this);
-        }
+      if (!fDynoScopeResolve) {
+        sym->maybeGenerateDeprecationWarning(this);
       }
 
     } else {

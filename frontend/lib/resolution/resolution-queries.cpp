@@ -54,6 +54,8 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+using ForwardingInfoVec = std::vector<QualifiedType>;
 
 const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
@@ -126,7 +128,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule()) {
+            child->isModule() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -144,7 +147,10 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }
@@ -175,7 +181,8 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface()) {
+            child->isInterface() ||
+            child->isExternBlock()) {
             // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
@@ -193,7 +200,10 @@ scopeResolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              re = *reToCopy;
+            }
           }
         }
       }
@@ -859,6 +869,25 @@ static Type::Genericity getFieldsGenericity(Context* context,
       }
     }
     return combined;
+  } else if (auto dt = ct->toDomainType()) {
+    Type::Genericity combined = Type::CONCRETE;
+
+    // Allows for instantiation of things like 'arg: domain'
+    // TODO: currently partially generic domains are not supported
+    if (dt->kind() == DomainType::Kind::Unknown) {
+      combined = Type::GENERIC;
+    }
+
+    return combined;
+  } else if (auto at = ct->toArrayType()) {
+    auto dt = getTypeGenericityIgnoring(context, at->domainType(), ignore);
+    auto et = getTypeGenericityIgnoring(context, at->eltType(), ignore);
+
+    if (dt != Type::CONCRETE || et != Type::CONCRETE) {
+      return Type::GENERIC;
+    } else {
+      return Type::CONCRETE;
+    }
   }
 
   // Some testing code creates CompositeType with empty IDs.
@@ -1536,7 +1565,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     if (instantiateVarArgs) {
-      const TupleType* t = TupleType::getVarArgTuple(context, varargsTypes);
+      const TupleType* t = TupleType::getQualifiedTuple(context, varargsTypes);
       auto formal = faMap.byFormalIdx(varArgIdx).formal()->toVarArgFormal();
       QualifiedType vat = QualifiedType(formal->storageKind(), t);
       substitutions.insert({formal->id(), vat});
@@ -2497,6 +2526,15 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
+  if (ci.name() == USTR("*") && ci.numActuals() == 2) {
+    auto first = ci.actual(0).type();
+    auto second = ci.actual(1).type();
+    if (first.isParam() && first.type()->isIntType() &&
+        second.isType()) {
+      return TupleType::getStarTuple(context, first, second);
+    }
+  }
+
   if (auto t = getManagedClassType(context, astForErr, ci)) {
     return t;
   }
@@ -2573,8 +2611,28 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-using CandidatesVec = std::vector<const TypedFnSignature*>;
-using ForwardingInfoVec = std::vector<QualifiedType>;
+static CallResolutionResult
+resolveFnCallDomain(Context* context,
+                    const Call* call,
+                    const CallInfo& ci,
+                    const Scope* inScope,
+                    const PoiScope* inPoiScope) {
+  // TODO: a compiler-generated type constructor would be simpler, but we
+  // don't support default values on compiler-generated methods because the
+  // default values require existing AST.
+
+  // Note: 'dmapped' is treated like a binary operator at the moment, so
+  // we don't need to worry about distribution type for 'domain(...)' exprs.
+
+  // Transform domain type expressions like `domain(arg1, ...)` into:
+  //   _domain.static_type(arg1, ...)
+  auto genericDom = DomainType::getGenericDomainType(context);
+  auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+  auto typeCtorName = UniqueString::get(context, "static_type");
+  auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+
+  return resolveCall(context, call, ctorCall, inScope, inPoiScope);
+}
 
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
@@ -2627,6 +2685,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
+  // TODO: This should be the QualifiedType in case of type methods
   auto receiverType = receiver.type().type();
 
   // if not compiler-generated, then nothing to do
@@ -3081,7 +3140,9 @@ CallResolutionResult resolveFnCall(Context* context,
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
-  if (ci.calledType().kind() == QualifiedType::TYPE) {
+  // Note: currently type constructors are not implemented as methods
+  if (ci.calledType().kind() == QualifiedType::TYPE &&
+      ci.isMethodCall() == false) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
     mostSpecific = resolveFnCallForTypeCtor(context, ci,
@@ -3229,7 +3290,10 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
                                           QualifiedType implicitReceiver) {
   return !ci.isMethodCall() &&
          !ci.isOpCall() &&
-         implicitReceiver.type() != nullptr;
+         implicitReceiver.type() != nullptr &&
+         // Assuming ci.name().isEmpty()==true implies a primitive call.
+         // TODO: Add some kind of 'isPrimitive()' to CallInfo
+         !ci.name().isEmpty();
 }
 
 CallResolutionResult resolveCall(Context* context,
@@ -3246,6 +3310,10 @@ CallResolutionResult resolveCall(Context* context,
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
+    if (ci.name() == "domain" && !ci.isMethodCall()) {
+      return resolveFnCallDomain(context, call, ci, inScope, inPoiScope);
+    }
+
     // otherwise do regular call resolution
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {

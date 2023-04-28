@@ -1,23 +1,23 @@
 use Time;
 
-const ZERO = new timedelta(0);
-const HOUR = new timedelta(hours=1);
-const DAY = new timedelta(days=1);
+const ZERO = new timeDelta(0);
+const HOUR = new timeDelta(hours=1);
+const DAY = new timeDelta(days=1);
 // In the US, DST starts at 2am (standard time) on the first Sunday in April.
-var DSTSTART = new datetime(1, 4, 1, 2);
+var DSTSTART = new dateTime(1, 4, 1, 2);
 // and ends at 2am (DST time; 1am standard time) on the last Sunday of Oct,
 // which is the first Sunday on or after Oct 25.  Because we view 1:MM as
 // being standard time on that day, there is no spelling in local time of
 // the last hour of DST (that's 1:MM DST, but 1:MM is taken as standard time).
-var DSTEND = new datetime(1, 10, 25, 1);
+var DSTEND = new dateTime(1, 10, 25, 1);
 
 class USTimeZone: Timezone {
-  var stdoffset: timedelta;
+  var stdoffset: timeDelta;
   var reprname: string;
   var stdname: string;
   var dstname: string;
   proc init(hours, reprname, stdname, dstname) {
-    this.stdoffset = new timedelta(hours=hours);
+    this.stdoffset = new timeDelta(hours=hours);
     this.reprname = reprname;
     this.stdname = stdname;
     this.dstname = dstname;
@@ -27,18 +27,18 @@ class USTimeZone: Timezone {
     return reprname;
   }
 
-  override proc tzname(dt: datetime) {
-    if dst(dt) != new timedelta(0) then
+  override proc tzname(dt: dateTime) {
+    if dst(dt) != new timeDelta(0) then
       return dstname;
     else
       return stdname;
   }
 
-  override proc utcOffset(dt: datetime) {
+  override proc utcOffset(dt: dateTime) {
     return stdoffset + dst(dt);
   }
 
-  override proc dst(dt: datetime) {
+  override proc dst(dt: dateTime) {
     if dt.timezone.borrow() == nil {
       // An exception instead may be sensible here, in one or more of
       // the cases.
@@ -63,7 +63,7 @@ class USTimeZone: Timezone {
     }
   }
 
-  override proc fromUtc(dt: datetime) {
+  override proc fromUtc(dt: dateTime) {
     var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -75,28 +75,28 @@ class USTimeZone: Timezone {
 }
 
 class FixedOffset: Timezone {
-  var offset: timedelta;
+  var offset: timeDelta;
   var name: string;
-  var dstoffset: timedelta;
+  var dstoffset: timeDelta;
   proc init(offset: int, name, dstoffset:int=42) {
-    this.offset = new timedelta(minutes=offset);
+    this.offset = new timeDelta(minutes=offset);
     this.name = name;
-    this.dstoffset = new timedelta(minutes=dstoffset);
+    this.dstoffset = new timeDelta(minutes=dstoffset);
   }
 
-  override proc utcOffset(dt: datetime) {
+  override proc utcOffset(dt: dateTime) {
     return offset;
   }
 
-  override proc tzname(dt: datetime) {
+  override proc tzname(dt: dateTime) {
     return name;
   }
 
-  override proc dst(dt: datetime) {
+  override proc dst(dt: dateTime) {
     return dstoffset;
   }
 
-  override proc fromUtc(dt: datetime) {
+  override proc fromUtc(dt: dateTime) {
     var dtoff = dt.utcOffset();
     var dtdst = dt.dst();
     var delta = dtoff - dtdst;
@@ -109,7 +109,7 @@ class FixedOffset: Timezone {
 proc first_sunday_on_or_after(in dt) {
   var days_to_go = 6 - dt.weekday():int;
   if days_to_go > 0 {
-    dt += new timedelta(days_to_go);
+    dt += new timeDelta(days_to_go);
   }
   return dt;
 }
@@ -122,8 +122,8 @@ var utc_real = new shared FixedOffset(0, "UTC", 0);
 var utc_fake = new shared FixedOffset(-12*60, "UTCfake", 0);
 
 // DST switch times for 2002
-var dston = new datetime(2002, 4, 7, 2);
-var dstoff = new datetime(2002, 10, 27, 1);
+var dston = new dateTime(2002, 4, 7, 2);
+var dstoff = new dateTime(2002, 10, 27, 1);
 
 proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   assert(dt.dst() == HOUR);
@@ -142,7 +142,7 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   // daylight time then (it's "after 2am"), really an alias
   // for 1:MM:SS standard time.  The latter form is what
   // conversion back from UTC produces.
-  if dt.getdate() == dston.getdate() && dt.hour == 2 {
+  if dt.getDate() == dston.getDate() && dt.hour == 2 {
     // We're in the redundant hour, and coming back from
     // UTC gives the 1:MM:SS standard-time spelling.
     assert(there_and_back + HOUR == dt);
@@ -166,7 +166,7 @@ proc checkinside(dt, tz:shared, utc:shared, dston, dstoff) {
   // from UTC to mimic the local clock's "repeat an hour" behavior.
   var nexthour_utc = asutc + HOUR;
   var nexthour_tz = nexthour_utc.astimezone(tz);
-  if dt.getdate() == dstoff.getdate() && dt.hour == 0 {
+  if dt.getDate() == dstoff.getDate() && dt.hour == 0 {
     // We're in the hour before the last DST hour.  The last DST hour
     // is ineffable.  We want the conversion back to repeat 1:MM.
     assert(nexthour_tz == dt.replace(hour=1, tz=dt.timezone));
@@ -198,11 +198,11 @@ proc convert_between_tz_and_utc(tz:shared, utc:shared) {
   // taken as being daylight time (and 1:MM is taken as being standard
   // time).
   var mydstoff = dstoff.replace(tz=tz);
-  for delta in (new timedelta(weeks=13),
+  for delta in (new timeDelta(weeks=13),
                 DAY,
                 HOUR,
-                new timedelta(minutes=1),
-                new timedelta(microseconds=1)) {
+                new timeDelta(minutes=1),
+                new timeDelta(microseconds=1)) {
 
     checkinside(mydston, tz, utc, mydston, mydstoff);
     for during in (mydston + delta, mydstoff - delta) {
@@ -246,7 +246,7 @@ proc test_easy() {
 
 proc test_tricky() {
   // 22:00 on day before daylight starts.
-  var fourback = dston - new timedelta(hours=4);
+  var fourback = dston - new timeDelta(hours=4);
   var ninewest = new shared FixedOffset(-9*60, "-0900", 0);
   fourback = fourback.replace(tz=ninewest);
   // 22:00-0900 is 7:00 UTC == 2:00 EST == 3:00 DST.  Since it's "after
@@ -277,11 +277,11 @@ proc test_tricky() {
   // wall  0:MM  1:MM  1:MM  2:MM  against these
   for utc in (utc_real, utc_fake) {
     for tz in (Eastern, Pacific) {
-      var first_std_hour = dstoff - new timedelta(hours=2); // 23:MM
+      var first_std_hour = dstoff - new timeDelta(hours=2); // 23:MM
       // Convert that to UTC.
-      first_std_hour -= tz.borrow().utcOffset(new datetime(1,1,1));
+      first_std_hour -= tz.borrow().utcOffset(new dateTime(1,1,1));
       // Adjust for possibly fake UTC.
-      var asutc = first_std_hour + utc.borrow().utcOffset(new datetime(1,1,1));
+      var asutc = first_std_hour + utc.borrow().utcOffset(new dateTime(1,1,1));
       // First UTC hour to convert; this is 4:00 when utc=utc_real &
       // tz=Eastern.
       var asutcbase = asutc.replace(tz=utc);
@@ -300,14 +300,14 @@ proc test_tricky() {
 }
 
 proc test_fromutc() {
-  var now = datetime.utcNow().replace(tz=utc_real);
+  var now = dateTime.utcNow().replace(tz=utc_real);
   now = now.replace(tz=Eastern);   // insert correct tz
   var enow = Eastern.fromUtc(now);         // doesn't blow up
   assert(enow.timezone == Eastern); // has right tz member
 
   // Always converts UTC to standard time.
   class FauxUSTimeZone: USTimeZone {
-    override proc fromUtc(dt: datetime) {
+    override proc fromUtc(dt: dateTime) {
       return dt + stdoffset;
     }
 
@@ -329,7 +329,7 @@ proc test_fromutc() {
   for wall in (23, 0, 1, 3, 4, 5) {
     var expected = start.replace(hour=wall, tz=start.timezone);
     if wall == 23 {
-      expected -= new timedelta(days=1);
+      expected -= new timeDelta(days=1);
     }
     var got = Eastern.fromUtc(start);
     assert(expected == got);

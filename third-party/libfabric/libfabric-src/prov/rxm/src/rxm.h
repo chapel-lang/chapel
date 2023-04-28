@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2016 Intel Corporation, Inc.  All rights reserved.
+ * Copyright (c) 2016-2021 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2019 Amazon.com, Inc. or its affiliates. All rights reserved.
  * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
@@ -52,6 +52,7 @@
 #include <ofi_enosys.h>
 #include <ofi_util.h>
 #include <ofi_list.h>
+#include <ofi_lock.h>
 #include <ofi_proto.h>
 #include <ofi_iov.h>
 #include <ofi_hmem.h>
@@ -70,6 +71,12 @@ enum {
 	RXM_REJECT_EALREADY,
 };
 
+enum {
+	RXM_CM_FLOW_CTRL_LOCAL,
+	RXM_CM_FLOW_CTRL_PEER_ON,
+	RXM_CM_FLOW_CTRL_PEER_OFF,
+};
+
 union rxm_cm_data {
 	struct _connect {
 		uint8_t version;
@@ -77,7 +84,8 @@ union rxm_cm_data {
 		uint8_t ctrl_version;
 		uint8_t op_version;
 		uint16_t port;
-		uint8_t padding[2];
+		uint8_t flow_ctrl;
+		uint8_t padding;
 		uint32_t eager_limit;
 		uint32_t rx_size; /* used? */
 		uint64_t client_conn_id;
@@ -86,6 +94,8 @@ union rxm_cm_data {
 	struct _accept {
 		uint64_t server_conn_id;
 		uint32_t rx_size; /* used? */
+		uint8_t flow_ctrl;
+		uint8_t align_pad[3];
 	} accept;
 
 	struct _reject {
@@ -94,6 +104,20 @@ union rxm_cm_data {
 	} reject;
 };
 
+static inline uint64_t rxm_conn_id(int peer_index)
+{
+	return (((uint64_t) getpid()) << 32) | ((uint32_t) peer_index);
+}
+
+static inline int rxm_peer_index(uint64_t conn_id)
+{
+	return (int) conn_id;
+}
+
+static inline uint32_t rxm_peer_pid(uint64_t conn_id)
+{
+	return (uint32_t) (conn_id >> 32);
+}
 
 extern size_t rxm_buffer_size;
 extern size_t rxm_packet_size;
@@ -132,6 +156,9 @@ extern size_t rxm_packet_size;
 	FI_DBG(&rxm_prov, subsystem, log_str 			\
 	       " (fi_addr: 0x%" PRIx64 " tag: 0x%" PRIx64 ")\n",\
 	       addr, tag)
+#define RXM_WARN_ERR(subsystem, log_str, err) \
+	FI_WARN(&rxm_prov, subsystem, log_str "%s (%d)\n", \
+		fi_strerror((int) -(err)), (int) err)
 
 #define RXM_GET_PROTO_STATE(context)					\
 	(*(enum rxm_proto_state *)					\
@@ -153,7 +180,13 @@ do {									\
 
 extern struct fi_provider rxm_prov;
 extern struct util_prov rxm_util_prov;
-extern struct fi_ops_rma rxm_ops_rma;
+
+extern struct fi_ops_msg rxm_msg_ops;
+extern struct fi_ops_msg rxm_msg_thru_ops;
+extern struct fi_ops_tagged rxm_tagged_ops;
+extern struct fi_ops_tagged rxm_tagged_thru_ops;
+extern struct fi_ops_rma rxm_rma_ops;
+extern struct fi_ops_rma rxm_rma_thru_ops;
 extern struct fi_ops_atomic rxm_ops_atomic;
 
 enum {
@@ -167,6 +200,7 @@ extern size_t rxm_msg_tx_size;
 extern size_t rxm_msg_rx_size;
 extern size_t rxm_cm_progress_interval;
 extern size_t rxm_cq_eq_fairness;
+extern int rxm_passthru;
 extern int force_auto_progress;
 extern int rxm_use_write_rndv;
 extern enum fi_wait_obj def_wait_obj, def_tcp_wait_obj;
@@ -186,30 +220,13 @@ enum {
 	RXM_CONN_INDEXED = BIT(0),
 };
 
-/* There will be at most 1 peer address per AV entry.  There
- * may be addresses that have not been inserted into the local
- * AV, and have no matching entry.  This can occur if we are
- * only receiving data from the remote rxm ep.
- */
-struct rxm_peer_addr {
-	struct rxm_av *av;
-	fi_addr_t fi_addr;
-	struct ofi_rbnode *node;
-	int index;
-	int refcnt;
-	union ofi_sock_ip addr;
-};
-
-struct rxm_peer_addr *rxm_get_peer(struct rxm_av *av, const void *addr);
-void rxm_put_peer(struct rxm_peer_addr *peer);
-
 /* Each local rxm ep will have at most 1 connection to a single
  * remote rxm ep.  A local rxm ep may not be connected to all
  * remote rxm ep's.
  */
 struct rxm_conn {
 	enum rxm_cm_state state;
-	struct rxm_peer_addr *peer;
+	struct util_peer_addr *peer;
 	struct fid_ep *msg_ep;
 	struct rxm_ep *ep;
 
@@ -219,7 +236,10 @@ struct rxm_conn {
 	 * the peer_addr.
 	 */
 	int remote_index;
+	uint32_t remote_pid;
 	uint8_t flags;
+	uint8_t flow_ctrl;
+	uint8_t peer_flow_ctrl;
 
 	struct dlist_entry deferred_entry;
 	struct dlist_entry deferred_tx_queue;
@@ -242,38 +262,20 @@ struct rxm_domain {
 	size_t rx_post_size;
 	uint64_t mr_key;
 	bool dyn_rbuf;
+	bool passthru;
 	struct ofi_ops_flow_ctrl *flow_ctrl_ops;
 	struct ofi_bufpool *amo_bufpool;
-	fastlock_t amo_bufpool_lock;
+	ofi_mutex_t amo_bufpool_lock;
 };
 
-/* All peer addresses, whether they've been inserted into the AV
- * or an endpoint has an active connection to it, are stored in
- * the addr_map.  Peers are allocated from a buffer pool and
- * assigned a local index using the pool.  All rxm endpoints
- * maintain a connection array which is aligned with the peer_pool.
- *
- * We technically only need to store the index of each peer in
- * the AV itself.  The 'util_av' could basically be replaced by
- * an ofi_index_map.  However, too much of the existing code
- * relies on the util_av existing and storing the AV addresses.
- *
- * A future cleanup would be to remove using the util_av and have the
- * rxm_av implementation be independent.
- */
- struct rxm_av {
-	struct util_av util_av;
-	struct ofi_rbmap addr_map;
-	struct ofi_bufpool *peer_pool;
-	struct ofi_bufpool *conn_pool;
+
+struct rxm_cntr {
+	struct util_cntr util_cntr;
+
+	/* Used in passthru mode */
+	struct fid_cntr *msg_cntr;
 };
 
-int rxm_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
-		struct fid_av **fid_av, void *context);
-size_t rxm_av_max_peers(struct rxm_av *av);
-void rxm_ref_peer(struct rxm_peer_addr *peer);
-struct rxm_conn *rxm_av_alloc_conn(struct rxm_av *av);
-void rxm_av_free_conn(struct rxm_conn *conn);
 
 struct rxm_mr {
 	struct fid_mr mr_fid;
@@ -281,7 +283,7 @@ struct rxm_mr {
 	struct rxm_domain *domain;
 	enum fi_hmem_iface iface;
 	uint64_t device;
-	fastlock_t amo_lock;
+	ofi_mutex_t amo_lock;
 };
 
 static inline enum fi_hmem_iface
@@ -396,7 +398,7 @@ union rxm_sar_ctrl_data {
 static inline enum rxm_sar_seg_type
 rxm_sar_get_seg_type(struct ofi_ctrl_hdr *ctrl_hdr)
 {
-	return ((union rxm_sar_ctrl_data *)&(ctrl_hdr->ctrl_data))->seg_type;
+	return (uint8_t)((union rxm_sar_ctrl_data *)&(ctrl_hdr->ctrl_data))->seg_type & 0x3;
 }
 
 static inline void
@@ -492,7 +494,7 @@ struct rxm_tx_buf {
 
 /* Used for application transmits, provides credit check */
 struct rxm_tx_buf *rxm_get_tx_buf(struct rxm_ep *ep);
-void rxm_free_rx_buf(struct rxm_ep *ep, struct rxm_tx_buf *buf);
+void rxm_free_tx_buf(struct rxm_ep *ep, struct rxm_tx_buf *buf);
 
 enum rxm_deferred_tx_entry_type {
 	RXM_DEFERRED_TX_RNDV_ACK,
@@ -629,6 +631,7 @@ struct rxm_ep {
 	struct fi_info 		*rxm_info;
 	struct fi_info 		*msg_info;
 
+	int			connecting_cnt;
 	struct index_map	conn_idx_map;
 	struct dlist_entry	loopback_list;
 	union ofi_sock_ip	addr;
@@ -641,7 +644,10 @@ struct rxm_ep {
 	struct fid_cq 		*msg_cq;
 	uint64_t		msg_cq_last_poll;
 	size_t 			comp_per_progress;
-	int			cq_eq_fairness;
+	size_t			cq_eq_fairness;
+	void			(*handle_comp_error)(struct rxm_ep *ep);
+	ssize_t			(*handle_comp)(struct rxm_ep *ep,
+					       struct fi_cq_data_entry *comp);
 
 	bool			msg_mr_local;
 	bool			rdm_mr_local;
@@ -678,10 +684,9 @@ void rxm_conn_progress(struct rxm_ep *ep);
 
 
 extern struct fi_provider rxm_prov;
+extern struct fi_info rxm_thru_info;
 extern struct fi_fabric_attr rxm_fabric_attr;
-extern struct fi_domain_attr rxm_domain_attr;
-extern struct fi_tx_attr rxm_tx_attr;
-extern struct fi_rx_attr rxm_rx_attr;
+
 extern struct rxm_rndv_ops rxm_rndv_ops_read;
 extern struct rxm_rndv_ops rxm_rndv_ops_write;
 
@@ -691,6 +696,8 @@ int rxm_info_to_core(uint32_t version, const struct fi_info *rxm_info,
 		     const struct fi_info *base_info, struct fi_info *core_info);
 int rxm_info_to_rxm(uint32_t version, const struct fi_info *core_info,
 		     const struct fi_info *base_info, struct fi_info *info);
+bool rxm_passthru_info(const struct fi_info *info);
+
 int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 			     struct fid_domain **dom, void *context);
 int rxm_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
@@ -705,6 +712,8 @@ void rxm_cq_write_error(struct util_cq *cq, struct util_cntr *cntr,
 void rxm_cq_write_error_all(struct rxm_ep *rxm_ep, int err);
 void rxm_handle_comp_error(struct rxm_ep *rxm_ep);
 ssize_t rxm_handle_comp(struct rxm_ep *rxm_ep, struct fi_cq_data_entry *comp);
+void rxm_thru_comp_error(struct rxm_ep *rxm_ep);
+ssize_t rxm_thru_comp(struct rxm_ep *rxm_ep, struct fi_cq_data_entry *comp);
 void rxm_ep_progress(struct util_ep *util_ep);
 void rxm_ep_progress_coll(struct util_ep *util_ep);
 void rxm_ep_do_progress(struct util_ep *util_ep);
@@ -819,6 +828,8 @@ rxm_cq_write(struct util_cq *cq, void *context, uint64_t flags, size_t len,
 			"Unable to report completion\n");
 		assert(0);
 	}
+	if (cq->wait)
+		cq->wait->signal(cq->wait);
 }
 
 static inline void
@@ -836,6 +847,8 @@ rxm_cq_write_src(struct util_cq *cq, void *context, uint64_t flags, size_t len,
 			"Unable to report completion\n");
 		assert(0);
 	}
+	if (cq->wait)
+		cq->wait->signal(cq->wait);
 }
 
 ssize_t rxm_get_conn(struct rxm_ep *rxm_ep, fi_addr_t addr,
@@ -854,10 +867,41 @@ rxm_ep_format_tx_buf_pkt(struct rxm_conn *rxm_conn, size_t len, uint8_t op,
 	pkt->hdr.data = data;
 }
 
+ssize_t
+rxm_send_segment(struct rxm_ep *rxm_ep,
+		 struct rxm_conn *rxm_conn, void *app_context, size_t data_len,
+		 size_t remain_len, uint64_t msg_id, size_t seg_len,
+		 size_t seg_no, size_t segs_cnt, uint64_t data, uint64_t flags,
+		 uint64_t tag, uint8_t op, const struct iovec *iov,
+		 uint8_t count, size_t *iov_offset,
+		 struct rxm_tx_buf **out_tx_buf,
+		 enum fi_hmem_iface iface, uint64_t device);
+ssize_t
+rxm_send_common(struct rxm_ep *rxm_ep, struct rxm_conn *rxm_conn,
+		const struct iovec *iov, void **desc, size_t count,
+		void *context, uint64_t data, uint64_t flags, uint64_t tag,
+		uint8_t op);
+ssize_t
+rxm_inject_send(struct rxm_ep *rxm_ep, struct rxm_conn *rxm_conn,
+		const void *buf, size_t len);
+
+struct rxm_recv_entry *
+rxm_recv_entry_get(struct rxm_ep *rxm_ep, const struct iovec *iov,
+		   void **desc, size_t count, fi_addr_t src_addr,
+		   uint64_t tag, uint64_t ignore, void *context,
+		   uint64_t flags, struct rxm_recv_queue *recv_queue);
+struct rxm_rx_buf *
+rxm_get_unexp_msg(struct rxm_recv_queue *recv_queue, fi_addr_t addr,
+		  uint64_t tag, uint64_t ignore);
+ssize_t rxm_handle_unexp_sar(struct rxm_recv_queue *recv_queue,
+			     struct rxm_recv_entry *recv_entry,
+			     struct rxm_rx_buf *rx_buf);
 int rxm_post_recv(struct rxm_rx_buf *rx_buf);
+void rxm_av_remove_handler(struct util_ep *util_ep,
+			   struct util_peer_addr *peer);
 
 static inline void
-rxm_rx_buf_free(struct rxm_rx_buf *rx_buf)
+rxm_free_rx_buf(struct rxm_rx_buf *rx_buf)
 {
 	if (rx_buf->data != rx_buf->pkt.data) {
 		free(rx_buf->data);

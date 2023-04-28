@@ -423,7 +423,8 @@ class CallInfo {
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */
   static CallInfo createWithReceiver(const CallInfo& ci,
-                                     types::QualifiedType receiverType);
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -444,7 +445,7 @@ class CallInfo {
 
 
   /** return the name of the called thing */
-  UniqueString name() const { return name_; }
+  const UniqueString name() const { return name_; }
 
   /** return the type of the called thing */
   types::QualifiedType calledType() const { return calledType_; }
@@ -1067,6 +1068,8 @@ class CallResolutionResult {
   PoiInfo poiInfo_;
 
  public:
+  CallResolutionResult() {}
+
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
     : exprType_(std::move(exprType)) {
@@ -1296,9 +1299,10 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
-  // TODO: replace this with a hashtable or at least
-  // something that doesn't have to start at 0
-  std::vector<ResolvedExpression> vec;
+  // This map is generally accessed with operator[] to default-construct a new
+  // ResolvedExpression if none exists for an ID. at() is used instead only
+  // when const-ness is required.
+  std::unordered_map<int, ResolvedExpression> map;
 
  public:
   /** prepare to resolve the contents of the passed symbol */
@@ -1310,42 +1314,35 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
-  ResolvedExpression& byIdExpanding(const ID& id) {
-    auto postorder = id.postOrderId();
-    CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
-    CHPL_ASSERT(0 <= postorder);
-    if ((size_t) postorder < vec.size()) {
-      // OK
-    } else {
-      vec.resize(postorder+1);
-    }
-    return vec[postorder];
-  }
-  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
-    return byIdExpanding(ast->id());
-  }
-
+  /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
-        0 <= postorder && (size_t) postorder < vec.size())
+        0 <= postorder && (map.count(postorder) > 0))
       return true;
 
     return false;
   }
-  bool hasAst(const uast::AstNode* ast) const {
-    return ast != nullptr && hasId(ast->id());
-  }
-
   ResolvedExpression& byId(const ID& id) {
-    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
     CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map.at(postorder);
+  }
+  const ResolvedExpression* byIdOrNull(const ID& id) const {
+    if (hasId(id)) {
+      auto postorder = id.postOrderId();
+      return &map.at(postorder);
+    }
+    return nullptr;
+  }
+
+  /* AST query functions */
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
@@ -1353,44 +1350,28 @@ class ResolutionResultByPostorderID {
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return byId(ast->id());
   }
-  ResolvedExpression* byIdOrNull(const ID& id) {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  const ResolvedExpression* byIdOrNull(const ID& id) const {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &vec[postorder];
-    }
-    return nullptr;
-  }
-  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
-    return byIdOrNull(ast->id());
-  }
   const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
     return byIdOrNull(ast->id());
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
     return symbolId == other.symbolId &&
-           vec == other.vec;
+           map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
     symbolId.swap(other.symbolId);
-    vec.swap(other.vec);
+    map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
     symbolId.mark(context);
-    for (auto const &elt : vec) {
-      elt.mark(context);
+    for (auto const &elt : map) {
+      // mark ResolvedExpressions
+      elt.second.mark(context);
     }
   }
 };
@@ -1477,6 +1458,9 @@ class ResolvedFunction {
   }
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
+  }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return resolutionById_.byAstOrNull(ast);
   }
 
   const ID& id() const {

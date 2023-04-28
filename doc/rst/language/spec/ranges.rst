@@ -79,7 +79,7 @@ decreasing if :math:`stride < 0`.
 If the represented sequence is defined but there are no indices
 satisfying the applicable equation(s) above, the range and its
 represented sequence are *empty*. A common case of this occurs when the
-high bound is greater than the low bound.
+low bound is greater than the high bound.
 
 We say that a value :math:`ix` is *aligned* w.r.t. the range
 :math:`(low, high, stride, alignmt)` if:
@@ -165,8 +165,8 @@ The type of a range is characterized by three properties:
    bit size as ``idxType`` for integral ranges; for boolean and
    enumerated ranges, it is simply ``int``.
 
--  ``boundedType`` indicates which of the range’s bounds are not
-   :math:`\infty`. ``boundedType`` is an enumeration constant of the
+-  ``bounds`` indicates which of the range’s bounds are not
+   :math:`\infty`. ``bounds`` is an enumeration constant of the
    type ``BoundedRangeType``. It is discussed further below.
 
 -  ``stridable`` is a boolean that determines whether the range’s stride
@@ -174,37 +174,36 @@ The type of a range is characterized by three properties:
    default. A range is called *stridable* if its type’s ``stridable``
    field is ``true``.
 
-``boundedType`` is one of the constants of the following enumeration:
+``bounds`` is one of the constants of the following enumeration:
 
-.. enum::   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+.. enum::  enum boundKind { both, low, high, neither };
 
-The value of ``boundedType`` determines which bounds of the range are
+The value of ``bounds`` determines which bound(s) of the range are
 specified (making the range “bounded”, as opposed to infinite, in the
 corresponding direction(s)) as follows:
 
--  ``bounded``: both bounds are specified.
+-  ``both``: both bounds are specified.
+   Such ranges are called *bounded*.
 
--  ``boundedLow``: the low bound is specified (the high bound is
-   +\ :math:`\infty`).
+-  ``low``: the low bound is specified, the high bound is +\ :math:`\infty`.
 
--  ``boundedHigh``: the high bound is specified (the low bound is
-   -:math:`\infty`).
+-  ``high``: the high bound is specified, the low bound is -:math:`\infty`.
 
--  ``boundedNone``: neither bound is specified (both bounds are
-   :math:`\infty`).
+-  ``neither``: neither bound is specified, both bounds are :math:`\infty`.
+   Such ranges are called *unbounded*.
 
-``boundedType`` is ``BoundedRangeType.bounded`` by default.
+``bounds`` is ``boundKind.both`` by default. 
 
-The parameters ``idxType``, ``boundedType``, and ``stridable`` affect
+The parameters ``idxType``, ``bounds``, and ``stridable`` affect
 all values of the corresponding range type. For example, the range’s low
-bound is -:math:`\infty` if and only if the ``boundedType`` of that
-range’s type is either ``boundedHigh`` or ``boundedNone``.
+bound is -:math:`\infty` if and only if the ``bounds`` of that
+range’s type is either ``high`` or ``neither``.
 
    *Rationale*.
 
-   Providing ``boundedType`` and ``stridable`` in a range’s type
+   Providing ``bounds`` and ``stridable`` in a range’s type
    allows the compiler to identify and optimize the common cases where
-   the range is ``bounded`` and/or its stride is 1.
+   the range is bounded in both directions and/or its stride is 1.
 
 A range type has the following syntax: 
 
@@ -220,12 +219,12 @@ header:
 .. code-block:: chapel
 
      proc range(type idxType = int,
-                param boundedType = BoundedRangeType.bounded,
+                param bounds = boundKind.both,
                 param stridable = false) type
 
 As a special case, the keyword ``range`` without a parenthesized
 argument list refers to the range type with the default values of all
-its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
+its parameters, i.e., ``range(int, boundKind.both, false)``.
 
    *Example (rangeVariable.chpl)*.
 
@@ -235,7 +234,7 @@ its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
 
    .. code-block:: chapel
 
-      var r: range(int(32), BoundedRangeType.bounded, stridable=true);
+      var r: range(int(32), boundKind.both, stridable=true);
 
    .. BLOCK-test-chapelpost
 
@@ -299,17 +298,17 @@ The type of a range literal is a range with the following parameters:
 
    -  Otherwise, the range literal is not legal.
 
--  ``boundedType`` is a value of the type ``BoundedRangeType`` that is
+-  ``bounds`` is a value of the type ``boundKind`` that is
    determined as follows:
 
-   -  ``bounded``, if both the lower bound and the upper bound expressions
+   -  ``both``, if both the lower bound and the upper bound expressions
       are given,
 
-   -  ``boundedLow``, if only the upper bound expression is given,
+   -  ``low``, if only the upper bound expression is given,
 
-   -  ``boundedHigh``, if only the lower bound expression is given,
+   -  ``high``, if only the lower bound expression is given,
 
-   -  ``boundedNone``, if neither bound expression is given.
+   -  ``neither``, if neither bound expression is given.
 
 -  ``stridable`` is ``false``.
 
@@ -335,15 +334,15 @@ Default Values
 ~~~~~~~~~~~~~~
 
 The default value for a range with an integral ``idxType`` depends on
-the type’s ``boundedType`` parameter as follows:
+the type’s ``bounds`` parameter as follows:
 
--  ``1..0`` (an empty range) if ``boundedType`` is ``bounded``
+-  ``1..0`` (an empty range) if ``bounds`` is ``both``
 
--  ``1..`` if ``boundedType`` is ``boundedLow``
+-  ``1..`` if ``bounds`` is ``low``
 
--  ``..0`` if ``boundedType`` is ``boundedHigh``
+-  ``..0`` if ``bounds`` is ``high``
 
--  ``..`` if ``boundedType`` is ``boundedNone``
+-  ``..`` if ``bounds`` is ``neither``
 
 ..
 
@@ -353,11 +352,11 @@ the type’s ``boundedType`` parameter as follows:
    available for any integer ``idxType`` with more than one value.
 
    We have not found the natural choice of the default value for
-   ``boundedLow`` and ``boundedHigh`` ranges. The values indicated above
+   ranges with ``low`` and ``high`` ``bounds``. The values indicated above
    are distinguished by the following property. Slicing the default
-   value for a ``boundedLow`` range with the default value for a
-   ``boundedHigh`` range (or visa versa) produces an empty range,
-   matching the default value for a ``bounded`` range
+   value for a ``low``-bounded range with the default value for a
+   ``high``-bounded range (or visa versa) produces an empty range,
+   matching the default value for a ``both``-bounded range
 
 Default values of ranges with boolean ``idxType`` are similar, but
 substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
@@ -402,7 +401,7 @@ Range assignment is legal when:
 -  An implicit conversion is allowed from ``idxType`` of the source
    range to ``idxType`` of the destination range type,
 
--  the two range types have the same ``boundedType``, and
+-  the two range types have the same ``bounds``, and
 
 -  either the destination range is stridable or the source range is not
    stridable.
@@ -845,7 +844,7 @@ range’s low and high bounds, producing a shifted version of the range.
 If the operand range is unbounded above or below, the missing bounds are
 ignored. The index type of the resulting range is the type of the value
 that would result from an addition between the scalar value and a value
-with the range’s index type. The bounded and stridable parameters for
+with the range’s index type. The ``bounds`` and ``stridable`` parameters for
 the result range are the same as for the input range.
 
 The stride of the resulting range is the same as the stride of the
@@ -929,7 +928,7 @@ with a range that is identical except it is given an alignment
 in such a way that that the intersection of the two ranges'
 represented sequences is non-empty, if possible.
 How this substitute alignment is chosen when multiple possibilities
-are availble is implementation-dependent.
+are available is implementation-dependent.
 
 If the resulting sequence cannot be expressed as a range with the
 original ``idxType``, the slice expression evaluates to the empty
@@ -955,16 +954,16 @@ Range Type Queries
 
 
 
-.. function:: proc range.boundedType param : BoundedRangeType
-
-   Returns which bounds the range explicitly represents (its
-   ``boundedType`` value).
-
-
-
 .. function:: proc range.idxType type
 
    Returns the type of the range's indices (its ``idxType``).
+
+
+
+.. function:: proc range.bounds param : BoundedRangeType
+
+   Returns which bounds the range explicitly represents
+   (its ``bounds`` value).
 
 
 

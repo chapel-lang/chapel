@@ -1,0 +1,36 @@
+if HAVE_NET
+_xnet_files = \
+	prov/net/src/xnet_fabric.c	\
+	prov/net/src/xnet_attr.c	\
+	prov/net/src/xnet_cm.c		\
+	prov/net/src/xnet_rdm_cm.c	\
+	prov/net/src/xnet_domain.c	\
+	prov/net/src/xnet_rma.c	\
+	prov/net/src/xnet_msg.c	\
+	prov/net/src/xnet_ep.c		\
+	prov/net/src/xnet_rdm.c	\
+	prov/net/src/xnet_pep.c	\
+	prov/net/src/xnet_srx.c	\
+	prov/net/src/xnet_cq.c		\
+	prov/net/src/xnet_eq.c		\
+	prov/net/src/xnet_init.c	\
+	prov/net/src/xnet_progress.c	\
+	prov/net/src/xnet_proto.h	\
+	prov/net/src/xnet.h
+
+if HAVE_NET_DL
+pkglib_LTLIBRARIES += libnet-fi.la
+libnet_fi_la_SOURCES = $(_xnet_files) $(common_srcs)
+libnet_fi_la_LIBADD = $(linkback) $(xnet_shm_LIBS)
+libnet_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libnet_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_NET_DL
+src_libfabric_la_SOURCES += $(_xnet_files)
+src_libfabric_la_LIBADD += $(xnet_shm_LIBS)
+endif !HAVE_NET_DL
+
+prov_install_man_pages += man/man7/fi_net.7
+
+endif HAVE_NET
+
+prov_dist_man_pages += man/man7/fi_net.7

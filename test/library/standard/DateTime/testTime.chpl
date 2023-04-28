@@ -90,7 +90,7 @@ proc test_resolution_info() {
 
   assert(valIsType(time, time.min));
   assert(valIsType(time, time.max));
-  assert(valIsType(timedelta, time.resolution));
+  assert(valIsType(timeDelta, time.resolution));
   assert(time.max > time.min);
 }
 

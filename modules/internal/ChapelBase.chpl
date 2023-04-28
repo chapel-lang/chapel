@@ -50,6 +50,12 @@ module ChapelBase {
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
 
+  // Used to test "--warn-unstable-internal", ignore.
+  pragma "no doc"
+  @unstable
+  var chpl_unstableInternalSymbolForTesting: int;
+  chpl_unstableInternalSymbolForTesting;
+
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
@@ -64,7 +70,7 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
-  // This is a compatability flag to maintain old behavior for applications
+  // This is a compatibility flag to maintain old behavior for applications
   // that rely on it (e.g., Arkouda). The tests for new features will run
   // with this set to FALSE. At a certain point the old behavior will be
   // deprecated, and this flag will be removed.
@@ -1902,7 +1908,7 @@ module ChapelBase {
 
   /*
   inline proc chpl__tounmanaged(ref arg:Owned) {
-    return arg.release();
+    return owned.release(arg);
   }
   inline proc chpl__tounmanaged(arg) where arg:object {
     return arg;

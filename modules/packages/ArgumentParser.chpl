@@ -1728,7 +1728,7 @@ module ArgumentParser {
         // get a ref to the argument
         var arg = _result[name];
         // get the argument handler to match
-        const handler = _handlers[name];
+        const handler = _handlers[name].borrow();
         // try to match values in argstring, get the last value position
         var stopPos = argsList.size - 1;
         if arrayOptionIndices.size > i + 1 {
@@ -1801,7 +1801,7 @@ module ArgumentParser {
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._handlers.keys() {
-        const handler = try! this._handlers[name];
+        const handler = try! this._handlers[name].borrow();
         const arg = try! this._result[name];
         if !arg._present && handler._hasDefault() {
           arg._values.append(handler._getDefaultValue());
@@ -1814,7 +1814,7 @@ module ArgumentParser {
     proc _checkSatisfiedOptions() throws {
       // make sure we satisfied options that require a value
       for name in this._handlers.keys() {
-        const handler = this._handlers[name];
+        const handler = this._handlers[name].borrow();
         const arg = this._result[name];
         var rtnMsg = handler._validate(arg._present, arg._values.size);
         if rtnMsg != "" {

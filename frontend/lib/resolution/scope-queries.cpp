@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-queries.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
@@ -26,6 +27,7 @@
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "scope-help.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -422,7 +424,7 @@ const Scope* scopeForId(Context* context, ID id) {
 using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
 // a struct to encapsulate arguments to doLookupIn...
-// so that the calls and function signatures do not get too unweildy.
+// so that the calls and function signatures do not get too unwieldy.
 struct LookupHelper {
   Context* context;
   const ResolvedVisibilityScope* resolving;
@@ -455,7 +457,8 @@ struct LookupHelper {
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
                              bool onlyInnermost,
-                             bool skipPrivateVisibilities);
+                             bool skipPrivateVisibilities,
+                             bool onlyMethodsFields);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -464,7 +467,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config);
 
-  bool doLookupInExternBlock(const Scope* scope, UniqueString name);
+  bool doLookupInExternBlocks(const Scope* scope, UniqueString name);
 
   bool doLookupInScope(const Scope* scope,
                        llvm::ArrayRef<const Scope*> receiverScopes,
@@ -521,6 +524,7 @@ bool LookupHelper::doLookupInImportsAndUses(
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
@@ -559,7 +563,7 @@ bool LookupHelper::doLookupInImportsAndUses(
         if (!allowPrivateAccess) {
           newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
         } else {
-          // TODO: this disallowes nested modules from working  with
+          // TODO: this disallows nested modules from working  with
           // a private use/import in a parent module. But, that is
           // subject to discussion in issue #21723.
           // See the history of this comment for an implementation that
@@ -571,6 +575,9 @@ bool LookupHelper::doLookupInImportsAndUses(
         }
         if (onlyMethodsFields) {
           newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+        }
+        if (checkExternBlocks) {
+          newConfig |= LOOKUP_EXTERN_BLOCKS;
         }
 
         // If the whole module is being renamed, still search for the original
@@ -643,7 +650,8 @@ bool LookupHelper::doLookupInImportsAndUses(
 bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
-                                         bool skipPrivateVisibilities) {
+                                         bool skipPrivateVisibilities,
+                                         bool onlyMethodsFields) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -656,6 +664,10 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
+      }
+
+      if (onlyMethodsFields) {
+        newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
       }
 
       if (trace) {
@@ -780,24 +792,41 @@ bool LookupHelper::doLookupInReceiverScopes(
   return got;
 }
 
-bool LookupHelper::doLookupInExternBlock(const Scope* scope,
-                                         UniqueString name) {
-  // Return the ID of the extern block(s) that matched.
+// returns IDs of all extern blocks directly contained within scope
+static const std::vector<ID>& gatherExternBlocks(Context* context, ID scopeID) {
+  QUERY_BEGIN(gatherExternBlocks, context, scopeID);
 
-  // TODO: need to check if the name is present in the C code for
-  // extern blocks contained in this scope. Consider using clang
-  // precompiled headers and FindExternalVisibleDeclsByName.
+  std::vector<ID> result;
 
-  // TODO: implement this in a more incremental-friendly manner
-  auto ast = parsing::idToAst(context, scope->id());
+  auto ast = parsing::idToAst(context, scopeID);
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
+      result.push_back(child->id());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
+                                          UniqueString name) {
+  // Which are the IDs of the contained extern block(s)?
+  const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
+
+  // Consider each extern block in turn. Does it have a symbol with that name?
+  for (const auto& exbId : exbIds) {
+    if (externBlockContainsName(context, exbId, name)) {
+      // note that this extern block can match 'name'
       bool isMethodOrField = false; // not possible in an extern block
-      bool isParenfulFunction = false; // TODO -- it could be a regular fn
+      bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
+
+      auto newId = ID::fabricateId(context, exbId, name,
+                                   ID::ExternBlockElement);
+
       auto foundIds =
-        BorrowedIdsWithName::createWithSingleId(child->id(),
+        BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
                                                 isParenfulFunction,
@@ -867,7 +896,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     curFilter |= IdAndFlags::METHOD_FIELD;
   }
   // Note: curFilter can only represent combinations of positive flags;
-  // if it extended, it might no longer be possible to rerepresent
+  // if it extended, it might no longer be possible to represent
   // the combinedFilter below as a single bitset.
   // Also note: setting excludeFilter in some way other than the
   // handling below with checkedScopes will require other adjustments.
@@ -968,7 +997,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(scope, name,
-                                 onlyInnermost, skipPrivateVisibilities);
+                                 onlyInnermost,
+                                 skipPrivateVisibilities,
+                                 onlyMethodsFields);
     if (onlyInnermost && got) return true;
   }
 
@@ -1114,7 +1145,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // return the extern block ID
   if (checkExternBlocks && scope->containsExternBlock()) {
     foundExternBlock = true;
-    doLookupInExternBlock(scope, name);
+    doLookupInExternBlocks(scope, name);
   }
 
   if (trace) {
@@ -1390,15 +1421,15 @@ static void errorIfNameNotInScope(Context* context,
                                   bool isRename) {
   CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> result;
-  bool foundExternBlock = false;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE;
-  auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                             foundExternBlock,
-                             /* traceCurPath */ nullptr,
-                             /* traceResult */ nullptr);
-  bool got = helper.doLookupInScope(scope, {}, name, config);
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_EXTERN_BLOCKS;
+
+  bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+                               checkedScopes, result,
+                               /* traceCurPath */ nullptr,
+                               /* traceResult */ nullptr);
 
   if (got == false || result.size() == 0) {
     CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
@@ -1635,6 +1666,30 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
+  // Added to help deprecate BoundedRangeType in 1.31.
+  // Pattern match the case `use ABC` where ABC is a parenless type function
+  // with a single statement `return XYZ`. If so, treat it as `use XYZ`,
+  // resolving `XYZ` in the scope where the function is defined.
+  if (isFunction(tag)) {
+    auto function = parsing::idToAst(context, foundId)->toFunction();
+    if (function->isParenless() && !function->isMethod() &&
+        function->returnIntent() == Function::ReturnIntent::TYPE) {
+      if (auto block = function->body()->toBlock()) {
+        if (block->numStmts() == 1) {
+          if (auto return_ = block->child(0)->toReturn()) {
+            if (auto ident = return_->value()->toIdentifier()) {
+              auto functionScope = scopeForId(context, foundId);
+              maybeEmitWarningsForId(context, idForErrs, functionScope->id());
+              return findScopeViz(context, functionScope, ident->name(),
+                  resolving, idForErrs, useOrImport, isFirstPart,
+                  previousPartName);
+            }
+          }
+        }
+      }
+    }
+  }
 
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
@@ -2292,7 +2347,7 @@ std::vector<ID> findUsedImportedModules(Context* context,
 static const std::map<ID, ID>&
 findAllModulesUsedImportedInTreeQuery(Context* context, ID id);
 
-// Pre-order depth first traveral of the entire module to gather use/import.
+// Pre-order depth first traversal of the entire module to gather use/import.
 // Key is ID of use/import, value is target module ID. We use a map here
 // because the C++ standard map maintains ordering, which should sort all
 // the use/import by their lexical order (via ID ordering).

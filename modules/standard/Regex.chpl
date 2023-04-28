@@ -1657,7 +1657,7 @@ proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool 
   return b.size > 0;
 }
 
-/* helper for: readThrough(regex), readTo(regex) (and eventually andvanceTo, advanceThrough)
+/* helper for: readThrough(regex), readTo(regex) (and eventually advanceTo, advanceThrough)
 
   looks for a regex match in the next 'maxBytes' bytes in the channel
 
@@ -1670,7 +1670,7 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   use Regex.RegexIoSupport;
 
   // look for a match with the provided regex
-  ch._mark();
+  ch.mark();
   const maxNumBytes = if maxBytes < 0 then max(int) else maxBytes,
         nm = 1;
 
@@ -1688,7 +1688,7 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
 
   // return if there was an error other than a no-match error
   if err != 0 && err != EEOF && err != EFORMAT {
-    ch._revert();
+    ch.revert();
     return (err, false, 0, separatorMatch);
   }
 
@@ -1698,14 +1698,14 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   // extract a string from the match
   ch._extractMatch(m, separatorMatch, err);
   if err != 0 && err != EEOF && err != EFORMAT {
-    ch._revert();
+    ch.revert();
     return (err, false, 0, separatorMatch);
   }
 
   // move back to the starting offset and compute the total number of bytes read
-  const endOffset = ch._offset();
-  ch._revert(); // A
-  const numBytesRead: int = endOffset - ch._offset();
+  const endOffset = ch.chpl_offset();
+  ch.revert(); // A
+  const numBytesRead: int = endOffset - ch.chpl_offset();
 
   _ddata_free(matches, nm);
 

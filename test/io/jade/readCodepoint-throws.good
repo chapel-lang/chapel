@@ -1,1 +1,1 @@
-Correctly threw UnexpectedEofError
+Correctly threw EofError

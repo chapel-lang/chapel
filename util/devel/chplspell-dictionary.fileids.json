@@ -298,6 +298,9 @@
   "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
     "compiler/resolution/expandVarArgs.cpp"
   ],
+  "19b44eb2-d463-11ed-ae82-c11fabc62016": [
+    "compiler/resolution/fcf-support.cpp"
+  ],
   "c50323ec-5a60-11ed-baec-ef9f14c5b529": [
     "compiler/resolution/firstClassFunctions.cpp"
   ],
@@ -461,6 +464,9 @@
   "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/expressions.rst"
   ],
+  "92abfbbc-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/language/spec/generics.rst"
+  ],
   "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
     "doc/rst/language/spec/interoperability.rst"
   ],
@@ -499,6 +505,12 @@
   ],
   "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/platforms/cray.rst"
+  ],
+  "41875858-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/platforms/raspberrypi.rst"
+  ],
+  "73f04412-d463-11ed-ae82-c11fabc62016": [
+    "doc/rst/technotes/attributes.rst"
   ],
   "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/dsi.rst"
@@ -1040,6 +1052,9 @@
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/filesystem.cpp"
   ],
+  "e091e076-d463-11ed-ae82-c11fabc62016": [
+    "frontend/lib/util/filtering.cpp"
+  ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/subprocess.cpp"
   ],
@@ -1294,6 +1309,9 @@
   ],
   "7de3ce6c-3f64-11e6-907f-843835579daa": [
     "modules/standard/Math.chpl"
+  ],
+  "cb0197c8-d464-11ed-ae82-c11fabc62016": [
+    "modules/standard/MemMove.chpl"
   ],
   "bd895c06-e3ac-11ec-a8be-cd81bce0efc4": [
     "modules/standard/OS.chpl"

@@ -340,7 +340,7 @@ proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
 }
 
 proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
-                                                 BoundedRangeType.bounded,
+                                                 boundKind.both,
                                                  stridable) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetIndices");
   return whole.getIndices();

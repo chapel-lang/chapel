@@ -68,7 +68,7 @@ int sock_av_get_addr_index(struct sock_av *av, union ofi_sock_ip *addr)
 	int i;
 	struct sock_av_addr *av_addr;
 
-	fastlock_acquire(&av->table_lock);
+	ofi_mutex_lock(&av->table_lock);
 	for (i = 0; i < (int)av->table_hdr->size; i++) {
 		av_addr = &av->table[i];
 		if (!av_addr->valid)
@@ -76,11 +76,11 @@ int sock_av_get_addr_index(struct sock_av *av, union ofi_sock_ip *addr)
 
 		 if (ofi_equals_sockaddr((const struct sockaddr *) addr,
 					 (const struct sockaddr *) &av_addr->addr)) {
-			fastlock_release(&av->table_lock);
+			ofi_mutex_unlock(&av->table_lock);
 			return i;
 		 }
 	}
-	fastlock_release(&av->table_lock);
+	ofi_mutex_unlock(&av->table_lock);
 	SOCK_LOG_DBG("failed to get index in AV\n");
 	return -1;
 }
@@ -88,18 +88,18 @@ int sock_av_get_addr_index(struct sock_av *av, union ofi_sock_ip *addr)
 int sock_av_compare_addr(struct sock_av *av,
 			 fi_addr_t addr1, fi_addr_t addr2)
 {
-	int index1, index2;
+	int64_t index1, index2;
 	struct sock_av_addr *av_addr1, *av_addr2;
 	int ret;
 
-	index1 = ((uint64_t)addr1 & av->mask);
-	index2 = ((uint64_t)addr2 & av->mask);
+	index1 = addr1 & av->mask;
+	index2 = addr2 & av->mask;
 
-	fastlock_acquire(&av->table_lock);
-	if (index1 >= (int)av->table_hdr->size || index1 < 0 ||
-	    index2 >= (int)av->table_hdr->size || index2 < 0) {
+	ofi_mutex_lock(&av->table_lock);
+	if (index1 >= av->table_hdr->size || index1 < 0 ||
+	    index2 >= av->table_hdr->size || index2 < 0) {
 		SOCK_LOG_ERROR("requested rank is larger than av table\n");
-		fastlock_release(&av->table_lock);
+		ofi_mutex_unlock(&av->table_lock);
 		return -1;
 	}
 
@@ -108,7 +108,7 @@ int sock_av_compare_addr(struct sock_av *av,
 
 	/* Return 0 if the addresses match */
 	ret = !ofi_equals_sockaddr(&av_addr1->addr.sa, &av_addr2->addr.sa);
-	fastlock_release(&av->table_lock);
+	ofi_mutex_unlock(&av->table_lock);
 	return ret;
 }
 
@@ -182,7 +182,7 @@ static int sock_resize_av_table(struct sock_av *av)
 	return 0;
 }
 
-static int sock_av_get_next_index(struct sock_av *av)
+static int64_t sock_av_get_next_index(struct sock_av *av)
 {
 	uint64_t i;
 
@@ -202,7 +202,7 @@ static int sock_check_table_in(struct sock_av *_av, const void *addr,
 	uint64_t j;
 	char sa_ip[INET6_ADDRSTRLEN];
 	struct sock_av_addr *av_addr;
-	int index;
+	int64_t index;
 
 	if ((_av->attr.flags & FI_EVENT) && !_av->eq)
 		return -FI_ENOEQ;
@@ -287,32 +287,32 @@ static int sock_av_insert(struct fid_av *av, const void *addr, size_t count,
 
 	_av = container_of(av, struct sock_av, av_fid);
 
-	fastlock_acquire(&_av->table_lock);
-	ret = sock_check_table_in(_av, addr, fi_addr, count, flags, context);
-	fastlock_release(&_av->table_lock);
+	ofi_mutex_lock(&_av->table_lock);
+	ret = sock_check_table_in(_av, addr, fi_addr, (int) count, flags, context);
+	ofi_mutex_unlock(&_av->table_lock);
 	return ret;
 }
 
 static int sock_av_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 			  size_t *addrlen)
 {
-	int index;
+	int64_t index;
 	struct sock_av *_av;
 	struct sock_av_addr *av_addr;
 
 	_av = container_of(av, struct sock_av, av_fid);
-	index = ((uint64_t)fi_addr & _av->mask);
+	index = fi_addr & _av->mask;
 
-	fastlock_acquire(&_av->table_lock);
-	if (index >= (int)_av->table_hdr->size || index < 0) {
+	ofi_mutex_lock(&_av->table_lock);
+	if (index >= _av->table_hdr->size || index < 0) {
 		SOCK_LOG_ERROR("requested address not inserted\n");
-		fastlock_release(&_av->table_lock);
+		ofi_mutex_unlock(&_av->table_lock);
 		return -EINVAL;
 	}
 
 	av_addr = &_av->table[index];
 	memcpy(addr, &av_addr->addr, MIN(*addrlen, (size_t)_av->addrlen));
-	fastlock_release(&_av->table_lock);
+	ofi_mutex_unlock(&_av->table_lock);
 	*addrlen = _av->addrlen;
 	return 0;
 }
@@ -342,10 +342,10 @@ static int _sock_av_insertsvc(struct fid_av *av, const char *node,
 		return -ret;
 	}
 
-	fastlock_acquire(&_av->table_lock);
+	ofi_mutex_lock(&_av->table_lock);
 	ret = sock_check_table_in(_av, result->ai_addr,
 				  fi_addr, 1, flags, context);
-	fastlock_release(&_av->table_lock);
+	ofi_mutex_unlock(&_av->table_lock);
 	freeaddrinfo(result);
 	return ret;
 }
@@ -379,7 +379,7 @@ static int sock_av_insertsym(struct fid_av *av, const char *node, size_t nodecnt
 		return -FI_EINVAL;
 	}
 
-	hostlen = strlen(node);
+	hostlen = (int) strlen(node);
 	while (isdigit(*(node + hostlen - (offset + 1))))
 		offset++;
 
@@ -429,15 +429,15 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 	uint16_t idx;
 
 	_av = container_of(av, struct sock_av, av_fid);
-	fastlock_acquire(&_av->list_lock);
+	ofi_mutex_lock(&_av->list_lock);
 	dlist_foreach(&_av->ep_list, item) {
 		fid_entry = container_of(item, struct fid_list_entry, entry);
 		sock_ep = container_of(fid_entry->fid, struct sock_ep, ep.fid);
-		fastlock_acquire(&sock_ep->attr->cmap.lock);
+		ofi_mutex_lock(&sock_ep->attr->cmap.lock);
 		for (i = 0; i < count; i++) {
-			idx = fi_addr[i] & sock_ep->attr->av->mask;
+			idx = (uint16_t)(fi_addr[i] & sock_ep->attr->av->mask);
 			conn = ofi_idm_lookup(&sock_ep->attr->av_idm, idx);
-			if (conn) {
+			if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
 				/* A peer may be using the connection, so leave
 				 * it operational, just dissociate it from AV.
 				 */
@@ -446,16 +446,16 @@ static int sock_av_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t count,
 				ofi_idm_clear(&sock_ep->attr->av_idm, idx);
 			}
 		}
-		fastlock_release(&sock_ep->attr->cmap.lock);
+		ofi_mutex_unlock(&sock_ep->attr->cmap.lock);
 	}
-	fastlock_release(&_av->list_lock);
+	ofi_mutex_unlock(&_av->list_lock);
 
-	fastlock_acquire(&_av->table_lock);
+	ofi_mutex_lock(&_av->table_lock);
 	for (i = 0; i < count; i++) {
 		av_addr = &_av->table[fi_addr[i]];
 		av_addr->valid = 0;
 	}
-	fastlock_release(&_av->table_lock);
+	ofi_mutex_unlock(&_av->table_lock);
 
 	return 0;
 }
@@ -510,8 +510,8 @@ static int sock_av_close(struct fid *fid)
 	}
 
 	ofi_atomic_dec32(&av->domain->ref);
-	fastlock_destroy(&av->list_lock);
-	fastlock_destroy(&av->table_lock);
+	ofi_mutex_destroy(&av->list_lock);
+	ofi_mutex_destroy(&av->table_lock);
 	free(av);
 	return 0;
 }
@@ -659,8 +659,8 @@ int sock_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 		goto err2;
 	}
 	dlist_init(&_av->ep_list);
-	fastlock_init(&_av->list_lock);
-	fastlock_init(&_av->table_lock);
+	ofi_mutex_init(&_av->list_lock);
+	ofi_mutex_init(&_av->table_lock);
 	_av->rx_ctx_bits = attr->rx_ctx_bits;
 	_av->mask = attr->rx_ctx_bits ?
 		((uint64_t)1 << (64 - attr->rx_ctx_bits)) - 1 : ~0;

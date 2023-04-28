@@ -46,6 +46,86 @@ module Math {
   private use CTypes;
   private use AutoMath;
 
+  //////////////////////////////////////////////////////////////////////////
+  // Constants (included in chpldocs)
+  //
+
+  /* e - exp(1) or  the base of the natural logarithm */
+  param e = 2.7182818284590452354;
+  /* log2(e) */
+  param log2_e = 1.4426950408889634074;
+  /* log10(e) */
+  param log10_e = 0.43429448190325182765;
+  /* log(2) (natural logarithm) */
+  param ln_2 = 0.69314718055994530942;
+  /* log(10) (natural logarithm) */
+  param ln_10 = 2.30258509299404568402;
+  /* pi - the circumference/the diameter of a circle */
+  param pi = 3.14159265358979323846;
+  /* pi/2 */
+  param half_pi = 1.57079632679489661923;
+  /* pi/4 */
+  param quarter_pi = 0.78539816339744830962;
+  /* 1/pi */
+  param recipr_pi = 0.31830988618379067154;
+  /* 2/pi */
+  param twice_recipr_pi = 0.63661977236758134308;
+  /* 2/sqrt(pi) */
+  param twice_recipr_sqrt_pi = 1.12837916709551257390;
+  /* sqrt(2) */
+  param sqrt_2 = 1.41421356237309504880;
+  /* 1/sqrt(2) */
+  param recipr_sqrt_2 = 0.70710678118654752440;
+
+  /* Returns the error function of the argument `x`. */
+  inline proc erf(x: real(64)): real(64) {
+    return chpl_erf(x);
+  }
+
+  /* Returns the error function of the argument `x`. */
+  inline proc erf(x : real(32)): real(32) {
+    return chpl_erf(x);
+  }
+
+  /* Returns the complementary error function of the argument.
+     This is equivalent to 1.0 - :proc:`erf`\(`x`).
+  */
+  inline proc erfc(x: real(64)): real(64) {
+    return chpl_erfc(x);
+  }
+
+  /* Returns the complementary error function of the argument.
+     This is equivalent to 1.0 - :proc:`erf`\(`x`).
+  */
+  inline proc erfc(x : real(32)): real(32) {
+    return chpl_erfc(x);
+  }
+
+  /* Multiply by an integer power of 2.
+     Returns x * 2**n.
+     */
+  inline proc ldexp(x:real(64), n:int(32)):real(64) {
+    return chpl_ldexp(x, n);
+  }
+
+  inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    return chpl_ldexp(x, n);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  inline proc lgamma(x: real(64)): real(64) {
+    return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  inline proc lgamma(x : real(32)): real(32) {
+    return chpl_lgamma(x);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
@@ -82,6 +162,16 @@ module Math {
   */
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
+  }
+
+  /* Returns the absolute value of the gamma function of the argument `x`. */
+  inline proc tgamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the absolute value of the gamma function of the argument `x`. */
+  inline proc tgamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */

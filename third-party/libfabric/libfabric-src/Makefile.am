@@ -15,6 +15,7 @@ AM_CPPFLAGS = \
 
 noinst_LTLIBRARIES =
 lib_LTLIBRARIES =
+noinst_PROGRAMS =
 
 if EMBEDDED
 noinst_LTLIBRARIES += src/libfabric.la
@@ -35,8 +36,10 @@ else !HAVE_LD_VERSION_SCRIPT
 endif !HAVE_LD_VERSION_SCRIPT
 
 rdmaincludedir = $(includedir)/rdma
+providersincludedir = $(rdmaincludedir)/providers
 
 rdmainclude_HEADERS =
+providersinclude_HEADERS =
 
 # internal utility functions shared by in-tree providers:
 common_srcs =				\
@@ -45,6 +48,9 @@ common_srcs =				\
 	src/hmem_cuda.c			\
 	src/hmem_cuda_gdrcopy.c		\
 	src/hmem_ze.c			\
+	src/hmem_neuron.c		\
+	src/hmem_synapseai.c		\
+	src/hmem_ipc_cache.c	        \
 	src/common.c			\
 	src/enosys.c			\
 	src/rbtree.c			\
@@ -57,6 +63,7 @@ common_srcs =				\
 	prov/util/src/util_atomic.c	\
 	prov/util/src/util_attr.c	\
 	prov/util/src/util_av.c		\
+	prov/util/src/rxm_av.c		\
 	prov/util/src/util_cq.c		\
 	prov/util/src/util_cntr.c	\
 	prov/util/src/util_domain.c	\
@@ -77,6 +84,7 @@ common_srcs =				\
 	prov/util/src/cuda_mem_monitor.c \
 	prov/util/src/rocr_mem_monitor.c \
 	prov/util/src/ze_mem_monitor.c \
+	prov/util/src/cuda_ipc_monitor.c \
 	prov/util/src/util_coll.c
 
 
@@ -103,6 +111,22 @@ common_srcs += include/linux/rdpmc.h
 common_srcs += include/linux/osd.h
 common_srcs += include/unix/osd.h
 endif
+
+if HAVE_LIBURING
+common_srcs += src/iouring.c
+endif
+
+common_hook_srcs =				\
+	prov/hook/src/hook.c			\
+	prov/hook/src/hook_av.c			\
+	prov/hook/src/hook_cm.c			\
+	prov/hook/src/hook_cntr.c		\
+	prov/hook/src/hook_cq.c			\
+	prov/hook/src/hook_domain.c		\
+	prov/hook/src/hook_ep.c			\
+	prov/hook/src/hook_eq.c			\
+	prov/hook/src/hook_wait.c		\
+	prov/hook/src/hook_xfer.c
 
 # ensure dl-built providers link back to libfabric
 linkback = src/libfabric.la
@@ -168,16 +192,7 @@ src_libfabric_la_SOURCES =			\
 	src/log.c				\
 	src/var.c				\
 	src/abi_1_0.c				\
-	prov/hook/src/hook.c			\
-	prov/hook/src/hook_av.c			\
-	prov/hook/src/hook_cm.c			\
-	prov/hook/src/hook_cntr.c		\
-	prov/hook/src/hook_cq.c			\
-	prov/hook/src/hook_domain.c		\
-	prov/hook/src/hook_ep.c			\
-	prov/hook/src/hook_eq.c			\
-	prov/hook/src/hook_wait.c		\
-	prov/hook/src/hook_xfer.c		\
+	$(common_hook_srcs)			\
 	$(common_srcs)
 
 src_libfabric_la_CPPFLAGS = $(AM_CPPFLAGS)
@@ -186,7 +201,7 @@ src_libfabric_la_LIBADD =
 src_libfabric_la_DEPENDENCIES = libfabric.map
 
 if !EMBEDDED
-src_libfabric_la_LDFLAGS += -version-info 17:2:16
+src_libfabric_la_LDFLAGS += -version-info 21:1:20
 endif
 src_libfabric_la_LDFLAGS += -export-dynamic \
 			   $(libfabric_version_script)
@@ -203,6 +218,9 @@ rdmainclude_HEADERS += \
 	$(top_srcdir)/include/rdma/fi_errno.h \
 	$(top_srcdir)/include/rdma/fi_tagged.h \
 	$(top_srcdir)/include/rdma/fi_trigger.h
+providersinclude_HEADERS += \
+	$(top_srcdir)/include/rdma/providers/fi_prov.h \
+	$(top_srcdir)/include/rdma/providers/fi_log.h
 
 if HAVE_DIRECT
 nodist_rdmainclude_HEADERS = \
@@ -239,6 +257,7 @@ real_man_pages = \
         man/man3/fi_errno.3 \
         man/man3/fi_eq.3 \
         man/man3/fi_fabric.3 \
+        man/man3/fi_peer.3 \
         man/man3/fi_provider.3 \
         man/man3/fi_getinfo.3 \
         man/man3/fi_mr.3 \
@@ -403,6 +422,7 @@ rpm: dist
 
 prov_install_man_pages=
 prov_dist_man_pages=
+prov_extra_dist=
 EXTRA_DIST=
 
 include prov/sockets/Makefile.include
@@ -418,12 +438,16 @@ include prov/rxm/Makefile.include
 include prov/mrail/Makefile.include
 include prov/rxd/Makefile.include
 include prov/bgq/Makefile.include
+include prov/opx/Makefile.include
 include prov/shm/Makefile.include
 include prov/tcp/Makefile.include
+include prov/net/Makefile.include
 include prov/rstream/Makefile.include
 include prov/hook/Makefile.include
 include prov/hook/perf/Makefile.include
 include prov/hook/hook_debug/Makefile.include
+include prov/hook/hook_hmem/Makefile.include
+include prov/hook/dmabuf_peer_mem/Makefile.include
 
 man_MANS = $(real_man_pages) $(prov_install_man_pages) $(dummy_man_pages)
 
@@ -432,4 +456,5 @@ EXTRA_DIST += \
         NEWS.md \
         libfabric.spec.in \
         config/distscript.pl \
-        $(real_man_pages) $(prov_dist_man_pages) $(dummy_man_pages)
+        $(real_man_pages) $(prov_dist_man_pages) $(dummy_man_pages) \
+        $(prov_extra_dist)

@@ -1,4 +1,5 @@
 use LinearAlgebra;
+use Math;
 
 config const n=10;
 config const thresh=1.0e-10;

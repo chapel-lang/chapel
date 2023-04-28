@@ -322,7 +322,7 @@ proc goodPiece(mask, pos) {
         a = (a | s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8) & b;
       } while aOld != a;
 
-      if popcount(a) % 5 != 0 then
+      if popCount(a) % 5 != 0 then
         return false;
 
       b ^= a;

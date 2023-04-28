@@ -123,6 +123,7 @@ int hook_cq_init(struct fid_domain *domain, struct fi_cq_attr *attr,
 	if (ret)
 		return ret;
 
+	mycq->format = hattr.format;
 	*cq = &mycq->cq;
 	return 0;
 }

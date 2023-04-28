@@ -91,7 +91,7 @@ struct gnix_fid_eq {
 
 	struct fid_wait *wait;
 
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct gnix_reference ref_cnt;
 
 	rwlock_t poll_obj_lock;

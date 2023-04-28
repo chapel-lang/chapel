@@ -64,6 +64,7 @@ _chpl ()
 --dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-scope-resolve \
 --dyno-verify-serialization \
 --early-deinit \
 --explain-call \
@@ -180,6 +181,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
@@ -268,6 +270,8 @@ _chpl ()
 --no-warn-tuple-iteration \
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
+--no-warn-unstable-internal \
+--no-warn-unstable-standard \
 --no-warnings \
 --optimize \
 --optimize-forall-unordered-ops \
@@ -290,6 +294,7 @@ _chpl ()
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \
+--print-chpl-loc \
 --print-chpl-settings \
 --print-code-size \
 --print-commands \
@@ -360,6 +365,8 @@ _chpl ()
 --warn-tuple-iteration \
 --warn-unknown-attribute-toolname \
 --warn-unstable \
+--warn-unstable-internal \
+--warn-unstable-standard \
 --warnings \
 -I \
 -L \
@@ -372,7 +379,7 @@ _chpl ()
 -o \
 -s"
 
-      # non-developer options
+      # user options
       local nodevel_opts="\
 --atomics \
 --auto-aggregation \
@@ -508,6 +515,7 @@ _chpl ()
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
+--print-chpl-home \
 --print-code-size \
 --print-commands \
 --print-module-files \

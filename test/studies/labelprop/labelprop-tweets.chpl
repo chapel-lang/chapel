@@ -194,16 +194,23 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
       try {
         got = logfile.readf("%~jt", tweet);
       } catch e: BadFormatError {
-        if verbose then
+        if verbose {
+            try! logfile.lock();
+            var off = logfile.offset();
+            logfile.unlock();
             stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", e._msg);
+              off, " : ", e._msg);
+        }
 
         // read over something else
         got = logfile.readf("%~jt", empty);
       }
     } catch e: SystemError {
+      try! logfile.lock();
+      var off = logfile.offset();
+      logfile.unlock();
       stderr.writeln("severe error reading tweets ", fname, " offset ",
-          logfile.offset(), " : ", errorToString(e.err));
+          off, " : ", errorToString(e.err));
 
       // advance to the next line.
       logfile.readln();

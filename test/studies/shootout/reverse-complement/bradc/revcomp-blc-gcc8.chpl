@@ -152,8 +152,8 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
+    const src = c_ptrTo(seq[charAfter]):c_void_ptr:c_ptr(uint(16)),
+          dst = c_ptrTo(buff[dstFront]):c_void_ptr:c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }

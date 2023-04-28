@@ -4,7 +4,7 @@ use color;
 var rgb = red..blue;
 var rdd = red..;
 var ddb = ..blue;
-var dd: range(color, BoundedRangeType.boundedNone) = ..;
+var dd: range(color, boundKind.neither) = ..;
 
 writeln(rgb == rdd);
 writeln(rgb == ddb);
@@ -20,7 +20,7 @@ writeln(ddb == dd);
 var ft = false..true;
 var fdd = false..;
 var ddt = ..true;
-var dd: range(bool, BoundedRangeType.boundedNone);
+var dd: range(bool, boundKind.neither);
 
 writeln(ft == fdd);
 writeln(ft == ddt);

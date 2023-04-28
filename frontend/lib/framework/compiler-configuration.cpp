@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/query-impl.h"
 #include "chpl/framework/compiler-configuration.h"
+
+#include "chpl/framework/query-impl.h"
 
 namespace chpl {
 
@@ -37,5 +38,6 @@ bool isCompilerFlagSet(Context* context, CompilerFlags::Name flag) {
   auto& list = chpl::compilerFlags(context);
   return list.get(flag);
 }
+
 
 } // end namespace chpl

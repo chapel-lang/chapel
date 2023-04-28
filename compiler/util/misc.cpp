@@ -183,13 +183,6 @@ static const char* cleanCompilerFilename(const char* name) {
 static void cleanup_for_exit() {
   closeCodegenFiles();
 
-  // Currently, gpu code generation is done in on forked process. This
-  // forked process produces some files in the tmp directory that are
-  // later read by the main process, so we want the main process
-  // to clean up the temp dir and not the forked process.
-  if (!gCodegenGPU) {
-    deleteTmpDir();
-  }
   stopCatchingSignals();
 }
 

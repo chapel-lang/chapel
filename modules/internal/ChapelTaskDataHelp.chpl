@@ -50,7 +50,7 @@ module ChapelTaskDataHelp {
   pragma "task complete impl fn"
   proc chpl_save_task_error_owned(e: _EndCountBase, in err: owned Error?) {
     if err != nil {
-      e.errors.append(err.release()!);
+      e.errors.append(owned.release(err)!);
     }
   }
 }

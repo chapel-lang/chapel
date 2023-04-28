@@ -3,5 +3,5 @@
 (y = 42.0, x = 5, z = hello)
 (x = 5, z = hello)
 uncaught Error: field not found...
-  ./Json.chpl:177: thrown here
-  ./Json.chpl:155: uncaught here
+  Json.chpl:177: thrown here
+  Json.chpl:155: uncaught here

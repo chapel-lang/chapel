@@ -1021,7 +1021,7 @@ proc CyclicArr.dsiSerialWrite(f) {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-override proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+override proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }

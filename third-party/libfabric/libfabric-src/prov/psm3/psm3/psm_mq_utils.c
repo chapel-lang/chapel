@@ -62,16 +62,16 @@
  *
  */
 
-psm2_mq_req_t MOCKABLE(psmi_mq_req_alloc)(psm2_mq_t mq, uint32_t type)
+psm2_mq_req_t MOCKABLE(psm3_mq_req_alloc)(psm2_mq_t mq, uint32_t type)
 {
 	psm2_mq_req_t req;
 
 	psmi_assert(type == MQE_TYPE_RECV || type == MQE_TYPE_SEND);
 
 	if (type == MQE_TYPE_SEND)
-		req = psmi_mpool_get(mq->sreq_pool);
+		req = psm3_mpool_get(mq->sreq_pool);
 	else
-		req = psmi_mpool_get(mq->rreq_pool);
+		req = psm3_mpool_get(mq->rreq_pool);
 
 	if_pt(req != NULL) {
 		memset(req, 0, sizeof(struct psm2_mq_req));
@@ -83,10 +83,10 @@ psm2_mq_req_t MOCKABLE(psmi_mq_req_alloc)(psm2_mq_t mq, uint32_t type)
 	} else {	/* we're out of reqs */
 		int issend = (type == MQE_TYPE_SEND);
 		uint32_t reqmax, reqchunk;
-		psmi_mpool_get_obj_info(issend ? mq->sreq_pool : mq->rreq_pool,
+		psm3_mpool_get_obj_info(issend ? mq->sreq_pool : mq->rreq_pool,
 					&reqchunk, &reqmax);
 
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_PARAM_ERR,
+		psm3_handle_error(PSMI_EP_NORETURN, PSM2_PARAM_ERR,
 				  "Exhausted %d MQ %s request descriptors, which usually indicates "
 				  "a user program error or insufficient request descriptors (%s=%d)",
 				  reqmax, issend ? "isend" : "irecv",
@@ -95,9 +95,9 @@ psm2_mq_req_t MOCKABLE(psmi_mq_req_alloc)(psm2_mq_t mq, uint32_t type)
 		return NULL;
 	}
 }
-MOCK_DEF_EPILOGUE(psmi_mq_req_alloc);
+MOCK_DEF_EPILOGUE(psm3_mq_req_alloc);
 
-psm2_error_t psmi_mq_req_init(psm2_mq_t mq)
+psm2_error_t psm3_mq_req_init(psm2_mq_t mq)
 {
 	psm2_mq_req_t warmup_req;
 	psm2_error_t err = PSM2_OK;
@@ -113,11 +113,11 @@ psm2_error_t psmi_mq_req_init(psm2_mq_t mq)
 		uint32_t maxsz, chunksz;
 
 		if ((err =
-		     psmi_parse_mpool_env(mq, 0, &rlim, &maxsz, &chunksz)))
+		     psm3_parse_mpool_env(mq, 0, &rlim, &maxsz, &chunksz)))
 			goto fail;
 
 		if ((mq->sreq_pool =
-		     psmi_mpool_create(sizeof(struct psm2_mq_req), chunksz,
+		     psm3_mpool_create(sizeof(struct psm2_mq_req), chunksz,
 				       maxsz, 0, DESCRIPTORS, NULL,
 				       NULL)) == NULL) {
 			err = PSM2_NO_MEMORY;
@@ -133,10 +133,10 @@ psm2_error_t psmi_mq_req_init(psm2_mq_t mq)
 		uint32_t maxsz, chunksz;
 
 		if ((err =
-		     psmi_parse_mpool_env(mq, 0, &rlim, &maxsz, &chunksz)))
+		     psm3_parse_mpool_env(mq, 0, &rlim, &maxsz, &chunksz)))
 			goto fail;
 		if ((mq->rreq_pool =
-			psmi_mpool_create(sizeof(struct psm2_mq_req), chunksz,
+			psm3_mpool_create(sizeof(struct psm2_mq_req), chunksz,
 				       maxsz, 0, DESCRIPTORS, NULL,
 				       NULL)) == NULL) {
 			err = PSM2_NO_MEMORY;
@@ -145,22 +145,22 @@ psm2_error_t psmi_mq_req_init(psm2_mq_t mq)
 	}
 
 	/* Warm up the allocators */
-	warmup_req = psmi_mq_req_alloc(mq, MQE_TYPE_RECV);
+	warmup_req = psm3_mq_req_alloc(mq, MQE_TYPE_RECV);
 	psmi_assert_always(warmup_req != NULL);
-	psmi_mq_req_free(warmup_req);
+	psm3_mq_req_free_internal(warmup_req);
 
-	warmup_req = psmi_mq_req_alloc(mq, MQE_TYPE_SEND);
+	warmup_req = psm3_mq_req_alloc(mq, MQE_TYPE_SEND);
 	psmi_assert_always(warmup_req != NULL);
-	psmi_mq_req_free(warmup_req);
+	psm3_mq_req_free_internal(warmup_req);
 
 fail:
 	return err;
 }
 
-psm2_error_t psmi_mq_req_fini(psm2_mq_t mq)
+psm2_error_t psm3_mq_req_fini(psm2_mq_t mq)
 {
-	psmi_mpool_destroy(mq->rreq_pool);
-	psmi_mpool_destroy(mq->sreq_pool);
+	psm3_mpool_destroy(mq->rreq_pool);
+	psm3_mpool_destroy(mq->sreq_pool);
 	return PSM2_OK;
 }
 
@@ -171,13 +171,13 @@ psm2_error_t psmi_mq_req_fini(psm2_mq_t mq)
  */
 
 static
-void psmi_mq_stats_callback(struct mpspawn_stats_req_args *args)
+void psm3_mq_stats_callback(struct mpspawn_stats_req_args *args)
 {
 	uint64_t *entry = args->stats;
 	psm2_mq_t mq = (psm2_mq_t) args->context;
 	psm2_mq_stats_t mqstats;
 
-	psm2_mq_get_stats(mq, &mqstats);
+	psm3_mq_get_stats(sizeof(mqstats), mq, &mqstats);
 
 	if (args->num < 8)
 		return;
@@ -193,7 +193,7 @@ void psmi_mq_stats_callback(struct mpspawn_stats_req_args *args)
 	entry[7] = mqstats.rx_sys_bytes;
 }
 
-void psmi_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn)
+void psm3_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn)
 {
 	char *desc[8];
 	uint16_t flags[8];
@@ -218,7 +218,7 @@ void psmi_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn)
 	mp_add.version = MPSPAWN_STATS_VERSION;
 	mp_add.num = 8;
 	mp_add.header = "MPI Statistics Summary (max,min @ rank)";
-	mp_add.req_fn = psmi_mq_stats_callback;
+	mp_add.req_fn = psm3_mq_stats_callback;
 	mp_add.desc = desc;
 	mp_add.flags = flags;
 	mp_add.context = mq;

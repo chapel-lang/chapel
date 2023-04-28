@@ -59,7 +59,7 @@ static struct rxd_x_entry *rxd_tx_entry_init_atomic(struct rxd_ep *ep, fi_addr_t
 		return NULL;
 
 	if (res_count) {
-		tx_entry->res_count = res_count;
+		tx_entry->res_count = (uint8_t) res_count;
 		memcpy(&tx_entry->res_iov[0], res_iov, sizeof(*res_iov) * res_count);
 	}
 
@@ -71,7 +71,7 @@ static struct rxd_x_entry *rxd_tx_entry_init_atomic(struct rxd_ep *ep, fi_addr_t
 		rxd_init_sar_hdr(&ptr, tx_entry, rma_count);
 	} else {
 		tx_entry->flags |= RXD_INLINE;
-		base_hdr->flags = tx_entry->flags;
+		base_hdr->flags = (uint16_t) tx_entry->flags;
 		tx_entry->num_segs = 1;
 	}
 
@@ -112,7 +112,7 @@ static ssize_t rxd_generic_atomic(struct rxd_ep *rxd_ep,
 {
 	struct rxd_x_entry *tx_entry;
 	struct iovec iov[RXD_IOV_LIMIT], res_iov[RXD_IOV_LIMIT], comp_iov[RXD_IOV_LIMIT];
-	struct fi_rma_iov rma_iov[RXD_IOV_LIMIT]; 
+	struct fi_rma_iov rma_iov[RXD_IOV_LIMIT];
 	fi_addr_t rxd_addr;
 	ssize_t ret = -FI_EAGAIN;
 
@@ -129,13 +129,13 @@ static ssize_t rxd_generic_atomic(struct rxd_ep *rxd_ep,
 	ofi_ioc_to_iov(compare_ioc, comp_iov, compare_count, ofi_datatype_size(datatype));
 	ofi_rma_ioc_to_iov(rma_ioc, rma_iov, rma_count, ofi_datatype_size(datatype));
 
-	fastlock_acquire(&rxd_ep->util_ep.lock);
+	ofi_mutex_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
-	
+
 	rxd_addr = (intptr_t) ofi_idx_lookup(&(rxd_ep_av(rxd_ep)->fi_addr_idx),
-					     RXD_IDX_OFFSET(addr));
+					     RXD_IDX_OFFSET((int) addr));
 	if (!rxd_addr)
 		goto out;
 	ret = rxd_send_rts_if_needed(rxd_ep, rxd_addr);
@@ -152,7 +152,7 @@ static ssize_t rxd_generic_atomic(struct rxd_ep *rxd_ep,
 		(void) rxd_start_xfer(rxd_ep, tx_entry);
 
 out:
-	fastlock_release(&rxd_ep->util_ep.lock);
+	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -221,24 +221,24 @@ static ssize_t rxd_atomic_inject(struct fid_ep *ep_fid, const void *buf,
 	struct rxd_ep *rxd_ep = container_of(ep_fid, struct rxd_ep, util_ep.ep_fid.fid);
 	struct rxd_x_entry *tx_entry;
 	struct iovec iov;
-	struct fi_rma_iov rma_iov; 
+	struct fi_rma_iov rma_iov;
 	fi_addr_t rxd_addr;
 	ssize_t ret = -FI_EAGAIN;
 
 	iov.iov_base = (void *) buf;
 	iov.iov_len = count * ofi_datatype_size(datatype);
-	assert(iov.iov_len <= rxd_ep_domain(rxd_ep)->max_inline_atom);
+	assert(iov.iov_len <= (size_t) rxd_ep_domain(rxd_ep)->max_inline_atom);
 
 	rma_iov.addr = addr;
 	rma_iov.len = count * ofi_datatype_size(datatype);
 	rma_iov.key = key;
 
-	fastlock_acquire(&rxd_ep->util_ep.lock);
+	ofi_mutex_lock(&rxd_ep->util_ep.lock);
 
 	if (ofi_cirque_isfull(rxd_ep->util_ep.tx_cq->cirq))
 		goto out;
-	rxd_addr = (intptr_t) ofi_idx_lookup(&(rxd_ep_av(rxd_ep)->fi_addr_idx), 
-					     RXD_IDX_OFFSET(addr));
+	rxd_addr = (intptr_t) ofi_idx_lookup(&(rxd_ep_av(rxd_ep)->fi_addr_idx),
+					     RXD_IDX_OFFSET((int) addr));
 	if (!rxd_addr)
 		goto out;
 
@@ -257,7 +257,7 @@ static ssize_t rxd_atomic_inject(struct fid_ep *ep_fid, const void *buf,
 
 	(void) rxd_start_xfer(rxd_ep, tx_entry);
 out:
-	fastlock_release(&rxd_ep->util_ep.lock);
+	ofi_mutex_unlock(&rxd_ep->util_ep.lock);
 	return ret;
 }
 
@@ -413,7 +413,13 @@ int rxd_query_atomic(struct fid_domain *domain, enum fi_datatype datatype,
 	if (flags & FI_TAGGED) {
 		FI_WARN(&rxd_prov, FI_LOG_EP_CTRL,
 			"tagged atomic op not supported\n");
-		return -FI_EINVAL;
+		return -FI_EOPNOTSUPP;
+	}
+
+	if ((datatype == FI_INT128) || (datatype == FI_UINT128)) {
+		FI_WARN(&rxd_prov, FI_LOG_EP_CTRL,
+			"128-bit integers not supported\n");
+		return -FI_EOPNOTSUPP;
 	}
 
 	ret = ofi_atomic_valid(&rxd_prov, datatype, op, flags);
@@ -423,9 +429,12 @@ int rxd_query_atomic(struct fid_domain *domain, enum fi_datatype datatype,
 	rxd_domain = container_of(domain, struct rxd_domain,
 				  util_domain.domain_fid);
 	attr->size = ofi_datatype_size(datatype);
+	if (!attr->size)
+		return -FI_EOPNOTSUPP;
 
-	total_size = (flags & FI_COMPARE_ATOMIC) ?  rxd_domain->max_inline_atom / 2 :
-		      rxd_domain->max_inline_atom;
+	total_size = (flags & FI_COMPARE_ATOMIC) ?
+		     rxd_domain->max_inline_atom / 2 :
+		     rxd_domain->max_inline_atom;
 	attr->count = total_size / attr->size;
 
 	return ret;

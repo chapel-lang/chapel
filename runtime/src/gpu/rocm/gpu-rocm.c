@@ -90,7 +90,7 @@ static void chpl_gpu_ensure_context() {
   ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
 
   // The below is a direct "hipification" of the CUDA runtime
-  // but it's using depercated APIs
+  // but it's using deprecated APIs
   /*if (!chpl_gpu_has_context()) {
     ROCM_CALL(hipCtxPushCurrent(next_context));
   }
@@ -107,6 +107,24 @@ static void chpl_gpu_ensure_context() {
       ROCM_CALL(hipCtxPushCurrent(next_context));
     }
   }*/
+}
+//
+static void chpl_gpu_impl_set_globals(hipModule_t module) {
+  /*
+    we expect this to work, but the LLVM backend puts the device version of
+    chpl_nodeID in the constant memory. To access constant memory, you need a
+    pointer to the thing, and can't do a name-based lookup. Differentiating by
+    name is complicated, because the compiler explicitly uses "chpl_nodeID" as
+    the name. We need to fix by making sure that chpl_nodeID is created in the
+    global memory and not in the constant memory.
+
+  hipDeviceptr_t ptr;
+  size_t glob_size;
+  ROCM_CALL(hipModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+  assert(glob_size == sizeof(c_nodeid_t));
+  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+
+  */
 }
 
 
@@ -141,7 +159,9 @@ void chpl_gpu_impl_init() {
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
     ROCM_CALL(hipSetDevice(device));
-    chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    hipModule_t module = chpl_gpu_load_module(chpl_gpuBinary);
+    chpl_gpu_impl_set_globals(module);
+    chpl_gpu_rocm_modules[i] = module;
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
   }
@@ -531,6 +551,21 @@ size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
 
 unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
+}
+
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+  int p2p;
+  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev1, dev2));
+  return p2p != 0;
+}
+
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
+  ROCM_CALL(hipSetDevice(dev1));
+  if(enable) {
+    ROCM_CALL(hipDeviceEnablePeerAccess(dev2, 0));
+  } else {
+    ROCM_CALL(hipDeviceDisablePeerAccess(dev2));
+  }
 }
 
 #endif // HAS_GPU_LOCALE

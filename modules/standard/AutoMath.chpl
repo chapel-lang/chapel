@@ -53,31 +53,69 @@ module AutoMath {
   // Constants (included in chpldocs)
   //
 
-  /* e - exp(1) or  the base of the natural logarithm */
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param e = 2.7182818284590452354;
-  /* log2(e) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'log2_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param log2_e = 1.4426950408889634074;
-  /* log10(e) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'log10_e' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param log10_e = 0.43429448190325182765;
-  /* log(2) (natural logarithm) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'ln_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param ln_2 = 0.69314718055994530942;
-  /* log(10) (natural logarithm) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'ln_10' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param ln_10 = 2.30258509299404568402;
-  /* pi - the circumference/the diameter of a circle */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param pi = 3.14159265358979323846;
-  /* pi/2 */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'half_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param half_pi = 1.57079632679489661923;
-  /* pi/4 */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'quarter_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param quarter_pi = 0.78539816339744830962;
-  /* 1/pi */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param recipr_pi = 0.31830988618379067154;
-  /* 2/pi */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'twice_recipr_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param twice_recipr_pi = 0.63661977236758134308;
-  /* 2/sqrt(pi) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'twice_recipr_sqrt_pi' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param twice_recipr_sqrt_pi = 1.12837916709551257390;
-  /* sqrt(2) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param sqrt_2 = 1.41421356237309504880;
-  /* 1/sqrt(2) */
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'recipr_sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it")
   param recipr_sqrt_2 = 0.70710678118654752440;
 
   //////////////////////////////////////////////////////////////////////////
@@ -157,9 +195,12 @@ module AutoMath {
     return fabsf(_i2r(im));
   }
 
-  /* Returns the real magnitude of the complex argument `z`.
+  /* Returns the magnitude (often called modulus) of complex `z`.
 
-     :rtype: The type of the real component of the argument (== `w`/2).
+     In concert with the related :proc:`carg`, the phase (a.k.a. argument)
+     of `z`, it can be used to recompute `z`.
+
+     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
   */
   inline proc abs(z : complex(?w)): real(w/2) {
     pragma "fn synchronization free"
@@ -174,8 +215,15 @@ module AutoMath {
       return cabs(z);
   }
 
+  /* Returns the phase (often called `argument`) of complex `z`, an angle (in
+     radians).
 
-  /* Returns the real phase angle of complex argument `z`. */
+     In concert with the related :proc:`abs`, the magnitude (a.k.a.
+     modulus) of `z`, it can be used to recompute `z`.
+
+     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
+  */
+
   inline proc carg(z: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -638,32 +686,74 @@ module AutoMath {
     return m / n;
   }
 
+  // When removing this deprecated function, be sure to remove chpl_erf and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc erf(x: real(64)): real(64) {
+    return chpl_erf(x);
+  }
 
-  /* Returns the error function of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc erf(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_erf(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erf(x: real(64)): real(64);
+    return erf(x);
+  }
 
-  /* Returns the error function of the argument `x`. */
+  // When removing this deprecated function, be sure to remove chpl_erf and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erf' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erf(x : real(32)): real(32) {
+    return chpl_erf(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_erf(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc erff(x: real(32)): real(32);
     return erff(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_erfc and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  inline proc erfc(x: real(64)): real(64) {
+    return chpl_erfc(x);
+  }
 
-  /* Returns the complementary error function of the argument.
-     This is equivalent to 1.0 - :proc:`erf`\(`x`).
-  */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc erfc(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_erfc(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfc(x: real(64)): real(64);
+    return erfc(x);
+  }
 
-  /* Returns the complementary error function of the argument.
-     This is equivalent to 1.0 - :proc:`erf`\(`x`).
-  */
+  // When removing this deprecated function, be sure to remove chpl_erfc and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'erfc' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
   inline proc erfc(x : real(32)): real(32) {
+    return chpl_erfc(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_erfc(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc erfcf(x: real(32)): real(32);
@@ -775,30 +865,74 @@ module AutoMath {
      `false` otherwise. */
   inline proc isnan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
 
-  /* Multiply by an integer power of 2.
-     Returns x * 2**n.
-     */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc ldexp(x:real(64), n:int(32)):real(64);
+  // When removing this deprecated function, be sure to remove chpl_ldexp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc ldexp(x:real(64), n:int(32)):real(64) {
+    return chpl_ldexp(x, n);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_ldexp(x:real(64), n:int(32)):real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexp(x:real(64), n:int(32)):real(64);
+    return ldexp(x, n);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_ldexp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
+    return chpl_ldexp(x, n);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_ldexp(x:real(32), n:int(32)):real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ldexpf(x:real(32), n:int(32)):real(32);
     return ldexpf(x, n);
   }
 
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc lgamma(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_lgamma and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc lgamma(x: real(64)): real(64) {
+    return chpl_lgamma(x);
+  }
 
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
+  @chpldoc.nodoc
+  inline proc chpl_lgamma(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc lgamma(x: real(64)): real(64);
+    return lgamma(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_lgamma and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'lgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc lgamma(x : real(32)): real(32) {
+    return chpl_lgamma(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_lgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc lgammaf(x: real(32)): real(32);
@@ -1367,15 +1501,37 @@ module AutoMath {
     return ctanh(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_tgamma and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc tgamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_tgamma(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tgamma(x: real(64)): real(64);
+    return tgamma(x);
+  }
 
-  /* Returns the absolute value of the gamma function of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc tgamma(x: real(64)): real(64);
-
-  /* Returns the absolute value of the gamma function of the argument `x`. */
+  // When removing this deprecated function, be sure to remove chpl_tgamma and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tgamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc tgammaf(x: real(32)): real(32);

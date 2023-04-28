@@ -1,3 +1,3 @@
-./OsetTypeTest.chpl:21: In function 'testSet':
-./OsetTypeTest.chpl:24: warning: creating a 'new borrowed' type is deprecated
+OsetTypeTest.chpl:21: In function 'testSet':
+OsetTypeTest.chpl:24: warning: creating a 'new borrowed' type is deprecated
   testBorrowed.chpl:6: called as testSet(type t = borrowed testClass)

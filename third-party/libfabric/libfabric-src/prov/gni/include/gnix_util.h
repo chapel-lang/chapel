@@ -266,14 +266,14 @@ static inline void _gnix_ref_init(
 	} while (0)
 
 #define COND_ACQUIRE(cond, lock) \
-	__COND_FUNC((cond), (lock), fastlock_acquire)
+	__COND_FUNC((cond), (lock), ofi_spin_lock)
 #define COND_READ_ACQUIRE(cond, lock) \
 	__COND_FUNC((cond), (lock), rwlock_rdlock)
 #define COND_WRITE_ACQUIRE(cond, lock) \
 	__COND_FUNC((cond), (lock), rwlock_wrlock)
 
 #define COND_RELEASE(cond, lock) \
-	__COND_FUNC((cond), (lock), fastlock_release)
+	__COND_FUNC((cond), (lock), ofi_spin_unlock)
 #define COND_RW_RELEASE(cond, lock) \
 	__COND_FUNC((cond), (lock), rwlock_unlock)
 #ifdef __GNUC__

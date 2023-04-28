@@ -26,6 +26,7 @@ target_sources(ChplFrontend-obj
                copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp
+               extern-blocks.cpp
                intents.cpp
                maybe-const.cpp
                prims.cpp

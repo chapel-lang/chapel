@@ -900,6 +900,8 @@ enable_fastcontext
 with_hwloc
 with_hwloc_symbol_prefix
 with_hwloc_get_topology_function
+enable_hwloc_configure_checks
+enable_hwloc_has_distance
 with_portals4
 '
       ac_precious_vars='build_alias
@@ -1677,6 +1679,10 @@ Optional Features:
                           swapping mechanism that does not make system calls.
                           If you run into bugs, you can disable it on some
                           systems to use the slower libc-provided version.
+  --disable-hwloc-configure-checks
+                          Disable hwloc link checks during configuration
+  --disable-hwloc-has-distance
+                          Disable hwloc distance support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1734,12 +1740,12 @@ Optional Packages:
                           (e.g. for cross-compiles)
   --with-bsd-qsort_r      Force the assumption of a BSD-style qsort_r
                           implementation (for cross-compiling)
-  --with-hwloc=[PATH]     specify the path to the hwloc library; used for both
+  --with-hwloc=[PATH]     Specify the path to the hwloc library; used for both
                           the library and the include files
   --with-hwloc-symbol-prefix=[prefix]
-                          specify prefix for hwloc symbols [default=hwloc_].
+                          Specify prefix for hwloc symbols [default=hwloc_].
   --with-hwloc-get-topology-function=[name]
-                          specify function to get hwloc topology (otherwise
+                          Specify function to get hwloc topology (otherwise
                           uses hwloc_topology_init and hwloc_topology_load)
   --with-portals4[=DIR]   Build Portals4 support, with optional install prefix
                           DIR
@@ -26008,10 +26014,19 @@ else
 fi
 
 
-
 # Check whether --with-hwloc-get-topology-function was given.
 if test "${with_hwloc_get_topology_function+set}" = set; then :
   withval=$with_hwloc_get_topology_function;
+fi
+
+  # Check whether --enable-hwloc-configure-checks was given.
+if test "${enable_hwloc_configure_checks+set}" = set; then :
+  enableval=$enable_hwloc_configure_checks;
+fi
+
+  # Check whether --enable-hwloc-has-distance was given.
+if test "${enable_hwloc_has_distance+set}" = set; then :
+  enableval=$enable_hwloc_has_distance;
 fi
 
 
@@ -26026,7 +26041,7 @@ fi
   hwloc_saved_LDFLAGS="$LDFLAGS"
   if test "x$with_hwloc" != x; then :
   CPPFLAGS="-I$with_hwloc/include $CPPFLAGS"
-		 LDFLAGS="-L$with_hwloc/lib $LDFLAGS"
+     LDFLAGS="-L$with_hwloc/lib $LDFLAGS"
 fi
   for ac_header in hwloc.h
 do :
@@ -26042,8 +26057,25 @@ fi
 
 done
 
-  if test "x$qt_allgoodsofar" = xyes; then :
-  as_ac_Search=`$as_echo "ac_cv_search_${with_hwloc_symbol_prefix}topology_init" | $as_tr_sh`
+
+  # enable or disable distance support if specified
+  if test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = xyes; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: enabling hwloc distance support" >&5
+$as_echo "$as_me: enabling hwloc distance support" >&6;}
+
+$as_echo "#define QTHREAD_HAVE_HWLOC_DISTS 1" >>confdefs.h
+
+fi
+  if test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = xno; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: disabling hwloc distance support" >&5
+$as_echo "$as_me: disabling hwloc distance support" >&6;}
+fi
+
+  if test "x$enable_hwloc_configure_checks" != xno; then :
+  # do configuration checks
+    if test "x$qt_allgoodsofar" = xyes; then :
+  # check if we can link against hwloc
+  	    as_ac_Search=`$as_echo "ac_cv_search_${with_hwloc_symbol_prefix}topology_init" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ${with_hwloc_symbol_prefix}topology_init" >&5
 $as_echo_n "checking for library containing ${with_hwloc_symbol_prefix}topology_init... " >&6; }
 if eval \${$as_ac_Search+:} false; then :
@@ -26068,7 +26100,7 @@ return ${with_hwloc_symbol_prefix}topology_init ();
   return 0;
 }
 _ACEOF
-for ac_lib in '' hwloc "hwloc -lnuma" "hwloc -lnuma -lpciaccess" "hwloc -lpciaccess"; do
+for ac_lib in '' hwloc "hwloc -lnuma"; do
   if test -z "$ac_lib"; then
     ac_res="none required"
   else
@@ -26104,13 +26136,14 @@ else
 fi
 
 fi
-  if test "x$qt_allgoodsofar" = xyes; then :
+    # check if hwloc has distance support if it wasn't specified
+    if test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = x; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for distance support in hwloc" >&5
 $as_echo_n "checking for distance support in hwloc... " >&6; }
-		 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+  		 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-#include <hwloc.h>
+  #include <hwloc.h>
 int main()
 {
   hwloc_topology_t topology;
@@ -26133,20 +26166,33 @@ rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
 
 fi
-  if test "x$qt_allgoodsofar" = xyes; then :
+    if test "x$qt_allgoodsofar" = xyes; then :
 
 $as_echo "#define QTHREAD_HAVE_HWLOC 1" >>confdefs.h
 
-		 if test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_via_chapel -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders; then :
+  		 if test "x$qthread_topo" != xhwloc -a "x$qthread_topo" != xhwloc_via_chapel -a "x$qthread_topo" != xhwloc_v2 -a "x$qthread_topo" != xbinders; then :
   qthread_topo=hwloc
 fi
+fi
 else
+  # don't do configuration checks
+    { $as_echo "$as_me:${as_lineno-$LINENO}: skipping hwloc link checks" >&5
+$as_echo "$as_me: skipping hwloc link checks" >&6;}
+
+$as_echo "#define QTHREAD_HAVE_HWLOC 1" >>confdefs.h
+
+    # default to having distance if not specified
+    if test "x$qt_allgoodsofar" = xyes && test "x$enable_hwloc_has_distance" = x; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: enabling hwloc distance support" >&5
+$as_echo "$as_me: enabling hwloc distance support" >&6;}
+
+$as_echo "#define QTHREAD_HAVE_HWLOC_DISTS 1" >>confdefs.h
+
+fi
+fi
+
   CPPFLAGS="$hwloc_saved_CPPFLAGS"
-		 LDFLAGS="$hwloc_saved_LDFLAGS"
-		 if test "x$qthread_topo" != xno; then :
-  as_fn_error $? "Specified topology library ($qthread_topo) does not work." "$LINENO" 5
-fi
-fi
+  LDFLAGS="$hwloc_saved_LDFLAGS"
 
 fi
        # Second, check for the ones that will give me distance information

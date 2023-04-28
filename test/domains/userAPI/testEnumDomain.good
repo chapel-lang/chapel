@@ -10,7 +10,7 @@ isEmpty()        = false
 lowBound         = (orange, yellow)
 highBound        = (green, blue)
 stride           = (1, 1)
-alignment        = (orange, yellow)
+alignment        = (red, red)
 first            = (orange, yellow)
 last             = (green, blue)
 low              = (orange, yellow)
@@ -59,7 +59,7 @@ isEmpty()        = true
 lowBound         = (orange, orange)
 highBound        = (red, red)
 stride           = (1, 1)
-alignment        = (orange, orange)
+alignment        = (red, red)
 
 strided 2D enum domain
 ------------

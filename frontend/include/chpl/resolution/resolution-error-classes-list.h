@@ -49,6 +49,7 @@ ERROR_CLASS(IncompatibleKinds, types::QualifiedType::Kind, const uast::AstNode*,
 ERROR_CLASS(IncompatibleRangeBounds, const uast::Range*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(IncompatibleTypeAndInit, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*, const types::Type*, const types::Type*)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
+ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
 ERROR_CLASS(ModuleAsVariable, const uast::AstNode*, const uast::AstNode*, const uast::Module*)

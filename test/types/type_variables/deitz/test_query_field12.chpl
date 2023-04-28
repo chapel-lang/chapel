@@ -1,8 +1,8 @@
-proc foo(x: range(int, BoundedRangeType.boundedLow, ?stridable) ... ?k) {
+proc foo(x: range(int, boundKind.low, ?stridable) ... ?k) {
   writeln("bounded low ranges: ", x);
 }
 
-proc foo(x: range(int, BoundedRangeType.boundedHigh, ?stridable) ... ?k) {
+proc foo(x: range(int, boundKind.high, ?stridable) ... ?k) {
   writeln("bounded high ranges: ", x);
 }
 
