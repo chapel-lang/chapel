@@ -62,21 +62,18 @@ def send_email(recipients, body, subject=None, headers=None, sender=None, smtp_h
 
     if not os.environ.get('CHPL_TEST_NOMAIL', ''):
         logging.debug('Opening connection to: {0}'.format(smtp_host))
-        try:
+        with smtplib.SMTP(smtp_host) as smtp:
             if smtp_user:
-                smtp = smtplib.SMTP(smtp_host,465)
                 logging.debug('Login with user={0}'.format(smtp_user))
                 smtp.starttls()
-                smtp.login(smtp_user, _get_smtp_password(smtp_user, smtp_password, smtp_password_file))
-            else:
-                smtp = smtplib.SMTP(smtp_host)
+                smtp.login(smtp_user,
+                           _get_smtp_password(smtp_user, smtp_password,
+                                              smtp_password_file))
             logging.info('Sending email to: {0} from: {1} subject: {2}'.format(
                 ','.join(recipients), sender, subject))
             logging.debug('Email headers: {0}'.format(headers))
             logging.debug('Email body length: {0}'.format(len(body)))
             smtp.sendmail(sender, recipients, msg.as_string())
-        finally:
-            smtp.quit()
     else:
         logging.info('CHPL_TEST_NOMAIL: no email to: {0} from: {1} subject: {2}'.format(
             ','.join(recipients), sender, subject))
