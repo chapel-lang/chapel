@@ -188,7 +188,7 @@ def _validate_cuda_version_impl():
         match = re.search(r'\d+\.\d+\.\d+', txt)
         if match:
             cudaVersion = match.group()
-    
+
     if cudaVersion is None:
         _reportMissingGpuReq("Unable to determine CUDA version.")
         return False
