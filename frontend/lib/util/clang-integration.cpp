@@ -297,6 +297,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
         const auto externErrorLoc =
             Location(UniqueString::get(context, presumedLoc.getFilename()),
                      presumedLoc.getLine(), presumedLoc.getColumn());
+        // TODO: also output diagnostic options after message ([-Werror] etc)
         context->error(externErrorLoc, "%s", (*it).second.c_str());
       }
 
