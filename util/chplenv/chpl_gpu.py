@@ -4,6 +4,7 @@ import glob
 import json
 import chpl_locale_model
 import chpl_llvm
+import re
 from utils import error, memoize, run_command, which, is_ver_in_range
 
 def _validate_cuda_version():
@@ -174,15 +175,23 @@ def _validate_cuda_version_impl():
     MAX_REQ_VERSION = "12"
 
     chpl_cuda_path = get_sdk_path('cuda')
-    version_file = '%s/version.json' % chpl_cuda_path
-    if not os.path.exists(version_file):
-      _reportMissingGpuReq("Unable to find file %s." % version_file)
-      return False
+    version_file_json = '%s/version.json' % chpl_cuda_path
+    version_file_txt = '%s/version.txt' % chpl_cuda_path
+    cudaVersion = None
+    if os.path.exists(version_file_json):
+        f = open(version_file_json)
+        version_json = json.load(f)
+        f.close()
+        cudaVersion = version_json["cuda"]["version"]
+    elif os.path.exists(version_file_txt):
+        txt = open(version_file_txt).read()
+        match = re.search(r'\d+\.\d+\.\d+', txt)
+        if match:
+            cudaVersion = match.group()
 
-    f = open(version_file)
-    version_json = json.load(f)
-    f.close()
-    cudaVersion = version_json["cuda"]["version"]
+    if cudaVersion is None:
+        _reportMissingGpuReq("Unable to determine CUDA version")
+        return False
 
     if not is_ver_in_range(cudaVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
       _reportMissingGpuReq(
@@ -201,12 +210,20 @@ def _validate_rocm_version_impl():
     MAX_REQ_VERSION = "6"
 
     chpl_rocm_path = get_sdk_path('rocm')
-    version_file = '%s/.info/version-hiprt' % chpl_rocm_path
-    if not os.path.exists(version_file):
-      _reportMissingGpuReq("Unable to find file %s.")
-      return False
+    files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
+        '%s/.info/version-libs' % chpl_rocm_path]
+    version_filename = None
+    for fname in files_to_try:
+       print(fname)
+       if os.path.exists(fname):
+           version_filename = fname
+           break
 
-    rocmVersion = open(version_file).read()
+    if version_filename is None:
+        _reportMissingGpuReq("Unable to determine ROCm version")
+        return False
+
+    rocmVersion = open(version_filename).read()
 
     if not is_ver_in_range(rocmVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
         _reportMissingGpuReq(
