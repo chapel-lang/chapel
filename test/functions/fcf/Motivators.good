@@ -23,6 +23,10 @@ proc(): int
 --- test4() ---
 Error: P1
 Error: P2
+--- test5() ---
+foo()
+foo()
+chpl_anon_proc_4()
 --- test6() ---
 --- test7() ---
 --- test8() ---
