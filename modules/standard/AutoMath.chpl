@@ -865,29 +865,71 @@ module AutoMath {
   }
 
 
-  /* Returns the hyperbolic cosine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc cosh(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc cosh(x: real(64)): real(64) {
+    return chpl_cosh(x);
+  }
 
-  /* Returns the hyperbolic cosine of the argument `x`. */
+  @chpldoc.nodoc
+  inline proc chpl_cosh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cosh(x: real(64)): real(64);
+    return cosh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(x : real(32)): real(32) {
+    return chpl_cosh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc coshf(x: real(32)): real(32);
     return coshf(x);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(64)): complex(64) {
+    return chpl_cosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccoshf(z: complex(64)): complex(64);
     return ccoshf(z);
   }
 
-  /* Returns the hyperbolic cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(128)): complex(128) {
+    return chpl_cosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccosh(z: complex(128)): complex(128);
