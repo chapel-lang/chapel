@@ -188,6 +188,14 @@ def _validate_cuda_version_impl():
         match = re.search(r'\d+\.\d+\.\d+', txt)
         if match:
             cudaVersion = match.group()
+    if cudaVersion is None:
+        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+            ["nvcc", "--version"])
+        if exists and returncode == 0:
+            pattern = r"Cuda compilation tools, release ([\d\.]+)"
+            match = re.search(pattern, my_stdout)
+            if match:
+                cudaVersion = match.group(1)
 
     if cudaVersion is None:
         _reportMissingGpuReq("Unable to determine CUDA version.")
