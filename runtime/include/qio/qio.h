@@ -58,6 +58,7 @@ typedef enum {
 typedef uint32_t qio_hint_t;
 
 extern ssize_t qio_write_unbuffered_threshold;
+extern ssize_t qio_read_unbuffered_threshold;
 
 // TODO: make these better values
 #ifndef FTYPE_NONE

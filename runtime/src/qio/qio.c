@@ -100,6 +100,10 @@ ssize_t qio_initial_mmap_max = 8*1024*1024;
 // can avoid buffering by calling pwrite/fwrite/write directly
 ssize_t qio_write_unbuffered_threshold = 32*1024;
 
+// when not using mmap, reads larger than this size
+// can avoid buffering by calling pread/fread/read directly
+ssize_t qio_read_unbuffered_threshold = 32*1024;
+
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
   // recursive mutex based on glibc pthreads implementation
@@ -2798,6 +2802,9 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   int64_t gotlen = 0;
   int64_t toRead = 0;
   int64_t remaining = len;
+  qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
+  ssize_t num_read;
+  size_t num_read_u;
   qioerr err;
   int eof = 0;
 
@@ -2805,49 +2812,133 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
   //_qio_buffered_advance_cached(ch);
 
   // handle channel position beyond end.
-  //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  while ((remaining > 0) && !eof) {
-    if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
-      toRead = ch->bufIoMax;
-    } else {
-      toRead = remaining;
-    }
-
-    // do the actual read. (require calls advance_cached)
-    err = _qio_channel_require_unlocked(ch, toRead, 0);
-    eof = 0;
-    if( qio_err_to_int(err) == EEOF ) eof = 1;
-    else if( err ) goto error;
-
-    // figure out the end of the data to copy
-    gotlen = ch->av_end - _right_mark_start(ch);
-    start = _right_mark_start_iter(ch);
-    if( toRead < gotlen ) {
-      gotlen = toRead;
+  // if possible make a direct system call instead of using the buffer
+  if (
+    len >= qio_read_unbuffered_threshold &&  // the read is large enough
+    method != QIO_METHOD_MMAP &&             // we aren't using mmap
+    method != QIO_METHOD_MEMORY &&           // we aren't using mem
+    ch->mark_cur == 0 &&                     // not waiting for a commit/revert
+    ch->chan_info == NULL                    // there is no IO plugin
+  ) {
+    // copy out what remains in the buffer before making a system call
+    gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
+    if ( gotlen > 0 ) {
+      start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
+      // start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
       end = start;
-      qbuffer_iter_advance(&ch->buf, &end, gotlen);
-    } else {
-      end = _av_end_iter(ch);
+      qbuffer_iter_advance(&ch->buf, &end, gotlen);  // end of available data
+
+      // copy 'gotlen' bytes into the ptr
+      err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
+      if( err ) return err;
+
+      // advance the ptr, start of aviliabe data, etc.
+      ptr = qio_ptr_add(ptr, gotlen);
+      _set_right_mark_start(ch, end.offset);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
+      remaining -= gotlen;
+      *amt_read = gotlen;
+
+      // clean up the now unused portion of the buffer
+      qbuffer_trim_front(&ch->buf, gotlen);
     }
 
-    // Now copy out the data.
-    err = qbuffer_copyout(&ch->buf, start, end, (char *) ptr + (len-remaining),
-                          gotlen);
-    if( err ) goto error;
+    // make a direct system call to read the rest
+    while( remaining > 0 ) {
+      num_read = 0;
+      switch (method) {
+        case QIO_METHOD_READWRITE:
+          err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining,
+                               &num_read));
+          break;
+        case QIO_METHOD_PREADPWRITE:
+          err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining,
+                               _right_mark_start(ch), &num_read));
+          break;
+        case QIO_METHOD_FREADFWRITE:
+          if( ch->file->fp ) {
+            num_read_u = fread(ptr, 1, remaining, ch->file->fp);
+            err = 0;
+            if( num_read_u == 0 ) {
+              if( feof(ch->file->fp) ) err = QIO_EEOF;
+              else err = qio_int_to_err(ferror(ch->file->fp));
+            }
+            num_read = num_read_u;
+          } else {
+            QIO_GET_CONSTANT_ERROR(err, EINVAL, "missing file pointer");
+            num_read = 0;
+          }
+          break;
+        case QIO_METHOD_MMAP:
+          break;
+        case QIO_METHOD_MEMORY:
+          break;
+      }
+      // Return early on an error or on EOF.
+      if( err ) {
+        *amt_read = len - remaining;
+        return err;
+      }
+      ptr = qio_ptr_add(ptr, num_read);
+      _add_right_mark_start(ch, num_read);
+      remaining -= num_read;
+      *amt_read += num_read;
+    }
 
-    // now advance the start of the available buffer by the amount.
-    _set_right_mark_start(ch, end.offset);
+    // reposition the existing buffer space (and 'av_end') by the size of the direct read
+    // this way, the buffer is ready for any future buffered reads
+    // (the buffer is empty, so we can just move the end pointers)
+    qbuffer_reposition(&ch->buf, qbuffer_start_offset(&ch->buf) +
+                       *amt_read - gotlen);
+    ch->av_end += *amt_read - gotlen;
 
-    // move the iterator for the next read
-    qbuffer_iter_advance(&ch->buf, &start, gotlen);
+    ch->cached_cur = NULL;
+    ch->cached_end = NULL;
+    ch->cached_start = NULL;
+  } else {
+    // otherwise, read from the buffer
+    while ((remaining > 0) && !eof) {
+      if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
+        toRead = ch->bufIoMax;
+      } else {
+        toRead = remaining;
+      }
 
-    // did we get to a different part? if so, we can release some
-    // buffers.
-    err = _qio_buffered_behind(ch, false);
-    if( err ) goto error;
-    remaining -= gotlen;
+      // do the actual read. (require calls advance_cached)
+      err = _qio_channel_require_unlocked(ch, toRead, 0);
+      eof = 0;
+      if( qio_err_to_int(err) == EEOF ) eof = 1;
+      else if( err ) goto error;
+
+      // figure out the end of the data to copy
+      gotlen = ch->av_end - _right_mark_start(ch);
+      start = _right_mark_start_iter(ch);
+      if( toRead < gotlen ) {
+        gotlen = toRead;
+        end = start;
+        qbuffer_iter_advance(&ch->buf, &end, gotlen);
+      } else {
+        end = _av_end_iter(ch);
+      }
+
+      // Now copy out the data.
+      err = qbuffer_copyout(&ch->buf, start, end, (char *) ptr + (len-remaining),
+                            gotlen);
+      if( err ) goto error;
+
+      // now advance the start of the available buffer by the amount.
+      _set_right_mark_start(ch, end.offset);
+
+      // move the iterator for the next read
+      qbuffer_iter_advance(&ch->buf, &start, gotlen);
+
+      // did we get to a different part? if so, we can release some buffers.
+      err = _qio_buffered_behind(ch, false);
+      if( err ) goto error;
+      remaining -= gotlen;
+    }
   }
 
   err = 0;

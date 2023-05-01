@@ -8029,7 +8029,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {
-       for (i, b) in zip(data.domain, data) {
+      for (i, b) in zip(data.domain, data) {
         select (endian) {
           when ioendian.native {
             e = try _read_binary_internal(this._channel_internal, iokind.native, b);
@@ -8117,7 +8117,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
                         due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var nr: int = 0;
@@ -8560,7 +8560,7 @@ pragma "no doc"
 proc fileReader._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
     throw new owned IllegalArgumentError("bad remote fileReader._readBytes");
-  var err = qio_channel_read_amt(false, _channel_internal, x, len);
+  var err = qio_channel_read_amt(false, _channel_internal, x[0], len);
   if err then try this._ch_ioerror(err, "in fileReader._readBytes");
 }
 
