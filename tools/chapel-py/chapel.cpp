@@ -262,7 +262,10 @@ PyTypeObject LocationType = {
 };
 
 static int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
-  new (&self->context) chpl::Context(getenv("CHPL_HOME"));
+  chpl::Context::Configuration config;
+  config.chplHome = getenv("CHPL_HOME");
+  new (&self->context) chpl::Context(std::move(config));
+  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
   return 0;
 }
 
