@@ -281,7 +281,7 @@ module ChapelRange {
     this.complete();
     if (stridable) {
       this._stride    = _stride;
-      this._alignment = _alignment;
+      this._alignment = chpl__mod(_alignment, _stride);
       this._aligned   = _aligned;
     }
   }
