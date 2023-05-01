@@ -410,13 +410,18 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 
 
 
+#if HAVE_LLVM_VER >= 150
+typedef MacroInfo::const_tokens_iterator tokens_iterator;
+#else
+typedef MacroInfo::tokens_iterator tokens_iterator;
+#endif
 
 static const bool debugPrintMacros = false;
 
 static void handleMacroExpr(const MacroInfo* inMacro,
                             const IdentifierInfo* origID,
-                            MacroInfo::tokens_iterator start,
-                            MacroInfo::tokens_iterator end,
+                            tokens_iterator start,
+                            tokens_iterator end,
                             VarSymbol*& varRet,
                             TypeDecl*& cTypeRet,
                             ValueDecl*& cValueRet,
@@ -435,7 +440,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
   // expect 'LAPACK_GLOBAL' '(' 'actual1' ',' 'actual2' ')'
   Token actual1, actual2;
   int count = 0;
-  for (MacroInfo::tokens_iterator tok = inMacro->tokens_begin();
+  for (tokens_iterator tok = inMacro->tokens_begin();
        tok != inMacro->tokens_end(); ++tok) {
     count++;
     if (count == 3)
@@ -459,7 +464,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
   // expecting 'identifier' ## '_'
   count = 0;
   Token body1, body2, body3;
-  for (MacroInfo::tokens_iterator tok = calledMacro->tokens_begin();
+  for (tokens_iterator tok = calledMacro->tokens_begin();
        tok != calledMacro->tokens_end(); ++tok) {
     count++;
     if (count == 1) {
@@ -560,8 +565,8 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 }
 
 static void removeMacroOuterParens(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator &start,
-                                   MacroInfo::tokens_iterator &end) {
+                                   tokens_iterator &start,
+                                   tokens_iterator &end) {
 
   if (start == end)
     return;
@@ -569,14 +574,14 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
   // Remove any number of outer parens e.g. (1), ((1)) -> 1
   int left_parens = 0;
   int right_parens = 0;
-  for (MacroInfo::tokens_iterator cur = end - 1;
+  for (tokens_iterator cur = end - 1;
        cur != start;
        --cur) {
     if(cur->getKind() == tok::r_paren) right_parens++;
     else break;
   }
 
-  for (MacroInfo::tokens_iterator cur = start;
+  for (tokens_iterator cur = start;
        cur != end;
        ++cur) {
     if(cur->getKind() == tok::l_paren) left_parens++;
@@ -585,8 +590,8 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 
   int min_parens = (left_parens < right_parens) ? left_parens : right_parens;
   if (min_parens > 0) {
-    MacroInfo::tokens_iterator oldStart = start;
-    MacroInfo::tokens_iterator oldEnd = end;
+    tokens_iterator oldStart = start;
+    tokens_iterator oldEnd = end;
     start = oldStart + min_parens;
     end = oldEnd - min_parens;
     INT_ASSERT(start != oldStart);
@@ -597,12 +602,12 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 // finds a parenthesized expression at the start of start..end
 // the expression does not necessarily cover the entire expression.
 static bool findParenthesizedExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
-                                  MacroInfo::tokens_iterator &pStart,
-                                  MacroInfo::tokens_iterator &pEnd) {
+                                  tokens_iterator start,
+                                  tokens_iterator end,
+                                  tokens_iterator &pStart,
+                                  tokens_iterator &pEnd) {
   int inparens = 0;
-  for (MacroInfo::tokens_iterator cur = start; cur != end; ++cur) {
+  for (tokens_iterator cur = start; cur != end; ++cur) {
 
     if (cur->getKind() == tok::l_paren) inparens++;
     if (cur->getKind() == tok::r_paren) inparens--;
@@ -631,8 +636,8 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 // Returns a type/identifier/macro name or NULL if it was not handled
 static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
                                               const IdentifierInfo* origID,
-                                              MacroInfo::tokens_iterator start,
-                                              MacroInfo::tokens_iterator end,
+                                              tokens_iterator start,
+                                              tokens_iterator end,
                                               IdentifierInfo*& ii) {
   GenInfo* info = gGenInfo;
   ii = NULL;
@@ -774,8 +779,8 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
 }
 
 static const char* handleStringExpr(const MacroInfo* inMacro,
-                                    MacroInfo::tokens_iterator start,
-                                    MacroInfo::tokens_iterator end) {
+                                    tokens_iterator start,
+                                    tokens_iterator end) {
   removeMacroOuterParens(inMacro, start, end);
 
   Token tok = *start; // the main token
@@ -800,26 +805,26 @@ static ::Type* getTypeForMacro(const char* name) {
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
+                                  tokens_iterator start,
+                                  tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet);
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
-                                         MacroInfo::tokens_iterator start,
-                                         MacroInfo::tokens_iterator end,
+                                         tokens_iterator start,
+                                         tokens_iterator end,
                                          Immediate* imm);
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
-                                     MacroInfo::tokens_iterator start,
-                                     MacroInfo::tokens_iterator end,
+                                     tokens_iterator start,
+                                     tokens_iterator end,
                                      Immediate* imm);
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator start,
-                                   MacroInfo::tokens_iterator end,
+                                   tokens_iterator start,
+                                   tokens_iterator end,
                                    Immediate* imm);
 
 static bool handleNumericExpr(const MacroInfo* inMacro,
-                              MacroInfo::tokens_iterator start,
-                              MacroInfo::tokens_iterator end,
+                              tokens_iterator start,
+                              tokens_iterator end,
                               Immediate* imm,
                               const char*& cCastToTypeRet) {
 
@@ -846,8 +851,8 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
+                                  tokens_iterator start,
+                                  tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet) {
 
@@ -855,8 +860,8 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     return false;
 
   // Check for a cast like '(unsigned int) 12'
-  MacroInfo::tokens_iterator castStart = start;
-  MacroInfo::tokens_iterator castEnd = start;
+  tokens_iterator castStart = start;
+  tokens_iterator castEnd = start;
 
   if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
     if (castEnd == end)
@@ -926,8 +931,8 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
 
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
-                                         MacroInfo::tokens_iterator start,
-                                         MacroInfo::tokens_iterator end,
+                                         tokens_iterator start,
+                                         tokens_iterator end,
                                          Immediate* imm) {
   if (start == end)
     return false;
@@ -961,8 +966,8 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
-                                     MacroInfo::tokens_iterator start,
-                                     MacroInfo::tokens_iterator end,
+                                     tokens_iterator start,
+                                     tokens_iterator end,
                                      Immediate* imm) {
   if (start == end)
     return false;
@@ -1073,16 +1078,16 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator start,
-                                   MacroInfo::tokens_iterator end,
+                                   tokens_iterator start,
+                                   tokens_iterator end,
                                    Immediate* imm) {
   // handle select binary operators
   // this only works if the LHS and RHS are either:
   //  parenthesized expressions; or
   //  numeric constants
   bool lhsOk = false;
-  MacroInfo::tokens_iterator lhsStart = start;
-  MacroInfo::tokens_iterator lhsEnd = start;
+  tokens_iterator lhsStart = start;
+  tokens_iterator lhsEnd = start;
 
   // find a LHS constant or parenthesized-expression
   if (start->getKind() == tok::numeric_constant) {
@@ -1097,9 +1102,9 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
     return false;
 
   bool rhsOk = false;
-  MacroInfo::tokens_iterator op = lhsEnd;
-  MacroInfo::tokens_iterator rhsStart = op + 1;
-  MacroInfo::tokens_iterator rhsEnd = rhsStart;
+  tokens_iterator op = lhsEnd;
+  tokens_iterator rhsStart = op + 1;
+  tokens_iterator rhsEnd = rhsStart;
 
   // find a RHS constant or parenthesized-expression
   if (rhsStart->getKind() == tok::numeric_constant) {
@@ -1143,8 +1148,8 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
 
 static void handleMacroExpr(const MacroInfo* inMacro,
                             const IdentifierInfo* origID,
-                            MacroInfo::tokens_iterator start,
-                            MacroInfo::tokens_iterator end,
+                            tokens_iterator start,
+                            tokens_iterator end,
                             VarSymbol*& varRet,
                             TypeDecl*& cTypeRet,
                             ValueDecl*& cValueRet,
@@ -1170,7 +1175,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
   }
 
   if (debugPrint) {
-    for (MacroInfo::tokens_iterator cur = start;
+    for (tokens_iterator cur = start;
          cur != end;
          ++cur) {
       Token t = *cur;
@@ -1329,6 +1334,9 @@ class CCodeGenConsumer final : public ASTConsumer {
         Builder = CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
+#if HAVE_LLVM_VER >= 150
+          &info->clangInfo->Clang->getVirtualFileSystem(),
+#endif
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
@@ -1943,7 +1951,13 @@ static llvm::TargetOptions getTargetOptions(
   Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
   Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
   Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
+#if HAVE_LLVM_VER >= 150
+  Options.MCOptions.MCUseDwarfDirectory =
+    CodeGenOpts.NoDwarfDirectoryAsm ? llvm::MCTargetOptions::DisableDwarfDirectory
+                                    : llvm::MCTargetOptions::EnableDwarfDirectory;
+#else
   Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
+#endif
   Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
   Options.MCOptions.MCIncrementalLinkerCompatible =
       CodeGenOpts.IncrementalLinkerCompatible;
@@ -2196,12 +2210,14 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
   PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
   PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
+#if HAVE_LLVM_VER < 150
 #if HAVE_LLVM_VER > 60
   PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
 #else
   PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
 #endif
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
+#endif
   PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
 
   if (gGenInfo->targetMachine)
