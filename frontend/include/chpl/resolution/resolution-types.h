@@ -1182,7 +1182,7 @@ class ResolvedExpression {
   // the ID of a NamedDecl it refers to
   ID toId_;
   // Is this a reference to a compiler-created primitive?
-  bool isPrimitive_ = false;
+  bool isBuiltin_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -1212,8 +1212,8 @@ class ResolvedExpression {
    * refers to */
   ID toId() const { return toId_; }
 
-  /** check whether this resolution result refers to a compiler primitive like `bool`. */
-  bool isPrimitive() const { return isPrimitive_; }
+  /** check whether this resolution result refers to a compiler builtin like `bool`. */
+  bool isBuiltin() const { return isBuiltin_; }
 
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
@@ -1233,7 +1233,7 @@ class ResolvedExpression {
   }
 
   /** set the isPrimitive flag */
-  void setIsPrimitive(bool isPrimitive) { isPrimitive_ = isPrimitive; }
+  void setIsPrimitive(bool isPrimitive) { isBuiltin_ = isPrimitive; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -1261,7 +1261,7 @@ class ResolvedExpression {
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
-           isPrimitive_ == other.isPrimitive_ &&
+           isBuiltin_ == other.isBuiltin_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -1273,7 +1273,7 @@ class ResolvedExpression {
   void swap(ResolvedExpression& other) {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
-    std::swap(isPrimitive_, other.isPrimitive_);
+    std::swap(isBuiltin_, other.isBuiltin_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);

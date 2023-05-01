@@ -434,7 +434,7 @@ struct Converter {
           auto nameExpr = new_CStringSymbol(node->name().c_str());
           CallExpr* ret = new CallExpr(".", thisExpr, nameExpr);
           return ret;
-        } else if (rr->isPrimitive()) {
+        } else if (rr->isBuiltin()) {
           auto scope = ResolveScope::getScopeFor(theProgram->block);
           if (!scope) scope = ResolveScope::getRootModule();
 
