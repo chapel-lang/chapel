@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config var n : int = 20;
 config var epsilon : real = 0.00001;

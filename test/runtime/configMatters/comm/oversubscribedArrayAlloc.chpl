@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 config const oversubscription = 4;
 const desiredTasks = oversubscription * here.maxTaskPar;

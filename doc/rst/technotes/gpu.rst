@@ -188,7 +188,7 @@ an error if one of the aforementioned requirements is not met.  This check
 might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
 depending on the presence of control flow.
 
-Utilities in :mod:`Memory.Diagnostics <Diagnostics>` module can be used to
+Utilities in :mod:`MemDiagnostics <Diagnostics>` module can be used to
 monitor GPU memory allocations and detect memory leaks. For example,
 :proc:`startVerboseMem() <Diagnostics.startVerboseMem()>` and
 :proc:`stopVerboseMem() <Diagnostics.stopVerboseMem()>` can be used to enable
