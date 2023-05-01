@@ -2,6 +2,7 @@ module RunVectorizeOnlyRawLoops {
   use LCALSDataTypes;
   use Timer;
   use VectorizingIterator;
+  private use Math;
 
   proc runVectorizeOnlyRawLoops(loop_stats: [] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();
