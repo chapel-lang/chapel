@@ -1676,29 +1676,71 @@ module AutoMath {
     return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
 
-  /* Returns the sine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc sin(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc sin(x: real(64)): real(64) {
+    return chpl_sin(x);
+  }
 
-  /* Returns the sine of the argument `x`. */
+  @chpldoc.nodoc
+  inline proc chpl_sin(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sin(x: real(64)): real(64);
+    return sin(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(x: real(32)): real(32) {
+    return chpl_sin(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc sinf(x: real(32)): real(32);
     return sinf(x);
   }
 
-  /* Returns the sine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(64)): complex(64) {
+    return chpl_sin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csinf(z: complex(64)): complex(64);
     return csinf(z);
   }
 
-  /* Returns the sine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(128)): complex(128) {
+    return chpl_sin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csin(z: complex(128)): complex(128);

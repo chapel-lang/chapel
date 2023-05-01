@@ -364,6 +364,26 @@ module Math {
     return chpl_logBasePow2(val, baseLog2);
   }
 
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: real(64)): real(64) {
+    return chpl_sin(x);
+  }
+
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: real(32)): real(32) {
+    return chpl_sin(x);
+  }
+
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(64)): complex(64) {
+    return chpl_sin(z);
+  }
+
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(128)): complex(128) {
+    return chpl_sin(z);
+  }
+
   /* Returns the absolute value of the gamma function of the argument `x`. */
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);
