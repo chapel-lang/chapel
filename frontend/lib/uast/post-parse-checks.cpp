@@ -132,6 +132,7 @@ struct Visitor {
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkExternBlockAtModuleScope(const ExternBlock* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -173,6 +174,7 @@ struct Visitor {
   void visit(const Yield* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const ExternBlock* node);
 };
 
 /**
@@ -1309,6 +1311,17 @@ void Visitor::visit(const Continue* node) {
   if (!checkParentsForControlFlow(parents_, nodeAllowsContinue, node, blockingNode, allowingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
   }
+}
+
+void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
+  const AstNode* p = parent();
+  if (!p->isModule()) {
+    error(node, "extern blocks are currently only supported at module scope");
+  }
+}
+
+void Visitor::visit(const ExternBlock* node) {
+  checkExternBlockAtModuleScope(node);
 }
 
 // Duplicate the contents of 'idIsInBundledModule', while skipping the
