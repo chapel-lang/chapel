@@ -30,7 +30,7 @@ def runCmd(cmd, env=None):
     else:
         proc = subprocess.run(cmd, text=True, check=True, env=env,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return proc
+    return proc.stdout
 
 def skipif():
     global skipReason
