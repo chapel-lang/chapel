@@ -793,29 +793,71 @@ module AutoMath {
   }
 
 
-  /* Returns the cosine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc cos(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc cos(x: real(64)): real(64) {
+    return chpl_cos(x);
+  }
 
-  /* Returns the cosine of the argument `x`. */
+  @chpldoc.nodoc
+  inline proc chpl_cos(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cos(x: real(64)): real(64);
+    return cos(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(x : real(32)): real(32) {
+    return chpl_cos(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cosf(x: real(32)): real(32);
     return cosf(x);
   }
 
-  /* Returns the cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(64)): complex(64) {
+    return chpl_cos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(z : complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccosf(z: complex(64)): complex(64);
     return ccosf(z);
   }
 
-  /* Returns the cosine of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(128)): complex(128) {
+    return chpl_cos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(z : complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccos(z: complex(128)): complex(128);

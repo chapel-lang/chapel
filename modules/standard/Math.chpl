@@ -237,6 +237,26 @@ module Math {
     return chpl_atanh(z);
   }
 
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x: real(64)): real(64) {
+    return chpl_cos(x);
+  }
+
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : real(32)): real(32) {
+    return chpl_cos(x);
+  }
+
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(64)): complex(64) {
+    return chpl_cos(z);
+  }
+
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(128)): complex(128) {
+    return chpl_coz(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
