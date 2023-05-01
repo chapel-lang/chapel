@@ -391,9 +391,9 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
 #define PLAIN_GETTER(NODE, NAME, TYPESTR, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
     auto cast = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
-    auto result = [](const chpl::uast::NODE* node) { \
+    auto result = [](const chpl::uast::NODE* node, ContextObject* contextObject) { \
       BODY; \
-    }(cast); \
+    }(cast, (ContextObject*) ((NODE##Object*) self)->parent.contextObject); \
     if constexpr (std::string_view(TYPESTR) == std::string_view("s")) { \
       return Py_BuildValue(TYPESTR, toCString(result)); \
     } else { \
@@ -411,6 +411,7 @@ PLAIN_GETTER(Function, kind, "s", return chpl::uast::Function::kindToString(node
 PLAIN_GETTER(Function, is_method, "b", return node->isMethod());
 PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
 PLAIN_GETTER(FnCall, used_square_brackets, "b", return node->callUsedSquareBrackets());
+PLAIN_GETTER(FnCall, called_expression, "O", return wrapAstNode(contextObject, node->calledExpression()));
 PLAIN_GETTER(Dot, field, "s", return node->field());
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
@@ -495,6 +496,7 @@ template <>
 struct PerNodeInfo<chpl::uast::asttags::FnCall> {
   static constexpr PyMethodDef methods[] = {
     {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
+    {"called_expression", FnCallObject_called_expression, METH_NOARGS, "Get the expression invoked by this FnCall node"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
