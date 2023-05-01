@@ -56,30 +56,27 @@ static void maybeEmitWarningsForId(Context* context, ID idMention,
   parsing::reportUnstableWarningForId(context, idMention, idTarget);
 }
 
-static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
+static bool isField(const AstNode* d, bool atFieldLevel) {
   // anything declared directly in a record/class/union counts
   // for this purpose. (This covers nested classes / nested records).
+  if (d == nullptr) return false;
+
   if (atFieldLevel) {
-    return true;
+    return !d->isFunction();
   }
 
-  if (d != nullptr) {
-    if (auto fn = d->toFunction()) {
-      return fn->isMethod();
-    }
-    if (auto v = d->toVariable()) {
-      return v->isField();
-    }
+  if (auto v = d->toVariable()) {
+    return v->isField();
   }
 
   return false;
 }
 
 static bool isMethod(const AstNode* d, bool atFieldLevel) {
-  if (d != nullptr) {
-    if (auto fn = d->toFunction()) {
-      return atFieldLevel || fn->isMethod();
-    }
+  if (d == nullptr) return false;
+
+  if (auto fn = d->toFunction()) {
+    return atFieldLevel || fn->isMethod();
   }
 
   return false;
@@ -109,14 +106,14 @@ static void gather(DeclMap& declared,
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d, atFieldLevel),
+                                           isField(d, atFieldLevel),
                                            isMethod(d, atFieldLevel),
                                            isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
     val.appendIdAndFlags(d->id(), visibility,
-                         isMethodOrField(d, atFieldLevel),
+                         isField(d, atFieldLevel),
                          isMethod(d, atFieldLevel),
                          isParenfulFunction(d));
   }
@@ -628,13 +625,13 @@ bool LookupHelper::doLookupInImportsAndUses(
         // Make sure the module / enum being renamed isn't private.
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
-        bool isMethodOrField = false; // target must be module/enum, not method
+        bool isField = false; // target must be module/enum, not field
         bool isMethod = false; // target must be module/enum, not method
         bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
-                                                  isMethodOrField,
+                                                  isField,
                                                   isMethod,
                                                   isParenfulFunction,
                                                   filterFlags,
@@ -841,7 +838,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
   for (const auto& exbId : exbIds) {
     if (externBlockContainsName(context, exbId, name)) {
       // note that this extern block can match 'name'
-      bool isMethodOrField = false; // not possible in an extern block
+      bool isField = false; // not possible in an extern block
       bool isMethod = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
@@ -853,7 +850,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
-                                                isMethodOrField,
+                                                isField,
                                                 isMethod,
                                                 isParenfulFunction,
                                                 filterFlags,

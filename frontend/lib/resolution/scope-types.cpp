@@ -283,7 +283,7 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name,
                     OwnedIdsWithName(ID(),
                                      uast::Decl::PUBLIC,
-                                     /*isMethodOrField*/ false,
+                                     /*isField*/ false,
                                      /*isMethod*/ false,
                                      /*isParenfulFunction*/ false));
 }
