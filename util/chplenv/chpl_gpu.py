@@ -227,11 +227,20 @@ def _validate_rocm_version_impl():
            version_filename = fname
            break
 
-    if version_filename is None:
+    rocmVersion = None
+    if version_filename is not None:
+        rocmVersion = open(version_filename).read()
+    else:
+        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+            ["hipcc", "--version"])
+        if exists and returncode == 0:
+            match = re.search(r"rocm?-([\d\.]+)", my_stdout)
+            if match:
+                rocmVersion = match.group(1)
+
+    if rocmVersion is None:
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
-
-    rocmVersion = open(version_filename).read()
 
     if not is_ver_in_range(rocmVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
         _reportMissingGpuReq(
