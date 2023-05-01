@@ -31,16 +31,16 @@ if errorCase == 1 {
 }
 
 var hi_c = c"hi";
-var ss = string.createWithNewBuffer(hi_c)+ string.createWithNewBuffer(hi_c);
+var ss = string.createCopyingBuffer(hi_c)+ string.createCopyingBuffer(hi_c);
 var s = ss.c_str();
 
-f(string.createWithNewBuffer(s));
-fi(string.createWithNewBuffer(s));
+f(string.createCopyingBuffer(s));
+fi(string.createCopyingBuffer(s));
 if errorCase == 2 then
-  fo(string.createWithNewBuffer(s));
+  fo(string.createCopyingBuffer(s));
 
 if errorCase == 3 then
-  fio(string.createWithNewBuffer(s));
+  fio(string.createCopyingBuffer(s));
 
 if errorCase == 4 then
-  fr(string.createWithNewBuffer(s));
+  fr(string.createCopyingBuffer(s));

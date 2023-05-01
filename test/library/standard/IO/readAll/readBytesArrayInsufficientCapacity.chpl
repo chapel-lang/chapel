@@ -23,7 +23,7 @@ proc testInsuffCapError(ch: fileReader) {
     ch.close();
 
     // the concatenation of the first 100 bytes, and the remaining bytes recreates the whole file:
-    const s_from_array = string.createWithBorrowedBuffer(c_ptrTo(a), length=a.size, size=a.size);
+    const s_from_array = string.createBorrowingBuffer(c_ptrTo(a), length=a.size, size=a.size);
     writeln(s_from_array + s_remaining);
 }
 

@@ -56,7 +56,7 @@ module ChapelIOStringifyHelper {
       if i != 0 then str += ", ";
       if (tup[i].type == c_string) {
         try! {
-          str += string.createWithNewBuffer(tup[i]);
+          str += string.createCopyingBuffer(tup[i]);
         }
       }
       else {
@@ -84,7 +84,7 @@ module ChapelIOStringifyHelper {
       } else if (args[i].type == c_string) {
         //decodePolicy.replace never throws
         try! {
-          str += string.createWithNewBuffer(args[i],
+          str += string.createCopyingBuffer(args[i],
                                            policy=decodePolicy.replace);
         }
       } else if (args[i].type == bytes) {

@@ -407,7 +407,7 @@ module Errors {
     var nameC: c_string = __primitive("class name by id", cid);
     var nameS: string;
     try! {
-      nameS = string.createWithNewBuffer(nameC);
+      nameS = string.createCopyingBuffer(nameC);
     }
     return nameS;
   }
@@ -507,7 +507,7 @@ module Errors {
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
-      myFileS = string.createWithNewBuffer(myFileC);
+      myFileS = string.createCopyingBuffer(myFileC);
     }
     const myLine = __primitive("_get_user_line");
 
@@ -515,7 +515,7 @@ module Errors {
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
-      thrownFileS = string.createWithNewBuffer(thrownFileC);
+      thrownFileS = string.createCopyingBuffer(thrownFileC);
     }
     const thrownLine = err.thrownLine;
 

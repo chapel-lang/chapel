@@ -1,6 +1,6 @@
 proc bad(type t, x:c_string) {
   try! {
-    return string.createWithNewBuffer(x):t;
+    return string.createCopyingBuffer(x):t;
   }
 }
 

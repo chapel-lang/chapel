@@ -10,8 +10,8 @@ get_string(ca);
 var cb: c_string;
 modify_string(cb, ca);
 
-a = string.createWithNewBuffer(ca);
-b = string.createWithNewBuffer(cb);
+a = string.createCopyingBuffer(ca);
+b = string.createCopyingBuffer(cb);
 writeln("a is: ", a);
 writeln("b is: ", b);
 

@@ -1348,7 +1348,7 @@ module String {
         readIdx += nBytes;
       }
       buff[writeIdx] = 0;
-      return bytes.createWithOwnedBuffer(buff, length=writeIdx, size=size);
+      return bytes.createAdoptingBuffer(buff, length=writeIdx, size=size);
     }
   }
 

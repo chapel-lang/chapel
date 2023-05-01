@@ -1,3 +1,3 @@
 export proc takesCstring(s: c_string) {
-  writeln(string.createWithNewBuffer(s));
+  writeln(string.createCopyingBuffer(s));
 }

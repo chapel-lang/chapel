@@ -383,7 +383,7 @@ module Bytes {
           return bytes.createAdoptingBuffer(localBuff, data.buffLen, data.size);
         }
       } else {
-        return bytes.createWithBorrowedBuffer(data.buff, data.buffLen,
+        return bytes.createBorrowingBuffer(data.buff, data.buffLen,
                                              data.size);
       }
     }
@@ -503,7 +503,7 @@ module Bytes {
   */
   inline proc bytes.localize() : bytes {
     if _local || this.locale_id == chpl_nodeID {
-      return bytes.createWithBorrowedBuffer(this);
+      return bytes.createBorrowingBuffer(this);
     } else {
       const x:bytes = this; // assignment makes it local
       return x;

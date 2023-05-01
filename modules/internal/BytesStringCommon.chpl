@@ -516,7 +516,7 @@ module BytesStringCommon {
           size=buffSize, numCodepoints=numCodepoints);
     }
     else {
-      return bytes.createWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
+      return bytes.createAdoptingBuffer(x=buff, length=buffLen, size=buffSize);
     }
   }
 
@@ -901,7 +901,7 @@ module BytesStringCommon {
                                                   numCodepoints=numCodepoints);
       }
       else {
-        return bytes.createWithOwnedBuffer(x=newBuff,
+        return bytes.createAdoptingBuffer(x=newBuff,
                                           length=joinedSize,
                                           size=allocSize);
       }
@@ -1207,7 +1207,7 @@ module BytesStringCommon {
                                                 x.cachedNumCodepoints*n);
     }
     else {
-      return bytes.createWithOwnedBuffer(buff, buffLen, allocSize);
+      return bytes.createAdoptingBuffer(buff, buffLen, allocSize);
     }
   }
 

@@ -657,7 +657,7 @@ record regex {
       var err_str = qio_regex_error(this._regex);
       var err_msg: string;
       try! {
-        err_msg = string.createWithOwnedBuffer(err_str) +
+        err_msg = string.createAdoptingBuffer(err_str) +
                     " when compiling regex '" + patternStr + "'";
       }
       // this is a workaround for a known limitation in throwing initializers
@@ -701,7 +701,7 @@ record regex {
       var patternTemp: c_string;
       var len:int;
       qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
-      try! pattern = exprType.createWithBorrowedBuffer(patternTemp, len).chpl__serialize();
+      try! pattern = exprType.createBorrowingBuffer(patternTemp, len).chpl__serialize();
 
       var localOptions: qio_regex_options_t;
       qio_regex_get_options(_regexCopy, localOptions);
@@ -1063,7 +1063,7 @@ record regex {
       var patternTemp:c_string;
       var len:int;
       qio_regex_borrow_pattern(this._regex, patternTemp, len);
-      try! pattern = exprType.createWithNewBuffer(patternTemp, len);
+      try! pattern = exprType.createCopyingBuffer(patternTemp, len);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -1123,7 +1123,7 @@ inline operator :(x: regex(?exprType), type t: exprType) {
     var cs: c_string;
     var len:int;
     qio_regex_borrow_pattern(x._regex, cs, len);
-    try! pattern = t.createWithNewBuffer(cs, len);
+    try! pattern = t.createCopyingBuffer(cs, len);
   }
   return pattern;
 }
@@ -1296,7 +1296,7 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
                       dst_off=writeIdx, src_off=readIdx);
   }
 
-  var ret = try! t.createWithOwnedBuffer(newBuff, length=numBytesInResult,
+  var ret = try! t.createAdoptingBuffer(newBuff, length=numBytesInResult,
                                          size=buffSize);
 
   return (ret, totalChunksToRemove);
@@ -1321,7 +1321,7 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
                                     x.numBytes, pos:int, endpos:int, global,
                                     replaced, replaced_len);
 
-  var ret = try! t.createWithOwnedBuffer(replaced, replaced_len);
+  var ret = try! t.createAdoptingBuffer(replaced, replaced_len);
 
   return (ret, nreplaced);
 }

@@ -10,5 +10,5 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
 }
 
 export proc writeStr(in x: c_string) {
-  writeln(string.createWithNewBuffer(x));
+  writeln(string.createCopyingBuffer(x));
 }

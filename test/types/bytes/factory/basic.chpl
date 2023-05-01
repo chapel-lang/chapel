@@ -5,7 +5,7 @@ var myBytes = b"A Chapel bytes";
 on targetLocale {
   // there should be 2 allocations, 2 frees
   writeln("Initialize from bytes");
-  var sBorrowed = bytes.createWithBorrowedBuffer(myBytes);
+  var sBorrowed = bytes.createBorrowingBuffer(myBytes);
 
   writeln(sBorrowed);
 }
@@ -21,9 +21,9 @@ var cStr = cPtrTmp:c_string;
 {
   // there should be 1 allocation 1 free
   writeln("Initialize from c_string");
-  var sNew = bytes.createWithNewBuffer(cStr);
-  var sBorrowed = bytes.createWithBorrowedBuffer(cStr);
-  var sOwned = bytes.createWithOwnedBuffer(cStr);
+  var sNew = bytes.createCopyingBuffer(cStr);
+  var sBorrowed = bytes.createBorrowingBuffer(cStr);
+  var sOwned = bytes.createAdoptingBuffer(cStr);
   /*var sOwned = new string(cStr, isowned=true, needToCopy=false);*/
 
   writeln(sNew);
@@ -42,9 +42,9 @@ cPtr[3] = 0:uint(8);
   // there should be 1 allocate, 2 frees
   writeln("Initialize from c_ptr(uint(8))");
 
-  var sNew = bytes.createWithNewBuffer(cPtr, length=3, size=4);
-  var sBorrowed = bytes.createWithBorrowedBuffer(cPtr, length=3, size=4);
-  var sOwned = bytes.createWithOwnedBuffer(cPtr, length=3, size=4);
+  var sNew = bytes.createCopyingBuffer(cPtr, length=3, size=4);
+  var sBorrowed = bytes.createBorrowingBuffer(cPtr, length=3, size=4);
+  var sOwned = bytes.createAdoptingBuffer(cPtr, length=3, size=4);
 
   writeln(sNew);
   writeln(sBorrowed);
@@ -68,9 +68,9 @@ cCharPtr[3] = 0:uint(8);
   // there should be 1 allocate, 2 frees
   writeln("Initialize from c_ptr(c_char)");
 
-  var sNew = bytes.createWithNewBuffer(cCharPtr, length=3, size=4);
-  var sBorrowed = bytes.createWithBorrowedBuffer(cCharPtr, length=3, size=4);
-  var sOwned = bytes.createWithOwnedBuffer(cCharPtr, length=3, size=4);
+  var sNew = bytes.createCopyingBuffer(cCharPtr, length=3, size=4);
+  var sBorrowed = bytes.createBorrowingBuffer(cCharPtr, length=3, size=4);
+  var sOwned = bytes.createAdoptingBuffer(cCharPtr, length=3, size=4);
 
   writeln(sNew);
   writeln(sBorrowed);

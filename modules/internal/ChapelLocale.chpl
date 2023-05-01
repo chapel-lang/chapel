@@ -351,7 +351,7 @@ module ChapelLocale {
       var hname: string;
       on this {
         try! {
-          hname = string.createWithNewBuffer(chpl_nodeName());
+          hname = string.createCopyingBuffer(chpl_nodeName());
         }
       }
       return hname;

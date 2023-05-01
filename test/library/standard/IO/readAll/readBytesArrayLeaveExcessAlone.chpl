@@ -16,4 +16,4 @@ writeln(num_b == NUMBYTES);
 writeln(&& reduce (a[(NUMBYTES+1)..] == 0));
 
 // the file can be reproduced from the bytes array:
-writeln(string.createWithBorrowedBuffer(c_ptrTo(a), length=num_b, size=num_b));
+writeln(string.createBorrowingBuffer(c_ptrTo(a), length=num_b, size=num_b));

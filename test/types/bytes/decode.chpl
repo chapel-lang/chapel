@@ -11,7 +11,7 @@ proc createHelp(b: bytes, param errors=decodePolicy.strict) throws {
     return b.decode(errors);
   }
   else {
-    return string.createWithNewBuffer(b.buff, b.buffLen, b.buffLen+1, errors);
+    return string.createCopyingBuffer(b.buff, b.buffLen, b.buffLen+1, errors);
   }
 }
 

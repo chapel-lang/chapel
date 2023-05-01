@@ -523,7 +523,7 @@ extern record sys_sockaddr_t {
       throw createSystemError(err_out);
     }
 
-    return string.createWithOwnedBuffer(buffer, length, NI_MAXHOST);
+    return string.createAdoptingBuffer(buffer, length, NI_MAXHOST);
   }
 
   /*
@@ -1050,7 +1050,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
   var addressStorage = new sys_sockaddr_t();
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
   if err_out == 0 {
-    return (bytes.createWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
+    return (bytes.createAdoptingBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     c_free(buffer);
@@ -1096,7 +1096,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       }
     }
   }
-  return (bytes.createWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
+  return (bytes.createAdoptingBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
 }
 
 proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, ipAddr) throws {
@@ -1391,7 +1391,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
       c_free(buffer);
       throw createSystemError(err_out, "Failed to get socket option");
     }
-    return bytes.createWithOwnedBuffer(buffer, len, buflen);
+    return bytes.createAdoptingBuffer(buffer, len, buflen);
   }
 }
 

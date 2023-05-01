@@ -1,5 +1,5 @@
 var s = "my string";
-var d = string.createWithBorrowedBuffer(s);
+var d = string.createBorrowingBuffer(s);
 writeln(d.numCodepoints);
 writeln(d.size);
 writeln(d.cachedNumCodepoints);

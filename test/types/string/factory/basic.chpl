@@ -7,7 +7,7 @@ var chplStr = "A Chapel string";
 on targetLocale {
   // there should be 2 allocations, 2 frees
   writeln("Initialize from string");
-  var sBorrowed = string.createWithBorrowedBuffer(chplStr);
+  var sBorrowed = string.createBorrowingBuffer(chplStr);
 
   writeln(sBorrowed);
 }
@@ -24,9 +24,9 @@ var cStr = cPtrTmp:c_string;
   // there should be 1 allocation 1 free
   writeln("Initialize from c_string");
   try! {
-    var sNew = string.createWithNewBuffer(cStr);
-    var sBorrowed = string.createWithBorrowedBuffer(cStr);
-    var sOwned = string.createWithOwnedBuffer(cStr);
+    var sNew = string.createCopyingBuffer(cStr);
+    var sBorrowed = string.createBorrowingBuffer(cStr);
+    var sOwned = string.createAdoptingBuffer(cStr);
     /*var sOwned = new string(cStr, isowned=true, needToCopy=false);*/
 
     writeln(sNew);
@@ -47,9 +47,9 @@ cPtr[3] = 0:uint(8);
   writeln("Initialize from c_ptr(uint(8))");
 
   try! {
-    var sNew = string.createWithNewBuffer(cPtr, length=3, size=4);
-    var sBorrowed = string.createWithBorrowedBuffer(cPtr, length=3, size=4);
-    var sOwned = string.createWithOwnedBuffer(cPtr, length=3, size=4);
+    var sNew = string.createCopyingBuffer(cPtr, length=3, size=4);
+    var sBorrowed = string.createBorrowingBuffer(cPtr, length=3, size=4);
+    var sOwned = string.createAdoptingBuffer(cPtr, length=3, size=4);
 
     writeln(sNew);
     writeln(sBorrowed);
@@ -75,9 +75,9 @@ cCharPtr[3] = 0:uint(8);
   writeln("Initialize from c_ptr(c_char)");
 
   try! {
-    var sNew = string.createWithNewBuffer(cCharPtr, length=3, size=4);
-    var sBorrowed = string.createWithBorrowedBuffer(cCharPtr, length=3, size=4);
-    var sOwned = string.createWithOwnedBuffer(cCharPtr, length=3, size=4);
+    var sNew = string.createCopyingBuffer(cCharPtr, length=3, size=4);
+    var sBorrowed = string.createBorrowingBuffer(cCharPtr, length=3, size=4);
+    var sOwned = string.createAdoptingBuffer(cCharPtr, length=3, size=4);
 
     writeln(sNew);
     writeln(sBorrowed);

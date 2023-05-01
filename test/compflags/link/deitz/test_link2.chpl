@@ -3,4 +3,4 @@ extern proc bar(i: int): c_string;
 
 foo("hello world");
 var s = bar(12);
-writeln(string.createWithNewBuffer(s));
+writeln(string.createCopyingBuffer(s));
