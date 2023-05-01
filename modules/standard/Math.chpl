@@ -254,7 +254,7 @@ module Math {
 
   /* Returns the cosine of the argument `z`. */
   inline proc cos(z : complex(128)): complex(128) {
-    return chpl_coz(z);
+    return chpl_cos(z);
   }
 
   /* Returns the error function of the argument `x`. */
