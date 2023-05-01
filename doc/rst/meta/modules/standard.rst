@@ -42,7 +42,7 @@ Diagnostics
 
    CommDiagnostics <standard/CommDiagnostics>
    GpuDiagnostics <standard/GpuDiagnostics>
-   Memory <standard/Memory>
+   MemDiagnostics <standard/MemDiagnostics>
 
 
 Files/IO
