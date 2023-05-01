@@ -51,7 +51,7 @@ proc testio(x)
   }
 }
 
-proc test_readlines()
+proc test_readlines(stripNewline = false)
 {
 
   var f = openTempFile();
@@ -80,13 +80,15 @@ proc test_readlines()
   }
 
 
-  if noisy then writeln("Testing readlines: fileReader.lines()");
+  if noisy then writeln("Testing readlines: fileReader.lines(stripNewline=", stripNewline, ")");
   {
-    for (line,i) in zip(f.reader().lines(),1..) {
+    proc getTestString(s) do return if stripNewline then s else s + "\n";
+
+    for (line,i) in zip(f.reader().lines(stripNewline),1..) {
       if i == 1 {
-        assert(line == "a b\n");
+        assert(line == getTestString("a b"));
       } else if i == 2 {
-        assert(line == "c d\n");
+        assert(line == getTestString("c d"));
       } else {
         assert(false);
       }
@@ -133,4 +135,5 @@ proc main() {
   testio(new ioLiteral("test"));
   
   test_readlines();
+  test_readlines(true);
 }

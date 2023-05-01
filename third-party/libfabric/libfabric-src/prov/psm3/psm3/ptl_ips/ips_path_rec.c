@@ -61,6 +61,10 @@
 #include "psm2_hal.h"
 #include "ips_proto.h"
 
+/* These functions hand build path records based on local link information
+ * and basic destination addressing available to our callers from the EPID
+ */
+
 /*
  * These are the default values used in parsing the environment
  * variable PSM3_PATH_NO_LMC_RANGE, which can be used to exclude
@@ -73,23 +77,188 @@
 #define DEF_LIMITS_VALUE 4294967295
 
 
+// unfortunately ibv_rate_to_mult and mult_to_ibv_rate have a bug as they
+// omit 100g rate and some others, so we create our own
 
+#define PSM3_GIGABIT 1000000000ULL
+// link speed input in units of bytes/sec
+// we take a conservative approach since some VMs might report
+// atypical speeds due to link throttling.  For such atypical speeds
+// we chose to round up
+enum psm3_ibv_rate ips_link_speed_to_enum(uint64_t link_speed)
+{
+	if (link_speed <= 2500000000)
+		return PSM3_IBV_RATE_2_5_GBPS;
+	else if (link_speed <= 5*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_5_GBPS;
+	else if (link_speed <= 10*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_10_GBPS;
+	else if (link_speed <= 14*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_14_GBPS;
+	else if (link_speed <= 20*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_20_GBPS;
+	else if (link_speed <= 25*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_25_GBPS;
+	else if (link_speed <= 28*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_28_GBPS;
+	else if (link_speed <= 30*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_30_GBPS;
+	else if (link_speed <= 40*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_40_GBPS;
+	else if (link_speed <= 50*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_50_GBPS;
+	else if (link_speed <= 56*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_56_GBPS;
+	else if (link_speed <= 60*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_60_GBPS;
+	else if (link_speed <= 80*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_80_GBPS;
+	else if (link_speed <= 100*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_100_GBPS;
+	else if (link_speed <= 112*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_112_GBPS;
+	else if (link_speed <= 120*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_120_GBPS;
+	else if (link_speed <= 168*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_168_GBPS;
+	else if (link_speed <= 200*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_200_GBPS;
+	else if (link_speed <= 300*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_300_GBPS;
+	else if (link_speed <= 400*PSM3_GIGABIT)
+		return PSM3_IBV_RATE_400_GBPS;
+	else
+		return PSM3_IBV_RATE_600_GBPS;
+}
 
+static uint64_t ips_enum_to_link_speed(enum psm3_ibv_rate rate)
+{
+	switch (rate) {
+	case PSM3_IBV_RATE_2_5_GBPS:	return  2500000000;
+	case PSM3_IBV_RATE_5_GBPS:	return  5*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_10_GBPS:	return  10*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_20_GBPS:	return  20*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_30_GBPS:	return  30*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_40_GBPS:	return  40*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_60_GBPS:	return  60*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_80_GBPS:	return  80*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_120_GBPS:	return 120*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_14_GBPS:	return  14*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_56_GBPS:	return  56*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_112_GBPS:	return 112*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_168_GBPS:	return 168*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_25_GBPS:	return  25*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_100_GBPS:	return 100*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_200_GBPS:	return 200*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_300_GBPS:	return 300*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_28_GBPS:	return  28*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_50_GBPS:	return  50*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_400_GBPS:	return 400*PSM3_GIGABIT;
+	case PSM3_IBV_RATE_600_GBPS:	return 600*PSM3_GIGABIT;
+	default:			return 100*PSM3_GIGABIT;
+	}
+}
+#undef PSM3_GIGABIT
+
+enum psm3_ibv_rate min_rate(enum psm3_ibv_rate a, enum psm3_ibv_rate b)
+{
+	// unfortunately the ibv_rate enum is not sorted by link rate
+	// so we must convert to link_speed to compare then convert back
+	return ips_link_speed_to_enum(min(ips_enum_to_link_speed(a),
+                                 ips_enum_to_link_speed(b)));
+}
+
+/* Convert Timeout value from usec to
+ * timeout_mult where usec = 4.096usec * 2^timeout_mult
+ */
+uint8_t psm3_timeout_usec_to_mult(uint64_t timeout_us)
+{
+	/* all values are rounded up, comments reflect exact value */
+	if (timeout_us <= 4)
+		return 0;	/* 4.096 us */
+	else if (timeout_us <= 8)
+		return 1;	/* 8.192 us */
+	else if (timeout_us <= 16)
+		return 2;	/* 16.384 us */
+	else if (timeout_us <= 32)
+		return 3;	/* 32.768 us */
+	else if (timeout_us <= 65)
+		return 4;	/* 65.536 us */
+	else if (timeout_us <= 131)
+		return 5;	/* 131.072 us */
+	else if (timeout_us <= 262)
+		return 6;	/* 262.144 us */
+	else if (timeout_us <= 524)
+		return 7;	/* 524.288 us */
+	else if (timeout_us <= 1048)
+		return 8;	/* 1048.576 us */
+	else if (timeout_us <= 2097)
+		return 9;	/* 2.097 ms */
+	else if (timeout_us <= 4194)
+		return 10;	/* 4.197 ms */
+	else if (timeout_us <= 8388)
+		return 11;	/* 8.388 ms */
+	else if (timeout_us <= 16777)
+		return 12;	/* 16.777 ms */
+	else if (timeout_us <= 33554)
+		return 13;	/* 33.554 ms */
+	else if (timeout_us <= 67108)
+		return 14;	/* 67.1 ms */
+	else if (timeout_us <= 134217)
+		return 15;	/* 134.2 ms */
+	else if (timeout_us <= 268435)
+		return 16;	/* 268.4 ms */
+	else if (timeout_us <= 536870)
+		return 17;	/* 536.8 ms */
+	else if (timeout_us <= 1073741)
+		return 18;/* 1.073 s */
+	else if (timeout_us <= 2147483)
+		return 19;/* 2.148 s */
+	else if (timeout_us <= 4294967)
+		return 20;/* 4.294 s */
+	else if (timeout_us <= 8589934)
+		return 21;/* 8.589 s */
+	else if (timeout_us <= 17179869)
+		return 22;/* 17.179 s */
+	else if (timeout_us <= 34359738)
+		return 23;/* 34.359 s */
+	else if (timeout_us <= 68719476)
+		return 24;/* 68.719 s */
+	else if (timeout_us <= 137438953ll)
+		return 25;/* 2.2 minutes */
+	else if (timeout_us <= 274877906ll)
+		return 26; /* 4.5 minutes */
+	else if (timeout_us <= 549755813ll)
+		return 27; /* 9 minutes */
+	else if (timeout_us <= 1099511628ll)
+		return 28;	/* 18 minutes */
+	else if (timeout_us <= 2199023256ll)
+		return 29;	/* 0.6 hr */
+	else if (timeout_us <= 4398046511ll)
+		return 30;	/* 1.2 hr	 */
+	else
+		return 31;	/* 2.4 hr */
+}
 
 static psm2_error_t
 ips_none_get_path_rec(struct ips_proto *proto,
-		      uint16_t slid, uint16_t dlid,
-		      uint16_t ip_hi,
+		      __be16 slid, __be16 dlid,
+		      __be64 gid_hi, __be64 gid_lo,
 		      unsigned long timeout, ips_path_rec_t **ppath_rec)
 {
 	psm2_error_t err = PSM2_OK;
 	ips_path_rec_t *path_rec;
-	ENTRY elid, *epath = NULL;
+	ENTRY elid = {}, *epath = NULL;
 	char eplid[128];
 
 	/* Query the path record cache */
+	/* the eplid is simply an exact match search key, we don't worry
+	 * about slid, dlid and gid being big endian.  In fact on little
+	 * endian CPU, this will put low bits earlier in string and cause
+	 * quicker discovery of differences when doing strcmp to sort/search
+	 */
 	// TBD - slid same until have dispersive LMC-like, could just use dest
-	snprintf(eplid, sizeof(eplid), "%x_%x%04x", slid, ip_hi, dlid);
+	snprintf(eplid, sizeof(eplid), "%x_%"PRIx64"_%"PRIx64"_%x", slid, (uint64_t)gid_lo, (uint64_t)gid_hi, dlid);
 	elid.key = eplid;
 	hsearch_r(elid, FIND, &epath, &proto->ips_path_rec_hash);
 
@@ -105,21 +274,20 @@ ips_none_get_path_rec(struct ips_proto *proto,
 		}
 
 		/* Create path record */
-		path_rec->pr_slid = slid;
-		path_rec->pr_dlid = dlid;
+		path_rec->pr_slid = slid;	/* __be16 */
+		path_rec->pr_dlid = dlid;	/* __be16 */
 		path_rec->pr_mtu = proto->epinfo.ep_mtu;
 		path_rec->pr_pkey = proto->epinfo.ep_pkey;
 		path_rec->pr_sl = proto->epinfo.ep_sl;
-		path_rec->pr_ip_hi = ip_hi;
+		path_rec->pr_gid_hi = gid_hi;	/* __be64 */
+		path_rec->pr_gid_lo = gid_lo;	/* __be64 */
 		path_rec->pr_static_rate = proto->epinfo.ep_link_rate;
 
-
-		/* Setup CCA parameters for path */
 		if (path_rec->pr_sl > PSMI_SL_MAX) {
 			err =  PSM2_INTERNAL_ERR;
 			goto fail;
 		}
-		err = ips_make_ah(proto->ep, path_rec);
+		err = psmi_hal_ips_path_rec_init(proto, path_rec, NULL);
 		if (err != PSM2_OK)
 			goto fail;
 
@@ -143,130 +311,19 @@ fail:
 	return err;
 }
 
-// This works for UD address vectors as well as the ah_attr in an RC QP attrs
-psm2_error_t ips_path_rec_to_ah_attr(psm2_ep_t ep,
-				const ips_path_rec_t *path_rec, struct ibv_ah_attr *ah_attr)
-{
-	memset(ah_attr, 0, sizeof *ah_attr);
-
-	// we keep PR in network byte order
-	// ah_attr is in CPU byte order except for GIDs which are always
-	// in network byte order
-	ah_attr->sl = path_rec->pr_sl;
-	ah_attr->port_num = ep->portnum;
-	ah_attr->static_rate = path_rec->pr_static_rate;
-	// for OPA/IB we use dlid and is_global=0, for eth use dgid and is_global=1
-	if (ep->verbs_ep.link_layer != IBV_LINK_LAYER_ETHERNET) {
-		// OPA or IB
-			// NIC/HCA/HFI will only look at low "LMC" worth of bits
-		ah_attr->src_path_bits = __be16_to_cpu(path_rec->pr_slid);
-		ah_attr->dlid = __be16_to_cpu(path_rec->pr_dlid);
-		ah_attr->is_global  = 0;
-		_HFI_CONNDBG("creating AH with DLID %u\n", ah_attr->dlid);
-	} else {
-		ah_attr->src_path_bits = 0;
-		ah_attr->dlid = 1;	// not used on ethernet, make non-zero
-		ah_attr->is_global  = 1;
-		ah_attr->grh.dgid = ep->verbs_ep.lgid;
-		ah_attr->grh.dgid.raw[12] =  (uint8_t)(__be16_to_cpu(path_rec->pr_ip_hi)>>8);
-		ah_attr->grh.dgid.raw[13] =  (uint8_t)(__be16_to_cpu(path_rec->pr_ip_hi));
-		ah_attr->grh.dgid.raw[14] =  (uint8_t)(__be16_to_cpu(path_rec->pr_dlid)>>8);
-		ah_attr->grh.dgid.raw[15] =  (uint8_t)(__be16_to_cpu(path_rec->pr_dlid));
-		ah_attr->grh.sgid_index = ep->verbs_ep.lgid_index;
-		ah_attr->grh.hop_limit = 0xFF;
-		ah_attr->grh.traffic_class = 0;
-		if (_HFI_CONNDBG_ON) {
-			char buf[80];
-			_HFI_CONNDBG("creating AH with DGID: %s\n",
-				__psm2_dump_gid(&ah_attr->grh.dgid, buf, sizeof(buf)));
-		}
-	}
-	return PSM2_OK;
-}
-
-psm2_error_t ips_make_ah(psm2_ep_t ep, ips_path_rec_t *path_rec)
-{
-	struct ibv_ah_attr ah_attr;
-
-	if (path_rec->ah) {
-		_HFI_CONNDBG("make_ah called second time on given path_rec, skipping\n");
-		return PSM2_OK;
-	}
-	if (PSM2_OK != ips_path_rec_to_ah_attr(ep, path_rec, &ah_attr)) {
-		_HFI_ERROR( "Unable to convert path_rec to AH for %s port %u\n", ep->dev_name, ep->portnum);
-		return PSM2_INTERNAL_ERR;
-	}
-	path_rec->ah = ibv_create_ah(ep->verbs_ep.pd, &ah_attr);
-	if (! path_rec->ah) {
-		int save_errno = errno;
-		_HFI_ERROR( "Unable to create AH for %s: %s (%d)\n", ep->dev_name, strerror(save_errno), save_errno);
-		if (save_errno == ETIMEDOUT)
-			return PSM2_EPID_PATH_RESOLUTION;
-		else
-			return PSM2_INTERNAL_ERR;
-	}
-	_HFI_CONNDBG("created AH %p\n", path_rec->ah);
-	// PSM doesn't free path_rec structures on shutdown, so this will
-	// simply leak and be cleaned up by the kernel close when we shutdown
-	return PSM2_OK;
-}
-
-#ifdef RNDV_MOD
-void ips_path_rec_to_ib_user_path_rec(psm2_ep_t ep,
-		const ips_path_rec_t *path_rec, union ibv_gid *dgid,
-		struct ib_user_path_rec *path)
-{
-	memset(path, 0, sizeof(*path));
-	memcpy(&path->sgid, &ep->verbs_ep.lgid, sizeof(path->sgid));
-	memcpy(&path->dgid, dgid, sizeof(path->dgid));
-	path->slid = path_rec->pr_slid; /* __be16 */
-	if (ep->verbs_ep.link_layer != IBV_LINK_LAYER_ETHERNET)
-		path->dlid = path_rec->pr_dlid; /* __be16 */
-	else
-		path->dlid = __cpu_to_be16(1);
-	//path->raw_traffic
-	//path->flow_label
-	path->reversible = 1;
-	path->mtu = opa_mtu_int_to_enum(path_rec->pr_mtu);
-	path->pkey = __cpu_to_be16(path_rec->pr_pkey); /* __be16 */
-	path->hop_limit = (ep->verbs_ep.link_layer == IBV_LINK_LAYER_ETHERNET)
-						?0xFF:0;	// indicates if need GRH
-	//path->traffic_class
-	path->numb_path = 1;
-	path->sl = path_rec->pr_sl;
-	path->mtu_selector = 2;  /* Exactly the given MTU */
-	path->rate_selector = 2; /* Exactly the given rate */
-	// ips_path_rec.pr_static_rate is negotiated in PSM REQ/REP
-	// then also use negotiated rate in user RC QP, ah_attr above and here
-	path->rate = path_rec->pr_static_rate;
-	path->packet_life_time_selector = 2; /* Exactly the given LT */
-	// the value supplied here will be increased by the CM based on ack_delay
-	// typically ack_delay will be small compared to packet_life_time
-	// in which case the CM wil end up using packet_life_time+1 as the timeout
-	// so we pass timeout-1 here so final timeout is usually what was requested
-	path->packet_life_time = ep->hfi_qp_timeout - 1;
-	//path->preferences
-}
-#endif // RNDV_MOD
-
 static psm2_error_t
 ips_none_path_rec(struct ips_proto *proto,
-		  uint16_t slid, uint16_t dlid,
-		  uint16_t ip_hi,
+		  __be16 slid, __be16 dlid,
+		  __be64 gid_hi, __be64 gid_lo,
 		  unsigned long timeout, ips_path_grp_t **ppathgrp)
 {
 	psm2_error_t err = PSM2_OK;
 	uint16_t pidx, num_path = (1 << proto->epinfo.ep_lmc);
-	uint16_t path_slid, path_dlid;
+	__be16 path_slid, path_dlid;
 	ips_path_rec_t *path;
 	ips_path_grp_t *pathgrp;
-	ENTRY elid, *epath = NULL;
+	ENTRY elid = {}, *epath = NULL;
 	char eplid[128];
-
-	num_path = 1;	// don't yet have multi-path dispersive routing
-					// maybe we use env to derrive multiple sequential IP
-					// addresses, sort of like an LMC concept
-					// or use ECMP or other mechanism
 
 	/* For the "none" path record resolution all paths are assumed to be
 	 * of equal priority however since we want to isolate all control
@@ -277,8 +334,13 @@ ips_none_path_rec(struct ips_proto *proto,
 	 */
 
 	/* Query the path record cache */
+	/* the eplid is simply an exact match search key, we don't worry
+	 * about slid, dlid and gid being big endian.  In fact on little
+	 * endian CPU, this will put low bits earlier in string and cause
+	 * quicker discovery of differences when doing strcmp to sort/search
+	 */
 	// TBD - slid same until have dispersive LMC-like, could just use dest
-	snprintf(eplid, sizeof(eplid), "%x_%x%04x", slid, ip_hi, dlid);
+	snprintf(eplid, sizeof(eplid), "%x_%"PRIx64"_%"PRIx64"_%x", slid, (uint64_t)gid_lo, (uint64_t)gid_hi, dlid);
 	elid.key = eplid;
 	hsearch_r(elid, FIND, &epath, &proto->ips_path_grp_hash);
 
@@ -319,7 +381,8 @@ ips_none_path_rec(struct ips_proto *proto,
 		pathgrp->pg_num_paths[IPS_PATH_HIGH_PRIORITY] = 1;
 		pathgrp->pg_num_paths[IPS_PATH_NORMAL_PRIORITY] = num_path - 1;
 		pathgrp->pg_num_paths[IPS_PATH_LOW_PRIORITY] = num_path - 1;
-	} else {
+	} else
+	{
 		/* LMC of 0. Use the same path for all priorities */
 		pathgrp->pg_num_paths[IPS_PATH_HIGH_PRIORITY] = 1;
 		pathgrp->pg_num_paths[IPS_PATH_NORMAL_PRIORITY] = 1;
@@ -335,7 +398,7 @@ ips_none_path_rec(struct ips_proto *proto,
 
 		err =
 		    ips_none_get_path_rec(proto, path_slid, path_dlid,
-					  ip_hi,
+					  gid_hi, gid_lo,
 					  timeout, &path);
 		if (err != PSM2_OK) {
 			psmi_free(elid.key);
@@ -356,25 +419,27 @@ ips_none_path_rec(struct ips_proto *proto,
 						 1][IPS_PATH_LOW_PRIORITY] =
 				    path;
 			}
-		} else {
+		} else
+		{
 			pathgrp->pg_path[0][IPS_PATH_HIGH_PRIORITY] = path;
 			pathgrp->pg_path[0][IPS_PATH_NORMAL_PRIORITY] = path;
 			pathgrp->pg_path[0][IPS_PATH_LOW_PRIORITY] = path;
 		}
-                PSM2_LOG_MSG("path %p slid %hu dlid %hu ip_hi %hu\n",
+                PSM2_LOG_MSG("path %p slid %hu dlid %hu gid %0x"PRIx64":%"PRIx64"\n",
                               path,
 			      __be16_to_cpu(path->pr_slid),
 			      __be16_to_cpu(path->pr_dlid),
-			      __be16_to_cpu(path->pr_ip_hi));
+			      __be64_to_cpu(path->pr_gid_hi),
+			      __be64_to_cpu(path->pr_gid_lo));
 
 	}
 
 	if (proto->flags & IPS_PROTO_FLAG_PPOLICY_ADAPTIVE) {
 		pathgrp->pg_next_path[IPS_PATH_NORMAL_PRIORITY] =
-		    proto->epinfo.EP_HASH %
+		    proto->epinfo.ep_hash %
 		    pathgrp->pg_num_paths[IPS_PATH_NORMAL_PRIORITY];
 		pathgrp->pg_next_path[IPS_PATH_LOW_PRIORITY] =
-		    proto->epinfo.EP_HASH %
+		    proto->epinfo.ep_hash %
 		    pathgrp->pg_num_paths[IPS_PATH_LOW_PRIORITY];
 	}
 
@@ -414,13 +479,13 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 			IPS_PROTO_ERRCHK_FACTOR_DEFAULT
 		};
 
-		if (!psmi_getenv("PSM3_ERRCHK_TIMEOUT",
+		if (!psm3_getenv("PSM3_ERRCHK_TIMEOUT",
 				 "Errchk timeouts in mS <min:max:factor>",
 				 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
 				 (union psmi_envvar_val)errchk_to, &env_to)) {
 			/* Not using default values, parse what we can */
 			errchk_to = env_to.e_str;
-			psmi_parse_str_tuples(errchk_to, 3, tvals);
+			psm3_parse_str_tuples(errchk_to, 3, tvals);
 			/* Adjust for max smaller than min, things would break */
 			if (tvals[1] < tvals[0])
 				tvals[1] = tvals[0];
@@ -429,6 +494,34 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 		proto->epinfo.ep_timeout_ack = ms_2_cycles(tvals[0]);
 		proto->epinfo.ep_timeout_ack_max = ms_2_cycles(tvals[1]);
 		proto->epinfo.ep_timeout_ack_factor = tvals[2];
+
+#ifdef PSM_FI
+		/* when doing Fault Injection to test send DMA completion races
+		 * it can be useful to set very aggressive timeouts such that
+		 * ack_timeout fires before send DMA is locally completed.
+		 * This allows values in units of microseconds and will override
+		 * any values specified in PSM3_ERRCHK_TIMEOUT
+		 */
+		if (!psm3_getenv("PSM3_ERRCHK_TIMEOUT_US",
+				 "Errchk timeouts in usec <min:max:factor>",
+				 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
+				 (union psmi_envvar_val)"", &env_to)) {
+			/* Not using default values, parse what we can */
+			int us_tvals[3] = {
+				IPS_PROTO_ERRCHK_MS_MIN_DEFAULT*1000,
+				IPS_PROTO_ERRCHK_MS_MAX_DEFAULT*1000,
+				IPS_PROTO_ERRCHK_FACTOR_DEFAULT
+			};
+			errchk_to = env_to.e_str;
+			psm3_parse_str_tuples(errchk_to, 3, us_tvals);
+			/* Adjust for max smaller than min, things would break */
+			if (us_tvals[1] < us_tvals[0])
+				us_tvals[1] = us_tvals[0];
+			proto->epinfo.ep_timeout_ack = us_2_cycles(us_tvals[0]);
+			proto->epinfo.ep_timeout_ack_max = us_2_cycles(us_tvals[1]);
+			proto->epinfo.ep_timeout_ack_factor = us_tvals[2];
+		}
+#endif /* PSM_FI */
 	}
 
 	proto->ibta.get_path_rec = ips_none_path_rec;
@@ -438,28 +531,14 @@ static psm2_error_t ips_none_path_rec_init(struct ips_proto *proto)
 	return err;
 }
 
-
-/* On link up/down we need to update some state */
-psm2_error_t ips_ibta_link_updown_event(struct ips_proto *proto)
-{
-	psm2_error_t err = PSM2_OK;
-
-	/* Get base lid, lmc and rate as these may have changed if the link bounced */
-	proto->epinfo.ep_base_lid =
-	    __cpu_to_be16((uint16_t) psm2_epid_nid(proto->ep->context.epid));
-
-	proto->epinfo.ep_lmc = 0; // No LMC for UD
-	proto->epinfo.ep_link_rate = proto->ep->verbs_ep.active_rate;
-	return err;
-}
-
 psm2_error_t
-MOCKABLE(ips_ibta_init)(struct ips_proto *proto)
+MOCKABLE(psm3_ips_ibta_init)(struct ips_proto *proto)
 {
 	psm2_error_t err = PSM2_OK;
 	union psmi_envvar_val path_disable_lmc_interval;
 
-	proto->flags |= IPS_PROTO_FLAG_PPOLICY_ADAPTIVE;
+	if ((err = psmi_hal_ips_ibta_init(proto)) != PSM2_OK)
+		goto fail;
 
 	/* Initialize path record/group hash table */
 
@@ -477,7 +556,7 @@ MOCKABLE(ips_ibta_init)(struct ips_proto *proto)
 		 * and PIO message, NOT TID messages.  So this size
 		 * bigger than any PIO size.
 		 */
-		psmi_getenv("PSM3_PATH_NO_LMC_RANGE",
+		psm3_getenv("PSM3_PATH_NO_LMC_RANGE",
 		            "Disable LMC route dispersion within this range, "
 		             "low_value:high_value\n",
 			    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_STR,
@@ -511,14 +590,14 @@ MOCKABLE(ips_ibta_init)(struct ips_proto *proto)
 	hcreate_r(DF_PATH_REC_HASH_SIZE, &proto->ips_path_rec_hash);
 	hcreate_r(DF_PATH_GRP_HASH_SIZE, &proto->ips_path_grp_hash);
 
-	/* On startup treat it as a link up/down event to setup state . */
-	if ((err = ips_ibta_link_updown_event(proto)) != PSM2_OK)
+	/* setup initial link state */
+	if ((err = psmi_hal_ips_proto_update_linkinfo(proto)) != PSM2_OK)
 		goto fail;
 
 	/* Setup the appropriate query interface for the endpoint */
 	switch (proto->ep->path_res_type) {
 	case PSM2_PATH_RES_OPP:
-		err = ips_opp_init(proto);
+		err = psm3_ips_opp_init(proto);
 		if (err != PSM2_OK)
 			_HFI_ERROR
 			    ("Unable to use OFED Plus Plus for path record queries.\n");
@@ -537,9 +616,9 @@ MOCKABLE(ips_ibta_init)(struct ips_proto *proto)
 fail:
 	return err;
 }
-MOCK_DEF_EPILOGUE(ips_ibta_init);
+MOCK_DEF_EPILOGUE(psm3_ips_ibta_init);
 
-psm2_error_t ips_ibta_fini(struct ips_proto *proto)
+psm2_error_t psm3_ips_ibta_fini(struct ips_proto *proto)
 {
 	psm2_error_t err = PSM2_OK;
 

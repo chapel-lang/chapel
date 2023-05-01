@@ -6,6 +6,7 @@ anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
+constPointer: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK
@@ -28,6 +29,7 @@ anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
+constPointer: OK
 cstrvoid: OK
 dashEye: OK
 enum: OK

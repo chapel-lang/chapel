@@ -313,6 +313,10 @@ void AggregateType::codegenDef() {
     TypeSymbol* base = getDataClassType(symbol);
     const char* baseType = base->cname;
     if( outfile ) {
+      // TODO: add const qualifier for const pointers
+      // This would require properly using const qualifiers throughout generated C
+      // code, which we currently do not have. Otherwise we get warnings about
+      // discarding const qualification. Anna, 04-19-2023
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
     } else {
 #ifdef HAVE_LLVM

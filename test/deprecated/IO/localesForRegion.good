@@ -7,4 +7,4 @@ $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: 
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ==(a: bool, b: bool)
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ==(a: borrowed object?, b: borrowed object?)
-note: and 113 other candidates, use --print-all-candidates to see them
+note: and 116 other candidates, use --print-all-candidates to see them

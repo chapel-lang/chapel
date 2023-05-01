@@ -365,7 +365,7 @@ module Map {
 
       :arg updater: A class or record used to update the value at `i`
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :return: What the updater returns
     */
@@ -398,18 +398,26 @@ module Map {
     }
 
     /*
-      Get the value mapped to the given key, or add the mapping if key does not
-      exist.
+      If the key exists in the map, get a reference to the value mapped
+      to the given key. If the key does not exist in the map, the value
+      type is default initializable, and this proc is called in an attempt
+      to modify the map, then the mapping is added and a reference to
+      that value is returned. If the key does not exist in the map and
+      either the value type is not default initializable or this proc
+      is called without attempting to modify the map, then an error will
+      be thrown.
 
       :arg k: The key to access
       :type k: keyType
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map, `valType` is not
+              default initializable, and proc is called in an attempt
+              to modify the map.
 
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref throws
-    where isDefaultInitializable(valType) {
+      where isDefaultInitializable(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -419,26 +427,25 @@ module Map {
         var val: valType;
         table.fillSlot(slot, k, val);
       }
-      return table.table[slot].val;
+      ref result = table.table[slot].val;
+      return result;
     }
 
-    pragma "no doc"
-    proc const this(k: keyType) const throws
-      where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
         throw new KeyNotFoundError(k:string);
-      const result = table.table[slot].val;
+      }
+      ref result = table.table[slot].val;
       return result;
     }
 
     pragma "no doc"
-    proc const this(k: keyType) const ref throws
-      where !isNonNilableClass(valType) {
+    proc const this(k: keyType) const ref throws {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -447,23 +454,6 @@ module Map {
         throw new KeyNotFoundError(k:string);
       const ref result = table.table[slot].val;
       return result;
-    }
-
-    pragma "no doc"
-    proc const this(k: keyType) throws
-      where isNonNilableClass(valType) {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k:string);
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
@@ -505,7 +495,7 @@ module Map {
 
       :arg k: The key to lookup in the map
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :returns: A copy of the value at position `k`
      */

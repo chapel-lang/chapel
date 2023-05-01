@@ -60,6 +60,9 @@ __device__ static inline chpl_localeID_t chpl_gen_getLocaleID(void)
 }
 
 __device__ static inline void* c_pointer_return(void* x) { return x; }
+__device__ static inline void* c_pointer_return_const(const void* x) {
+  return (void*)x;
+}
 
 __device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
   chpl_localeID_t loc = { node, subloc };
@@ -126,9 +129,15 @@ __device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __builtin_am
 __device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __builtin_amdgcn_workgroup_size_y(); }
 __device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __builtin_amdgcn_workgroup_size_z(); }
 
-__device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __builtin_amdgcn_grid_size_x(); }
-__device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __builtin_amdgcn_grid_size_y(); }
-__device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __builtin_amdgcn_grid_size_z(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   {
+  return __builtin_amdgcn_grid_size_x() / chpl_gpu_getBlockDimX();
+}
+__device__ static inline uint32_t chpl_gpu_getGridDimY()   {
+  return __builtin_amdgcn_grid_size_y() / chpl_gpu_getBlockDimY();
+}
+__device__ static inline uint32_t chpl_gpu_getGridDimZ()   {
+  return __builtin_amdgcn_grid_size_z() / chpl_gpu_getBlockDimZ();
+}
 
 #endif // HAS_GPU_LOCALE
 

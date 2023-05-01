@@ -138,7 +138,7 @@ VarFrame* VarScopeVisitor::currentCatchFrame(int i) {
 
 ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
   ID toId;
-  if (ast != nullptr && rv.hasAst(ast)) {
+  if (ast != nullptr) {
     toId = rv.byAst(ast).toId();
   }
   return toId;
@@ -392,44 +392,41 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
       // Use FormalActualMap to figure out which variable ID
       // is passed to a formal with out/in/inout intent.
       // Issue an error if it does not match among return intent overloads.
-      auto calledExprAst = callAst->calledExpression();
-      if (rv.hasAst(calledExprAst)) {
-        std::vector<const AstNode*> actualAsts;
-        auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
-                                   /* raiseErrors */ false,
-                                   &actualAsts);
+      std::vector<const AstNode*> actualAsts;
+      auto ci = CallInfo::create(context, callAst, rv.byPostorder(),
+                                 /* raiseErrors */ false,
+                                 &actualAsts);
 
-        // compute a vector indicating which actuals are passed to
-        // an 'out' formal in all return intent overloads
-        std::vector<QualifiedType> actualFormalTypes;
-        std::vector<Qualifier> actualFormalIntents;
-        computeActualFormalIntents(context, candidates, ci, actualAsts,
-                                   actualFormalIntents, actualFormalTypes);
+      // compute a vector indicating which actuals are passed to
+      // an 'out' formal in all return intent overloads
+      std::vector<QualifiedType> actualFormalTypes;
+      std::vector<Qualifier> actualFormalIntents;
+      computeActualFormalIntents(context, candidates, ci, actualAsts,
+                                 actualFormalIntents, actualFormalTypes);
 
-        int actualIdx = 0;
-        for (auto actual : ci.actuals()) {
-          (void) actual; // avoid compilation error about unused variable
+      int actualIdx = 0;
+      for (auto actual : ci.actuals()) {
+        (void) actual; // avoid compilation error about unused variable
 
-          const AstNode* actualAst = actualAsts[actualIdx];
-          Qualifier kind = actualFormalIntents[actualIdx];
+        const AstNode* actualAst = actualAsts[actualIdx];
+        Qualifier kind = actualFormalIntents[actualIdx];
 
-          // handle an actual that is passed to an 'out'/'in'/'inout' formal
-          if (kind == Qualifier::OUT) {
-            handleOutFormal(callAst, actualAst,
+        // handle an actual that is passed to an 'out'/'in'/'inout' formal
+        if (kind == Qualifier::OUT) {
+          handleOutFormal(callAst, actualAst,
+                          actualFormalTypes[actualIdx], rv);
+        } else if (kind == Qualifier::IN || kind == Qualifier::CONST_IN) {
+          handleInFormal(callAst, actualAst,
+                         actualFormalTypes[actualIdx], rv);
+        } else if (kind == Qualifier::INOUT) {
+          handleInoutFormal(callAst, actualAst,
                             actualFormalTypes[actualIdx], rv);
-          } else if (kind == Qualifier::IN || kind == Qualifier::CONST_IN) {
-            handleInFormal(callAst, actualAst,
-                           actualFormalTypes[actualIdx], rv);
-          } else if (kind == Qualifier::INOUT) {
-            handleInoutFormal(callAst, actualAst,
-                              actualFormalTypes[actualIdx], rv);
-          } else {
-            // otherwise, visit the actuals to gather mentions
-            actualAst->traverse(rv);
-          }
-
-          actualIdx++;
+        } else {
+          // otherwise, visit the actuals to gather mentions
+          actualAst->traverse(rv);
         }
+
+        actualIdx++;
       }
     }
   }
@@ -488,10 +485,7 @@ bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
 }
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
   if (!scopeStack.empty()) {
-    ID toId;
-    if (rv.hasAst(ast)) {
-      toId = rv.byAst(ast).toId();
-    }
+    ID toId = rv.byAst(ast).toId();
     if (!toId.isEmpty()) {
       handleMention(ast, toId, rv);
     }

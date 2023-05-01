@@ -63,6 +63,7 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -110,6 +111,7 @@
 #include "llvmVer.h"
 
 #include "../../frontend/lib/immediates/prim_data.h"
+#include "chpl/util/clang-integration.h"
 
 #include "global-ast-vecs.h"
 
@@ -182,10 +184,6 @@ struct ClangInfo {
   std::vector<const char*> driverArgsCStrings;
 
   clang::CodeGenOptions codegenOptions;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
-  clang::TextDiagnosticPrinter* DiagClient;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID;
-  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags;
 
   clang::CompilerInstance *Clang;
 
@@ -231,10 +229,7 @@ ClangInfo::ClangInfo(
          clangCCArgs(std::move(clangCCArgsIn)),
          clangOtherArgs(std::move(clangOtherArgsIn)),
          clangLDArgs(std::move(clangLDArgsIn)),
-         codegenOptions(), diagOptions(nullptr),
-         DiagClient(nullptr),
-         DiagID(nullptr),
-         Diags(nullptr),
+         codegenOptions(),
          Clang(nullptr),
          Ctx(nullptr),
          cCodeGen(nullptr), cCodeGenAction(nullptr),
@@ -1324,7 +1319,7 @@ class CCodeGenConsumer final : public ASTConsumer {
     CCodeGenConsumer()
       : ASTConsumer(),
         info(gGenInfo),
-        Diags(info->clangInfo->Diags.get()),
+        Diags(&info->clangInfo->Clang->getDiagnostics()),
         Builder(NULL),
         parseOnly(info->clangInfo->parseOnly),
         savedCtx(NULL)
@@ -1561,8 +1556,6 @@ static void finishClang(ClangInfo* clangInfo){
     // This should call Builder->Release()
     clangInfo->cCodeGen->HandleTranslationUnit(*clangInfo->Ctx);
   }
-  clangInfo->Diags.reset();
-  clangInfo->DiagID.reset();
 }
 
 static void deleteClang(ClangInfo* clangInfo){
@@ -1641,31 +1634,32 @@ void setupClang(GenInfo* info, std::string mainFile)
   initializeLlvmTargets();
   std::string triple = getConfiguredTargetTriple();
 
-  // Create a compiler instance to handle the actual work.
-  CompilerInstance* Clang = new CompilerInstance();
-  Clang->createDiagnostics();
-
-  clangInfo->diagOptions = new DiagnosticOptions();
-  clangInfo->DiagClient= new TextDiagnosticPrinter(errs(),&*clangInfo->diagOptions);
-  clangInfo->DiagID = new DiagnosticIDs();
-  DiagnosticsEngine* Diags = NULL;
-  Diags = new DiagnosticsEngine(
-      clangInfo->DiagID, &*clangInfo->diagOptions, clangInfo->DiagClient);
-  if (usingGpuLocaleModel()) {
-    Diags->setSeverityForGroup(diag::Flavor::WarningOrError,
-                               "unknown-cuda-version",
-                               diag::Severity::Ignored);
-  }
-  clangInfo->Diags = Diags;
-  clangInfo->Clang = Clang;
-
-  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *Diags);
-
-  //   SetInstallDir(argv, TheDriver);
-
   for (auto & arg : clangInfo->driverArgs) {
     clangInfo->driverArgsCStrings.push_back(arg.c_str());
   }
+
+  // Create a compiler instance to handle the actual work.
+  CompilerInstance* Clang = new CompilerInstance();
+  auto diagOptions =
+    chpl::util::wrapCreateAndPopulateDiagOpts(clangInfo->driverArgsCStrings);
+  auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
+                                                     &*diagOptions);
+  auto clangDiags =
+    clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                               diagClient,
+                                               /* owned */ true);
+  Clang->setDiagnostics(&*clangDiags);
+
+  if (usingGpuLocaleModel()) {
+    clangDiags->setSeverityForGroup(diag::Flavor::WarningOrError,
+                                    "unknown-cuda-version",
+                                    diag::Severity::Ignored);
+  }
+  clangInfo->Clang = Clang;
+
+  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *clangDiags);
+
+  //   SetInstallDir(argv, TheDriver);
 
   std::unique_ptr<clang::driver::Compilation> C(
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
@@ -1722,12 +1716,12 @@ void setupClang(GenInfo* info, std::string mainFile)
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             job->getArguments(),
-            *Diags);
+            *clangDiags);
 #else
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
             &job->getArguments().front(), (&job->getArguments().back())+1,
-            *Diags);
+            *clangDiags);
 #endif
 
   CompilerInvocation* CI = &Clang->getInvocation();
@@ -2344,6 +2338,22 @@ static bool isTargetCpuValid(const char* targetCpu) {
   }
 }
 
+static std::string generateClangGpuLangArgs() {
+  std::string args = "";
+  if (usingGpuLocaleModel()) {
+    args += "-x ";
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        args += "cuda";
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        args += "hip";
+        break;
+    }
+  }
+  return args;
+}
+
 // If we are parsing an extern block with clang, we might
 // be configured to use a target compiler that is not clang.
 // In that event, filter out everything but the -D and -I arguments,
@@ -2352,11 +2362,10 @@ static bool isTargetCpuValid(const char* targetCpu) {
 // This could filter out more aggressively but we do need the
 // paths and defines for the runtime headers to work.
 static void addFilteredArgs(std::vector<std::string>& dst,
-                            std::vector<std::string>& src,
-                            bool parseOnly) {
+                            std::vector<std::string>& src) {
   bool clang = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm") ||
                0 == strcmp(CHPL_TARGET_COMPILER, "clang");
-  bool filter = parseOnly && !clang;
+  bool filter = !clang;
 
   if (filter) {
     for (size_t i = 0; i < src.size(); i++) {
@@ -2380,13 +2389,11 @@ static void addFilteredArgs(std::vector<std::string>& dst,
   }
 }
 
-// if just_parse_filename != NULL, it is a file
-// containing an extern block to parse only
-// (and in that setting there is no need to work with the runtime).
-void runClang(const char* just_parse_filename) {
-  bool parseOnly = (just_parse_filename != NULL);
-  static bool is_installed_fatal_error_handler = false;
-
+static void helpComputeClangArgs(std::string& clangCC,
+                                 std::string& clangCXX,
+                                 std::vector<std::string>& clangCCArgs,
+                                 std::vector<std::string>& clangOtherArg,
+                                 std::vector<std::string>& clangLDArgs) {
   // These warnings are _required_ to make sure the code Clang generates
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
@@ -2409,16 +2416,12 @@ void runClang(const char* just_parse_filename) {
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> split;
-  std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs;
-  std::vector<std::string> clangLDArgs;
-
-  // find the path to clang and clang++
-  std::string clangCC, clangCXX;
+  BumpPtrAllocator A;
+  StringSaver Saver(A);
 
   // get any args passed to CC/CXX and add them to the builtin clang invocation
-  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  SmallVector<const char *, 0> split;
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_C, Saver, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
     if (i == 0) {
@@ -2430,7 +2433,7 @@ void runClang(const char* just_parse_filename) {
     }
   }
   split.clear();
-  splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
+  llvm::cl::TokenizeGNUCommandLine(CHPL_LLVM_CLANG_CXX, Saver, split);
   if (split.size() > 0) {
     clangCXX = split[0];
   }
@@ -2460,7 +2463,7 @@ void runClang(const char* just_parse_filename) {
     expandInstallationPaths(args);
 
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
 
   // add a -I. so we can find headers named on command line in same dir
@@ -2546,8 +2549,44 @@ void runClang(const char* just_parse_filename) {
     std::vector<std::string> args;
     splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, args);
     // add the arguments, filtering if parsing an extern block
-    addFilteredArgs(clangCCArgs, args, parseOnly);
+    addFilteredArgs(clangCCArgs, args);
   }
+}
+
+void computeClangArgs(std::vector<std::string>& clangCCArgs) {
+  std::string clangCC, ignoredClangCXX;
+  std::vector<std::string> ignoredOtherArgs, ignoredLDArgs;
+
+  std::vector<std::string> gotCCArgs;
+
+  helpComputeClangArgs(clangCC, ignoredClangCXX,
+                       gotCCArgs,
+                       ignoredOtherArgs, ignoredLDArgs);
+
+  // append clangCC argument first
+  if (clangCC == "") {
+    clangCC = "clang";
+  }
+  clangCCArgs.push_back(clangCC);
+
+  // append the other arguments
+  clangCCArgs.insert(clangCCArgs.end(), gotCCArgs.begin(), gotCCArgs.end());
+}
+
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
+void runClang(const char* just_parse_filename) {
+  bool parseOnly = (just_parse_filename != NULL);
+  static bool is_installed_fatal_error_handler = false;
+
+  // find the path to clang and clang++
+  std::string clangCC, clangCXX;
+  std::vector<std::string> clangCCArgs;
+  std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangLDArgs;
+  helpComputeClangArgs(clangCC, clangCXX,
+                       clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
   if (usingGpuLocaleModel()) {
@@ -2556,15 +2595,7 @@ void runClang(const char* just_parse_filename) {
 
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
-    clangOtherArgs.push_back("-x");
-    switch (getGpuCodegenType()) {
-      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        clangOtherArgs.push_back("cuda");
-        break;
-      case GpuCodegenType::GPU_CG_AMD_HIP:
-        clangOtherArgs.push_back("hip");
-        break;
-    }
+    splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
 
     std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
     clangOtherArgs.push_back(gpuArch);
@@ -3381,6 +3412,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (makeRef || t->isRef()) {
     ::Type* eltType = t->getValType();
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const refs
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -3388,6 +3420,7 @@ static clang::CanQualType getClangType(::Type* t, bool makeRef) {
   if (ts->hasFlag(FLAG_C_PTR_CLASS) || ts->hasFlag(FLAG_DATA_CLASS)) {
     ::Type* eltType = getDataClassType(ts)->type;
     clang::CanQualType cTy = getClangType(eltType, false);
+    // TODO: const qualify const C pointers
     cTy = Ctx->getPointerType(cTy);
     return cTy;
   }
@@ -4144,6 +4177,9 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     }
   }
 
+  // avoid warning about not statically knowing the stack size when recursive
+  // functions are called from the kernel
+  ptxasFlags += " --suppress-stack-size-warning ";
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
@@ -4575,11 +4611,16 @@ void makeBinaryLLVM(void) {
     cargs += clangInfo->clangCCArgs[i];
   }
 
+  std::string gpuArgs = "";
+  if (usingGpuLocaleModel()) {
+    gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
+  }
+
   int filenum = 0;
   while (const char* inputFilename = nthFilename(filenum++)) {
     if (isCSource(inputFilename)) {
       const char* objFilename = objectFileForCFile(inputFilename);
-      std::string cmd = clangCC + " -c -o " + objFilename + " " +
+      std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
                         inputFilename + " " + cargs;
 
       mysystem(cmd.c_str(), "Compile C File");

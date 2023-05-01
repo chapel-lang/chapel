@@ -97,8 +97,12 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
 
   Expr* pointee = convertToChplType(module, pointeeType.getTypePtr());
 
-  // Other pointers are represented as a call to c_ptr.
-  return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+  // Other pointers are represented as a call to c_ptr or c_ptrConst.
+  if (pointeeType.isConstQualified()) {
+    return new CallExpr(new UnresolvedSymExpr("c_ptrConst"), pointee);
+  } else {
+    return new CallExpr(new UnresolvedSymExpr("c_ptr"), pointee);
+  }
 }
 
 static
@@ -130,7 +134,11 @@ Expr* convertArrayToChplType(ModuleSymbol* module,
   Expr* eltTypeChapel = convertToChplType(module, eltType.getTypePtr());
 
   // For now, just represent it as a c_ptr
-  return new CallExpr("c_ptr", eltTypeChapel);
+  if (eltType.isConstQualified()) {
+    return new CallExpr("c_ptrConst", eltTypeChapel);
+  } else {
+    return new CallExpr("c_ptr", eltTypeChapel);
+  }
 }
 
 static

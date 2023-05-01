@@ -950,13 +950,13 @@ extern proc g_time_zone_get_identifier(ref tz : GTimeZone) : c_ptr(gchar);
 
 extern proc g_time_zone_get_identifier(tz : c_ptr(GTimeZone)) : c_ptr(gchar);
 
-extern proc g_date_time_unref(ref datetime : GDateTime) : void;
+extern proc g_date_time_unref(ref dateTime : GDateTime) : void;
 
-extern proc g_date_time_unref(datetime : c_ptr(GDateTime)) : void;
+extern proc g_date_time_unref(dateTime : c_ptr(GDateTime)) : void;
 
-extern proc g_date_time_ref(ref datetime : GDateTime) : c_ptr(GDateTime);
+extern proc g_date_time_ref(ref dateTime : GDateTime) : c_ptr(GDateTime);
 
-extern proc g_date_time_ref(datetime : c_ptr(GDateTime)) : c_ptr(GDateTime);
+extern proc g_date_time_ref(dateTime : c_ptr(GDateTime)) : c_ptr(GDateTime);
 
 extern proc g_date_time_new_now(ref tz : GTimeZone) : c_ptr(GDateTime);
 
@@ -990,41 +990,41 @@ extern proc g_date_time_new_local(year : gint, month : gint, day : gint, hour : 
 
 extern proc g_date_time_new_utc(year : gint, month : gint, day : gint, hour : gint, minute : gint, seconds : gdouble) : c_ptr(GDateTime);
 
-extern proc g_date_time_add(ref datetime : GDateTime, timespan : GTimeSpan) : c_ptr(GDateTime);
+extern proc g_date_time_add(ref dateTime : GDateTime, timespan : GTimeSpan) : c_ptr(GDateTime);
 
-extern proc g_date_time_add(datetime : c_ptr(GDateTime), timespan : GTimeSpan) : c_ptr(GDateTime);
+extern proc g_date_time_add(dateTime : c_ptr(GDateTime), timespan : GTimeSpan) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_years(ref datetime : GDateTime, years : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_years(ref dateTime : GDateTime, years : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_years(datetime : c_ptr(GDateTime), years : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_years(dateTime : c_ptr(GDateTime), years : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_months(ref datetime : GDateTime, months : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_months(ref dateTime : GDateTime, months : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_months(datetime : c_ptr(GDateTime), months : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_months(dateTime : c_ptr(GDateTime), months : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_weeks(ref datetime : GDateTime, weeks : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_weeks(ref dateTime : GDateTime, weeks : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_weeks(datetime : c_ptr(GDateTime), weeks : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_weeks(dateTime : c_ptr(GDateTime), weeks : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_days(ref datetime : GDateTime, days : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_days(ref dateTime : GDateTime, days : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_days(datetime : c_ptr(GDateTime), days : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_days(dateTime : c_ptr(GDateTime), days : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_hours(ref datetime : GDateTime, hours : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_hours(ref dateTime : GDateTime, hours : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_hours(datetime : c_ptr(GDateTime), hours : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_hours(dateTime : c_ptr(GDateTime), hours : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_minutes(ref datetime : GDateTime, minutes : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_minutes(ref dateTime : GDateTime, minutes : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_minutes(datetime : c_ptr(GDateTime), minutes : gint) : c_ptr(GDateTime);
+extern proc g_date_time_add_minutes(dateTime : c_ptr(GDateTime), minutes : gint) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_seconds(ref datetime : GDateTime, seconds : gdouble) : c_ptr(GDateTime);
+extern proc g_date_time_add_seconds(ref dateTime : GDateTime, seconds : gdouble) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_seconds(datetime : c_ptr(GDateTime), seconds : gdouble) : c_ptr(GDateTime);
+extern proc g_date_time_add_seconds(dateTime : c_ptr(GDateTime), seconds : gdouble) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_full(ref datetime : GDateTime, years : gint, months : gint, days : gint, hours : gint, minutes : gint, seconds : gdouble) : c_ptr(GDateTime);
+extern proc g_date_time_add_full(ref dateTime : GDateTime, years : gint, months : gint, days : gint, hours : gint, minutes : gint, seconds : gdouble) : c_ptr(GDateTime);
 
-extern proc g_date_time_add_full(datetime : c_ptr(GDateTime), years : gint, months : gint, days : gint, hours : gint, minutes : gint, seconds : gdouble) : c_ptr(GDateTime);
+extern proc g_date_time_add_full(dateTime : c_ptr(GDateTime), years : gint, months : gint, days : gint, hours : gint, minutes : gint, seconds : gdouble) : c_ptr(GDateTime);
 
 extern proc g_date_time_compare(dt1 : gconstpointer, dt2 : gconstpointer) : gint;
 
@@ -1032,105 +1032,105 @@ extern proc g_date_time_difference(ref end : GDateTime, ref begin_arg : GDateTim
 
 extern proc g_date_time_difference(end : c_ptr(GDateTime), begin_arg : c_ptr(GDateTime)) : GTimeSpan;
 
-extern proc g_date_time_hash(datetime : gconstpointer) : guint;
+extern proc g_date_time_hash(dateTime : gconstpointer) : guint;
 
 extern proc g_date_time_equal(dt1 : gconstpointer, dt2 : gconstpointer) : gboolean;
 
-extern proc g_date_time_get_ymd(ref datetime : GDateTime, ref year : gint, ref month : gint, ref day : gint) : void;
+extern proc g_date_time_get_ymd(ref dateTime : GDateTime, ref year : gint, ref month : gint, ref day : gint) : void;
 
-extern proc g_date_time_get_ymd(datetime : c_ptr(GDateTime), year : c_ptr(gint), month : c_ptr(gint), day : c_ptr(gint)) : void;
+extern proc g_date_time_get_ymd(dateTime : c_ptr(GDateTime), year : c_ptr(gint), month : c_ptr(gint), day : c_ptr(gint)) : void;
 
-extern proc g_date_time_get_year(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_year(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_year(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_year(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_month(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_month(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_month(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_month(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_day_of_month(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_day_of_month(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_day_of_month(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_day_of_month(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_week_numbering_year(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_week_numbering_year(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_week_numbering_year(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_week_numbering_year(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_week_of_year(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_week_of_year(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_week_of_year(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_week_of_year(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_day_of_week(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_day_of_week(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_day_of_week(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_day_of_week(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_day_of_year(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_day_of_year(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_day_of_year(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_day_of_year(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_hour(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_hour(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_hour(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_hour(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_minute(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_minute(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_minute(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_minute(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_second(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_second(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_second(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_second(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_microsecond(ref datetime : GDateTime) : gint;
+extern proc g_date_time_get_microsecond(ref dateTime : GDateTime) : gint;
 
-extern proc g_date_time_get_microsecond(datetime : c_ptr(GDateTime)) : gint;
+extern proc g_date_time_get_microsecond(dateTime : c_ptr(GDateTime)) : gint;
 
-extern proc g_date_time_get_seconds(ref datetime : GDateTime) : gdouble;
+extern proc g_date_time_get_seconds(ref dateTime : GDateTime) : gdouble;
 
-extern proc g_date_time_get_seconds(datetime : c_ptr(GDateTime)) : gdouble;
+extern proc g_date_time_get_seconds(dateTime : c_ptr(GDateTime)) : gdouble;
 
-extern proc g_date_time_to_unix(ref datetime : GDateTime) : gint64;
+extern proc g_date_time_to_unix(ref dateTime : GDateTime) : gint64;
 
-extern proc g_date_time_to_unix(datetime : c_ptr(GDateTime)) : gint64;
+extern proc g_date_time_to_unix(dateTime : c_ptr(GDateTime)) : gint64;
 
-extern proc g_date_time_to_timeval(ref datetime : GDateTime, ref tv : GTimeVal) : gboolean;
+extern proc g_date_time_to_timeval(ref dateTime : GDateTime, ref tv : GTimeVal) : gboolean;
 
-extern proc g_date_time_to_timeval(datetime : c_ptr(GDateTime), tv : c_ptr(GTimeVal)) : gboolean;
+extern proc g_date_time_to_timeval(dateTime : c_ptr(GDateTime), tv : c_ptr(GTimeVal)) : gboolean;
 
-extern proc g_date_time_get_utc_offset(ref datetime : GDateTime) : GTimeSpan;
+extern proc g_date_time_get_utc_offset(ref dateTime : GDateTime) : GTimeSpan;
 
-extern proc g_date_time_get_utc_offset(datetime : c_ptr(GDateTime)) : GTimeSpan;
+extern proc g_date_time_get_utc_offset(dateTime : c_ptr(GDateTime)) : GTimeSpan;
 
-extern proc g_date_time_get_timezone(ref datetime : GDateTime) : c_ptr(GTimeZone);
+extern proc g_date_time_get_timezone(ref dateTime : GDateTime) : c_ptr(GTimeZone);
 
-extern proc g_date_time_get_timezone(datetime : c_ptr(GDateTime)) : c_ptr(GTimeZone);
+extern proc g_date_time_get_timezone(dateTime : c_ptr(GDateTime)) : c_ptr(GTimeZone);
 
-extern proc g_date_time_get_timezone_abbreviation(ref datetime : GDateTime) : c_ptr(gchar);
+extern proc g_date_time_get_timezone_abbreviation(ref dateTime : GDateTime) : c_ptr(gchar);
 
-extern proc g_date_time_get_timezone_abbreviation(datetime : c_ptr(GDateTime)) : c_ptr(gchar);
+extern proc g_date_time_get_timezone_abbreviation(dateTime : c_ptr(GDateTime)) : c_ptr(gchar);
 
-extern proc g_date_time_is_daylight_savings(ref datetime : GDateTime) : gboolean;
+extern proc g_date_time_is_daylight_savings(ref dateTime : GDateTime) : gboolean;
 
-extern proc g_date_time_is_daylight_savings(datetime : c_ptr(GDateTime)) : gboolean;
+extern proc g_date_time_is_daylight_savings(dateTime : c_ptr(GDateTime)) : gboolean;
 
-extern proc g_date_time_to_timezone(ref datetime : GDateTime, ref tz : GTimeZone) : c_ptr(GDateTime);
+extern proc g_date_time_to_timezone(ref dateTime : GDateTime, ref tz : GTimeZone) : c_ptr(GDateTime);
 
-extern proc g_date_time_to_timezone(datetime : c_ptr(GDateTime), tz : c_ptr(GTimeZone)) : c_ptr(GDateTime);
+extern proc g_date_time_to_timezone(dateTime : c_ptr(GDateTime), tz : c_ptr(GTimeZone)) : c_ptr(GDateTime);
 
-extern proc g_date_time_to_local(ref datetime : GDateTime) : c_ptr(GDateTime);
+extern proc g_date_time_to_local(ref dateTime : GDateTime) : c_ptr(GDateTime);
 
-extern proc g_date_time_to_local(datetime : c_ptr(GDateTime)) : c_ptr(GDateTime);
+extern proc g_date_time_to_local(dateTime : c_ptr(GDateTime)) : c_ptr(GDateTime);
 
-extern proc g_date_time_to_utc(ref datetime : GDateTime) : c_ptr(GDateTime);
+extern proc g_date_time_to_utc(ref dateTime : GDateTime) : c_ptr(GDateTime);
 
-extern proc g_date_time_to_utc(datetime : c_ptr(GDateTime)) : c_ptr(GDateTime);
+extern proc g_date_time_to_utc(dateTime : c_ptr(GDateTime)) : c_ptr(GDateTime);
 
-extern proc g_date_time_format(ref datetime : GDateTime, ref format : gchar) : c_ptr(gchar);
+extern proc g_date_time_format(ref dateTime : GDateTime, ref format : gchar) : c_ptr(gchar);
 
-extern proc g_date_time_format(datetime : c_ptr(GDateTime), format : c_ptr(gchar)) : c_ptr(gchar);
+extern proc g_date_time_format(dateTime : c_ptr(GDateTime), format : c_ptr(gchar)) : c_ptr(gchar);
 
-extern proc g_date_time_format_iso8601(ref datetime : GDateTime) : c_ptr(gchar);
+extern proc g_date_time_format_iso8601(ref dateTime : GDateTime) : c_ptr(gchar);
 
-extern proc g_date_time_format_iso8601(datetime : c_ptr(GDateTime)) : c_ptr(gchar);
+extern proc g_date_time_format_iso8601(dateTime : c_ptr(GDateTime)) : c_ptr(gchar);
 
 extern proc g_bookmark_file_error_quark() : GQuark;
 
@@ -6579,7 +6579,7 @@ extern var g_thread_functions_for_glib_use : GThreadFunctions;
 
 extern var g_thread_use_default_impl : gboolean;
 
-extern var g_thread_gettime : c_ptr(c_fn_ptr);
+extern var g_thread_getTime : c_ptr(c_fn_ptr);
 
 extern proc g_thread_create(func : GThreadFunc, data : gpointer, joinable : gboolean, ref error : c_ptr(GError)) : c_ptr(GThread);
 

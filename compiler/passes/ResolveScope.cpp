@@ -831,14 +831,9 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (!fDynoCompilerLibrary) {
-      if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-        outerMod->generateDeprecationWarning(call);
-      }
-
-      if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-        outerMod->generateUnstableWarning(call);
-      }
+    if (!fDynoScopeResolve) {
+      outerMod->maybeGenerateDeprecationWarning(call);
+      outerMod->maybeGenerateUnstableWarning(call);
     }
 
     const char* rhsName = getNameFrom(call->get(2));

@@ -682,7 +682,7 @@ module ChapelArray {
     return new _distribution(x);
   }
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
-    return new _distribution(x.release());
+    return new _distribution(owned.release(x));
   }
 
   proc chpl__buildDistValue(x) {
@@ -756,7 +756,7 @@ module ChapelArray {
     }
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+                           ranges: rank*range(idxType, boundKind.both,stridable),
                            definedConst: bool = false) {
       var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
 
@@ -770,7 +770,7 @@ module ChapelArray {
 
     proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
                            definedConst: bool = false) {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var ranges: rank*range(idxType, boundKind.both, stridable);
       return newRectangularDom(rank, idxType, stridable, ranges, definedConst);
     }
 
@@ -1730,6 +1730,7 @@ module ChapelArray {
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
     pragma "no doc"
+    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
     proc head(): this._value.eltType {
       return this[this.domain.low];
     }
@@ -1738,6 +1739,7 @@ module ChapelArray {
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
     pragma "no doc"
+    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
@@ -1904,7 +1906,6 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    @unstable("'Array.count' is unstable")
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }

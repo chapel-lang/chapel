@@ -8,33 +8,33 @@ var b = new bigint( 4);
 var c = new bigint(10);
 var d = new bigint();
 
-a.powMod(a, b, c);          // a = a^b mod c
+powMod(a, a, b, c);          // a = a^b mod c
 writeln("2^4 mod 10 = ", a);
 
 a.set(2);
-a.powMod(a, 3, c);          // a = a^3 mod c
+powMod(a, a, 3, c);          // a = a^3 mod c
 writeln("2^3 mod 10 = ", a);
 
 a.set(2);
-d.pow(a, 5);
+pow(d, a, 5);
 writeln(d);
 
-d.pow(3, 5);
+pow(d, 3, 5);
 writeln(d);
 
 // roots
-a.root(d, 5); // fifth root of d = 3 // d^(1/5) = 3
+root(a, d, 5); // fifth root of d = 3 // d^(1/5) = 3
 writeln(a);
 
-d.add(d, 10);
-a.rootrem(b, d, 5);
+add(d, d, 10);
+rootrem(a, b, d, 5);
 writeln(a, ", remainder ", b);
 
 b.set(17);
-d.sqrt(b);
+sqrt(d, b);
 writeln("sqrt ", b, " = ", d);
 
-d.sqrtrem(a, b);
+sqrtrem(d, a, b);
 writeln("sqrt ", b, " = ", d, " remainder ", a);
 
 c.set(81);

@@ -37,7 +37,7 @@ executing on a GPU sublocale.  Loops are eligible when:
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
 * They are free of any call to a function that fails to meet the above
-  criteria, accesses outer variables, or are recursive.
+  criteria or accesses outer variables.
 
 Any code in an ``on`` statement for a GPU sublocale that is not within an
 eligible loop will be executed on the CPU.
@@ -121,12 +121,16 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* Either ``nvcc`` (for NVIDIA) or ``hipcc`` (for AMD) must be available; Chapel
-  uses libraries included in these packages and will automatically deduce the
-  path to these libraries based on the location of the ``nvcc``/``hipcc``
-  executable. Note that the automatically deduced paths may be overwritten by
-  manually setting the ``CHPL_CUDA_PATH`` or ``CHPL_ROCM_PATH`` environment
-  variables.
+* Either the CUDA toolkit (for NVIDIA), or ROCM (for AMD) must be installed.
+
+  * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
+    (inclusive). If using version 10.x you must set
+    ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
+    although we have not tested this.
+
+  * If targeting AMD GPUs, we require ROCM version 4.x; we suspect version 5.x
+    will work as well although we have not tested so.
+
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -294,7 +298,7 @@ improvements in the future.
   supported).
 
 * Associative arrays cannot be used on GPU sublocales with
-  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
+  ``CHPL_GPU_MEM_STRATEGY=array_on_device``.
 
 * If using CUDA 10, single thread per locale can be used. i.e., you have to set
   ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
@@ -302,6 +306,14 @@ improvements in the future.
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
   default in only Cygwin and NetBSD.
+
+Using C Interoperability
+~~~~~~~~~~~~~~~~~~~~~~~~
+C interoperability on the host side is supported. However, GPU programming
+implies C++ linkage. To handle that, the Chapel compiler compiles the ``.c``
+files passed via the command line and/or ``require`` statements with ``clang -x
+[cuda|hip]``. This implies that some C features may fail to compile if they are
+not supported by the above ``clang`` compilation.
 
 Further Information
 -------------------

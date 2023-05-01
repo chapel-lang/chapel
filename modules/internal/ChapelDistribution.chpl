@@ -954,7 +954,7 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,stridable)) {
       halt("reallocating not supported for this array type");
     }
 
@@ -1180,13 +1180,13 @@ module ChapelDistribution {
         var eCast = eCastQ!;
 
         var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+        var tmp:rank * range(idxType,boundKind.both,stridable);
 
         // set tmp = inds with some error checking
         for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
-            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+            from.safeCast(range(idxType,boundKind.both,stridable));
         }
 
         eCast.dsiReallocate(tmp);

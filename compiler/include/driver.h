@@ -232,6 +232,8 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnIntUint;
 extern bool fWarnUnstable;
+extern bool fWarnUnstableStandard;
+extern bool fWarnUnstableInternal;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
@@ -287,7 +289,8 @@ extern std::string llvmFlags;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoCompilerLibrary;
+extern bool fDynoResolve;
+extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;

@@ -35,10 +35,7 @@ namespace {
     // We write the regexp so the relevant part of "content" will be captured by
     // std::smatch if we wish to use this to filter out the markup.
 
-    // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
-    //       show up in sanitized message).
-
-    // There are three "kinds" of content we consider, so we OR these together
+    // There are four "kinds" of content we consider, so we OR these together
     // Capture a normal Chapel identifier
     std::string reCntType1 = R"#(([\w$.]+))#";
     // If it starts with ~, capture last identifier to the right of a '.'
@@ -46,9 +43,13 @@ namespace {
     std::string reCntType2 = R"#(~([\w$]+\.?)+)#";
     // Starts with !, capture identifier to right of ! without capturing ! itself
     std::string reCntType3 = R"#(!([\w$.]+))#";
+    // support explicit title and reference target, captures the target
+    // note that Sphinx allows any character for the nice name of the title
+    // but does not allow a space directly before the '<'
+    std::string reCntType4 = R"#((?:[^<]+[^\s])<([\w$.]+)>)#";
 
     // OR all the content types together, wrapping each in a non capturing group
-    std::string reContent = "(?:(?:" + reCntType1 + ")|(?:" + reCntType2 + ")|(?:" + reCntType3 + "))";
+    std::string reContent = "(?:(?:" + reCntType1 + ")|(?:" + reCntType2 + ")|(?:" + reCntType3 + ")|(?:" + reCntType4 +  + "))";
 
     // Various roles; put into a (?...) group so we don't "capture" it
     std::string reRole = R"#((?:mod|proc|iter|data|const|var|param|type|class|record|attr|enum))#";

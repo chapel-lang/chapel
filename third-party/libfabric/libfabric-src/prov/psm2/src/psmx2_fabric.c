@@ -53,7 +53,7 @@ static int psmx2_fabric_close(fid_t fid)
 	if (psmx2_env.name_server)
 		ofi_ns_stop_server(&fabric->name_server);
 
-	fastlock_destroy(&fabric->domain_lock);
+	ofi_spin_destroy(&fabric->domain_lock);
 	assert(fabric == psmx2_active_fabric);
 	psmx2_active_fabric = NULL;
 	free(fabric);
@@ -102,7 +102,7 @@ int psmx2_fabric(struct fi_fabric_attr *attr,
 	if (!fabric_priv)
 		return -FI_ENOMEM;
 
-	fastlock_init(&fabric_priv->domain_lock);
+	ofi_spin_init(&fabric_priv->domain_lock);
 	dlist_init(&fabric_priv->domain_list);
 
 	if (psmx2_env.name_server) {

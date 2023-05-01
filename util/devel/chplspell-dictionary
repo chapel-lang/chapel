@@ -1097,6 +1097,7 @@ stdchplrt
 stime
 strcmps
 strd
+streamoff
 stridelevels
 stringend
 stringlen
@@ -2969,6 +2970,7 @@ flwlen
 nfty
 printoutput
 saligned
+snew
 upcasting
 
 FILEID: c643ceac-1f14-11e6-a3a6-10ddb1d4c3d5
@@ -3194,6 +3196,8 @@ colorenum
 cstr
 cwrx
 fadvise
+filereader
+filewriter
 isopen
 madvise
 nommap
@@ -3349,6 +3353,7 @@ greptests
 hepl
 illumos
 keypart
+liblibdyno
 libmvec
 librt
 libtool
@@ -3359,10 +3364,12 @@ memleakslog
 modindex
 nodbg
 nomail
+notests
 ousing
 parentlocid
 pascalcase
 pshm
+ptxas
 readbytes
 readthis
 readwritethis
@@ -3835,6 +3842,7 @@ pami
 
 FILEID: e8974bb8-8068-11e6-ab60-00a0cc3ee663
 rtub
+snew
 writerange
 
 FILEID: eb31abc0-8068-11e6-ab60-00a0cc3ee663
@@ -4687,8 +4695,10 @@ devtoolset
 epel
 fossa
 indri
+kitware
 kudu
 pacman
+xvzf
 
 FILEID: d45846e8-a1b9-11e7-a204-10ddb1d4c3d5
 eliben
@@ -4919,7 +4929,9 @@ locdoms
 FILEID: 203d644e-8648-11e8-ad82-10ddb1d4c3d5
 andnot
 nbobjs
+nics
 schedaffinity
+sobj
 thisthread
 
 FILEID: 6de8d7ca-9c7b-11e8-b963-10ddb1d4c3d5
@@ -4993,6 +5005,7 @@ bdynamic
 binutils
 bundler
 casttype
+cmatch
 coroutines
 dndebug
 eabi
@@ -5014,6 +5027,9 @@ mcpu
 mfile
 mpicxx
 myshell
+ockl
+oclc
+ocml
 outbin
 ploc
 ptxas
@@ -5021,6 +5037,7 @@ qunused
 softfp
 srcm
 tlii
+wavefrontsize
 wmissing
 wstrict
 wwrite
@@ -5455,6 +5472,7 @@ threadidx
 FILEID: 65cc59e0-f560-11eb-bb15-35b7469d4b43
 allocas
 dtype
+hipcc
 inalloca
 isinstance
 ndarray
@@ -5584,6 +5602,7 @@ FILEID: f235c39e-3f89-11ec-81f0-3de99c714400
 acct
 
 FILEID: e72aeca4-45ab-11ec-a187-336475c959d4
+griddim
 uize
 xtract
 
@@ -5965,6 +5984,9 @@ foldb
 foldpow
 
 FILEID: 45947086-9f74-11ec-866d-111c8d7a1817
+hpechpl
+seekg
+tellg
 textc
 
 FILEID: 495be19a-9f74-11ec-866d-111c8d7a1817
@@ -6059,6 +6081,12 @@ FILEID: 66fb22e4-a729-11ec-866d-111c8d7a1817
 filenamelookupposition
 
 FILEID: 70eb8f46-a729-11ec-866d-111c8d7a1817
+aopen
+hipcc
+nsight
+nvcc
+nvptx
+ptxas
 triadchpl
 vidia
 worksharing
@@ -6346,6 +6374,7 @@ FILEID: 7003a24e-5a61-11ed-baec-ef9f14c5b529
 einfo
 
 FILEID: 8eccc1ce-5a61-11ed-baec-ef9f14c5b529
+frontload
 inserter
 
 FILEID: 5d6b5c0a-945c-11ed-b9f6-7def56659a0b
@@ -6384,7 +6413,10 @@ FILEID: 8d09636e-ac5b-11ed-b67e-4d191cd16eac
 comprt
 
 FILEID: a33853a2-ac5b-11ed-b67e-4d191cd16eac
+curid
 hpechpl
+maplen
+pathstr
 sfname
 
 FILEID: 068304b4-b57d-11ed-b67e-4d191cd16eac
@@ -6405,12 +6437,39 @@ amdgcn
 
 FILEID: 31c40b14-b57d-11ed-b67e-4d191cd16eac
 deviceptr
+hipification
+
+FILEID: 19b44eb2-d463-11ed-ae82-c11fabc62016
+tsym
+
+FILEID: 41875858-d463-11ed-ae82-c11fabc62016
+afbd
+armhf
+clusterfs
+glmdev
+oldstable
+raspios
+
+FILEID: 73f04412-d463-11ed-ae82-c11fabc62016
+chplldoc
+
+FILEID: 92abfbbc-d463-11ed-ae82-c11fabc62016
+sbig
+
+FILEID: e091e076-d463-11ed-ae82-c11fabc62016
+mrkp
+smatch
+
+FILEID: cb0197c8-d464-11ed-ae82-c11fabc62016
+aname
+bname
 
 NATURAL:
 aarch
 abcd
 abcdefg
 ablock
+abraham
 accumgen
 achtung
 acknowledgements
@@ -6548,6 +6607,7 @@ autotools
 auxio
 avneet
 backend
+backends
 backoff
 backquotes
 backticks
@@ -7003,6 +7063,7 @@ dflt
 dgemm
 dgemms
 dgram
+dhcpcd
 diaconescu
 diags
 diffs
@@ -7032,6 +7093,7 @@ dlongnecke
 dmapped
 dmitry
 dockerfile
+dockerfiles
 doctests
 docutils
 doinit
@@ -7210,6 +7272,7 @@ eremoteio
 erestart
 erfc
 eric
+erik
 erin
 erofs
 errbuf
@@ -7270,6 +7333,7 @@ fatbin
 fatbinary
 faux
 fbody
+fcfs
 fcntl
 fdexcept
 fdflag
@@ -7362,6 +7426,7 @@ ftest
 ftpport
 ftpsslauth
 fullname
+funcs
 functor
 fwrite
 gabriel
@@ -7906,6 +7971,7 @@ lineno
 linkershared
 linpack
 linter
+linters
 linux
 listdir
 listlinks
@@ -8252,6 +8318,7 @@ nodelist
 nodename
 nodepara
 nodesets
+nodoc
 noexec
 noexit
 nohandle
@@ -8418,6 +8485,7 @@ parameterized
 paramness
 paratest
 parekh
+parenful
 parenless
 parens
 parenthesesless
@@ -8436,6 +8504,7 @@ pasv
 patchlevel
 pathscale
 patil
+pcidev
 pctflag
 percentfound
 perfcompopts
@@ -8603,6 +8672,7 @@ quickstart
 qword
 rabin
 rachel
+radeon
 radixbits
 rafael
 raghuraman
@@ -8619,6 +8689,7 @@ randstate
 randstream
 rangesub
 rasbold
+raspberrypi
 ratomicbool
 raytrace
 raytracing
@@ -8802,6 +8873,7 @@ sbatch
 scanf
 schar
 scheurich
+schierboom
 schneier
 schubert
 schur
@@ -9069,6 +9141,7 @@ sublocid
 submatrices
 submatrix
 submul
+subnet
 subobject
 subpixel
 subpixels
@@ -9223,6 +9296,10 @@ toml
 tommy
 tonum
 toolchain
+toolname
+toolnames
+toolspace
+toolspaced
 tooltip
 toordinal
 topdown
@@ -9385,6 +9462,7 @@ valgrinds
 vallen
 valloc
 vals
+vanessa
 varanasi
 varargs
 variadic
@@ -9449,6 +9527,7 @@ wellknown
 werror
 westen
 westmere
+wget
 whichpart
 whipkey
 whitworth
@@ -9521,6 +9600,7 @@ yujia
 yyyy
 zaharia
 zakian
+zambrano
 zerfas
 zeroes
 zeromq

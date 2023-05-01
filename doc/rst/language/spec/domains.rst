@@ -214,7 +214,7 @@ Rectangular Domain Values
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Each dimension of a rectangular domain is a range of type
-``range(idxType, BoundedRangeType.bounded, stridable)``. The index set
+``range(idxType, boundKind.both, stridable)``. The index set
 for a rank 1 domain is the set of indices described by its singleton
 range. The index set for a rank \ :math:`n` domain is the set of all
 ``n*idxType`` tuples described by the tensor product of its ranges. When
@@ -283,7 +283,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 The default value of a domain type is the ``rank`` default range values
 for type:
 
-   ``range(idxType, BoundedRangeType.bounded, stridable)``
+   ``range(idxType, boundKind.both, stridable)``
 
 ..
 

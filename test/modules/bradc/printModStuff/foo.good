@@ -39,6 +39,7 @@ end of module search dirs
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Regex.chpl
   $CHPL_HOME/modules/packages/CopyAggregation.chpl
+  $CHPL_HOME/modules/standard/GPU.chpl
   $CHPL_HOME/modules/standard/Communication.chpl
   $CHPL_HOME/modules/standard/MemMove.chpl
   $CHPL_HOME/modules/standard/List.chpl
@@ -46,6 +47,7 @@ end of module search dirs
   $CHPL_HOME/modules/dists/BlockDist.chpl
   $CHPL_HOME/modules/standard/Set.chpl
   $CHPL_HOME/modules/standard/Time.chpl
+  $CHPL_HOME/modules/standard/Math.chpl
   $CHPL_HOME/modules/layouts/LayoutCS.chpl
   $CHPL_HOME/modules/dists/SparseBlockDist.chpl
 In bar

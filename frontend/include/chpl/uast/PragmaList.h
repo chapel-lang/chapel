@@ -156,6 +156,7 @@ PRAGMA(CONST_DUE_TO_TASK_FORALL_INTENT, npr,
        ncm)
 PRAGMA(C_ARRAY, ypr, "c_array record", "marks c_array record")
 PRAGMA(C_PTR_CLASS, ypr, "c_ptr class", "marks c_ptr class")
+PRAGMA(C_PTRCONST_CLASS, ypr, "c_ptrConst class", "marks c_ptrConst class")
 PRAGMA(COPY_MUTATES, ypr,
        "copy mutates",
        "the initCopy function / copy initializer takes its argument by ref")

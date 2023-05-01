@@ -83,7 +83,7 @@ class IdAndFlags {
       case uast::Decl::PRIVATE:
         flags |= NOT_PUBLIC;
         break;
-      // no defaut for compilation error if more are added
+      // no default for compilation error if more are added
     }
     if (isMethodOrField) {
       flags |= METHOD_FIELD;
@@ -395,6 +395,13 @@ class BorrowedIdsWithName {
                                        filterFlags, excludeFlags);
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
+  }
+
+  static BorrowedIdsWithName
+  createWithBuiltinId() {
+    // Implementation only happens to coincide; there is no philosophical
+    // relation between a top-level module ID and a builtin ID.
+    return createWithToplevelModuleId(ID());
   }
 
   /** Return the number of IDs stored here */

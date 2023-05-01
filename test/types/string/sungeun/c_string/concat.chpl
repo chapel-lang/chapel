@@ -33,7 +33,7 @@ checkType(string, (createStringWithNewBuffer(vcstr)+c:string).type);
 checkType(string, (c"8"+pe:string).type);
 checkType(string, ("8"+pe:string).type);
 checkType(string, (cstr+pe:string).type);
-checkType(string, (createStringWithNewBuffer(vcstr)+e:string).type);
+checkType(string, (createStringWithNewBuffer(vcstr)+pe:string).type);
 checkType(string, ("8"+ee:string).type);
 checkType(string, (createStringWithNewBuffer(cstr)+ee:string).type);
 checkType(string, (createStringWithNewBuffer(vcstr)+ee:string).type);

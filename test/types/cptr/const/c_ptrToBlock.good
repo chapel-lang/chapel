@@ -1,0 +1,1 @@
+c_ptrToBlock.chpl:5: error: Only single-locale rectangular arrays support c_ptrToConst() at present

@@ -1023,6 +1023,7 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // TODO: add const qualifier for const pointers?
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
     return pointedTo->codegen().c + " *";
   }
@@ -2284,6 +2285,17 @@ void FnSymbol::codegenPrototype() {
             break;
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+            break;
+        }
+      } else {
+        // This is a function called from a GPU kernel
+        // hipcc marks such functions as hidden visibility
+        // so we do the same here.
+        switch (getGpuCodegenType()) {
+          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+            break; // no visibility change for NVIDIA
+          case GpuCodegenType::GPU_CG_AMD_HIP:
+            func->setVisibility(llvm::Function::HiddenVisibility);
             break;
         }
       }

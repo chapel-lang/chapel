@@ -20,11 +20,26 @@
 
 module ChapelGpuSupport {
   use ChapelBase;
+  use ChplConfig;
 
   extern var chpl_gpu_debug : bool;
 
   config const debugGpu = false;
 
+  /* If true, upon startup, enables peer-to-peer access between all pairs of
+     GPUs that are eligible for peer-to-peer access within each locale. */
+  pragma "no doc"
+  config const enableGpuP2P = false;
+
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
+
+  if CHPL_LOCALE_MODEL == 'gpu' then
+    if(enableGpuP2P) {
+      use GPU;
+      for loc in Locales do on loc do
+        for gpu1 in here.gpus do
+          for gpu2 in here.gpus do
+            if canAccessPeer(gpu1,gpu2) then setPeerAccess(gpu1,gpu2,true);
+    }
 }

@@ -38,3 +38,38 @@ parseStringAndReportErrors(parsing::Parser* parser, const char* filename,
   uast::checkBuilderResult(parser->context(), path, result);
   return result;
 }
+
+struct NamedCollector {
+  std::vector<const uast::AstNode*> nodes;
+  std::string name_;
+  public:
+    NamedCollector(std::string name) : name_(name) { }
+
+    bool enter(const uast::AstNode* node) {
+      return true;
+    }
+    void exit(const uast::AstNode* node) { }
+
+    bool enter(const uast::NamedDecl* node) {
+      if (node->name() == name_) {
+        nodes.push_back(node);
+      }
+      return true;
+    }
+    void exit(const uast::NamedDecl* node) {
+    }
+
+    const uast::AstNode* only() {
+      if (nodes.size() == 1) {
+        return nodes.front();
+      } else {
+        return nullptr;
+      }
+    }
+};
+
+const uast::AstNode* findOnlyNamed(const uast::Module* mod, std::string name) {
+  NamedCollector col(name);
+  mod->traverse(col);
+  return col.only();
+}

@@ -69,7 +69,7 @@ struct ptl_self {
 } __attribute__((aligned(16)));
 
 /* not reported yet, so just track in a global so can pass a pointer to
- * psmi_mq_handle_envelope and psmi_mq_handle_rts
+ * psm3_mq_handle_envelope and psm3_mq_handle_rts
  */
 static struct ptl_strategy_stats strat_stats;
 
@@ -80,25 +80,25 @@ ptl_handle_rtsmatch(psm2_mq_req_t recv_req, int was_posted)
 	psm2_mq_req_t send_req = (psm2_mq_req_t) recv_req->ptl_req_ptr;
 
 	if (recv_req->req_data.recv_msglen > 0) {
-		psmi_mq_mtucpy(recv_req->req_data.buf, send_req->req_data.buf,
+		psm3_mq_mtucpy(recv_req->req_data.buf, send_req->req_data.buf,
 			       recv_req->req_data.recv_msglen);
 	}
 
 	recv_req->mq->stats.rx_user_num++;
 	recv_req->mq->stats.rx_user_bytes += recv_req->req_data.recv_msglen;
-	psmi_mq_handle_rts_complete(recv_req);
+	psm3_mq_handle_rts_complete(recv_req);
 
 	send_req->mq->stats.tx_rndv_bytes += send_req->req_data.send_msglen;
 	/* If the send is already marked complete, that's because it was internally
 	 * buffered. */
 	if (send_req->state == MQ_STATE_COMPLETE) {
 		if (send_req->req_data.buf != NULL && send_req->req_data.send_msglen > 0)
-			psmi_mq_sysbuf_free(send_req->mq, send_req->req_data.buf);
+			psm3_mq_sysbuf_free(send_req->mq, send_req->req_data.buf);
 		/* req was left "live" even though the sender was told that the
 		 * send was done */
-		psmi_mq_req_free(send_req);
+		psm3_mq_req_free_internal(send_req);
 	} else
-		psmi_mq_handle_rts_complete(send_req);
+		psm3_mq_handle_rts_complete(send_req);
 
 	_HFI_VDBG("[self][complete][b=%p][sreq=%p][rreq=%p]\n",
 		  recv_req->req_data.buf, send_req, recv_req);
@@ -121,10 +121,10 @@ psm2_error_t self_mq_send_testwait(psm2_mq_req_t *ireq)
 
 	ubuf = req->req_data.buf;
 	if (ubuf != NULL && req->req_data.send_msglen > 0) {
-		req->req_data.buf = psmi_mq_sysbuf_alloc(req->mq, req->req_data.send_msglen);
+		req->req_data.buf = psm3_mq_sysbuf_alloc(req->mq, req->req_data.send_msglen);
 		if (req->req_data.buf == NULL)
 			return PSM2_NO_MEMORY;
-		psmi_mq_mtucpy(req->req_data.buf, ubuf, req->req_data.send_msglen);
+		psm3_mq_mtucpy(req->req_data.buf, ubuf, req->req_data.send_msglen);
 	}
 
 	/* Mark it complete but don't free the req, it's freed when the receiver
@@ -145,12 +145,12 @@ self_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags_user,
 	psm2_mq_req_t recv_req;
 	int rc;
 
-	send_req = psmi_mq_req_alloc(mq, MQE_TYPE_SEND);
+	send_req = psm3_mq_req_alloc(mq, MQE_TYPE_SEND);
 	if_pf(send_req == NULL)
 	    return PSM2_NO_MEMORY;
 
 #ifdef PSM_CUDA
-	if (len && PSMI_IS_CUDA_ENABLED && PSMI_IS_CUDA_MEM(ubuf)) {
+	if (len && PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(ubuf)) {
 		psmi_cuda_set_attr_sync_memops(ubuf);
 		send_req->is_buf_gpu_mem = 1;
 	} else
@@ -160,7 +160,7 @@ self_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags_user,
 	mq->stats.tx_num++;
 	mq->stats.tx_rndv_num++;
 
-	rc = psmi_mq_handle_rts(mq, epaddr, tag, &strat_stats,
+	rc = psm3_mq_handle_rts(mq, epaddr, tag->tag, &strat_stats,
 				len, NULL, 0, 1,
 				ptl_handle_rtsmatch, &recv_req);
 	send_req->req_data.tag = *tag;
@@ -190,7 +190,7 @@ self_mq_send(psm2_mq_t mq, psm2_epaddr_t epaddr, uint32_t flags,
 	psm2_error_t err;
 	psm2_mq_req_t req;
 	err = self_mq_isend(mq, epaddr, flags, PSMI_REQ_FLAG_NORMAL, tag, ubuf, len, NULL, &req);
-	psmi_mq_wait_internal(&req);
+	psm3_mq_wait_internal(&req);
 	return err;
 }
 
@@ -303,17 +303,17 @@ self_connect(ptl_t *ptl_gen,
 		if (!array_of_epid_mask[i])
 			continue;
 
-		if (array_of_epid[i] == ptl->epid) {
+		if (!psm3_epid_cmp_internal(array_of_epid[i], ptl->epid)) {
 			_HFI_CONNDBG("connect self\n");
 			array_of_epaddr[i] = ptl->epaddr;
 			array_of_epaddr[i]->ptlctl = ptl->ctl;
 			array_of_epaddr[i]->epid = ptl->epid;
-			if (psmi_epid_set_hostname(psm2_epid_nid(ptl->epid),
-						   psmi_gethostname(), 0)) {
+			if (psm3_epid_set_hostname(psm3_epid_nid(ptl->epid),
+						   psm3_gethostname(), 0)) {
 				err = PSM2_NO_MEMORY;
 				goto fail;
 			}
-			psmi_epid_add(ptl->ep, ptl->epid, ptl->epaddr);
+			psm3_epid_add(ptl->ep, ptl->epid, ptl->epaddr);
 			array_of_errors[i] = PSM2_OK;
 		} else {
 			array_of_epaddr[i] = NULL;
@@ -340,7 +340,7 @@ self_disconnect(ptl_t *ptl_gen, int force, int numep,
 
 		if (array_of_epaddr[i] == ptl->epaddr) {
 			_HFI_CONNDBG("disconnect self\n");
-			psmi_epid_remove(ptl->ep, ptl->epid);
+			psm3_epid_remove(ptl->ep, ptl->epid);
 			array_of_errors[i] = PSM2_OK;
 		}
 	}
@@ -359,7 +359,7 @@ psm2_error_t self_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	struct ptl_self *ptl = (struct ptl_self *)ptl_gen;
 	psmi_assert_always(ep != NULL);
 	psmi_assert_always(ep->epaddr != NULL);
-	psmi_assert_always(ep->epid != 0);
+	psmi_assert_always(!psm3_epid_zero_internal(ep->epid));
 
 	ptl->ep = ep;
 	ptl->epid = ep->epid;
@@ -402,7 +402,7 @@ self_ptl_setopt(const void *component_obj, int optname,
 		const void *optval, uint64_t optlen)
 {
 	/* No options for SELF PTL at the moment */
-	return psmi_handle_error(NULL, PSM2_PARAM_ERR,
+	return psm3_handle_error(NULL, PSM2_PARAM_ERR,
 				 "Unknown SELF ptl option %u.", optname);
 }
 
@@ -412,13 +412,13 @@ self_ptl_getopt(const void *component_obj, int optname,
 		void *optval, uint64_t *optlen)
 {
 	/* No options for SELF PTL at the moment */
-	return psmi_handle_error(NULL, PSM2_PARAM_ERR,
+	return psm3_handle_error(NULL, PSM2_PARAM_ERR,
 				 "Unknown SELF ptl option %u.", optname);
 }
 
 /* Only symbol we expose out of here */
 struct ptl_ctl_init
-psmi_ptl_self = {
+psm3_ptl_self = {
 	self_ptl_sizeof, self_ptl_init, self_ptl_fini, self_ptl_setopt,
 	self_ptl_getopt
 };

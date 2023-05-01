@@ -102,6 +102,7 @@ struct Visitor {
 
   bool isNamedThisAndNotReceiverOrFunction(const NamedDecl* node);
   bool isNameReservedWord(const NamedDecl* node);
+  bool shouldEmitUnstableWarning(const AstNode* node);
 
   // Checks.
   void checkForArraysOfRanges(const Array* node);
@@ -130,6 +131,7 @@ struct Visitor {
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
+  void checkUserModuleHasPragma(const AttributeGroup* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -158,6 +160,7 @@ struct Visitor {
   void visit(const Array* node);
   void visit(const BracketLoop* node);
   void visit(const Attribute* node);
+  void visit(const AttributeGroup* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -192,8 +195,9 @@ enum class ControlFlowModifier {
   BLOCKS,
 };
 
-// The six node types that most mess with control flow are:
+// The seven node types that most mess with control flow are:
 //   * "forall statement"
+//   * "foreach statement"
 //   * "coforall statement"
 //   * "on statement"
 //   * "begin statement"
@@ -203,8 +207,8 @@ enum class ControlFlowModifier {
 static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
                                             const Return* ctrl) {
   if (node->isFunction()) return ControlFlowModifier::ALLOWS;
-  if (node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+  if (node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   return ControlFlowModifier::NONE;
@@ -222,8 +226,8 @@ static ControlFlowModifier nodeAllowsYield(const AstNode* node,
 static ControlFlowModifier nodeAllowsBreak(const AstNode* node,
                                            const Break* ctrl) {
   if (node->isFunction() || // functions block break
-      node->isForall() || node->isCoforall() || node->isOn() ||
-      node->isBegin() || node->isSync() || node->isCobegin()) {
+      node->isForall() || node->isForeach() || node->isCoforall() ||
+      node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
   }
   if (auto target = ctrl->target()) {
@@ -932,6 +936,10 @@ void Visitor::checkExportedName(const NamedDecl* node) {
   (void) node;
 }
 
+bool Visitor::shouldEmitUnstableWarning(const AstNode* node) {
+  return isFlagSet(CompilerFlags::WARN_UNSTABLE);
+}
+
 bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   if (node->name() != USTR("this")) return false;
   if (node->isFunction()) return false;
@@ -1062,16 +1070,14 @@ void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
   }
 }
 
-// TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
-  warn(node,
-       "unions are currently unstable and are expected to change in ways that "
-       "will break their current uses.");
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "unions are currently unstable and are expected to change "
+             "in ways that will break their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!shouldEmitUnstableWarning(node)) return;
   if (!isUserCode()) return;
 
   auto name = node->name();
@@ -1094,6 +1100,38 @@ void Visitor::visit(const Array* node) {
 
 void Visitor::visit(const BracketLoop* node) {
   checkGenericArrayTypeUsage(node);
+}
+
+void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
+  // determine if the module is user code
+  if (!isUserCode() || !isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+
+  // issue a warning once for the symbol
+  if (node->pragmas().begin() != node->pragmas().end()) {
+    auto parentNode = parsing::parentAst(context_, node);
+    UniqueString parentName;
+    if (auto decl = parentNode->toNamedDecl()) {
+      parentName = decl->name();
+    } else if (auto label = parentNode->toLabel()) {
+      parentName = label->name();
+    } else if (auto include = parentNode->toInclude()) {
+      parentName = include->name();
+    } else if (auto function = parentNode->toFunction()) {
+      parentName = function->name();
+    } else if (auto ident = parentNode->toIdentifier()) {
+      parentName = ident->name();
+    } else if (auto formal = parentNode->toFormal()) {
+      parentName = formal->name();
+    }
+    // if the parent is not named, just produce a generic warning about pragmas
+    if (parentName.isEmpty()) {
+      warn(node, "all pragmas are considered unstable and may change in the future",
+           parentName.c_str());
+    } else {
+      warn(node, "'%s' uses pragmas, which are considered unstable and may change in the future",
+           parentName.c_str());
+    }
+  }
 }
 
 void Visitor::checkAttributeUsedParens(const Attribute* node) {
@@ -1136,6 +1174,10 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
 void Visitor::visit(const Attribute* node) {
   checkAttributeNameRecognizedOrToolSpaced(node);
   checkAttributeUsedParens(node);
+}
+
+void Visitor::visit(const AttributeGroup* node) {
+  checkUserModuleHasPragma(node);
 }
 
 void Visitor::visit(const FnCall* node) {

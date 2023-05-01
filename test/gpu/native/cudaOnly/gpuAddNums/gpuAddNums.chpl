@@ -1,6 +1,10 @@
+// See the README file for more information about this test.
+
 extern {
   #include <cuda.h>
   #include <assert.h>
+  #include <stdio.h>
+  #include <stdbool.h>
 
   #define FATBIN_FILE "gpuAddNums_gpu_files/chpl__gpu.fatbin"
 

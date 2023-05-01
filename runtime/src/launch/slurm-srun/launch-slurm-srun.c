@@ -46,6 +46,7 @@ static char* walltime = NULL;
 static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
 static char* partition = NULL;
+static char* reservation = NULL;
 static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
@@ -110,6 +111,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   char buf[buflen];
   char partition_arg[128];
   char* argv[7];
+  char reservationBuf[128];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
   char* cpusPerTaskString = getenv("SLURM_CPUS_PER_TASK");
 
@@ -125,9 +127,14 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     return numCores;
   }
 
-  argv[0] = (char *)  "sinfo";          // use sinfo to get num cpus
+  // We need the information about the partition that srun/sbatch will
+  // use.
+
+  argv[0] = (char *)  "sinfo";            // use sinfo to get num cpus
   argv[1] = (char *)  "--exact";        // get exact otherwise you get 16+, etc
-  argv[2] = (char *)  "--format=%c %Z"; // format for cpu/node and threads/cpu (%c %Z)
+  argv[2] = (char *)  "--format=%c %Z %i"; // format for cpu/node,
+                                           // threads/cpu, and reservation
+                                           // (%c %Z %i)
   argv[3] = (char *)  "--sort=+c";      // sort by num cpu (lower to higher)
   argv[4] = (char *)  "--noheader";     // don't show header (hide "CPU" header)
   argv[5] = NULL;
@@ -140,12 +147,45 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   }
 
   memset(buf, 0, buflen);
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
+  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
     chpl_error("Error trying to determine number of cores per node", 0, 0);
+  }
 
-  if (sscanf(buf, "%d %d", &numCores, &threadsPerCore) != 2)
+  if (!strncmp("Invalid node format specification: i", buf,
+               strlen("Invalid node format specification: i"))) {
+    // older versions of sinfo don't support the %i format. Try again
+    // without it. We won't be able to exclude reservations, but there's
+    // not much we can do about that.
+    argv[2] = (char *)  "--format=%c %Z";
+    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+  }
+
+  char *cursor = buf;
+  char *line;
+  chpl_bool found = false;
+  while ((line = strsep(&cursor, "\n")) != NULL) {
+    if (*line != '\0') {
+      int scanned = sscanf(line, "%d %d %127s", &numCores, &threadsPerCore,
+                         reservationBuf);
+      if (scanned == 2) {
+        if (!reservation) {
+          found = true;
+          break;
+        }
+      } else if (scanned == 3) {
+        if (reservation && (!strcmp(reservation, reservationBuf))) {
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+  if (!found) {
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+  }
 
   if (nomultithread) {
     if (localesPerNode == 1) {
@@ -227,15 +267,28 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     nodelist = getenv("CHPL_LAUNCHER_NODELIST");
   }
 
-  // command line partition takes precedence over env var
+  // command line partition takes precedence over Chapel env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");
+  }
+
+  // Chapel env var takes precedence over Slurm
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
+  // job's partition trumps everything
+  char *tmp = getenv("SLURM_JOB_PARTITION");
+  if (tmp) {
+    partition = tmp;
   }
 
   // command line exclude takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
+
+  reservation = getenv("SLURM_RESERVATION");
 
   // request exclusive node access by default, but allow user to override
   if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
@@ -323,9 +376,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                         numLocales : localesPerNode;
     int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
-    if (localesPerNode > 1) {
-      fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
-    }
 
     // request specified node access
     if (nodeAccessStr != NULL)
@@ -392,9 +442,18 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
-    // add the srun command and the (possibly wrapped) binary name.
-    fprintf(slurmFile, "srun --kill-on-bad-exit %s %s ",
+    // add the srun command
+    fprintf(slurmFile, "srun --kill-on-bad-exit  ");
+
+    fprintf(slurmFile, "--cpus-per-task=%d ", cpusPerTask);
+
+    if (localesPerNode > 1) {
+      fprintf(slurmFile, "--cpu-bind=none ");
+    }
+    // add the (possibly wrapped) binary name.
+    fprintf(slurmFile, "%s %s ",
         chpl_get_real_binary_wrapper(), chpl_get_real_binary_name());
+
 
     // add any arguments passed to the launcher to the binary
     for (i=1; i<argc; i++) {

@@ -122,6 +122,10 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);
+
+bool chpl_gpu_can_access_peer(int dev1, int dev2);
+void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
+
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

@@ -681,8 +681,9 @@ static void test5(void) {
   std::ignore = resolveConcreteFunction(ctx, f3->id());
 
 
-  assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::Deprecation);
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
+  assert(guard.error(1)->type() == ErrorType::Deprecation);
   assert(guard.realizeErrors());
 }
 

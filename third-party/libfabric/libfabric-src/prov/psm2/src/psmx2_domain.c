@@ -190,8 +190,8 @@ static int psmx2_domain_close(fid_t fid)
 	if (domain->progress_thread_enabled)
 		psmx2_domain_stop_progress(domain);
 
-	fastlock_destroy(&domain->sep_lock);
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->sep_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 	rbtDelete(domain->mr_map);
 
 	psmx2_lock(&domain->fabric->domain_lock, 1);
@@ -206,13 +206,13 @@ static int psmx2_domain_close(fid_t fid)
 static int psmx2_domain_get_val(struct fid *fid, int var, void *val)
 {
 	struct psmx2_fid_domain *domain;
- 
+
 	if (!val)
 		return -FI_EINVAL;
 
 	domain = container_of(fid, struct psmx2_fid_domain,
 			      util_domain.domain_fid.fid);
- 
+
 	switch (var) {
 	case FI_PSM2_DISCONNECT:
 		*(uint32_t *)val = domain->params.disconnect;
@@ -226,13 +226,13 @@ static int psmx2_domain_get_val(struct fid *fid, int var, void *val)
 static int psmx2_domain_set_val(struct fid *fid, int var, void *val)
 {
 	struct psmx2_fid_domain *domain;
- 
+
 	if (!val)
 		return -FI_EINVAL;
 
 	domain = container_of(fid, struct psmx2_fid_domain,
 			      util_domain.domain_fid.fid);
- 
+
 	switch (var) {
 	case FI_PSM2_DISCONNECT:
 		domain->params.disconnect = *(uint32_t *)val;
@@ -308,10 +308,10 @@ static int psmx2_domain_init(struct psmx2_fid_domain *domain,
 {
 	int err;
 
-	err = fastlock_init(&domain->mr_lock);
+	err = ofi_spin_init(&domain->mr_lock);
 	if (err) {
 		FI_WARN(&psmx2_prov, FI_LOG_CORE,
-			"fastlock_init(mr_lock) returns %d\n", err);
+			"ofi_spin_init(mr_lock) returns %d\n", err);
 		goto err_out;
 	}
 
@@ -326,10 +326,10 @@ static int psmx2_domain_init(struct psmx2_fid_domain *domain,
 	domain->max_atomic_size = INT_MAX;
 
 	ofi_atomic_initialize32(&domain->sep_cnt, 0);
-	fastlock_init(&domain->sep_lock);
+	ofi_spin_init(&domain->sep_lock);
 	dlist_init(&domain->sep_list);
 	dlist_init(&domain->trx_ctxt_list);
-	fastlock_init(&domain->trx_ctxt_lock);
+	ofi_spin_init(&domain->trx_ctxt_lock);
 
 	if (domain->progress_thread_enabled)
 		psmx2_domain_start_progress(domain);
@@ -337,7 +337,7 @@ static int psmx2_domain_init(struct psmx2_fid_domain *domain,
 	return 0;
 
 err_out_destroy_mr_lock:
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 
 err_out:
 	return err;
@@ -385,7 +385,8 @@ int psmx2_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		       sizeof(psm2_uuid_t));
 	}
 
-	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context);
+	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (err)
 		goto err_out_free_domain;
 

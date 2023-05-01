@@ -283,7 +283,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   // ensure we got unstridable range with VType-typed indices
   compilerAssert(followThis.type ==
-                 1*range(VType, BoundedRangeType.bounded, false));
+                 1*range(VType, boundKind.both, false));
 
   const myIDs = unDensify(followThis(0), uxIDs);
 

@@ -532,12 +532,17 @@ all:
   02/24/23:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
+    - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
+      config: gpu
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
   03/14/23:
     - text: Eliminate extra destructions when yielding tuples (#21887)
       config: chapcs
+  03/16/23:
+    - text: Update GPU performance tests to not count launches in perf mode (#21891)
+      config: gpu
 # End all
 
 allocate:
@@ -1477,6 +1482,10 @@ memleaksfull:
     - IO Encoders/Decoders prototype (#21586)
   02/23/23:
     - QIO fix Free the mark stack if it has been allocated (#21662)
+  03/30/23:
+    - IO module error types cleanup (#22003)
+  03/31/23:
+    - Fix memory leaks in readAll tests (#22032)
 # End memleaksfull
 
 meteor:
@@ -2331,9 +2340,17 @@ arkouda: &arkouda-base
     - 2060 add pdarray data type and size to metric (Bears-R-Us/arkouda#2067)
   02/28/23:
     - Parallelize array deinitialization (#21670)
+  03/25/23:
+    - Add initial aggregation support for bigint (Bears-R-Us/arkouda#2290)
+  03/28/23:
+    - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
+  03/30/23:
+    - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
 
 
 arkouda-string:
+  <<: *arkouda-base
+arkouda-bigint:
   <<: *arkouda-base
 
 arkouda-comp:
@@ -2370,3 +2387,15 @@ arkouda-comp:
 shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
+
+triadAodBw1:
+  02/28/23:
+    - Include chpl-env in files that use CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE  macro (#21699)
+
+sort:
+  02/24/23:
+    - Improve SHOC-Sort implementation (#21610)
+
+chplGPU:
+  03/25/23:
+    - Upstream changes

@@ -25,6 +25,7 @@
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/DomainType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
@@ -116,6 +117,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "_string", stringType);
 
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
+
+  gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

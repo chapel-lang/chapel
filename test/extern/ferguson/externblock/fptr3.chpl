@@ -1,4 +1,6 @@
 extern {
+  #include <stdio.h>
+
   typedef double (*function_ptr_type)(double x);
   static void runit(function_ptr_type f) {
      double result;

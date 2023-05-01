@@ -979,7 +979,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
-    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -1005,9 +1005,25 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 toString(classType));
     }
 
-    retval = new CallExpr(PRIM_GET_MEMBER,
-                          call->get(1)->copy(),
-                          new_CStringSymbol(name));
+    if(isManagedPtrType(call->get(1)->getValType())) {
+      // Extract the 'chpl_p' field.
+      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField("chpl_p");
+      VarSymbol* pTemp = newTempConst(pField->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE,
+                            pTemp,
+                            new CallExpr(PRIM_GET_MEMBER,
+                                call->get(1)->copy(),
+                                pField)));
+
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            new SymExpr(pTemp),
+                            new_CStringSymbol(name));
+    } else {
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            call->get(1)->copy(),
+                            new_CStringSymbol(name));
+    }
 
     call->replace(retval);
 
@@ -2783,6 +2799,19 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
+// Deprecated by Vass in 1.31: given `range(boundedType=?b),
+// redirect it to `range(bounds=?b)`, with a deprecation warning.
+static void checkRangeDeprecations(AggregateType* at, VarSymbol* var,
+                                   Symbol*& retval) {
+  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
+    const char* requested = var->immediate->v_string.c_str();
+    if (!strcmp(requested, "boundedType")) {
+      USR_WARN(var,
+        "range.boundedType is deprecated; please use '.bounds' instead");
+      retval = at->getField("bounds");
+    }
+  }
+}
 
 //
 // determine field associated with query expression
@@ -2796,6 +2825,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
+    checkRangeDeprecations(at, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

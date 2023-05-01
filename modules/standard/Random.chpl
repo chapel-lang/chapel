@@ -806,6 +806,7 @@ module Random {
 
     use super.RandomSupport;
     private use Random, IO;
+    private use Math only ldexp;
     private use PCGRandomLib;
     use ChapelLocks;
 

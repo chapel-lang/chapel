@@ -89,10 +89,10 @@ record BlockCyclic1dom {
   param stridable: bool;
 
   // convenience
-  proc rangeT type do  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, stridable);
 
   // our range, normalized; its absolute stride
-  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
+  var wholeR: range(idxType, boundKind.both, stridable);
   var wholeRstrideAbs: idxType;
 
   // a copy of BlockCyclicDim constants
@@ -620,7 +620,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
   proc rangecast(ref r1: range(?), r2: range(?)): void {
-    compilerAssert(r1.boundedType == r2.boundedType);
+    compilerAssert(r1.bounds == r2.bounds);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
@@ -726,7 +726,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type do
   return range(idxType=globDD.idxType, stridable=globDD.stridable);
 
 proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
-  : range(stoIndexT, sliceRange.boundedType, false)
+  : range(stoIndexT, sliceRange.bounds, false)
 {
   if sliceRange.stridable {
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride

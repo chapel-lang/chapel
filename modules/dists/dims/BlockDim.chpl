@@ -80,10 +80,10 @@ record Block1dom {
   param stridable: bool;
 
   // convenience
-  proc rangeT type do  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, stridable);
 
   // our range
-  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
+  var wholeR: range(idxType, boundKind.both, stridable);
 
   // privatized distribution descriptor
   const pdist;

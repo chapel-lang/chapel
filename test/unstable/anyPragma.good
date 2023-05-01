@@ -1,0 +1,15 @@
+anyPragma.chpl:5: In module 'M':
+anyPragma.chpl:5: warning: 'M' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:8: warning: 'x' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:11: warning: 'Color' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:14: warning: 'y' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:19: warning: 'R' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:22: warning: 'a' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:25: In method 'bar':
+anyPragma.chpl:25: warning: 'bar' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:5: In module 'M':
+anyPragma.chpl:32: warning: 'myTuple' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:35: warning: 'chroma' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:40: warning: 'refToActual' uses pragmas, which are considered unstable and may change in the future
+anyPragma.chpl:46: In function 'foo':
+anyPragma.chpl:46: warning: 'foo' uses pragmas, which are considered unstable and may change in the future

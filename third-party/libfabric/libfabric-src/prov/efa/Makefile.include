@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2018-2020 Amazon.com, Inc. or its affiliates. All rights reserved.
+# Copyright (c) 2018-2022 Amazon.com, Inc. or its affiliates. All rights reserved.
 #
 # This software is available to you under a choice of one of two
 # licenses.  You may choose to be licensed under the terms of the GNU
@@ -32,6 +32,8 @@
 if HAVE_EFA
 _efa_files = \
 	prov/efa/src/efa_device.c \
+	prov/efa/src/efa_hmem.c \
+	prov/efa/src/efa_shm.c \
 	prov/efa/src/efa_av.c \
 	prov/efa/src/efa_domain.c \
 	prov/efa/src/efa_cm.c \
@@ -41,10 +43,12 @@ _efa_files = \
 	prov/efa/src/efa_msg.c \
 	prov/efa/src/efa_mr.c \
 	prov/efa/src/efa_rma.c \
-	prov/efa/src/rxr/rxr_attr.c	\
-	prov/efa/src/rxr/rxr_init.c	\
-	prov/efa/src/rxr/rxr_fabric.c	\
-	prov/efa/src/rxr/rxr_domain.c	\
+	prov/efa/src/efa_strerror.c \
+	prov/efa/src/efa_user_info.c \
+	prov/efa/src/efa_prov_info.c \
+	prov/efa/src/efa_fork_support.c \
+	prov/efa/src/rxr/rxr_prov.c	\
+	prov/efa/src/rxr/rxr_env.c	\
 	prov/efa/src/rxr/rxr_cq.c	\
 	prov/efa/src/rxr/rxr_ep.c	\
 	prov/efa/src/rxr/rxr_cntr.c	\
@@ -52,24 +56,84 @@ _efa_files = \
 	prov/efa/src/rxr/rxr_msg.c	\
 	prov/efa/src/rxr/rxr_pkt_entry.c \
 	prov/efa/src/rxr/rxr_pkt_type_req.c \
+	prov/efa/src/rxr/rxr_pkt_type_base.c \
 	prov/efa/src/rxr/rxr_pkt_type_data.c \
 	prov/efa/src/rxr/rxr_pkt_type_misc.c \
 	prov/efa/src/rxr/rxr_pkt_cmd.c \
 	prov/efa/src/rxr/rxr_read.c \
-	prov/efa/src/rxr/rxr_atomic.c
+	prov/efa/src/rxr/rxr_op_entry.c \
+	prov/efa/src/rxr/rxr_atomic.c \
+	prov/efa/src/rxr/rxr_tp_def.c
 
 _efa_headers = \
 	prov/efa/src/efa.h \
+	prov/efa/src/efa_mr.h \
+	prov/efa/src/efa_shm.h \
+	prov/efa/src/efa_hmem.h \
+	prov/efa/src/efa_device.h \
+	prov/efa/src/efa_domain.h \
+	prov/efa/src/efa_errno.h \
+	prov/efa/src/efa_user_info.h \
+	prov/efa/src/efa_prov_info.h \
+	prov/efa/src/efa_fork_support.h \
+	prov/efa/src/efa_cq.h \
 	prov/efa/src/rxr/rxr.h \
+	prov/efa/src/rxr/rxr_env.h \
 	prov/efa/src/rxr/rxr_cntr.h \
 	prov/efa/src/rxr/rxr_rma.h \
 	prov/efa/src/rxr/rxr_msg.h \
+	prov/efa/src/rxr/rxr_pkt_hdr.h \
 	prov/efa/src/rxr/rxr_pkt_entry.h \
 	prov/efa/src/rxr/rxr_pkt_type.h \
 	prov/efa/src/rxr/rxr_pkt_type_req.h \
+	prov/efa/src/rxr/rxr_pkt_type_base.h \
 	prov/efa/src/rxr/rxr_pkt_cmd.h \
 	prov/efa/src/rxr/rxr_read.h \
-	prov/efa/src/rxr/rxr_atomic.h
+	prov/efa/src/rxr/rxr_atomic.h \
+	prov/efa/src/rxr/rxr_op_entry.h \
+	prov/efa/src/rxr/rdm_proto_v4.h \
+	prov/efa/src/rxr/rxr_tp_def.h \
+	prov/efa/src/rxr/rxr_tp.h
+
+if HAVE_LTTNG
+efa_LDFLAGS += -llttng-ust
+endif HAVE_LTTNG
+
+if ENABLE_EFA_UNIT_TEST
+noinst_PROGRAMS += prov/efa/test/efa_unit_test
+TESTS += prov/efa/test/efa_unit_test
+nodist_prov_efa_test_efa_unit_test_SOURCES = \
+	prov/efa/test/efa_unit_tests.h \
+	prov/efa/test/efa_unit_tests.c \
+	prov/efa/test/efa_unit_test_mocks.c \
+	prov/efa/test/efa_unit_test_common.c \
+	prov/efa/test/efa_unit_test_ep.c \
+	prov/efa/test/efa_unit_test_av.c \
+	prov/efa/test/efa_unit_test_cq.c \
+	prov/efa/test/efa_unit_test_device.c \
+	prov/efa/test/efa_unit_test_info.c \
+	prov/efa/test/efa_unit_test_hmem.c
+
+efa_CPPFLAGS += -I$(top_srcdir)/include -I$(top_srcdir)/prov/efa/test $(cmocka_CPPFLAGS)
+
+prov_efa_test_efa_unit_test_CPPFLAGS = $(efa_CPPFLAGS)
+prov_efa_test_efa_unit_test_LDADD = $(cmocka_LIBS) $(linkback)
+prov_efa_test_efa_unit_test_LDFLAGS = $(cmocka_rpath) $(efa_LDFLAGS) $(cmocka_LDFLAGS) \
+					-Wl,--wrap=ibv_create_ah \
+					-Wl,--wrap=efadv_query_device \
+					-Wl,--wrap=ofi_copy_from_hmem_iov
+
+if HAVE_EFADV_CQ_EX
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=efadv_create_cq
+endif HAVE_EFADV_CQ_EX
+
+if HAVE_NEURON
+prov_efa_test_efa_unit_test_LDFLAGS += -Wl,--wrap=neuron_alloc
+endif HAVE_NEURON
+
+prov_efa_test_efa_unit_test_LIBS = $(efa_LIBS) $(linkback)
+
+endif ENABLE_EFA_UNIT_TEST
 
 efa_CPPFLAGS += \
 	-I$(top_srcdir)/prov/efa/src/ \

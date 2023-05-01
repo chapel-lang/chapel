@@ -263,12 +263,11 @@ is possible to disable the lock (for performance reasons) by passing
 methods - in particular those beginning with the underscore - should only be
 called on locked fileReaders or fileWriters.  With these methods, it is possible
 to get or set the fileReader or fileWriter style, or perform I/O "transactions"
-(see :proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
-methods, e.g., first lock the fileWriter with :proc:`fileWriter.lock`, call the
-methods you need, then unlock the fileWriter with :proc:`fileWriter.unlock`.
-Note that in the future, we may move to alternative ways of calling these
-functions that guarantee that they are not called on a fileReader or fileWriter
-without the appropriate locking.
+(see :proc:`fileWriter.mark`, e.g.). To use these methods, e.g., first lock the
+fileWriter with :proc:`fileWriter.lock`, call the methods you need, then unlock
+the fileWriter with :proc:`fileWriter.unlock`. Note that in the future, we may
+move to alternative ways of calling these functions that guarantee that they
+are not called on a fileReader or fileWriter without the appropriate locking.
 
 Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
@@ -283,7 +282,7 @@ kind of data race can occur.
 .. note::
 
   Since fileWriters can buffer data until :proc:`fileWriter.flush` is called, it
-  is possible to write programs that have undefined behaviour because of race
+  is possible to write programs that have undefined behavior because of race
   conditions on fileWriter buffers. In particular, the problem comes up for
   programs that make:
 
@@ -411,19 +410,51 @@ Their types' ``kind`` argument is ``dynamic``.
 Error Handling
 --------------
 
-Most I/O routines throw an :class:`OS.SystemError`, which can be handled
+Most I/O routines throw a :class:`~OS.SystemError`, which can be handled
 appropriately with ``try`` and ``catch`` (see the
 :ref:`documentation<Complete_handling>` for more detail).
 
-Additionally, some subclasses of :class:`Errors.Error` are commonly used within
+Additionally, some subclasses of :class:`~Errors.Error` are commonly used within
 the I/O implementation. These are:
 
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
 
-An error code can be converted to a string using the function
-:proc:`OS.errorToString()`.
+.. _io-general-sys-error:
+
+**System Errors:**
+
+For other error cases, a general :class:`~OS.SystemError` is typically thrown.
+These errors are often produced by less predictable circumstances that are
+more challenging to recover from. For example, a :record:`fileReader` could run
+out of memory when attempting to allocate more buffer space.
+
+As such, it is typically recommended that more specific errors are caught and
+recovered from separately from a ``SystemError``. See the following example:
+
+.. code-block:: chapel
+
+  const r = openReader("test.txt");
+
+  try {
+    var i = r.read(int);
+    // ...
+  } catch e: EofError {
+    writeln("r is at EOF");
+    // we're done reading
+
+  } catch e: UnexpectedEofError {
+    writeln("unable to read an 'int'");
+    // try to read something else? ...
+
+  } catch e: SystemError {
+    writeln("system error in IO implementation: ", e);
+    // try to recover from the error? ...
+
+  } catch e: Error {
+    writeln("something else went wrong...");
+  }
 
 .. _about-io-ensuring-successful-io:
 
@@ -1557,7 +1588,7 @@ record ioHintSet {
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
-  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead")
+  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead")
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
@@ -3287,50 +3318,94 @@ inline proc fileWriter.unlock() {
 }
 
 /*
-   Return the current offset of a fileReader.
+  A compile-time parameter to control the behavior of :proc:`fileReader.offset`
+  and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
+  :param:`fileWriter.locking` is true.
 
-   .. warning::
+  When 'false', the deprecated behavior is used (i.e., the method acquires a
+  lock internally before getting the offset)
 
-      If the fileReader can be used by multiple tasks, take care
-      when doing operations that rely on the fileReader's current offset.
-      To prevent race conditions, first lock the fileReader with
-      :proc:`fileReader.lock`, do the operations with :proc:`fileReader._offset`
-      instead, then unlock it with :proc:`fileReader.unlock`.
+  When 'true', the new behavior is used (i.e., no lock is automatically
+  aquired)
+*/
+config param fileOffsetWithoutLocking = false;
 
-   :returns: the current offset of the fileReader
- */
-proc fileReader.offset():int(64) {
+@chpldoc.nodoc
+private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
   var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
+  on fileRW._home {
+    if doDeprecatedLocking then try! fileRW.lock();
+    ret = qio_channel_offset_unlocked(fileRW._channel_internal);
+    if doDeprecatedLocking then fileRW.unlock();
   }
   return ret;
 }
 
 /*
+   Return the current offset of a fileReader.
+
+   The fileReader will call :proc:`fileReader.lock` before getting the offset
+   and call :proc:`fileReader.unlock` after.
+
+   :returns: the current offset of the fileReader
+ */
+@deprecated(notes="The variant of :proc:`fileReader.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
+proc fileReader.offset():int(64)
+  where this.locking == true && !fileOffsetWithoutLocking
+  do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileReader.
+
+   If the fileReader can be used by multiple tasks, take care when doing
+   operations that rely on the fileReader's current offset. To prevent race
+   conditions, lock the fileReader with :proc:`fileReader.lock` before calling
+   :proc:`fileReader.offset`, then unlock it afterwards with
+   :proc:`fileReader.unlock`.
+
+   :returns: the current offset of the fileReader
+ */
+proc fileReader.offset():int(64)
+  where this.locking == false ||
+        (this.locking == true && fileOffsetWithoutLocking)
+  do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
+
+/*
    Return the current offset of a fileWriter.
 
-   .. warning::
-
-      If the fileWriter can be used by multiple tasks, take care
-      when doing operations that rely on the fileWriter's current offset.
-      To prevent race conditions, first lock the fileWriter with
-      :proc:`fileWriter.lock`, do the operations with :proc:`fileWriter._offset`
-      instead, then unlock it with :proc:`fileWriter.unlock`.
+   The fileWriter will call :proc:`fileWriter.lock` before getting the offset
+   and call :proc:`fileWriter.unlock` after.
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    try! this.lock();
-    ret = qio_channel_offset_unlocked(_channel_internal);
-    this.unlock();
-  }
-  return ret;
-}
+@deprecated(notes="The variant of :proc:`fileWriter.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileWriter.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
+proc fileWriter.offset():int(64)
+  where this.locking == true && !fileOffsetWithoutLocking
+  do return offsetHelper(this, true);
+
+/*
+   Return the current offset of a fileWriter.
+
+   If the fileWriter can be used by multiple tasks, take care when doing
+   operations that rely on the fileWriter's current offset. To prevent race
+   conditions, lock the fileWriter with :proc:`fileWriter.lock` before calling
+   :proc:`fileWriter.offset`, then unlock it afterwards with
+   :proc:`fileWriter.unlock`.
+
+   :returns: the current offset of the fileWriter
+ */
+proc fileWriter.offset():int(64)
+  where this.locking == false ||
+        (this.locking == true && fileOffsetWithoutLocking)
+  do return offsetHelper(this, false);
+
+// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
+@chpldoc.nodoc
+proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
    Move a fileReader offset forward.
@@ -3356,8 +3431,8 @@ proc fileReader.advance(amount:int(64)) throws {
    Move a fileWriter offset forward.
 
    This function will write ``amount`` zeros - or some other data if it is
-   stored in the fileWriter's buffer, for example with :proc:`fileWriter._mark`
-   and :proc:`fileWriter._revert`.
+   stored in the fileWriter's buffer, for example with :proc:`fileWriter.mark`
+   and :proc:`fileWriter.revert`.
 
    :throws EofError: If EOF is reached before the offset can be advanced by the
                       requested number of bytes.
@@ -3512,11 +3587,20 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   }
 }
 
+@chpldoc.nodoc
+private inline proc markHelper(fileRW) throws {
+  const offset = fileRW.chpl_offset();
+  const err = qio_channel_mark(false, fileRW._channel_internal);
+
+  if err then
+    throw createSystemError(err);
+
+  return offset;
+}
 
 /*
    *Mark* a fileReader - that is, save the current offset of the fileReader
-   on its *mark stack*. This function can only be called on a fileReader
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileReader offsets. For any fileReader offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3534,6 +3618,12 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
       calling :proc:`fileReader.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileReader has ``locking==true``, :proc:`fileReader.mark` should be
+   called only once the fileReader has been locked with
+   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
+   :proc:`fileReader.unlock` until after the mark has been committed with
+   :proc:`fileReader.commit` or reverted with :proc:`fileReader.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3544,20 +3634,11 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
-proc fileReader.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileReader.mark() throws do return markHelper(this);
 
 /*
    *Mark* a fileWriter - that is, save the current offset of the fileWriter
-   on its *mark stack*. This function can only be called on a fileWriter
-   with ``locking==false``.
+   on its *mark stack*.
 
    The *mark stack* stores several fileWriter offsets. For any fileWriter offset
    that is between the minimum and maximum value in the *mark stack*, I/O
@@ -3575,6 +3656,12 @@ proc fileReader.mark() throws where this.locking == false {
       calling :proc:`fileWriter.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
+   If a fileWriter has ``locking==true``, :proc:`fileWriter.mark` should be
+   called only once the fileWriter has been locked with
+   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
+   :proc:`fileWriter.unlock` until after the mark has been committed with
+   :proc:`fileWriter.commit` or reverted with :proc:`fileWriter.revert`.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -3585,55 +3672,57 @@ proc fileReader.mark() throws where this.locking == false {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
-proc fileWriter.mark() throws where this.locking == false {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
-}
+proc fileWriter.mark() throws do return markHelper(this);
 
 /*
    Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileReader offset unchanged.  This function can only be
-   called on a fileReader with ``locking==false``.
+   previous fileReader offset unchanged.
+
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.revert() where this.locking == false {
+inline proc fileReader.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Abort an *I/O transaction*. See :proc:`fileWriter.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous fileWriter offset unchanged.  This function can only be
-   called on a fileWriter with ``locking==false``.
+   previous fileWriter offset unchanged.
+
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.revert() where this.locking == false {
+inline proc fileWriter.revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileReader.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileReader offset to the popped offset.  This function can
-   only be called on a fileReader with ``locking==false``.
+   set the fileReader offset to the popped offset.
 
+   This function should only be called on a fileReader that has already been
+   marked. If called on a fileReader with ``locking==true``, the fileReader
+   should have already been locked.
 */
-inline proc fileReader.commit() where this.locking == false {
+inline proc fileReader.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
 /*
    Commit an *I/O transaction*. See :proc:`fileWriter.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the fileWriter offset to the popped offset.  This function can
-   only be called on a fileWriter with ``locking==false``.
+   set the fileWriter offset to the popped offset.
 
+   This function should only be called on a fileWriter that has already been
+   marked. If called on a fileWriter with ``locking==true``, the fileWriter
+   should have already been locked.
 */
-inline proc fileWriter.commit() where this.locking == false {
+inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
@@ -3781,24 +3870,18 @@ proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
    For a ``fileReader`` locked with :proc:`fileReader.lock`, return the offset
    of that fileReader.
  */
+@deprecated(notes="fileReader._offset is deprecated - please use :proc:`fileReader.offset` instead")
 proc fileReader._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
    For a fileWriter locked with :proc:`fileWriter.lock`, return the offset
    of that fileWriter.
  */
+@deprecated(notes="fileWriter._offset is deprecated - please use :proc:`fileWriter.offset` instead")
 proc fileWriter._offset():int(64) {
-  var ret:int(64);
-  on this._home {
-    ret = qio_channel_offset_unlocked(_channel_internal);
-  }
-  return ret;
+  return this.offset();
 }
 
 /*
@@ -3815,14 +3898,9 @@ proc fileWriter._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileReader failed
  */
+@deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
 proc fileReader._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -3839,14 +3917,9 @@ proc fileReader._mark() throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the fileWriter failed
  */
+@deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
 proc fileWriter._mark() throws {
-  const offset = this.offset();
-  const err = qio_channel_mark(false, _channel_internal);
-
-  if err then
-    throw createSystemError(err);
-
-  return offset;
+  return this.mark();
 }
 
 /*
@@ -3856,8 +3929,9 @@ proc fileWriter._mark() throws {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._revert is deprecated - please use :proc:`fileReader.revert` instead")
 inline proc fileReader._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3867,8 +3941,9 @@ inline proc fileReader._revert() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._revert is deprecated - please use :proc:`fileWriter.revert` instead")
 inline proc fileWriter._revert() {
-  qio_channel_revert_unlocked(_channel_internal);
+  this.revert();
 }
 
 /*
@@ -3878,8 +3953,9 @@ inline proc fileWriter._revert() {
    only be called on a fileReader that has already been locked and
    marked.
 */
+@deprecated(notes="fileReader._commit is deprecated - please use :proc:`fileReader.commit` instead")
 inline proc fileReader._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 /*
@@ -3889,8 +3965,9 @@ inline proc fileReader._commit() {
    only be called on a fileWriter that has already been locked and
    marked.
 */
+@deprecated(notes="fileWriter._commit is deprecated - please use :proc:`fileWriter.commit` instead")
 inline proc fileWriter._commit() {
-  qio_channel_commit_unlocked(_channel_internal);
+  this.commit();
 }
 
 // TODO -- come up with better names for these
@@ -4449,7 +4526,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = region.low;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = region.low;
         end = region.high;
@@ -4472,7 +4549,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
         start = 0;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = 0;
         end = region.high;
@@ -4682,7 +4759,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
       // removed
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         start = region.low;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = region.low;
         end = region.high;
@@ -4695,7 +4772,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
     } else if (region.hasHighBound()) {
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
         start = 0;
-        end = region.high + 1;
+        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
       } else {
         start = 0;
         end = region.high;
@@ -5803,7 +5880,8 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
   Iterate over all of the lines ending in ``\n`` in a fileReader - the
   fileReader lock will be held while iterating over the lines.
 
-  Only serial iteration is supported.
+  Only serial iteration is supported. This iterator will halt on internal
+  system errors.
 
   .. warning::
 
@@ -5811,9 +5889,11 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
     performance if the current locale is not the same locale on which the
     fileReader was created.
 
-  :yields: lines ending in ``\n`` in fileReader
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. Defaults to false
+  :yields: lines from the fileReader, by default with a trailing ``\n``
+
  */
-iter fileReader.lines() {
+iter fileReader.lines(stripNewline = false) {
 
   try! this.lock();
 
@@ -5822,14 +5902,22 @@ iter fileReader.lines() {
   // Update iostyleInternal
   var newline_style: iostyleInternal = this._styleInternal();
 
+  param newlineChar = 0x0A; // '\n'
+
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
-  newline_style.string_end = 0x0a; // '\n'
+  newline_style.string_end = newlineChar;
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
   var itemReader = new itemReaderInternal(string, kind, locking, fmtType, this);
   for line in itemReader {
-    yield line;
+    if !stripNewline then yield line;
+    else {
+      var lastCharIdx = line.size-1;
+      if !line.isEmpty() && line.byte(lastCharIdx) == newlineChar
+        then yield line[..<lastCharIdx];
+        else yield line;
+    }
   }
 
   // Set the iostyle back to original state
@@ -5864,7 +5952,9 @@ proc stringify(const args ...?k):string {
 
       w.write((...args));
 
-      var offset = w.offset();
+      try! w.lock();
+      var offset = w.chpl_offset();
+      w.unlock();
 
       var buf = c_malloc(uint(8), offset+1);
 
@@ -5916,18 +6006,19 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
 }
 
 /*
+   Read one or more values from a ``fileReader``. The ``fileReader``'s lock
+   will be held while reading the values — this protects against interleaved
+   reads.
 
-   Read values from a fileReader. The input will be consumed atomically - the
-   fileReader lock will be held while reading all of the passed values.
-
-   :arg args: a list of arguments to read. Basic types are handled
+   :arg args: a series of variables to read into. Basic types are handled
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
-   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the fileReader could not be read.
+   :throws UnexpectedEofError: Thrown if an EOF occurred while reading an item.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        for :ref:`another reason<io-general-sys-error>`.
  */
 inline proc fileReader.read(ref args ...?k):bool throws {
   try {
@@ -6023,39 +6114,45 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
 }
 
 /*
-  Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
-  This function always does a binary read (i.e. it is not aware of UTF-8 etc)
-  and is similar in some ways to `readLine(bytes)` but works with an array
-  directly.  However, it does not resize the array but rather stores up to first
-  'size' bytes in to it. The exact number of bytes in the array set will depend
-  on the line length (and on stripNewline since the newline will be counted if
-  it is stored in the array).
+  Read a line into an array of bytes.
 
-  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8)
-          which must have at least 1 element.
+  Reads bytes from the ``fileReader`` until a ``\n`` is reached. Values are
+  read in binary format (i.e., this method is not aware of UTF-8 encoding).
+
+  The array's size is not changed to accommodate bytes. If a newline is not
+  found before the array is filled, or ``maxSize`` bytes are read, a
+  :class:`~OS.BadFormatError` is thrown and the ``fileReader`` offset is
+  returned to its original position.
+
+  :arg a: A 1D DefaultRectangular non-strided array storing ``int(8)`` or
+          ``uint(8)``. Values are overwritten.
   :arg maxSize: The maximum number of bytes to store into the ``a`` array.
                 Defaults to the size of the array.
-  :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
-  :returns: Returns `0` if EOF is reached and no data is read. Otherwise,
-            returns the number of array elements that were set by this call.
+  :arg stripNewline: Whether to strip the trailing ``\n`` from the line. If
+                     ``true``, the newline isn't counted in the number of
+                     bytes read.
+  :returns: The number of array elements set by this call, or ``0`` otherwise
+            (i.e., the ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws IllegalArgumentError: Thrown if ``maxSize > a.size``
+  :throws BadFormatError: Thrown if the line is longer than ``maxSize``. File
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
-  if a.size == 0 || maxSize == 0 ||
-  ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
+      where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable
+{
+  if maxSize > a.size
+    then throw new IllegalArgumentError("'maxSize' argument exceeds size of array in readLine");
+  if maxSize == 0 then return 0;
 
   var err:errorCode = 0;
   var numRead:int;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    this._mark();
+    this.mark();
     param newLineChar = 0x0A;
     var got: int;
     var i = a.domain.lowBound;
@@ -6068,7 +6165,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         var err:errorCode = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(a : [] uint(8))");
       }
@@ -6080,7 +6177,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode, "line longer than maxSize in fileReader.readLine(a : [] uint(8))");
         }
       }
@@ -6091,7 +6188,7 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
     }
     numRead = i - a.domain.lowBound;
     if i == a.domain.lowBound && got < 0 then err = (-got):errorCode;
-    this._commit();
+    this.commit();
   }
 
   if !err {
@@ -6200,10 +6297,10 @@ proc readStringBytesData(ref s /*: string or bytes*/,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: ``true`` if a line was read without error, ``false`` upon EOF
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The
+                          ``fileReader`` offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(ref s: string,
                          maxSize=-1,
@@ -6221,7 +6318,7 @@ proc fileReader.readLine(ref s: string,
     var foundNewline = false;
     // use the fileReader's buffering to compute how many bytes/codepoints
     // we are reading
-    this._mark();
+    this.mark();
     while !foundNewline {
       // read a single codepoint
       err = qio_channel_read_char(false, this._channel_internal, chr);
@@ -6230,7 +6327,7 @@ proc fileReader.readLine(ref s: string,
         break;
       } else if err {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
       }
       nCodepoints += 1;
@@ -6242,15 +6339,15 @@ proc fileReader.readLine(ref s: string,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                "line longer than maxSize in fileReader.readLine(ref s: string)");
         }
       }
     }
-    var endOffset = this._offset();
-    this._revert();
-    var nBytes:int = endOffset - this._offset();
+    var endOffset = this.chpl_offset();
+    this.revert();
+    var nBytes:int = endOffset - this.chpl_offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -6287,10 +6384,10 @@ proc fileReader.readLine(ref s: string,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: ``true`` if a line was read without error, ``false`` upon EOF
 
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The file
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(ref b: bytes,
                          maxSize=-1,
@@ -6304,7 +6401,7 @@ proc fileReader.readLine(ref b: bytes,
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
     var nBytes: int = 0;
     // use the fileReader's buffering to compute how many bytes we are reading
-    this._mark();
+    this.mark();
     var got : int;
     var err: errorCode = 0;
     var foundNewline = false;
@@ -6316,7 +6413,7 @@ proc fileReader.readLine(ref b: bytes,
         break;
       } else if got < 0 {
         // encountered an error so throw
-        this._revert();
+        this.revert();
         err = -got;
         try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
         break;
@@ -6330,13 +6427,13 @@ proc fileReader.readLine(ref b: bytes,
           // don't worry about it since we wouldn't return the newline
         } else {
           // The line is longer than was specified so we throw an error
-          this._revert();
+          this.revert();
           try this._ch_ioerror(EFORMAT:errorCode,
                    "line longer than maxSize in fileReader.readLine(ref b: bytes)");
         }
       }
     }
-    this._revert();
+    this.revert();
     // now, nBytes includes the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -6376,20 +6473,20 @@ proc fileReader.readLine(ref b: bytes,
                 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to (and possibly including) the newline.
+            up to (and possibly including) the newline.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
                     was already at EOF.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
-                          the fileReader offset at the beginning of the
-                          offending line.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. The file
+                          offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readLine(type t=string, maxSize=-1,
                          stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
-  // TODO: throw an EOF error if this call returns false
-  this.readLine(retval, maxSize, stripNewline);
+  if !this.readLine(retval, maxSize, stripNewline)
+    then throw new EofError("Encountered EOF in readLine");
   return retval;
 }
 
@@ -6410,20 +6507,21 @@ proc fileReader.readLine(type t=string, maxSize=-1,
   :type:`~Regex.regex` separator.
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
-    or :type:`~Bytes.bytes`.
+                  or :type:`~Bytes.bytes`.
   :arg maxSize: The maximum number of bytes to read. For the default value of
-    ``-1``, this method can read until EOF.
+                ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
-    ``string`` or ``bytes``. If ``true``, the returned value will not include
-    the separator.
+                        ``string`` or ``bytes``. If ``true``, the returned
+                        value will not include the separator.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to (and possibly including) the separator.
+            up to (and possibly including) the separator.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
-    was already at EOF.
+                    was already at EOF.
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -6444,15 +6542,16 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method can read until EOF.
+                of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
-    If ``true``, the separator will not be included in ``s``.
+                       If ``true``, the separator will not be included in ``s``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -6502,15 +6601,16 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   :arg separator: The separator to match with.
   :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of codepoints to read. For the default value
-    of ``-1``, this method can read until EOF.
+                of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
-    If ``true``, the separator will not be included in ``b``.
+                       If ``true``, the separator will not be included in ``b``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The fileReader offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The fileReader offset is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
@@ -6550,17 +6650,19 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   :type:`~Regex.regex` separator.
 
   :arg separator: The separator to match with. Must be a :type:`~String.string`
-    or :type:`~Bytes.bytes`.
+                  or :type:`~Bytes.bytes`.
   :arg maxSize: The maximum number of bytes to read. For the default
-    value of ``-1``, this method can read until EOF.
+                value of ``-1``, this method can read until EOF.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to the ``separator``.
+            up to the ``separator``.
 
   :throws EofError: Thrown if nothing could be read because the ``fileReader``
-    was already at EOF.
+                    was already at EOF.
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   where t==string || t==bytes
@@ -6582,13 +6684,15 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method will read until EOF.
+                of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          `maxSize` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
   var atEof = false;
@@ -6631,13 +6735,15 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   :arg separator: The separator to match with.
   :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
-    of ``-1``, this method will read until EOF.
+                of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF).
+            ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The ``fileReader`` offset is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+                          ``maxSize`` bytes. The ``fileReader`` offset is not
+                          moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
   var atEof = false;
@@ -6760,24 +6866,26 @@ private proc _findSeparator(separator: ?t, maxBytes=-1, ch_internal): (errorCode
           :type:`~Bytes.bytes`. Defaults to ``bytes`` if not specified.
   :returns: the contents of the ``fileReader`` as a ``t``
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
+  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+                    was already at EOF.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``
-                       for another reason.
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(type t=bytes): t throws
   where t==string || t==bytes
 {
-  var out_var : t;
+  var out_var : t,
+      num_read = 0;
 
   if t == bytes {
     out_var = b"";
-    this.readAll(out_var);
+    num_read = this.readAll(out_var);
   } else {
     out_var = "";
-    this.readAll(out_var);
+    num_read = this.readAll(out_var);
   }
 
+  if num_read == 0 then throw new EofError("EOF encountered in readAll");
   return out_var;
 }
 
@@ -6787,13 +6895,12 @@ proc fileReader.readAll(type t=bytes): t throws
   Note that any existing contents of the ``string`` are overwritten.
 
   :arg s: the :type:`~String.string` to read into
-  :returns: the number of codepoints that were stored in ``s``
+  :returns: the number of codepoints that were stored in ``s``, or 0 if
+            the ``fileReader`` is at EOF.
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref s: string): int throws {
   const (err, lenread) = readBytesOrString(this, s, -1);
@@ -6811,13 +6918,12 @@ proc fileReader.readAll(ref s: string): int throws {
   Note that any existing contents of the ``bytes`` are overwritten.
 
   :arg b: the :type:`~Bytes.bytes` to read into
-  :returns: the number of bytes that were stored in ``b``
+  :returns: the number of bytes that were stored in ``b``, or 0 if
+            the ``fileReader`` is at EOF.
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref b: bytes): int throws {
   const (err, lenread) = readBytesOrString(this, b, -1);
@@ -6833,9 +6939,12 @@ proc fileReader.readAll(ref b: bytes): int throws {
   Read the remaining contents of the ``fileReader`` into an array of bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
-  Additionally, If the remaining contents of the fileReader exceed the size of
-  ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
-  ``InsufficientCapacityError`` will be thrown.
+
+  If the remaining contents of the fileReader exceed the size of ``a``, the
+  first ``a.size`` bytes will be read into ``a``, and then an
+  :class:`~OS.InsufficientCapacityError` will be thrown. In such a case, the
+  ``fileReader`` offset is advanced ``a.size`` bytes from its original
+  position.
 
   :arg a: the array of bytes to read into
   :returns: the number of bytes that were stored in ``a``
@@ -6843,10 +6952,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
 
   :throws InsufficientCapacityError: Thrown if the fileReader's contents do not
                                      fit into ``a``.
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if data could not be read from the fileReader for
-                       another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
@@ -6879,10 +6986,10 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
     if i-1 == d.high {
       var has_more = false;
 
-      this._mark();
+      this.mark();
       got = qio_channel_read_byte(false, this._channel_internal);
       has_more = (got >= 0);
-      this._revert();
+      this.revert();
 
       if has_more {
         const sz = qio_channel_get_size(this._channel_internal);
@@ -6936,13 +7043,17 @@ proc fileReader.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
               from the ``fileReader``
 
-  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readString(maxSize: int): string throws {
   var ret: string = "";
-  var (e, _) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesOrString(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
+  else if e == EEOF && numRead == 0 then
+    throw new EofError("EOF encountered in readString");
 
   return ret;
 }
@@ -6957,10 +7068,11 @@ proc fileReader.readString(maxSize: int): string throws {
 
   :arg s: the ``string`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
-  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+            ``fileReader`` was already at EOF).
 
-  :throws SystemError: Thrown if a ``string`` could not be read from the
-                       ``fileReader``.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   var (e, lenRead) = readBytesOrString(this, s, maxSize);
@@ -7004,16 +7116,19 @@ proc fileReader.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
 
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
   :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
-              from the ``fileReader``
+            from the ``fileReader``
 
-  :throws SystemError: Thrown if a ``bytes`` could not be read from the
-                       ``fileReader`` for another reason.
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
-  var (e, _) = readBytesOrString(this, ret, maxSize);
+  var (e, numRead) = readBytesOrString(this, ret, maxSize);
 
   if e != 0 && e != EEOF then throw createSystemError(e);
+  else if e == EEOF && numRead == 0 then
+    throw new EofError("EOF encountered in readBytes");
 
   return ret;
 }
@@ -7028,11 +7143,11 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 
   :arg b: the ``bytes`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
-  :returns: ``false`` if nothing could be read, or ``true`` if something was
-              read.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+            ``fileReader`` was already at EOF).
 
-  :throws SystemError: Thrown if a ``bytes`` could not be read from the
-                       ``fileReader`` for another reason.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   var (e, lenRead) = readBytesOrString(this, b, maxSize);
@@ -7115,11 +7230,13 @@ proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
    :arg x: where to store the read bits. This value will have its *numBits*
            least-significant bits set.
    :arg numBits: how many bits to read
-   :returns: `true` if the bits were read without error, `false` upon EOF
+   :returns: ``true`` if the bits were read, and ``false`` otherwise (i.e., the
+             ``fileReader`` was already at EOF).
 
-   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the bits could not be read from the
-                        ``fileReader``.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before ``numBits``
+                               could be read.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
@@ -7147,15 +7264,16 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
     :returns: bits read. This value will have its *numBits* least-significant
               bits set
 
-    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                                reading.
-    :throws SystemError: Thrown if the bits could not be read from the
-                         ``fileReader``.
+    :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+    :throws UnexpectedEofError: Thrown if EOF was encountered before ``numBits``
+                                could be read.
+    :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                         due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var tmp:resultType;
   var ret = try this.readBits(tmp, numBits);
-  if !ret then throw new UnexpectedEofError("Encountered EOF in readBits");
+  if !ret then throw new EofError("EOF Encountered in readBits");
   return tmp;
 }
 
@@ -7171,11 +7289,12 @@ proc fileWriter.writebits(v:integral, nbits:integral) throws {
   :arg x: a value containing *numBits* bits to write the least-significant bits
   :arg numBits: how many bits to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws IllegalArgumentError: Thrown if writing more bits than fit into `x`.
-  :throws SystemError: Thrown if the bits could not be written to the
-                       ``fileWriter``.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
@@ -7194,46 +7313,49 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
 }
 
 /*
-  Writes a single Unicode codepoint to a ``fileWriter``
+  Write a single Unicode codepoint to a ``fileWriter``
 
   :arg codepoint: Unicode codepoint to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
-  :throws SystemError: Thrown if the codepoint could not be written to the
-                       ``fileWriter``.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeCodepoint(codepoint: int) throws {
   try this.write(new _internalIoChar(codepoint.safeCast(int(32))));
 }
 
 /*
-  Reads a single Unicode codepoint from a ``fileReader``
+  Read a single Unicode codepoint from a ``fileReader``
 
   :returns: Unicode codepoint read
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if the codepoint could not be read from the
-                       ``fileReader``.
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if EOF was encountered while reading a
+                              codepoint.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readCodepoint(): int throws {
   var tmp:int;
   var ret = try this.readCodepoint(tmp);
-  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
+  if !ret then throw new EofError("Encountered EOF in readCodepoint");
   return tmp;
 }
 
 /*
-  Reads a single Unicode codepoint from a ``fileReader``
+  Read a single Unicode codepoint from a ``fileReader``
 
   :arg c: where to store the read codepoint
-  :returns: `true` if the codepoint was read without error, `false` upon EOF
+  :returns: ``true`` if the codepoint was read, and ``false`` otherwise (i.e.,
+            the ``fileReader`` was already at EOF).
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if the codepoint could not be read from the
-                       ``fileReader``.
+  :throws UnexpectedEofError: Thrown if EOF was encountered while reading a
+                              codepoint.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readCodepoint(ref codepoint: int):bool throws {
   var tmp:_internalIoChar;
@@ -7243,14 +7365,15 @@ proc fileReader.readCodepoint(ref codepoint: int):bool throws {
 }
 
 /*
-  Writes a single byte to a ``fileWriter``
+  Write a single byte to a ``fileWriter``
 
   :arg byte: the byte to write
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
-  :throws SystemError: Thrown if the byte could not be written to the
-                       ``fileWriter``.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeByte(byte: uint(8)) throws {
   var err:errorCode = 0;
@@ -7268,32 +7391,30 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
 }
 
 /*
-  Reads a single byte from a ``fileReader``
+  Read a single byte from a ``fileReader``
 
   :returns: the byte read
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if the byte could not be read from the
-                       ``fileReader``.
+  :throws EofError: Thrown if the ``fileReader`` offset was already at EOF.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readByte(): uint(8) throws {
   var tmp:uint(8);
   var ret = try this.readByte(tmp);
-  if !ret then throw new UnexpectedEofError("Encountered EOF in readByte");
+  if !ret then throw new EofError("Encountered EOF in readByte");
   return tmp;
 }
 
 /*
-  Reads a single byte from a ``fileReader``
+  Read a single byte from a ``fileReader``
 
   :arg byte: where to store the read byte
-  :returns: `true` if the byte was read without error, `false` upon EOF
+  :returns: ``true`` if the byte was read, and ``false`` otherwise (i.e.,
+            the ``fileReader`` was already at EOF).
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                              reading.
-  :throws SystemError: Thrown if the byte could not be read from the
-                       ``fileReader``.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readByte(ref byte: uint(8)): bool throws {
   var err:errorCode = 0;
@@ -7322,10 +7443,11 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
-  :throws SystemError: Thrown if the string could not be written to the
-                       ``fileWriter``.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
 proc fileWriter.writeString(s: string, size = s.size) throws {
@@ -7340,10 +7462,11 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
 
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
-  :throws SystemError: Thrown if the bytes could not be written to the
-                       ``fileWriter``.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
 proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
@@ -7351,25 +7474,26 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
 }
 
 /*
-   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
+  Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
 
-   Note that native endianness is always used.
+  Note that native endianness is always used.
 
-   If ``numBytes`` is not evenly divisible by the size of ``t``, the remaining
-   bytes will be ignored. For example, if the ``c_ptr``'s internal type is 4
-   bytes in length, and ``numBytes=17``, only 16 bytes will be written.
+  If ``numBytes`` is not evenly divisible by the size of ``t``, the remaining
+  bytes will be ignored. For example, if the ``c_ptr``'s internal type is 4
+  bytes in length, and ``numBytes=17``, only 16 bytes will be written.
 
-   .. warning::
-      This method provides no protection against attempting to access invalid
-      memory
+  .. warning::
+    This method provides no protection against attempting to access invalid
+    memory
 
-   :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
-   :arg numBytes: the number of bytes to write
+  :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
+  :arg numBytes: the number of bytes to write
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified region.
-   :throws SystemError: Thrown if an error occurred while writing to the
-                        ``fileWriter``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
@@ -7385,21 +7509,22 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
+  Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
 
-   The data are written to the file one byte at a time.
+  The data are written to the file one byte at a time.
 
-   .. warning::
-      This method provides no protection against attempting to access invalid
-      memory
+  .. warning::
+    This method provides no protection against attempting to access invalid
+    memory
 
-   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
-   :arg numBytes: the number of bytes to write
+  :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
+  :arg numBytes: the number of bytes to write
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified region.
-   :throws SystemError: Thrown if an error occurred while writing to the
-                        ``fileWriter``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0;
@@ -7407,23 +7532,22 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var byte_ptr = ptr : c_ptr(uint(8));
   e = try qio_channel_write_amt(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t);
 
-  if (e != 0) {
-    throw createSystemOrChplError(e);
-  }
+  if e != 0 then throw createSystemOrChplError(e);
 }
 
 /*
-   Write a binary number to the ``fileWriter``
+  Write a binary number to the ``fileWriter``
 
-   :arg arg: number to be written
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
-                order in which to write the number. Defaults to
-                ``ioendian.native``.
+  :arg arg: number to be written
+  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+               order in which to write the number. Defaults to
+               ``ioendian.native``.
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the number could not be written to the
-                        ``fileWriter``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileWriter.writeBinary(arg:numeric,
                             param endian:ioendian = ioendian.native) throws {
@@ -7446,16 +7570,17 @@ proc fileWriter.writeBinary(arg:numeric,
 }
 
 /*
-   Write a binary number to the ``fileWriter``
+  Write a binary number to the ``fileWriter``
 
-   :arg arg: number to be written
-   :arg endian: :type:`ioendian` specifies the byte order in which
-              to write the number.
+  :arg arg: number to be written
+  :arg endian: :type:`ioendian` specifies the byte order in which
+               to write the number.
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the number could not be written to the
-                        ``fileWriter``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
   select (endian) {
@@ -7472,16 +7597,17 @@ proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
 }
 
 /*
-   Write a :type:`~String.string` to a ``fileWriter`` in binary format
+  Write a :type:`~String.string` to a ``fileWriter`` in binary format
 
-   :arg s: the ``string`` to write
-   :arg size: the number of codepoints to write from the ``string``
+  :arg s: the ``string`` to write
+  :arg size: the number of codepoints to write from the ``string``
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the string could not be written to the
-                        ``fileWriter``.
-   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``.
 */
 proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   // handle bad arguments
@@ -7519,16 +7645,17 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
 }
 
 /*
-   Write a :type:`~Bytes.bytes` to a ``fileWriter`` in binary format
+  Write a :type:`~Bytes.bytes` to a ``fileWriter`` in binary format
 
-   :arg b: the ``bytes`` to write
-   :arg size: the number of bytes to write from the ``bytes``
+  :arg b: the ``bytes`` to write
+  :arg size: the number of bytes to write from the ``bytes``
 
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the bytes could not be written to the
-                        ``fileWriter``.
-   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``.
 */
 proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   // handle bad arguments
@@ -7553,19 +7680,20 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
 }
 
 /*
-   Write an array of binary numbers to a ``fileWriter``
+  Write an array of binary numbers to a ``fileWriter``
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a 1D rectangular non-strided array.
 
-   :arg data: an array of numbers to write to the fileWriter
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
-                order in which to read the numbers. Defaults to
-                ``ioendian.native``.
+  :arg data: an array of numbers to write to the fileWriter
+  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+               order in which to read the numbers. Defaults to
+               ``ioendian.native``.
 
-   :throws SystemError: Thrown if the values could not be written to the
-                        ``fileWriter``.
-   :throws UnexpectedEofError: Thrown if EOF is reached before all the values
-                               could be written.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
   where (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
@@ -7578,13 +7706,10 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     const tSize = c_sizeof(t) : c_ssize_t;
 
     if endian == ioendian.native && data.locale == this._home && data.isDefaultRectangular() {
-      e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
+      e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
 
-      if e == EEOF {
-        throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
-      } else if e != 0 {
+      if e != 0 then
         throw createSystemOrChplError(e);
-      }
     } else {
       for b in data {
         select (endian) {
@@ -7599,29 +7724,27 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
           }
         }
 
-        if e == EEOF {
-          throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
-        } else if e != 0 {
+        if e != 0 then
           throw createSystemOrChplError(e);
-        }
       }
     }
   }
 }
 
 /*
-   Write an array of binary numbers to a ``fileWriter``
+  Write an array of binary numbers to a ``fileWriter``
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a 1D rectangular non-strided array.
 
-   :arg data: an array of numbers to write to the fileWriter
-   :arg endian: :type:`ioendian` specifies the byte order in which
-              to write the number.
+  :arg data: an array of numbers to write to the fileWriter
+  :arg endian: :type:`ioendian` specifies the byte order in which
+               to write the number.
 
-   :throws SystemError: Thrown if the values could not be written to the
-                        ``fileWriter``.
-   :throws UnexpectedEofError: Thrown if EOF is reached before all the values
-                               could be written.
+  :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified region.
+  :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
   where (d.rank == 1 && d.stridable == false) && (
@@ -7641,18 +7764,19 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
 }
 
 /*
-   Read a binary number from the ``fileReader``
+  Read a binary number from the ``fileReader``
 
-   :arg arg: number to be read
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
-                order in which to read the number. Defaults to
-                ``ioendian.native``.
-   :returns: `true` if the number was read, `false` otherwise
+  :arg arg: number to be read
+  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+               order in which to read the number. Defaults to
+               ``ioendian.native``.
+  :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
+            the ``fileReader`` was already at EOF).
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred reading the number for
-                        another reason.
+  :throws UnexpectedEofError: Thrown if EOF was encountered while reading the
+                              number.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
   var e:errorCode = 0;
@@ -7682,12 +7806,13 @@ proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nat
    :arg arg: number to be read
    :arg endian: :type:`ioendian` specifies the byte order in which
                 to read the number.
-   :returns: `true` if the number was read, `false` otherwise
+   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
+             the ``fileReader`` was already at EOF).
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred reading the number for
-                        another reason.
+  :throws UnexpectedEofError: Thrown if EOF was encountered while reading the
+                              number.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   var rv: bool = false;
@@ -7707,26 +7832,24 @@ proc fileReader.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 }
 
 /*
-   Read a specified number of codepoints into a :type:`~String.string`
+  Read a specified number of codepoints into a :type:`~String.string`
 
-   The string ``s`` may be smaller than ``maxSize`` if EOF is reached before
-   reading the specified number of codepoints. Additionally, if nothing
-   is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
-   and the method will return ``false``.
+  The resulting string ``s`` may be smaller than ``maxSize`` if EOF is reached
+  before reading the specified number of codepoints. Additionally, if nothing
+  is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
+  and the method will return ``false``.
 
-   .. note::
+  .. note::
 
-      This method always uses UTF-8 encoding regardless of the fileReader's
-      configuration
+    This method always uses UTF-8 encoding regardless of the fileReader's
+    configuration
 
-   :arg s: the string to read into — this value is overwritten
-   :arg maxSize: the number of codepoints to read from the ``fileReader``
-   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+  :arg s: the string to read into — this value is overwritten
+  :arg maxSize: the number of codepoints to read from the ``fileReader``
+  :returns: ``true`` if some codepoints were read, or ``false`` on EOF
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred while reading from the
-                        ``fileReader``.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   var e:errorCode = 0,
@@ -7753,21 +7876,19 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 }
 
 /*
-   Read a specified number of bytes into a :type:`~Bytes.bytes`
+  Read a specified number of bytes into a :type:`~Bytes.bytes`
 
-   The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
-   reading the specified number of bytes. Additionally, if nothing is read
-   from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
-   the method will return ``false``.
+  The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
+  reading the specified number of bytes. Additionally, if nothing is read
+  from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
+  the method will return ``false``.
 
-   :arg b: the bytes to read into — this value is overwritten
-   :arg maxSize: the number of bytes to read from the ``fileReader``
-   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+  :arg b: the bytes to read into — this value is overwritten
+  :arg maxSize: the number of bytes to read from the ``fileReader``
+  :returns: ``true`` if some bytes were read, or ``false`` on EOF
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred while reading from the
-                        ``fileReader``.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   var e:errorCode = 0,
@@ -7875,30 +7996,30 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
 }
 
 /*
-   Read an array of binary numbers from a ``fileReader``
+  Read an array of binary numbers from a ``fileReader``
 
-   Binary values of the type ``data.eltType`` are consumed from the fileReader
-   until ``data`` is full or EOF is reached.
+  Binary values of the type ``data.eltType`` are consumed from the fileReader
+  until ``data`` is full or EOF is reached.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a 1D rectangular non-strided array.
 
-   :arg data: an array to read into – existing values are overwritten.
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
-                order in which to read the numbers in. Defaults to
-                ``ioendian.native``.
-   :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occurred,
-              before filling the array.
+  :arg data: an array to read into – existing values are overwritten.
+  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+               order in which to read the numbers in. Defaults to
+               ``ioendian.native``.
+  :returns: the number of values that were read into the array. This can be
+            less than ``data.size`` if EOF was reached, or an error occurred,
+            before filling the array.
 
-   :throws SystemError: Thrown if an error occurred while reading from the
-                       ``fileReader``.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                       due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
-      numRead = 0;
+      numRead : c_ssize_t = 0;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -7932,7 +8053,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     }
   }
 
-  return numRead;
+  return numRead : int;
 }
 
 /*
@@ -7946,7 +8067,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
-              to read the number.
+                to read the number.
    :returns: `false` if EOF is encountered before reading anything,
               `true` otherwise
 
@@ -7957,7 +8078,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
-  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var rv: bool = false;
@@ -7987,13 +8108,13 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
-              to read the number.
+                to read the number.
    :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occurred,
-              before filling the array.
+             less than ``data.size`` if EOF was reached, or an error occurred,
+             before filling the array.
 
-   :throws SystemError: Thrown if an error occurred while reading the from
-                        ``fileReader``.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
@@ -8026,17 +8147,15 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
    remaining bytes are ignored.
 
    :arg ptr: a :class:`~CTypes.c_ptr` to some memory — existing values will be
-              overwritten
+             overwritten
    :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
    :returns: the number of bytes that were read. this can be less than
               ``maxBytes`` if EOF was reached before reading the specified
               number of bytes, or if ``maxBytes`` is not evenly divisible by
               the size of ``t``
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred while reading from the
-                        ``fileReader``.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0,
@@ -8060,13 +8179,11 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
              values will be overwritten
    :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
    :returns: the number of bytes that were read. this can be less than
-            ``maxBytes`` if EOF was reached before reading the specified number
-            of bytes
+             ``maxBytes`` if EOF was reached before reading the specified number
+             of bytes
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if an error occurred while reading from the
-                        ``fileReader``
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
   var e: errorCode = 0,
@@ -8088,7 +8205,6 @@ proc fileReader.readln():bool throws {
 }
 
 /*
-
    Read values from a ``fileReader`` and then consume any bytes until
    newline is reached. The input will be consumed atomically - the
    fileReader lock will be held while reading all of the passed values.
@@ -8102,8 +8218,8 @@ proc fileReader.readln():bool throws {
 
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
-   :throws SystemError: Thrown if a line could not be read from the
-                        ``fileReader``.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
@@ -8131,15 +8247,16 @@ proc fileReader.readlnHelper(ref args ...?k,
 
    .. code-block:: chapel
 
-     var x = stdin.read(int)
+     var x = stdin.read(int);
 
    :arg t: the type to read
    :returns: the value read
 
+   :throws EofError: Thrown if the ``fileReader`` is already at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if the type could not be read from the
-                        ``fileReader.``
+                               be fully read.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.read(type t) throws {
   const origLocale = this.getLocaleOfIoRequest();
@@ -8169,10 +8286,11 @@ proc fileReader.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
+   :throws EofError: Thrown if the ``fileReader`` is at already EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if the type could not be read from the
-                        ``fileReader``.
+                               be fully read.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readln(type t) throws {
   var tmp:t;
@@ -8188,10 +8306,11 @@ proc fileReader.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws EofError: Thrown if the ``fileReader`` is already at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
-                               be read.
-   :throws SystemError: Thrown if the types could not be read from the
-                        ``fileReader``.
+                               be fully read.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
@@ -8202,14 +8321,17 @@ proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
 
 /*
    Read values of passed types and return a tuple containing the read values.
+   The ``fileReader``'s lock will be held while reading — this protects against
+   interleaved reads.
 
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
-   :throws SystemError: Thrown if the types could not be read from the
-                        ``fileReader``.
+   :throws EofError: Thrown if the ``fileReader`` is already at EOF.
    :throws UnexpectedEofError: Thrown if EOF was encountered while more data was
                                expected.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   // TODO: better IO-specific error message if type is an array or tuple...
@@ -8227,10 +8349,12 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
               internally, but for other types this function will call
               value.writeThis() with the ``fileWriter`` as an argument.
 
-   :throws SystemError: Thrown if the values could not be written to the
-                        ``fileWriter``.
    :throws EofError: Thrown if EOF is reached before all the arguments could be
                      written.
+   :throws UnexpectedEofError: Thrown if EOF is encountered while writing one of
+                               the arguments.
+   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 pragma "fn exempt instantiation limit"
 inline proc fileWriter.write(const args ...?k) throws {
@@ -8293,10 +8417,12 @@ proc fileWriter.writeln() throws {
               internally, but for other types this function will call
               value.writeThis() with the fileWriter as an argument.
 
-   :throws SystemError: Thrown if the values could not be written to the
-                        ``fileWriter``.
-   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments
-                               could be written.
+   :throws EofError: Thrown if EOF is reached before all the arguments
+                     could be written.
+   :throws UnexpectedEofError: Thrown if EOF is encountered while writing one of
+                               the arguments.
+   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
+                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
@@ -8457,11 +8583,11 @@ record itemReaderInternal {
   }
 
   /* iterate through all items of that type read from the fileReader */
-  iter these() { // TODO: this should be throws
+  iter these() { // TODO: this should throw
     while true {
       var x:ItemType;
       var gotany:bool;
-      try! { // TODO: this should by try
+      try! { // TODO this should by a 'try' (once #7134 is fixed)
         gotany = ch.read(x);
       }
       if ! gotany then break;
@@ -11035,7 +11161,9 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
       } catch { /* ignore deferred close error */ }
     }
     try w.writef(fmt, (...args));
-    offset = w.offset();
+    try! w.lock();
+    offset = w.chpl_offset();
+    w.unlock();
 
     // close error is thrown instead of ignored
     try w.close();
@@ -11352,9 +11480,9 @@ iter fileReader.matches(re:regex(?), param captures=0,
   param nret = captures+1;
   var ret:nret*regexMatch;
 
-  // TODO should be try not try!  ditto try! _mark() below
+  // TODO should be try not try!  ditto try! mark() below
   try! lock();
-  on this._home do try! _mark();
+  on this._home do try! mark();
 
   while go && i < maxmatches {
     on this._home {
@@ -11406,7 +11534,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
     if ! error then yield ret;
     i += 1;
   }
-  _commit();
+  commit();
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;

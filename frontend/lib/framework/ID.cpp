@@ -97,6 +97,21 @@ UniqueString ID::innermostSymbolName(Context* context, UniqueString symbolPath)
   return UniqueString::get(context, s);
 }
 
+ID ID::fabricateId(Context* context,
+                   ID parentSymbolId,
+                   UniqueString name,
+                   FabricatedIdKind kind) {
+
+  auto newSymPath = UniqueString::getConcat(context,
+                                            parentSymbolId.symbolPath().c_str(),
+                                            ".",
+                                            name.c_str());
+  auto newId = ID(newSymPath, (int) kind, 0);
+  CHPL_ASSERT(newId.isFabricatedId());
+  CHPL_ASSERT(newId.fabricatedIdKind() == kind);
+  return newId;
+}
+
 ID ID::parentSymbolId(Context* context) const {
   if (postOrderId_ >= 0) {
     // Create an ID with postorder id -1 instead

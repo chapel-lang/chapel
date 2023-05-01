@@ -1,1 +1,3 @@
+IllegalArgumentError: 'maxSize' argument exceeds size of array in readLine
+IllegalArgumentError: 'maxSize' argument exceeds size of array in readLine
 BadFormatError: bad format (line longer than maxSize in fileReader.readLine(a : [] uint(8)) with path "unknown" offset 0)
