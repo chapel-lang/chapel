@@ -76,7 +76,8 @@ extern PyTypeObject AstNodeType;
   type. For example, an Identifier node will be wrapped in a a chapel.Identifier.
  */
 static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node) {
-  PyObject* toReturn = nullptr;
+  PyObject* toReturn = Py_None;
+  if (node == nullptr) return toReturn;
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
 #define CAST_TO(NAME) \
