@@ -20,7 +20,7 @@
 
 /* Provides routines for reasoning about memory usage.
 
-  The :mod:`Diagnostics` module provides procedures which report information
+  The :mod:`MemDiagnostics` module provides procedures which report information
   about memory usage.  With one exception, to use these procedures you
   must enable memory tracking.  Do this by setting one or more of the
   config vars below, using appropriate ``--configVarName=value`` or
@@ -91,8 +91,9 @@
     to its own file, with a dot ('.') and the locale ID appended to
     this path.
  */
-@deprecated("The Memory.Diagnostics module is deprecated - please use the :mod:`MemDiagnostics` instead")
-module Diagnostics {
+
+@unstable("The 'MemDiagnostics' module is unstable")
+module MemDiagnostics {
 
 pragma "insert line file info"
 private extern proc chpl_memoryUsed(): uint(64);
@@ -113,11 +114,11 @@ enum MemUnits {Bytes, KB, MB, GB};
 
   .. note::
 
-    Unlike the other procedures in the :mod:`Diagnostics` module, this
+    Unlike the other procedures in the :mod:`MemDiagnostics` module, this
     one does not require memory tracking to be enabled.
 
   :arg unit: Units in which the returned value is to be expressed.
-  :type unit: :type:`~Diagnostics.MemUnits`
+  :type unit: :type:`~MemDiagnostics.MemUnits`
   :arg retType: Type of the returned value.  Defaults to `int(64)`.
   :type retType: `type`
   :returns: Size of physical memory on the locale where the call is made.
