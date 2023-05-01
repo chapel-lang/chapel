@@ -234,7 +234,7 @@ static PyObject* LocationObject_start(LocationObject *self, PyObject* Py_UNUSED(
 
 static PyObject* LocationObject_end(LocationObject *self, PyObject* Py_UNUSED(args)) {
   auto& location = self->location;
-  return Py_BuildValue("ii", location.firstLine(), location.firstColumn());
+  return Py_BuildValue("ii", location.lastLine(), location.lastColumn());
 }
 
 static PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args)) {
