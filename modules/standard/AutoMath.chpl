@@ -637,33 +637,71 @@ module AutoMath {
   }
 
 
-  /* Returns the inverse hyperbolic tangent of the argument `x`.
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc atanh(x: real(64)): real(64) {
+    return chpl_atanh(x);
+  }
 
-     It is an error if `x` is less than -1 or greater than 1. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc atanh(x: real(64)): real(64);
+  @chpldoc.nodoc
+  inline proc chpl_atanh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanh(x: real(64)): real(64);
+    return atanh(x);
+  }
 
-  /* Returns the inverse hyperbolic tangent of the argument `x`.
-
-     It is an error if `x` is less than -1 or greater than 1. */
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(x : real(32)): real(32) {
+    return chpl_atanh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc atanhf(x: real(32)): real(32);
     return atanhf(x);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(64)): complex(64) {
+    return chpl_atanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catanhf(z: complex(64)): complex(64);
     return catanhf(z);
   }
 
-  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(128)): complex(128) {
+    return chpl_atanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catanh(z: complex(128)): complex(128);
