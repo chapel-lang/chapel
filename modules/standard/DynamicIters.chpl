@@ -28,6 +28,7 @@
   Angeles Navarro. *PGAS 2011: Fifth Conference on Partitioned Global
   Address Space Programming Models*, October 2011.
 */
+@unstable("The 'DynamicIters' module is unstable")
 module DynamicIters {
 
   use ChapelLocks, DSIUtil;

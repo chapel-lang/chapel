@@ -105,6 +105,7 @@ And all :type:`mpz_t` GMP routines, as well as the following routines:
   * :proc:`mpf_ui_sub()`
 
 */
+@unstable("The 'GMP' module is unstable")
 module GMP {
   use CTypes;
   use OS;
