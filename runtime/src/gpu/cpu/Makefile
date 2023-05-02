@@ -16,8 +16,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GPU_SUBDIR = src/gpu/none
+RUNTIME_ROOT = ../../..
+RUNTIME_SUBDIR = src/gpu/cpu
 
-GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
+endif
 
-include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share
+#
+# standard header
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+
+GPU_OBJDIR = $(RUNTIME_OBJDIR)
+include Makefile.share
+
+TARGETS = $(GPU_OBJS)
+
+include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
+
+#
+# standard footer
+#
+include $(RUNTIME_ROOT)/make/Makefile.runtime.foot

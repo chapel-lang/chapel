@@ -106,11 +106,11 @@ GpuCodegenType getGpuCodegenType() {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
     } else if (0 == strcmp(CHPL_GPU_CODEGEN, "rocm")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
-    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "none")) {
-      return GpuCodegenType::GPU_CG_NONE;
+    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "cpu")) {
+      return GpuCodegenType::GPU_CG_CPU;
     } else {
       INT_FATAL("Unknown value for CHPL_GPU_CODEGEN.");
-      return GpuCodegenType::GPU_CG_NONE;
+      return GpuCodegenType::GPU_CG_CPU;
     }
   }();
   return cached;
@@ -122,7 +122,7 @@ bool usingGpuLocaleModel() {
 }
 
 bool doGpuCodegen() {
-  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU_CODEGEN, "none"));
+  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU_CODEGEN, "cpu"));
 }
 
 bool forceWidePtrsForLocal() {

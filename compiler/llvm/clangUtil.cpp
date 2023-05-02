@@ -2365,7 +2365,7 @@ static std::string generateClangGpuLangArgs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         args += "hip";
         break;
-      case GpuCodegenType::GPU_CG_NONE:
+      case GpuCodegenType::GPU_CG_CPU:
         break;
     }
   }
@@ -4287,7 +4287,7 @@ void makeBinaryLLVM(void) {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         artifactFilename = genIntermediateFilename("chpl__gpu.o");
         break;
-      case GpuCodegenType::GPU_CG_NONE:
+      case GpuCodegenType::GPU_CG_CPU:
         break;
     }
   }
@@ -4569,7 +4569,7 @@ void makeBinaryLLVM(void) {
         case GpuCodegenType::GPU_CG_AMD_HIP:
           makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
           break;
-        case GpuCodegenType::GPU_CG_NONE:
+        case GpuCodegenType::GPU_CG_CPU:
           break;
       }
     }

@@ -41,11 +41,11 @@ GPU_TYPES = {
                      default_arch="gfx908",
                      llvm_target="AMDGPU",
                      version_validator=_validate_rocm_version),
-    "none": gpu_type(sdk_path_env="NONE",
-                     compiler="none",
-                     bin_depth=1,
-                     default_arch="none",
-                     llvm_target="none",
+    "cpu": gpu_type(sdk_path_env="",
+                     compiler="",
+                     bin_depth=-1,
+                     default_arch="",
+                     llvm_target="",
                      version_validator=lambda: None),
 }
 
@@ -53,7 +53,7 @@ GPU_TYPES = {
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
     if suggestNone:
         msg += " To avoid this issue, you can have GPU code run on the CPU "
-        msg += "by setting 'CHPL_GPU_CODEGEN=none'."
+        msg += "by setting 'CHPL_GPU_CODEGEN=gpu'."
 
     if allowExempt and os.environ.get('CHPLENV_GPU_REQ_ERRS_AS_WARNINGS'):
         warning(msg)
@@ -66,7 +66,7 @@ def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
 
 
 def determineGpuType():
-    typesFound = [gpu_type for gpu_type in GPU_TYPES.items() if which(gpu_type.compiler)]
+    typesFound = [val for (val, gpu_type) in GPU_TYPES.items() if which(gpu_type.compiler)]
     if len(typesFound) == 1:
       return typesFound[0]
 
@@ -83,7 +83,7 @@ def get():
     chpl_gpu_codegen = os.environ.get("CHPL_GPU_CODEGEN")
     if chpl_gpu_codegen:
         if chpl_gpu_codegen not in GPU_TYPES:
-            error("Only {} supported for 'CHPL_GPU_CODEGEN'".format(GPU_TYPES.keys()))
+            error("Only {} supported for 'CHPL_GPU_CODEGEN'".format(list(GPU_TYPES.keys())))
         else:
             return chpl_gpu_codegen
     else:
@@ -110,7 +110,7 @@ def get_sdk_path(for_gpu):
     gpu_type = get()
 
     # No SDK path if GPU is not being used.
-    if gpu_type == 'none':
+    if gpu_type == 'cpu':
         return 'none'
 
     # Check vendor-specific environment variable for SDK path
@@ -285,7 +285,7 @@ def validate(chplLocaleModel, chplComm):
     # (e.g. cuda or rocm)
     gpu.validate_sdk_version()
 
-    if get_runtime() == 'none':
+    if get_runtime() == 'cpu':
         return True
 
     if chpl_compiler.get('target') != 'llvm':

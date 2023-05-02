@@ -2320,7 +2320,7 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
             break;
-          case GpuCodegenType::GPU_CG_NONE:
+          case GpuCodegenType::GPU_CG_CPU:
             break;
         }
       } else {
@@ -2333,7 +2333,7 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setVisibility(llvm::Function::HiddenVisibility);
             break;
-          case GpuCodegenType::GPU_CG_NONE:
+          case GpuCodegenType::GPU_CG_CPU:
             break;
         }
       }
