@@ -108,7 +108,7 @@ extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_RUNTIME_CPU;
-extern const char* CHPL_TARGET_BACKEND_CPU;
+extern const char* CHPL_LLVM_TARGET_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_COMPILER_PRGENV;

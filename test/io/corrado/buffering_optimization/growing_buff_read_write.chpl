@@ -25,16 +25,19 @@ while bufSize < maxBufSize {
 
 fw.close();
 
-const fr = openReader("gb.bin");
+const fr = openReader("gb.bin", locking=false, hints=ioHintSet.mmap(false));
 
 bufSize = 128;
 bufDom = {0..<bufSize};
 i = 1;
 while bufSize < maxBufSize {
-  fr.readBinary(buf);
+  const numRead = fr.readBinary(buf);
+  assert(numRead == bufSize);
 
-  if ! && reduce (i == buf) then
-    writeln("mismatched write/read!");
+  if ! && reduce (i == buf) {
+    writeln("mismatched write/read: ", bufSize, " for i=", i);
+    writeln(buf);
+  }
 
   bufSize *= 2;
   bufDom = {0..<bufSize};

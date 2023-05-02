@@ -365,7 +365,7 @@ module Map {
 
       :arg updater: A class or record used to update the value at `i`
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :return: What the updater returns
     */
@@ -410,9 +410,9 @@ module Map {
       :arg k: The key to access
       :type k: keyType
 
-      :throws: `KeyNotFoundError` if `k` not in map, `valType` is not
-               default initializable, and proc is called in an attempt
-               to modify the map.
+      :throws KeyNotFoundError: if `k` not in map, `valType` is not
+              default initializable, and proc is called in an attempt
+              to modify the map.
 
       :returns: Reference to the value mapped to the given key.
     */
@@ -495,7 +495,7 @@ module Map {
 
       :arg k: The key to lookup in the map
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :returns: A copy of the value at position `k`
      */

@@ -46,6 +46,7 @@ from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import unittest
 from sys import stdout, path
 
 from chplenv import *
@@ -126,6 +127,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_TARGET_CPU', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
@@ -249,6 +251,7 @@ def compute_internal_values():
     backend_info = chpl_cpu.get('target', map_to_compiler=True)
     ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
+    ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
@@ -482,6 +485,9 @@ def parse_args():
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
 
+    #[hidden]
+    parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
+
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -491,6 +497,16 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
+    # can find and exit.
+    if options.do_unit_tests:
+      this_dir = os.path.realpath(os.path.dirname(__file__))
+      test_loader = unittest.TestLoader()
+      test_suite = test_loader.discover(this_dir, pattern="*.py")
+      test_runner = unittest.TextTestRunner()
+      test_runner.run(test_suite)
+      exit(1)
 
     # Handle --all flag
     if options.all:

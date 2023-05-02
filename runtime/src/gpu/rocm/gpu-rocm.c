@@ -553,4 +553,19 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return (unsigned int)deviceClockRates[devNum];
 }
 
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+  int p2p;
+  ROCM_CALL(hipDeviceCanAccessPeer(&p2p, dev1, dev2));
+  return p2p != 0;
+}
+
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
+  ROCM_CALL(hipSetDevice(dev1));
+  if(enable) {
+    ROCM_CALL(hipDeviceEnablePeerAccess(dev2, 0));
+  } else {
+    ROCM_CALL(hipDeviceDisablePeerAccess(dev2));
+  }
+}
+
 #endif // HAS_GPU_LOCALE

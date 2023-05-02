@@ -11,6 +11,13 @@ import subprocess
 import os
 import sys
 
+if not 'CHPL_HOME' in os.environ:
+    print('CHPL_HOME is not set')
+    sys.exit(1)
+
+sys.path.append(os.path.join(os.environ['CHPL_HOME'], 'util', 'chplenv'))
+import printchplenv
+
 verbose = False
 skipReason = None
 
@@ -27,20 +34,24 @@ def runCmd(cmd, env=None):
 
 def skipif():
     global skipReason
-    # These tests only run on slurm-srun
-    output = runCmd("printchplenv --simple")
-    for line in output.splitlines():
-        (key, value) = line.split('=',1)
-        if key == 'CHPL_LAUNCHER' and value != 'slurm-srun':
-            skipReason = "CHPL_LAUNCHER != slurm-srun"
-    # Verify environment variables
-    output = runCmd("printenv")
-    for line in output.splitlines():
-        (key, value) = line.split('=',1)
-        if key == 'CHPL_RT_LOCALES_PER_NODE' and value != 1:
-            skipReason = "CHPL_RT_LOCALES_PER_NODE != 1"
-        if key == 'SLURM_HINT' and value == 'nomultithread':
-            skipReason = "SLURM_HINT == nomultithread"
+
+    # Get the Chapel configuration
+    printchplenv.compute_all_values()
+    # strip the padding printchplenv puts on some of the keys
+    env = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
+
+    # Verify Chapel configuration
+    if env.get('CHPL_LAUNCHER', None) != 'slurm-srun':
+        skipReason = "CHPL_LAUNCHER != slurm-srun"
+        return
+
+    # Verify environment
+    if os.environ.get('CHPL_RT_LOCALES_PER_NODE', '1') != '1':
+        skipReason = "CHPL_RT_LOCALES_PER_NODE != 1"
+        return
+    if os.environ.get('SLURM_HINT') == 'nomultithread':
+        skipReason = "SLURM_HINT == nomultithread"
+        return
 
 class SrunTests(unittest.TestCase):
     @classmethod
@@ -131,10 +142,7 @@ class SbatchTests(SrunTests):
     def runCmd(self, cmd):
         """Use the contents of the batch file as output"""
         output = super().runCmd(cmd)
-        try:
-            (_, batch) = output.split();
-        except:
-            print(output);
+        batch = output.split()[-1]
         with open(batch) as fd:
             output = fd.read();
         os.unlink(batch)
@@ -159,12 +167,13 @@ def main(argv):
     path = os.environ['PATH']
     os.environ['PATH'] = os.path.join(os.getcwd(), "bin") + ":" + path
 
-    # Compile the test program
-    cmd = 'chpl hello.chpl'
-    if verbose:
-        print("Compiling test program")
-        print(cmd)
-    runCmd(cmd)
+    if skipReason is None:
+        # Compile the test program
+        cmd = 'chpl hello.chpl'
+        if verbose:
+            print("Compiling test program")
+            print(cmd)
+        runCmd(cmd)
     if verbose:
         print("Running tests")
     prog = unittest.main(argv=argv, failfast=failfast, exit=False)

@@ -1,0 +1,1 @@
+generic-field-nil.chpl:n: error: could not coerce a value of type 'nil' to type '_formal_type'

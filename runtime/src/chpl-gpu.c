@@ -294,4 +294,12 @@ bool chpl_gpu_is_host_ptr(const void* ptr) {
   return chpl_gpu_impl_is_host_ptr(ptr);
 }
 
+bool chpl_gpu_can_access_peer(int dev1, int dev2) {
+  return chpl_gpu_impl_can_access_peer(dev1, dev2);
+}
+
+void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
+  chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
+}
+
 #endif

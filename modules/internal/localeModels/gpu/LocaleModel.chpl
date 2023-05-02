@@ -214,8 +214,8 @@ module LocaleModel {
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
     override proc chpl_localeid() {
-      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid);
+      return try! chpl_buildLocaleID((parent._value:LocaleModel)._node_id:chpl_nodeID_t,
+                                     sid);
     }
     override proc chpl_name() {
       return try! (parent._value:LocaleModel).local_name + "-GPU" + sid:string;

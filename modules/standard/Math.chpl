@@ -112,6 +112,19 @@ module Math {
     return chpl_ldexp(x, n);
   }
 
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  inline proc lgamma(x: real(64)): real(64) {
+    return chpl_lgamma(x);
+  }
+
+  /* Returns the natural logarithm of the absolute value
+     of the gamma function of the argument `x`.
+  */
+  inline proc lgamma(x : real(32)): real(32) {
+    return chpl_lgamma(x);
+  }
 
   /* Returns the natural logarithm of `x` + 1.
 
@@ -149,6 +162,16 @@ module Math {
   */
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
+  }
+
+  /* Returns the absolute value of the gamma function of the argument `x`. */
+  inline proc tgamma(x: real(64)): real(64) {
+    return chpl_tgamma(x);
+  }
+
+  /* Returns the absolute value of the gamma function of the argument `x`. */
+  inline proc tgamma(x : real(32)): real(32) {
+    return chpl_tgamma(x);
   }
 
   /* Returns the Bessel function of the first kind of order `0` of `x`. */

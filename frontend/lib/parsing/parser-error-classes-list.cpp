@@ -300,6 +300,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     // Nothing
   } else if (blockingAst->isForall()) {
     blockingName = "'forall' statement";
+  } else if (blockingAst->isForeach()) {
+    blockingName = "'foreach' statement";
   } else if (blockingAst->isCoforall()) {
     blockingName = "'coforall' statement";
   } else if (blockingAst->isOn()) {

@@ -241,8 +241,13 @@ namespace {
                                           "", insertBefore);
 
     Constant* undef = UndefValue::get(widePtrType);
+#if HAVE_LLVM_VER >= 150
+    IRBuilder<> irBuilder(insertBefore);
+    Value* undefLocPtr = irBuilder.CreateExtractValue(undef, wideAddrGEP);
+#else
     Constant* undefLocPtr = ConstantExpr::getExtractValue(undef,
                                                           wideAddrGEP);
+#endif
     // get the local address space pointer.
     Value* cast = CastInst::CreatePointerCast(ptr, undefLocPtr->getType(),
                                               "", insertBefore);
