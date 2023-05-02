@@ -17,7 +17,8 @@ endif
 CHPL_LIBFABRIC_CFG_OPTIONS += --enable-static \
                               --disable-shared \
                               --prefix=$(LIBFABRIC_INSTALL_DIR) \
-			      --enable-psm3=no
+			      --disable-psm3 \
+			      --disable-opx
 
 ifdef CHPL_COMM_DEBUG
 CHPL_LIBFABRIC_CFG_OPTIONS += --enable-debug
