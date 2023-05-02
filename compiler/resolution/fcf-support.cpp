@@ -174,14 +174,10 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
 *                                                                            *
 ************************************** | ************************************/
 
-
-
 static bool isIntentSameAsDefault(IntentTag tag, Type* t) {
   auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(tag, t);
   return ret;
 }
-
-
 
 static Type* buildSharedWrapperType(AggregateType* super) {
   Type* ret = NULL;
@@ -322,7 +318,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
                                   throws);
   std::ignore = attachSuperWriteMethod(v->type, "writeThis");
   if (fUseIOFormatters) {
-    std::ignore = attachSuperWriteMethod(v->type, "writeThis");
+    std::ignore = attachSuperWriteMethod(v->type, "encodeTo");
   }
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
