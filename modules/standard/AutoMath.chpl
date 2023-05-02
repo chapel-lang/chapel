@@ -286,7 +286,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
-    /* Returns the arc cosine of the argument `z`. */
+  /* Returns the arc cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(z: complex(64)): complex(64) {
