@@ -261,6 +261,18 @@ module ChapelRange {
               _aligned = true);
   }
 
+  @chpldoc.nodoc
+  proc chpl__modUnsafeCast(dividend:integral, modulus:integral)
+  {
+    const m = abs(modulus):(dividend.type);
+
+    var tmp = dividend % m;
+    if isInt(dividend) then
+      if tmp < 0 then tmp += m;
+
+    return tmp;
+  }
+
   // This is an initializer for defining a range value in terms of its
   // internal field values
   //
@@ -281,7 +293,7 @@ module ChapelRange {
     this.complete();
     if (stridable) {
       this._stride    = _stride;
-      this._alignment = chpl__mod(_alignment, _stride);
+      this._alignment = chpl__modUnsafeCast(_alignment, _stride);
       this._aligned   = _aligned;
     }
   }
