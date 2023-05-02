@@ -738,28 +738,24 @@ module CTypes {
 
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref s: string): c_string {
-  // inline proc c_ptrTo(ref s: string): c_ptr(c_char) {
+  inline proc c_ptrTo(ref s: string): c_ptrConst(c_uchar) {
     if boundsChecking {
       if (s.buffLen == 0) then
         halt("Can't create a C pointer for an empty string.");
     }
-    // return s.buff;
-    return s.c_str();
+    return c_pointer_return_const(s.buff[0]);
   }
 
   /*
    Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(ref s: string): c_string {
-  // inline proc c_ptrToConst(ref s: string): c_ptrConst(c_char) {
+  inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar) {
     if boundsChecking {
       if (s.buffLen == 0) then
         halt("Can't create a C pointer for an empty string.");
     }
-    // return c_pointer_return_const(s.buff);
-    return s.c_str();
+    return c_pointer_return_const(s.buff[0]);
   }
 
   /*
@@ -771,28 +767,24 @@ module CTypes {
 
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref b: bytes): c_string {
-  // inline proc c_ptrTo(ref b: bytes): c_ptr(c_char) {
+  inline proc c_ptrTo(ref b: bytes): c_ptrConst(c_uchar) {
     if boundsChecking {
       if (b.buffLen == 0) then
         halt("Can't create a C pointer for an empty bytes.");
     }
-    // return b.buff;
-    return b.c_str();
+    return c_pointer_return_const(b.buff[0]);
   }
 
   /*
    Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(ref b: bytes): c_string {
-  // inline proc c_ptrToConst(ref b: bytes): c_ptrConst(c_char) {
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar) {
     if boundsChecking {
       if (b.buffLen == 0) then
         halt("Can't create a C pointer for an empty bytes.");
     }
-    // return c_pointer_return_const(b.buff);
-    return b.c_str();
+    return c_pointer_return_const(b.buff[0]);
   }
 
   /*
