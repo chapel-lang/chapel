@@ -404,6 +404,26 @@ module Math {
     return chpl_sinh(z);
   }
 
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: real(64)): real(64) {
+    return chpl_tan(x);
+  }
+
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x : real(32)): real(32) {
+    return chpl_tan(x);
+  }
+
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(64)): complex(64) {
+    return chpl_tan(z);
+  }
+
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(128)): complex(128) {
+    return chpl_tan(z);
+  }
+
   /* Returns the absolute value of the gamma function of the argument `x`. */
   inline proc tgamma(x: real(64)): real(64) {
     return chpl_tgamma(x);

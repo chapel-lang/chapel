@@ -1856,29 +1856,71 @@ module AutoMath {
   }
 
 
-  /* Returns the tangent of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc tan(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc tan(x: real(64)): real(64) {
+    return chpl_tan(x);
+  }
 
-  /* Returns the tangent of the argument `x`. */
+  @chpldoc.nodoc
+  inline proc chpl_tan(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tan(x: real(64)): real(64);
+    return tan(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(x : real(32)): real(32) {
+    return chpl_tan(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc tanf(x: real(32)): real(32);
     return tanf(x);
   }
 
-  /* Returns the tangent of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(64)): complex(64) {
+    return chpl_tan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctanf(z: complex(64)): complex(64);
     return ctanf(z);
   }
 
-  /* Returns the tangent of the argument `z`. */
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(128)): complex(128) {
+    return chpl_tan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctan(z: complex(128)): complex(128);
