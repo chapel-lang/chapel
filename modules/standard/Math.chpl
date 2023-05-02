@@ -77,6 +77,206 @@ module Math {
   /* 1/sqrt(2) */
   param recipr_sqrt_2 = 0.70710678118654752440;
 
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc acos(x: real(64)): real(64) {
+    return chpl_acos(x);
+  }
+
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc acos(x : real(32)): real(32) {
+    return chpl_acos(x);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(64)): complex(64) {
+    return chpl_acos(z);
+  }
+
+  /* Returns the arc cosine of the argument `z`. */
+  inline proc acos(z: complex(128)): complex(128) {
+    return chpl_acos(z);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
+  inline proc acosh(x: real(64)): real(64) {
+    return chpl_acosh(x);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
+  inline proc acosh(x : real(32)): real(32) {
+    return chpl_acosh(x);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(64)): complex(64) {
+    return chpl_acosh(z);
+  }
+
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  inline proc acosh(z: complex(128)): complex(128) {
+    return chpl_acosh(z);
+  }
+
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc asin(x: real(64)): real(64) {
+    return chpl_asin(x);
+  }
+
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
+  inline proc asin(x : real(32)): real(32) {
+    return chpl_asin(x);
+  }
+
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(64)): complex(64) {
+    return chpl_asin(z);
+  }
+
+  /* Returns the arc sine of the argument `z`. */
+  inline proc asin(z: complex(128)): complex(128) {
+    return chpl_asin(z);
+  }
+
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x: real(64)): real(64) {
+    return chpl_asinh(x);
+  }
+
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
+  inline proc asinh(x : real(32)): real(32) {
+    return chpl_asinh(x);
+  }
+
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
+  inline proc asinh(z: complex(64)): complex(64) {
+    return chpl_asinh(z);
+  }
+
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
+  inline proc asinh(z: complex(128)): complex(128) {
+    return chpl_asinh(z);
+  }
+
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x: real(64)): real(64) {
+    return chpl_atan(x);
+  }
+
+  /* Returns the arc tangent of the argument `x`. */
+  inline proc atan(x : real(32)): real(32) {
+    return chpl_atan(x);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(64)): complex(64) {
+    return chpl_atan(z);
+  }
+
+  /* Returns the arc tangent of the argument `z`. */
+  inline proc atan(z: complex(128)): complex(128) {
+    return chpl_atan(z);
+  }
+
+  /* Returns the arc tangent of the ratio of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
+  inline proc atan2(y: real(64), x: real(64)): real(64) {
+    return chpl_atan2(y, x);
+  }
+
+  /* Returns the arc tangent of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
+  inline proc atan2(y : real(32), x: real(32)): real(32) {
+    return chpl_atan2(y, x);
+  }
+
+  /* Returns the inverse hyperbolic tangent of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1. */
+  inline proc atanh(x: real(64)): real(64) {
+    return chpl_atanh(x);
+  }
+
+  /* Returns the inverse hyperbolic tangent of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1. */
+  inline proc atanh(x : real(32)): real(32) {
+    return chpl_atanh(x);
+  }
+
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  inline proc atanh(z: complex(64)): complex(64) {
+    return chpl_atanh(z);
+  }
+
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  inline proc atanh(z: complex(128)): complex(128) {
+    return chpl_atanh(z);
+  }
+
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x: real(64)): real(64) {
+    return chpl_cos(x);
+  }
+
+  /* Returns the cosine of the argument `x`. */
+  inline proc cos(x : real(32)): real(32) {
+    return chpl_cos(x);
+  }
+
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(64)): complex(64) {
+    return chpl_cos(z);
+  }
+
+  /* Returns the cosine of the argument `z`. */
+  inline proc cos(z : complex(128)): complex(128) {
+    return chpl_cos(z);
+  }
+
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x: real(64)): real(64) {
+    return chpl_cosh(x);
+  }
+
+  /* Returns the hyperbolic cosine of the argument `x`. */
+  inline proc cosh(x : real(32)): real(32) {
+    return chpl_cosh(x);
+  }
+
+  /* Returns the hyperbolic cosine of the argument `z`. */
+  inline proc cosh(z: complex(64)): complex(64) {
+    return chpl_cosh(z);
+  }
+
+  /* Returns the hyperbolic cosine of the argument `z`. */
+  inline proc cosh(z: complex(128)): complex(128) {
+    return chpl_cosh(z);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
@@ -162,6 +362,86 @@ module Math {
   */
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
+  }
+
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: real(64)): real(64) {
+    return chpl_sin(x);
+  }
+
+  /* Returns the sine of the argument `x`. */
+  inline proc sin(x: real(32)): real(32) {
+    return chpl_sin(x);
+  }
+
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(64)): complex(64) {
+    return chpl_sin(z);
+  }
+
+  /* Returns the sine of the argument `z`. */
+  inline proc sin(z: complex(128)): complex(128) {
+    return chpl_sin(z);
+  }
+
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x: real(64)): real(64) {
+    return chpl_sinh(x);
+  }
+
+  /* Returns the hyperbolic sine of the argument `x`. */
+  inline proc sinh(x : real(32)): real(32) {
+    return chpl_sinh(x);
+  }
+
+  /* Returns the hyperbolic sine of the argument `z`. */
+  inline proc sinh(z: complex(64)): complex(64) {
+    return chpl_sinh(z);
+  }
+
+  /* Returns the hyperbolic sine of the argument `z`. */
+  inline proc sinh(z: complex(128)): complex(128) {
+    return chpl_sinh(z);
+  }
+
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x: real(64)): real(64) {
+    return chpl_tan(x);
+  }
+
+  /* Returns the tangent of the argument `x`. */
+  inline proc tan(x : real(32)): real(32) {
+    return chpl_tan(x);
+  }
+
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(64)): complex(64) {
+    return chpl_tan(z);
+  }
+
+  /* Returns the tangent of the argument `z`. */
+  inline proc tan(z: complex(128)): complex(128) {
+    return chpl_tan(z);
+  }
+
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x: real(64)): real(64) {
+    return chpl_tanh(x);
+  }
+
+  /* Returns the hyperbolic tangent of the argument `x`. */
+  inline proc tanh(x : real(32)): real(32) {
+    return chpl_tanh(x);
+  }
+
+  /* Returns the hyperbolic tangent of the argument `z`. */
+  inline proc tanh(z: complex(64)): complex(64) {
+    return chpl_tanh(z);
+  }
+
+  /* Returns the hyperbolic tangent of the argument `z`. */
+  inline proc tanh(z: complex(128)): complex(128) {
+    return chpl_tanh(z);
   }
 
   /* Returns the absolute value of the gamma function of the argument `x`. */

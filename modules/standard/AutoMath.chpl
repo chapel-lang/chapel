@@ -238,35 +238,81 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_acos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc acos(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc acos(x: real(64)): real(64) {
+    return chpl_acos(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_acos(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acos(x: real(64)): real(64);
+    return acos(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_acos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(x : real(32)): real(32) {
+    return chpl_acos(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acos(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc acosf(x: real(32)): real(32);
     return acosf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_acos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(z: complex(64)): complex(64) {
+    return chpl_acos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acos(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacosf(z: complex(64)): complex(64);
     return cacosf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_acos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(z: complex(128)): complex(128) {
+    return chpl_acos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acos(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacos(z: complex(128)): complex(128);
@@ -274,35 +320,81 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc acosh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc acosh(x: real(64)): real(64) {
+    return chpl_acosh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_acosh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acosh(x: real(64)): real(64);
+    return acosh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(x : real(32)): real(32) {
+    return chpl_acosh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc acoshf(x: real(32)): real(32);
     return acoshf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(64)): complex(64) {
+    return chpl_acosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacoshf(z: complex(64)): complex(64);
     return cacoshf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_acosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(128)): complex(128) {
+    return chpl_acosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_acosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacosh(z: complex(128)): complex(128);
@@ -310,35 +402,81 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_asin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc sine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc asin(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc asin(x: real(64)): real(64) {
+    return chpl_asin(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_asin(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asin(x: real(64)): real(64);
+    return asin(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_asin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc sine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(x : real(32)): real(32) {
+    return chpl_asin(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asin(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc asinf(x: real(32)): real(32);
     return asinf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_asin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(z: complex(64)): complex(64) {
+    return chpl_asin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc casinf(z: complex(64)): complex(64);
     return casinf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_asin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(z: complex(128)): complex(128) {
+    return chpl_asin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc casin(z: complex(128)): complex(128);
@@ -346,29 +484,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_asinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic sine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc asinh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc asinh(x: real(64)): real(64) {
+    return chpl_asinh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_asinh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asinh(x: real(64)): real(64);
+    return asinh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_asinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic sine of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(x : real(32)): real(32) {
+    return chpl_asinh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc asinhf(x: real(32)): real(32);
     return asinhf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_asinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(z: complex(64)): complex(64) {
+    return chpl_asinh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc casinhf(z: complex(64)): complex(64);
     return casinhf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_asinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(z: complex(128)): complex(128) {
+    return chpl_asinh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_asinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc casinh(z: complex(128)): complex(128);
@@ -377,29 +561,75 @@ module AutoMath {
 
 
 
+  // When removing this deprecated function, be sure to remove chpl_atan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc atan(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc atan(x: real(64)): real(64) {
+    return chpl_atan(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_atan(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atan(x: real(64)): real(64);
+    return atan(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_atan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(x : real(32)): real(32) {
+    return chpl_atan(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc atanf(x: real(32)): real(32);
     return atanf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_atan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(z: complex(64)): complex(64) {
+    return chpl_atan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catanf(z: complex(64)): complex(64);
     return catanf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_atan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(z: complex(128)): complex(128) {
+    return chpl_atan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catan(z: complex(128)): complex(128);
@@ -407,21 +637,47 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_atan2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the ratio of the two arguments.
 
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc atan2(y: real(64), x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc atan2(y: real(64), x: real(64)): real(64) {
+    return chpl_atan2(y, x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_atan2(y: real(64), x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atan2(y: real(64), x: real(64)): real(64);
+    return atan2(y, x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_atan2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the arc tangent of the two arguments.
 
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan2(y : real(32), x: real(32)): real(32) {
+    return chpl_atan2(y, x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atan2(y : real(32), x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc atan2f(y: real(32), x: real(32)): real(32);
@@ -429,33 +685,79 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc atanh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc atanh(x: real(64)): real(64) {
+    return chpl_atanh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_atanh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanh(x: real(64)): real(64);
+    return atanh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(x : real(32)): real(32) {
+    return chpl_atanh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc atanhf(x: real(32)): real(32);
     return atanhf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(64)): complex(64) {
+    return chpl_atanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catanhf(z: complex(64)): complex(64);
     return catanhf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_atanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the inverse hyperbolic tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(128)): complex(128) {
+    return chpl_atanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_atanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc catanh(z: complex(128)): complex(128);
@@ -547,29 +849,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the cosine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc cos(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc cos(x: real(64)): real(64) {
+    return chpl_cos(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_cos(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cos(x: real(64)): real(64);
+    return cos(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the cosine of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(x : real(32)): real(32) {
+    return chpl_cos(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cosf(x: real(32)): real(32);
     return cosf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(64)): complex(64) {
+    return chpl_cos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(z : complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccosf(z: complex(64)): complex(64);
     return ccosf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_cos and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(128)): complex(128) {
+    return chpl_cos(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cos(z : complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccos(z: complex(128)): complex(128);
@@ -577,29 +925,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic cosine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc cosh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc cosh(x: real(64)): real(64) {
+    return chpl_cosh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_cosh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cosh(x: real(64)): real(64);
+    return cosh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic cosine of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(x : real(32)): real(32) {
+    return chpl_cosh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc coshf(x: real(32)): real(32);
     return coshf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(64)): complex(64) {
+    return chpl_cosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccoshf(z: complex(64)): complex(64);
     return ccoshf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_cosh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic cosine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(128)): complex(128) {
+    return chpl_cosh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_cosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ccosh(z: complex(128)): complex(128);
@@ -1346,29 +1740,75 @@ module AutoMath {
     return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
 
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the sine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc sin(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc sin(x: real(64)): real(64) {
+    return chpl_sin(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_sin(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sin(x: real(64)): real(64);
+    return sin(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the sine of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(x: real(32)): real(32) {
+    return chpl_sin(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc sinf(x: real(32)): real(32);
     return sinf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(64)): complex(64) {
+    return chpl_sin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csinf(z: complex(64)): complex(64);
     return csinf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_sin and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(128)): complex(128) {
+    return chpl_sin(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csin(z: complex(128)): complex(128);
@@ -1376,29 +1816,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_sinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic sine of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc sinh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc sinh(x: real(64)): real(64) {
+    return chpl_sinh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_sinh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sinh(x: real(64)): real(64);
+    return sinh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_sinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic sine of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(x : real(32)): real(32) {
+    return chpl_sinh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc sinhf(x: real(32)): real(32);
     return sinhf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_sinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(z: complex(64)): complex(64) {
+    return chpl_sinh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csinhf(z: complex(64)): complex(64);
     return csinhf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_sinh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic sine of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(z: complex(128)): complex(128) {
+    return chpl_sinh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_sinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csinh(z: complex(128)): complex(128);
@@ -1442,29 +1928,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the tangent of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc tan(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc tan(x: real(64)): real(64) {
+    return chpl_tan(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_tan(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tan(x: real(64)): real(64);
+    return tan(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the tangent of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(x : real(32)): real(32) {
+    return chpl_tan(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc tanf(x: real(32)): real(32);
     return tanf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(64)): complex(64) {
+    return chpl_tan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctanf(z: complex(64)): complex(64);
     return ctanf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_tan and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(128)): complex(128) {
+    return chpl_tan(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctan(z: complex(128)): complex(128);
@@ -1472,29 +2004,75 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_tanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic tangent of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc tanh(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc tanh(x: real(64)): real(64) {
+    return chpl_tanh(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_tanh(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tanh(x: real(64)): real(64);
+    return tanh(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_tanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic tangent of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(x : real(32)): real(32) {
+    return chpl_tanh(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc tanhf(x: real(32)): real(32);
     return tanhf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_tanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(z: complex(64)): complex(64) {
+    return chpl_tanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctanhf(z: complex(64)): complex(64);
     return ctanhf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_tanh and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the hyperbolic tangent of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(z: complex(128)): complex(128) {
+    return chpl_tanh(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_tanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ctanh(z: complex(128)): complex(128);
