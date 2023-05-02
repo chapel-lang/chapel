@@ -7,6 +7,8 @@ var A: [D] real;
 
 inspectDist(A);
 
+// redistribute using the '.redistribute()' method on Block
+
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
@@ -24,6 +26,39 @@ for i in 1..10 {
 */
 }
 
+
+// reset and do it again using assignment
+
+n = 10;
+D = {1..0};
+B.redistribute({1..n});
+D = {1..n};
+inspectDist(A);
+
+for i in 1..10 {
+  D = {1..0}; // reset domain to avoid need to preserve data
+  n *= 2;
+  B = new dmap(new Block({1..n}));
+  D = {1..n};
+  inspectDist(A);
+
+/*
+  writeln("----- B's represenation -----");
+  B.dsiDisplayRepresentation();
+  writeln("----- D's represenation -----");
+  D.dsiDisplayRepresentation();
+  writeln("----- A's represenation -----");
+  A.dsiDisplayRepresentation();
+*/
+}
+
+/*
+var targetLocales = Locales;
+targetLocales[numLocales-1] = Locales[0];
+
+B = new dmap(new Block(
+*/
+
 proc inspectDist(X: [] ?t) {
   writeln("-------------");
   for loc in Locales do
@@ -39,15 +74,3 @@ proc inspectDist(X: [] ?t) {
   writeln("-------------");
 }
 
-proc Block.redistribute(const in newBbox) {
-  const newBboxDims = newBbox.dims();
-  const pid = this.pid;
-  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist)
-    do on loc {
-      const that = chpl_getPrivatizedCopy(this.type, pid);
-      that.boundingBox = newBbox;
-
-      var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
-      locdist.myChunk = {(...inds)};
-    }
-}

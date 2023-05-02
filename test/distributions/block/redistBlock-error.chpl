@@ -1,31 +1,18 @@
-// Achieved in 2 hours, 1 minute:
-// From: 27 Apr 14 18:09
-// To:  Fri Apr 14 20:10:28 EDT 2023
 use BlockDist;
 
+var targetLocDom = {0..numLocales-2};
+var targetLocales = Locales[targetLocDom];
+
 var n = 10;
-var B = new dmap(new Block({1..n}));
+var B = new dmap(new Block({1..n}, targetLocales));
 var D = {1..n} dmapped B;
 var A: [D] real;
 
+
+
+B = new dmap(new Block({1..2*n}, Locales));  // error b/c targLoc shape differs
+
 inspectDist(A);
-
-for i in 1..10 {
-  D = {1..0}; // reset domain to avoid need to preserve data
-  n *= 2;
-  B = new dmap(new Block({1..n}));
-  D = {1..n};
-  inspectDist(A);
-
-/*
-  writeln("----- B's represenation -----");
-  B.dsiDisplayRepresentation();
-  writeln("----- D's represenation -----");
-  D.dsiDisplayRepresentation();
-  writeln("----- A's represenation -----");
-  A.dsiDisplayRepresentation();
-*/
-}
 
 proc inspectDist(X: [] ?t) {
   writeln("-------------");
@@ -41,3 +28,4 @@ proc inspectDist(X: [] ?t) {
     }
   writeln("-------------");
 }
+

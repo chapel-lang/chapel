@@ -2198,6 +2198,7 @@ module ChapelArray {
   // Assignment of distributions and arrays
   //
   pragma "no doc"
+  @unstable(category="experimental", reason="hasn't received much testing or attention")
   operator =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
