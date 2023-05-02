@@ -1,5 +1,5 @@
 use Time;
-use Memory.Diagnostics;
+use MemDiagnostics;
 use CommDiagnostics;
 
 use BlockDist;

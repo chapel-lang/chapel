@@ -1,4 +1,4 @@
-use Memory.Diagnostics, IO;
+use MemDiagnostics, IO;
 
 config const n = 1;
 

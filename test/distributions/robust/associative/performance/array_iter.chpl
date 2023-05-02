@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Types, Time, Sort;
+use MemDiagnostics, Types, Time, Sort;
 
 config const printTiming = false;
 config const verify = true;

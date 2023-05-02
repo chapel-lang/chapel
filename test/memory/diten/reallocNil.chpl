@@ -1,5 +1,5 @@
 proc main {
-  use MemAlloc, Memory.Diagnostics;
+  use MemAlloc, MemDiagnostics;
   var m1, m2, m3: uint(64);
   var o: opaque;
   m1 = memoryUsed();
