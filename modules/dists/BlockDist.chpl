@@ -534,7 +534,7 @@ proc Block.redistribute(const in newBbox) {
   const pid = this.pid;
   coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist) {
     on loc {
-      const that = chpl_getPrivatizedCopy(this.type, pid);
+      const that = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
       that.boundingBox = newBbox;
 
       var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
