@@ -68,7 +68,7 @@
 static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
-  chpl_warning("assertOnGpu() is ignored with CHPL_GPU_[CODEGEN|RUNTIME]=none", lineno, filenameIdx);
+  chpl_warning("assertOnGpu() is ignored with CHPL_GPU_[CODEGEN|RUNTIME]=cpu", lineno, filenameIdx);
 }
 
 static inline unsigned int chpl_gpu_clock(void) {

@@ -180,7 +180,7 @@ module GPU
      Synchronize threads within a GPU block.
    */
   inline proc syncThreads() {
-    if CHPL_GPU_CODEGEN != "none" {
+    if CHPL_GPU_CODEGEN != "cpu" {
       __primitive("gpu syncThreads");
     }
   }
@@ -196,7 +196,7 @@ module GPU
     :arg size: the number of elements in each GPU thread block's copy of the array.
    */
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
-    if CHPL_GPU_CODEGEN != "none" {
+    if CHPL_GPU_CODEGEN != "cpu" {
       const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
       return voidPtr : c_ptr(eltType);
     }

@@ -53,7 +53,7 @@ void chpl_gpu_init(void) {
       chpl_error("CHPL_RT_NUM_DEVICES_PER_LOCALE must be >= 0", 0, 0);
     }
 
-#ifndef GPU_RUNTIME_NONE
+#ifndef GPU_RUNTIME_CPU
     if (chpl_gpu_num_devices > 0 && num > chpl_gpu_num_devices) {
       char msg[200];
       snprintf(msg, sizeof(msg),
@@ -66,7 +66,7 @@ void chpl_gpu_init(void) {
 #endif
       assert(num!=-1);
       chpl_gpu_num_devices = num;
-#ifndef GPU_RUNTIME_NONE
+#ifndef GPU_RUNTIME_CPU
     }
 #endif
   }

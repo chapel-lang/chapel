@@ -120,7 +120,7 @@ void chpl_gpu_impl_comm_wait(void *stream) {
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
-  // this function's upstream is blocked by GPU_RUNTIME_NONE check, This should
+  // this function's upstream is blocked by GPU_RUNTIME_CPU check, This should
   // be unreachable
   chpl_internal_error("chpl_gpu_mem_array_alloc was called unexpectedly.");
   return chpl_malloc(size);

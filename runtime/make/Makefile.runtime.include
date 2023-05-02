@@ -128,9 +128,9 @@ endif
 # If compiling for GPU locale add CUDA runtime headers to include path
 ifeq ($(CHPL_MAKE_LOCALE_MODEL),gpu)
 RUNTIME_INCLS += -I$(CHPL_MAKE_CUDA_PATH)/include
-  ifeq ($(CHPL_MAKE_GPU_RUNTIME),none)
+  ifeq ($(CHPL_MAKE_GPU_RUNTIME),cpu)
+    RUNTIME_DEFS += -DGPU_RUNTIME_CPU
   endif
-    RUNTIME_DEFS += -DGPU_RUNTIME_NONE
 RUNTIME_DEFS += -DHAS_GPU_LOCALE
 endif
 

@@ -113,7 +113,7 @@
 #endif
 #endif
 
-#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_NONE) && defined(CHPL_GEN_CODE)
+#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU) && defined(CHPL_GEN_CODE)
 #define MAYBE_GPU __host__ __device__
 #else
 #define MAYBE_GPU
