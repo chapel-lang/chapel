@@ -102,9 +102,6 @@ static void chpl_gpu_ensure_context() {
 }
 
 void chpl_gpu_impl_init(int* num_devices) {
-  int         num_devices;
-
-  // CUDA initialization
   CUDA_CALL(cuInit(0));
 
   CUDA_CALL(cuDeviceGetCount(num_devices));

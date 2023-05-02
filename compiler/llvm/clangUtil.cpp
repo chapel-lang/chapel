@@ -2365,6 +2365,8 @@ static std::string generateClangGpuLangArgs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         args += "hip";
         break;
+      case GpuCodegenType::GPU_CG_NONE:
+        break;
     }
   }
   return args;

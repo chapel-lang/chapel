@@ -148,4 +148,11 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
   return -1;
 }
 
+bool chpl_gpu_impl_can_access_peer(int dev1, int dev2) {
+  return false;
+}
+
+void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable) {
+}
+
 #endif // HAS_GPU_LOCALE

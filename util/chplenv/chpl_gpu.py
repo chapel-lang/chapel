@@ -21,9 +21,9 @@ def _validate_rocm_version():
 #   Default GPU architecure for the vendor
 #   LLVM target
 GPU_TYPES = {
-    "cuda": ("CHPL_CUDA_PATH", "nvcc", 2, "sm_60", "NVPTX"),
-    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU"),
-    "none": ("NONE", "none", 1, "none", "none", none)
+    "cuda": ("CHPL_CUDA_PATH", "nvcc", 2, "sm_60", "NVPTX", _validate_cuda_version),
+    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU", _validate_rocm_version),
+    "none": ("NONE", "none", 1, "none", "none", lambda: None)
 }
 
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
