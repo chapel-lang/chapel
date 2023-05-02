@@ -1702,6 +1702,8 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
+// this wrapper around resolveFunctionByPoisQuery helps to avoid
+// 'possibly dangling reference to a temporary' warnings from GCC 13.
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQueryWrapper(Context* context,
                                   const TypedFnSignature* sig,
@@ -2261,13 +2263,14 @@ filterCandidatesInitial(Context* context,
 
   return QUERY_END(result);
 }
+
+// this wrapper around filterCandidatesInitial helps to avoid
+// 'possibly dangling reference to a temporary' warnings from GCC 13.
 static const std::vector<const TypedFnSignature*>&
 filterCandidatesInitialWrapper(Context* context,
                                std::vector<BorrowedIdsWithName>&& lst,
                                const CallInfo& call) {
-  auto lstMove = std::move(lst);
-  auto callCopy = call;
-  return filterCandidatesInitial(context, lstMove, callCopy);
+  return filterCandidatesInitial(context, std::move(lst), call);
 }
 
 void
