@@ -1702,6 +1702,18 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
+static const owned<ResolvedFunction>&
+resolveFunctionByPoisQueryWrapper(Context* context,
+                                  const TypedFnSignature* sig,
+                                  const PoiInfo& poiInfo) {
+  auto poiFnIdsUsedCopy = poiInfo.poiFnIdsUsed();
+  auto recursiveFnsUsedCopy = poiInfo.recursiveFnsUsed();
+
+  return resolveFunctionByPoisQuery(context, sig,
+                                    std::move(poiFnIdsUsedCopy),
+                                    std::move(recursiveFnsUsedCopy));
+}
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
                            const TypedFnSignature* sig,
@@ -1760,9 +1772,8 @@ resolveFunctionByInfoQuery(Context* context,
                          resolvedPoiInfo.poiFnIdsUsed(),
                          resolvedPoiInfo.recursiveFnsUsed());
       auto& saved =
-        resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                   resolvedPoiInfo.poiFnIdsUsed(),
-                                   resolvedPoiInfo.recursiveFnsUsed());
+        resolveFunctionByPoisQueryWrapper(context, newTfsForInitializer,
+                                          resolvedPoiInfo);
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1840,9 +1851,7 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig,
-                               resolvedPoiInfo.poiFnIdsUsed(),
-                               resolvedPoiInfo.recursiveFnsUsed());
+    resolveFunctionByPoisQueryWrapper(context, sig, resolvedPoiInfo);
 
   const ResolvedFunction* result = resolved.get();
 
@@ -2251,6 +2260,14 @@ filterCandidatesInitial(Context* context,
   }
 
   return QUERY_END(result);
+}
+static const std::vector<const TypedFnSignature*>&
+filterCandidatesInitialWrapper(Context* context,
+                               std::vector<BorrowedIdsWithName>&& lst,
+                               const CallInfo& call) {
+  auto lstMove = std::move(lst);
+  auto callCopy = call;
+  return filterCandidatesInitial(context, lstMove, callCopy);
 }
 
 void
@@ -2878,7 +2895,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         const auto& initialCandidates =
-          filterCandidatesInitial(context, v, fci);
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2914,7 +2931,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
         auto v = lookupCalledExpr(context, curPoi->inScope(), fci, visited[i]);
 
         // filter without instantiating yet
-        auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+        auto& initialCandidates =
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2988,7 +3006,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -3014,7 +3033,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
