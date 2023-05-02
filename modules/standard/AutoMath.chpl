@@ -241,6 +241,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(x: real(64)): real(64) {
@@ -261,6 +265,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc cosine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(x : real(32)): real(32) {
@@ -278,6 +286,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+    /* Returns the arc cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(z: complex(64)): complex(64) {
@@ -295,6 +304,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acos(z: complex(128)): complex(128) {
@@ -313,6 +323,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(x: real(64)): real(64) {
@@ -333,6 +347,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic cosine of the argument `x`.
+
+     It is an error if `x` is less than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(x : real(32)): real(32) {
@@ -350,6 +368,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(64)): complex(64) {
@@ -367,6 +386,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_acosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'acosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc acosh(z: complex(128)): complex(128) {
@@ -385,6 +405,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(x: real(64)): real(64) {
@@ -405,6 +429,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc sine of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1.
+  */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(x : real(32)): real(32) {
@@ -422,6 +450,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(z: complex(64)): complex(64) {
@@ -439,6 +468,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asin(z: complex(128)): complex(128) {
@@ -457,6 +487,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(x: real(64)): real(64) {
@@ -477,6 +508,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(x : real(32)): real(32) {
@@ -494,6 +526,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(z: complex(64)): complex(64) {
@@ -511,6 +544,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_asinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'asinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc asinh(z: complex(128)): complex(128) {
@@ -530,6 +564,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(x: real(64)): real(64) {
@@ -550,6 +585,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(x : real(32)): real(32) {
@@ -567,6 +603,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(z: complex(64)): complex(64) {
@@ -584,6 +621,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan(z: complex(128)): complex(128) {
@@ -602,6 +640,11 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan2 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the ratio of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan2(y: real(64), x: real(64)): real(64) {
@@ -622,6 +665,11 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atan2 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the arc tangent of the two arguments.
+
+     This is equivalent to
+     the arc tangent of `y` / `x` except that the signs of `y`
+     and `x` are used to determine the quadrant of the result. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atan2(y : real(32), x: real(32)): real(32) {
@@ -640,6 +688,9 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic tangent of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(x: real(64)): real(64) {
@@ -660,6 +711,9 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic tangent of the argument `x`.
+
+     It is an error if `x` is less than -1 or greater than 1. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(x : real(32)): real(32) {
@@ -677,6 +731,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(64)): complex(64) {
@@ -694,6 +749,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_atanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the inverse hyperbolic tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'atanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc atanh(z: complex(128)): complex(128) {
@@ -796,6 +852,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the cosine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(x: real(64)): real(64) {
@@ -816,6 +873,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the cosine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(x : real(32)): real(32) {
@@ -833,6 +891,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(64)): complex(64) {
@@ -850,6 +909,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cos(z : complex(128)): complex(128) {
@@ -868,6 +928,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(x: real(64)): real(64) {
@@ -888,6 +949,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(x : real(32)): real(32) {
@@ -905,6 +967,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(64)): complex(64) {
@@ -922,6 +985,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_cosh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic cosine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'cosh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc cosh(z: complex(128)): complex(128) {
@@ -1679,6 +1743,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(x: real(64)): real(64) {
@@ -1699,6 +1764,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(x: real(32)): real(32) {
@@ -1716,6 +1782,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(64)): complex(64) {
@@ -1733,6 +1800,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sin and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sin' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sin(z: complex(128)): complex(128) {
@@ -1751,6 +1819,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(x: real(64)): real(64) {
@@ -1771,6 +1840,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic sine of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(x : real(32)): real(32) {
@@ -1788,6 +1858,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(z: complex(64)): complex(64) {
@@ -1805,6 +1876,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_sinh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic sine of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'sinh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc sinh(z: complex(128)): complex(128) {
@@ -1859,6 +1931,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(x: real(64)): real(64) {
@@ -1879,6 +1952,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(x : real(32)): real(32) {
@@ -1896,6 +1970,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(64)): complex(64) {
@@ -1913,6 +1988,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tan' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tan(z: complex(128)): complex(128) {
@@ -1931,6 +2007,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(x: real(64)): real(64) {
@@ -1951,6 +2028,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic tangent of the argument `x`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(x : real(32)): real(32) {
@@ -1968,6 +2046,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(z: complex(64)): complex(64) {
@@ -1985,6 +2064,7 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_tanh and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the hyperbolic tangent of the argument `z`. */
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'tanh' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc tanh(z: complex(128)): complex(128) {
