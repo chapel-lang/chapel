@@ -280,11 +280,8 @@ module ChapelRange {
   proc range.init(type idxType,
                   param bounds : boundKind,
                   param stridable : bool,
-                  _low,
-                  _high,
-                  _stride,
-                  _alignment,
-                  _aligned = true) {
+                  _low, _high, _stride, _alignment, _aligned,
+                  param normalizeAlignment=true) {
     this.idxType     = idxType;
     this.bounds      = bounds;
     this.stridable   = stridable;
@@ -293,7 +290,9 @@ module ChapelRange {
     this.complete();
     if (stridable) {
       this._stride    = _stride;
-      this._alignment = chpl__modUnsafeCast(_alignment, _stride);
+      this._alignment = if normalizeAlignment
+                          then chpl__modUnsafeCast(_alignment, _stride)
+                          else _alignment;
       this._aligned   = _aligned;
     }
   }
@@ -1280,12 +1279,11 @@ operator :(r: range(?), type t: range(?)) {
 
     var boundedOther = new range(
                           idxType, boundKind.both,
-                          s || this.stridable,
+                          other.stridable,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other.stride,
-                          chpl__idxToInt(other.alignment),
-                          true);
+                          other._stride, other._alignment,
+                          true, false);
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
@@ -1463,7 +1461,7 @@ operator :(r: range(?), type t: range(?)) {
     return new range(idxType, bounds, stridable,
                      _low-i,
                      _high+i,
-                     stride, _alignment, aligned);
+                     _stride, _alignment, _aligned);
   }
 
   pragma "no doc"
@@ -1529,15 +1527,16 @@ operator :(r: range(?), type t: range(?)) {
     const i = (abs(offset)).safeCast(intIdxType);
     if offset < 0 then
       return new range(idxType, bounds, stridable,
-                       _low, _low - 1 + i, stride,
-                       _effAlmt(), aligned);
+                       _low, _low - 1 + i,
+                       _stride, _alignment, _aligned, false);
     if offset > 0 then
       return new range(idxType, bounds, stridable,
-                       _high + 1 - i, _high, stride,
-                       _effAlmt(), aligned);
+                       _high + 1 - i, _high,
+                       _stride, _alignment, _aligned, false);
     // if i == 0 then
     return new range(idxType, bounds, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+                     _low, _high,
+                     _stride, _alignment, _aligned, false);
   }
 
   pragma "no doc"
@@ -1578,15 +1577,16 @@ operator :(r: range(?), type t: range(?)) {
       return new range(idxType, bounds, stridable,
                        _low - i,
                        _low - 1,
-                       stride, _effAlmt(), aligned);
+                       _stride, _alignment, _aligned, false);
     if offset > 0 then
       return new range(idxType, bounds, stridable,
                        _high + 1,
                        _high + i,
-                       stride, _effAlmt(), aligned);
+                       _stride, _alignment, _aligned, false);
     // if i == 0 then
     return new range(idxType, bounds, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+                     _low, _high,
+                     _stride, _alignment, _aligned, false);
   }
 
   pragma "no doc"
@@ -1982,7 +1982,7 @@ operator :(r: range(?), type t: range(?)) {
     /////////// allocate the result ///////////
 
     var result = new range(idxType, newBoundKind, newStrideKind,
-                           newlo, newhi, newStride, 0:intIdxType, true);
+                           newlo, newhi, newStride, 0:intIdxType, true, false);
 
     /////////// Step 3: choose the alignment ///////////
 
@@ -2048,10 +2048,13 @@ operator :(r: range(?), type t: range(?)) {
         // Now offset can be safely cast to intIdxType.
         result._alignment = al1:intIdxType + offset:intIdxType * st1:intIdxType / g:intIdxType;
 
-        if result._alignment:int < 0 then
+        if result._alignment:int < 0 {
           result._alignment += newAbsStride;
-        else if result._alignment >= newAbsStride then
+          assert(result._alignment >= 0);
+        } else if result._alignment >= newAbsStride {
           result._alignment -= newAbsStride;
+          assert(result._alignment < newAbsStride);
+        }
       }
     }
 
@@ -2101,7 +2104,7 @@ operator :(r: range(?), type t: range(?)) {
                          _high = r._low - absSameType(r.stride),
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
@@ -2110,7 +2113,7 @@ operator :(r: range(?), type t: range(?)) {
                          _high = r._high,
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       } else {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
@@ -2121,7 +2124,7 @@ operator :(r: range(?), type t: range(?)) {
                                                         boundKind.both),
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       }
     }
 
@@ -2191,9 +2194,7 @@ operator :(r: range(?), type t: range(?)) {
                      stridable = r.stridable,
                      _low = lo,
                      _high = hi,
-                     _stride = if r.stridable then r.stride: strType else none,
-                     _alignment = if r.stridable then r._alignment else none,
-                     _aligned = r.aligned);
+                     r._stride, r._alignment, r._aligned, false);
   }
 
   // TODO: Do we really want to support this?  Arkouda currently relies
