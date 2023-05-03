@@ -57,15 +57,15 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 
 llvm::Optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
-                         IdAndFlags::Flags excludeFlags) const {
+                         const IdAndFlags::FlagSet& excludeFlagSet) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
     return llvm::None;
   }
 
-  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlags)) {
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
+  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -76,19 +76,19 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
   // And, if excludeFlags is present, some flag in it is not present in flagsOr?
   // If so, return the borrow
   if ((flagsAnd_ & filterFlags) == filterFlags &&
-      (excludeFlags == 0 || (flagsOr_ & excludeFlags) != excludeFlags)) {
+      excludeFlagSet.noneMatch(flagsOr_)) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
   }
 
   // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlags))
+    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlags);
+    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlagSet);
   }
 
   // No ID was visible, so we can't borrow.
@@ -105,7 +105,7 @@ int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
   // found symbols will included in this borrowedIds, so we don't have
   // to consider them individually.
   if ((flagsAnd & filterFlags_) == filterFlags_ &&
-      (excludeFlags_ == 0 || (flagsOr & excludeFlags_) != excludeFlags_)) {
+      excludeFlagSet_.noneMatch(flagsOr)) {
     // all of the found symbols will match
     return moreIdvs_->size();
   }
@@ -206,7 +206,7 @@ const Scope* Scope::parentModuleScope() const {
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
                           IdAndFlags::Flags filterFlags,
-                          IdAndFlags::Flags excludeFlags) const {
+                          const IdAndFlags::FlagSet& excludeFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns

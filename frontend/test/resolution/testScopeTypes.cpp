@@ -26,35 +26,37 @@ const IdAndFlags::Flags not_pub = IdAndFlags::NOT_PUBLIC;
 const IdAndFlags::Flags method = IdAndFlags::METHOD_FIELD;
 const IdAndFlags::Flags not_method = IdAndFlags::NOT_METHOD_FIELD;
 
+using FlagSet = IdAndFlags::FlagSet;
+
 // test IdAndFlags::matchFilter
 static void testMatchFilter() {
   // no filter provided -> it matches
-  assert(IdAndFlags::matchFilter(pub, 0, 0));
-  assert(IdAndFlags::matchFilter(not_pub, 0, 0));
+  assert(IdAndFlags::matchFilter(pub, 0, FlagSet::empty()));
+  assert(IdAndFlags::matchFilter(not_pub, 0, FlagSet::empty()));
 
   // same filter as what we have -> it matches
-  assert(IdAndFlags::matchFilter(pub, pub, 0));
-  assert(IdAndFlags::matchFilter(not_pub, not_pub, 0));
+  assert(IdAndFlags::matchFilter(pub, pub, FlagSet::empty()));
+  assert(IdAndFlags::matchFilter(not_pub, not_pub, FlagSet::empty()));
 
   // no filter provided but it is excluded -> it does not match
-  assert(!IdAndFlags::matchFilter(pub, 0, pub));
-  assert(!IdAndFlags::matchFilter(not_pub, 0, not_pub));
+  assert(!IdAndFlags::matchFilter(pub, 0, FlagSet::singleton(pub)));
+  assert(!IdAndFlags::matchFilter(not_pub, 0, FlagSet::singleton(not_pub)));
 
   // test some multi-bit situations
   IdAndFlags::Flags pm = pub | method;
   IdAndFlags::Flags pf = pub | not_method;
 
-  assert(IdAndFlags::matchFilter(pm, 0, 0));
-  assert(IdAndFlags::matchFilter(pm, pub, 0));
-  assert(IdAndFlags::matchFilter(pm, method, 0));
+  assert(IdAndFlags::matchFilter(pm, 0, FlagSet::empty()));
+  assert(IdAndFlags::matchFilter(pm, pub, FlagSet::empty()));
+  assert(IdAndFlags::matchFilter(pm, method, FlagSet::empty()));
 
-  assert(!IdAndFlags::matchFilter(pm, not_pub, 0));
-  assert(!IdAndFlags::matchFilter(pm, not_method, 0));
-  assert(!IdAndFlags::matchFilter(pm, pm, pm));
-  assert(!IdAndFlags::matchFilter(pm, pm, pub));
-  assert(!IdAndFlags::matchFilter(pm, pm, method));
+  assert(!IdAndFlags::matchFilter(pm, not_pub, FlagSet::empty()));
+  assert(!IdAndFlags::matchFilter(pm, not_method, FlagSet::empty()));
+  assert(!IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(pm)));
+  assert(!IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(pub)));
+  assert(!IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(method)));
 
-  assert(IdAndFlags::matchFilter(pm, pm, pf));
+  assert(IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(pf)));
 }
 
 // test OwnedIdsWithName::borrow
@@ -70,7 +72,7 @@ static void testBorrowIds() {
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     assert(ids.numIds() == 1);
-    auto foundIds = ids.borrow(0, 0);
+    auto foundIds = ids.borrow(0, FlagSet::empty());
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
     assert(b.firstId() == x);
@@ -88,7 +90,7 @@ static void testBorrowIds() {
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = pub;
-    IdAndFlags::Flags e = 0;
+    auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
@@ -97,7 +99,7 @@ static void testBorrowIds() {
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
-    IdAndFlags::Flags e = not_method;
+    auto e = FlagSet::singleton(not_method);
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
@@ -110,7 +112,7 @@ static void testBorrowIds() {
                          /* method */ true, /* parenful */ false);
     assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
-    IdAndFlags::Flags e = 0;
+    auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -131,7 +133,7 @@ static void testBorrowIds() {
     ids.appendIdAndFlags(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
-    IdAndFlags::Flags e = 0;
+    auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -152,7 +154,7 @@ static void testBorrowIds() {
     ids.appendIdAndFlags(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
-    IdAndFlags::Flags e = 0;
+    auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -173,7 +175,7 @@ static void testBorrowIds() {
     ids.appendIdAndFlags(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
-    IdAndFlags::Flags e = pub | method;
+    auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -194,7 +196,7 @@ static void testBorrowIds() {
     ids.appendIdAndFlags(x, Decl::PUBLIC,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
-    IdAndFlags::Flags e = pub | method;
+    auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -215,7 +217,7 @@ static void testBorrowIds() {
     ids.appendIdAndFlags(x, Decl::PUBLIC,
                          /* method */ false, /* parenful */ false);
     IdAndFlags::Flags f = 0;
-    IdAndFlags::Flags e = pub;
+    auto e = FlagSet::singleton(pub);
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }

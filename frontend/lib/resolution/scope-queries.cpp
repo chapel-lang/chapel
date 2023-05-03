@@ -451,7 +451,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config,
                                 IdAndFlags::Flags filterFlags,
-                                IdAndFlags::Flags excludeFilter,
+                                const IdAndFlags::FlagSet& excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -519,7 +519,7 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    UniqueString name,
                                    LookupConfig config,
                                    IdAndFlags::Flags filterFlags,
-                                   IdAndFlags::Flags excludeFilter,
+                                   const IdAndFlags::FlagSet& excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
@@ -820,7 +820,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
       bool isMethodOrField = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
-      IdAndFlags::Flags excludeFlags = 0;
+      IdAndFlags::FlagSet excludeFlagSet;
 
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
@@ -831,7 +831,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
                                                 isMethodOrField,
                                                 isParenfulFunction,
                                                 filterFlags,
-                                                excludeFlags);
+                                                excludeFlagSet);
       if (foundIds) {
         if (traceCurPath && traceResult) {
           ResultVisibilityTrace t;
@@ -888,7 +888,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
-  IdAndFlags::Flags excludeFilter = 0;
+  IdAndFlags::FlagSet excludeFilter;
   if (skipPrivateVisibilities) {
     curFilter |= IdAndFlags::PUBLIC;
   }
@@ -913,26 +913,25 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
   // update the checkedScopes map and return early if there is nothing to do.
   auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
-                                               curFilter));
+                                               IdAndFlags::FlagSet::singleton(curFilter)));
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
-    // Set flagsInMap to refer to the flags of the existing element
-    IdAndFlags::Flags& flagsInMap = p.first->second;
+    // Set flagsInMap to refer to the flag combinations of the existing element
+    IdAndFlags::FlagSet& flagsInMap = p.first->second;
 
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndFlags::Flags foundFilter = flagsInMap;
-    if ((curFilter & foundFilter) == foundFilter) {
+    if (flagsInMap.subsumes(curFilter)) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
       // (which, because these are filters, means that foundFilter is
-      //  less restricted / more general),
+      //  less restricted / more general / subsumes curFilter),
       // there is no need to visit this scope further.
       return false;
     }
 
     // ok, we can search for curFilter but exclude what was already found
-    excludeFilter = foundFilter;
+    excludeFilter = flagsInMap;
 
     // Update checkedScopes to remove filter bits that weren't present
     // in foundFilter (because we are going to update results
@@ -945,9 +944,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     //   but then we will have no way of recording that we have
     //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
     //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
-    IdAndFlags::Flags combinedFilter = foundFilter & curFilter;
-
-    flagsInMap = combinedFilter;
+    flagsInMap.insert(curFilter);
   }
 
   // if the scope has an extern block, note that fact.
@@ -2117,8 +2114,8 @@ doWarnHiddenFormal(Context* context,
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
   IdAndFlags::Flags filterFlags = 0;
-  IdAndFlags::Flags excludeFlags = 0;
-  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
+  IdAndFlags::FlagSet excludeFlagSet;
+  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlagSet);
   for (const auto& b : ids) {
     for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);
