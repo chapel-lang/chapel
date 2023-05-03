@@ -222,7 +222,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
-    result = resolvedStmt.byId(id).type();
+    if (resolvedStmt.hasId(id)) {
+      result = resolvedStmt.byId(id).type();
+    } else {
+      // fall back to default value
+      result = QualifiedType();
+    }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
@@ -2773,6 +2778,10 @@ lookupCalledExpr(Context* context,
 
   if (ci.isMethodCall()) {
     config |= LOOKUP_ONLY_METHODS_FIELDS;
+  }
+
+  if (ci.isOpCall()) {
+    config |= LOOKUP_METHODS;
   }
 
   UniqueString name = ci.name();

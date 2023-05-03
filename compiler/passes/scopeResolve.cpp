@@ -272,7 +272,8 @@ static void processGenericFields() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getScopeFor(theProgram->block);
+  if (!rootScope) rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {

@@ -1177,6 +1177,40 @@ static void test30a() {
   assert(reY.toId().isEmpty());
 }
 
+// Production compiler excludes methods from search unless their receiver
+// somehow matches. In non-method contexts, Dyno mimics this by ignoring
+// all methods. So, a method on int should not get in the way of foo.
+//
+// At the time of writing, this is locked down in production by:
+// test/functions/kbrady/proc_scoping.chpl
+static void test31() {
+  printf("test31\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      proc foo(arg: int) {
+        proc int.arg {}
+        var x = arg;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+
+  ID fnId = x->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reX = rfn->byAst(x->initExpression());
+  assert(reX.toId() == fn->toFunction()->formal(0)->id());
+}
+
 
 int main() {
   test1();
@@ -1210,6 +1244,7 @@ int main() {
   test29();
   test30();
   test30a();
+  test31();
 
   return 0;
 }

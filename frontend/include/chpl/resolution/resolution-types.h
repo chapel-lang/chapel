@@ -1181,6 +1181,8 @@ class ResolvedExpression {
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
   ID toId_;
+  // Is this a reference to a compiler-created primitive?
+  bool isBuiltin_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -1210,6 +1212,9 @@ class ResolvedExpression {
    * refers to */
   ID toId() const { return toId_; }
 
+  /** check whether this resolution result refers to a compiler builtin like `bool`. */
+  bool isBuiltin() const { return isBuiltin_; }
+
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
    * choice between these needs to happen later than the main function
@@ -1226,6 +1231,9 @@ class ResolvedExpression {
   const ResolvedParamLoop* paramLoop() const {
     return paramLoop_;
   }
+
+  /** set the isPrimitive flag */
+  void setIsPrimitive(bool isPrimitive) { isBuiltin_ = isPrimitive; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -1253,6 +1261,7 @@ class ResolvedExpression {
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
+           isBuiltin_ == other.isBuiltin_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -1264,6 +1273,7 @@ class ResolvedExpression {
   void swap(ResolvedExpression& other) {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
+    std::swap(isBuiltin_, other.isBuiltin_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
