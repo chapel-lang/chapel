@@ -26,45 +26,6 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
-//static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
-//{
-  //return chpl_task_getRequestedSubloc();
-//}
-
- //static inline chpl_localeID_t chpl_gen_getLocaleID(void)
-//{
-  //chpl_localeID_t localeID;
-  //localeID = {0,chpl_task_getRequestedSubloc()};
-  //return localeID;
-//}
-
-//__device__ static inline void* c_pointer_return(void* x) { return x; }
-
-//__device__ static inline chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node,  c_sublocid_t subloc) {
-  //chpl_localeID_t loc = { node, subloc };
-  //return loc;
-//}
-
-//__device__ static inline c_nodeid_t get_chpl_nodeID(void) {
-  //return 0;
-//}
-
-//__device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
-  //return loc.node;
-//}
-
-//__device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
-  //void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
-//{
-  //// TODO
-//}
-
-//__device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
-  //void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
-//{
-  //// TODO
-//}
-
 static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
