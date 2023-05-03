@@ -655,9 +655,11 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   GenInfo* info = gGenInfo;
 
   INT_ASSERT(valType);
+  GenRet loadValType = valType;
+  INT_ASSERT(loadValType.type);
 
 #if HAVE_LLVM_VER >= 130
-  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(loadValType.type, ptr);
 #else
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
 #endif
