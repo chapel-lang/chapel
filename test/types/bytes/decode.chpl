@@ -1,6 +1,6 @@
 // this test tests two things with identical behaviors w.r.t decodePolicy
 // (1) bytes.decode
-// (2) createStringWithNewBuffer
+// (2) string.createCopyingBuffer
 // the good file is identical
 
 config const testBytesDecode = false;
