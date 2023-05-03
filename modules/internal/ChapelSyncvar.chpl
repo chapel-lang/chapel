@@ -101,7 +101,7 @@ module ChapelSyncvar {
     var ret: t;
     // It will be an error to read the empty value
     // but we zero it just in case
-    c_memset(c_ptrTo(ret), 0, c_sizeof(t));
+    c_memset(c_addrOf(ret), 0, c_sizeof(t));
     return ret;
   }
 
@@ -554,7 +554,7 @@ module ChapelSyncvar {
         var localRet : valType;
 
         if isPODType(valType) ||
-           chpl_sync_isFull(c_ptrTo(value), syncAux) {
+           chpl_sync_isFull(c_addrOf(value), syncAux) {
           localRet = value;
         } else {
           // otherwise, just use the default value:
@@ -598,7 +598,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         _moveSet(value, localVal);
@@ -618,7 +618,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         _moveSet(value, localVal);
@@ -633,7 +633,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         if isPODType(valType) {
@@ -652,7 +652,7 @@ module ChapelSyncvar {
 
       on this {
         chpl_rmem_consist_release();
-        b = chpl_sync_isFull(c_ptrTo(value), syncAux);
+        b = chpl_sync_isFull(c_addrOf(value), syncAux);
         chpl_rmem_consist_acquire();
       }
 
@@ -1099,7 +1099,7 @@ module ChapelSyncvar {
 
       on this {
         chpl_rmem_consist_release();
-        b = chpl_single_isFull(c_ptrTo(value), singleAux);
+        b = chpl_single_isFull(c_addrOf(value), singleAux);
         chpl_rmem_consist_acquire();
       }
 
