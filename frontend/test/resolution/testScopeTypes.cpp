@@ -25,8 +25,18 @@ const IdAndFlags::Flags pub = IdAndFlags::PUBLIC;
 const IdAndFlags::Flags not_pub = IdAndFlags::NOT_PUBLIC;
 const IdAndFlags::Flags method = IdAndFlags::METHOD_FIELD;
 const IdAndFlags::Flags not_method = IdAndFlags::NOT_METHOD_FIELD;
+const IdAndFlags::Flags parenful = IdAndFlags::PARENFUL_FUNCTION;
+const IdAndFlags::Flags not_parenful = IdAndFlags::NOT_PARENFUL_FUNCTION;
 
 using FlagSet = IdAndFlags::FlagSet;
+
+template <typename ... Args>
+static FlagSet anyOf(Args...args) {
+  FlagSet toReturn;
+  auto temp = {(toReturn.addDisjunction(args), 0)...,};
+  (void) temp;
+  return toReturn;
+}
 
 // test IdAndFlags::matchFilter
 static void testMatchFilter() {
@@ -57,6 +67,31 @@ static void testMatchFilter() {
   assert(!IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(method)));
 
   assert(IdAndFlags::matchFilter(pm, pm, FlagSet::singleton(pf)));
+
+  // test some multi-disjunct excludes.
+  auto publicOrPrivateMethods = anyOf(pub, not_pub | method);
+  assert(!IdAndFlags::matchFilter(pub | method, 0, publicOrPrivateMethods));
+  assert(!IdAndFlags::matchFilter(pub | not_method, 0, publicOrPrivateMethods));
+  assert(!IdAndFlags::matchFilter(not_pub | method, 0, publicOrPrivateMethods));
+  assert(IdAndFlags::matchFilter(not_pub | not_method, 0, publicOrPrivateMethods));
+
+  // Packing should reduce this to just 'pub'.
+  auto justPublic = anyOf(pub | method, pub);
+  assert(!IdAndFlags::matchFilter(pub | method, 0, justPublic));
+  assert(!IdAndFlags::matchFilter(pub | not_method, 0, justPublic));
+  assert(IdAndFlags::matchFilter(not_pub | method, 0, justPublic));
+  assert(IdAndFlags::matchFilter(not_pub | not_method, 0, justPublic));
+
+  // Try a three-disjunct condition.
+  auto allExceptPrivateParenfulMethods = anyOf(pub, not_method, not_parenful);
+  assert(!IdAndFlags::matchFilter(pub | method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(IdAndFlags::matchFilter(not_pub | method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(not_pub | method | not_parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(not_pub | not_method | parenful, 0, allExceptPrivateParenfulMethods));
+  assert(!IdAndFlags::matchFilter(not_pub | not_method | not_parenful, 0, allExceptPrivateParenfulMethods));
 }
 
 // test OwnedIdsWithName::borrow
