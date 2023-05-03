@@ -275,7 +275,7 @@ to GPUs may be limited. In this mode:
 * the compiler will generate GPU kernels from order-independent loops normally,
 
 * it will call the internal runtime API for GPU operations, so that features
-  outlined under `Diagnostics and Utilities` will work as expected
+  outlined under `Diagnostics and Utilities`_ will work as expected
 
   * e.g, ``assertOnGpu`` will fail at compile time normally. This can allow
     testing if a loop is GPU-eligible.
