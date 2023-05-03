@@ -5835,6 +5835,10 @@ DEFINE_PRIM(FTABLE_CALL) {
     } else {
 #ifdef HAVE_LLVM
       GenRet             ftable = gGenInfo->lvt->getValue("chpl_ftable");
+      auto global = llvm::cast<llvm::GlobalVariable>(ftable.val);
+      GenRet fnPtrT = codegenTypeByName("chpl_fn_p");
+      llvm::Type*  genericFnPtr = fnPtrT.type;
+      INT_ASSERT(genericFnPtr);
       llvm::Value*       fnPtrPtr;
       llvm::Instruction* fnPtr;
       llvm::Value*       GEPLocs[2];
@@ -5843,8 +5847,7 @@ DEFINE_PRIM(FTABLE_CALL) {
       GEPLocs[1] = index.val;
       fnPtrPtr   = createInBoundsGEPCompat(ftable.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
-      fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(),
-                                                   fnPtrPtr);
+      fnPtr      = gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
 #else
       fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
 #endif
@@ -5927,15 +5930,19 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     } else {
 #ifdef HAVE_LLVM
       GenRet       table = gGenInfo->lvt->getValue("chpl_vmtable");
+      auto global = llvm::cast<llvm::GlobalVariable>(table.val);
       llvm::Value* fnPtrPtr;
+      GenRet fnPtrT = codegenTypeByName("chpl_fn_p");
+      llvm::Type*  genericFnPtr = fnPtrT.type;
+      INT_ASSERT(genericFnPtr);
       llvm::Value* GEPLocs[2];
       GEPLocs[0] = llvm::Constant::getNullValue(
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr = createInBoundsGEPCompat(table.val, GEPLocs);
+      fnPtrPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       llvm::Instruction* fnPtrV =
-        gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(), fnPtrPtr);
+        gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
 #else
       llvm::Instruction* fnPtrV = gGenInfo->irBuilder->CreateLoad(fnPtrPtr);
 #endif
