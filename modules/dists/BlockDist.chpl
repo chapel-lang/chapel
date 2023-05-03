@@ -529,6 +529,7 @@ proc Block.init(boundingBox: domain,
   }
 }
 
+@unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
 proc Block.redistribute(const in newBbox) {
   const newBboxDims = newBbox.dims();
   const pid = this.pid;
