@@ -352,13 +352,6 @@ static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
 #endif
 }
 
-// this function should be removed before merging
-static llvm::Value* createInBoundsGEPCompat(llvm::Value* ptr, llvm::ArrayRef<llvm::Value*> idxList) {
-  llvm::Type* gepType =
-    llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType();
-  createInBoundsGEP(gepType, ptr, idxList);
-}
-
 #endif
 
 enum WideThingField {
@@ -1390,7 +1383,11 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
     GEPLocs.push_back(extendToPointerSize(index, AS));
 
-    ret.val = createInBoundsGEPCompat(base.val, GEPLocs);
+    GenRet gepBaseType = baseType;
+    if (baseType->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      gepBaseType = eltType;
+    }
+    ret.val = createInBoundsGEP(gepBaseType.type, base.val, GEPLocs);
 
     // Propagate noalias scopes
     if (base.aliasScope)
