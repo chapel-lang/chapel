@@ -1,14 +1,17 @@
 use GPU;
 use Memory.Diagnostics;
 
-startVerboseMem();
+config param triggerAssert = false;
 
-on here.gpus[0] {
+
+for gpu in here.gpus do on gpu {
   var A: [1..10] int;
   foreach i in A.domain {
     assertOnGpu();
     A[i] = i;
+
+    if triggerAssert then
+      writeln(A[i]);
   }
-  writeln(A);
+  writeln(here, " ", A);
 }
-stopVerboseMem();

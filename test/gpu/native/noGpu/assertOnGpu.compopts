@@ -1,0 +1,2 @@
+-striggerAssert=true   #assertOnGpu-do-assert
+-striggerAssert=false  #assertOnGpu-dont-assert
