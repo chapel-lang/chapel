@@ -4176,11 +4176,15 @@ DEFINE_PRIM(ARRAY_SHIFT_BASE_POINTER) {
     GenRet addr    = call->get(2);
     GenRet shifted = codegenElementPtr(addr, call->get(3), true);
 
-    if (rv.isLVPtr != GEN_WIDE_PTR) {
-      codegenAssign(rv, codegenAddrOf(shifted));
-    } else {
-      codegenWideAddrWithAddr(rv, shifted, ret.chplType);
+    // used to have code to handle this case but it was wrong
+    INT_ASSERT(rv.isLVPtr != GEN_WIDE_PTR);
+
+    // not useful to get a reference type in this case
+    GenRet shiftedAddr = codegenAddrOf(shifted);
+    if (shiftedAddr.chplType) {
+      shiftedAddr.chplType = shiftedAddr.chplType->getValType();
     }
+    codegenAssign(rv, shiftedAddr);
 }
 
 DEFINE_PRIM(NOOP) {
