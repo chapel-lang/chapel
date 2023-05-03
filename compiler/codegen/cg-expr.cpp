@@ -643,7 +643,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
 // appropriate metadata based upon the Chapel type of ptr.
 static
 llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
-                                Type* valType = NULL,
+                                Type* valType,
                                 Type* surroundingStruct = NULL,
                                 uint64_t fieldOffset = 0,
                                 llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
@@ -653,6 +653,9 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
                                 bool isLoadOfLocalVar = true)
 {
   GenInfo* info = gGenInfo;
+
+  INT_ASSERT(valType);
+
 #if HAVE_LLVM_VER >= 130
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr->getType()->getPointerElementType(), ptr);
 #else

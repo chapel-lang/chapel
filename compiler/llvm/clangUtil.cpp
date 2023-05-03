@@ -3054,6 +3054,7 @@ void LayeredValueTable::addGlobalValue(
   store.u.value = value;
   store.isLVPtr = isLVPtr;
   store.isUnsigned = isUnsigned;
+  store.chplType = type;
   (layers.back())[name] = store;
 }
 
