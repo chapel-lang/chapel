@@ -1547,7 +1547,7 @@ proc BlockDom.dsiLocalSubdomain(loc: locale) {
     } else {
       // Otherwise, compute it to avoid communication...
       var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
-      return whole[(...inds)]; 
+      return whole[(...inds)];
     }
   } else {
     var d: domain(rank, idxType, stridable);
