@@ -45,7 +45,6 @@ static inline void chpl_gpu_printTimeDelta(
 
 static inline void chpl_gpu_force_sync() {
   chpl_warning("chpl_gpu_force_sync was called", 0, 0);
-  
 }
 
 #endif // HAS_GPU_LOCALE
