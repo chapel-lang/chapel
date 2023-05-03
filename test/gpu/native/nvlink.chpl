@@ -124,9 +124,9 @@ proc checkNumAccessEnabled(valFromChpl) {
   // For the time being I'm going to run this as a CUDA only test as we I
   // believe `rocm-smi --showtopotype` could be used to detect pairs of AMD
   // GPUs that can have peer access enabled but I have not yet explored this.
-  select ChplConfig.CHPL_GPU_CODEGEN {
-    when "cuda" do checkNumAccessEnabled_cuda(valFromChpl);
-    when "rocm" do checkNumAccessEnabled_rocm(valFromChpl);
+  select ChplConfig.CHPL_GPU {
+    when "nvidia" do checkNumAccessEnabled_cuda(valFromChpl);
+    when "amd" do checkNumAccessEnabled_rocm(valFromChpl);
     otherwise do compilerError("Update test to check for new runtime lib");
   }
 }
