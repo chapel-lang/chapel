@@ -1091,17 +1091,13 @@ GenRet doCodegenFieldPtr(
   AggregateType* ct = NULL;
   Type* castType = NULL;
 
-  if( special == field_normal ) {
-    INT_ASSERT(baseType);
-  }
+  INT_ASSERT(baseType);
 
-  if( baseType ) {
-    // Reduce the Chapel reference or wide reference cases
-    // to GEN_PTR or GEN_WIDE_PTR cases.
-    if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
-      base = codegenDeref(base);
-      return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
-    }
+  // Reduce the Chapel reference or wide reference cases
+  // to GEN_PTR or GEN_WIDE_PTR cases.
+  if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
+    base = codegenDeref(base);
+    return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
   }
 
   if( ! fLLVMWideOpt ) {
@@ -1117,27 +1113,25 @@ GenRet doCodegenFieldPtr(
     }
   }
 
-  if( baseType ) {
-    // At this point, baseType should be a record, union, class, or wide class
-    // All of these types are in the AggregateType AST node.
-    ct = toAggregateType(baseType);
-    INT_ASSERT(ct);
+  // At this point, baseType should be a record, union, class, or wide class
+  // All of these types are in the AggregateType AST node.
+  ct = toAggregateType(baseType);
+  INT_ASSERT(ct);
 
-    if ( isClass(ct) ) {
-      // ok, we have a class type. We should codegenValue
-      // to make sure we have no extra indirection.
-      base = codegenValue(base);
-    } else if ( baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
-      // Get the local version of the class (because it has the fields)
-      base = codegenValue(base);
-      baseType = baseType->getField("addr")->typeInfo();
-      ct = toAggregateType(baseType);
-    } else {
-      // Must be a record or union type, and we must have an
-      // lvalue-ptr to one of them.
-      INT_ASSERT(isRecord(ct) || isUnion(ct));
-      INT_ASSERT( base.isLVPtr != GEN_VAL );
-    }
+  if ( isClass(ct) ) {
+    // ok, we have a class type. We should codegenValue
+    // to make sure we have no extra indirection.
+    base = codegenValue(base);
+  } else if ( baseType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    // Get the local version of the class (because it has the fields)
+    base = codegenValue(base);
+    baseType = baseType->getField("addr")->typeInfo();
+    ct = toAggregateType(baseType);
+  } else {
+    // Must be a record or union type, and we must have an
+    // lvalue-ptr to one of them.
+    INT_ASSERT(isRecord(ct) || isUnion(ct));
+    INT_ASSERT( base.isLVPtr != GEN_VAL );
   }
 
   // No Chapel field name? it must be special.
@@ -1209,7 +1203,7 @@ GenRet doCodegenFieldPtr(
     INT_ASSERT(ret.chplType);
     GenRet retType = ret.chplType;
 
-    if( isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special ) {
+    if (isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special) {
       // Get a pointer to the union data then cast it to the right type
       bool unused;
       llvm::Type* eltTy = nullptr;
