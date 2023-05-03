@@ -82,6 +82,23 @@ void FlagSet::addDisjunction(Flags excludeFlags) {
     }
   }
 
+  // Performance: another possible optimization is the detection of two disjuncts
+  // being logical negations of each other (particularly if each disjunct is
+  // a single flag). For instance, if we have
+  //
+  //    IdAndFlags::METHOD_FIELD ∨ ...
+  //
+  // And we add IdAndFlags::NOT_METHOD_FIELD. In that case, we get:
+  //
+  //    IdAndFlags::METHOD_FIELD ∨ IdAndFlags::NOT_METHOD_FIELD ∨ ...
+  //
+  // Which is logically equivalent to:
+  //
+  //    True ∨ ... = True
+  //
+  // This means we can replace the whole disjunction with a single term,
+  // True, aka the empty Flags value 0.
+
   // We didn't find a pair eligible for merging, so just insert.
   flagVec.push_back(excludeFlags);
 }

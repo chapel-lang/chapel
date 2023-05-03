@@ -66,6 +66,7 @@ class IdAndFlags {
       * just IdAndFlags::METHOD_FIELD -- only methods/fields
       * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
         only public symbols that are methods/fields
+      * Empty Flags -- match everything
    */
   using Flags = uint16_t;
 
@@ -83,7 +84,7 @@ class IdAndFlags {
       That is, either any public symbol, or a private method or field.
 
       Other examples:
-        * [] (empty FlagSet) -- matches everything.
+        * [] (empty FlagSet) -- matches nothing.
         * [IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD] --
           only public symbols that are methods / fields.
         * More generally, [f] (singleton set) --
@@ -108,7 +109,7 @@ class IdAndFlags {
     static FlagSet singleton(Flags flags);
 
     /** Create a FlagSet consisting of no flag combinations; such a set
-        matches any entry. */
+        matches nothing (the base case of OR is false). */
     static FlagSet empty();
 
     /** Add a new disjunct to the set of flag combinations. Automatically
