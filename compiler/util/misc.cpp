@@ -102,9 +102,9 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 GpuCodegenType getGpuCodegenType() {
   static const GpuCodegenType cached = []() {
     INT_ASSERT(usingGpuLocaleModel());
-    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "NVPTX")) {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
-    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "rocm")) {
+    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "AMDGPU")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
     } else if (0 == strcmp(CHPL_GPU_CODEGEN, "cpu")) {
       return GpuCodegenType::GPU_CG_CPU;

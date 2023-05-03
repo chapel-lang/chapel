@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GPU_SUBDIR = src/gpu/rocm
+GPU_SUBDIR = src/gpu/nvidia
 
 GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
 
