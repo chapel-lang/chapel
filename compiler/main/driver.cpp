@@ -1671,7 +1671,7 @@ static void setGPUFlags() {
                " This may impact debuggability. To suppress this warning,"
                " compile with --no-checks explicitly");
 
-      // if (doGpuCodegen()) { needs chpl_nodeID fix
+       // if (doGpuCodegen()) {  we still can't do this.
         fNoChecks = true;
         fNoNilChecks    = true;
         fNoBoundsChecks = true;
@@ -1680,7 +1680,7 @@ static void setGPUFlags() {
         fNoStackChecks  = true;
         fNoCastChecks = true;
         fNoDivZeroChecks = true;
-      // }
+       // }
     }
   }
 }
