@@ -792,6 +792,52 @@ struct Converter {
     return ret;
   }
 
+  bool isDotOnModule(const uast::Dot* node,
+                     ID& outModuleId,
+                     ID& outTargetId,
+                     types::QualifiedType& outTargetType) {
+    outModuleId = ID();
+    outTargetId = ID();
+    outTargetType = types::QualifiedType();
+
+    auto r = currentResolutionResult();
+    if (!r) return false;
+
+    if (auto rr = r->byAstOrNull(node->receiver())) {
+      if (rr->type().kind() == types::QualifiedType::MODULE) {
+        outModuleId = rr->toId();
+      }
+    }
+    if (outModuleId.isEmpty()) return false;
+
+    if (auto rr = r->byAstOrNull(node)) {
+      outTargetId = rr->toId();
+      outTargetType = rr->type();
+    }
+
+    return true;
+  }
+
+  Expr* convertModuleDot(const uast::Dot* node) {
+    ID moduleId, targetId;
+    types::QualifiedType targetType;
+    if (!isDotOnModule(node, moduleId, targetId, targetType) ||
+        targetId.isEmpty()) return nullptr;
+    // TODO: track explicitly used modules
+
+    // If it's just a variable, turn it into a direct reference to said
+    // variable, bypassing a ('.' M x) expression.
+    auto convertedSymbol = findConvertedSym(targetId);
+    Expr* ret = new SymExpr(convertedSymbol);
+
+    // If it's a parenless function call it.
+    if (targetType.kind() == types::QualifiedType::PARENLESS_FUNCTION) {
+      ret = new CallExpr(ret);
+    }
+
+    return ret;
+  }
+
   Expr* visit(const uast::Dot* node) {
 
     // These are the arguments that 'buildDotExpr' requires.
@@ -807,6 +853,9 @@ struct Converter {
     } else if (member == USTR("by")) {
       return buildDotExpr(base, "chpl_by");
     } else {
+      if (auto ret = convertModuleDot(node)) {
+        return ret;
+      }
       return buildDotExpr(base, member.c_str());
     }
   }
@@ -1981,6 +2030,17 @@ struct Converter {
     return ret;
   }
 
+  CallExpr* convertModuleDotCall(const uast::FnCall* node) {
+    ID moduleId, targetId;
+    types::QualifiedType targetType;
+    auto dot = node->calledExpression()->toDot();
+    if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
+    // TODO: track explicitly used modules
+
+    auto moduleForCall = findConvertedSym(moduleId);
+    return new CallExpr(new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
+  }
+
   Expr* visit(const uast::FnCall* node) {
     const uast::AstNode* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
@@ -2026,6 +2086,9 @@ struct Converter {
     } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
+    } else if (CallExpr* callExpr = convertModuleDotCall(node)) {
+      ret = callExpr;
+      addArgsTo = callExpr;
     } else {
       ret = new CallExpr(convertAST(calledExpression));
       ret->square = node->callUsedSquareBrackets();
