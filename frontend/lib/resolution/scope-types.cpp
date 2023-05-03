@@ -118,6 +118,10 @@ size_t FlagSet::hash() const {
   return ret;
 }
 
+void FlagSet::mark(Context* context) const {
+  // nothing, because flags don't need to be marked.
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {

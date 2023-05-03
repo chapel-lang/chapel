@@ -107,6 +107,7 @@ class IdAndFlags {
     bool operator==(const FlagSet& other) const;
     bool operator!=(const FlagSet& other) const;
     size_t hash() const;
+    void mark(Context* context) const;
   };
 
  private:
@@ -512,6 +513,7 @@ class BorrowedIdsWithName {
     for (auto const& elt : *moreIdvs_) {
       context->markPointer(&elt.id_);
     }
+    excludeFlagSet_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
