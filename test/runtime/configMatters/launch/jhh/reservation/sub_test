@@ -10,4 +10,4 @@ pushd $CHPL_HOME
 source util/setchplenv.bash
 popd
 
-python3 reservation.py --verbose
+python3 reservation.py $@ --verbose

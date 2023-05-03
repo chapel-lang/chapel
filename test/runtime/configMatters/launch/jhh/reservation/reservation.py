@@ -10,6 +10,9 @@ import unittest
 import subprocess
 import os
 import sys
+import operator
+from functools import reduce
+
 
 if not 'CHPL_HOME' in os.environ:
     print('CHPL_HOME is not set')
@@ -148,6 +151,66 @@ class SbatchTests(SrunTests):
         os.unlink(batch)
         return output
 
+# copied from sub_test.py
+# report an error message and exit
+def Fatal(message):
+    sys.stdout.write('[Error (sub_test): '+message+']\n')
+    magic_exit_code = reduce(operator.add, map(ord, 'CHAPEL')) % 256
+    sys.exit(magic_exit_code)
+
+def getDir(compiler):
+
+    # This code is copied from sub_test.py to ensure we print
+    # the path of the test in the same format so all paths look
+    # the same in the test outputs.
+
+    # Find the base installation
+    #compiler=argv[1]
+    if not os.access(compiler,os.R_OK|os.X_OK):
+        Fatal('Cannot execute compiler \''+compiler+'\'')
+
+    is_chpldoc = compiler.endswith('chpldoc')
+
+    path_to_compiler=os.path.abspath(os.path.dirname(compiler))
+    # Assume chpl binary is 2 directory levels down in the base installation
+    (chpl_base, tmp) = os.path.split(path_to_compiler)
+    (chpl_base, tmp) = os.path.split(chpl_base)
+    chpl_base=os.path.normpath(chpl_base)
+    # sys.stdout.write('CHPL_BASE='+chpl_base+'\n')
+
+    # If $CHPL_HOME is not set, use the base installation of the compiler
+
+    chpl_home=os.getenv('CHPL_HOME', chpl_base);
+    chpl_home=os.path.normpath(chpl_home)
+
+    # Find the test directory
+    testdir=chpl_home+'/test'
+    if os.path.isdir(testdir)==0:
+        testdir=chpl_home+'/examples'
+        if os.path.isdir(testdir)==0:
+            Fatal('Cannot find test directory '+chpl_home+'/test or '+testdir)
+    # Needed for MacOS mount points
+    testdir = os.path.realpath(testdir)
+    # sys.stdout.write('testdir='+testdir+'\n');
+
+    # If user specified a different test directory (e.g. with --test-root flag on
+    # start_test), use it instead.
+    test_root_dir = os.environ.get('CHPL_TEST_ROOT_DIR')
+    if test_root_dir is not None:
+        testdir = test_root_dir
+
+    # Get the current directory (normalize for MacOS case-sort-of-sensitivity)
+    localdir = os.path.normpath(os.getcwd()).replace(testdir, '.')
+    # sys.stdout.write('localdir=%s\n'%(localdir))
+
+    if localdir.find('./') == 0:
+        # strip off the leading './'
+        localdir = localdir.lstrip('.')
+        localdir = localdir.lstrip('/')
+    # sys.stdout.write('localdir=%s\n'%(localdir))
+
+    return localdir
+
 def main(argv):
     global verbose
     failfast = False
@@ -163,13 +226,21 @@ def main(argv):
 
     skipif()
 
+    if len(argv) < 2:
+        print('usage: sub_test COMPILER [options]')
+        sys.exit(0)
+
+    compiler = argv[1]
+    name = os.path.join(getDir(compiler), argv[0])
+    del argv[1]
+
     # Add sbatch and srun to our path
     path = os.environ['PATH']
     os.environ['PATH'] = os.path.join(os.getcwd(), "bin") + ":" + path
 
     if skipReason is None:
         # Compile the test program
-        cmd = 'chpl hello.chpl'
+        cmd = compiler + ' hello.chpl'
         if verbose:
             print("Compiling test program")
             print(cmd)
@@ -183,12 +254,12 @@ def main(argv):
     # test failed, and nothing if all tests were skipped.
 
     if len(prog.result.skipped) > 0:
-        print("Skipped %d tests" % len(prog.result.skipped))
+        print("Skipped %d tests in %s" % (len(prog.result.skipped), name))
     if len(prog.result.skipped) != prog.result.testsRun:
         if len(prog.result.errors) > 0 or len(prog.result.failures) > 0:
-            print("[Error running tests]")
+            print("[Error running tests in %s]" % name)
         else:
-            print("[Success matching test results]")
+            print("[Success matching tests in %s]" % name)
 
 if __name__ == '__main__':
     main(sys.argv)
