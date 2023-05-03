@@ -2246,7 +2246,9 @@ GenRet codegenIsNotZero(GenRet x)
 }
 
 static
-GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
+GenRet codegenGlobalArrayElement(const char* table_name,
+                                 const char* eltTypeName,
+                                 GenRet elt)
 {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -2260,7 +2262,12 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     GenRet       table = info->lvt->getValue(table_name);
 
     INT_ASSERT(table.val);
-    INT_ASSERT(elt.val);;
+    INT_ASSERT(elt.val);
+
+    auto global = llvm::cast<llvm::GlobalVariable>(table.val);
+    INT_ASSERT(global);
+    //GenRet eltTy = codegenTypeByName(eltTypeName);
+    //INT_ASSERT(eltTy.type);
 
     llvm::Value* GEPLocs[2];
     GEPLocs[0] = llvm::Constant::getNullValue(
@@ -2268,7 +2275,7 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     GEPLocs[1] = extendToPointerSize(elt, 0);
 
     llvm::Value* elementPtr;
-    elementPtr = createInBoundsGEPCompat(table.val, GEPLocs);
+    elementPtr = createInBoundsGEP(global->getValueType(), table.val, GEPLocs);
 
 #if HAVE_LLVM_VER >= 130
     llvm::Instruction* element =
@@ -2310,7 +2317,8 @@ GenRet codegenDynamicCastCheck(GenRet cid_Td, Type* C)
   // Since we use n1_Td twice, put it into a temp var
   // other than that, n1_Td is cid_Td.
   GenRet n1_Td = createTempVarWith(cid_Td);
-  GenRet n2_C  = codegenGlobalArrayElement("chpl_subclass_max_id", cid_C);
+  GenRet n2_C  = codegenGlobalArrayElement("chpl_subclass_max_id",
+                                           "chpl__class_id", cid_C);
 
   GenRet part1 = codegenLessEquals(n1_C, n1_Td);
   GenRet part2 = codegenLessEquals(n1_Td, n2_C);
@@ -4236,7 +4244,7 @@ DEFINE_PRIM(REF_TO_STRING) {
 
 DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
-    ret = codegenGlobalArrayElement("chpl_classNames", cid);
+    ret = codegenGlobalArrayElement("chpl_classNames", "c_string", cid);
 }
 
 DEFINE_PRIM(RETURN) {
