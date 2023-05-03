@@ -94,8 +94,6 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU', COMPILER | RUNTIME | NOPATH, 'gpu'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
-    ChapelEnv('  CHPL_GPU_CODEGEN', INTERNAL ),
-    ChapelEnv('  CHPL_GPU_RUNTIME', RUNTIME ),
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
@@ -195,7 +193,6 @@ def compute_all_values():
     ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
-    ENV_VALS['  CHPL_GPU_RUNTIME'] = chpl_gpu.get_runtime()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
@@ -301,7 +298,6 @@ def compute_internal_values():
     ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(tgt_link[1])
 
     ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
-    ENV_VALS['  CHPL_GPU_CODEGEN'] = chpl_gpu.get_codegen()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
     ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
 
@@ -330,11 +326,8 @@ def filter_overrides(chpl_env):
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     llvm = ENV_VALS['CHPL_LLVM']
-    locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
-
-    gpu_vars = ('CHPL_GPU_SDK_PATH',
-                'CHPL_CUDA_LIBDEVICE_PATH',
-                'CHPL_GPU_MEM_STRATEGY')
+    locale = ENV_VALS['CHPL_LOCALE_MODEL']
+    gpu = ENV_VALS['  CHPL_GPU']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
@@ -344,8 +337,18 @@ def filter_tidy(chpl_env):
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
-    elif chpl_env.name in gpu_vars:
-        return locale_model == 'gpu'
+    elif chpl_env.name == '  CHPL_GPU':
+        return locale == 'gpu'
+    elif chpl_env.name == '  CHPL_GPU_MEM_STRATEGY':
+        return gpu != 'none'
+    elif chpl_env.name == '  CHPL_CUDA_PATH':
+        return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
+        return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_ROCM_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_GPU_ARCH':
+        return gpu == 'nvidia' or gpu == 'amd'
     return True
 
 

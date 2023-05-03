@@ -102,14 +102,14 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 GpuCodegenType getGpuCodegenType() {
   static const GpuCodegenType cached = []() {
     INT_ASSERT(usingGpuLocaleModel());
-    if (0 == strcmp(CHPL_GPU_CODEGEN, "NVPTX")) {
+    if (0 == strcmp(CHPL_GPU, "nvidia")) {
       return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
-    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "AMDGPU")) {
+    } else if (0 == strcmp(CHPL_GPU, "amd")) {
       return GpuCodegenType::GPU_CG_AMD_HIP;
-    } else if (0 == strcmp(CHPL_GPU_CODEGEN, "cpu")) {
+    } else if (0 == strcmp(CHPL_GPU, "cpu")) {
       return GpuCodegenType::GPU_CG_CPU;
     } else {
-      INT_FATAL("Unknown value for CHPL_GPU_CODEGEN.");
+      INT_FATAL("Unknown value for CHPL_GPU.");
       return GpuCodegenType::GPU_CG_CPU;
     }
   }();
@@ -122,7 +122,7 @@ bool usingGpuLocaleModel() {
 }
 
 bool doGpuCodegen() {
-  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU_CODEGEN, "cpu"));
+  return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU, "cpu"));
 }
 
 bool forceWidePtrsForLocal() {

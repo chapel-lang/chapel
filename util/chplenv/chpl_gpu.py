@@ -57,7 +57,7 @@ GPU_TYPES = {
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
     if suggestNone:
         msg += " To avoid this issue, you can have GPU code run on the CPU "
-        msg += "by setting 'CHPL_GPU_CODEGEN=gpu'."
+        msg += "by setting 'CHPL_GPU=cpu'."
 
     if allowExempt and os.environ.get('CHPLENV_GPU_REQ_ERRS_AS_WARNINGS'):
         warning(msg)
@@ -164,23 +164,6 @@ def get_cuda_libdevice_path():
             return libdevices[0]
 
     return "none"
-
-
-def get_runtime():
-    # For now, the runtime and codegen targets match one-for-one.
-    chpl_gpu_runtime_env = os.environ.get("CHPL_GPU_RUNTIME")
-    if chpl_gpu_runtime_env:
-        warning("CHPL_GPU_RUNTIME is deprecated. Its value is overridden based on CHPL_GPU")
-
-    return GPU_TYPES[get()].runtime_impl
-
-def get_codegen():
-    # For now, the runtime and codegen targets match one-for-one.
-    chpl_gpu_codegen_env = os.environ.get("CHPL_GPU_CODEGEN")
-    if chpl_gpu_codegen_env:
-        warning("CHPL_GPU_CODEGEN is deprecated. Its value is overridden based on CHPL_GPU")
-
-    return GPU_TYPES[get()].llvm_target
 
 def validateLlvmBuiltForTgt(expectedTgt):
     # If we're using the bundled LLVM, llvm-config may not have been built
@@ -294,7 +277,7 @@ def validate(chplLocaleModel, chplComm):
     # (e.g. cuda or rocm)
     gpu.validate_sdk_version()
 
-    if get_runtime() == 'cpu':
+    if get() == 'cpu':
         return True
 
     if chpl_compiler.get('target') != 'llvm':

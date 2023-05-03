@@ -3940,7 +3940,7 @@ static void linkGpuDeviceLibraries() {
   } else {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
-    auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
+    auto libPath = gGpuSdkPath + std::string("/amdgcn/bitcode");
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());

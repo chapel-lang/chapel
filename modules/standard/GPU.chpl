@@ -54,10 +54,6 @@ module GPU
   @chpldoc.nodoc
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
-  pragma "no doc"
-  param CHPL_GPU_CODEGEN:string;
-  CHPL_GPU_CODEGEN = __primitive("get compiler variable", "CHPL_GPU_CODEGEN");
-
   /*
      This function is intended to be called from within a GPU kernel and is
      useful for debugging purposes.
@@ -180,7 +176,7 @@ module GPU
      Synchronize threads within a GPU block.
    */
   inline proc syncThreads() {
-    if CHPL_GPU_CODEGEN != "cpu" {
+    if CHPL_GPU != "cpu" {
       __primitive("gpu syncThreads");
     }
   }
@@ -196,7 +192,7 @@ module GPU
     :arg size: the number of elements in each GPU thread block's copy of the array.
    */
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
-    if CHPL_GPU_CODEGEN != "cpu" {
+    if CHPL_GPU != "cpu" {
       const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
       return voidPtr : c_ptr(eltType);
     }
