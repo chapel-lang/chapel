@@ -157,6 +157,8 @@ struct Converter {
      ForwardingDecls will add a method that does not exist in the uAST. */
   std::vector<Symbol*> methodThisStack;
 
+  std::vector<BlockStmt*> blockStack;
+
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
@@ -202,6 +204,27 @@ struct Converter {
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
   const resolution::ResolutionResultByPostorderID* currentResolutionResult();
+
+  // blockStack helpers
+  BlockStmt* pushScopefulBlock() {
+    auto newBlockStmt = new BlockStmt();
+    blockStack.push_back(newBlockStmt);
+    return newBlockStmt;
+  }
+  void popScopefulBlock() {
+    CHPL_ASSERT(blockStack.size() > 0);
+    blockStack.pop_back();
+  }
+  void storeReferencedMod(Symbol* referencedMod) {
+    CHPL_ASSERT(blockStack.size() > 0);
+    if (auto modSym = toModuleSymbol(referencedMod)) {
+      blockStack.back()->modRefsAdd(modSym);
+    } else if (auto tcs = toTemporaryConversionSymbol(referencedMod)) {
+      blockStack.back()->modRefsAdd(tcs);
+    } else {
+      CHPL_ASSERT(false && "Only module symbols and temporary conversion symbols should be stored in a BlockStmt's modRefs!");
+    }
+  }
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
@@ -582,7 +605,7 @@ struct Converter {
   BlockStmt*
   convertExplicitBlock(uast::AstListIteratorPair<uast::AstNode> stmts,
                        bool flattenTopLevelScopelessBlocks) {
-    BlockStmt* ret = new BlockStmt();
+    BlockStmt* ret = pushScopefulBlock();
 
     for (auto stmt: stmts) {
       astlocMarker markAstLoc(stmt->id());
@@ -603,6 +626,7 @@ struct Converter {
       }
     }
 
+    popScopefulBlock();
     return ret;
   }
 
@@ -682,7 +706,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Manage* node) {
-    auto managers = new BlockStmt();
+    auto managers = pushScopefulBlock();
 
     for (auto manager : node->managers()) {
 
@@ -737,6 +761,7 @@ struct Converter {
 
       managers->insertAtTail(conv);
     }
+    popScopefulBlock(); // No longer in the "managers" block
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
@@ -823,7 +848,7 @@ struct Converter {
     types::QualifiedType targetType;
     if (!isDotOnModule(node, moduleId, targetId, targetType) ||
         targetId.isEmpty()) return nullptr;
-    // TODO: track explicitly used modules
+    storeReferencedMod(findConvertedSym(moduleId));
 
     // If it's just a variable, turn it into a direct reference to said
     // variable, bypassing a ('.' M x) expression.
@@ -1422,11 +1447,12 @@ struct Converter {
 
   BlockStmt* visit(const uast::Select* node) {
     Expr* selectCond = toExpr(convertAST(node->expr()));
-    BlockStmt* whenStmts = new BlockStmt();
+    BlockStmt* whenStmts = pushScopefulBlock();
 
     for (auto when : node->whenStmts()) {
       whenStmts->insertAtTail(toExpr(convertAST(when)));
     }
+    popScopefulBlock();
 
     return buildSelectStmt(selectCond, whenStmts);
   }
@@ -1459,7 +1485,7 @@ struct Converter {
       bool tryBang = node->isTryBang();
       auto style = uast::BlockStyle::EXPLICIT;
       auto body = createBlockWithStmts(node->stmts(), style);
-      BlockStmt* catches = new BlockStmt();
+      BlockStmt* catches = pushScopefulBlock();
       bool isSyncTry = false; // TODO: When can this be true?
 
       for (auto handler : node->handlers()) {
@@ -1467,6 +1493,7 @@ struct Converter {
         auto conv = toExpr(convertAST(handler));
         catches->insertAtTail(conv);
       }
+      popScopefulBlock();
 
       return TryStmt::build(tryBang, body, catches, isSyncTry);
     }
@@ -2035,9 +2062,9 @@ struct Converter {
     types::QualifiedType targetType;
     auto dot = node->calledExpression()->toDot();
     if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
-    // TODO: track explicitly used modules
 
     auto moduleForCall = findConvertedSym(moduleId);
+    storeReferencedMod(moduleForCall);
     return new CallExpr(new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
   }
 
