@@ -884,7 +884,7 @@ module ZMQ {
         // conditionally have ZeroMQ free the memory.
         //
         // Note: the string factory below can throw DecodeError
-        var copy = if isString(T) then string.createCopyingBuffer(x=data)
+        var copy = if isString(T) then data:string
                    else parallelCreateBytesWithNewBuffer(data.localize().buff,
                                                          length=data.size);
         copy.isOwned = false;
