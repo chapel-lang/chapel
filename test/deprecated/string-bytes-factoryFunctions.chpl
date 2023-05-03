@@ -96,17 +96,3 @@ writeln("bytes factory functions");
   var s_ = createBytesWithNewBuffer(c_ptrTo(b), length=helloBytes.size-1, size=helloBytes.size);
   writeln(s_);
 }
-
-
-// inline proc createBytesWithBorrowedBuffer(x: bytes)
-//   inline proc createBytesWithBorrowedBuffer(x: c_string,
-//                                             length=x.size) 
-//   inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int,
-//                                             size: int)
-//   inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) 
-//   inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int,
-//                                          size: int)
-// inline proc createBytesWithNewBuffer(x: bytes) 
-//   inline proc createBytesWithNewBuffer(x: c_string, length=x.size)
-//   inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
-//                                        size=length+1)
