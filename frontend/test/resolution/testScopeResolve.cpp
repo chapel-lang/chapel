@@ -1085,6 +1085,50 @@ static void test29() {
   assert(reY.toId().isEmpty());
 }
 
+// this one is a regression test for filter/exclude flags and their storage.
+static void test30() {
+  printf("test30\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module TopLevel {
+          module XContainerUser {
+              public use TopLevel.XContainer; // Will search for public, to no avail.
+          }
+          module XContainer {
+              private var x: int;
+              record R {} // R is in the same scope as x so it won't set public
+
+              module MethodHaver {
+                  use TopLevel.XContainerUser;
+                  use TopLevel.XContainer;
+                  proc R.foo() {
+                      var y = x;
+                  }
+              }
+          }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId() == x->id());
+}
+
 
 int main() {
   test1();
@@ -1116,6 +1160,7 @@ int main() {
   test27();
   test28();
   test29();
+  test30();
 
   return 0;
 }
