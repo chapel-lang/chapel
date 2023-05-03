@@ -892,9 +892,15 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
 {
   GenRet ret;
   GenInfo* info = gGenInfo;
+  Type* wideRefType = nullptr;
+  Type* refType = nullptr;
 
   INT_ASSERT(field == WIDE_GEP_LOC ||
              field == WIDE_GEP_ADDR);
+
+  refType = getRefTypesForWideThing(ws, &wideRefType);
+
+  INT_ASSERT(wideRefType);
 
   if( field == WIDE_GEP_LOC ) {
     ret.chplType = LOCALE_ID_TYPE;
@@ -902,7 +908,7 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
     // get the local reference type
     // this will probably be overwritten by the caller,
     // but it is used below in the LLVM code.
-    ret.chplType = getRefTypesForWideThing(ws, NULL);
+    ret.chplType = refType;
   }
 
   const char* fname = wide_fields[field];
@@ -923,11 +929,9 @@ static GenRet codegenWideThingField(GenRet ws, WideThingField field)
     if ( !fLLVMWideOpt ) {
       if (ws.val->getType()->isPointerTy()){
         ret.isLVPtr = GEN_PTR;
-        llvm::Type* ty = nullptr;
-#if HAVE_LLVM_VER >= 130
-        ty = llvm::cast<llvm::PointerType>(
-          ws.val->getType()->getScalarType())->getPointerElementType();
-#endif
+        GenRet genWideType = wideRefType;
+        llvm::Type* ty = genWideType.type;
+        INT_ASSERT(ty);
         ret.val = info->irBuilder->CreateConstInBoundsGEP2_32(
                                             ty, ws.val, 0, field);
       } else {
