@@ -94,7 +94,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
     ChapelEnv('  CHPL_GPU', RUNTIME, 'gpu'),
     ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
-    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu-mem' ),
+    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
     ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
     ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),

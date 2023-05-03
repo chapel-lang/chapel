@@ -41,6 +41,8 @@ prefixes = {
     'arch':         'CHPL_TARGET_CPU', # obsolete
     'cpu':          'CHPL_TARGET_CPU',
     'loc':          'CHPL_LOCALE_MODEL',
+    'gpu':          'CHPL_GPU',
+    'gpu_mem':      'CHPL_GPU_MEM_STRATEGY',
     'comm':         'CHPL_COMM',
     'tasks':        'CHPL_TASKS',
     'launch':       'CHPL_LAUNCHER',
