@@ -140,17 +140,16 @@ before building Chapel.
 
 Chapel's build system will automatically try and deduce what type of GPU you
 have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
-If the type of GPU is not detected you may set ``CHPL_GPU_CODEGEN`` manually to
-either ``cuda`` (for NVIDIA GPUs) or ``rocm`` (for AMD GPUs). If the relevant
-runtime path is not automatically detected (or you would like to use a
-different installation) you may set ``CHPL_CUDA_PATH`` and/or
-``CHPL_ROCM_PATH``.
+If the type of GPU is not detected you may set ``CHPL_GPU`` manually to either
+``nvidia`` or ``amd`` . If the relevant runtime path is not automatically
+detected (or you would like to use a different installation) you may set
+``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH``.
 
 ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
 architecture to compile for.  The default value is ``sm_60`` for
-``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
-also use the ``--gpu-arch`` compiler flag to set GPU architecture. For a list
-of possible values please refer to `CUDA Programming Guide
+``CHPL_GPU=nvidia`` and ``gfx906`` for ``CHPL_GPU=amd``. You may also use the
+``--gpu-arch`` compiler flag to set GPU architecture. For a list of possible
+values please refer to `CUDA Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
 for NVIDIA or "processor" values in `this table in the LLVM documentation
 <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD.
@@ -265,6 +264,37 @@ it thwarts optimizations done by the backend assembler. In our experience, this
 can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
+
+``CHPL_GPU=cpu``: Using ``CHPL_LOCALE_MODEL=gpu`` Without GPUs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``CHPL_GPU`` environment variable can be set to ``cpu`` to enable many GPU
+features to be used without actual GPUs and/or vendors' SDKs not installed. This
+mode is mainly for initial development steps or quick feature tests where access
+to GPUs may be limited. In this mode:
+
+* the compiler will generate GPU kernels from order-independent loops normally,
+
+* it will call the internal runtime API for GPU operations, so that features
+  outlined under `Diagnostics and Utilities` will work as expected
+
+  * e.g, ``assertOnGpu`` will fail at compile time normally. This can allow
+    testing if a loop is GPU-eligible.
+
+  * but it will generate only a warning per-loop at execution time.
+
+* even though the GPU diagnostics are collected, the loop will be executed for
+  correctness testing and there will not be any kernel launch
+
+* advanced features like ``syncThreads`` and ``createSharedArray`` will compile
+  and runs, but in all likelihood code that uses those features will not
+  generate correct results
+
+
+.. warning::
+
+  This mode should not be used for performance studies. Application correctness
+  is not guaranteed in complex cases.
+
 
 Known Limitations
 -----------------
