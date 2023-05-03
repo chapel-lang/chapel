@@ -737,6 +737,7 @@ def filter_llvm_config_flags(flags):
 
     platform_val = chpl_platform.get('host')
     cygwin = platform_val.startswith('cygwin')
+    darwin = platform_val.startswith('darwin')
     gnu = chpl_compiler.get('host') == 'gnu'
 
     for flag in flags:
@@ -746,7 +747,7 @@ def filter_llvm_config_flags(flags):
             flag.startswith('-O') or
             flag == '-pedantic' or
             flag == '-Wno-class-memaccess' or
-            (gnu and flag.startswith('-stdlib=')) or
+            (darwin and gnu and flag.startswith('-stdlib=')) or
             (cygwin and flag == '-std=c++14')):
             continue # filter out these flags
 
