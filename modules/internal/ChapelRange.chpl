@@ -3080,7 +3080,7 @@ operator :(r: range(?), type t: range(?)) {
     if isInt(dividend) then
       if tmp < 0 then tmp += m;
 
-    return tmp;
+    return tmp:dividend.type;
   }
 
 
@@ -3102,8 +3102,8 @@ operator :(r: range(?), type t: range(?)) {
     var subMod = chpl__mod(subtrahend, m);
 
     return if minMod < subMod
-      then m  - (subMod - minMod)
-      else minMod - subMod;
+      then (m  - (subMod - minMod)): minuend.type
+      else (minMod - subMod): minuend.type;
   }
 
   proc chpl__diffMod(minuend : integral,
