@@ -426,23 +426,35 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
       info->cStatements.push_back(addrAssign);
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type* ty = nullptr;
-#if HAVE_LLVM_VER >= 130
-      ty = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getPointerElementType();
-#endif
-      llvm::Value* adr = info->irBuilder->CreateStructGEP(
-          ty, ret.val, WIDE_GEP_ADDR);
-      llvm::Value* loc = info->irBuilder->CreateStructGEP(
-          ty, ret.val, WIDE_GEP_LOC);
+      GenRet genWideRefType = wideRefType;
+      llvm::Type* gepTy = genWideRefType.type;
+      INT_ASSERT(gepTy);
 
-      // cast address if needed. This is necessary for building a wide
-      // NULL pointer since NULL is actually an i8*.
-      llvm::Type* addrType = adr->getType()->getPointerElementType();
+      llvm::Value* adr = info->irBuilder->CreateStructGEP(
+          gepTy, ret.val, WIDE_GEP_ADDR);
+      llvm::Value* loc = info->irBuilder->CreateStructGEP(
+          gepTy, ret.val, WIDE_GEP_LOC);
+
       llvm::Value* addrVal = raddr.val;
-      if (raddr.val->getType() != addrType) {
-        addrVal = convertValueToType(addrVal, addrType);
+
+#if HAVE_LLVM_VER < 170
+      bool isOpaque = false;
+#if HAVE_LLVM_VER >= 140
+      isOpaque = adr->getType()->isOpaquePointerTy();
+#endif
+      if (!isOpaque) {
+        // TODO: this code can be ifdef'd out for LLVM 15 once
+        // we fully migrate to opaque pointers with LLVM 15.
+
+        // cast address if needed. This is necessary for building a wide
+        // NULL pointer since NULL is actually an i8*.
+        llvm::Type* addrType = adr->getType()->getPointerElementType();
+        if (raddr.val->getType() != addrType) {
+          addrVal = convertValueToType(addrVal, addrType);
+        }
       }
       INT_ASSERT(addrVal);
+#endif
 
       info->irBuilder->CreateStore(addrVal, adr);
       info->irBuilder->CreateStore(locale.val, loc);
@@ -459,18 +471,36 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
     llvm::Function* fn = getMakeFn(info->module, &info->globalToWideInfo,
                                    addrType);
     INT_ASSERT(fn);
-#if HAVE_LLVM_VER >= 130
-    llvm::Type* eltType = addrType->getPointerElementType();
-#else
-    llvm::Type* eltType = addrType->getElementType();
+
+    bool isOpaque = false;
+    llvm::Type* locAddrType = nullptr;
+
+#if HAVE_LLVM_VER < 170
+#if HAVE_LLVM_VER >= 140
+    isOpaque = addrType->isOpaquePointerTy();
 #endif
-    llvm::Type* locAddrType = llvm::PointerType::getUnqual(eltType);
+
+    if (!isOpaque) {
+      // TODO: this code can be ifdef'd out for LLVM 15 once
+      // we fully migrate to opaque pointers with LLVM 15.
+      locAddrType =
+        llvm::PointerType::getUnqual(addrType->getPointerElementType());
+    }
+#endif
+
+#if HAVE_LLVM_VER >= 140
+    if (isOpaque) {
+      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
+    }
+#endif
+
+    INT_ASSERT(locAddrType);
+
     // Null pointers require us to possibly cast to the pointer type
     // we are supposed to have since null has type void*.
     llvm::Value* locAddr = raddr.val;
     locAddr = info->irBuilder->CreatePointerCast(locAddr, locAddrType);
     ret.val = info->irBuilder->CreateCall(fn, {locale.val, locAddr});
-
 #endif
   }
 
