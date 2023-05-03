@@ -189,7 +189,7 @@ def _validate_cuda_version_impl():
     MIN_REQ_VERSION = "7"
     MAX_REQ_VERSION = "12"
 
-    chpl_cuda_path = get_sdk_path('cuda')
+    chpl_cuda_path = get_sdk_path('nvidia')
     version_file_json = '%s/version.json' % chpl_cuda_path
     version_file_txt = '%s/version.txt' % chpl_cuda_path
     cudaVersion = None
