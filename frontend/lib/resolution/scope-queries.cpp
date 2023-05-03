@@ -1440,7 +1440,8 @@ static void errorIfNameNotInScope(Context* context,
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_EXTERN_BLOCKS;
+                        LOOKUP_EXTERN_BLOCKS |
+                        LOOKUP_METHODS;
 
   bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
                                checkedScopes, result,
