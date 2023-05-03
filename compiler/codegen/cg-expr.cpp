@@ -1815,9 +1815,15 @@ GenRet codegenAdd(GenRet a, GenRet b)
 
       unsigned AS = ptr->val->getType()->getPointerAddressSpace();
 
+      INT_ASSERT(ptr->chplType &&
+                 ptr->chplType->symbol->hasFlag(FLAG_DATA_CLASS));
+      TypeSymbol* eltTypeSym = getDataClassType(ptr->chplType->symbol);
+      GenRet genEltType = eltTypeSym->type;
+      INT_ASSERT(genEltType.type);
       // Emit a GEP instruction to do the addition.
       ret.isUnsigned = true; // returning a pointer, consider them unsigned
-      ret.val = createInBoundsGEPCompat(ptr->val, extendToPointerSize(*i, AS));
+      ret.val = createInBoundsGEP(genEltType.type, ptr->val,
+                                  extendToPointerSize(*i, AS));
     } else {
       PromotedPair values =
         convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
