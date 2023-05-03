@@ -936,7 +936,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     // Update checkedScopes to record that a search has occurred for
     // curFilter. This means subsequent searches will not look at symbols
     // that match curFilter, because those symbols would've already been found.
-    flagsInMap.insert(curFilter);
+    flagsInMap.addDisjunction(curFilter);
   }
 
   // if the scope has an extern block, note that fact.

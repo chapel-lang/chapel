@@ -114,7 +114,7 @@ class IdAndFlags {
     /** Add a new disjunct to the set of flag combinations. Automatically
         performs some deduplication and packing to avoid growing the set
         if possible. */
-    void insert(Flags excludeFlags);
+    void addDisjunction(Flags excludeFlags);
 
     /* Checks if any flag combinations in the set already subsume
        the given flag combination. */

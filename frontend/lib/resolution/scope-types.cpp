@@ -47,7 +47,7 @@ using FlagSet = IdAndFlags::FlagSet;
 
 FlagSet FlagSet::singleton(Flags flags) {
   FlagSet toReturn;
-  toReturn.insert(flags);
+  toReturn.addDisjunction(flags);
   return toReturn;
 }
 
@@ -55,7 +55,7 @@ FlagSet FlagSet::empty() {
   return FlagSet();
 }
 
-void FlagSet::insert(Flags excludeFlags) {
+void FlagSet::addDisjunction(Flags excludeFlags) {
   // booleans, like all lattices, follow the absorption law:
   //
   //     a ∧ (a ∨ b) = a   and   a ∨ (a ∧ b) = a
