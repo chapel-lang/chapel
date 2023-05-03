@@ -2266,8 +2266,8 @@ GenRet codegenGlobalArrayElement(const char* table_name,
 
     auto global = llvm::cast<llvm::GlobalVariable>(table.val);
     INT_ASSERT(global);
-    //GenRet eltTy = codegenTypeByName(eltTypeName);
-    //INT_ASSERT(eltTy.type);
+    GenRet eltTy = codegenTypeByName(eltTypeName);
+    INT_ASSERT(eltTy.type);
 
     llvm::Value* GEPLocs[2];
     GEPLocs[0] = llvm::Constant::getNullValue(
@@ -2279,7 +2279,7 @@ GenRet codegenGlobalArrayElement(const char* table_name,
 
 #if HAVE_LLVM_VER >= 130
     llvm::Instruction* element =
-      info->irBuilder->CreateLoad(elementPtr->getType()->getPointerElementType(), elementPtr);
+      info->irBuilder->CreateLoad(eltTy.type, elementPtr);
 #else
     llvm::Instruction* element = info->irBuilder->CreateLoad(elementPtr);
 #endif
