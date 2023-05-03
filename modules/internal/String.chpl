@@ -438,7 +438,7 @@ module String {
   @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
   inline proc createStringWithBorrowedBuffer(x: c_string,
                                              length=x.size) : string throws {
-    return createBorrowingBuffer(x:c_ptr(uint(8)), length=length, size=length+1);
+    return string.createBorrowingBuffer(x:c_ptr(uint(8)), length=length, size=length+1);
   }
 
   /*
@@ -563,10 +563,10 @@ module String {
 
     :returns: A new `string`
   */
-  @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer`")
+  @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
   inline proc createStringWithOwnedBuffer(x: c_string,
                                           length=x.size) : string throws {
-    return createAdoptingBuffer(x: bufferType, length=length, size=length+1);
+    return string.createAdoptingBuffer(x: bufferType, length=length, size=length+1);
   }
 
   /*

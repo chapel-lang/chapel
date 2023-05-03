@@ -275,7 +275,7 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
-  @deprecated("createBytesWithNewBuffer is deprecated - please use :proc:`createCopyingBuffer` instead")
+  @deprecated("createBytesWithNewBuffer is deprecated - please use :proc:`bytes.createCopyingBuffer` instead")
   inline proc createBytesWithNewBuffer(x: c_string, length=x.size) : bytes {
     return bytes.createCopyingBuffer(x, length);
   }
@@ -308,7 +308,7 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
-  @deprecated("createBytesWithNewBuffer is deprecated - please use :proc:`createCopyingBuffer` instead")
+  @deprecated("createBytesWithNewBuffer is deprecated - please use :proc:`bytes.createCopyingBuffer` instead")
   inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
                                        size=length+1) : bytes {
     return bytes.createCopyingBuffer(x, length, size);
