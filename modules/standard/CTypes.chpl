@@ -469,7 +469,7 @@ module CTypes {
   pragma "no doc"
   inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
-      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
   pragma "last resort"
