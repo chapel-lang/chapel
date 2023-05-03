@@ -725,10 +725,6 @@ module CTypes {
     return c_pointer_return_const(arr[arr.domain.low]);
   }
 
-  // TODO: make the string and bytes versions of c_ptrTo and c_ptrToConst
-  // return a `c_ptr(c_char)` and `c_ptrConst(c_char)` respectively once
-  // c_string is deprecated and `c_ptr(c_char)` is supported.
-
   /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
 
@@ -738,12 +734,12 @@ module CTypes {
 
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref s: string): c_ptrConst(c_uchar) {
+  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar) {
     if boundsChecking {
       if (s.buffLen == 0) then
         halt("Can't create a C pointer for an empty string.");
     }
-    return c_pointer_return_const(s.buff[0]);
+    return c_pointer_return(s.buff[0]);
   }
 
   /*
@@ -767,12 +763,12 @@ module CTypes {
 
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref b: bytes): c_ptrConst(c_uchar) {
+  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar) {
     if boundsChecking {
       if (b.buffLen == 0) then
         halt("Can't create a C pointer for an empty bytes.");
     }
-    return c_pointer_return_const(b.buff[0]);
+    return c_pointer_return(b.buff[0]);
   }
 
   /*
@@ -801,11 +797,7 @@ module CTypes {
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
-    if isDomainType(t) then
-      compilerError("c_ptrTo domain type not supported", 2);
-
-    // Other cases should be avoided, e.g. sync vars
-    return c_pointer_return(x);
+    return c_addrOf(x);
   }
 
   /*
@@ -813,10 +805,7 @@ module CTypes {
     modification of the pointee.
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
-    if isDomainType(t) then
-      compilerError("c_ptrToConst domain type not supported", 2);
-    // Other cases should be avoided, e.g. sync vars
-    return c_pointer_return_const(x);
+    return c_addrOfConst(x);
   }
 
   @chpldoc.nodoc
@@ -848,6 +837,23 @@ module CTypes {
   }
 
   /*
+   Like c_addrOf for arrays, but returns a :type:`c_ptrConst` which disallows
+   direct modification of the pointee.
+  */
+  inline proc c_addrOfConst(arr: []) {
+    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
+
+    if (arr._value.locale != here) then
+      halt(
+          "c_addrOfConst() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
+
+    return c_pointer_return_const(arr);
+  }
+
+  /*
     Returns a :type:`c_ptr` to the address of any chapel object.
 
     Note that the behavior of this procedure is identical to :func:`c_ptrTo`
@@ -857,6 +863,16 @@ module CTypes {
     if isDomainType(t) then
       compilerError("c_addrOf domain type not supported", 2);
     return c_pointer_return(x);
+  }
+
+  /*
+    Like c_addrOf, but returns a :type:`c_ptrConst` which disallows direct
+    modification of the pointee.
+  */
+  inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
+    if isDomainType(t) then
+      compilerError("c_addrOfConst domain type not supported", 2);
+    return c_pointer_return_const(x);
   }
 
   @chpldoc.nodoc
