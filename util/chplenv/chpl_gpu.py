@@ -288,4 +288,10 @@ def validate(chplLocaleModel, chplComm):
         _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
                              gpu.llvm_target, allowExempt=False)
 
+    for depr_env in ("CHPL_GPU_CODEGEN", "CHPL_GPU_RUNTIME"):
+        if os.environ.get(depr_env):
+            warning(depr_env + " is deprecated and now ignored. Please use " +
+                    "'CHPL_GPU=[nvidia|amd|cpu]' to choose a GPU target " +
+                    "explicitly.")
+
     return True
