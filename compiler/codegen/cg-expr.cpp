@@ -323,9 +323,15 @@ static llvm::Value* extendToPointerSize(GenRet index, unsigned AS) {
   return index.val;
 }
 
-static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
+
+static llvm::Value* createInBoundsGEP(llvm::Type* gepType,
+                                      llvm::Value* ptr,
                                       llvm::ArrayRef<llvm::Value*> idxList) {
   GenInfo* info = gGenInfo;
+
+  INT_ASSERT(gepType);
+  INT_ASSERT(ptr);
+  INT_ASSERT(idxList.size() > 0);
 
   if (developer || fVerify) {
     const llvm::DataLayout& DL = info->module->getDataLayout();
@@ -340,10 +346,17 @@ static llvm::Value* createInBoundsGEP(llvm::Value* ptr,
     }
   }
 #if HAVE_LLVM_VER >= 130
-  return info->irBuilder->CreateInBoundsGEP(llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType(), ptr, idxList);
+  return info->irBuilder->CreateInBoundsGEP(gepType, ptr, idxList);
 #else
   return info->irBuilder->CreateInBoundsGEP(ptr, idxList);
 #endif
+}
+
+// this function should be removed before merging
+static llvm::Value* createInBoundsGEPCompat(llvm::Value* ptr, llvm::ArrayRef<llvm::Value*> idxList) {
+  llvm::Type* gepType =
+    llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType();
+  createInBoundsGEP(gepType, ptr, idxList);
 }
 
 #endif
@@ -1377,7 +1390,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
     GEPLocs.push_back(extendToPointerSize(index, AS));
 
-    ret.val = createInBoundsGEP(base.val, GEPLocs);
+    ret.val = createInBoundsGEPCompat(base.val, GEPLocs);
 
     // Propagate noalias scopes
     if (base.aliasScope)
@@ -1804,7 +1817,7 @@ GenRet codegenAdd(GenRet a, GenRet b)
 
       // Emit a GEP instruction to do the addition.
       ret.isUnsigned = true; // returning a pointer, consider them unsigned
-      ret.val = createInBoundsGEP(ptr->val, extendToPointerSize(*i, AS));
+      ret.val = createInBoundsGEPCompat(ptr->val, extendToPointerSize(*i, AS));
     } else {
       PromotedPair values =
         convertValuesToLarger(av.val, bv.val, a_signed, b_signed);
@@ -2255,7 +2268,7 @@ GenRet codegenGlobalArrayElement(const char* table_name, GenRet elt)
     GEPLocs[1] = extendToPointerSize(elt, 0);
 
     llvm::Value* elementPtr;
-    elementPtr = createInBoundsGEP(table.val, GEPLocs);
+    elementPtr = createInBoundsGEPCompat(table.val, GEPLocs);
 
 #if HAVE_LLVM_VER >= 130
     llvm::Instruction* element =
@@ -5820,7 +5833,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr   = createInBoundsGEP(ftable.val, GEPLocs);
+      fnPtrPtr   = createInBoundsGEPCompat(ftable.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       fnPtr      = gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(),
                                                    fnPtrPtr);
@@ -5911,7 +5924,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
       GEPLocs[0] = llvm::Constant::getNullValue(
           llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr = createInBoundsGEP(table.val, GEPLocs);
+      fnPtrPtr = createInBoundsGEPCompat(table.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       llvm::Instruction* fnPtrV =
         gGenInfo->irBuilder->CreateLoad(fnPtrPtr->getType()->getPointerElementType(), fnPtrPtr);
