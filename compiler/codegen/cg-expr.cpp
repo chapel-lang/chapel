@@ -611,21 +611,23 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     if( ptr.isLVPtr ) valType = ptr.chplType;
     else valType = ptr.chplType->getValType();
   }
-#if HAVE_LLVM_VER >= 130
-  llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
-                                      ptr.val->getType())->getPointerElementType();
-#else
-  llvm::Type* ptrValType = llvm::cast<llvm::PointerType>(
-                                      ptr.val->getType())->getElementType();
-#endif
-  // implicit cast in C, needs to be made explicit in LLVM
-  // e.g. T3 = alloca i8;
-  //      T3 = (T == T2);   // not actual LLVM syntax
-  // in LLVM, boolean type is i1
-  if (val.val->getType() != ptrValType){
-    llvm::Value* v = convertValueToType(val.val, ptrValType, !val.isUnsigned);
-    INT_ASSERT(v);
-    val.val = v;
+
+  if (valType != nullptr) {
+    // check that the stored type matches the valType
+
+    // implicit cast in C, needs to be made explicit in LLVM
+    // e.g. T3 = alloca i8;
+    //      T3 = (T == T2);   // not actual LLVM syntax
+    // in LLVM, boolean type is i1
+
+    GenRet genValType = valType;
+    INT_ASSERT(genValType.type);
+    if (genValType.type != val.val->getType()) {
+      llvm::Value* v = convertValueToType(val.val, genValType.type,
+                                          !val.isUnsigned);
+      INT_ASSERT(v);
+      val.val = v;
+    }
   }
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
@@ -3642,8 +3644,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   // To must be a pointer.
   INT_ASSERT(to_ptr.isLVPtr);
 
-  Type* type = from.chplType;
-  if( ! type ) type = to_ptr.chplType;
+  Type* type = to_ptr.chplType;
+  if( ! type ) type = from.chplType;
   INT_ASSERT(type);
 
   bool isStarTuple = false;
