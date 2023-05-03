@@ -86,86 +86,27 @@ class IdAndFlags {
     FlagSet& operator=(FlagSet&& other) = default;
 
     /** Create a FlagSet consisting of only one combination of Flags. */
-    static FlagSet singleton(Flags flags) {
-      FlagSet toReturn;
-      toReturn.insert(flags);
-      return toReturn;
-    }
+    static FlagSet singleton(Flags flags);
 
     /** Create a FlagSet consisting of no flag combinations; such a set
         matches any entry. */
-    static FlagSet empty() {
-      return FlagSet();
-    }
+    static FlagSet empty();
 
     /** Add a new disjunct to the set of flag combinations. Automatically
         performs some deduplication and packing to avoid growing the set
         if possible. */
-    void insert(Flags excludeFlags) {
-      // booleans, like all lattices, follow the absorption law:
-      //
-      //     a /\ (a \/ b) = a   and   a \/ (a /\ b) = a
-      //
-      // Since Flags elements represent conjunction, if a & b = a,
-      // we know that b has all of flags in a, and maybe more. Thus,
-      // logically, b = a /\ b', where b' is the "more". But then, by the
-      // absorption law,
-      //
-      //     a \/ b = a \/ (a /\ b') = a
-      //
-      // In other words, if a & b = a, then only a needs to be in the
-      // FlagSet (which is a disjunction of flags). First try finding such a pair,
-      // so that we can keep the size of the set small.
-      for (auto& otherFlags : flagVec) {
-        if ((otherFlags & excludeFlags) == otherFlags) {
-          // excludeFlags is subsumed, we're done.
-          return;
-        }
-        if ((excludeFlags & otherFlags) == excludeFlags) {
-          // Existing entry is subsumed.
-          otherFlags = excludeFlags;
-          return;
-        }
-      }
-
-      // We didn't find a pair eligible for merging, so just insert.
-      flagVec.push_back(excludeFlags);
-    }
+    void insert(Flags excludeFlags);
 
     /* Checks if any flag combinations in the set already subsume
        the given flag combination. */
-    bool subsumes(Flags mightBeSubsumed) {
-      for (auto& otherFlags : flagVec) {
-        if ((otherFlags & mightBeSubsumed) == otherFlags) {
-          // excludeFlags is subsumed, we're done.
-          return true;
-        }
-      }
-      return false;
-    }
+    bool subsumes(Flags mightBeSubsumed) const;
 
     /** Checks that none of the or'ed flag combinations match the given flags. */
-    bool noneMatch(Flags match) const {
-      return std::all_of(flagVec.begin(), flagVec.end(), [&](auto excludeFlags) {
-        return (match & excludeFlags) != excludeFlags;
-      });
-    }
+    bool noneMatch(Flags match) const;
 
-    bool operator==(const FlagSet& other) const {
-      return flagVec == other.flagVec;
-    }
-
-    bool operator!=(const FlagSet& other) const {
-      return !(*this == other);
-    }
-
-    size_t hash() const {
-      size_t ret = 0;
-      for (auto excludeFlags : flagVec) {
-        ret = hash_combine(ret, chpl::hash(excludeFlags));
-      }
-      return ret;
-    }
+    bool operator==(const FlagSet& other) const;
+    bool operator!=(const FlagSet& other) const;
+    size_t hash() const;
   };
 
  private:

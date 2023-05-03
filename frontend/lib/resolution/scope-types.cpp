@@ -42,6 +42,82 @@ std::string IdAndFlags::flagsToString(Flags flags) {
   return ret;
 }
 
+using Flags = IdAndFlags::Flags;
+using FlagSet = IdAndFlags::FlagSet;
+
+FlagSet FlagSet::singleton(Flags flags) {
+  FlagSet toReturn;
+  toReturn.insert(flags);
+  return toReturn;
+}
+
+FlagSet FlagSet::empty() {
+  return FlagSet();
+}
+
+void FlagSet::insert(Flags excludeFlags) {
+  // booleans, like all lattices, follow the absorption law:
+  //
+  //     a /\ (a \/ b) = a   and   a \/ (a /\ b) = a
+  //
+  // Since Flags elements represent conjunction, if a & b = a,
+  // we know that b has all of flags in a, and maybe more. Thus,
+  // logically, b = a /\ b', where b' is the "more". But then, by the
+  // absorption law,
+  //
+  //     a \/ b = a \/ (a /\ b') = a
+  //
+  // In other words, if a & b = a, then only a needs to be in the
+  // FlagSet (which is a disjunction of flags). First try finding such a pair,
+  // so that we can keep the size of the set small.
+  for (auto& otherFlags : flagVec) {
+    if ((otherFlags & excludeFlags) == otherFlags) {
+      // excludeFlags is subsumed, we're done.
+      return;
+    }
+    if ((excludeFlags & otherFlags) == excludeFlags) {
+      // Existing entry is subsumed.
+      otherFlags = excludeFlags;
+      return;
+    }
+  }
+
+  // We didn't find a pair eligible for merging, so just insert.
+  flagVec.push_back(excludeFlags);
+}
+
+bool FlagSet::subsumes(Flags mightBeSubsumed) const {
+  for (auto& otherFlags : flagVec) {
+    if ((otherFlags & mightBeSubsumed) == otherFlags) {
+      // excludeFlags is subsumed, we're done.
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FlagSet::noneMatch(Flags match) const {
+  return std::all_of(flagVec.begin(), flagVec.end(), [&](auto excludeFlags) {
+    return (match & excludeFlags) != excludeFlags;
+  });
+}
+
+bool FlagSet::operator==(const FlagSet& other) const {
+  return flagVec == other.flagVec;
+}
+
+bool FlagSet::operator!=(const FlagSet& other) const {
+  return !(*this == other);
+}
+
+size_t FlagSet::hash() const {
+  size_t ret = 0;
+  for (auto excludeFlags : flagVec) {
+    ret = hash_combine(ret, chpl::hash(excludeFlags));
+  }
+  return ret;
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
