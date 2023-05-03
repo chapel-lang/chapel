@@ -43,21 +43,21 @@ void chpl_gpu_init(void) {
   // override number of devices if applicable
   const char* env;
   int32_t num = -1;
-  if ((env = chpl_env_rt_get("NUM_DEVICES_PER_LOCALE", NULL)) != NULL) {
+  if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
     if (sscanf(env, "%" SCNi32, &num) != 1) {
-      chpl_error("Cannot parse CHPL_RT_NUM_DEVICES_PER_LOCALE environment "
+      chpl_error("Cannot parse CHPL_RT_NUM_GPUS_PER_LOCALE environment "
                  "variable", 0, 0);
     }
 
     if (num < 0) {
-      chpl_error("CHPL_RT_NUM_DEVICES_PER_LOCALE must be >= 0", 0, 0);
+      chpl_error("CHPL_RT_NUM_GPUS_PER_LOCALE must be >= 0", 0, 0);
     }
 
 #ifndef GPU_RUNTIME_CPU
     if (chpl_gpu_num_devices > 0 && num > chpl_gpu_num_devices) {
       char msg[200];
       snprintf(msg, sizeof(msg),
-          "CHPL_RT_NUM_DEVICES_PER_LOCALE = %" PRIi32 " is too large; "
+          "CHPL_RT_NUM_GPUS_PER_LOCALE = %" PRIi32 " is too large; "
           "limit is %." PRIi32 "Ignoring this environment variable.",
           num, chpl_gpu_num_devices);
       chpl_warning(msg, 0, 0);
