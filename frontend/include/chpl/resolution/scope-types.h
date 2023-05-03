@@ -58,19 +58,36 @@ class IdAndFlags {
     NOT_PARENFUL_FUNCTION = 32,
     // note: if adding something here, also update flagsToString
   };
-  /** A bit-set of the flags defined in the above enum */
+  /**
+    A bit-set of the flags defined in the above enum.
+    Represents a conjunction / AND of all the set bit.
+    E.g.:
+      * just IdAndFlags::PUBLIC -- only public symbols
+      * just IdAndFlags::METHOD_FIELD -- only methods/fields
+      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
+        only public symbols that are methods/fields
+   */
   using Flags = uint16_t;
 
   /** A set of bit-sets / flag combinations. Logically, while Flags
-      represents a conjunction of all of its bitfields (PUBLIC | METHOD
-      means PUBLIC /\ METHOD), this FlagSet represents a disjunction of
-      each flag combination. That is to say, if FlagSet contains:
+      represents a conjunction of all of its bitfields (see documentation
+      on Flags), this FlagSet represents a disjunction of each flag
+      combination. That is to say, if FlagSet contains:
 
-          PRIVATE, PUBLIC | METHOD
+          IdAndFlags::PUBLIC, IdAndFlags::NOT_PUBLIC | IdAndFlags::METHOD_FIELD
 
       This represents the following condition on variables:
 
-          PRIVATE \/ (PUBLIC /\ METHOD)
+          IdAndFlags::PUBLIC ∨ (IdAndFlags::NOT_PUBLIC ∧ IdAndFlags::METHOD_FIELD)
+
+      That is, either any public symbol, or a private method or field.
+
+      Other examples:
+        * [] (empty FlagSet) -- matches everything.
+        * [IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD] --
+          only public symbols that are methods / fields.
+        * More generally, [f] (singleton set) --
+          equivalent to the single contained Flags value f.
 
       Inserting into the FlagSet automatically tries to perform basic
       simplificaton to avoid growing the size. */
@@ -85,7 +102,9 @@ class IdAndFlags {
     FlagSet& operator=(const FlagSet& other) = default;
     FlagSet& operator=(FlagSet&& other) = default;
 
-    /** Create a FlagSet consisting of only one combination of Flags. */
+    /** Create a FlagSet consisting of only one combination of Flags.
+        Flags represents a conjunction (AND) of properties; see the comment
+        on Flags for more info. */
     static FlagSet singleton(Flags flags);
 
     /** Create a FlagSet consisting of no flag combinations; such a set
@@ -178,10 +197,9 @@ class IdAndFlags {
     return (flags_ & PARENFUL_FUNCTION) != 0;
   }
 
-  // consider filterFlags and excludeFlags to represent AND of set flags.
-  // A set of flag combinations / Flags is an OR of the contained Flags.
-  // return true if haveFlags has all of the flags in filterFlags
-  // and it does not have all of the flags in excludeFlags
+  // return true if haveFlags matches filterFlags, and does not match
+  // the exclude flag set. See the comments on Flags adn FlagSet for
+  // how the matching works.
   static bool matchFilter(Flags haveFlags,
                           Flags filterFlags,
                           const FlagSet& excludeFlagSet) {
@@ -296,19 +314,13 @@ class BorrowedIdsWithName {
 
  private:
   /**
-    Filter to symbols where all of the flags set here are also set.
-    E.g.:
-      * just IdAndFlags::PUBLIC -- only public symbols
-      * just IdAndFlags::METHOD_FIELD -- only methods/fields
-      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
-        only public symbols that are methods/fields
+    Filter to symbols that match these flags. See the comment on Flags
+    for how matching is performed.
    */
   IdAndFlags::Flags filterFlags_ = 0;
   /**
-    Exclude these combinations of flags; for example, if one is
-    IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD,
-    it would exclude public methods/fields,
-    but allow public non-methods or private methods/fields.
+    Exclude symbols whose flags are matched by this FlagSet; see
+    the comment on FlagSet for how the matching is performed.
    */
   IdAndFlags::FlagSet excludeFlagSet_;
 

@@ -58,14 +58,14 @@ FlagSet FlagSet::empty() {
 void FlagSet::insert(Flags excludeFlags) {
   // booleans, like all lattices, follow the absorption law:
   //
-  //     a /\ (a \/ b) = a   and   a \/ (a /\ b) = a
+  //     a ∧ (a ∨ b) = a   and   a ∨ (a ∧ b) = a
   //
   // Since Flags elements represent conjunction, if a & b = a,
   // we know that b has all of flags in a, and maybe more. Thus,
-  // logically, b = a /\ b', where b' is the "more". But then, by the
+  // logically, b = a ∧ b', where b' is the "more". But then, by the
   // absorption law,
   //
-  //     a \/ b = a \/ (a /\ b') = a
+  //     a ∨ b = a ∨ (a ∧ b') = a
   //
   // In other words, if a & b = a, then only a needs to be in the
   // FlagSet (which is a disjunction of flags). First try finding such a pair,

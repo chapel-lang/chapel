@@ -895,11 +895,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (onlyMethodsFields) {
     curFilter |= IdAndFlags::METHOD_FIELD;
   }
-  // Note: curFilter can only represent combinations of positive flags;
-  // if it extended, it might no longer be possible to represent
-  // the combinedFilter below as a single bitset.
-  // Also note: setting excludeFilter in some way other than the
+  // note: setting excludeFilter in some way other than the
   // handling below with checkedScopes will require other adjustments.
+  // This is because the updated filter in checkedScopes will be assumed to
+  // contain all the past search information, but would be missing any
+  // additional information from modifying excludeFilter manually.
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -933,17 +933,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     // ok, we can search for curFilter but exclude what was already found
     excludeFilter = flagsInMap;
 
-    // Update checkedScopes to remove filter bits that weren't present
-    // in foundFilter (because we are going to update results
-    // with matches for the now-not-filtered-out cases).
-    // This is an approximation.
-    // Since we are storing only a single bit set, we cannot represent
-    // all combinations, e.g.:
-    //   if we had input foundFilter={PUBLIC} and curFilter={METHODS_OR_FIELDS},
-    //   we will search now for {PRIVATE,METHODS_OR_FIELDS},
-    //   but then we will have no way of recording that we have
-    //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
-    //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
+    // Update checkedScopes to record that a search has occurred for
+    // curFilter. This means subsequent searches will not look at symbols
+    // that match curFilter, because those symbols would've already been found.
     flagsInMap.insert(curFilter);
   }
 
