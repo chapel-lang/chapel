@@ -31,6 +31,7 @@
 
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallSet.h"
 
 namespace chpl {
 namespace resolution {
@@ -57,8 +58,77 @@ class IdAndFlags {
     NOT_PARENFUL_FUNCTION = 32,
     // note: if adding something here, also update flagsToString
   };
-  /** A bit-set of the flags defined in the above enum */
+  /**
+    A bit-set of the flags defined in the above enum.
+    Represents a conjunction / AND of all the set bit.
+    E.g.:
+      * just IdAndFlags::PUBLIC -- only public symbols
+      * just IdAndFlags::METHOD_FIELD -- only methods/fields
+      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
+        only public symbols that are methods/fields
+      * Empty Flags -- match everything
+   */
   using Flags = uint16_t;
+
+  /** A set of bit-sets / flag combinations. Logically, while Flags
+      represents a conjunction of all of its bitfields (see documentation
+      on Flags), this FlagSet represents a disjunction of each flag
+      combination. That is to say, if FlagSet contains:
+
+          IdAndFlags::PUBLIC, IdAndFlags::NOT_PUBLIC | IdAndFlags::METHOD_FIELD
+
+      This represents the following condition on variables:
+
+          IdAndFlags::PUBLIC ∨ (IdAndFlags::NOT_PUBLIC ∧ IdAndFlags::METHOD_FIELD)
+
+      That is, either any public symbol, or a private method or field.
+
+      Other examples:
+        * [] (empty FlagSet) -- matches nothing.
+        * [IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD] --
+          only public symbols that are methods / fields.
+        * More generally, [f] (singleton set) --
+          equivalent to the single contained Flags value f.
+
+      Inserting into the FlagSet automatically tries to perform basic
+      simplificaton to avoid growing the size. */
+  class FlagSet {
+   private:
+     llvm::SmallVector<Flags, 4> flagVec;
+
+   public:
+    FlagSet() = default;
+    FlagSet(const FlagSet& other) = default;
+    FlagSet(FlagSet&& other) = default;
+    FlagSet& operator=(const FlagSet& other) = default;
+    FlagSet& operator=(FlagSet&& other) = default;
+
+    /** Create a FlagSet consisting of only one combination of Flags.
+        Flags represents a conjunction (AND) of properties; see the comment
+        on Flags for more info. */
+    static FlagSet singleton(Flags flags);
+
+    /** Create a FlagSet consisting of no flag combinations; such a set
+        matches nothing (the base case of OR is false). */
+    static FlagSet empty();
+
+    /** Add a new disjunct to the set of flag combinations. Automatically
+        performs some deduplication and packing to avoid growing the set
+        if possible. */
+    void addDisjunction(Flags excludeFlags);
+
+    /* Checks if any flag combinations in the set already subsume
+       the given flag combination. */
+    bool subsumes(Flags mightBeSubsumed) const;
+
+    /** Checks that none of the or'ed flag combinations match the given flags. */
+    bool noneMatch(Flags match) const;
+
+    bool operator==(const FlagSet& other) const;
+    bool operator!=(const FlagSet& other) const;
+    size_t hash() const;
+    void mark(Context* context) const;
+  };
 
  private:
   // friends
@@ -128,15 +198,14 @@ class IdAndFlags {
     return (flags_ & PARENFUL_FUNCTION) != 0;
   }
 
-  // consider filterFlags and excludeFlags to represent AND of set flags.
-  // return true if haveFlags has all of the flags in filterFlags
-  // and it does not have all of the flags in excludeFlags
-  // (or excludeFlags is 0).
+  // return true if haveFlags matches filterFlags, and does not match
+  // the exclude flag set. See the comments on Flags adn FlagSet for
+  // how the matching works.
   static bool matchFilter(Flags haveFlags,
                           Flags filterFlags,
-                          Flags excludeFlags) {
+                          const FlagSet& excludeFlagSet) {
     return (haveFlags & filterFlags) == filterFlags &&
-           (excludeFlags == 0 || (haveFlags & excludeFlags) != excludeFlags);
+           excludeFlagSet.noneMatch(haveFlags);
   }
 
   static std::string flagsToString(Flags flags);
@@ -229,7 +298,7 @@ class OwnedIdsWithName {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   llvm::Optional<BorrowedIdsWithName>
-  borrow(IdAndFlags::Flags filterFlags, IdAndFlags::Flags excludeFlags) const;
+  borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -246,21 +315,15 @@ class BorrowedIdsWithName {
 
  private:
   /**
-    Filter to symbols where all of the flags set here are also set.
-    E.g.:
-      * just IdAndFlags::PUBLIC -- only public symbols
-      * just IdAndFlags::METHOD_FIELD -- only methods/fields
-      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
-        only public symbols that are methods/fields
+    Filter to symbols that match these flags. See the comment on Flags
+    for how matching is performed.
    */
   IdAndFlags::Flags filterFlags_ = 0;
   /**
-    Exclude this combination of flags; for example, if it is
-    IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD,
-    it would exclude public methods/fields,
-    but allow public non-methods or private methods/fields.
+    Exclude symbols whose flags are matched by this FlagSet; see
+    the comment on FlagSet for how the matching is performed.
    */
-  IdAndFlags::Flags excludeFlags_ = 0;
+  IdAndFlags::FlagSet excludeFlagSet_;
 
   /** How many IDs are visible in this list. */
   int numVisibleIds_ = 0;
@@ -272,13 +335,13 @@ class BorrowedIdsWithName {
 
   static inline bool isIdVisible(const IdAndFlags& idv,
                                  IdAndFlags::Flags filterFlags,
-                                 IdAndFlags::Flags excludeFlags) {
+                                 const IdAndFlags::FlagSet& excludeFlagSet) {
     // check that all flags set in filterFlags are also set in idv.flags_
-    return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlags);
+    return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlagSet);
   }
 
   bool isIdVisible(const IdAndFlags& idv) const {
-    return isIdVisible(idv, filterFlags_, excludeFlags_);
+    return isIdVisible(idv, filterFlags_, excludeFlagSet_);
   }
 
   /** Returns an iterator referring to the first element stored. */
@@ -350,11 +413,11 @@ class BorrowedIdsWithName {
   BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
                       const IdAndFlags& firstMatch,
                       IdAndFlags::Flags filterFlags,
-                      IdAndFlags::Flags excludeFlags)
-    : filterFlags_(filterFlags), excludeFlags_(excludeFlags),
+                      IdAndFlags::FlagSet excludeFlagSet)
+    : filterFlags_(filterFlags), excludeFlagSet_(std::move(excludeFlagSet)),
       idv_(firstMatch), moreIdvs_(ownedIds.moreIdvs_.get()) {
     numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_, ownedIds.flagsOr_);
-    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlags));
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlagSet));
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
@@ -363,10 +426,10 @@ class BorrowedIdsWithName {
     */
   BorrowedIdsWithName(IdAndFlags idv,
                       IdAndFlags::Flags filterFlags,
-                      IdAndFlags::Flags excludeFlags)
-    : filterFlags_(filterFlags), excludeFlags_(excludeFlags),
+                      IdAndFlags::FlagSet excludeFlagSet)
+    : filterFlags_(filterFlags), excludeFlagSet_(std::move(excludeFlagSet)),
       numVisibleIds_(1), idv_(std::move(idv)) {
-    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlags));
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlagSet));
   }
  public:
 
@@ -374,11 +437,11 @@ class BorrowedIdsWithName {
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isMethodOrField, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,
-                     IdAndFlags::Flags excludeFlags) {
+                     IdAndFlags::FlagSet excludeFlagSet) {
     auto idAndVis = IdAndFlags(id, vis, isMethodOrField, isParenfulFunction);
-    if (isIdVisible(idAndVis, filterFlags, excludeFlags)) {
+    if (isIdVisible(idAndVis, filterFlags, excludeFlagSet)) {
       return BorrowedIdsWithName(std::move(idAndVis),
-                                 filterFlags, excludeFlags);
+                                 filterFlags, std::move(excludeFlagSet));
     }
     return llvm::None;
   }
@@ -389,10 +452,10 @@ class BorrowedIdsWithName {
     bool isMethodOrField = false;
     bool isParenfulFunction = false;
     IdAndFlags::Flags filterFlags = 0;
-    IdAndFlags::Flags excludeFlags = 0;
+    IdAndFlags::FlagSet excludeFlagSet;
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isMethodOrField, isParenfulFunction,
-                                       filterFlags, excludeFlags);
+                                       filterFlags, excludeFlagSet);
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
   }
@@ -433,7 +496,7 @@ class BorrowedIdsWithName {
 
   bool operator==(const BorrowedIdsWithName& other) const {
     return filterFlags_ == other.filterFlags_ &&
-           excludeFlags_ == other.excludeFlags_ &&
+           excludeFlagSet_ == other.excludeFlagSet_ &&
            numVisibleIds_ == other.numVisibleIds_ &&
            idv_ == other.idv_ &&
            moreIdvs_ == other.moreIdvs_;
@@ -445,7 +508,7 @@ class BorrowedIdsWithName {
   size_t hash() const {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(filterFlags_));
-    ret = hash_combine(ret, chpl::hash(excludeFlags_));
+    ret = hash_combine(ret, chpl::hash(excludeFlagSet_));
     ret = hash_combine(ret, chpl::hash(numVisibleIds_));
     ret = hash_combine(ret, chpl::hash(moreIdvs_));
     if (moreIdvs_ == nullptr) {
@@ -463,6 +526,7 @@ class BorrowedIdsWithName {
     for (auto const& elt : *moreIdvs_) {
       context->markPointer(&elt.id_);
     }
+    excludeFlagSet_.mark(context);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -588,7 +652,7 @@ class Scope {
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
                      IdAndFlags::Flags filterFlags,
-                     IdAndFlags::Flags excludeFlags) const;
+                     const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;
@@ -1181,7 +1245,7 @@ struct CheckedScope {
   }
 };
 
-using CheckedScopes = std::unordered_map<CheckedScope, IdAndFlags::Flags>;
+using CheckedScopes = std::unordered_map<CheckedScope, IdAndFlags::FlagSet>;
 
 
 } // end namespace resolution
@@ -1224,6 +1288,13 @@ namespace std {
 template<> struct hash<chpl::resolution::IdAndFlags>
 {
   size_t operator()(const chpl::resolution::IdAndFlags& key) const {
+    return key.hash();
+  }
+};
+
+template<> struct hash<chpl::resolution::IdAndFlags::FlagSet>
+{
+  size_t operator()(const chpl::resolution::IdAndFlags::FlagSet& key) const {
     return key.hash();
   }
 };

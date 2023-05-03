@@ -42,6 +42,103 @@ std::string IdAndFlags::flagsToString(Flags flags) {
   return ret;
 }
 
+using Flags = IdAndFlags::Flags;
+using FlagSet = IdAndFlags::FlagSet;
+
+FlagSet FlagSet::singleton(Flags flags) {
+  FlagSet toReturn;
+  toReturn.addDisjunction(flags);
+  return toReturn;
+}
+
+FlagSet FlagSet::empty() {
+  return FlagSet();
+}
+
+void FlagSet::addDisjunction(Flags excludeFlags) {
+  // booleans, like all lattices, follow the absorption law:
+  //
+  //     a ∧ (a ∨ b) = a   and   a ∨ (a ∧ b) = a
+  //
+  // Since Flags elements represent conjunction, if a & b = a,
+  // we know that b has all of flags in a, and maybe more. Thus,
+  // logically, b = a ∧ b', where b' is the "more". But then, by the
+  // absorption law,
+  //
+  //     a ∨ b = a ∨ (a ∧ b') = a
+  //
+  // In other words, if a & b = a, then only a needs to be in the
+  // FlagSet (which is a disjunction of flags). First try finding such a pair,
+  // so that we can keep the size of the set small.
+  for (auto& otherFlags : flagVec) {
+    if ((otherFlags & excludeFlags) == otherFlags) {
+      // excludeFlags is subsumed, we're done.
+      return;
+    }
+    if ((excludeFlags & otherFlags) == excludeFlags) {
+      // Existing entry is subsumed.
+      otherFlags = excludeFlags;
+      return;
+    }
+  }
+
+  // Performance: another possible optimization is the detection of two disjuncts
+  // being logical negations of each other (particularly if each disjunct is
+  // a single flag). For instance, if we have
+  //
+  //    IdAndFlags::METHOD_FIELD ∨ ...
+  //
+  // And we add IdAndFlags::NOT_METHOD_FIELD. In that case, we get:
+  //
+  //    IdAndFlags::METHOD_FIELD ∨ IdAndFlags::NOT_METHOD_FIELD ∨ ...
+  //
+  // Which is logically equivalent to:
+  //
+  //    True ∨ ... = True
+  //
+  // This means we can replace the whole disjunction with a single term,
+  // True, aka the empty Flags value 0.
+
+  // We didn't find a pair eligible for merging, so just insert.
+  flagVec.push_back(excludeFlags);
+}
+
+bool FlagSet::subsumes(Flags mightBeSubsumed) const {
+  for (auto& otherFlags : flagVec) {
+    if ((otherFlags & mightBeSubsumed) == otherFlags) {
+      // excludeFlags is subsumed, we're done.
+      return true;
+    }
+  }
+  return false;
+}
+
+bool FlagSet::noneMatch(Flags match) const {
+  return std::all_of(flagVec.begin(), flagVec.end(), [&](auto excludeFlags) {
+    return (match & excludeFlags) != excludeFlags;
+  });
+}
+
+bool FlagSet::operator==(const FlagSet& other) const {
+  return flagVec == other.flagVec;
+}
+
+bool FlagSet::operator!=(const FlagSet& other) const {
+  return !(*this == other);
+}
+
+size_t FlagSet::hash() const {
+  size_t ret = 0;
+  for (auto excludeFlags : flagVec) {
+    ret = hash_combine(ret, chpl::hash(excludeFlags));
+  }
+  return ret;
+}
+
+void FlagSet::mark(Context* context) const {
+  // nothing, because flags don't need to be marked.
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
@@ -57,15 +154,15 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 
 llvm::Optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
-                         IdAndFlags::Flags excludeFlags) const {
+                         const IdAndFlags::FlagSet& excludeFlagSet) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
     return llvm::None;
   }
 
-  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlags)) {
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
+  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -76,19 +173,19 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
   // And, if excludeFlags is present, some flag in it is not present in flagsOr?
   // If so, return the borrow
   if ((flagsAnd_ & filterFlags) == filterFlags &&
-      (excludeFlags == 0 || (flagsOr_ & excludeFlags) != excludeFlags)) {
+      excludeFlagSet.noneMatch(flagsOr_)) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
-    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlagSet);
   }
 
   // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlags))
+    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlagSet))
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlags);
+    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlagSet);
   }
 
   // No ID was visible, so we can't borrow.
@@ -105,7 +202,7 @@ int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
   // found symbols will included in this borrowedIds, so we don't have
   // to consider them individually.
   if ((flagsAnd & filterFlags_) == filterFlags_ &&
-      (excludeFlags_ == 0 || (flagsOr & excludeFlags_) != excludeFlags_)) {
+      excludeFlagSet_.noneMatch(flagsOr)) {
     // all of the found symbols will match
     return moreIdvs_->size();
   }
@@ -206,7 +303,7 @@ const Scope* Scope::parentModuleScope() const {
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
                           IdAndFlags::Flags filterFlags,
-                          IdAndFlags::Flags excludeFlags) const {
+                          const IdAndFlags::FlagSet& excludeFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns
