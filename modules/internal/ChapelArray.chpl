@@ -2198,10 +2198,11 @@ module ChapelArray {
   // Assignment of distributions and arrays
   //
   pragma "no doc"
+  @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
   operator =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
-    } else if a._value._doms_containing_dist == 0 {
+    } else {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
       if a._value == b._value {
@@ -2210,8 +2211,6 @@ module ChapelArray {
         a._value.dsiAssign(b._value);
       if _isPrivatized(a._instance) then
         _reprivatize(a._value);
-    } else {
-      halt("assignment to distributions with declared domains is not yet supported");
     }
   }
 

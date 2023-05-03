@@ -342,7 +342,7 @@ class Block : BaseDist {
 class LocBlock {
   param rank: int;
   type idxType;
-  const myChunk: domain(rank, idxType);
+  var myChunk: domain(rank, idxType);
 }
 
 //
@@ -529,27 +529,29 @@ proc Block.init(boundingBox: domain,
   }
 }
 
+@unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
+proc Block.redistribute(const in newBbox) {
+  const newBboxDims = newBbox.dims();
+  const pid = this.pid;
+  coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist) {
+    on loc {
+      const that = if _privatization then chpl_getPrivatizedCopy(this.type, pid) else this;
+      that.boundingBox = newBbox;
+
+      var inds = chpl__computeBlock(chpl__tuplify(locid), targetLocDom, newBbox, newBboxDims);
+      locdist.myChunk = {(...inds)};
+    }
+  }
+}
+
+
 proc Block.dsiAssign(other: this.type) {
-
-  coforall (loc, locDistElt) in zip(targetLocales, locDist) {
-    on loc {
-      delete locDistElt;
-    }
+  if (this.targetLocDom != other.targetLocDom ||
+      || reduce (this.targetLocales != other.targetLocales)) {
+    halt("Block distribution assignments currently require the target locale arrays to match");
   }
-  boundingBox = other.boundingBox;
-  targetLocDom = other.targetLocDom;
-  targetLocales = other.targetLocales;
-  dataParTasksPerLocale = other.dataParTasksPerLocale;
-  dataParIgnoreRunningTasks = other.dataParIgnoreRunningTasks;
-  dataParMinGranularity = other.dataParMinGranularity;
 
-  coforall (locid, loc, locDistElt)
-           in zip(targetLocDom, targetLocales, locDist) {
-    on loc {
-      locDistElt = new unmanaged LocBlock(rank, idxType, locid, boundingBox,
-                                          targetLocDom);
-    }
-  }
+  this.redistribute(other.boundingBox);
 }
 
 //
@@ -1041,7 +1043,7 @@ proc LocBlockDom.contains(i) do return myBlock.contains(i);
 override proc BlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
     writeln("locArr[", tli, "].myElems = ", for e in locArr[tli].myElems do e);
-    if doRADOpt then
+    if doRADOpt && locArr[tli].locRAD != nil then
       writeln("locArr[", tli, "].locRAD = ", locArr[tli].locRAD!.RAD);
   }
 }
@@ -1539,8 +1541,15 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
 proc BlockDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
-    return whole[(...inds)];
+    if loc == here {
+      // If we're doing the common case of just querying our own ownership,
+      // return the local, pre-computed value
+      return locDoms[locid].myBlock;
+    } else {
+      // Otherwise, compute it to avoid communication...
+      var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox, dist.boundingBox.dims());
+      return whole[(...inds)];
+    }
   } else {
     var d: domain(rank, idxType, stridable);
     return d;
