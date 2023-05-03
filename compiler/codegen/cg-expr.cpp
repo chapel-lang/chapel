@@ -1199,6 +1199,10 @@ GenRet doCodegenFieldPtr(
 
     AggregateType *cBaseType = castType ? toAggregateType(castType) : ct;
 
+    // Compute the LLVM type of the structure we are accessing
+    llvm::Type* baseTy = cBaseType->symbol->getLLVMStructureType();
+    INT_ASSERT(baseTy);
+
     // We need the LLVM type of the field we're getting
     INT_ASSERT(ret.chplType);
     GenRet retType = ret.chplType;
@@ -1206,12 +1210,8 @@ GenRet doCodegenFieldPtr(
     if (isUnion(ct) && !ct->symbol->hasFlag(FLAG_EXTERN) && !special) {
       // Get a pointer to the union data then cast it to the right type
       bool unused;
-      llvm::Type* eltTy = nullptr;
-#if HAVE_LLVM_VER >= 130
-      eltTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
-#endif
       ret.val = info->irBuilder->CreateStructGEP(
-          eltTy, baseValue, cBaseType->getMemberGEP("_u", unused));
+          baseTy, baseValue, cBaseType->getMemberGEP("_u", unused));
       llvm::PointerType* ty =
         llvm::PointerType::get(retType.type,
                                baseValue->getType()->getPointerAddressSpace());
@@ -1226,36 +1226,21 @@ GenRet doCodegenFieldPtr(
           ret.chplType->getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
         // Accessing field that is a C array declared with c_ptr(eltType)
         // should result in a pointer to the first element.
-        llvm::Type* baseTy = nullptr;
-        llvm::Type* retTy = nullptr;
-#if HAVE_LLVM_VER >= 130
-        baseTy = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
-#endif
+        TypeSymbol* eltTypeSym =
+          getDataClassType(ret.chplType->getValType()->symbol);
+        GenRet genEltType = eltTypeSym->type;
+        llvm::Type* retTy = genEltType.type;
+        INT_ASSERT(retTy);
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
-#if HAVE_LLVM_VER >= 130
-        retTy = llvm::cast<llvm::PointerType>(ret.val->getType()->getScalarType())->getPointerElementType();
-#endif
         ret.val = info->irBuilder->CreateStructGEP(retTy, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
       } else {
-        llvm::Type* ty = nullptr;
-#if HAVE_LLVM_VER >= 130
-        ty = llvm::cast<llvm::PointerType>(baseValue->getType()->getScalarType())->getPointerElementType();
-#endif
-        ret.val = info->irBuilder->CreateStructGEP(ty, baseValue, fieldno);
+        ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
 
         if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
           ret.chplType->symbol->llvmTbaaTypeDescriptor != info->tbaaRootNode) {
-#if HAVE_LLVM_VER >= 130
-          llvm::StructType *structType = llvm::cast<llvm::StructType>
-            (llvm::cast<llvm::PointerType>
-             (baseValue->getType())->getPointerElementType());
-#else
-          llvm::StructType *structType = llvm::cast<llvm::StructType>
-            (llvm::cast<llvm::PointerType>
-             (baseValue->getType())->getPointerElementType());
-#endif
+          llvm::StructType *structType = llvm::cast<llvm::StructType>(baseTy);
           ret.surroundingStruct = cBaseType;
           ret.fieldOffset = info->module->getDataLayout().
             getStructLayout(structType)->getElementOffset(fieldno);
@@ -2218,7 +2203,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
-    ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMStructureType(), tmp);
+    ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMType(), tmp);
 
     ret.isUnsigned = !values.isSigned;
 #endif

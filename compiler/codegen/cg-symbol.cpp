@@ -1403,7 +1403,7 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    llvmImplType = type;
+    if (llvmImplType == nullptr) llvmImplType = type;
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
