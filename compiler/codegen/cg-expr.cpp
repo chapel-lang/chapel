@@ -5851,7 +5851,8 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       GEPLocs[0] = llvm::Constant::getNullValue(llvm::IntegerType::getInt64Ty(gGenInfo->module->getContext()));
       GEPLocs[1] = index.val;
-      fnPtrPtr   = createInBoundsGEPCompat(ftable.val, GEPLocs);
+      fnPtrPtr   = createInBoundsGEP(global->getValueType(),
+                                     ftable.val, GEPLocs);
 #if HAVE_LLVM_VER >= 130
       fnPtr      = gGenInfo->irBuilder->CreateLoad(genericFnPtr, fnPtrPtr);
 #else
