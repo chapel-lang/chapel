@@ -1211,6 +1211,58 @@ static void test31() {
   assert(reX.toId() == fn->toFunction()->formal(0)->id());
 }
 
+static void test32a() {
+  printf("test32\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        proc int.method() {}
+      }
+
+      module O {
+        use M only method;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* moduleO = vec[1];
+  auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test32b() {
+  printf("test32\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        proc int.method() {}
+      }
+
+      module O {
+        import M.{method};
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* moduleO = vec[1];
+  auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
+
+  assert(guard.realizeErrors() == 0);
+}
+
 
 int main() {
   test1();
@@ -1245,6 +1297,8 @@ int main() {
   test30();
   test30a();
   test31();
+  test32a();
+  test32b();
 
   return 0;
 }
