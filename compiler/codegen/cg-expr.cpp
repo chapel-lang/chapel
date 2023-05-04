@@ -2787,11 +2787,10 @@ static GenRet codegenCallExprInner(GenRet function,
                 for (unsigned i = 0; i < nElts; i++) {
                   // load to produce the next LLVM argument
 #if HAVE_LLVM_VER >= 130
-                  llvm::Type* ty = llvm::cast<llvm::PointerType>(ptr->getType()->getScalarType())->getPointerElementType();
                   llvm::Value* eltPtr =
-                    irBuilder->CreateStructGEP(ty, ptr, i);
+                    irBuilder->CreateStructGEP(sTy, ptr, i);
                   llvm::Value* loaded =
-                    irBuilder->CreateLoad(eltPtr->getType()->getPointerElementType(), eltPtr);
+                    irBuilder->CreateLoad(sTy->getElementType(i), eltPtr);
 #else
                   llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
                   llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
@@ -2833,9 +2832,9 @@ static GenRet codegenCallExprInner(GenRet function,
               // load to produce the next LLVM argument
 #if HAVE_LLVM_VER >= 130
               llvm::Value* eltPtr =
-                irBuilder->CreateStructGEP(ptr->getType(), ptr, i);
+                irBuilder->CreateStructGEP(sTy, ptr, i);
               llvm::Value* loaded =
-                irBuilder->CreateLoad(eltPtr->getType()->getPointerElementType(), eltPtr);
+                irBuilder->CreateLoad(ty, eltPtr);
 #else
               llvm::Value* eltPtr = irBuilder->CreateStructGEP(ptr, i);
               llvm::Value* loaded = irBuilder->CreateLoad(eltPtr);
