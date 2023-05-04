@@ -2643,9 +2643,12 @@ static GenRet codegenCallExprInner(GenRet function,
 
     if (func) {
       fnType = func->getFunctionType();
+    } else if (fn) {
+      GenRet t = fn->codegenFunctionType(false);
+      fnType = llvm::dyn_cast<llvm::FunctionType>(t.type);
+      INT_ASSERT(fnType);
     } else {
-      fnType = llvm::cast<llvm::FunctionType>(
-          val->getType()->getPointerElementType());
+      INT_FATAL("Could not compute called function type");
     }
 
     std::vector<llvm::Value *> llArgs;
@@ -2672,7 +2675,7 @@ static GenRet codegenCallExprInner(GenRet function,
       }
     }
 
-    if (CGI == NULL &&
+    if (CGI == nullptr && fnType != nullptr &&
         fnType->getReturnType()->isVoidTy() &&
         fnType->getNumParams() >= 1 &&
         func && func->hasStructRetAttr())
@@ -2848,7 +2851,7 @@ static GenRet codegenCallExprInner(GenRet function,
         }
       } else {
 
-        if (llArgs.size() < fnType->getNumParams() && func) {
+        if (func && fnType && llArgs.size() < fnType->getNumParams()) {
 #if HAVE_LLVM_VER >= 140
           bool funcHasAttribute =
             func->getAttributes().hasAttributeAtIndex(llArgs.size()+1,
@@ -2863,7 +2866,7 @@ static GenRet codegenCallExprInner(GenRet function,
         }
         llvm::Value* val = NULL;
 
-        if (llArgs.size() < fnType->getNumParams()) {
+        if (fnType && llArgs.size() < fnType->getNumParams()) {
           bool isSigned = !args[i].isUnsigned ||
                           (args[i].chplType && is_signed(args[i].chplType));
           llvm::Type* targetType = NULL;
@@ -2886,6 +2889,7 @@ static GenRet codegenCallExprInner(GenRet function,
     if (func) {
       c = info->irBuilder->CreateCall(func, llArgs);
     } else {
+      if (!fnType) INT_FATAL("Could not compute called function type");
 #if HAVE_LLVM_VER >= 90
       c = info->irBuilder->CreateCall(fnType, val, llArgs);
 #else
