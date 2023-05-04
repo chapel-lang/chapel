@@ -3,7 +3,6 @@ extern {
   void bar(void) {
     foo();
   }
-  void baz(a) { }
 }
 
 var globalArr : [1..1] real;
