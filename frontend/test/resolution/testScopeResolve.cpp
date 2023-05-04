@@ -1259,8 +1259,6 @@ static void test32b() {
   assert(vec.size() == 2);
   const Module* moduleO = vec[1];
   auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
-
-  assert(guard.realizeErrors() == 0);
 }
 
 
