@@ -337,8 +337,8 @@ module CopyAggregation {
       myRSrcVals.GET(myLSrcVals, myBufferIdx);
 
       // Assign the srcVal to the dstAddrs
-      var dstAddrPtr = c_ptrTo(dstAddrs[loc][0]);
-      var srcValPtr = c_ptrTo(myLSrcVals[0]);
+      var dstAddrPtr = c_addrOf(dstAddrs[loc][0]);
+      var srcValPtr = c_addrOf(myLSrcVals[0]);
       for i in 0..<myBufferIdx {
         dstAddrPtr[i].deref() = srcValPtr[i];
       }
