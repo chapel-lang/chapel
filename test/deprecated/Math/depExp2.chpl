@@ -1,9 +1,6 @@
-// exp2.chpl
-// 
-// AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.
-// 
+// Copied from the version that current gets generated in
+// test/library/standard/Math/promotion/generate_tests/promotion_tests.py
 
-use Math;
 proc roundIfClose(x: real) {
   const eps = 1e-8;
   if abs(x) < eps then return 0.0; // special case, to avoid -0.0

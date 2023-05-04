@@ -1,4 +1,5 @@
 use Time, IO, BlockDist;
+import Math.exp;
 
 config const timer : bool = false;
 var t : stopwatch;

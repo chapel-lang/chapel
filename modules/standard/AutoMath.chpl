@@ -1155,29 +1155,79 @@ module AutoMath {
   }
 
 
-  /* Returns the value of the Napierian `e` raised to the power of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc exp(x: real(64)): real(64);
+  // When removing this deprecated function, be sure to remove chpl_exp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc exp(x: real(64)): real(64) {
+    return chpl_exp(x);
+  }
 
-  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  @chpldoc.nodoc
+  inline proc chpl_exp(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc exp(x: real(64)): real(64);
+    return exp(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_exp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(x : real(32)): real(32) {
+    return chpl_exp(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_exp(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc expf(x: real(32)): real(32);
     return expf(x);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  // When removing this deprecated function, be sure to remove chpl_exp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(z: complex(64)): complex(64) {
+    return chpl_exp(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_exp(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cexpf(z: complex(64)): complex(64);
     return cexpf(z);
   }
 
-  /* Returns the value of the Napierian `e` raised to the power of the argument. */
+  // When removing this deprecated function, be sure to remove chpl_exp and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(z: complex(128)): complex(128) {
+    return chpl_exp(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_exp(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cexp(z: complex(128)): complex(128);
@@ -1185,13 +1235,39 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_exp2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the value of `2` raised to the power of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc exp2(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc exp2(x: real(64)): real(64) {
+    return chpl_exp2(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_exp2(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc exp2(x: real(64)): real(64);
+    return exp2(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_exp2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the value of `2` raised to the power of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp2(x : real(32)): real(32) {
+    return chpl_exp2(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_exp2(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc exp2f(x: real(32)): real(32);
@@ -1199,15 +1275,41 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_expm1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc expm1(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'expm1' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc expm1(x: real(64)): real(64) {
+    return chpl_expm1(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_expm1(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc expm1(x: real(64)): real(64);
+    return expm1(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_expm1 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'expm1' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc expm1(x : real(32)): real(32) {
+    return chpl_expm1(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_expm1(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc expm1f(x: real(32)): real(32);

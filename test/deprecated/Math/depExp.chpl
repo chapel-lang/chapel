@@ -1,4 +1,4 @@
-use Math;
+// copied from test/library/standard/Math/exp.chpl
 
 var a: real = -3.0;
 var b: real = -1.0;
