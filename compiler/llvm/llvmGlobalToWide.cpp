@@ -296,22 +296,13 @@ namespace {
     return load;
   }
 
-  void checkFunctionExistAndHasArgs(Value* f, Type* t, unsigned nArgs)
+  void checkFunctionExistAndHasArgs(Value* f, FunctionType* ft, unsigned nArgs)
   {
     #ifndef NDEBUG
       assert(f);
       if( Function* ff = dyn_cast<Function>(f) ) {
         assert(ff->getParent());
       }
-      FunctionType* ft = NULL;
-      if( PointerType* pt = dyn_cast<PointerType>(t) ) {
-#if HAVE_LLVM_VER >= 130
-        t = pt->getPointerElementType();
-#else
-        t = pt->getElementType();
-#endif
-      }
-      ft = cast<FunctionType>(t);
       assert(ft);
       assert(ft->getNumParams() == nArgs);
     #endif
@@ -1720,7 +1711,7 @@ namespace {
                 GI != GE; ++GI) {
           GlobalVariable *gv = &*GI;
 
-          Type *old_type = gv->getType()->getPointerElementType();
+          Type *old_type = gv->getValueType();
           Type *new_type = convertTypeGlobalToWide(&M, info, old_type);
           Constant *old_init = NULL;
           Constant *new_init = NULL;
@@ -2062,7 +2053,24 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
 
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
-  ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+  bool isOpaque = false;
+#if HAVE_LLVM_VER < 170
+#if HAVE_LLVM_VER >= 140
+  isOpaque = globalPtrTy->isOpaquePointerTy();
+#endif
+  if (!isOpaque) {
+    // TODO: this code can be ifdef'd out for LLVM 15 once
+    // we fully migrate to opaque pointers with LLVM 15.
+    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+  }
+#endif
+
+#if HAVE_LLVM_VER >= 140
+  if (isOpaque) {
+    ptrTy = llvm::PointerType::getUnqual(module->getContext());
+  }
+#endif
+
   locTy = info->localeIdType;
   nodeTy = info->nodeIdType;
 
@@ -2209,7 +2217,26 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  fields[1] = PointerType::get(eltTy, 0);
+  llvm::PointerType* ptrTy;
+  bool isOpaque = false;
+#if HAVE_LLVM_VER < 170
+#if HAVE_LLVM_VER >= 140
+  isOpaque = globalPtrTy->isOpaquePointerTy();
+#endif
+  if (!isOpaque) {
+    // TODO: this code can be ifdef'd out for LLVM 15 once
+    // we fully migrate to opaque pointers with LLVM 15.
+    assert(eltTy);
+    ptrTy = llvm::PointerType::getUnqual(eltTy);
+  }
+#endif
+#if HAVE_LLVM_VER >= 140
+  if (isOpaque) {
+    assert(!eltTy);
+    ptrTy = llvm::PointerType::getUnqual(context);
+  }
+#endif
+  fields[1] = ptrTy;
 
   return StructType::get(context, fields, false);
 }
@@ -2293,8 +2320,19 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
   }
 
   if(t->isPointerTy()){
+  bool isOpaque = false;
+  Type* eltType = nullptr;
+#if HAVE_LLVM_VER < 170
+#if HAVE_LLVM_VER >= 140
+  isOpaque = t->isOpaquePointerTy();
+#endif
+  if (!isOpaque) {
+    // TODO: this code can be ifdef'd out for LLVM 15 once
+    // we fully migrate to opaque pointers with LLVM 15.
     Type* eltType = t->getPointerElementType();
     assert(t != t->getPointerElementType()); // detect simple recursion
+  }
+#endif
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
 
     if( t->getPointerAddressSpace() == info->globalSpace ||
