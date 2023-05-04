@@ -2970,7 +2970,7 @@ void Resolver::exit(const Dot* dot) {
 
   bool resolvingCalledDot = (inLeafCall &&
                              dot == inLeafCall->calledExpression());
-  if (resolvingCalledDot) {
+  if (resolvingCalledDot && !scopeResolveOnly) {
     // we will handle it when resolving the FnCall
     return;
   }

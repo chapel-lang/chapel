@@ -77,6 +77,7 @@ struct ConvertedSymbolsMap {
   std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
 
   std::vector<std::pair<SymExpr*, ID>> identFixups;
+  std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
   std::vector<std::pair<SymExpr*,
                         const resolution::TypedFnSignature*>> callFixups;
 
@@ -94,6 +95,8 @@ struct ConvertedSymbolsMap {
                             bool trace);
   void noteIdentFixupNeeded(SymExpr* se, ID id, ConvertedSymbolsMap* cur,
                             bool trace);
+  void noteModuleFixupNeeded(ModuleSymbol* m, ID id, ConvertedSymbolsMap* cur,
+                             bool trace);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig,
                            ConvertedSymbolsMap* cur,
@@ -119,6 +122,10 @@ static ConvertedSymbolsMap gConvertedSyms;
 struct Converter {
   struct ModStackEntry {
     const uast::Module* mod;
+    // If we detect a module use and the module is already converted, store it here.
+    std::vector<ModuleSymbol*> usedModules;
+    // If we detect a module use and the module is not converted, store the ID here.
+    std::vector<ID> usedModuleIds;
     ModStackEntry(const uast::Module* mod)
       : mod(mod) {
     }
@@ -193,7 +200,9 @@ struct Converter {
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn);
   Symbol* findConvertedSym(ID id);
   FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig);
+  ConvertedSymbolsMap* findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
+  void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig);
   void noteAllContainedFixups(BaseAST* ast, int depth);
@@ -217,10 +226,13 @@ struct Converter {
   }
   void storeReferencedMod(Symbol* referencedMod) {
     CHPL_ASSERT(blockStack.size() > 0);
+    CHPL_ASSERT(modStack.size() > 0);
     if (auto modSym = toModuleSymbol(referencedMod)) {
       blockStack.back()->modRefsAdd(modSym);
+      modStack.back().usedModules.push_back(modSym);
     } else if (auto tcs = toTemporaryConversionSymbol(referencedMod)) {
       blockStack.back()->modRefsAdd(tcs);
+      modStack.back().usedModuleIds.push_back(tcs->symId);
     } else {
       CHPL_ASSERT(false && "Only module symbols and temporary conversion symbols should be stored in a BlockStmt's modRefs!");
     }
@@ -2063,6 +2075,14 @@ struct Converter {
     auto dot = node->calledExpression()->toDot();
     if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
 
+    if (!targetId.isEmpty() && targetType.kind() != types::QualifiedType::FUNCTION) {
+      // an empty ID indicates that it's an overloaded function or otherwise unknown,
+      // and a function type indicates... a function. Otherwise, it's something
+      // else (like a class name) and shouldn't be turned into a call in this
+      // manner.
+      return nullptr;
+    }
+
     auto moduleForCall = findConvertedSym(moduleId);
     storeReferencedMod(moduleForCall);
     return new CallExpr(new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
@@ -3228,8 +3248,15 @@ struct Converter {
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);
 
-    // Pop the module after converting children.
+    // Pop the module after converting children, and note the moduels used
+    // within.
     INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
+    for (auto usedMod : modStack.back().usedModules) {
+      mod->moduleUseAdd(usedMod);
+    }
+    for (auto modId : modStack.back().usedModuleIds) {
+      noteModuleFixupNeeded(mod, modId);
+    }
     this->modStack.pop_back();
     popFromSymStack(node, mod);
 
@@ -4188,11 +4215,9 @@ FnSymbol* Converter::findConvertedFn(const resolution::TypedFnSignature* sig) {
   }
 }
 
-void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
-  if (!canScopeResolve) return;
-
+ConvertedSymbolsMap* Converter::findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur) {
   ConvertedSymbolsMap* m = nullptr;
-  ConvertedSymbolsMap* cur = &gConvertedSyms;
+  cur = &gConvertedSyms;
   if (symStack.size() > 0) {
     // figure out where to put the fixup
     cur = symStack.back().convertedSyms.get();
@@ -4202,24 +4227,33 @@ void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
   if (m == nullptr) {
     m = &gConvertedSyms;
   }
+  return m;
+}
+
+void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
+  if (!canScopeResolve) return;
+
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
 
   m->noteIdentFixupNeeded(se, id, cur, trace);
+}
+
+void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
+  if (!canScopeResolve) return;
+
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
+
+  m->noteModuleFixupNeeded(mod, id, cur, trace);
 }
 
 void Converter::noteCallFixupNeeded(SymExpr* se,
                                     const resolution::TypedFnSignature* sig) {
   if (!canScopeResolve) return;
 
-  ConvertedSymbolsMap* m = nullptr;
-  ConvertedSymbolsMap* cur = &gConvertedSyms;
-  if (symStack.size() > 0) {
-    cur = symStack.back().convertedSyms.get();
-    m = cur->findMapContaining(sig->untyped()->id());
-  }
-
-  if (m == nullptr) {
-    m = &gConvertedSyms;
-  }
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(sig->untyped()->id(), cur);
 
   m->noteCallFixupNeeded(se, sig, cur, trace);
 }
@@ -4388,6 +4422,20 @@ void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
   identFixups.emplace_back(se, id);
 }
 
+void ConvertedSymbolsMap::noteModuleFixupNeeded(ModuleSymbol* m, ID id,
+                                                ConvertedSymbolsMap* cur,
+                                                bool trace) {
+  if (trace) {
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           m->id,
+           id.str().c_str(),
+           computeMapName(cur->inSymbolId).c_str(),
+           computeMapName(this->inSymbolId).c_str());
+  }
+
+  moduleFixups.emplace_back(m, id);
+}
+
 void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
                                 const resolution::TypedFnSignature* sig,
                                 ConvertedSymbolsMap* cur,
@@ -4533,6 +4581,21 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
   }
   // clear gIdentFixups since these have now been processed
   identFixups.clear();
+
+  for (const auto& p : moduleFixups) {
+    ModuleSymbol* m = p.first;
+    const ID& target = p.second;
+
+    Symbol* sym = findConvertedSym(target, /* trace */ false);
+    auto usedM = toModuleSymbol(sym);
+    if (!usedM) {
+      INT_FATAL("could not find target symbol for module fixup for %s within %s",
+                target.str().c_str(), inSymbolId.str().c_str());
+    }
+
+    m->moduleUseAdd(usedM);
+  }
+  moduleFixups.clear();
 
   // Fix up any CallExprs that need to have their calledExpr re-targeted
   for (const auto& p : callFixups) {
