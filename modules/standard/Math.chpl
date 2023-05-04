@@ -331,6 +331,18 @@ module Math {
     return chpl_exp2(x);
   }
 
+  /* Returns one less than the value of the Napierian `e` raised to the power
+     of the argument `x`. */
+  inline proc expm1(x: real(64)): real(64) {
+    return chpl_expm1(x);
+  }
+
+  /* Returns one less than the value of the Napierian `e` raised to the power
+     of the argument `x`. */
+  inline proc expm1(x : real(32)): real(32) {
+    return chpl_expm1(x);
+  }
+
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
      */
