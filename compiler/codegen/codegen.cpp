@@ -2827,6 +2827,11 @@ GenInfo::GenInfo()
              clangInfo(nullptr)
 #endif
 {
+#ifdef LLVM_NO_OPAQUE_POINTERS
+#if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
+  llvmContext.setOpaquePointers(false);
+#endif
+#endif
 }
 
 std::string numToString(int64_t num)
