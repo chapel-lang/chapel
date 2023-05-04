@@ -56,37 +56,37 @@ module PeekPoke {
   }
 
   /*
-     Non-atomically writes `value`.
+     Non-atomically writes `val`.
   */
-  inline proc AtomicBool.poke(value:bool): void {
-    this.write(value, order=memoryOrder.relaxed);
+  inline proc AtomicBool.poke(val:bool): void {
+    this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicBool.poke(value:bool): void {
-    _v = value:int(64);
+  inline proc RAtomicBool.poke(val:bool): void {
+    _v = val:int(64);
   }
 
 
   /*
      Non-atomically reads the stored value.
   */
-  inline proc const AtomicT.peek(): T {
+  inline proc const AtomicT.peek(): valType {
     return this.read(order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc const RAtomicT.peek(): T {
+  inline proc const RAtomicT.peek(): valType {
     return _v;
   }
 
 
   /*
-     Non-atomically writes `value`.
+     Non-atomically writes `val`.
   */
-  inline proc AtomicT.poke(value:T): void {
-    this.write(value, order=memoryOrder.relaxed);
+  inline proc AtomicT.poke(val:valType): void {
+    this.write(val, order=memoryOrder.relaxed);
   }
   @chpldoc.nodoc
-  inline proc RAtomicT.poke(value:T): void {
-    _v = value;
+  inline proc RAtomicT.poke(val:valType): void {
+    _v = val;
   }
 }

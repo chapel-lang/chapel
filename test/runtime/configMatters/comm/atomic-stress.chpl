@@ -30,33 +30,33 @@ proc testAddSub(type t) {
 }
 
 enum ExchangeType {cmpxchg, cmpxchgW, cas};
-inline proc AtomicT.loopAdd(value: T, param exchangeType: ExchangeType) {
+inline proc AtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
   var oldValue = this.read();
   select (exchangeType) {
     when ExchangeType.cmpxchgW {
-      while !this.compareExchangeWeak(oldValue, oldValue + value) { }
+      while !this.compareExchangeWeak(oldValue, oldValue + val) { }
     }
     when ExchangeType.cmpxchg {
-      while !this.compareExchange(oldValue, oldValue + value) { }
+      while !this.compareExchange(oldValue, oldValue + val) { }
     }
     when ExchangeType.cas {
-      while !this.compareAndSwap(oldValue, oldValue + value) {
+      while !this.compareAndSwap(oldValue, oldValue + val) {
         oldValue = this.read();
       }
     }
   }
 }
-inline proc RAtomicT.loopAdd(value: T, param exchangeType: ExchangeType) {
+inline proc RAtomicT.loopAdd(val: valType, param exchangeType: ExchangeType) {
   var oldValue = this.read();
   select (exchangeType) {
     when ExchangeType.cmpxchgW {
-      while !this.compareExchangeWeak(oldValue, oldValue + value) { }
+      while !this.compareExchangeWeak(oldValue, oldValue + val) { }
     }
     when ExchangeType.cmpxchg {
-      while !this.compareExchange(oldValue, oldValue + value) { }
+      while !this.compareExchange(oldValue, oldValue + val) { }
     }
     when ExchangeType.cas {
-      while !this.compareAndSwap(oldValue, oldValue + value) {
+      while !this.compareAndSwap(oldValue, oldValue + val) {
         oldValue = this.read();
       }
     }
