@@ -532,11 +532,23 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 // Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
 #define USE_TBAA 1
 
+// If valType is nullptr, will try to compute it by looking
+// for an AllocaInst or a GlobalValue in addr.
 static
 void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
 {
   GenInfo *info = gGenInfo;
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
+
+  if (valType == nullptr) {
+    if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(addr)) {
+      valType = locVar->getAllocatedType();
+    }
+    if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(addr)) {
+      valType = globVar->getValueType();
+    }
+    INT_ASSERT(valType);
+  }
 
   uint64_t sizeInBytes;
   if (valType->isSized())
@@ -4049,19 +4061,7 @@ static GenRet codegenCallStaticAddress(CallExpr* call) {
             INT_ASSERT(ptr);
             llvm::Type* ptrTy = ptr->getType();
             INT_ASSERT(ptrTy && ptrTy->isPointerTy());
-
-            llvm::Type* eltTy = nullptr;
-            llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr);
-            llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr);
-            if (locVar) {
-              eltTy = locVar->getAllocatedType();
-            }
-            if (globVar) {
-              eltTy = globVar->getValueType();
-            }
-            INT_ASSERT(eltTy);
-
-            codegenInvariantStart(eltTy, ptr);
+            codegenInvariantStart(nullptr, ptr);
           }
         }
       }
