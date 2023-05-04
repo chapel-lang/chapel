@@ -85,11 +85,13 @@ static GenRet codegenRnode(GenRet wide);
 
 static GenRet codegenAddrOf(GenRet r);
 
-// This typedef exists just to avoid needing ifdefs in fn prototypes
+// These typedefs exist just to avoid needing ifdefs in fn prototypes
 #ifdef HAVE_LLVM
 typedef clang::FunctionDecl* ClangFunctionDeclPtr;
+typedef llvm::FunctionType* LlvmFunctionTypePtr;
 #else
 typedef void* ClangFunctionDeclPtr;
+typedef void* LlvmFunctionTypePtr;
 #endif
 
 /* Note well the difference between codegenCall and codegenCallExpr.
@@ -104,6 +106,7 @@ static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
                                    FunctionType* chplFnType);
 static GenRet codegenCallExprInner(GenRet function, std::vector<GenRet> & args,
                                    FnSymbol* fn, ClangFunctionDeclPtr FD,
+                                   LlvmFunctionTypePtr fnTy,
                                    bool defaultToValues);
 static GenRet codegenCallExprWithArgs(GenRet function,
                                       std::vector<GenRet> & args,
@@ -2604,6 +2607,7 @@ static GenRet codegenCallExprInner(GenRet function,
                             std::vector<GenRet> & args,
                             FnSymbol* fn,
                             ClangFunctionDeclPtr FD,
+                            LlvmFunctionTypePtr fnTyArg,
                             bool defaultToValues) {
   GenInfo* info = gGenInfo;
   GenRet ret;
@@ -2679,6 +2683,8 @@ static GenRet codegenCallExprInner(GenRet function,
       GenRet t = fn->codegenFunctionType(false);
       fnType = llvm::dyn_cast<llvm::FunctionType>(t.type);
       INT_ASSERT(fnType);
+    } else if (fnTyArg) {
+      fnType = fnTyArg;
     } else {
       INT_FATAL("Could not compute called function type");
     }
@@ -2985,7 +2991,8 @@ static GenRet codegenCallExprWithArgs(GenRet function,
       if (!FD)
         INT_FATAL("Could not find FD or fn in codegenCallExprWithArgs");
 
-  return codegenCallExprInner(function, args, fnSym, FD, defaultToValues);
+  return codegenCallExprInner(function, args, fnSym, FD, nullptr,
+                              defaultToValues);
 }
 
 static
@@ -4044,7 +4051,7 @@ static GenRet codegenCallStaticAddress(CallExpr* call) {
 
   // C
   if (gGenInfo->cfile != NULL) {
-    ret = codegenCallExprInner(base, args, fn, nullptr, true);
+    ret = codegenCallExprInner(base, args, fn, nullptr, nullptr, true);
 
     if (call->getStmtExpr() == call) {
       gGenInfo->cStatements.push_back(ret.c + ";\n");
@@ -5872,6 +5879,8 @@ DEFINE_PRIM(FTABLE_CALL) {
     GenRet index = codegenValue(call->get(1));
     GenRet fngen;
 
+    LlvmFunctionTypePtr fnTy = nullptr;
+
     // Generate a cast based upon the arguments.
     if (gGenInfo->cfile){
       std::string str = "((void(*)(";
@@ -5921,7 +5930,6 @@ DEFINE_PRIM(FTABLE_CALL) {
       returnType = llvm::Type::getVoidTy(gGenInfo->module->getContext());
 
       llvm::Type*              argt   = NULL;
-      llvm::FunctionType*      fnType = NULL;
 
       argt = call->get(2)->typeInfo()->codegen().type;
 
@@ -5937,13 +5945,13 @@ DEFINE_PRIM(FTABLE_CALL) {
 
       argumentTypes.push_back(argt);
 
-      fnType = llvm::FunctionType::get(returnType,
-                                       argumentTypes,
-                                       /* is var arg */ false);
+      fnTy = llvm::FunctionType::get(returnType,
+                                     argumentTypes,
+                                     /* is var arg */ false);
 
-      // OK, now cast to the fnType.
+      // OK, now cast to the fnTy.
       fngen.val = gGenInfo->irBuilder->CreateBitCast(fnPtr,
-                                                     fnType->getPointerTo());
+                                                     fnTy->getPointerTo());
 #endif
     }
 
@@ -5962,7 +5970,7 @@ DEFINE_PRIM(FTABLE_CALL) {
 
     args.push_back(arg);
 
-    ret = codegenCallExprInner(fngen, args, nullptr, nullptr, true);
+    ret = codegenCallExprInner(fngen, args, nullptr, nullptr, fnTy, true);
 }
 DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
@@ -6021,7 +6029,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
       args.push_back(call->get(i++));
     }
 
-    ret = codegenCallExprInner(fngen, args, fn, nullptr, true);
+    ret = codegenCallExprInner(fngen, args, fn, nullptr, nullptr, true);
 }
 
 DEFINE_BASIC_PRIM(LOOKUP_FILENAME)
