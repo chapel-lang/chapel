@@ -324,7 +324,7 @@ module Math {
   inline proc exp(z: complex(128)): complex(128) {
     return chpl_exp(z);
   }
-  
+
   /* Returns the value of `2` raised to the power of the argument `x`. */
   inline proc exp2(x: real(64)): real(64) {
     return chpl_exp2(x);
