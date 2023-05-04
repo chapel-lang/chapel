@@ -451,6 +451,8 @@ proc myerror(args...) {
 }
 
 proc reportNumVerticesError(G, snapshot_prefix, vCount) {
+  use Math;
+
   const vcountLog2 =
     if vCount <= 0 then -1:int(64) else floor(log2(vCount)):int(64);
   const helpMessage =
