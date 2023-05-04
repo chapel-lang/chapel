@@ -224,4 +224,112 @@ module GPU
 
     chpl_gpu_set_peer_access(loc1Sid, loc2Sid, shouldEnable);
   }
+
+  // ============================
+  // Atomics
+  // ============================
+
+  private proc externTString(type T) param {
+    param nb = if isNumeric(T) then numBits(T) else -1;
+    param nbInt = numBits(c_int);
+    param nbShort = numBits(c_short);
+    param nbFloat = numBits(c_float);
+
+    if nb == -1 then return "unknown";
+    if isUint(T) && nb <= nbShort then return "short";
+    if isInt(T)  && nb <= nbInt   then return "int";
+    if isInt(T)                   then return "longlong";
+    if isUint(T) && nb <= nbInt   then return "uint";
+    if isUint(T)                  then return "ulonglong";
+    if isReal(T) && nb <= nbFloat then return "float";
+    if isReal(T)                  then return "double";
+    return "unknown";
+  }
+
+  private proc externFunc(param opName : string, type T) param {
+    return "chpl_gpu_atomic_" + opName + "_" + externTString(T);
+  }
+
+  private proc validGpuAtomicOp(param s : string) param {
+    select s { when
+      "chpl_gpu_atomic_add_int",       "chpl_gpu_atomic_add_uint",
+      "chpl_gpu_atomic_add_ulonglong", "chpl_gpu_atomic_add_float",
+      "chpl_gpu_atomic_add_double",
+
+      "chpl_gpu_atomic_sub_int", "chpl_gpu_atomic_sub_uint",
+
+      "chpl_gpu_atomic_exch_int",       "chpl_gpu_atomic_exch_uint",
+      "chpl_gpu_atomic_exch_ulonglong", "chpl_gpu_atomic_exch_float",
+
+      "chpl_gpu_atomic_min_int",       "chpl_gpu_atomic_min_uint",
+      "chpl_gpu_atomic_min_ulonglong", "chpl_gpu_atomic_min_longlong",
+
+      "chpl_gpu_atomic_max_int",       "chpl_gpu_atomic_max_uint",
+      "chpl_gpu_atomic_max_ulonglong", "chpl_gpu_atomic_max_longlong",
+
+      "chpl_gpu_atomic_inc_uint",
+
+      "chpl_gpu_atomic_dec_uint",
+
+      "chpl_gpu_atomic_and_int",       "chpl_gpu_atomic_and_uint",
+      "chpl_gpu_atomic_and_ulonglong",
+
+      "chpl_gpu_atomic_or_int",       "chpl_gpu_atomic_or_uint",
+      "chpl_gpu_atomic_or_ulonglong",
+
+      "chpl_gpu_atomic_xor_int",       "chpl_gpu_atomic_xor_uint",
+      "chpl_gpu_atomic_xor_ulonglong",
+
+      "chpl_gpu_atomic_CAS_int",       "chpl_gpu_atomic_CAS_uint",
+      "chpl_gpu_atomic_CAS_ulonglong"
+
+      // Before adding support for this I would want better capabilities
+      // to process CHPL_GPU (this is only supported when compiling for
+      // CUDA with CC >= 7.0
+      //"chpl_gpu_atomic_CAS_ushort"
+
+      do return true; }
+    return false;
+  }
+
+  private proc checkValidGpuAtomicOp(param opName, param rtFuncName, type T) param {
+    if(!validGpuAtomicOp(rtFuncName)) then
+      compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string, ".");
+  }
+
+  private inline proc gpuAtomicBinOp(param opName : string, ref x : ?T, val : T) {
+    param rtName = externFunc(opName, T);
+    checkValidGpuAtomicOp(opName, rtName, T);
+
+    pragma "codegen for GPU"
+    extern rtName proc chpl_atomicBinOp(x, val);
+
+    assertOnGpu();
+    chpl_atomicBinOp(c_ptrTo(x), val);
+  }
+
+  private inline proc gpuAtomicTernOp(param opName : string, ref x : ?T, cmp : T, val : T) {
+    param rtName = externFunc(opName, T);
+    checkValidGpuAtomicOp(opName, rtName, T);
+
+    pragma "codegen for GPU"
+    extern rtName proc chpl_atomicTernOp(x, cmp, val);
+
+    assertOnGpu();
+    chpl_atomicTernOp(c_ptrTo(x), cmp, val);
+  }
+
+  // I think to get any of this to work I'll need
+  // https://github.com/chapel-lang/chapel/issues/22114 to be resolved.
+  proc gpuAtomicAdd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("add", x, val); }
+  proc gpuAtomicSub(  ref x : ?T, val : T) : void { gpuAtomicBinOp("sub", x, val); }
+  proc gpuAtomicExch( ref x : ?T, val : T) : void { gpuAtomicBinOp("exch", x, val); }
+  proc gpuAtomicMin(  ref x : ?T, val : T) : void { gpuAtomicBinOp("min", x, val); }
+  proc gpuAtomicMax(  ref x : ?T, val : T) : void { gpuAtomicBinOp("max", x, val); }
+  proc gpuAtomicInc(  ref x : ?T, val : T) : void { gpuAtomicBinOp("inc", x, val); }
+  proc gpuAtomicDec(  ref x : ?T, val : T) : void { gpuAtomicBinOp("dec", x, val); }
+  proc gpuAtomicAnd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("and", x, val); }
+  proc gpuAtomicOr(   ref x : ?T, val : T) : void { gpuAtomicBinOp("or", x, val); }
+  proc gpuAtomicXor(  ref x : ?T, val : T) : void { gpuAtomicBinOp("xor", x, val); }
+  proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : void { gpuAtomicTernOp("CAS", x, cmp, val); }
 }
