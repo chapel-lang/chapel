@@ -4049,7 +4049,18 @@ static GenRet codegenCallStaticAddress(CallExpr* call) {
             INT_ASSERT(ptr);
             llvm::Type* ptrTy = ptr->getType();
             INT_ASSERT(ptrTy && ptrTy->isPointerTy());
-            llvm::Type* eltTy = ptrTy->getPointerElementType();
+
+            llvm::Type* eltTy = nullptr;
+            llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr);
+            llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr);
+            if (locVar) {
+              eltTy = locVar->getAllocatedType();
+            }
+            if (globVar) {
+              eltTy = globVar->getValueType();
+            }
+            INT_ASSERT(eltTy);
+
             codegenInvariantStart(eltTy, ptr);
           }
         }
