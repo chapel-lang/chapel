@@ -6015,8 +6015,7 @@ DEFINE_PRIM(INVARIANT_START) {
 #ifdef HAVE_LLVM
     GenRet ptr = codegenValue(call->get(1));
     llvm::Value* val = ptr.val;
-    llvm::Type* ty = val->getType()->getPointerElementType();
-    codegenInvariantStart(ty, val);
+    codegenInvariantStart(nullptr, val);
 #endif
   }
 }
