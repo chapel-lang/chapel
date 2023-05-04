@@ -532,6 +532,19 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 // Set USE_TBAA to 1 to emit TBAA metadata with loads and stores.
 #define USE_TBAA 1
 
+static
+llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
+  llvm::Type* eltType = nullptr;
+  if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr)) {
+    eltType = locVar->getAllocatedType();
+  }
+  if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr)) {
+    eltType = globVar->getValueType();
+  }
+
+  return eltType;
+}
+
 // If valType is nullptr, will try to compute it by looking
 // for an AllocaInst or a GlobalValue in addr.
 static
@@ -541,12 +554,7 @@ void codegenInvariantStart(llvm::Type *valType, llvm::Value *addr)
   const llvm::DataLayout& dataLayout = info->module->getDataLayout();
 
   if (valType == nullptr) {
-    if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(addr)) {
-      valType = locVar->getAllocatedType();
-    }
-    if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(addr)) {
-      valType = globVar->getValueType();
-    }
+    valType = tryComputingPointerElementType(addr);
     INT_ASSERT(valType);
   }
 
@@ -624,7 +632,16 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     else valType = ptr.chplType->getValType();
   }
 
-  if (valType != nullptr) {
+  llvm::Type* storeType = nullptr;
+  if (valType) {
+    GenRet genValType = valType;
+    storeType = genValType.type;
+    INT_ASSERT(storeType);
+  } else {
+    storeType = tryComputingPointerElementType(ptr.val);
+  }
+
+  if (storeType && storeType != val.val->getType()) {
     // check that the stored type matches the valType
 
     // implicit cast in C, needs to be made explicit in LLVM
@@ -632,14 +649,9 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     //      T3 = (T == T2);   // not actual LLVM syntax
     // in LLVM, boolean type is i1
 
-    GenRet genValType = valType;
-    INT_ASSERT(genValType.type);
-    if (genValType.type != val.val->getType()) {
-      llvm::Value* v = convertValueToType(val.val, genValType.type,
-                                          !val.isUnsigned);
-      INT_ASSERT(v);
-      val.val = v;
-    }
+    llvm::Value* v = convertValueToType(val.val, storeType, !val.isUnsigned);
+    INT_ASSERT(v);
+    val.val = v;
   }
 
   INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
@@ -666,12 +678,20 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
 {
   GenInfo* info = gGenInfo;
 
-  INT_ASSERT(valType);
-  GenRet loadValType = valType;
-  INT_ASSERT(loadValType.type);
+  llvm::Type* loadType = nullptr;
+  if (valType) {
+    INT_ASSERT(valType);
+    GenRet loadValType = valType;
+    INT_ASSERT(loadValType.type);
+    loadType = loadValType.type;
+  } else {
+    // try to get the type from an Alloca or GlobalValue
+    loadType = tryComputingPointerElementType(ptr);
+  }
+  INT_ASSERT(loadType);
 
 #if HAVE_LLVM_VER >= 130
-  llvm::LoadInst* ret = info->irBuilder->CreateLoad(loadValType.type, ptr);
+  llvm::LoadInst* ret = info->irBuilder->CreateLoad(loadType, ptr);
 #else
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
 #endif
