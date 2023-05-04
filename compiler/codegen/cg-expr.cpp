@@ -5946,7 +5946,7 @@ DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     INT_ASSERT(fn);
 
     {
-      GenRet  i           = codegenValue(call->get(2));    // the cid
+      GenRet  i          = codegenValue(call->get(2));    // the cid
       int64_t fnId       = virtualMethodMap.get(fn);
       GenRet j           = new_IntSymbol(fnId,    INT_SIZE_64);
       GenRet maxVMTConst = new_IntSymbol(gMaxVMT, INT_SIZE_64);
