@@ -2320,23 +2320,23 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
   }
 
   if(t->isPointerTy()){
-  bool isOpaque = false;
-  Type* eltType = nullptr;
+    bool isOpaque = false;
+    Type* eltType = nullptr;
 #if HAVE_LLVM_VER < 170
 #if HAVE_LLVM_VER >= 140
-  isOpaque = t->isOpaquePointerTy();
+    isOpaque = t->isOpaquePointerTy();
 #endif
-  if (!isOpaque) {
-    // TODO: this code can be ifdef'd out for LLVM 15 once
-    // we fully migrate to opaque pointers with LLVM 15.
-    Type* eltType = t->getPointerElementType();
-    assert(t != t->getPointerElementType()); // detect simple recursion
-  }
+    if (!isOpaque) {
+      // TODO: this code can be ifdef'd out for LLVM 15 once
+      // we fully migrate to opaque pointers with LLVM 15.
+      Type* eltType = t->getPointerElementType();
+      assert(t != t->getPointerElementType());  // detect simple recursion
+    }
 #endif
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
 
-    if( t->getPointerAddressSpace() == info->globalSpace ||
-        t->getPointerAddressSpace() == info->wideSpace ) {
+    if (t->getPointerAddressSpace() == info->globalSpace ||
+        t->getPointerAddressSpace() == info->wideSpace) {
       // Replace the pointer with a struct containing {locale, address}
       return createWidePointerToType(module, info, wideEltType);
     } else {
