@@ -1158,9 +1158,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument `x`. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(x: real(64)): real(64) {
     return chpl_exp(x);
   }
@@ -1179,9 +1180,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(x : real(32)): real(32) {
     return chpl_exp(x);
   }
@@ -1197,9 +1199,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(z: complex(64)): complex(64) {
     return chpl_exp(z);
   }
@@ -1215,9 +1218,10 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of the Napierian `e` raised to the power of the
+     argument. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp(z: complex(128)): complex(128) {
     return chpl_exp(z);
   }
@@ -1234,9 +1238,9 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp2 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of `2` raised to the power of the argument `x`. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp2(x: real(64)): real(64) {
     return chpl_exp2(x);
   }
@@ -1255,9 +1259,9 @@ module AutoMath {
   // When removing this deprecated function, be sure to remove chpl_exp2 and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
+  /* Returns the value of `2` raised to the power of the argument `x`. */
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it")
+  @deprecated(notes="In an upcoming release 'exp2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc exp2(x : real(32)): real(32) {
     return chpl_exp2(x);
   }
@@ -1277,7 +1281,6 @@ module AutoMath {
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'expm1' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc expm1(x: real(64)): real(64) {
     return chpl_expm1(x);
@@ -1300,7 +1303,6 @@ module AutoMath {
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   pragma "last resort"
-  @chpldoc.nodoc
   @deprecated(notes="In an upcoming release 'expm1' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc expm1(x : real(32)): real(32) {
     return chpl_expm1(x);
