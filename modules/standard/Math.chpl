@@ -321,6 +321,16 @@ module Math {
     return chpl_exp(z);
   }
   
+  /* Returns the value of `2` raised to the power of the argument `x`. */
+  inline proc exp2(x: real(64)): real(64) {
+    return chpl_exp2(x);
+  }
+
+  /* Returns the value of `2` raised to the power of the argument `x`. */
+  inline proc exp2(x : real(32)): real(32) {
+    return chpl_exp2(x);
+  }
+
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
      */
@@ -344,16 +354,6 @@ module Math {
   */
   inline proc lgamma(x : real(32)): real(32) {
     return chpl_lgamma(x);
-  }
-
-  /* Returns the value of `2` raised to the power of the argument `x`. */
-  inline proc exp2(x: real(64)): real(64) {
-    return chpl_exp2(x);
-  }
-
-  /* Returns the value of `2` raised to the power of the argument `x`. */
-  inline proc exp2(x : real(32)): real(32) {
-    return chpl_exp2(x);
   }
 
   /* Returns the natural logarithm of `x` + 1.
