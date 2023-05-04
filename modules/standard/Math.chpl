@@ -372,6 +372,32 @@ module Math {
     return chpl_lgamma(x);
   }
 
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log(x: real(64)): real(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log(x : real(32)): real(32) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(64)): complex(64) {
+    return chpl_log(z);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(128)): complex(128) {
+    return chpl_log(z);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
