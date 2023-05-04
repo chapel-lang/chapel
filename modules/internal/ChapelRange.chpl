@@ -3091,6 +3091,10 @@ operator :(r: range(?), type t: range(?)) {
   // We currently assume that the built-in modulo operator always returns an
   // integer in the range [0, mod-1].
   //
+  // In general, this can return an incorrect value if modulus is a bigger
+  // value than can fit into minuend.type. This function should only be used
+  // in controlled circumstances.
+  //
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
                      modulus : integral) : minuend.type
