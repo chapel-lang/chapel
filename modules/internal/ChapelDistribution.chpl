@@ -494,6 +494,17 @@ module ChapelDistribution {
     // calculate new nnz and update it, (2) call this method, (3) add
     // indices
     inline proc _bulkGrow() {
+      // TODO: find a different way to implement this function or move it out of
+      // ChapelDistribution?  If it moves out, we could return to using the
+      // version of exp2 and log2 defined in Math.chpl (which we stopped doing
+      // because they shouldn't be included in user programs by default)
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
+      extern proc exp2(x: real(64)): real(64);
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
+      extern proc log2(x: real(64)): real(64);
+
       const nnz  = getNNZ();
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
