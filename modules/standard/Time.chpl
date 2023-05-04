@@ -275,11 +275,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 /* A record representing a date */
   record date {
     @chpldoc.nodoc
-    var chpl_year: int;
-    @chpldoc.nodoc
-    var chpl_month:int;
-    @chpldoc.nodoc
-    var chpl_day: int;
+    var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
     proc year {
@@ -610,13 +606,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* A record representing a time */
   record time {
     @chpldoc.nodoc
-    var chpl_hour: int;
-    @chpldoc.nodoc
-    var chpl_minute: int;
-    @chpldoc.nodoc
-    var chpl_second: int;
-    @chpldoc.nodoc
-    var chpl_microsecond: int;
+    var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     @chpldoc.nodoc
     var chpl_tz: shared Timezone?;
 

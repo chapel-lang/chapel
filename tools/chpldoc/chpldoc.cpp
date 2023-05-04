@@ -295,8 +295,9 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributeGroup()) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext, "chpldoc.nodoc"));
+  if (auto attrs = parsing::astToAttributeGroup(gContext, e)) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
+                                                           "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
     }

@@ -1,4 +1,4 @@
-@chpldoc.nodoc
+pragma "no doc"
 module M {
 
   proc bar() {
@@ -7,21 +7,21 @@ module M {
 }
 
 module N {
-  @chpldoc.nodoc
+  pragma "no doc"
   proc foo() {
     writeln("foo");
   }
 
-  @chpldoc.nodoc
+  pragma "no doc"
   config const x = 1;
 
-  @chpldoc.nodoc
+  pragma "no doc"
   record R {
     var x: int;
   }
 
   class C {
-    @chpldoc.nodoc
+    pragma "no doc"
     var y: int;
   }
 

@@ -2896,15 +2896,11 @@ module Random {
     // NPB-defined constants for linear congruential generator
     //
     @chpldoc.nodoc
-    private const r23   = 0.5**23;
-    @chpldoc.nodoc
-    private const t23   = 2.0**23;
-    @chpldoc.nodoc
-    private const r46   = 0.5**46;
-    @chpldoc.nodoc
-    private const t46   = 2.0**46;
-    @chpldoc.nodoc
-    private const arand = 1220703125.0; // TODO: Is arand something that a
+    private const r23   = 0.5**23,
+                  t23   = 2.0**23,
+                  r46   = 0.5**46,
+                  t46   = 2.0**46,
+                  arand = 1220703125.0; // TODO: Is arand something that a
                                         // user might want to set on a
                                         // case-by-case basis?
 

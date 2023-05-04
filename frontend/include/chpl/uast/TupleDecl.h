@@ -147,8 +147,8 @@ class TupleDecl final : public Decl {
    */
   AstListIteratorPair<Decl> decls() const {
     auto begin = numDecls()
-        ? children_.begin() + declChildNum()
-        : children_.end();
+        ? children_.begin()
+        : children_.end() - declChildNum();
     auto end = begin + numDecls();
     return AstListIteratorPair<Decl>(begin, end);
   }
@@ -164,7 +164,7 @@ class TupleDecl final : public Decl {
    */
   const Decl* decl(int i) const {
     CHPL_ASSERT(i >= 0 && i < numDecls());
-    const AstNode* ast = this->child(i + declChildNum());
+    const AstNode* ast = this->child(i);
     CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl());
     CHPL_ASSERT(ast->isDecl());
     return (const Decl*)ast;
