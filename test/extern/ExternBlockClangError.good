@@ -1,16 +1,22 @@
-ExternBlockClangError.chpl:2:18: error: this function declaration is not a prototype [-Werror,-Wstrict-prototypes]
-  extern void foo();
-                 ^
-                  void
 ExternBlockClangError.chpl:3:8: error: no previous prototype for function 'bar' [-Werror,-Wmissing-prototypes]
-  void bar() {
+  void bar(void) {
        ^
 ExternBlockClangError.chpl:3:3: note: declare 'static' if the function is not intended to be used outside of this translation unit
-  void bar() {
+  void bar(void) {
   ^
   static 
-ExternBlockClangError.chpl:3:11: error: this old-style function definition is not preceded by a prototype [-Werror,-Wstrict-prototypes]
-  void bar() {
-          ^
-3 errors generated.
+ExternBlockClangError.chpl:6:12: error: parameter 'a' was not declared, defaults to 'int'; ISO C99 and later do not support implicit int [-Werror,-Wimplicit-int]
+  void baz(a) { }
+           ^
+ExternBlockClangError.chpl:6:8: error: no previous prototype for function 'baz' [-Werror,-Wmissing-prototypes]
+  void baz(a) { }
+       ^
+ExternBlockClangError.chpl:6:3: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  void baz(a) { }
+  ^
+  static 
+ExternBlockClangError.chpl:6:8: error: a function definition without a prototype is deprecated in all versions of C and is not supported in C2x [-Werror,-Wdeprecated-non-prototype]
+  void baz(a) { }
+       ^
+4 errors generated.
 ExternBlockClangError.chpl:1: error: error running clang on extern block

@@ -1,8 +1,9 @@
 extern {
-  extern void foo();
-  void bar() {
+  extern void foo(void);
+  void bar(void) {
     foo();
   }
+  void baz(a) { }
 }
 
 var globalArr : [1..1] real;
