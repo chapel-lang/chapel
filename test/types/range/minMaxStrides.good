@@ -1,3 +1,4 @@
+Testing signed int(8) and unsigned uint(8)
 by_=                -128:int(8)    ; align_=                -128:int(8)    ; range=0..100 by -128 align 0
 by_=                -128:int(8)    ; align_=                 127:int(8)    ; range=0..100 by -128 align 0
 by_=                -128:int(8)    ; align_=                  -1:uint(8)   ; range=0..100 by -128 align 1
