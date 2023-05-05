@@ -1250,7 +1250,10 @@ GenRet doCodegenFieldPtr(
         llvm::Type* retTy = genEltType.type;
         INT_ASSERT(retTy);
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
-        ret.val = info->irBuilder->CreateStructGEP(retTy, ret.val, 0);
+        llvm::StructType* sTy = llvm::cast<llvm::StructType>(baseTy);
+        INT_ASSERT(sTy);
+        llvm::Type* eltTy = sTy->getElementType(fieldno);
+        ret.val = info->irBuilder->CreateStructGEP(eltTy, ret.val, 0);
         ret.isLVPtr = GEN_VAL;
       } else {
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
