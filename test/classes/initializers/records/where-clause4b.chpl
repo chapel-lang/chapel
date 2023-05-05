@@ -4,7 +4,6 @@ record Foo {
 
   proc init(xVal) where (isInt(xVal)) {
     x = xVal;
-    super.init();
   }
 }
 
