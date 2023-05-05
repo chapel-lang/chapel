@@ -440,15 +440,8 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
 
       llvm::Value* addrVal = raddr.val;
 
-#if HAVE_LLVM_VER < 170
-      bool isOpaque = false;
-#if HAVE_LLVM_VER >= 140
-      isOpaque = adr->getType()->isOpaquePointerTy();
-#endif
-      if (!isOpaque) {
-        // TODO: this code can be ifdef'd out for LLVM 15 once
-        // we fully migrate to opaque pointers with LLVM 15.
-
+#ifdef HAVE_LLVM_TYPED_POINTERS
+      if (!isOpaquePointer(adr->getType())) {
         // cast address if needed. This is necessary for building a wide
         // NULL pointer since NULL is actually an i8*.
         llvm::Type* addrType = adr->getType()->getPointerElementType();
@@ -475,28 +468,18 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
                                    addrType);
     INT_ASSERT(fn);
 
-    bool isOpaque = false;
     llvm::Type* locAddrType = nullptr;
 
-#if HAVE_LLVM_VER < 170
+    if (isOpaquePointer(addrType)) {
 #if HAVE_LLVM_VER >= 140
-    isOpaque = addrType->isOpaquePointerTy();
+      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
 #endif
-
-    if (!isOpaque) {
-      // TODO: this code can be ifdef'd out for LLVM 15 once
-      // we fully migrate to opaque pointers with LLVM 15.
+    } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
       locAddrType =
         llvm::PointerType::getUnqual(addrType->getPointerElementType());
-    }
 #endif
-
-#if HAVE_LLVM_VER >= 140
-    if (isOpaque) {
-      locAddrType = llvm::PointerType::getUnqual(info->llvmContext);
     }
-#endif
-
     INT_ASSERT(locAddrType);
 
     // Null pointers require us to possibly cast to the pointer type
