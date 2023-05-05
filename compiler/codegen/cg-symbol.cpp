@@ -685,23 +685,16 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           return ret;
         }
         llvm::Value *constString = codegenImmediateLLVM(immediate);
+        auto globalConstString = llvm::cast<llvm::GlobalValue>(constString);
+        llvm::Type* gepTy = globalConstString->getValueType();
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
                   (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
-#if HAVE_LLVM_VER >= 130
-        llvm::Type* ty = llvm::cast<llvm::PointerType>(
-          constString->getType()->getScalarType())->getPointerElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
-              ty, constString, 0, 0)));
-#else
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreateConstInBoundsGEP2_32(
-              NULL, constString, 0, 0)));
-
-#endif
+                gepTy, globalConstString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
