@@ -532,20 +532,18 @@ llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
 }
 
 static
-llvm::Type* computePointerElementType(GenRet ptr) {
+llvm::Type* computePointerElementType(llvm::Value* ptr, Type* chplType) {
   llvm::Type* eltTypeFromInsn = nullptr;
   llvm::Type* eltTypeFromChapelType = nullptr;
 
-  eltTypeFromInsn = tryComputingPointerElementType(ptr.val);
+  eltTypeFromInsn = tryComputingPointerElementType(ptr);
 
-  if (ptr.chplType && (eltTypeFromInsn==nullptr || developer || fVerify)) {
-    Type* useType = ptr.chplType;
+  if (chplType && (eltTypeFromInsn==nullptr || developer || fVerify)) {
     // if the pointer has isLVPtr == GEN_PTR, then we expect the
     // .chplType to be the pointed-to type, which is what we are
     // looking for here.
-    INT_ASSERT(ptr.isLVPtr == GEN_PTR);
-    GenRet genUseType = useType;
-    eltTypeFromChapelType = genUseType.type;
+    GenRet genType = chplType;
+    eltTypeFromChapelType = genType.type;
   }
 
   if (eltTypeFromInsn != nullptr && eltTypeFromChapelType != nullptr &&
@@ -649,7 +647,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     else valType = ptr.chplType->getValType();
   }
 
-  llvm::Type* storeType = computePointerElementType(ptr);
+  llvm::Type* storeType = computePointerElementType(ptr.val, ptr.chplType);
   if (storeType && storeType != val.val->getType()) {
     // check that the stored type matches the valType
 
@@ -687,17 +685,7 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
 {
   GenInfo* info = gGenInfo;
 
-  llvm::Type* loadType = nullptr;
-  if (valType) {
-    INT_ASSERT(valType);
-    GenRet loadValType = valType;
-    INT_ASSERT(loadValType.type);
-    loadType = loadValType.type;
-  } else {
-    // try to get the type from an Alloca or GlobalValue
-    loadType = tryComputingPointerElementType(ptr);
-  }
-  INT_ASSERT(loadType);
+  llvm::Type* loadType = computePointerElementType(ptr, valType);
 
 #if HAVE_LLVM_VER >= 130
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(loadType, ptr);
