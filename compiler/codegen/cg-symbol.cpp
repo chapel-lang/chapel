@@ -659,16 +659,15 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // extern C arrays might be declared with type c_ptr(eltType)
       // (which is a lie but works OK in C). In that event, generate
       // a pointer to the first element when the variable is used.
+      Type* valType = getValType();
       if (got.val &&
           hasFlag(FLAG_EXTERN) &&
-          getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
           info->lvt->isCArray(cname)) {
-        llvm::Type* eltTy = nullptr;
-#if HAVE_LLVM_VER >= 130
-        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getPointerElementType();
-#endif
-
-        got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
+        auto global = llvm::cast<llvm::GlobalValue>(got.val);
+        INT_ASSERT(global);
+        llvm::Type* gepTy = global->getValueType();
+        got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
         got.isLVPtr = GEN_VAL;
       }
       if (got.val) {
