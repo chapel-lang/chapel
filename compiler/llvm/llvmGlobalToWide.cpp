@@ -2221,7 +2221,7 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   bool isOpaque = false;
 #if HAVE_LLVM_VER < 170
 #if HAVE_LLVM_VER >= 140
-  isOpaque = globalPtrTy->isOpaquePointerTy();
+  isOpaque = !eltTy;
 #endif
   if (!isOpaque) {
     // TODO: this code can be ifdef'd out for LLVM 15 once
@@ -2319,9 +2319,8 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     return FunctionType::get(wideRetType, wideArgTypes, fnType->isVarArg());
   }
 
-  if(t->isPointerTy()){
+  if (t->isPointerTy()) {
     bool isOpaque = false;
-    Type* eltType = nullptr;
 #if HAVE_LLVM_VER < 170
 #if HAVE_LLVM_VER >= 140
     isOpaque = t->isOpaquePointerTy();
@@ -2331,17 +2330,27 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
       // we fully migrate to opaque pointers with LLVM 15.
       Type* eltType = t->getPointerElementType();
       assert(t != t->getPointerElementType());  // detect simple recursion
+      Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, wideEltType);
+      } else {
+          return PointerType::get(wideEltType, t->getPointerAddressSpace());
+      }
     }
 #endif
-    Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
-
-    if (t->getPointerAddressSpace() == info->globalSpace ||
-        t->getPointerAddressSpace() == info->wideSpace) {
-      // Replace the pointer with a struct containing {locale, address}
-      return createWidePointerToType(module, info, wideEltType);
-    } else {
-      return PointerType::get(wideEltType, t->getPointerAddressSpace());
+#if HAVE_LLVM_VER >= 140
+    if (isOpaque) {
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, nullptr);
+      } else {
+          return PointerType::get(context, t->getPointerAddressSpace());
+      }
     }
+#endif
   }
 
   if(t->isArrayTy()){
