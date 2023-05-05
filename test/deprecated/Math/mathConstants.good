@@ -19,6 +19,7 @@ mathConstants.chpl:13: warning: In an upcoming release 'pi' will no longer be in
 mathConstants.chpl:14: warning: In an upcoming release 'sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
 mathConstants.chpl:15: warning: In an upcoming release 'recipr_sqrt_2' will no longer be included by default, please 'use' or 'import' the 'Math' module to access it
 mathConstants.chpl:1: warning: In an upcoming release 'exp' will no longer be included by default, please 'use' or 'import' the Math module to call it
+mathConstants.chpl:3: warning: In an upcoming release 'log10' will no longer be included by default, please 'use' or 'import' the Math module to call it
 mathConstants.chpl:4: warning: In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the Math module to call it
 mathConstants.chpl:5: warning: In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the Math module to call it
 true
