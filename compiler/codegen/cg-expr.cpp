@@ -1350,6 +1350,7 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   GenRet ret;
   GenInfo* info = gGenInfo;
   Type* baseType = NULL;
+  Type* baseValType = NULL;
   Type* eltType = NULL;
   std::string addr;
   bool isStarTuple = false;
@@ -1390,16 +1391,24 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
   ret.isLVPtr = GEN_PTR;
   if( fLLVMWideOpt && isWide(base) ) ret.isLVPtr = GEN_WIDE_PTR;
 
-  if( baseType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
-    eltType = baseType->getField("x0")->typeInfo();
+  baseValType = baseType->getValType();
+  if (baseValType->symbol->hasEitherFlag(FLAG_WIDE_REF,FLAG_WIDE_CLASS)) {
+    // with --llvm-wide-opt we can get here e.g. for a wide _ddata
+    // and in that case, we need to compute the element type from
+    // within the regular (narrow) ddata
+    baseValType = baseValType->getField("addr")->typeInfo();
+  }
+
+  if (baseValType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    eltType = baseValType->getField("x0")->typeInfo();
     isStarTuple = true;
     // Star tuples should only be passed by reference here...
     INT_ASSERT(base.isLVPtr != GEN_VAL);
-  } else if (baseType->symbol->hasFlag(FLAG_C_ARRAY)) {
-    eltType = toAggregateType(baseType)->cArrayElementType();
+  } else if (baseValType->symbol->hasFlag(FLAG_C_ARRAY)) {
+    eltType = toAggregateType(baseValType)->cArrayElementType();
     isStarTuple = true;
-  } else if( baseType->symbol->hasFlag(FLAG_DATA_CLASS) ) {
-    eltType = getDataClassType(baseType->symbol)->typeInfo();
+  } else if (baseValType->symbol->hasFlag(FLAG_DATA_CLASS)) {
+    eltType = getDataClassType(baseValType->symbol)->typeInfo();
     isStarTuple = false;
   }
 
@@ -1435,11 +1444,14 @@ GenRet codegenElementPtr(GenRet base, GenRet index, bool ddataPtr=false) {
     }
     GEPLocs.push_back(extendToPointerSize(index, AS));
 
-    GenRet gepBaseType = baseType;
-    if (baseType->symbol->hasFlag(FLAG_DATA_CLASS)) {
-      gepBaseType = eltType;
+    llvm::Type* gepBaseType = nullptr;
+    if (baseValType->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      // tuples and c_array are stored as LLVM arrays but ddatas are pointers
+      gepBaseType = eltType->codegen().type;
+    } else {
+      gepBaseType = baseValType->codegen().type;
     }
-    ret.val = createInBoundsGEP(gepBaseType.type, base.val, GEPLocs);
+    ret.val = createInBoundsGEP(gepBaseType, base.val, GEPLocs);
 
     // Propagate noalias scopes
     if (base.aliasScope)
