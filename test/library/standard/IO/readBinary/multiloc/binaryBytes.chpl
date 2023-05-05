@@ -4,7 +4,7 @@ on Locales[0] {
     var reader = openReader("./input.bin");
 
     on Locales[1] {
-        var b: bytes = bytes.createCopyingBuffer(b"");
+        var b: bytes = bytes.createCopyingBuffer(c"");
 
         on Locales[2] {
             reader.readBinary(b, 40);
