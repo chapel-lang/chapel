@@ -1,9 +1,10 @@
 use GPU, CTypes, GpuDiagnostics, Types, Random;
 
 config const verbose = false;
+config param excludeForRocm;
 
 // CPU versions of associated GPU functions. These aren't actually atomic but
-// just used for test verification:
+// are used for test verification:
 proc cpuAtomicAdd (ref x : ?T, val : T) : void { x += val; }
 proc cpuAtomicSub (ref x : ?T, val : T) : void { x -= val; }
 proc cpuAtomicExch(ref x : ?T, val : T) : void { x = val; }
@@ -113,35 +114,46 @@ proc main() {
   on here.gpus[0] {
     startGpuDiagnostics();
 
-    runTest("add", c_int);   runTest("add", c_uint);  runTest("add", c_ulonglong);
-    runTest("add", c_float); runTest("add", c_double);
+    runTest("add", c_int);  runTest("add", c_uint);  runTest("add", c_float);
+    if(!excludeForRocm) {
+      runTest("add", c_ulonglong);  runTest("add", c_double);
+    }
 
-    runTest("sub", c_int); runTest("sub", c_uint);
+    runTest("sub", c_int);  runTest("sub", c_uint);
 
-    runTest("exch", c_int); runTest("exch", c_uint); runTest("exch", c_ulonglong);
-    runTest("exch", c_float);
+    runTest("exch", c_int);  runTest("exch", c_uint);  runTest("exch", c_float);
+    /*if !excludeForRocm then */runTest("exch", c_ulonglong);
 
-    runTest("min", c_int); runTest("min", c_uint); runTest("min", c_ulonglong);
-    runTest("min", c_longlong);
+    runTest("min", c_int);  runTest("min", c_uint);
+    if !excludeForRocm then runTest("min", c_ulonglong);
+    // This is not listed as supported in the ROCM (5.5) documentation:
+    if(!excludeForRocm) then runTest("min", c_longlong);
 
-    runTest("max", c_int); runTest("max", c_uint); runTest("max", c_ulonglong);
-    runTest("max", c_longlong);
+    runTest("max", c_int); runTest("max", c_uint);
+    if !excludeForRocm then runTest("max", c_ulonglong);
+    // This is not listed as supported in the ROCM (5.5) documentation:
+    if !excludeForRocm then runTest("max", c_longlong);
 
     runTest("inc", c_uint);
 
     runTest("dec", c_uint);
 
-    runTest("and", c_int); runTest("and", c_uint); runTest("and", c_ulonglong);
+    runTest("and", c_int); runTest("and", c_uint);
+    if !excludeForRocm then runTest("and", c_ulonglong);
 
-    runTest("or", c_int); runTest("or", c_uint); runTest("or", c_ulonglong);
+    runTest("or", c_int); runTest("or", c_uint);
+    if !excludeForRocm then runTest("or", c_ulonglong);
 
-    runTest("xor", c_int); runTest("xor", c_uint); runTest("xor", c_ulonglong);
+    runTest("xor", c_int); runTest("xor", c_uint);
+    if !excludeForRocm then runTest("xor", c_ulonglong);
 
-    runTest("CAS", c_int); runTest("CAS", c_uint); runTest("CAS", c_ulonglong);
+    runTest("CAS", c_int); runTest("CAS", c_uint);
+    if !excludeForRocm then runTest("CAS", c_ulonglong);
 
     // Before adding support for this I would want better capabilities
     // to process CHPL_GPU (this is only supported when compiling for
-    // CUDA with CC >= 7.0
-    // runTest("CAS", c_ushort); 
+    // CUDA with CC >= 7.0. This is also not listed as something supported
+    // by the ROCM (5.5) documentation
+    // if !excludeForRocm then runTest("CAS", c_ushort);
   }
 }

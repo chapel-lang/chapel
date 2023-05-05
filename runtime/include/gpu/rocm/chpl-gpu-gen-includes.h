@@ -139,6 +139,71 @@ __device__ static inline uint32_t chpl_gpu_getGridDimZ()   {
   return __builtin_amdgcn_grid_size_z() / chpl_gpu_getBlockDimZ();
 }
 
+// =================
+// Atomic Operations
+// =================
+
+#define GPU_2OP_ATOMIC(T, runtime_name, rocm_name)           \
+  __device__ static inline void runtime_name(T *x, T val) {  \
+    rocm_name(x, val);                                       \
+  }                                                          \
+  __host__ static inline void runtime_name(T *x, T val) {}
+
+#define GPU_3OP_ATOMIC(T, runtime_name, rocm_name)                   \
+  __device__ static inline void runtime_name(T *x, T val1, T val2) { \
+    rocm_name(x, val1, val2);                                        \
+  }                                                                  \
+  __host__ static inline void runtime_name(T *x, T val1, T val2) {}
+
+// Some atomic operations are only supported in CUDA while others are only
+// supported in ROCM. We mark the operations that are unsupported for this
+// header's SDK with [*]:
+
+GPU_2OP_ATOMIC(int,                chpl_gpu_atomic_add_int,       atomicAdd);
+GPU_2OP_ATOMIC(unsigned int,       chpl_gpu_atomic_add_uint,      atomicAdd);
+GPU_2OP_ATOMIC(unsigned long long, chpl_gpu_atomic_add_ulonglong, atomicAdd);
+GPU_2OP_ATOMIC(float,              chpl_gpu_atomic_add_float,     atomicAdd);
+GPU_2OP_ATOMIC(double,             chpl_gpu_atomic_add_double,    atomicAdd);
+
+GPU_2OP_ATOMIC(int,          chpl_gpu_atomic_sub_int,  atomicSub);
+GPU_2OP_ATOMIC(unsigned int, chpl_gpu_atomic_sub_uint, atomicSub);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_exch_int,       atomicExch);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_exch_uint,      atomicExch);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_exch_ulonglong, atomicExch);
+GPU_2OP_ATOMIC(float,                  chpl_gpu_atomic_exch_float,     atomicExch);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_min_int,       atomicMin);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_min_uint,      atomicMin);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_min_ulonglong, atomicMin);
+// [*] GPU_2OP_ATOMIC(long long int,          chpl_gpu_atomic_min_longlong,  atomicMin);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_max_int,       atomicMax);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_max_uint,      atomicMax);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_max_ulonglong, atomicMax);
+// [*] GPU_2OP_ATOMIC(long long int,          chpl_gpu_atomic_max_longlong,  atomicMax);
+
+GPU_2OP_ATOMIC(unsigned int, chpl_gpu_atomic_inc_uint, atomicInc);
+
+GPU_2OP_ATOMIC(unsigned int, chpl_gpu_atomic_dec_uint, atomicDec);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_and_int,       atomicAnd);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_and_uint,      atomicAnd);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_and_ulonglong, atomicAnd);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_or_int,       atomicOr);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_or_uint,      atomicOr);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_or_ulonglong, atomicOr);
+
+GPU_2OP_ATOMIC(int,                    chpl_gpu_atomic_xor_int,       atomicXor);
+GPU_2OP_ATOMIC(unsigned int,           chpl_gpu_atomic_xor_uint,      atomicXor);
+GPU_2OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_xor_ulonglong, atomicXor);
+
+GPU_3OP_ATOMIC(int,                    chpl_gpu_atomic_CAS_int,       atomicCAS);
+GPU_3OP_ATOMIC(unsigned int,           chpl_gpu_atomic_CAS_uint,      atomicCAS);
+GPU_3OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_CAS_ulonglong, atomicCAS);
+// [*] GPU_3OP_ATOMIC(unsigned short int,     chpl_gpu_atomic_CAS_ushort, atomicCAS);
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H

@@ -35,6 +35,7 @@
 module GPU
 {
   use CTypes;
+  use ChplConfig;
 
   pragma "no doc"
   pragma "codegen for CPU and GPU"
@@ -229,7 +230,13 @@ module GPU
   // Atomics
   // ============================
 
-  private proc externTString(type T) param {
+  // In the runtime library we have various type specific wrappers to call out
+  // to the CUDA/ROCM atomic operation functions.  Note that the various
+  // CUDA/ROCM atomic functions are defined in terms of the various "minimum
+  // width" C types (like int, long, etc.) rather than fixed width types (like
+  // int32_t, int64_t, etc.) thus we need to figure out which of these C types
+  // makes the "best fit" for a corresponding Chapel type.
+  private proc atomicExternTString(type T) param {
     param nb = if isNumeric(T) then numBits(T) else -1;
     param nbInt = numBits(c_int);
     param nbShort = numBits(c_short);
@@ -247,7 +254,18 @@ module GPU
   }
 
   private proc externFunc(param opName : string, type T) param {
-    return "chpl_gpu_atomic_" + opName + "_" + externTString(T);
+    return "chpl_gpu_atomic_" + opName + "_" + atomicExternTString(T);
+  }
+
+  // used to indicate that although a given atomic operation
+  // is supported by other SDKs these particular ones are not
+  // supported by ROCm.
+  private proc invalidGpuAtomicOpForRocm(param s : string) param {
+    select s { when
+      "chpl_gpu_atomic_min_longlong",
+      "chpl_gpu_atomic_max_longlong"
+      do return true; }
+    return false;
   }
 
   private proc validGpuAtomicOp(param s : string) param {
@@ -293,6 +311,10 @@ module GPU
   }
 
   private proc checkValidGpuAtomicOp(param opName, param rtFuncName, type T) param {
+    if CHPL_GPU_CODEGEN == "rocm" && invalidGpuAtomicOpForRocm(rtFuncName) then
+      compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string,
+        " when using the rocm runtime.");
+
     if(!validGpuAtomicOp(rtFuncName)) then
       compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string, ".");
   }
