@@ -86,6 +86,12 @@ extern GenRet baseASTCodegenString(const char* str);
    BaseAST* (code generate some Chapel thing)
    const char* (generate a string)
    int (generate an int)
+     TODO: stop change these to explicit ->codegen() calls
+
+   In a GenRet value, there is also a .chplType field that stores the relevant
+   Chapel type. In the case that isLVPtr is some sort of pointer (GEN_PTR or
+   GEN_WIDE_PTR), then the value is expected to be a pointer (or wide
+   pointer/wide reference) and .chplType is the element type of that pointer.
 
  */
 class GenRet {
