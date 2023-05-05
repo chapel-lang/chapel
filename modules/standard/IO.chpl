@@ -8820,8 +8820,8 @@ Chapel format specifiers.
 ========  ===========  ==========================================
 C         Chapel       Meaning
 ========  ===========  ==========================================
-%i        %i           an integer in decimal
-%d        %i           an integer in decimal
+%i        %i           a signed integer in decimal
+%d        %i           a signed integer in decimal
 %u        %u           an unsigned integer in decimal
 %x        %xu          an unsigned integer in hexadecimal
 %g        %r           real number in exponential or decimal (if compact)
