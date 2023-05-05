@@ -531,6 +531,37 @@ llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
   return eltType;
 }
 
+static
+llvm::Type* computePointerElementType(GenRet ptr) {
+  llvm::Type* eltTypeFromInsn = nullptr;
+  llvm::Type* eltTypeFromChapelType = nullptr;
+
+  eltTypeFromInsn = tryComputingPointerElementType(ptr.val);
+
+  if (ptr.chplType && (eltTypeFromInsn==nullptr || developer || fVerify)) {
+    Type* useType = ptr.chplType;
+    // if the pointer has isLVPtr == GEN_PTR, then we expect the
+    // .chplType to be the pointed-to type, which is what we are
+    // looking for here.
+    INT_ASSERT(ptr.isLVPtr == GEN_PTR);
+    GenRet genUseType = useType;
+    eltTypeFromChapelType = genUseType.type;
+  }
+
+  if (eltTypeFromInsn != nullptr && eltTypeFromChapelType != nullptr &&
+      eltTypeFromInsn != eltTypeFromChapelType) {
+    INT_FATAL("error computing pointer type");
+  }
+
+  llvm::Type* ret = nullptr;
+
+  if (eltTypeFromInsn) ret = eltTypeFromInsn;
+  if (eltTypeFromChapelType) ret = eltTypeFromChapelType;
+  INT_ASSERT(ret);
+
+  return ret;
+}
+
 // If valType is nullptr, will try to compute it by looking
 // for an AllocaInst or a GlobalValue in addr.
 static
@@ -618,15 +649,7 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     else valType = ptr.chplType->getValType();
   }
 
-  llvm::Type* storeType = nullptr;
-  if (valType) {
-    GenRet genValType = valType;
-    storeType = genValType.type;
-    INT_ASSERT(storeType);
-  } else {
-    storeType = tryComputingPointerElementType(ptr.val);
-  }
-
+  llvm::Type* storeType = computePointerElementType(ptr);
   if (storeType && storeType != val.val->getType()) {
     // check that the stored type matches the valType
 
