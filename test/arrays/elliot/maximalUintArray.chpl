@@ -1,5 +1,7 @@
-inline proc _defaultOf(type t) param where (isIntType(t)) return 13:t;
+record R {
+  var x : int = 13;
+}
 
-var foo: [0:uint(8)..255:uint(8)] int;
+var foo: [0:uint(8)..255:uint(8)] R;
 
 writeln(foo[42:uint(8)]);
