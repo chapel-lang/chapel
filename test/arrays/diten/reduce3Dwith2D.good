@@ -1,2 +1,1 @@
-reduce3Dwith2D.chpl:4: warning: reduction will be executed serially
-0
+reduce3Dwith2D.chpl:4: error: rank mismatch in zippered iteration (can't zip a 3D expression with a 2D array)
