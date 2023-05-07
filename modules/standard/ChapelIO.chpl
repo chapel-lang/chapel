@@ -754,7 +754,7 @@ module ChapelIO {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
       f._writeLiteral(" align ");
-      f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
+      f.write(alignment);
       }
     }
   }

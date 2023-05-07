@@ -3042,8 +3042,7 @@ operator :(r: range(?), type t: range(?)) {
       if x.stride != -1 && x.aligned && ! x.isNaturallyAligned() then
       // Write out the alignment only if it differs from natural alignment.
       // We take alignment modulo the stride for consistency.
-       ret += " align " + x.chpl_intToIdx(
-                  chpl__mod(chpl__idxToInt(x.alignment), x.stride)):string;
+       ret += " align " + x.alignment:string;
     }
     return ret;
   }
