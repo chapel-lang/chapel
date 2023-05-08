@@ -964,7 +964,7 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   // then relocate the loop
   cpuBlock->insertAtHead(gpuLoop.loop()->remove());
 
-  // if not doing codegen, just add cpuBlock after the conditional
+  // if not doing GPU codegen, just add cpuBlock after the conditional
   if (!isFullGpuCodegen()) {
     cond->insertAfter(cpuBlock);
   }
