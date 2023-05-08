@@ -73,10 +73,10 @@ jobs:
            from:  ${{env.AUTHOR}}
            body: |
               
-              Branch: ${{github.ref}} 
-              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
               Author: ${{ env.AUTHOR}} 
-              Link: ${{github.event.pull_request._links.html.href}}              
+              Link: ${{github.event.pull_request._links.html.href}} 
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }}          
               Log Message: 
               ${{env.MERGE}} 
 
