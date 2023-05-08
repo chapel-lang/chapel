@@ -465,14 +465,25 @@ void AggregateType::codegenDef() {
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
         INT_ASSERT(llBaseType);
-        llvm::Type *globalPtrTy = NULL;
+        llvm::Type *globalPtrTy = nullptr;
 
-        // Remove one level of indirection since the addr field
-        // of a wide pointer is always a local address.
-        llBaseType = llBaseType->getPointerElementType();
-        INT_ASSERT(llBaseType);
+        if (isOpaquePointer(llBaseType)) {
+#if HAVE_LLVM_VER >= 140
+          // No need to compute the element type for an opaque pointer
+          globalPtrTy = llvm::PointerType::get(info->llvmContext,
+                                               globalAddressSpace);
+#endif
+        } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+          // Remove one level of indirection since the addr field
+          // of a wide pointer is always a local address.
+          llvm::Type* eltType = llBaseType->getPointerElementType();
+          INT_ASSERT(eltType);
+          globalPtrTy = llvm::PointerType::get(eltType, globalAddressSpace);
+#endif
+        }
 
-        globalPtrTy = llvm::PointerType::get(llBaseType, globalAddressSpace);
+        INT_ASSERT(globalPtrTy);
         type = globalPtrTy; // set to use alternative address space ptr
 
         if( fLLVMWideOpt ) {
