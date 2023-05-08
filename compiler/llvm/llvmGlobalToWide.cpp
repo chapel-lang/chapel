@@ -1228,30 +1228,18 @@ namespace {
         auto getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                            voidPtrTy, nodeTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* getFnTy = getFn->getType();
-        info->getFn = getFn;
-        info->getFnType = NULL;
-#else
         FunctionType* getFnTy = getFn.getFunctionType();
         info->getFn = getFn.getCallee();
         info->getFnType = getFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getFn, getFnTy, 5);
 
 
         auto putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                            nodeTy, voidPtrTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* putFnTy = putFn->getType();
-        info->putFn = putFn;
-        info->putFnType = NULL;
-#else
         FunctionType* putFnTy = putFn.getFunctionType();
         info->putFn = putFn.getCallee();
         info->putFnType = putFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->putFn, putFnTy, 5);
 
 
@@ -1259,32 +1247,18 @@ namespace {
                                               nodeTy, voidPtrTy,
                                               nodeTy, voidPtrTy,
                                               sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* getPutFnTy = getPutFn->getType();
-        info->getPutFn = getPutFn;
-        info->getPutFnType = NULL;
-#else
         FunctionType* getPutFnTy = getPutFn.getFunctionType();
         info->getPutFn = getPutFn.getCallee();
         info->getPutFnType = getPutFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getPutFn, getPutFnTy, 5);
 
 
         auto memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
                                               nodeTy, voidPtrTy,
                                               i8Ty, sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* memsetFnTy = memsetFn->getType();
-        info->memsetFn = memsetFn;
-        info->memsetFnType = NULL;
-#else
         FunctionType* memsetFnTy = memsetFn.getFunctionType();
         info->memsetFn = memsetFn.getCallee();
         info->memsetFnType = memsetFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->memsetFn, memsetFnTy, 4);
 
 
