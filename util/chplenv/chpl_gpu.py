@@ -274,7 +274,7 @@ def validate(chplLocaleModel, chplComm):
     gpu = GPU_TYPES[get()]
 
     # Run function to validate that we have a satisfactory version of our SDK
-    # (e.g. cuda or rocm)
+    # (e.g. CUDA or ROCm)
     gpu.validate_sdk_version()
 
     if get() == 'cpu':
