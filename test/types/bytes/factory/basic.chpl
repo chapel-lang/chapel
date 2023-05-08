@@ -3,11 +3,18 @@ const targetLocale = Locales[numLocales-1];
 
 var myBytes = b"A Chapel bytes";
 on targetLocale {
-  // there should be 2 allocations, 2 frees
-  writeln("Initialize from bytes");
-  var sBorrowed = bytes.createBorrowingBuffer(myBytes);
 
-  writeln(sBorrowed);
+  var localMyBytes = b"A local Chapel bytes";
+  writeln("Initialize from bytes");
+  // this will fail, as createBorrowingBuffer() calls initWithBorrowedBuffer()
+  // which when the data it borrows is remote allocates a new buffer locally
+  // this new buffer gets an automatic null byte added to it, which is
+  // mistakenly included in the returned bytes
+  // var sBorrowedFromRemote = bytes.createBorrowingBuffer(myBytes);
+  var sBorrowedFromLocal = bytes.createBorrowingBuffer(localMyBytes);
+
+  // writeln(sBorrowedFromRemote);
+  writeln(sBorrowedFromLocal);
 }
 
 writeln();

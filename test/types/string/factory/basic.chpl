@@ -5,11 +5,18 @@ const targetLocale = Locales[numLocales-1];
 
 var chplStr = "A Chapel string";
 on targetLocale {
-  // there should be 2 allocations, 2 frees
+  
+  var localChplStr = "A local Chapel string";
   writeln("Initialize from string");
-  var sBorrowed = string.createBorrowingBuffer(chplStr);
+  // this will fail, as createBorrowingBuffer() calls initWithBorrowedBuffer()
+  // which when the data it borrows is remote allocates a new buffer locally
+  // this new buffer gets an automatic null byte added to it, which is
+  // mistakenly included in the returned string
+  // var sBorrowedFromRemote = string.createBorrowingBuffer(chplStr);
+  var sBorrowedFromLocal = string.createBorrowingBuffer(localChplStr);
 
-  writeln(sBorrowed);
+  // writeln(sBorrowedFromRemote);
+  writeln(sBorrowedFromLocal);
 }
 
 writeln();
