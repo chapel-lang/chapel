@@ -1719,6 +1719,95 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
+  proc _supportsBulkElements(f, arr) param : bool {
+    use Reflection;
+    var temp : c_ptr(arr.eltType);
+    if f.writing then
+      return Reflection.canResolveMethod(f.serializer, "writeBulkElements", f, temp, 0:uint);
+    else
+      return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
+  }
+
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
+  where chpl_useIOSerializers {
+    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
+       _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
+       arr.isDataContiguous(dom) {
+      _readWriteBulk(f, arr, dom);
+    } else {
+      _readWriteHelper(f, arr, dom);
+    }
+  }
+
+  proc _readWriteHelper(f, arr, dom) throws {
+    param rank = arr.rank;
+    type idxType = arr.idxType;
+    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+
+    ref fmt = if f.writing then f.serializer else f.deserializer;
+
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
+      type strType = idxSignedType;
+      const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
+
+      // TODO: the '0' here isn't exactly useful for (de)serializers that want
+      // to know the length up-front (e.g. always 1D)
+      if f.writing then
+        fmt.startArray(f, 0);
+      else
+        fmt.startArray(f);
+
+      // The simple 1D case
+      if dim == rank-1 {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          idx(dim) = j;
+          if f.writing then
+            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+          else {
+            // TODO: does it make sense to just ignore the idx here?
+            // I guess it's a way for the type authors to assert they know
+            // more about their own type...
+            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+          }
+        }
+      } else {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          var lastIdx =  dom.dsiDim(dim).last;
+          idx(dim) = j;
+
+          recursiveArrayReaderWriter(idx, dim=dim+1,
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
+
+        }
+      }
+
+      fmt.endArray(f);
+    }
+
+    const zeroTup: rank*idxType;
+    recursiveArrayReaderWriter(zeroTup);
+  }
+
+  proc _readWriteBulk(f, arr, dom) throws {
+    ref fmt = if f.writing then f.serializer else f.deserializer;
+
+    const len = dom.dsiNumIndices:uint;
+    if f.writing then
+      fmt.startArray(f, len);
+    else
+      fmt.startArray(f);
+
+    var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
+    if f.writing {
+      fmt.writeBulkElements(f, ptr, len);
+    } else {
+      fmt.readBulkElements(f, ptr, len);
+    }
+
+    fmt.endArray(f);
+  }
+
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;

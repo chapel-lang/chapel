@@ -2261,8 +2261,25 @@ static bool hasFullyGenericField(AggregateType* at) {
   return false;
 }
 
+static int numIOFields(AggregateType* ag) {
+  int ret = 0;
+
+  for_fields(fieldDefExpr, ag) {
+
+    if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
+      if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
+        if (field->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE) == false) {
+          ret += 1;
+        }
+      }
+    }
+  }
+
+  return ret;
+}
+
 void AggregateType::buildReaderInitializer() {
-  if (!fUseIOFormatters) return;
+  if (!fUseIOSerializers) return;
 
   // Neither 'fileReader' nor 'chpl__isFileReader' are available in our
   // internal modules. Initializers in such cases will need to take a
@@ -2286,7 +2303,8 @@ void AggregateType::buildReaderInitializer() {
     ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
 
-    ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "chpl__reader", dtAny);
+    ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "reader", dtAny);
+    ArgSymbol* deser  = new ArgSymbol(INTENT_REF, "deserializer", dtAny);
 
     // TODO: Can we avoid the where-clause with an import in ChapelIO?
     //   import IO.fileReader as chpl__fileReader
@@ -2305,7 +2323,7 @@ void AggregateType::buildReaderInitializer() {
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
     fn->insertFormalAtTail(reader);
-
+    fn->insertFormalAtTail(deser);
 
     if (this->isUnion() == false) {
       std::set<const char*> names;
@@ -2315,22 +2333,19 @@ void AggregateType::buildReaderInitializer() {
       // for compatibility with the new-expression-type-alias feature, in
       // which instantiated fields are passed to this initializer with
       // named-expressions.
-      if (handleSuperFields(fn, names, fieldArgMap, reader) == true) {
+      if (handleSuperFields(fn, names, fieldArgMap, reader, deser) == true) {
 
-        VarSymbol* formatter = newTemp("_fmt", QualifiedType(QUAL_REF, dtUnknown));
-        formatter->addFlag(FLAG_REF_VAR);
-        CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
-
-        CallExpr* readStart = new CallExpr("readTypeStart", gMethodToken, formatter,
-                                           reader, new SymExpr(this->symbol));
+        auto startKind = this->isClass() ? "startClass" : "startRecord";
+        CallExpr* readStart = new CallExpr(startKind, gMethodToken, deser,
+                                           reader, new_StringSymbol(this->symbol->name), new_IntSymbol(numIOFields(this)));
         fn->insertAtHead(readStart);
-        fn->insertAtHead(new DefExpr(formatter, getFormatter));
 
         // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap, reader, formatter);
+        fieldToArg(fn, names, fieldArgMap, reader, deser);
 
-        CallExpr* readEnd = new CallExpr("readTypeEnd", gMethodToken, formatter,
-                                         reader, new SymExpr(this->symbol));
+        auto endKind = this->isClass() ? "endClass" : "endRecord";
+        CallExpr* readEnd = new CallExpr(endKind, gMethodToken, deser,
+                                         reader);
         fn->insertAtTail(readEnd);
 
         // Replaces field references with argument references
@@ -2359,8 +2374,12 @@ void AggregateType::buildReaderInitializer() {
       }
     }
 
+    // TODO: currently need to juggle these formals around while other things
+    // are inserted. Can we avoid these touch-ups?
     reader->defPoint->remove();
     fn->insertFormalAtTail(reader);
+    deser->defPoint->remove();
+    fn->insertFormalAtTail(deser);
 
     builtReaderInit = true;
   }
@@ -2370,7 +2389,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap,
                                ArgSymbol*             fileReader,
-                               VarSymbol*             formatter) {
+                               ArgSymbol*             formatter) {
   bool isReaderInit = (fileReader != nullptr);
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
@@ -2491,7 +2510,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                         arg));
         } else {
           // isReaderInit == true, and we need to generate code to invoke
-          // the 'readField' interface from the formatter.
+          // the 'deserializeField' interface from the formatter.
           Expr* typeExpr = nullptr;
           if (defPoint->exprType != NULL) {
             typeExpr = defPoint->exprType->copy();
@@ -2500,7 +2519,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
 
           if (typeExpr != nullptr) {
-            CallExpr* readField = new CallExpr("readField", gMethodToken, formatter,
+            CallExpr* desField = new CallExpr("deserializeField", gMethodToken, formatter,
                                                fileReader,
                                                new_StringSymbol(name),
                                                typeExpr);
@@ -2508,7 +2527,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                           new CallExpr(".",
                                                        fn->_this,
                                                        new_CStringSymbol(name)),
-                                          readField));
+                                          desField));
           }
         }
       }
@@ -2538,7 +2557,8 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
 bool AggregateType::handleSuperFields(FnSymbol*                    fn,
                                       const std::set<const char*>& names,
                                       SymbolMap& fieldArgMap,
-                                      ArgSymbol* fileReader) {
+                                      ArgSymbol* fileReader,
+                                      ArgSymbol* deser) {
   bool retval = true;
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
@@ -2606,7 +2626,8 @@ bool AggregateType::handleSuperFields(FnSymbol*                    fn,
         }
 
         if (fileReader != nullptr) {
-          superCall->insertAtTail(new SymExpr(fileReader));
+          superCall->insertAtTail(new NamedExpr("reader", new SymExpr(fileReader)));
+          superCall->insertAtTail(new NamedExpr("deserializer", new SymExpr(deser)));
         }
 
       }

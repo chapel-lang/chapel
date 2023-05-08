@@ -144,6 +144,9 @@ module CTypes {
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
+    }
   }
 
   /*
@@ -167,6 +170,9 @@ module CTypes {
     }
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
+    }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
     }
   }
 
@@ -306,6 +312,9 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
+  }
+  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
+    this.writeThis(writer);
   }
 
   @chpldoc.nodoc

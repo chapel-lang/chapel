@@ -392,7 +392,7 @@ prototype module AtomicObjects {
       compilerWarning("Reading an ABA is not supported");
     }
 
-    proc init(type __ABA_objType, r: fileReader) {
+    proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
       this.init(__ABA_objType);
       compilerWarning("Reading an ABA is not supported");
     }

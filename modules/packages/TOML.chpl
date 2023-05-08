@@ -1358,7 +1358,7 @@ module TomlReader {
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc init(r: fileReader) {
+    proc init(reader: fileReader, ref deserializer) {
       this.complete();
       compilerError("Reading a Tokens type is not supported");
     }

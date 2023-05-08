@@ -282,7 +282,7 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
-  extend(gUseIOFormatters);
+  extend(gUseIOSerializers);
 
   extend(gInfinity);
   extend(gNan);

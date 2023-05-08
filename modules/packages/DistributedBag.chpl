@@ -261,7 +261,7 @@ module DistributedBag {
       compilerError("Reading a DistBag is not supported");
     }
 
-    proc init(type eltType, r: fileReader) {
+    proc init(type eltType, reader: fileReader, ref deserializer) {
       this.init(eltType);
       compilerError("Reading a DistBag is not supported");
     }

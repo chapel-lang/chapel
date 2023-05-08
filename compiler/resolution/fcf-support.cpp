@@ -317,8 +317,8 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
                                   retType,
                                   throws);
   std::ignore = attachSuperWriteMethod(v->type, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachSuperWriteMethod(v->type, "encodeTo");
+  if (fUseIOSerializers) {
+    std::ignore = attachSuperWriteMethod(v->type, "serialize");
   }
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
@@ -789,8 +789,8 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   std::ignore = attachChildThis(info, child, fn);
 
   std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteMethod(info, child, fn, "encodeTo");
+  if (fUseIOSerializers) {
+    std::ignore = attachChildWriteMethod(info, child, fn, "serialize");
   }
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);

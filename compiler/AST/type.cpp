@@ -331,8 +331,14 @@ bool QualifiedType::isWideRefType() const {
 }
 
 const char* QualifiedType::qualStr() const {
-  if (isRefType())
-    return qualifierToStr(QUAL_REF);
+  if (isRefType()) {
+    if (_qual == QUAL_CONST_REF ||
+        _qual == QUAL_CONST) {
+      return qualifierToStr(QUAL_CONST_REF);
+    } else {
+      return qualifierToStr(QUAL_REF);
+    }
+  }
 
   if (isWideRefType())
     return qualifierToStr(QUAL_WIDE_REF);
@@ -1333,10 +1339,12 @@ static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
   if (value) {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gTrue->immediate;
+    paramMap.put(globalVar, gTrue);
 
   } else {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gFalse->immediate;
+    paramMap.put(globalVar, gFalse);
   }
 }
 
@@ -1383,9 +1391,9 @@ void initCompilerGlobals() {
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
-  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
-  gUseIOFormatters->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
+  gUseIOSerializers = new VarSymbol("chpl_useIOSerializers", dtBool);
+  gUseIOSerializers->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gUseIOSerializers, fUseIOSerializers);
 
   initForTaskIntents();
 }

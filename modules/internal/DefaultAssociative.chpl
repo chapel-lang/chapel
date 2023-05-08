@@ -641,6 +641,60 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where chpl_useIOSerializers && !_isDefaultDeser(f) {
+      ref fmt = if f.writing then f.serializer else f.deserializer;
+
+      if f.writing then
+        fmt.startMap(f, dom.dsiNumIndices:uint);
+      else
+        fmt.startMap(f);
+
+      if f.writing {
+        for (key, val) in zip(this.dom, this) {
+          fmt.writeKey(f, key);
+          fmt.writeValue(f, val);
+        }
+      } else {
+        for 0..<dom.dsiNumIndices {
+          const k = fmt.readKey(f, idxType);
+
+          if !dom.dsiMember(k) {
+            // TODO: throw error
+          } else {
+            dsiAccess(k) = fmt.readValue(f, eltType);
+          }
+        }
+      }
+
+      fmt.endMap(f);
+    }
+
+    proc _isDefaultDeser(f) param : bool {
+      if f.writing then return f.serializerType == IO.DefaultSerializer;
+      else return f.deserializerType == IO.DefaultDeserializer;
+    }
+
+    proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
+    where chpl_useIOSerializers && _isDefaultDeser(f) {
+      ref fmt = if f.writing then f.serializer else f.deserializer;
+
+      if f.writing then
+        fmt.startArray(f, dom.dsiNumIndices:uint);
+      else
+        fmt.startArray(f);
+
+      if f.writing {
+        for (key, val) in zip(this.dom, this) {
+          fmt.writeArrayElement(f, val);
+        }
+      } else {
+        compilerError("Formatter '" + f.deserializerType:string + "' does not support reading associative arrays");
+      }
+
+      fmt.endArray(f);
+    }
+
     proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);

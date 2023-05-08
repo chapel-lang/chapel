@@ -1768,20 +1768,22 @@ static bool inheritsFromError(Type* t) {
 
 // common code to create a writeThis() function without filling in the body
 FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const char* name) {
+  bool isSerialize = strcmp(name, "serialize") == 0;
   FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  if (ct->isClass() && ct != dtObject)
+  if (ct->isClass() && ct != dtObject) {
     fn->addFlag(FLAG_OVERRIDE);
-  else
+  } else {
     fn->addFlag(FLAG_INLINE);
+  }
 
   fn->cname = astr("_auto_", ct->symbol->name, "_write");
   fn->_this = new ArgSymbol(INTENT_BLANK, "this", ct);
   fn->_this->addFlag(FLAG_ARG_THIS);
 
-  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, "f", dtAny);
+  ArgSymbol* fileArg = new ArgSymbol(INTENT_BLANK, isSerialize ? "writer" : "f", dtAny);
   *filearg = fileArg;
 
   fileArg->addFlag(FLAG_MARKED_GENERIC);
@@ -1791,6 +1793,12 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const c
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(fileArg);
+
+  if (isSerialize) {
+    CallExpr* initExpr = new CallExpr(".", fileArg, new_StringSymbol("serializerType"));
+    ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtUnknown, initExpr);
+    fn->insertFormalAtTail(serializer);
+  }
 
   fn->retType = dtVoid;
 
@@ -1814,7 +1822,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool makeReadThisAndWriteThis = true;
 
   bool hasEncodeTo              = false;
-  bool makeEncodeTo             = fUseIOFormatters;
+  bool makeEncodeTo             = fUseIOSerializers;
 
   //
   // We have no QIO when compiling with --minimal-modules, so no need
@@ -1842,7 +1850,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     hasReadThis = true;
   }
 
-  if (functionExists("encodeTo", dtMethodToken, ct, dtAny)) {
+  if (functionExists("serialize", dtMethodToken, ct, dtAny, dtAny)) {
     hasEncodeTo = true;
   }
 
@@ -1873,25 +1881,28 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   //
-  // Keep generating the 'encodeTo' method so that the override versions don't
+  // Keep generating the 'serialize' method so that the override versions don't
   // cause errors.
   //
-  if (makeEncodeTo && !hasEncodeTo) {
+  if (makeEncodeTo && !hasEncodeTo && ct != dtObject) {
     ArgSymbol* fileArg = NULL;
-    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "encodeTo");
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "serialize");
+    ArgSymbol* serializer = fn->getFormal(fn->numFormals());
 
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    if (fUseIOFormatters) {
+    if (fUseIOSerializers) {
       if (hasWriteThis) {
         // TODO: we probably want to have a warning here to help users migrate
         // their code to use formatters.
         fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));
       } else {
-        fn->insertAtTail(new CallExpr("encodeToDefaultImpl",
+        fn->insertAtTail(new CallExpr("serializeDefaultImpl",
                                       fileArg,
-                                      fn->_this));
+                                      serializer,
+                                      fn->_this,
+                                      new_StringSymbol(ct->symbol->name)));
       }
     }
 

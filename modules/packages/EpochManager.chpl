@@ -517,7 +517,7 @@ module EpochManager {
         compilerError("Reading a Vector is not supported");
       }
 
-      proc init(type eltType, r: fileReader) {
+      proc init(type eltType, reader: fileReader, ref deserializer) {
         this.init(eltType);
         compilerError("Reading a Vector is not supported");
       }
