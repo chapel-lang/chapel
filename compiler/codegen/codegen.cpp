@@ -2114,11 +2114,9 @@ codegen_config() {
         std::vector<llvm::Value *> args (6);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[0] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[0] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         Type* type = var->type;
@@ -2133,28 +2131,22 @@ codegen_config() {
         }
         {
           GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[1] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
           GenRet gen = new_CStringSymbol("Built-in")->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         else {
           GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] =info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
@@ -2162,11 +2154,9 @@ codegen_config() {
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
         {
           GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[5] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
