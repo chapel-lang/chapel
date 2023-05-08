@@ -2209,7 +2209,7 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  llvm::PointerType* ptrTy;
+  llvm::PointerType* ptrTy = nullptr;
   if (eltTy) {
 #ifdef HAVE_LLVM_TYPED_POINTERS
     ptrTy = llvm::PointerType::getUnqual(eltTy);
@@ -2219,6 +2219,7 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
     ptrTy = llvm::PointerType::getUnqual(context);
 #endif
   }
+  assert(ptrTy);
   fields[1] = ptrTy;
 
   return StructType::get(context, fields, false);
