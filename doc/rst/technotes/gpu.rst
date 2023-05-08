@@ -295,8 +295,12 @@ to GPUs may be limited. In this mode:
   and run, but in all likelihood code that uses those features will not
   generate correct results
 
-* there will be one GPU sublocale per locale. ``CHPL_RT_NUM_GPUS_PER_LOCALE``
-  can be set to control how many GPU sublocales will be created per locale.
+* ``asyncGpuComm`` will do a blocking memcpy and ``gpuCommWait`` will return
+  immediately
+
+* there will be one GPU sublocale per locale by default.
+  ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
+  will be created per locale.
 
 
 .. warning::
