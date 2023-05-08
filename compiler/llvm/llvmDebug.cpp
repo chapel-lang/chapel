@@ -172,6 +172,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
     }
     else {
       if(type->astTag == E_PrimitiveType) {
+        // TODO: reimplement this properly within the Chapel type system
 #ifdef HAVE_LLVM_TYPED_POINTERS
         llvm::Type *PointeeTy = ty->getPointerElementType();
         // handle string, c_string, nil, opaque, c_void_ptr
