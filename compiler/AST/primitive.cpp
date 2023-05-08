@@ -811,9 +811,9 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
-  // given a complex value, produce get a reference to the real component
+  // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
-  // given a complex value, produce get a reference to the imag component
+  // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
