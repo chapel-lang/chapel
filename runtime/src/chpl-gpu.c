@@ -22,7 +22,7 @@
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
 bool chpl_gpu_debug = false;
-int chpl_gpu_num_devices = 0;
+int chpl_gpu_num_devices = -1;
 
 #ifdef HAS_GPU_LOCALE
 
@@ -39,6 +39,8 @@ int chpl_gpu_num_devices = 0;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
+
+  assert(chpl_gpu_num_devices >= 0);
 
   // override number of devices if applicable
   const char* env;
