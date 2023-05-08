@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'read':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: reading generic types is not supported: 'R'
+  generic-type.chpl:15: called as (fileReader(dynamic,true,DefaultDeserializer)).read(type t = R)

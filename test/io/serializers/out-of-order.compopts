@@ -1,0 +1,2 @@
+--use-io-serializers -sformat=FormatKind.default # out-of-order.default.good
+--use-io-serializers -sformat=FormatKind.json # out-of-order.json.good

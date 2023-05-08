@@ -1,0 +1,1 @@
+$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: error: Formatter 'DefaultDeserializer' does not support reading associative arrays

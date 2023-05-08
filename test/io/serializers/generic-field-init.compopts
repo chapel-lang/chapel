@@ -1,0 +1,2 @@
+--use-io-serializers -sT=G # generic-field-init.typeless.good
+--use-io-serializers -sT=I # generic-field-init.integral.good

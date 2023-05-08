@@ -1,0 +1,5 @@
+--use-io-serializers -sformat=FormatKind.default # basic-types.default.good
+--use-io-serializers -sformat=FormatKind.json # basic-types.json.good
+--use-io-serializers -sformat=FormatKind.little # basic-types.little.good
+--use-io-serializers -sformat=FormatKind.big # basic-types.big.good
+--use-io-serializers -sformat=FormatKind.syntax # basic-types.syntax.good
