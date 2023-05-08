@@ -292,11 +292,11 @@ to GPUs may be limited. In this mode:
   correctness testing and there will not be any kernel launch
 
 * advanced features like ``syncThreads`` and ``createSharedArray`` will compile
-  and runs, but in all likelihood code that uses those features will not
+  and run, but in all likelihood code that uses those features will not
   generate correct results
 
-* ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
-  will be created per locale.
+* there will be one GPU sublocale per locale. ``CHPL_RT_NUM_GPUS_PER_LOCALE``
+  can be set to control how many GPU sublocales will be created per locale.
 
 
 .. warning::
