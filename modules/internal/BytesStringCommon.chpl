@@ -276,7 +276,7 @@ module BytesStringCommon {
         // if other is remote, copy and own the buffer no matter what
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x.buffLen = otherLen+1;
+        x.buffSize = otherLen+1;
         if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {

@@ -8,14 +8,10 @@ on targetLocale {
   
   var localChplStr = "A local Chapel string";
   writeln("Initialize from string");
-  // this will fail, as createBorrowingBuffer() calls initWithBorrowedBuffer()
-  // which when the data it borrows is remote allocates a new buffer locally
-  // this new buffer gets an automatic null byte added to it, which is
-  // mistakenly included in the returned string
-  // var sBorrowedFromRemote = string.createBorrowingBuffer(chplStr);
+  var sBorrowedFromRemote = string.createBorrowingBuffer(chplStr);
   var sBorrowedFromLocal = string.createBorrowingBuffer(localChplStr);
 
-  // writeln(sBorrowedFromRemote);
+  writeln(sBorrowedFromRemote);
   writeln(sBorrowedFromLocal);
 }
 

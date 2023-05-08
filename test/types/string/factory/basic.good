@@ -1,4 +1,5 @@
 Initialize from string
+A Chapel string
 A local Chapel string
 
 Initialize from c_string
