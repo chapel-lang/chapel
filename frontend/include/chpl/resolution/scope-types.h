@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
@@ -456,7 +457,11 @@ class BorrowedIdsWithName {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, std::move(excludeFlagSet));
     }
+#if LLVM_VERSION_MAJOR >= 16
+    return std::nullopt;
+#else
     return llvm::None;
+#endif
   }
 
   static BorrowedIdsWithName
@@ -470,8 +475,13 @@ class BorrowedIdsWithName {
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
                                        filterFlags, excludeFlagSet);
+#if LLVM_VERSION_MAJOR >= 16
+    CHPL_ASSERT(maybeIds.has_value());
+    return maybeIds.value();
+#else
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
+#endif
   }
 
   static BorrowedIdsWithName

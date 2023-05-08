@@ -1120,7 +1120,11 @@ commonType(Context* context,
   if (requiredKind) {
     // The caller enforces a particular kind on us. Make sure that the
     // computed properties line up with the kind.
+#if LLVM_VERSION_MAJOR >= 16
+    auto requiredProperties = KindProperties::fromKind(requiredKind.value());
+#else
     auto requiredProperties = KindProperties::fromKind(requiredKind.getValue());
+#endif
     requiredProperties.strictCombineWith(properties);
     properties = requiredProperties;
   }
@@ -1150,8 +1154,14 @@ commonType(Context* context,
     return commonType;
   }
 
+#if LLVM_VERSION_MAJOR >= 16
   bool paramRequired = requiredKind &&
-    requiredKind.getValue() == QualifiedType::PARAM;
+                       requiredKind.value() == QualifiedType::PARAM;
+#else
+  bool paramRequired = requiredKind &&
+                       requiredKind.getValue() == QualifiedType::PARAM;
+#endif
+
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.
