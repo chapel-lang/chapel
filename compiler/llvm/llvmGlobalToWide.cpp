@@ -2202,6 +2202,7 @@ llvm::Function* getWideToGlobalFn(llvm::Module *module, GlobalToWideInfo* info, 
   return r.wideToGlobalFn;
 }
 
+// Generates an opaque pointer if eltTy is nullptr, and typed pointer otherwise.
 static
 Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
 {
