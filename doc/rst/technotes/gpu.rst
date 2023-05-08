@@ -121,14 +121,14 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* Either the CUDA toolkit (for NVIDIA), or ROCM (for AMD) must be installed.
+* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed.
 
   * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
     (inclusive). If using version 10.x you must set
     ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
     although we have not tested this.
 
-  * If targeting AMD GPUs, we require ROCM version 4.x; we suspect version 5.x
+  * If targeting AMD GPUs, we require ROCm version 4.x; we suspect version 5.x
     will work as well although we have not tested so.
 
 
@@ -139,7 +139,7 @@ To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
 before building Chapel.
 
 Chapel's build system will automatically try and deduce what type of GPU you
-have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
+have and where your installation of relevant runtime (e.g. CUDA or ROCm) are.
 If the type of GPU is not detected you may set ``CHPL_GPU`` manually to either
 ``nvidia`` or ``amd`` . If the relevant runtime path is not automatically
 detected (or you would like to use a different installation) you may set
