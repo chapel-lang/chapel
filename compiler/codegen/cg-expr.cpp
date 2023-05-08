@@ -523,28 +523,26 @@ llvm::Type* computePointerElementType(llvm::Value* ptr, Type* chplType) {
   llvm::Type* eltTypeFromInsn = nullptr;
   llvm::Type* eltTypeFromChapelType = nullptr;
 
-  eltTypeFromInsn = tryComputingPointerElementType(ptr);
-
-  if (chplType && (eltTypeFromInsn==nullptr || developer || fVerify)) {
+  if (chplType) {
     // if the pointer has isLVPtr == GEN_PTR, then we expect the
     // .chplType to be the pointed-to type, which is what we are
     // looking for here.
     GenRet genType = chplType;
     eltTypeFromChapelType = genType.type;
+    INT_ASSERT(eltTypeFromChapelType);
+    return eltTypeFromChapelType;
   }
 
-  if (eltTypeFromInsn != nullptr && eltTypeFromChapelType != nullptr &&
-      eltTypeFromInsn != eltTypeFromChapelType) {
-    INT_FATAL("error computing pointer type");
+  // otherwise, try to compute it from the pointer element type.
+  // Note that while this works in simple cases, it is innaccurate for
+  // more complex cases like e.g. a GEP of the 1st element in a global
+  // of struct type -- that can return the global since the opaque pointer
+  // value is the same as an opaque pointer pointing to the 1st field.
+  eltTypeFromInsn = tryComputingPointerElementType(ptr);
+  if (!eltTypeFromInsn) {
+    INT_FATAL("could not compute pointer type");
   }
-
-  llvm::Type* ret = nullptr;
-
-  if (eltTypeFromInsn) ret = eltTypeFromInsn;
-  if (eltTypeFromChapelType) ret = eltTypeFromChapelType;
-  INT_ASSERT(ret);
-
-  return ret;
+  return eltTypeFromInsn;
 }
 
 // If valType is nullptr, will try to compute it by looking
