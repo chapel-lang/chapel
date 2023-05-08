@@ -126,11 +126,13 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
+  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
+
+  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
+  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
   return ret;
 }
 
