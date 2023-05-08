@@ -94,15 +94,17 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
 inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         const char* name,
-                                        int num_threads, int blk_dim, int nargs,
+                                        int64_t num_threads, int blk_dim, int nargs,
                                         ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
+                 "\tNumArgs: %d\n"
+                 "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
                  name,
-                 nargs);
+                 nargs,
+                 num_threads);
 
   va_list args;
   va_start(args, nargs);
@@ -124,11 +126,13 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
+  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
+
+  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
+  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
   return ret;
 }
 

@@ -268,6 +268,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
   assert(kernel_params);
 
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
+  CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
+                 grd_dim_x, grd_dim_y, grd_dim_z,
+                 blk_dim_x, blk_dim_y, blk_dim_z);
 
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
@@ -357,7 +360,7 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
 
 inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                              const char* name,
-                                             int num_threads,
+                                             int64_t num_threads,
                                              int blk_dim,
                                              int nargs,
                                              va_list args) {
@@ -455,7 +458,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 
   chpl_gpu_ensure_context();
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%d file:%s line:%d\n", size,
+  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
   hipDeviceptr_t ptr = 0;
