@@ -94,15 +94,17 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
 inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         const char* name,
-                                        int num_threads, int blk_dim, int nargs,
+                                        int64_t num_threads, int blk_dim, int nargs,
                                         ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
-                 "\tNumArgs: %d\n",
+                 "\tNumArgs: %d\n"
+                 "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
                  name,
-                 nargs);
+                 nargs,
+                 num_threads);
 
   va_list args;
   va_start(args, nargs);
