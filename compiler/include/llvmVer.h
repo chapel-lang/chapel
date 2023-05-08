@@ -31,8 +31,9 @@
 #error LLVM version is too old for this version of Chapel
 #endif
 
-// TODO: this is transitional -- stop setting LLVM_NO_OPAQUE_POINTERS when ready
-#define LLVM_NO_OPAQUE_POINTERS 1
+// LLVM 15 supports opaque pointers or typed pointers.
+// To select typed pointers, use
+//   #define LLVM_NO_OPAQUE_POINTERS 1
 
 // define HAVE_LLVM_TYPED_POINTERS if the LLVM version / configuration
 // allows typed pointers (and leave it undefined if only opaque pointers
