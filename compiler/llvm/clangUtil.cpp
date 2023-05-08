@@ -2356,7 +2356,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
-  if (doGpuCodegen()) {
+  if (isFullGpuCodegen()) {
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2607,7 +2607,7 @@ void runClang(const char* just_parse_filename) {
                        clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
-  if (doGpuCodegen()) {
+  if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
 

@@ -956,7 +956,7 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
 
   // we can't add elseStmt later on
   CondStmt* cond = new CondStmt(condExpr, gpuBlock,
-                                doGpuCodegen() ? cpuBlock : NULL);
+                                isFullGpuCodegen() ? cpuBlock : NULL);
 
   // first, make sure the conditional is in place
   gpuLoop.loop()->insertBefore(cond);
@@ -965,7 +965,7 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   cpuBlock->insertAtHead(gpuLoop.loop()->remove());
 
   // if not doing codegen, just add cpuBlock after the conditional
-  if (!doGpuCodegen()) {
+  if (!isFullGpuCodegen()) {
     cond->insertAfter(cpuBlock);
   }
 }

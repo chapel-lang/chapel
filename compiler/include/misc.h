@@ -97,7 +97,7 @@ bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
 bool        usingGpuLocaleModel();
-bool        doGpuCodegen();
+bool        isFullGpuCodegen();
 GpuCodegenType getGpuCodegenType();
 
 const char* cleanFilename(const BaseAST* ast);

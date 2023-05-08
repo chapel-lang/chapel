@@ -121,7 +121,7 @@ bool usingGpuLocaleModel() {
   return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
 }
 
-bool doGpuCodegen() {
+bool isFullGpuCodegen() {
   return usingGpuLocaleModel() && (0 != strcmp(CHPL_GPU, "cpu"));
 }
 
