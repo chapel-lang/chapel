@@ -176,9 +176,7 @@ module GPU
      Synchronize threads within a GPU block.
    */
   inline proc syncThreads() {
-    if CHPL_GPU != "cpu" {
-      __primitive("gpu syncThreads");
-    }
+    __primitive("gpu syncThreads");
   }
 
   /*
