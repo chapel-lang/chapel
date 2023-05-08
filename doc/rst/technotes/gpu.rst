@@ -154,6 +154,12 @@ values please refer to `CUDA Programming Guide
 for NVIDIA or "processor" values in `this table in the LLVM documentation
 <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD.
 
+``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be used to control the number of GPU
+sublocales created. For example, in a system where 8 physical GPUs per node,
+setting this environment variable to 4 will make Chapel use only the first 4
+GPUs. Setting this number to a value higher than the number of GPUs per node
+results in an error.
+
 GPU Support Features
 --------------------
 
@@ -288,6 +294,9 @@ to GPUs may be limited. In this mode:
 * advanced features like ``syncThreads`` and ``createSharedArray`` will compile
   and runs, but in all likelihood code that uses those features will not
   generate correct results
+
+* ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
+  will be created per locale.
 
 
 .. warning::
