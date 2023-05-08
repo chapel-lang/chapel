@@ -169,7 +169,7 @@ void chpl_gpu_impl_init() {
 
 static bool chpl_gpu_device_alloc = false;
 
-void chpl_gpu_impl_on_std_modules_finished_initializing() {
+void chpl_gpu_impl_on_locale_model_finished_initializing() {
   // The standard module has some memory that we allocate when we  are "on" a
   // GPU sublocale when in fact we want to allocate it on the device. (As of
   // the writing of this comment this is in `helpSetupLocaleGPU` in
@@ -451,7 +451,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   // (chpl_gpu_device_alloc == true during this time), in this case the intent
   // is just to return host memory anyway so there's no need to switch
   // contexts.
-  if(!chpl_gpu_device_alloc) { return chpl_malloc(size); }
+  if(!chpl_gpu_device_alloc) { return chpl_mem_alloc(size, description, lineno, filename); }
 
   chpl_gpu_ensure_context();
 

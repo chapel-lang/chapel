@@ -379,7 +379,16 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
+      extern proc chpl_gpu_on_locale_model_finished_initializing() : void;
+
       helpSetupLocaleGPU(this, local_name, numSublocales, GPULocale);
+
+      // There are some allocations that occur in `helpSetupLocaleGPU` where we
+      // set the current sublocale to a GPU but we still want the allocations
+      // to actually be performed on the CPU. To do this we start the GPU
+      // runtime library in a mode where all allocations will be done on the
+      // host until this "finished_initializing" function is called.
+      chpl_gpu_on_locale_model_finished_initializing();
     }
     //------------------------------------------------------------------------}
   }

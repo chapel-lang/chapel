@@ -149,7 +149,7 @@ void chpl_gpu_impl_init() {
 
 static bool chpl_gpu_device_alloc = false;
 
-void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
+void chpl_gpu_impl_on_locale_model_finished_initializing(void) {
   // The standard module has some memory that we allocate when we  are "on" a
   // GPU sublocale when in fact we want to allocate it on the device. (As of
   // the writing of this comment this is in `helpSetupLocaleGPU` in

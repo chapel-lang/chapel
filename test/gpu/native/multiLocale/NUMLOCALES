@@ -1,1 +1,8 @@
-4
+#!/usr/bin/bash
+
+codegen=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_GPU_CODEGEN | cut -d = -f 2-`
+if [ "$codegen" = "rocm" ]; then
+  echo "2"
+else
+  echo "4"
+fi

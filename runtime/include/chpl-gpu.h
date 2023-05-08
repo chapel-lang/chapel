@@ -78,7 +78,7 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
-void chpl_gpu_on_std_modules_finished_initializing(void);
+void chpl_gpu_on_locale_model_finished_initializing(void);
 
 void chpl_gpu_get_device_count(int* into);
 
