@@ -3904,7 +3904,7 @@ static std::string determineOclcVersionLib(std::string libPath) {
 
   // Extract version number from CHPL_GPU_ARCH string (e.g. extract
   // the 908 from "gfx908")
-  std::regex pattern("gfx(\\d+)");
+  std::regex pattern("[[:alpha:]]+([[:digit:]]+[[:alpha:]]?)");
   std::cmatch match;
   if (std::regex_search(CHPL_GPU_ARCH, match, pattern)) {
     result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
@@ -4228,7 +4228,8 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                       "/llvm/bin/lld -flavor gnu" +
                        " --no-undefined -shared" +
                        " -plugin-opt=-amdgpu-internalize-symbols" +
-                       " -plugin-opt=mcpu=gfx906 -plugin-opt=O3" +
+                       " -plugin-opt=mcpu=" + CHPL_GPU_ARCH +
+                       " -plugin-opt=O3" +
                        " -plugin-opt=-amdgpu-early-inline-all=true" +
                        " -plugin-opt=-amdgpu-function-calls=false -o " +
                        outFilename + " " + artifactFilename;
