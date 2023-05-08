@@ -1919,15 +1919,14 @@ static void codegen_header(std::set<const char*> & cnames,
           info->module->getNamedGlobal("chpl_globals_registry"))) {
       GVar->eraseFromParent();
     }
+    llvm::Type* globValType =
+      llvm::ArrayType::get(ptr_wide_ptr_t, globals_registry_static_size);
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            llvm::ArrayType::get(
-              ptr_wide_ptr_t,
-              globals_registry_static_size)));
+                                          globValType));
     chpl_globals_registryGVar->setInitializer(
-        llvm::Constant::getNullValue(
-          chpl_globals_registryGVar->getType()->getContainedType(0)));
+        llvm::Constant::getNullValue(globValType));
     info->lvt->addGlobalValue("chpl_globals_registry",
                               chpl_globals_registryGVar, GEN_PTR, true, /* chplType= */ nullptr);
 #endif
