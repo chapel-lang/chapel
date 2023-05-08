@@ -529,7 +529,6 @@ genSubclassArray(bool isHeader) {
 
 // Returns the type, in .c or .type field, for the passed name.
 // The type_name typically refers to something defined in the runtime.
-static
 GenRet codegenTypeByName(const char* type_name)
 {
   GenInfo* info = gGenInfo;

@@ -427,6 +427,7 @@ void AggregateType::codegenDef() {
         for_fields(field, this) {
           if (field->type != dtNothing && field->type != dtVoid) {
             nonVoidFields++;
+            break;
           }
         }
 
@@ -558,7 +559,7 @@ void AggregateType::codegenPrototype() {
 
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
       info->lvt->addGlobalType(symbol->cname, pt, false);
-      symbol->llvmImplType = pt;
+      symbol->llvmImplType = st;
 #endif
     }
   }

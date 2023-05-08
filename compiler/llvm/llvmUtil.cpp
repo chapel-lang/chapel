@@ -626,5 +626,13 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   #endif
 }
 
+bool isOpaquePointer(llvm::Type* ty) {
+#if HAVE_LLVM_VER >= 140
+  return ty->isOpaquePointerTy();
+#else
+  return false; // older LLVMs did not have opaque pointers
+#endif
+}
+
 #endif
 

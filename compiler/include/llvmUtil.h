@@ -80,5 +80,7 @@ void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
 
 void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy);
 
+bool isOpaquePointer(llvm::Type* ty);
+
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H
