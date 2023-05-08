@@ -842,6 +842,7 @@ def compute_host_link_settings():
                          '-lclangAST',
                          '-lclangLex',
                          '-lclangBasic']
+
     llvm_components = ['bitreader',
                        'bitwriter',
                        'ipo',
@@ -853,6 +854,13 @@ def compute_host_link_settings():
                        'coverage',
                        'coroutines',
                        'lto']
+
+    if llvm_val == 'system' or llvm_val == 'bundled':
+        llvm_version = get_llvm_version()
+        # Starting with clang 15, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14'):
+            clang_static_libs.append('-lclangSupport')
+            llvm_components.append('windowsdriver')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':
