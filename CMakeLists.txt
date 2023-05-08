@@ -243,6 +243,9 @@ endif()
 # set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
+message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
+
 # TODO: replace this with above, get proper values depending on compiler/version
 #  see make/compiler/Makefile.gnu, make/compiler/Makefile.clang
 add_compile_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_CXX_FLAGS}>)
