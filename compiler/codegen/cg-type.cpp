@@ -477,9 +477,9 @@ void AggregateType::codegenDef() {
 #ifdef HAVE_LLVM_TYPED_POINTERS
           // Remove one level of indirection since the addr field
           // of a wide pointer is always a local address.
-          globalPtrTy =
-            llvm::PointerType::get(llBaseType->getPointerElementType(),
-                                   globalAddressSpace);
+          llvm::Type* eltType = llBaseType->getPointerElementType();
+          INT_ASSERT(eltType);
+          globalPtrTy = llvm::PointerType::get(eltType, globalAddressSpace);
 #endif
         }
 
