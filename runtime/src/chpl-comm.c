@@ -204,6 +204,7 @@ static void *touch_thread(void *mem_region) {
 // poor NUMA affinity with memory split evenly in massive chunks across NUMA
 // domains.
 void chpl_comm_regMemHeapTouch(void* start, uintptr_t size) {
+  fprintf(stderr, "XXX chpl_comm_regMemHeapTouch\n");
   int nthreads = chpl_topo_getNumCPUsPhysical(true);
   pthread_t thread_id[nthreads];
   memory_region mem_regions[nthreads];

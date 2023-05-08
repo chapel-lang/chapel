@@ -452,6 +452,8 @@ static void cpuInfoInit(void) {
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
+  _DBG_P("useSocket = %d", useSocket);
+  _DBG_P("cond = %d", (numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket);
   if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
     if (numLocalesOnNode > 1) {
       oversubscribed = true;
@@ -470,6 +472,7 @@ static void cpuInfoInit(void) {
     if (numCPUsPhysAcc == numCPUsPhysAll) {
       if (numLocalesOnNode <= numSockets) {
         if (rank != -1) {
+         _DBG_P("XXX using a socket");
           // Use the socket whose logical index corresponds to our local rank.
           // See getSocketNumber below if you change this.
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
@@ -633,9 +636,11 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
   CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
   if (debug) {
-    char buf[1024];
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), cpuset);
-    _DBG_P("chpl_topo_setThreadLocality(%d): %s", (int) subloc, buf);
+    char cpubuf[1024];
+    char nodebuf[1024];
+    hwloc_bitmap_list_snprintf(cpubuf, sizeof(cpubuf), cpuset);
+    hwloc_bitmap_list_snprintf(nodebuf, sizeof(nodebuf), getNumaObj(subloc)->allowed_nodeset);
+    _DBG_P("chpl_topo_setThreadLocality(%d): cpuset %s nodeset %s", (int) subloc, cpubuf, nodebuf);
   }
   hwloc_bitmap_free(cpuset);
 }

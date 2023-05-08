@@ -188,16 +188,17 @@ int32_t chpl_comm_getMaxThreads(void);
 // initialization required to enable comm calls made by the topo layer
 // during its initialization, specifically:
 //  * chpl_get_num_locales_on_node
+//  * chpl_get_local_rank
 //
-void chpl_comm_pre_topo_init(void);
-
-//
-// initializes the communications package
-//   set chpl_nodeID and chpl_numNodes
 // notes:
 //   * Called with the argc/argv pair passed to main()
+
+void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p);
+
 //
-void chpl_comm_init(int *argc_p, char ***argv_p);
+// initializes the communications layer after topo layer initialization
+//
+void chpl_comm_init(void);
 
 //
 // Allow the communication layer to do any additional initialization

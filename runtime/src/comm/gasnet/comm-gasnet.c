@@ -836,13 +836,14 @@ static void set_num_comm_domains() {
 #endif
 }
 
-void chpl_comm_pre_topo_init(void) {
-  // not supported on this platform
-  chpl_set_num_locales_on_node(1);
-}
-
-void chpl_comm_init(int *argc_p, char ***argv_p) {
-//  int status; // Some compilers complain about unused variable 'status'.
+void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p) {
+  // Initialize gasnet so that we can call gex_System_QueryHostInfo and
+  // set the number of locales on our node which allows the rest of the
+  // runtime to determine which cores this locale will use. gasnet_attach
+  // is called in chpl_comm_init which is called after the cores have been
+  // determined.
+  gex_Rank_t      infoCount;
+  gex_Rank_t      myIndex;
 
   // For configurations that register a fixed heap at startup use a gasnet hook
   // to allow us to fault and interleave in the memory in parallel for faster
@@ -852,6 +853,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
 #endif
 #endif
+
 
   set_max_segsize();
   set_num_comm_domains();
@@ -863,6 +865,17 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   gasnet_init(argc_p, argv_p);
   chpl_nodeID = gasnet_mynode();
   chpl_numNodes = gasnet_nodes();
+
+  // get information about locales on the same node
+  gex_System_QueryHostInfo(NULL, &infoCount, &myIndex);
+  chpl_set_num_locales_on_node((int32_t) infoCount);
+  chpl_set_local_rank(myIndex);
+}
+
+void chpl_comm_init(void) {
+
+  //  int status; // Some compilers complain about unused variable 'status'.
+
   GASNET_Safe(gasnet_attach(ftable,
                             sizeof(ftable)/sizeof(gasnet_handlerentry_t),
                             gasnet_getMaxLocalSegmentSize(),

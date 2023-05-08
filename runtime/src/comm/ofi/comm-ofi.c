@@ -991,7 +991,7 @@ static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static chpl_bool mrGetLocalKey(void*, size_t);
 static chpl_bool mrGetDesc(void**, void*, size_t);
 
-void chpl_comm_pre_topo_init(void) {
+void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p) {
   chpl_comm_ofi_abort_on_error =
     (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
   time_init();
@@ -1005,7 +1005,7 @@ void chpl_comm_pre_topo_init(void) {
   }
 }
 
-void chpl_comm_init(int *argc_p, char ***argv_p) {
+void chpl_comm_init(void) {
   //
   // Gather run-invariant environment info as early as possible.
   //
