@@ -26,7 +26,7 @@ module ChapelGpuSupport {
   config const debugGpu = false;
 
   extern var chpl_gpu_no_cpu_mode_warning: bool;
-  config const noCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
+  config const gpuNoCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
@@ -37,7 +37,7 @@ module ChapelGpuSupport {
 
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
-  chpl_gpu_no_cpu_mode_warning = noCpuModeWarning;
+  chpl_gpu_no_cpu_mode_warning = gpuNoCpuModeWarning;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {

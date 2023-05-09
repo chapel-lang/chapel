@@ -286,7 +286,11 @@ to GPUs may be limited. In this mode:
   * e.g, ``assertOnGpu`` will fail at compile time normally. This can allow
     testing if a loop is GPU-eligible.
 
-  * but it will generate only a warning per-loop at execution time.
+  * but it will generate a warning per-iteration at execution time.
+
+  * ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress these
+    warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
+    application to the same effect.
 
 * even though the GPU diagnostics are collected, the loop will be executed for
   correctness testing and there will not be any kernel launch
