@@ -971,13 +971,13 @@ void VarSymbol::codegenDef() {
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
 
     // Update the alignment if necessary
-#if HAVE_LLVM_VER >= 100
-    if (alignment.hasValue()) {
-      varAlloca->setAlignment(alignment.getValue());
+#if HAVE_LLVM_VER >= 160
+    if (alignment.has_value()) {
+      varAlloca->setAlignment(alignment.value());
     }
 #else
-    if (alignment > 1) {
-      varAlloca->setAlignment(alignment);
+    if (alignment.hasValue()) {
+      varAlloca->setAlignment(alignment.getValue());
     }
 #endif
 
