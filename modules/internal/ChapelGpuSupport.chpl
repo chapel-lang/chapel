@@ -21,6 +21,8 @@
 module ChapelGpuSupport {
   use ChapelBase;
   use ChplConfig;
+  private use ChapelSysCTypes;
+  private use CTypes;
 
   extern var chpl_gpu_debug : bool;
   config const debugGpu = false;
@@ -62,7 +64,7 @@ module ChapelGpuSupport {
 
   private proc isEnvSet(name: string): bool {
     extern proc getenv(name : c_string) : c_string;
-    var env = bytes.createBorrowingBuffer(getenv(name.localize().c_str()));
+    var env = bytes.createBorrowingBuffer(getenv(name.localize():c_ptrConst(c_char):c_string));
     return !env.isEmpty();
   }
 }

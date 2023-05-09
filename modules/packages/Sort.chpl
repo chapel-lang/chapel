@@ -3640,7 +3640,7 @@ record DefaultComparator {
     if boundsChecking then
       assert(x.locale_id == here.id);
 
-    var ptr = x.c_str():c_ptr(uint(8));
+    var ptr = x:c_ptrConst(c_char):c_string:c_ptr(uint(8));
     var len = x.numBytes;
     var section = if i < len then 0:int(8) else -1:int(8);
     var part =    if i < len then ptr[i] else  0:uint(8);

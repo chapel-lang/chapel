@@ -106,7 +106,7 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
     var host = other.numericHost();
     var port = other.port();
     var family = other.family;
-    this.set(host.c_str(), port, family:c_int);
+    this.set(host:c_ptrConst(c_char):c_string, port, family:c_int);
   }
 }
 
@@ -181,7 +181,7 @@ proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000,
           family: IPFamily = IPFamily.IPv4): ipAddr throws {
   // We will use type methods for now but expect to add initializers (and possibly deprecate these ones) once [#8692](https://github.com/chapel-lang/chapel/issues/8692) is resolved
   var addressStorage = new sys_sockaddr_t();
-  addressStorage.set(host.c_str(), port, family:c_int);
+  addressStorage.set(host:c_ptrConst(c_char):c_string, port, family:c_int);
   return new ipAddr(addressStorage);
 }
 
@@ -917,7 +917,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   var hints = new sys_addrinfo_t();
   hints.ai_family = family:c_int;
   hints.ai_socktype = SOCK_STREAM;
-  var err = getaddrinfo(host.c_str(), service.c_str(), hints, result);
+  var err = getaddrinfo(host:c_ptrConst(c_char):c_string, service:c_ptrConst(c_char):c_string, hints, result);
   if err != 0 {
     throw new Error("Can't resolve address");
   }
@@ -1164,7 +1164,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = indefiniteTimeout):c_ssize_t throws {
   var err_out:c_int = 0;
   var length:c_ssize_t;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+  err_out = sys_sendto(this.socketFd, data:c_ptrConst(c_char):c_string:c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
     return length;
   }
@@ -1189,7 +1189,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       throw createSystemError(ETIMEDOUT, "send timed out");
     }
     var elapsedTime = (t.elapsed()*1_000_000):c_long;
-    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+    err_out = sys_sendto(this.socketFd, data:c_ptrConst(c_char):c_string:c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw createSystemError(err_out, "send failed");
@@ -1282,7 +1282,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
 @chpldoc.nodoc
 proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, ref value: bytes) throws {
   var optlen = value.size:socklen_t;
-  var ptroptval = value.c_str();
+  var ptroptval = value:c_ptrConst(c_char):c_string;
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to set socket option");

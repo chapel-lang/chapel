@@ -700,7 +700,7 @@ module Buffers {
         this.advance(end, len);
         err = qbuffer_copyin(this._buf_internal,
                              start._bufit_internal, end._bufit_internal,
-                             tmp.c_str():c_void_ptr, len);
+                             tmp:c_ptrConst(c_char):c_string:c_void_ptr, len);
         ret = end;
       }
     }

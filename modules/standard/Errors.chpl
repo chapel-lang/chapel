@@ -522,7 +522,7 @@ module Errors {
     var s = "uncaught " + chpl_describe_error(err) +
             "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
             "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
-    chpl_error_preformatted(s.c_str());
+    chpl_error_preformatted(s:c_ptrConst(c_char):c_string);
   }
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
@@ -624,7 +624,7 @@ module Errors {
   proc assert(test: bool, args...) {
     if !test {
       var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
-      __primitive("chpl_error", tmpstring.c_str());
+      __primitive("chpl_error", tmpstring:c_ptrConst(c_char):c_string);
     }
   }
 
@@ -744,7 +744,7 @@ module Errors {
   pragma "always propagate line file info"
   @chpldoc.nodoc  // documented in the varargs overload
   proc halt(msg:string) {
-    halt(msg.localize().c_str());
+    halt(msg.localize():c_ptrConst(c_char):c_string);
   }
 
   /*
@@ -759,7 +759,7 @@ module Errors {
   pragma "always propagate line file info"
   proc halt(args...) {
     var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
-    __primitive("chpl_error", tmpstring.c_str());
+    __primitive("chpl_error", tmpstring:c_ptrConst(c_char):c_string);
   }
 
   /*
@@ -768,7 +768,7 @@ module Errors {
   */
   pragma "always propagate line file info"
   proc warning(msg:string) {
-    __primitive("chpl_warning", msg.localize().c_str());
+    __primitive("chpl_warning", msg.localize():c_ptrConst(c_char):c_string);
   }
 
   /*
