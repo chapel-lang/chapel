@@ -2053,7 +2053,39 @@ GenRet codegenMod(GenRet a, GenRet b)
       if(!values.isSigned) {
         ret.val = info->irBuilder->CreateURem(values.a, values.b);
       } else {
-        ret.val = info->irBuilder->CreateSRem(values.a, values.b);
+        // For signed integers, the llvm srem instruction may give undefined
+        // behavior at integer extremes
+        // (https://llvm.org/docs/LangRef.html#srem-instruction). To combat
+        // this, follow the same pattern used in C to sign extend and then
+        // truncate 8-bit and 32-bit values.
+        // TODO: note for the future - we may need to do this for float ->
+        // double as well, matching the C semantics for fmod
+        auto aBitWidth = values.a->getType()->getPrimitiveSizeInBits();
+        auto bBitWidth = values.b->getType()->getPrimitiveSizeInBits();
+        // after convertValuesToLarger, both both bit widths should be the same
+        INT_ASSERT(aBitWidth == bBitWidth);
+        auto bitWidth = aBitWidth;
+        auto sextBitWidth =
+            (bitWidth == 8 ? 16 : (bitWidth == 16 ? 32 : bitWidth));
+
+        auto aVal = values.a;
+        auto bVal = values.b;
+        // perform sign extension;
+        if (sextBitWidth != bitWidth) {
+          auto sextType = llvm::IntegerType::get(info->module->getContext(),
+                                                    sextBitWidth);
+          aVal = info->irBuilder->CreateSExt(aVal, sextType);
+          bVal = info->irBuilder->CreateSExt(bVal, sextType);
+        }
+        auto sremResult = info->irBuilder->CreateSRem(aVal, bVal);
+        // perform truncation
+        if(sextBitWidth != bitWidth) {
+          auto truncType = values.a->getType();
+          ret.val = info->irBuilder->CreateTrunc(sremResult, truncType);
+        }
+        else {
+          ret.val = sremResult;
+        }
       }
     }
 #endif
