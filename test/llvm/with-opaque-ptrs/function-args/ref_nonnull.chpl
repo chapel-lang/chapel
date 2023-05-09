@@ -2,8 +2,8 @@
 // attributes that have ref intent
 
 //CHECK: i64 @f_chpl(
-//CHECK: i64* nonnull
-//CHECK: i64* nonnull
+//CHECK: ptr nonnull
+//CHECK: ptr nonnull
 //CHECK: i64
 //CHECK-NOT: nonnull
 //CHECK: )
