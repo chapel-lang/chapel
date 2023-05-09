@@ -271,11 +271,12 @@ COMPILERS = [('gnu', 'gcc', 'g++'),
 # and the C and C++ variants of that command
 def get_compiler_from_command(command):
     # the following adjustments are to handle a command like
-    #    /path/to/gcc-10 --some-option
+    #    /path/to/gcc-10.exe --some-option
     # where we are looking for just the 'gcc' part.
     first = command.split()[0]
     basename = os.path.basename(first)
     name = basename.split('-')[0].strip()
+    name = name.split('.')[0].strip()
     for tup in COMPILERS:
         if name == tup[1] or name == tup[2]:
             return tup[0]
