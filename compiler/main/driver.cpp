@@ -1671,16 +1671,14 @@ static void setGPUFlags() {
                " This may impact debuggability. To suppress this warning,"
                " compile with --no-checks explicitly");
 
-       // if (isFullGpuCodegen()) {  we still can't do this.
-        fNoChecks = true;
-        fNoNilChecks    = true;
-        fNoBoundsChecks = true;
-        fNoFormalDomainChecks = true;
-        fNoLocalChecks  = true;
-        fNoStackChecks  = true;
-        fNoCastChecks = true;
-        fNoDivZeroChecks = true;
-       // }
+      fNoChecks = true;
+      fNoNilChecks    = true;
+      fNoBoundsChecks = true;
+      fNoFormalDomainChecks = true;
+      fNoLocalChecks  = true;
+      fNoStackChecks  = true;
+      fNoCastChecks = true;
+      fNoDivZeroChecks = true;
     }
   }
 }
