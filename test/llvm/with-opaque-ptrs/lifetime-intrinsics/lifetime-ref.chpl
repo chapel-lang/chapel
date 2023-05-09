@@ -7,17 +7,13 @@ proc refidentity(const ref a) const ref { return a; }
 
 proc mytest_ref() {
   var someVar: int = 42;
-  // CHECK: %[[REG1:[0-9]+]] = bitcast i64* %someVar_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG1]])
+  // CHECK: call void @llvm.lifetime.start.p0(i64 8, ptr %someVar_chpl)
   ref toSomeVar : int = someVar;
-  // CHECK: %[[REG2:[0-9]+]] = bitcast i64** %toSomeVar_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG2]])
+  // CHECK: call void @llvm.lifetime.start.p0(i64 8, ptr %toSomeVar_chpl)
   refidentity(toSomeVar);
   toSomeVar = 112;
-  // CHECK: %[[REG3:[0-9]+]] = bitcast i64* %someVar_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG3]])
-  // CHECK: %[[REG4:[0-9]+]] = bitcast i64** %toSomeVar_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG4]])
+  // CHECK: call void @llvm.lifetime.end.p0(i64 8, ptr %someVar_chpl)
+  // CHECK: call void @llvm.lifetime.end.p0(i64 8, ptr %toSomeVar_chpl)
 }
 
 mytest_ref();

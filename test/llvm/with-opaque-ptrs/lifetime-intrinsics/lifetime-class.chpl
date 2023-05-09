@@ -8,12 +8,10 @@ class C {}
 
 proc mytest_class() {
   var x: unmanaged C = new unmanaged C();
-  // CHECK: %[[REG1:[0-9]+]] = bitcast %chpl_C_chpl_object** %x_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG1]])
+  // CHECK: call void @llvm.lifetime.start.p0(i64 8, ptr %x_chpl)
   refidentity(x);
   delete x;
-  // CHECK: %[[REG2:[0-9]+]] = bitcast %chpl_C_chpl_object** %x_chpl to i8*
-  // CHECK-NEXT: call void @llvm.lifetime.end.p0i8(i64 8, i8* %[[REG2]])
+  // CHECK: call void @llvm.lifetime.end.p0(i64 8, ptr %x_chpl)
 }
 
 mytest_class();
