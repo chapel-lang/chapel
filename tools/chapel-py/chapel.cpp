@@ -452,98 +452,63 @@ struct PerNodeInfo {
   };
 };
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::START_VarLikeDecl> {
-  static constexpr PyMethodDef methods[] = {
-    {"storage_kind", VarLikeDeclObject_storage_kind, METH_NOARGS, "Get the storage kind of this VarLikeDecl node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+#define METHOD_TABLE(TAG, ...)\
+  template <> \
+  struct PerNodeInfo<chpl::uast::asttags::TAG> {\
+    static constexpr PyMethodDef methods[] = {\
+      __VA_ARGS__ \
+      {NULL, NULL, 0, NULL}  /* Sentinel */ \
+    };\
+  }
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::START_NamedDecl> {
-  static constexpr PyMethodDef methods[] = {
-    {"name", NamedDeclObject_name, METH_NOARGS, "Get the name of this NamedDecl node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(START_VarLikeDecl,
+  {"storage_kind", VarLikeDeclObject_storage_kind, METH_NOARGS, "Get the storage kind of this VarLikeDecl node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Variable> {
-  static constexpr PyMethodDef methods[] = {
-    {"is_config", VariableObject_is_config, METH_NOARGS, "Check if the given Variable node is a config variable"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(START_NamedDecl,
+  {"name", NamedDeclObject_name, METH_NOARGS, "Get the name of this NamedDecl node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Comment> {
-  static constexpr PyMethodDef methods[] = {
-    {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Variable,
+  {"is_config", VariableObject_is_config, METH_NOARGS, "Check if the given Variable node is a config variable"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::StringLiteral> {
-  static constexpr PyMethodDef methods[] = {
-    {"value", StringLiteralObject_value, METH_NOARGS, "Get the value of the StringLiteral node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Comment,
+  {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Function> {
-  static constexpr PyMethodDef methods[] = {
-    {"kind", FunctionObject_kind, METH_NOARGS, "Get the kind of this Function node"},
-    {"is_method", FunctionObject_is_method, METH_NOARGS, "Check if this function is a method"},
-    {"is_primary_method", FunctionObject_is_primary_method, METH_NOARGS, "Check if this function is a primary method"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(StringLiteral,
+  {"value", StringLiteralObject_value, METH_NOARGS, "Get the value of the StringLiteral node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::FnCall> {
-  static constexpr PyMethodDef methods[] = {
-    {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
-    {"called_expression", FnCallObject_called_expression, METH_NOARGS, "Get the expression invoked by this FnCall node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Function,
+  {"kind", FunctionObject_kind, METH_NOARGS, "Get the kind of this Function node"},
+  {"is_method", FunctionObject_is_method, METH_NOARGS, "Check if this function is a method"},
+  {"is_primary_method", FunctionObject_is_primary_method, METH_NOARGS, "Check if this function is a primary method"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Dot> {
-  static constexpr PyMethodDef methods[] = {
-    {"field", DotObject_field, METH_NOARGS, "Get the field accessed in the Dot node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(FnCall,
+  {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
+  {"called_expression", FnCallObject_called_expression, METH_NOARGS, "Get the expression invoked by this FnCall node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Attribute> {
-  static constexpr PyMethodDef methods[] = {
-    {"actuals", AttributeObject_actuals, METH_NOARGS, "Get the actuals for this Attribute node"},
-    {"name", AttributeObject_name, METH_NOARGS, "Get the name of this Attribute node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Dot,
+  {"field", DotObject_field, METH_NOARGS, "Get the field accessed in the Dot node"},
+);
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::VisibilityClause> {
-  static constexpr PyMethodDef methods[] = {
-    {"symbol", VisibilityClauseObject_symbol, METH_NOARGS, "Get the symbol referenced by this VisibilityClause node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Attribute,
+  {"actuals", AttributeObject_actuals, METH_NOARGS, "Get the actuals for this Attribute node"},
+  {"name", AttributeObject_name, METH_NOARGS, "Get the name of this Attribute node"},
+);
+
+METHOD_TABLE(VisibilityClause,
+  {"symbol", VisibilityClauseObject_symbol, METH_NOARGS, "Get the symbol referenced by this VisibilityClause node"},
+);
 
 
-template <>
-struct PerNodeInfo<chpl::uast::asttags::Identifier> {
-  static constexpr PyMethodDef methods[] = {
-    {"name", IdentifierObject_name, METH_NOARGS, "Get the name of this Identifier node"},
-    {NULL, NULL, 0, NULL}  /* Sentinel */
-  };
-};
+METHOD_TABLE(Identifier,
+  {"name", IdentifierObject_name, METH_NOARGS, "Get the name of this Identifier node"},
+);
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
   static PyMethodDef NAME##Object_methods[] = { \
