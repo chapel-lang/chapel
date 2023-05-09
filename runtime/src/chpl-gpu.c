@@ -311,12 +311,11 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
-  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
-
-  // this is not really cool. Should we have a realloc in the impl layer?
-  if (cur_size == -1) {
+#ifdef GPU_RUNTIME_CPU
     return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
-  }
+#else
+  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+  assert(cur_size >= 0);
 
   if (size == cur_size) {
     return memAlloc;
@@ -331,6 +330,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;
+#endif
 }
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
