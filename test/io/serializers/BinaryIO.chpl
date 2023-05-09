@@ -105,13 +105,15 @@ module BinaryIO {
     // - TODO: support for unknown size
     //   - idea: serialize into internal buffer, count calls, then actually write things
     // - TODO: check size mismatches
-    proc startArray(w: _writeType) throws {
-      throw new Error("arrays of unknown size are not yet supported by BinarySerializer");
+
+    proc startArray(w: _writeType, numElements: uint) throws {
+      w.write(numElements);
+      _size = numElements;
     }
 
-    proc startArray(w: _writeType, size: uint) throws {
-      w.write(size);
-      _size = size;
+    proc startArrayDim(w: _writeType, len: uint) throws {
+    }
+    proc endArrayDim(w: _writeType) throws {
     }
 
     proc writeArrayElement(w: _writeType, const val: ?) throws {
@@ -255,6 +257,11 @@ module BinaryIO {
     proc startArray(r: fileReader) throws {
       _numElements = r.read(uint);
       _sizeKnown = _numElements != 0;
+    }
+
+    proc startArrayDim(r: fileReader) throws {
+    }
+    proc endArrayDim(r: fileReader) throws {
     }
 
     proc readArrayElement(r: fileReader, type eltType) throws {

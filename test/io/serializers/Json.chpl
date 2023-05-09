@@ -91,7 +91,10 @@ module Json {
       writer.writeLiteral("]");
     }
 
-    proc startArray(w: _writeType, _size:uint = 0) throws {
+    proc startArray(w: _writeType, _size:uint) throws {
+    }
+
+    proc startArrayDim(w: _writeType, len: uint) throws {
       _arrayDim += 1;
       if _arrayFirst.size < _arrayDim {
         _arrayFirst.append(true);
@@ -112,15 +115,7 @@ module Json {
       w._writeLiteral("[");
     }
 
-    proc writeArrayElement(w: _writeType, const val: ?) throws {
-      if !firstField then
-        w._writeLiteral(", ");
-      else
-        firstField = false;
-      w.write(val);
-    }
-
-    proc endArray(w: _writeType) throws {
+    proc endArrayDim(w: _writeType) throws {
       if _arrayDim < _arrayMax {
         w.writeNewline();
         w._writeLiteral(" " * (_arrayDim-1));
@@ -132,6 +127,17 @@ module Json {
 
       _arrayDim -= 1;
       firstField = true;
+    }
+
+    proc writeArrayElement(w: _writeType, const val: ?) throws {
+      if !firstField then
+        w._writeLiteral(", ");
+      else
+        firstField = false;
+      w.write(val);
+    }
+
+    proc endArray(w: _writeType) throws {
     }
 
     proc startMap(w: _writeType, _size:uint = 0) throws {
@@ -357,6 +363,9 @@ module Json {
     }
 
     proc startArray(r: fileReader) throws {
+    }
+
+    proc startArrayDim(r: fileReader) throws {
       _arrayDim += 1;
       if _arrayFirst.size < _arrayDim {
         _arrayFirst.append(true);
@@ -384,7 +393,7 @@ module Json {
       return r.read(eltType);
     }
 
-    proc endArray(r: fileReader) throws {
+    proc endArrayDim(r: fileReader) throws {
       if _arrayDim < _arrayMax {
         r.readNewline();
         r._readLiteral(" " * (_arrayDim-1));
@@ -400,6 +409,9 @@ module Json {
 
       _arrayDim -= 1;
       firstField = true;
+    }
+
+    proc endArray(r: fileReader) throws {
     }
 
     proc startMap(r: fileReader) throws {

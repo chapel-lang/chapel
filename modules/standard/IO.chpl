@@ -2697,13 +2697,20 @@ record DefaultSerializer {
 
   // BHARSH TODO: what should we do for sparse arrays? The current format is
   // kind of weird. I'd personally lean towards writing them as a map.
-  proc startArray(w: fileWriter, _size : uint = 0) throws {
+  proc startArray(w: fileWriter, numElements : uint) throws {
+  }
+
+  proc startArrayDim(w: fileWriter, len: uint) throws {
     _arrayDim += 1;
-    if _arrayMax >= _arrayDim {
+    if _arrayMax >= _arrayDim then
       w.writeNewline();
-    } else {
+    else
       _arrayMax = _arrayDim;
-    }
+  }
+
+  proc endArrayDim(w: fileWriter) throws {
+    _arrayDim -= 1;
+    firstField = true;
   }
 
   proc writeArrayElement(w: fileWriter, const val: ?) throws {
@@ -2715,10 +2722,6 @@ record DefaultSerializer {
   }
 
   proc endArray(w: fileWriter) throws {
-    _arrayDim -= 1;
-
-    // Reset for any subsequent chunks of the array
-    firstField = true;
   }
 
   proc startMap(w: fileWriter, _size : uint = 0) throws {
@@ -2861,6 +2864,9 @@ record DefaultDeserializer {
   }
 
   proc startArray(r: fileReader) throws {
+  }
+
+  proc startArrayDim(r: fileReader) throws {
     _arrayDim += 1;
     if _arrayMax >= _arrayDim {
       // use 'match' rather than 'read' to allow for reading in a non-shaped
@@ -2869,6 +2875,12 @@ record DefaultDeserializer {
     } else {
       _arrayMax = _arrayDim;
     }
+  }
+
+  proc endArrayDim(r: fileReader) throws {
+    _arrayDim -= 1;
+
+    firstField = true;
   }
 
   proc readArrayElement(r: fileReader, type eltType) throws {
@@ -2880,9 +2892,6 @@ record DefaultDeserializer {
   }
 
   proc endArray(r: fileReader) throws {
-    _arrayDim -= 1;
-
-    firstField = true;
   }
 
   proc startMap(r: fileReader) throws {

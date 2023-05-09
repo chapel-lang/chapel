@@ -1751,12 +1751,10 @@ module DefaultRectangular {
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
-      // TODO: the '0' here isn't exactly useful for (de)serializers that want
-      // to know the length up-front (e.g. always 1D)
       if f.writing then
-        fmt.startArray(f, 0);
+        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
       else
-        fmt.startArray(f);
+        fmt.startArrayDim(f);
 
       // The simple 1D case
       if dim == rank-1 {
@@ -1782,11 +1780,18 @@ module DefaultRectangular {
         }
       }
 
-      fmt.endArray(f);
+      fmt.endArrayDim(f);
     }
+
+    if f.writing then
+      fmt.startArray(f, dom.dsiNumIndices:uint);
+    else
+      fmt.startArray(f);
 
     const zeroTup: rank*idxType;
     recursiveArrayReaderWriter(zeroTup);
+
+    fmt.endArray(f);
   }
 
   proc _readWriteBulk(f, arr, dom) throws {

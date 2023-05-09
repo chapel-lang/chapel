@@ -102,24 +102,12 @@ module ChplFormat {
     }
 
     proc startArray(w: _writeType, _size:uint = 0) throws {
-      _arrayDim += 1;
-      if _arrayFirst.size < _arrayDim {
-        _arrayFirst.append(true);
-      }
-
-      if _arrayFirst[_arrayDim-1] {
-        _arrayFirst[_arrayDim-1] = false;
-      } else {
-        w._writeLiteral(",");
-      }
-
-      _arrayMax = max(_arrayMax, _arrayDim);
-
-      if _arrayDim > 1 {
-        w.writeNewline();
-        w.writeLiteral(" " * (_arrayDim-1));
-      }
       w._writeLiteral("[");
+    }
+
+    proc startArrayDim(w: _writeType, len: uint) throws {
+    }
+    proc endArrayDim(w: _writeType) throws {
     }
 
     proc writeArrayElement(w: _writeType, const val: ?) throws {
@@ -131,17 +119,7 @@ module ChplFormat {
     }
 
     proc endArray(w: _writeType) throws {
-      if _arrayDim < _arrayMax {
-        w.writeNewline();
-        w._writeLiteral(" " * (_arrayDim-1));
-      }
       w._writeLiteral("]");
-
-      if _arrayDim < _arrayFirst.size then
-      _arrayFirst[_arrayDim] = true;
-
-      _arrayDim -= 1;
-      firstField = true;
     }
 
     proc startMap(w: _writeType, _size:uint = 0) throws {
@@ -272,20 +250,12 @@ module ChplFormat {
     }
 
     proc startArray(r: fileReader) throws {
-      _arrayDim += 1;
-      if _arrayFirst.size < _arrayDim {
-        _arrayFirst.append(true);
-      }
-
-      if _arrayFirst[_arrayDim-1] {
-        _arrayFirst[_arrayDim-1] = false;
-      } else {
-        r._readLiteral(",");
-      }
-
-      _arrayMax = max(_arrayMax, _arrayDim);
-
       r._readLiteral("[");
+    }
+
+    proc startArrayDim(w: _readerT) throws {
+    }
+    proc endArrayDim(w: _readerT) throws {
     }
 
     proc readArrayElement(r: fileReader, type eltType) throws {
@@ -297,18 +267,7 @@ module ChplFormat {
     }
 
     proc endArray(r: fileReader) throws {
-      if _arrayDim < _arrayMax {
-        r.readNewline();
-        r._readLiteral(" " * (_arrayDim-1));
-      }
-
       r._readLiteral("]");
-
-      if _arrayDim < _arrayFirst.size then
-        _arrayFirst[_arrayDim] = true;
-
-      _arrayDim -= 1;
-      firstField = true;
     }
 
     proc startMap(r: fileReader) throws {

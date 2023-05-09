@@ -1778,8 +1778,10 @@ module List {
       _enter();
 
       serializer.startArray(writer, this._size);
+      serializer.startArrayDim(writer, this._size);
       for i in 0..<this._size do
         serializer.writeArrayElement(writer, _getRef(i));
+      serializer.endArrayDim(writer);
       serializer.endArray(writer);
 
       _leave();
@@ -1906,6 +1908,7 @@ module List {
 
       ref fmt = r.deserializer;
       fmt.startArray(r);
+      fmt.startArrayDim(r);
 
       var done = false;
       while !done {
@@ -1919,6 +1922,7 @@ module List {
         }
       }
 
+      fmt.endArrayDim(r);
       fmt.endArray(r);
 
       _leave();
