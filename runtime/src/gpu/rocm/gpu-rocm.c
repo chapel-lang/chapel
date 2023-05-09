@@ -443,16 +443,6 @@ void chpl_gpu_impl_comm_wait(void *stream) {
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
-
-  // This line is a workaround since currently it looks like
-  // `chpl_gpu_ensure_context()` fails in our ROCM runtime when there are
-  // multiple devices. This function (`chpl_gpu_mem_array_alloc`) is called
-  // when initializing the Chapel module for the GPU locale module
-  // (chpl_gpu_device_alloc == true during this time), in this case the intent
-  // is just to return host memory anyway so there's no need to switch
-  // contexts.
-  if(!chpl_gpu_device_alloc) { return chpl_mem_alloc(size, description, lineno, filename); }
-
   chpl_gpu_ensure_context();
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%d file:%s line:%d\n", size,
