@@ -452,6 +452,22 @@ module Math {
     return chpl_logBasePow2(val, baseLog2);
   }
 
+  /* Returns the base 2 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(x: real(64)): real(64) {
+    return chpl_log2(x);
+  }
+
+  /* Returns the base 2 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(x : real(32)): real(32) {
+    return chpl_log2(x);
+  }
+
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(64)): real(64) {
     return chpl_sin(x);
