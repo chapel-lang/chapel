@@ -4,13 +4,23 @@ import subprocess
 import os
 import sys
 
+chpl_home = os.getenv('CHPL_HOME')
+chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
+chpl_variables = subprocess.check_output([chpl_printchplenv, "--internal"]).decode(sys.stdout.encoding).strip().splitlines()
+chpl_lib_path = os.path.join(chpl_home, "lib", "compiler")
+
+chpl_bin_prefix = "CHPL_HOST_BIN_SUBDIR: "
+for line in chpl_variables:
+    if line.startswith(chpl_bin_prefix):
+        chpl_lib_path = os.path.join(chpl_lib_path, line[len(chpl_bin_prefix):])
+
 CXXFLAGS = []
 CXXFLAGS += ["-Wno-c99-designator"]
 CXXFLAGS += subprocess.check_output(["llvm-config", "--cxxflags"]).decode(sys.stdout.encoding).strip().split(" ")
-CXXFLAGS += ["-std=c++17", "-I/Users/daniel.fedorin/Documents/software/chapel/frontend/include"]
+CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 
 LDFLAGS = []
-LDFLAGS += ["-L/Users/daniel.fedorin/Documents/software/chapel/lib/compiler/darwin-arm64", "-lChplFrontend"]
+LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend"]
 
 setup(name = "chapel",
       version = "0.1",
