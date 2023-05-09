@@ -23,8 +23,10 @@ module ChapelGpuSupport {
   use ChplConfig;
 
   extern var chpl_gpu_debug : bool;
-
   config const debugGpu = false;
+
+  extern var chpl_gpu_no_cpu_mode_warning: bool;
+  config const noCpuModeWarning = isEnvSet("CHPL_GPU_NO_CPU_MODE_WARNING");
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
@@ -35,6 +37,7 @@ module ChapelGpuSupport {
 
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
+  chpl_gpu_no_cpu_mode_warning = noCpuModeWarning;
 
   if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {
@@ -55,5 +58,10 @@ module ChapelGpuSupport {
     // calling this so we make this call here in ChapelGpuSupport.
     coforall loc in Locales do on loc do
       chpl_gpu_support_module_finished_initializing();
+
+  private proc isEnvSet(name: string): bool {
+    extern proc getenv(name : c_string) : c_string;
+    var env = createBytesWithBorrowedBuffer(getenv(name.localize().c_str()));
+    return !env.isEmpty();
   }
 }

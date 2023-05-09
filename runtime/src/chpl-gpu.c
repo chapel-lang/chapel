@@ -22,6 +22,7 @@
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
 bool chpl_gpu_debug = false;
+bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
 
 #ifdef HAS_GPU_LOCALE

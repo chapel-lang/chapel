@@ -26,14 +26,20 @@
 #include "chpltypes.h"
 #include "chpl-comm.h"
 
+extern bool chpl_gpu_no_cpu_mode_warning;
+
 static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
-  chpl_warning("assertOnGpu() is ignored with CHPL_GPU=cpu", lineno, filenameIdx);
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("assertOnGpu() is ignored with CHPL_GPU=cpu", lineno, filenameIdx);
+  }
 }
 
 static inline unsigned int chpl_gpu_clock(void) {
-  chpl_warning("chpl_gpu_clock was called.", 0, 0);
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_clock was called.", 0, 0);
+  }
   return (unsigned int)clock();
 }
 
@@ -44,7 +50,9 @@ static inline void chpl_gpu_printTimeDelta(
 }
 
 static inline void chpl_gpu_force_sync() {
-  chpl_warning("chpl_gpu_force_sync was called", 0, 0);
+  if (!chpl_gpu_no_cpu_mode_warning) {
+    chpl_warning("chpl_gpu_force_sync was called", 0, 0);
+  }
 }
 
 #endif // HAS_GPU_LOCALE
