@@ -519,19 +519,6 @@ GenRet codegenWideAddrWithAddr(GenRet base, GenRet newAddr, Type* wideType = NUL
 #define USE_TBAA 1
 
 static
-llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
-  llvm::Type* eltType = nullptr;
-  if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr)) {
-    eltType = locVar->getAllocatedType();
-  }
-  if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr)) {
-    eltType = globVar->getValueType();
-  }
-
-  return eltType;
-}
-
-static
 llvm::Type* computePointerElementType(llvm::Value* ptr, Type* chplType) {
   llvm::Type* eltTypeFromInsn = nullptr;
   llvm::Type* eltTypeFromChapelType = nullptr;

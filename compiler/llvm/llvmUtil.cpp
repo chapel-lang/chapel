@@ -634,5 +634,16 @@ bool isOpaquePointer(llvm::Type* ty) {
 #endif
 }
 
-#endif
+llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
+  llvm::Type* eltType = nullptr;
+  if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr)) {
+    eltType = locVar->getAllocatedType();
+  }
+  if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr)) {
+    eltType = globVar->getValueType();
+  }
 
+  return eltType;
+}
+
+#endif
