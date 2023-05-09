@@ -686,12 +686,8 @@ llvm::LoadInst* codegenLoadLLVM(llvm::Value* ptr,
   GenInfo* info = gGenInfo;
 
   llvm::Type* loadType = computePointerElementType(ptr, valType);
-
-#if HAVE_LLVM_VER >= 130
   llvm::LoadInst* ret = info->irBuilder->CreateLoad(loadType, ptr);
-#else
-  llvm::LoadInst* ret = info->irBuilder->CreateLoad(ptr);
-#endif
+
   llvm::MDNode* tbaa = NULL;
   if (USE_TBAA && valType &&
       (isClass(valType) || !valType->symbol->llvmTbaaStructCopyNode)) {
