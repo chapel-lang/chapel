@@ -1694,6 +1694,9 @@ module AutoMath {
     return _logBasePow2Help(val, baseLog2);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`,
      rounded down.
 
@@ -1701,10 +1704,20 @@ module AutoMath {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log2(val: int(?w)) {
+    return chpl_log2(val);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log2(val: int(?w)) {
     return chpl_logBasePow2(val, 1);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`,
      rounded down.
 
@@ -1712,7 +1725,14 @@ module AutoMath {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log2(val: uint(?w)) {
+    return chpl_log2(val);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log2(val: uint(?w)) {
     return chpl_logBasePow2(val, 1);
   }
 
