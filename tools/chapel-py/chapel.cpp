@@ -341,6 +341,13 @@ static PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py
   Py_RETURN_NONE;
 }
 
+static PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)) {
+  auto contextObject = (ContextObject*) self->contextObject;
+  auto context = &contextObject->context;
+
+  return wrapAstNode(contextObject, chpl::parsing::parentAst(context, self->astNode));
+}
+
 static PyObject* AstNodeObject_iter(AstNodeObject *self) {
   auto argList = Py_BuildValue("(O)", (PyObject*) self);
   auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
@@ -362,6 +369,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
   {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
   {"location", (PyCFunction) AstNodeObject_location, METH_NOARGS, "Get the location of this AST node in its file"},
+  {"parent", (PyCFunction) AstNodeObject_parent, METH_NOARGS, "Get the parent node of this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -413,6 +421,8 @@ PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
 PLAIN_GETTER(FnCall, used_square_brackets, "b", return node->callUsedSquareBrackets());
 PLAIN_GETTER(FnCall, called_expression, "O", return wrapAstNode(contextObject, node->calledExpression()));
 PLAIN_GETTER(Dot, field, "s", return node->field());
+PLAIN_GETTER(VisibilityClause, symbol, "O", return wrapAstNode(contextObject, node->symbol()));
+PLAIN_GETTER(Identifier, name, "s", return node->name());
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
@@ -514,6 +524,23 @@ struct PerNodeInfo<chpl::uast::asttags::Attribute> {
   static constexpr PyMethodDef methods[] = {
     {"actuals", AttributeObject_actuals, METH_NOARGS, "Get the actuals for this Attribute node"},
     {"name", AttributeObject_name, METH_NOARGS, "Get the name of this Attribute node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::VisibilityClause> {
+  static constexpr PyMethodDef methods[] = {
+    {"symbol", VisibilityClauseObject_symbol, METH_NOARGS, "Get the symbol referenced by this VisibilityClause node"},
+    {NULL, NULL, 0, NULL}  /* Sentinel */
+  };
+};
+
+
+template <>
+struct PerNodeInfo<chpl::uast::asttags::Identifier> {
+  static constexpr PyMethodDef methods[] = {
+    {"name", IdentifierObject_name, METH_NOARGS, "Get the name of this Identifier node"},
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
