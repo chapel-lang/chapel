@@ -1604,8 +1604,11 @@ bool GlobalToWide::run(Module &M) {
           // fix up functions that have bodies
           // also skip "special" functions like wideToGlobal
           // (since they have no body)
-
+#if HAVE_LLVM_VER >= 160
+          NF->splice(NF->begin(), F);
+#else
           NF->getBasicBlockList().splice(NF->begin(), F->getBasicBlockList());
+#endif
 
           // Loop over the argument list, transferring uses of the old arguments
           // over to the new arguments, also transferring over the names as

@@ -245,7 +245,11 @@ GenRet DefExpr::codegen() {
 
       info->irBuilder->CreateBr(blockLabel);
 
+#if HAVE_LLVM_VER >= 160
+      func->insert(func->end(), blockLabel);
+#else
       func->getBasicBlockList().push_back(blockLabel);
+#endif
       info->irBuilder->SetInsertPoint(blockLabel);
     }
 #endif
@@ -2221,17 +2225,29 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockIfTrue);
+#else
     func->getBasicBlockList().push_back(blockIfTrue);
+#endif
     info->irBuilder->SetInsertPoint(blockIfTrue);
     info->irBuilder->CreateStore(values.a, tmp);
     info->irBuilder->CreateBr(blockEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockIfFalse);
+#else
     func->getBasicBlockList().push_back(blockIfFalse);
+#endif
     info->irBuilder->SetInsertPoint(blockIfFalse);
     info->irBuilder->CreateStore(values.b, tmp);
     info->irBuilder->CreateBr(blockEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockEnd);
+#else
     func->getBasicBlockList().push_back(blockEnd);
+#endif
     info->irBuilder->SetInsertPoint(blockEnd);
     ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMType(), tmp);
 
