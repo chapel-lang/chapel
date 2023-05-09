@@ -2366,6 +2366,8 @@ static std::string generateClangGpuLangArgs() {
         args += "hip";
         break;
       case GpuCodegenType::GPU_CG_CPU:
+        args += "c++";
+        args += " -lstdc++";
         break;
     }
   }
