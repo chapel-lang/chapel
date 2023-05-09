@@ -2060,12 +2060,12 @@ GenRet codegenMod(GenRet a, GenRet b)
         // truncate 8-bit and 32-bit values.
         // TODO: note for the future - we may need to do this for float ->
         // double as well, matching the C semantics for fmod
-        auto aBitWidth = values.a->getType()->getPrimitiveSizeInBits();
-        auto bBitWidth = values.b->getType()->getPrimitiveSizeInBits();
+        auto aBitWidth = values.a->getType()->getScalarSizeInBits();
+        auto bBitWidth = values.b->getType()->getScalarSizeInBits();
         // after convertValuesToLarger, both both bit widths should be the same
         INT_ASSERT(aBitWidth == bBitWidth);
         auto bitWidth = aBitWidth;
-        auto sextBitWidth =
+        unsigned sextBitWidth =
             (bitWidth == 8 ? 16 : (bitWidth == 16 ? 32 : bitWidth));
 
         auto aVal = values.a;
