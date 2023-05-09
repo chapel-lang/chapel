@@ -34,6 +34,8 @@ extern "C" {
 // module can be used despite what locale model you're using).
 extern bool chpl_gpu_debug;
 extern int chpl_gpu_num_devices;
+extern bool chpl_gpu_no_cpu_mode_warning;
+
 
 #ifdef HAS_GPU_LOCALE
 

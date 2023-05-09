@@ -62,9 +62,9 @@ void chpl_gpu_init(void) {
       snprintf(msg, sizeof(msg),
           "CHPL_RT_NUM_GPUS_PER_LOCALE = %" PRIi32 " is too large; "
           "it must be less than or equal to the number of GPUs per node. "
-          "Detected %" PRIi32 " GPUs per node. "
+          "Detected %" PRIi32 " GPUs in node %" PRIi32 ". "
           "Ignoring this environment variable.",
-          num, chpl_gpu_num_devices);
+          num, chpl_gpu_num_devices, chpl_nodeID);
       chpl_warning(msg, 0, 0);
     }
     else {
