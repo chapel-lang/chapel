@@ -1,6 +1,7 @@
 use BitOps;
 use Random;
 use Time;
+use Math;
 
 use HPCCProblemSize;
 
@@ -68,7 +69,6 @@ proc initVectors(Twiddles, z) {
 
 
 proc computeTwiddles(Twiddles) {
-  use Math;
   const numTwdls = Twiddles.size,
         delta = 2.0 * atan(1.0) / numTwdls;
 

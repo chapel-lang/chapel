@@ -1,4 +1,4 @@
-use Time;
+use Time, Math;
 
 type tableElem = uint(64);
 

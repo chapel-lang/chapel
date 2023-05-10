@@ -1,7 +1,7 @@
 use BitOps;
 use Random;
 use Time;
-
+use Math;
 
 // problem size configs
 config const logN = 8;
@@ -57,7 +57,6 @@ proc main() {
 
 
 proc computeTwiddles(W) {
-  use Math;
   const n = W.size;
   const delta = 2.0 * atan(1.0) / n;
 

@@ -1,6 +1,8 @@
 /*  This is the Chapel version of Random Access HPC benchmark.
  *
  */  
+use Math;
+
 param POLY:uint(64) = 7;
 
 config const verify = true;
