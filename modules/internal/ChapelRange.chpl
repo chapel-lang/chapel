@@ -3073,7 +3073,11 @@ operator :(r: range(?), type t: range(?)) {
   //
   proc chpl__mod(dividend:integral, modulus:integral)
   {
-    const m = abs(modulus);
+    type t = modulus.type;
+    var m = modulus;
+    if isIntType(t) {
+      if modulus != min(t) then m = abs(modulus);
+    }
 
     var tmp = dividend % m;
     if isInt(dividend) then
