@@ -25,7 +25,7 @@ DYNO_CHPLDEF_SRCS = \
            Message.cpp \
            message-handle.cpp \
            misc.cpp \
-           protocol-types.cpp \ 
+           protocol-types.cpp \
            Server.cpp \
            Transport.cpp
 

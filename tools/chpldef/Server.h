@@ -38,11 +38,20 @@
 namespace chpldef {
 
 class Server {
+public:
+  class Configuration {};
+
+private:
   Logger logger_;
+  chpl::owned<chpl::Context> chplctx_ = nullptr;
+  int revision_;
 
 public:
   Server();
  ~Server() = default;
+
+  inline int revision() const { return revision_; }
+  inline const chpl::Context* chplctx() const { return chplctx_.get(); }
 
   void setLogger(Logger&& logger);
   inline Logger& logger() { return logger_; }

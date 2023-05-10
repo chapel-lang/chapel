@@ -72,7 +72,7 @@ CHPLDEF_MESSAGE(NotebookDidClose, notebookDocument/didClose)
 */
 
 //
-// LANGUAGE FEATURES 
+// LANGUAGE FEATURES
 //
 
 /*

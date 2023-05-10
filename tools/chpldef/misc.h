@@ -60,6 +60,7 @@ namespace chpldef {
 using JsonValue = llvm::json::Value;
 using JsonObject = llvm::json::Object;
 using JsonPath = llvm::json::Path;
+using JsonMapper = llvm::json::ObjectMapper;
 
 /** Wrapper around LLVM's optional type. */
 template <typename T> using opt = llvm::Optional<T>;

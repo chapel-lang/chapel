@@ -98,8 +98,7 @@ chpl::owned<Message> Message::request(Server* ctx, JsonValue&& json) {
 // TODO: Is outbound format the same as for incoming requests?
 template <typename P, typename R>
 JsonValue Request<P, R>::pack() const {
-  CHPLDEF_TODO();
-  return toJson(p);
+  return p.toJson();
 }
 
 template <typename T>
@@ -107,13 +106,13 @@ static Response createSuccessfulResponse(const T* t) {
   CHPL_ASSERT(t && t->isCompleted() && !t->hasError());
   auto r = t->result();
   CHPL_ASSERT(r);
-  auto data = toJson(*r);
+  auto data = r->toJson();
   auto ret = Response::create(t->id(), std::move(data));
   return ret;
 }
 
 opt<Response> Message::response(Server* ctx, const Message* msg) {
-  auto ret = opt<Response>();
+  opt<Response> ret;
 
   if (msg->tag() == Message::UNSET || msg->tag() == Message::INVALID ||
       msg->tag() == Message::RESPONSE) {
@@ -203,7 +202,7 @@ Message::Error Request<P, R>::unpack(const JsonValue& json, P& p,
                                      std::string* note) {
   llvm::json::Path::Root root;
   // Appropriate 'fromJson' must be defined in 'protocol-types.h'!
-  bool err = chpldef::fromJson(p, json, root);
+  bool err = p.fromJson(json, root);
   if (!err) return Message::OK;
   if (note) *note = "Failed to unpack JSON";
   return Message::ERR_INVALID_PARAMS;

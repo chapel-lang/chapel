@@ -24,61 +24,112 @@
 #include "./Logger.h"
 #include "./misc.h"
 
+/** Bunch up some redundant overrides for protocol structs into a macro. */
+#define CHPLDEF_PROTOCOL_STRUCT_OVERRIDES()               \
+  virtual bool fromJson(const JsonValue& j, JsonPath p);  \
+  virtual JsonValue toJson() const;
+
+/** This header contains types which help form the Microsoft language server
+    protocol. The types attempt to follow the specification as faithfully
+    as possible, but liberty is taken in cases where definitions are too
+    deeply nested or otherwise redundant.
+
+    NOTE: If you define a new struct in this file, you should add a pair of
+    (de)serializer functions to the section at the bottom of the file in
+    order to define how the type is converted to/from JSON.
+*/
 namespace chpldef {
 
-/** The progress token is either an 'integer' or a 'string'. */
-struct WorkDoneProgressParams {
-  JsonValue token = nullptr;
+struct ProtocolStruct {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) = 0;
+  virtual JsonValue toJson() const = 0;
+
+  /** By default, convert to JSON and then print the JSON. */
+  virtual std::string toString() const;
+  virtual ~ProtocolStruct() = default;
 };
 
-struct ClientInfo {
+/** Information about the client. */
+struct ClientInfo : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+
   std::string name;
   opt<std::string> version;
+};
+
+/** TODO: Used to store 'chpldef' specific initialization options. */
+struct ChpldefInit : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
 };
 
 /** As defined by the spec, this structure is deeply nested and absolutely
     impossible to read/understand. I've opted to follow clangd's lead here
     and only list things we should (probably) care about.
-    For now this thing is empty, but as we find we need to care about
-    certain client capabilities, we'll add them here.
+
+    For right now, this struct is empty (because the spec allows all the
+    fields to be nullable).
+
+    TODO: If you add a field here, then adjust the (de)serializer methods.
 */
-struct ClientCapabilities {
-  opt<int> dummy;
+struct ClientCapabilities : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
 };
 
-struct WorkspaceFolder {
-  opt<int> dummy;
+struct WorkspaceFolder : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+
+  std::string uri;
+  std::string name;
 };
 
-struct InitializeParams : WorkDoneProgressParams {
-  opt<int> proccessId;
+struct TraceLevel : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+
+  Logger::Level level;
+};
+
+struct InitializeParams : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+
+  opt<int> processId;
   opt<ClientInfo> clientInfo;
   opt<std::string> locale;
-  opt<std::string> rootPath;  /** Deprecated - see 'rootUri'. */
-  opt<std::string> rootUri;   /** Deprecated - see 'workspaceFolders'. */
-  JsonValue initializationOptions = nullptr;
-  ClientCapabilities clientCapabilities;
-  Logger::Level trace;
+  opt<std::string> rootPath;  /** Deprecated -> 'rootUri'. */
+  opt<std::string> rootUri;   /** Deprecated -> 'workspaceFolders. */
+  opt<ChpldefInit> initializationOptions;
+  ClientCapabilities capabilities;
+  opt<TraceLevel> trace;
   opt<std::vector<WorkspaceFolder>> workspaceFolders;
 };
 
-bool fromJson(InitializeParams& data, const JsonValue& val, JsonPath p);
-JsonValue toJson(const InitializeParams& data);
-
-struct InitializeResult {
-  opt<int> dummy;
+/** TODO: Build this up in conjunction with 'ClientCapabilities'. */
+struct ServerCapabilities : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
 };
 
-bool fromJson(InitializeResult& data, const JsonValue& val, JsonPath p);
-JsonValue toJson(const InitializeResult& data);
+struct ServerInfo : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
 
-struct ServerCapabilities {
-  opt<int> dummy;
+  std::string name;
+  opt<std::string> version;
 };
 
+struct InitializeResult : ProtocolStruct {
+  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
 
-
+  ServerCapabilities capabilities;
+  opt<ServerInfo> serverInfo;
+};
 
 } // end namespace 'chpldef'
+
+/** Teach the LLVM JSON library how to use the protocol structs. */
+namespace llvm {
+namespace json {
+  bool fromJSON(const llvm::json::Value& j, chpldef::ProtocolStruct& x,
+                llvm::json::Path p);
+  llvm::json::Value toJSON(const chpldef::ProtocolStruct& x);
+} // end namespace 'json'
+} // end namespace 'llvm'
 
 #endif

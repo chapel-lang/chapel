@@ -88,7 +88,7 @@ public:
 private:
   Tag tag_;
   JsonValue id_;
-  Error error_ = Message::OK; 
+  Error error_ = Message::OK;
   Status status_ = Message::PENDING;
   std::string note_;
 
@@ -96,7 +96,7 @@ protected:
   inline void markProgressing() { status_ = Message::PROGRESSING; }
   inline void markCompleted() { status_ = Message::COMPLETED; }
   inline void markFailed(Error error, std::string note=std::string()) {
-    status_ = Message::FAILED;  
+    status_ = Message::FAILED;
     error_ = error;
     note_ = std::move(note);
   }
@@ -118,7 +118,7 @@ public:
   /** Create a request given a JSON value. */
   static chpl::owned<Message> request(Server* ctx, JsonValue&& json);
 
-  /** Create a response to a handled message. The status of the message 
+  /** Create a response to a handled message. The status of the message
       must be COMPLETED or FAILED, or else nothing is returned. */
   static opt<Response> response(Server* ctx, const Message* msg);
 
@@ -195,7 +195,7 @@ public:
     Server* ctx_;
 
   public:
-    Visitor(Server* ctx) : ctx_(ctx) {} 
+    Visitor(Server* ctx) : ctx_(ctx) {}
 
     virtual T visit(const class Response* rsp) {
       T ret;
@@ -247,6 +247,12 @@ public:
     Message::Error error;
     std::string note;
     Result result;
+
+    ComputedResult() = default;
+    ComputedResult(Result&& r)
+        : isProgressingCallAgain(false),
+          error(Message::OK),
+          result(r) {}
   };
 
 protected:
@@ -271,11 +277,6 @@ protected:
   /** Use in message handlers to delay. */
   inline ComputedResult delay() const {
     return { true, Message::OK, {}, {} };
-  }
-
-  /** Use in message handlers to return success. */
-  inline ComputedResult succeed(Result&& ret) const {
-    return { false, Message::OK, {}, std::move(ret) };
   }
 
 public:
@@ -317,7 +318,12 @@ private: \
          Params&& p) \
       : Request(Message::name__, std::move(id), error, \
                 std::move(note), \
-                std::move(p)) {} \
+                std::move(p)) { \
+    static_assert(std::is_base_of<ProtocolStruct, Params>::value, \
+                  "Must be derived from 'ProtocolStruct'"); \
+    static_assert(std::is_base_of<ProtocolStruct, Result>::value, \
+                  "Must be derived from 'ProtocolStruct'"); \
+  } \
 public: \
   virtual ~name__() = default; \
   static chpl::owned<Message> create(JsonValue&& id, const JsonValue& json); \

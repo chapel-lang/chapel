@@ -60,7 +60,7 @@ Logger::Logger(Logger&& other) {
 Logger::Logger() : Logger(Logger::STDERR, "<stderr>") {}
 
 Logger Logger::createForStderr() {
-  return Logger();  
+  return Logger();
 }
 
 Logger Logger::createForStdout() {

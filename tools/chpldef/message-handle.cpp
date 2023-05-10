@@ -79,8 +79,8 @@ opt<Response> Message::handle(Server* ctx, Message* msg) {
 
 /** TODO: Fill in 'InitializeResult', turning most fields off. */
 Initialize::ComputedResult Initialize::compute(Server* ctx) {
-  CHPLDEF_TODO();
-  return fail();
+  Result ret;
+  return ret;
 }
 
 } // end namespace 'chpldef'
