@@ -3878,7 +3878,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
 static
 void addDumpIrPass(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
-  PM.add(createDumpIrPass(llvmPrintIrStageNum));
+  PM.add(createLegacyDumpIrPass(llvmPrintIrStageNum));
 }
 
 static void linkBitCodeFile(const char *bitCodeFilePath) {
@@ -4353,7 +4353,7 @@ void makeBinaryLLVM(void) {
               point,
               [stage] (const PassManagerBuilder &Builder,
                        llvm::legacy::PassManagerBase &PM) -> void {
-                PM.add(createDumpIrPass(stage));
+                PM.add(createLegacyDumpIrPass(stage));
               });
       }
 
