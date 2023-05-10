@@ -465,14 +465,7 @@ module CommDiagnostics
     :type printEmptyColumns: `bool`
   */
   proc printCommDiagnosticsTable(printEmptyColumns=false) {
-    use Reflection;
-
-    // Included here to avoid relying on the Math module in a module that is
-    // built in all user programs by default (even though CommDiagnostics still
-    // requires a use or import to be accessed in user code).
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc log10(x: real(64)): real(64);
+    use Reflection, Math;
 
     param unstable = "unstable";
 
