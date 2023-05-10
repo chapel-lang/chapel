@@ -1,6 +1,7 @@
 
 use IO;
 use List;
+use Map;
 
 record R {
   var x : int;
@@ -67,6 +68,21 @@ proc main() {
     var li : list(list(int));
     var x : list(int) = [1, 2, 3];
     var y : list(int) = [4, 5, 6];
+    li.append(x);
+    li.append(y);
+    testList(li);
+  }
+  {
+    var li : list(map(string, int));
+
+    var x : map(string,int);
+    x.add("A", 1);
+    x.add("B", 2);
+
+    var y : map(string,int);
+    y.add("X", 3);
+    y.add("Y", 4);
+
     li.append(x);
     li.append(y);
     testList(li);

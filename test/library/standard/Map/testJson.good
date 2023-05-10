@@ -42,3 +42,14 @@ Read map(string,map(string,int(64),false),false):
 {y: {S: 33, R: 99}, x: {A: 5, B: 42}}
 Equals original: true
 ---------------------------------------------------
+--- map(string,list(int(64),false),false) ---
+Writing map: 
+{y: [4, 5, 6], x: [1, 2, 3]}
+
+Wrote JSON: 
+{"y": [4, 5, 6], "x": [1, 2, 3]}
+
+Read map(string,list(int(64),false),false): 
+{y: [4, 5, 6], x: [1, 2, 3]}
+Equals original: true
+---------------------------------------------

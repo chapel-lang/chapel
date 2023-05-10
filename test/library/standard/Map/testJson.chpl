@@ -1,6 +1,7 @@
 
 use IO;
 use Map;
+use List;
 
 record R {
   var x : int;
@@ -69,6 +70,14 @@ proc main() {
     m.add("x", x);
     m.add("y", y);
 
+    testMap(m);
+  }
+  {
+    var m : map(string, list(int));
+    var x : list(int) = [1, 2, 3];
+    var y : list(int) = [4, 5, 6];
+    m.add("x", x);
+    m.add("y", y);
     testMap(m);
   }
 }

@@ -53,3 +53,14 @@ Read list(list(int(64),false),false):
 [[1, 2, 3], [4, 5, 6]]
 Equals original: true
 ---------------------------------------
+--- list(map(string,int(64),false),false) ---
+Writing list: 
+[{A: 1, B: 2}, {Y: 4, X: 3}]
+
+Wrote JSON: 
+[{"A": 1, "B": 2}, {"Y": 4, "X": 3}]
+
+Read list(map(string,int(64),false),false): 
+[{A: 1, B: 2}, {Y: 4, X: 3}]
+Equals original: true
+---------------------------------------------
