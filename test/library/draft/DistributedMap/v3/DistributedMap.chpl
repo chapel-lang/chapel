@@ -5,6 +5,7 @@ module DistributedMap {
     private use HaltWrappers;
     private use CyclicDist;
     private use IO;
+    private use Math;
     private use Reflection;
     private use ChapelLocks;
 
