@@ -3075,8 +3075,8 @@ operator :(r: range(?), type t: range(?)) {
   {
     type t = modulus.type;
     var m = modulus;
-    if Types.isIntType(t) {
-      if modulus != Types.min(t) then
+    if isIntType(t) {
+      if modulus != min(t) then
         m = abs(modulus);
     }
 
