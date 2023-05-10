@@ -43,7 +43,8 @@
 // code generator might have started with loads and stores.
 
 // This code was based upon the LLVM optimization MemCpyOptimizer.cpp
-
+// TODO: MemCpyOptimizer has evolved quite a bit since then,
+// so look at making a new version of this pass.
 #include "llvmAggregateGlobalOps.h"
 
 #ifdef HAVE_LLVM
@@ -682,16 +683,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Determine alignment
     unsigned Alignment = Range.Alignment;
     if (Alignment == 0) {
-#if HAVE_LLVM_VER >= 150
-      Type *EltType = First->getType();
-#elif HAVE_LLVM_VER >= 130
-      Type *EltType =
-        cast<PointerType>(StartPtr->getType())->getPointerElementType();
-#else
-      Type *EltType =
-        cast<PointerType>(StartPtr->getType())->getElementType();
-#endif
-      Alignment = DL->getABITypeAlignment(EltType);
+      Type* eltType = nullptr;
+      if (LoadInst* ld = dyn_cast<LoadInst>(First)) {
+        eltType = ld->getType();
+      } else if (StoreInst* st = dyn_cast<StoreInst>(First)) {
+        eltType = st->getValueOperand()->getType();
+      }
+      if (eltType) {
+        Alignment = DL->getABITypeAlignment(eltType);
+      } else {
+        assert(false && "expected eltType when computing natural alignment");
+      }
     }
 
     Instruction *alloc = NULL;
@@ -728,13 +730,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                                                    alloc,
                                                    offsets);
 
-#if HAVE_LLVM_VER >= 150
-        Type* DstTy = oldStore->getType();
-#else
-        Type* origDstTy = oldStore->getPointerOperand()->getType();
-        Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
-#endif
-        Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);
+        Type* StoreType = oldStore->getValueOperand()->getType();
+        Type* PtrType = StoreType->getPointerTo(0);
+        Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
@@ -831,21 +829,14 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
-#if HAVE_LLVM_VER >= 150
-        Type* SrcTy = oldLoad->getType();
-#else
-        Type* origSrcTy = oldLoad->getPointerOperand()->getType();
-        Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
-#endif
-        Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
-#if HAVE_LLVM_VER >= 150
-        LoadInst* newLoad = irBuilder.CreateLoad(SrcTy, Src);
-#elif HAVE_LLVM_VER >= 130
-        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
-#else
-        LoadInst* newLoad = irBuilder.CreateLoad(Src);
-#endif
+        Type* LoadType = oldLoad->getType();
+        Type* PtrType = LoadType->getPointerTo(0);
+
+        Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
+
+        LoadInst* newLoad = irBuilder.CreateLoad(LoadType, Src);
+
 #if HAVE_LLVM_VER >= 100
         newLoad->setAlignment(oldLoad->getAlign());
 #else
