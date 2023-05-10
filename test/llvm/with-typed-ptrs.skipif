@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+
+# Skip versions of LLVM in which we don't have typed pointers.
+# These tests should not be updated when we move to new LLVM versions, and
+# can be deleted once we no longer support any version of LLVM with typed
+# pointers.
+
+import os
+
+print(int(os.getenv('CHPL_LLVM_VERSION')) >= 15)
