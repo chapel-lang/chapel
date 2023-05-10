@@ -656,19 +656,61 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // check LVT for value
       GenRet got = info->lvt->getValue(cname);
       got.chplType = typeInfo();
-      // extern C arrays might be declared with type c_ptr(eltType)
-      // (which is a lie but works OK in C). In that event, generate
-      // a pointer to the first element when the variable is used.
       Type* valType = getValType();
-      if (got.val &&
-          hasFlag(FLAG_EXTERN) &&
-          valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-          info->lvt->isCArray(cname)) {
-        auto global = llvm::cast<llvm::GlobalValue>(got.val);
-        INT_ASSERT(global);
-        llvm::Type* gepTy = global->getValueType();
-        got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
-        got.isLVPtr = GEN_VAL;
+      if (got.val && hasFlag(FLAG_EXTERN)) {
+        // extern C arrays might be declared with type c_ptr(eltType)
+        // (which is a lie but works OK in C). In that event, generate
+        // a pointer to the first element when the variable is used.
+        bool cArrayLie = valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+                         info->lvt->isCArray(cname);
+        if (cArrayLie) {
+          auto global = llvm::cast<llvm::GlobalValue>(got.val);
+          INT_ASSERT(global);
+          llvm::Type* gepTy = global->getValueType();
+          got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
+          got.isLVPtr = GEN_VAL;
+        }
+        // check for extern global variables where there is a different
+        // type provided by clang
+        clang::TypeDecl* unusedCType = nullptr;
+        clang::ValueDecl* cValue = nullptr;
+        const char* cCastToType = nullptr;
+        astlocT cLoc(0, nullptr);
+        Type* chapelType = got.chplType;
+        info->lvt->getCDecl(cname, &unusedCType, &cValue, &cCastToType, &cLoc);
+
+        llvm::Type* genCType = nullptr;
+        llvm::Type* genChplType = nullptr;
+        if (cCastToType) {
+          genCType = getTypeLLVM(cCastToType);
+        } else if (cValue) {
+          genCType = codegenCType(cValue->getType());
+        }
+
+        {
+          GenRet tmp = chapelType->codegen();
+          genChplType = tmp.type;
+        }
+
+        if (cValue && llvm::isa<clang::EnumConstantDecl>(cValue)) {
+          // if there is a mismatch for an enum constant, don't worry about it
+          // c enum types are always 'int' but code might assume it is smaller
+          // TODO: should we check this?
+        } else if (cArrayLie) {
+          // ignore mismatch for c arrays due to identifying it as the
+          // same as c_ptr.
+        } else if (genCType && genChplType && genCType != genChplType) {
+          USR_FATAL_CONT(this, "type conflict for extern variable '%s'",
+                         name);
+          if (cCastToType) {
+            USR_PRINT(cLoc, "the C type is '%s'", cCastToType);
+          } else {
+            clang::QualType qt = cValue->getType();
+            USR_PRINT(cLoc, "the C type is '%s'", qt.getAsString().c_str());
+          }
+          USR_PRINT(this, "the Chapel type is '%s'", toString(chapelType));
+          USR_STOP();
+        }
       }
       if (got.val) {
         return got;
