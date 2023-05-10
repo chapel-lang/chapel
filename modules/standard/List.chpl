@@ -1737,7 +1737,7 @@ module List {
       _leave();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _writeJson(ch: fileWriter) throws {
       _enter();
 
@@ -1827,6 +1827,7 @@ module List {
       _leave();
     }
 
+    @chpldoc.nodoc
     proc _readJson(ch: fileReader) throws {
       var isFirst = true;
       var hasReadEnd = false;

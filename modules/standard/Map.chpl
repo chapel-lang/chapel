@@ -659,7 +659,7 @@ module Map {
         _readWriteHelper(ch);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _readJson(ch: fileReader) throws {
       _enter(); defer _leave();
       var first = true;
@@ -714,7 +714,7 @@ module Map {
         _readWriteHelper(ch);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _writeJson(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
