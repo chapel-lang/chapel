@@ -3073,7 +3073,12 @@ operator :(r: range(?), type t: range(?)) {
   //
   proc chpl__mod(dividend:integral, modulus:integral)
   {
-    const m = abs(modulus);
+    type t = modulus.type;
+    var m = modulus;
+    // The extra check for `m != min(t)` is requird to avoid an optimizer
+    // (specially LLVM) determin that `-min(t)` is undefined and inserting
+    // `poison`.
+    if isIntType(t) && m < 0 && m != min(t) then m = -m;
 
     var tmp = dividend % m;
     if isInt(dividend) then
