@@ -108,8 +108,13 @@ static void testBorrowIds() {
                          /* field */ false, /* method */ false, /* parenful */ false);
     assert(ids.numIds() == 1);
     auto foundIds = ids.borrow(0, FlagSet::empty());
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == x);
     assert(b.numIds() == 1);
     int count = 0;
@@ -127,7 +132,11 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(!foundIds.has_value());
+#else
     assert(!foundIds.hasValue());
+#endif
   }
   {
     // check one id with filtering
@@ -136,7 +145,11 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(not_method);
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(!foundIds.has_value());
+#else
     assert(!foundIds.hasValue());
+#endif
   }
 
   {
@@ -149,8 +162,13 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = pub;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == y);
     assert(b.numIds() == 1);
     int count = 0;
@@ -170,8 +188,13 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = IdAndFlags::PUBLIC;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == y);
     assert(b.numIds() == 1);
     int count = 0;
@@ -191,8 +214,13 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::empty();
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == y);
     assert(b.numIds() == 2);
     int count = 0;
@@ -212,8 +240,13 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == x);
     assert(b.numIds() == 1);
     int count = 0;
@@ -233,8 +266,13 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub | method);
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(foundIds.has_value());
+    auto b = foundIds.value();
+#else
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
+#endif
     assert(b.firstId() == x);
     assert(b.numIds() == 1);
     int count = 0;
@@ -254,7 +292,11 @@ static void testBorrowIds() {
     IdAndFlags::Flags f = 0;
     auto e = FlagSet::singleton(pub);
     auto foundIds = ids.borrow(f, e);
+#if LLVM_VERSION_MAJOR >= 16
+    assert(!foundIds.has_value());
+#else
     assert(!foundIds.hasValue());
+#endif
   }
 }
 

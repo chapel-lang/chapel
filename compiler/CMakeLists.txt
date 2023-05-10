@@ -16,10 +16,13 @@
 # limitations under the License.
 
 
-# TODO: Determine when CMake looks for CC and CXX and set them to our
-# CHPL_HOST_CC and CHPL_HOST_CXX
-# request C++14
-set(CMAKE_CXX_STANDARD 14)
+# request C++14 -- or C++17 if using LLVM 16
+if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # request C11

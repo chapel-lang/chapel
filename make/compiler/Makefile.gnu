@@ -143,9 +143,9 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
-# CXX11_STD is the flag to select C++11, or "unknown" for compilers
-# we don't know how to do that with yet.
-# If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
+# CXX11_STD is the flag to select C++11, blank for compilers that
+# don't know how to do that
+# Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
 
@@ -155,7 +155,11 @@ ifeq ($(GNU_GPP_MAJOR_VERSION),4)
 endif
 
 COMP_CFLAGS += $(C_STD)
+ifneq ($(CHPL_MAKE_LLVM_VERSION),16)
 COMP_CXXFLAGS += $(CXX14_STD)
+else
+# get the C++ standard flag from CMake
+endif
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)

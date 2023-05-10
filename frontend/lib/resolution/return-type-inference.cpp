@@ -297,7 +297,11 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       context->error(astForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
+#if LLVM_VERSION_MAJOR >= 16
+    auto adjType = adjustForReturnIntent(returnIntent, retType.value());
+#else
     auto adjType = adjustForReturnIntent(returnIntent, retType.getValue());
+#endif
     return adjType;
   }
 }

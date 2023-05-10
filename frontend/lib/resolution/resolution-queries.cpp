@@ -2820,10 +2820,6 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
                                     ForwardingInfoVec& poiForwardingTo) {
-  nonPoiCandidates.empty();
-  poiCandidates.empty();
-  nonPoiForwardingTo.empty();
-  poiForwardingTo.empty();
 
   const Type* receiverType = ci.actual(0).type().type();
 
