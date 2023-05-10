@@ -659,16 +659,15 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // extern C arrays might be declared with type c_ptr(eltType)
       // (which is a lie but works OK in C). In that event, generate
       // a pointer to the first element when the variable is used.
+      Type* valType = getValType();
       if (got.val &&
           hasFlag(FLAG_EXTERN) &&
-          getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
           info->lvt->isCArray(cname)) {
-        llvm::Type* eltTy = nullptr;
-#if HAVE_LLVM_VER >= 130
-        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getPointerElementType();
-#endif
-
-        got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
+        auto global = llvm::cast<llvm::GlobalValue>(got.val);
+        INT_ASSERT(global);
+        llvm::Type* gepTy = global->getValueType();
+        got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
         got.isLVPtr = GEN_VAL;
       }
       if (got.val) {
@@ -685,23 +684,16 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           return ret;
         }
         llvm::Value *constString = codegenImmediateLLVM(immediate);
+        auto globalConstString = llvm::cast<llvm::GlobalValue>(constString);
+        llvm::Type* gepTy = globalConstString->getValueType();
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
                   (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
-#if HAVE_LLVM_VER >= 130
-        llvm::Type* ty = llvm::cast<llvm::PointerType>(
-          constString->getType()->getScalarType())->getPointerElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
-              ty, constString, 0, 0)));
-#else
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreateConstInBoundsGEP2_32(
-              NULL, constString, 0, 0)));
-
-#endif
+                gepTy, globalConstString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -1403,7 +1395,7 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    llvmImplType = type;
+    if (llvmImplType == nullptr) llvmImplType = type;
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
@@ -2666,13 +2658,8 @@ void FnSymbol::codegenDef() {
               // consume the next LLVM argument
               llvm::Value* val = &*ai++;
               // store it into the addr
-#if HAVE_LLVM_VER >= 130
-              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getPointerElementType();
               llvm::Value* eltPtr =
-                irBuilder->CreateStructGEP(eltTy, storeAdr, i);
-#else
-              llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
-#endif
+                irBuilder->CreateStructGEP(sTy, storeAdr, i);
               irBuilder->CreateStore(val, eltPtr);
             }
 

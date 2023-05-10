@@ -726,6 +726,23 @@ module CTypes {
   }
 
   /*
+    Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
+    :proc:`c_ptrToConst` is used for :type:`~String.string` and
+    :type:`~Bytes.bytes` arguments.
+
+    The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
+    underlying buffer of the ``string`` or ``bytes``. The deprecated behavior
+    is to return a :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or
+    ``bytes`` itself — this matches the behavior of
+    :proc:`c_addrOf`/:proc:`c_addrOfConst`.
+
+    The deprecated behavior is on by default. To opt in to the new behavior,
+    compile your program with the following argument:
+    ``-s cPtrToStringBytesBufferAddress=true``.
+  */
+  config param cPtrToStringBytesBufferAddress = false;
+
+  /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
 
     Note that the existence of this ``c_ptr`` has no impact on the lifetime of
@@ -734,7 +751,9 @@ module CTypes {
 
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar) {
+  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
+    where cPtrToStringBytesBufferAddress == true
+  {
     if boundsChecking {
       if (s.buffLen == 0) then
         halt("Can't create a C pointer for an empty string.");
@@ -742,16 +761,32 @@ module CTypes {
     return c_pointer_return(s.buff[0]);
   }
 
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref s: string): c_ptr(string)
+    where cPtrToStringBytesBufferAddress == false
+  {
+    return c_addrOf(s);
+  }
+
   /*
    Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar) {
+  inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
+    where cPtrToStringBytesBufferAddress == true
+  {
     if boundsChecking {
       if (s.buffLen == 0) then
         halt("Can't create a C pointer for an empty string.");
     }
     return c_pointer_return_const(s.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
+    where cPtrToStringBytesBufferAddress == false
+  {
+    return c_addrOfConst(s);
   }
 
   /*
@@ -763,7 +798,9 @@ module CTypes {
 
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
-  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar) {
+  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
+    where cPtrToStringBytesBufferAddress == true
+  {
     if boundsChecking {
       if (b.buffLen == 0) then
         halt("Can't create a C pointer for an empty bytes.");
@@ -771,16 +808,32 @@ module CTypes {
     return c_pointer_return(b.buff[0]);
   }
 
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
+    where cPtrToStringBytesBufferAddress == false
+  {
+    return c_addrOf(b);
+  }
+
   /*
    Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar) {
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
+    where cPtrToStringBytesBufferAddress == true
+  {
     if boundsChecking {
       if (b.buffLen == 0) then
         halt("Can't create a C pointer for an empty bytes.");
     }
     return c_pointer_return_const(b.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
+    where cPtrToStringBytesBufferAddress == false
+  {
+    return c_addrOfConst(b);
   }
 
   /*

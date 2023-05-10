@@ -53,12 +53,15 @@ module SharedObject {
       totalCount.add(1);
     }
 
-    // decrement the strong reference count and return the new strong- and total-counts
-    proc release() {
-      var oldValue = strongCount.fetchSub(1);
-      return (oldValue - 1, totalCount.fetchSub(1) - 1);
+    // decrement the strong reference count and return its new value
+    inline proc releaseStrong() {
+      return strongCount.fetchSub(1) - 1;
     }
 
+    // decrement the total reference count and return its new value
+    inline proc releaseTotal() {
+      return totalCount.fetchSub(1) - 1;
+    }
 
     // ---------------- 'weak' interface ----------------
 
@@ -327,15 +330,13 @@ module SharedObject {
     @chpldoc.nodoc
     proc ref doClear() {
       if chpl_p != nil && chpl_pn != nil {
-        var (strongCount, totalCount) = chpl_pn!.release();
-        if strongCount == 0 {
-          // this is the last strong pointer, free the underlying class
+        const sc = chpl_pn!.releaseStrong();
+        if sc == 0 then
           delete _to_unmanaged(chpl_p);
-          if totalCount == 0 {
-            // There are no weak pointers, free the reference counter too
-            delete chpl_pn;
-          }
-        }
+
+        const tc = chpl_pn!.releaseTotal();
+        if tc == 0 then
+          delete chpl_pn;
       }
       chpl_p = nil;
       chpl_pn = nil;

@@ -243,6 +243,9 @@ endif()
 # set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
+message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
+
 # TODO: replace this with above, get proper values depending on compiler/version
 #  see make/compiler/Makefile.gnu, make/compiler/Makefile.clang
 add_compile_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_CXX_FLAGS}>)
@@ -290,13 +293,18 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
 
+if(CHPLENV_RETURNCODE AND NOT CHPLENV_RETURNCODE EQUAL 0)
+  message(FATAL_ERROR "CHPL_LLVM_GCC_PREFIX=${CHPL_LLVM_GCC_PREFIX} CHPL_DEVELOPER=${CHPL_DEVELOPER} CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} printchplenv failed")
+else()
+  message(VERBOSE "printchplenv ran successfully")
+endif()
+
 message(VERBOSE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
 
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
 STRING(REGEX REPLACE ";" "\\\\;" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
 STRING(REGEX REPLACE "\n" ";" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
-# message(DEBUG "printchplenv returned ${CHPLENV_RETURNCODE}")
 # set all the chplenv values from printchplenv
 foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value

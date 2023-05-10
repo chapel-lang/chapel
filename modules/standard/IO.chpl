@@ -3632,7 +3632,7 @@ private inline proc markHelper(fileRW) throws {
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileReader failed
+  :throws SystemError: if marking the fileReader failed
  */
 proc fileReader.mark() throws do return markHelper(this);
 
@@ -3670,7 +3670,7 @@ proc fileReader.mark() throws do return markHelper(this);
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileWriter failed
+  :throws SystemError: if marking the fileWriter failed
  */
 proc fileWriter.mark() throws do return markHelper(this);
 
@@ -3896,7 +3896,7 @@ proc fileWriter._offset():int(64) {
    discipline.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileReader failed
+  :throws SystemError: if marking the fileReader failed
  */
 @deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
 proc fileReader._mark() throws {
@@ -3915,7 +3915,7 @@ proc fileReader._mark() throws {
    discipline.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileWriter failed
+  :throws SystemError: if marking the fileWriter failed
  */
 @deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
 proc fileWriter._mark() throws {
@@ -8820,8 +8820,8 @@ Chapel format specifiers.
 ========  ===========  ==========================================
 C         Chapel       Meaning
 ========  ===========  ==========================================
-%i        %i           an integer in decimal
-%d        %i           an integer in decimal
+%i        %i           a signed integer in decimal
+%d        %i           a signed integer in decimal
 %u        %u           an unsigned integer in decimal
 %x        %xu          an unsigned integer in hexadecimal
 %g        %r           real number in exponential or decimal (if compact)

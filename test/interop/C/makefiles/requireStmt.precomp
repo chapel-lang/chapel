@@ -1,3 +1,3 @@
 #!/bin/bash
-
-gcc -c foo.c && ar -rc libfoo.a foo.o
+USE_CC=`${CHPL_HOME}/util/printchplenv --all --compiler --simple | grep CHPL_TARGET_CC | cut -d = -f 2-`
+${USE_CC} -c foo.c && ar -rc libfoo.a foo.o

@@ -29,6 +29,7 @@
 #include <unordered_map>
 #include <utility>
 
+#include "llvm/ADT/None.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
@@ -379,7 +380,7 @@ class BorrowedIdsWithName {
   /**
     Iterator that skips invisible entries from the list of borrowed IDs.
    */
-  class BorrowedIdsWithNameIter : public std::iterator<ID, std::forward_iterator_tag> {
+  class BorrowedIdsWithNameIter {
     // To allow use of isIdVisible
     friend class BorrowedIdsWithName;
    private:
@@ -413,6 +414,13 @@ class BorrowedIdsWithName {
     }
     inline const ID& operator*() const { return currentIdv->id_; }
     inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
+
+    // iterator traits
+    using difference_type = std::ptrdiff_t;
+    using value_type = ID;
+    using pointer = const ID*;
+    using reference = const ID&;
+    using iterator_category = std::forward_iterator_tag;
   };
 
  private:
@@ -456,7 +464,11 @@ class BorrowedIdsWithName {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, std::move(excludeFlagSet));
     }
+#if LLVM_VERSION_MAJOR >= 16
+    return std::nullopt;
+#else
     return llvm::None;
+#endif
   }
 
   static BorrowedIdsWithName
@@ -470,8 +482,13 @@ class BorrowedIdsWithName {
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
                                        filterFlags, excludeFlagSet);
+#if LLVM_VERSION_MAJOR >= 16
+    CHPL_ASSERT(maybeIds.has_value());
+    return maybeIds.value();
+#else
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
+#endif
   }
 
   static BorrowedIdsWithName

@@ -177,6 +177,7 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
 void gatherTypesForCodegen(void);
+GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
 

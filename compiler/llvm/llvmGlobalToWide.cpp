@@ -296,22 +296,13 @@ namespace {
     return load;
   }
 
-  void checkFunctionExistAndHasArgs(Value* f, Type* t, unsigned nArgs)
+  void checkFunctionExistAndHasArgs(Value* f, FunctionType* ft, unsigned nArgs)
   {
     #ifndef NDEBUG
       assert(f);
       if( Function* ff = dyn_cast<Function>(f) ) {
         assert(ff->getParent());
       }
-      FunctionType* ft = NULL;
-      if( PointerType* pt = dyn_cast<PointerType>(t) ) {
-#if HAVE_LLVM_VER >= 130
-        t = pt->getPointerElementType();
-#else
-        t = pt->getElementType();
-#endif
-      }
-      ft = cast<FunctionType>(t);
       assert(ft);
       assert(ft->getNumParams() == nArgs);
     #endif
@@ -1237,30 +1228,18 @@ namespace {
         auto getFn = M.getOrInsertFunction("chpl_gen_comm_get_ctl_sym", voidTy,
                                            voidPtrTy, nodeTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* getFnTy = getFn->getType();
-        info->getFn = getFn;
-        info->getFnType = NULL;
-#else
         FunctionType* getFnTy = getFn.getFunctionType();
         info->getFn = getFn.getCallee();
         info->getFnType = getFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getFn, getFnTy, 5);
 
 
         auto putFn = M.getOrInsertFunction("chpl_gen_comm_put_ctl_sym", voidTy,
                                            nodeTy, voidPtrTy, voidPtrTy,
                                            sizeTy, i64Ty);
-#if HAVE_LLVM_VER < 90
-        Type* putFnTy = putFn->getType();
-        info->putFn = putFn;
-        info->putFnType = NULL;
-#else
         FunctionType* putFnTy = putFn.getFunctionType();
         info->putFn = putFn.getCallee();
         info->putFnType = putFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->putFn, putFnTy, 5);
 
 
@@ -1268,32 +1247,18 @@ namespace {
                                               nodeTy, voidPtrTy,
                                               nodeTy, voidPtrTy,
                                               sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* getPutFnTy = getPutFn->getType();
-        info->getPutFn = getPutFn;
-        info->getPutFnType = NULL;
-#else
         FunctionType* getPutFnTy = getPutFn.getFunctionType();
         info->getPutFn = getPutFn.getCallee();
         info->getPutFnType = getPutFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->getPutFn, getPutFnTy, 5);
 
 
         auto memsetFn = M.getOrInsertFunction("chpl_gen_comm_memset_sym", voidTy,
                                               nodeTy, voidPtrTy,
                                               i8Ty, sizeTy);
-
-#if HAVE_LLVM_VER < 90
-        Type* memsetFnTy = memsetFn->getType();
-        info->memsetFn = memsetFn;
-        info->memsetFnType = NULL;
-#else
         FunctionType* memsetFnTy = memsetFn.getFunctionType();
         info->memsetFn = memsetFn.getCallee();
         info->memsetFnType = memsetFnTy;
-#endif
         checkFunctionExistAndHasArgs(info->memsetFn, memsetFnTy, 4);
 
 
@@ -1720,7 +1685,7 @@ namespace {
                 GI != GE; ++GI) {
           GlobalVariable *gv = &*GI;
 
-          Type *old_type = gv->getType()->getPointerElementType();
+          Type *old_type = gv->getValueType();
           Type *new_type = convertTypeGlobalToWide(&M, info, old_type);
           Constant *old_init = NULL;
           Constant *new_init = NULL;
@@ -2062,7 +2027,16 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
 
   GlobalPointerInfo & r = info->gTypes[globalPtrTy];
 
-  ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+  if (isOpaquePointer(globalPtrTy)) {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(module->getContext());
+#endif
+  } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+#endif
+  }
+
   locTy = info->localeIdType;
   nodeTy = info->nodeIdType;
 
@@ -2202,6 +2176,7 @@ llvm::Function* getWideToGlobalFn(llvm::Module *module, GlobalToWideInfo* info, 
   return r.wideToGlobalFn;
 }
 
+// Generates an opaque pointer if eltTy is nullptr, and typed pointer otherwise.
 static
 Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
 {
@@ -2209,7 +2184,18 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   // Get the wide pointer struct containing {locale, address}
   Type* fields[2];
   fields[0] = i->localeIdType;
-  fields[1] = PointerType::get(eltTy, 0);
+  llvm::PointerType* ptrTy = nullptr;
+  if (eltTy) {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+    ptrTy = llvm::PointerType::getUnqual(eltTy);
+#endif
+  } else {
+#if HAVE_LLVM_VER >= 140
+    ptrTy = llvm::PointerType::getUnqual(context);
+#endif
+  }
+  assert(ptrTy);
+  fields[1] = ptrTy;
 
   return StructType::get(context, fields, false);
 }
@@ -2292,17 +2278,30 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     return FunctionType::get(wideRetType, wideArgTypes, fnType->isVarArg());
   }
 
-  if(t->isPointerTy()){
-    Type* eltType = t->getPointerElementType();
-    assert(t != t->getPointerElementType()); // detect simple recursion
-    Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
-
-    if( t->getPointerAddressSpace() == info->globalSpace ||
-        t->getPointerAddressSpace() == info->wideSpace ) {
-      // Replace the pointer with a struct containing {locale, address}
-      return createWidePointerToType(module, info, wideEltType);
+  if (t->isPointerTy()) {
+    if (isOpaquePointer(t)) {
+#if HAVE_LLVM_VER >= 140
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, nullptr);
+      } else {
+          return PointerType::get(context, t->getPointerAddressSpace());
+      }
+#endif
     } else {
-      return PointerType::get(wideEltType, t->getPointerAddressSpace());
+#ifdef HAVE_LLVM_TYPED_POINTERS
+      Type* eltType = t->getPointerElementType();
+      assert(t != t->getPointerElementType());  // detect simple recursion
+      Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+      if (t->getPointerAddressSpace() == info->globalSpace ||
+          t->getPointerAddressSpace() == info->wideSpace) {
+          // Replace the pointer with a struct containing {locale, address}
+          return createWidePointerToType(module, info, wideEltType);
+      } else {
+          return PointerType::get(wideEltType, t->getPointerAddressSpace());
+      }
+#endif
     }
   }
 

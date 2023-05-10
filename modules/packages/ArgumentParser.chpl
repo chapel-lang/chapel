@@ -1046,7 +1046,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` is already defined for this parser
              * `defaultValue` is something other than a string, array or list
@@ -1103,7 +1103,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` is already defined for this parser
              * `defaultValue` is something other than a string, array or list
@@ -1189,7 +1189,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * values in `opts` do not begin with a dash ``-``
@@ -1265,7 +1265,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * values in `opts` do not begin with a dash ``-``
@@ -1361,7 +1361,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
               * `name` or `opts` are already defined for this parser
               * `numArgs` > 1
@@ -1444,7 +1444,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError in any of the following conditions:
+    :throws: `ArgumentError` in any of the following conditions:
 
              * `name` or `opts` are already defined for this parser
              * `numArgs` high-bound > 1
@@ -1541,7 +1541,7 @@ module ArgumentParser {
 
     :returns: a shared `Argument` where parsed values will be placed
 
-    :throws: ArgumentError if `cmd` is already defined for this parser
+    :throws: `ArgumentError` if `cmd` is already defined for this parser
 
     */
     proc addSubCommand(cmd:string, help="",
@@ -1575,7 +1575,7 @@ module ArgumentParser {
     :returns: a shared `Argument` where collected values will be placed for use
               by the developer
 
-    :throws: ArgumentError if `delimiter` is already defined for this parser
+    :throws: `ArgumentError` if `delimiter` is already defined for this parser
 
     */
     proc addPassThrough(delimiter="--") : shared Argument throws {
@@ -1623,9 +1623,9 @@ module ArgumentParser {
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
-    :throws: If argumentParser initialized with exitOnError=false,
-             then an ArgumentError is raised if invalid or undefined command
-             line arguments found in `arguments`
+    :throws: `ArgumentError` if argumentParser is initialized with
+             `exitOnError=false`, and invalid or undefined command line
+             arguments are found in `arguments`.
     */
     proc parseArgs(arguments:[?argsD] string) throws {
       // normal operation is to catch parsing error, write help message,
