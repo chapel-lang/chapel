@@ -1224,9 +1224,8 @@ GenRet doCodegenFieldPtr(
       bool unused;
       ret.val = info->irBuilder->CreateStructGEP(
           baseTy, baseValue, cBaseType->getMemberGEP("_u", unused));
-      llvm::PointerType* ty =
-        llvm::PointerType::get(retType.type,
-                               baseValue->getType()->getPointerAddressSpace());
+      auto addrSpace = baseValue->getType()->getPointerAddressSpace();
+      llvm::PointerType* ty = llvm::PointerType::get(retType.type, addrSpace);
       // Now cast it to the right type.
       ret.val = convertValueToType(ret.val, ty, false);
       INT_ASSERT(ret.val);
@@ -1251,6 +1250,14 @@ GenRet doCodegenFieldPtr(
         ret.isLVPtr = GEN_VAL;
       } else {
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
+
+        if (isUnion(ct)) {
+          // cast the returned pointer to the right type
+          auto addrSpace = baseValue->getType()->getPointerAddressSpace();
+          llvm::PointerType* ty =
+            llvm::PointerType::get(retType.type, addrSpace);
+          ret.val = convertValueToType(ret.val, ty, false);
+        }
 
         if ((isClass(ct) || isRecord(ct)) &&
           cBaseType->symbol->llvmTbaaAggTypeDescriptor &&
