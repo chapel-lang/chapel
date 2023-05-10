@@ -66,6 +66,7 @@ module Random {
   public use PCGRandom;
   import Set.set;
   private use IO;
+  private use Math;
 
 
   /* Select between different supported RNG algorithms.

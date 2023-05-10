@@ -1401,6 +1401,7 @@ pragma "no doc"
 module SampleSortHelp {
   private use Sort;
   private use CTypes;
+  private use Math;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;

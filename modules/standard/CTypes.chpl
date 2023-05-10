@@ -987,6 +987,8 @@ module CTypes {
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
                               size: integral) : c_ptr(eltType) {
+    use Math;
+
     // check alignment, size restriction
     if boundsChecking {
       var one:c_size_t = 1;
