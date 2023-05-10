@@ -25,7 +25,7 @@ add_executable(chpldef
     protocol-types.cpp
     Server.cpp
     Transport.cpp)
-set_property(TARGET chpldef PROPERTY CXX_STANDARD 14)
+set_property(TARGET chpldef PROPERTY CXX_STANDARD 17)
 target_link_libraries(chpldef ChplFrontend)
 target_include_directories(chpldef PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}

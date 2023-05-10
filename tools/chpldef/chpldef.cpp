@@ -89,12 +89,12 @@ int main(int argc, char** argv) {
     auto optRsp = Message::handle(ctx, msg.get());
 
     // Always expect an immediate response for now.
-    if (!optRsp.hasValue() && !msg->isNotification()) {
+    if (!optRsp && !msg->isNotification()) {
       CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
     }
 
     // Send the response.
-    auto& rsp = optRsp.getValue();
+    auto& rsp = *optRsp;
     err = Transport::sendJsonBlocking(ctx, std::cout, rsp.pack());
     CHPL_ASSERT(!err);
 

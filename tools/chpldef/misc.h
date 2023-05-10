@@ -26,11 +26,9 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/printf.h"
-
-#include "llvm/ADT/Optional.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
-
 #include <cstdlib>
 #include <string>
 
@@ -63,7 +61,13 @@ using JsonPath = llvm::json::Path;
 using JsonMapper = llvm::json::ObjectMapper;
 
 /** Wrapper around LLVM's optional type. */
-template <typename T> using opt = llvm::Optional<T>;
+#if LLVM_VERSION_MAJOR >= 16
+  #include <optional>
+  static_assert(std::is_same<std::optional<T>, llvm::Optional<T>>::value);
+  template <typename T> using opt = std::optional<T>;
+#else
+  template <typename T> using opt = llvm::Optional<T>;
+#endif
 
 template <typename T>
 inline opt<T> option(T&& t) { return opt<T>(std::move(t)); }

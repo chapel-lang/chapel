@@ -44,13 +44,13 @@ void Request<P, R>::handle(Server* ctx) {
 }
 
 opt<Response> Message::handle(Server* ctx, Message* msg) {
-  if (!ctx || !msg || msg->isResponse()) return opt<Response>();
-  if (msg->status() != Message::PENDING) return opt<Response>();
+  if (!ctx || !msg || msg->isResponse()) return {};
+  if (msg->status() != Message::PENDING) return {};
 
   // TODO: Notification will have empty 'Result' type.
   if (msg->isNotification()) {
     CHPLDEF_TODO();
-    return opt<Response>();
+    return {};
   }
 
   switch (msg->tag()) {
@@ -66,15 +66,14 @@ opt<Response> Message::handle(Server* ctx, Message* msg) {
   }
 
   if (msg->status() == Message::COMPLETED) {
-    auto ret = Message::response(ctx, msg);
-    auto rsp = ret.getPointer();
-    CHPL_ASSERT(rsp);
-    CHPL_ASSERT(rsp->id() == msg->id());
-    CHPL_ASSERT(rsp->status() == Message::COMPLETED);
-    return ret;
+    if (auto ret = Message::response(ctx, msg)) {
+      CHPL_ASSERT(ret->id() == msg->id());
+      CHPL_ASSERT(ret->status() == Message::COMPLETED);
+      return ret;
+    }
   }
 
-  return opt<Response>();
+  return {};
 }
 
 /** TODO: Fill in 'InitializeResult', turning most fields off. */

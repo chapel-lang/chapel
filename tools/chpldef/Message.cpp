@@ -55,10 +55,8 @@ chpl::owned<Message> Message::request(Server* ctx, const JsonValue& json) {
 
   // Determine what method is to be called.
   Message::Tag tag = Message::UNSET;
-  auto optMethod = objPtr->getString("method");
-  if (optMethod.hasValue()) {
-    auto str = optMethod.getValue().str();
-    tag = Message::jsonRpcMethodNameToTag(str);
+  if (auto optMethod = objPtr->getString("method")) {
+    tag = Message::jsonRpcMethodNameToTag(optMethod->str());
 
     // TODO: We can create an 'Invalid' request to represent this failure.
     bool hasTag = tag != Message::UNSET && tag != Message::INVALID;
@@ -190,11 +188,10 @@ Message::Tag Message::jsonRpcMethodNameToTag(std::string str) {
 }
 
 std::string Message::idToString() const {
-  auto optStr = id().getAsString();
-  if (optStr.hasValue()) return optStr.getValue().str();
-  auto optInt = id().getAsInteger();
-  if (!optInt.hasValue()) CHPLDEF_IMPOSSIBLE();
-  return std::to_string(optInt.getValue());
+  if (auto optStr = id().getAsString()) return optStr->str();
+  if (auto optInt = id().getAsInteger()) return std::to_string(*optInt);
+  CHPLDEF_IMPOSSIBLE();
+  return {};
 }
 
 template <typename P, typename R>
