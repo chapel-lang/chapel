@@ -41,7 +41,13 @@ module BinaryIO {
     }
 
     proc serializeValue(writer: _writeType, const x:?t) throws {
-      if t == string  || isEnumType(t) || t == bytes || isNumericType(t) ||
+      if isNumericType(t) {
+        select endian {
+          when ioendian.native do writer.writeBinary(x, ioendian.native);
+          when ioendian.little do writer.writeBinary(x, ioendian.little);
+          when ioendian.big do writer.writeBinary(x, ioendian.big);
+        }
+      } else if t == string  || isEnumType(t) || t == bytes ||
          isBoolType(t) {
         _oldWrite(writer, x);
       } else if t == nothing {
@@ -202,9 +208,20 @@ module BinaryIO {
         // else: not nil, proceed to try initializing
       }
 
-      if isNumericType(readType) || isBoolType(readType) ||
-         isEnumType(readType) || isStringType(readType) ||
-         isBytesType(readType) {
+      if isNumericType(readType) {
+        var x : readType;
+        var ret : bool;
+        select endian {
+          when ioendian.native do ret = reader.readBinary(x, ioendian.native);
+          when ioendian.little do ret = reader.readBinary(x, ioendian.little);
+          when ioendian.big    do ret = reader.readBinary(x, ioendian.big);
+        }
+        if !ret then
+          throw new EofError();
+        return x;
+      } else if isBoolType(readType) ||
+                isEnumType(readType) || isStringType(readType) ||
+                isBytesType(readType) {
         var x : readType;
         _oldRead(reader, x);
         return x;
