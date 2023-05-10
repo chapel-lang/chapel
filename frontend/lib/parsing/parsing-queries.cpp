@@ -674,11 +674,11 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
-static bool
+bool
 filePathIsInInternalModule(Context* context, UniqueString filePath) {
   // check for prepended internal module paths that may have come in from
   // the command line flag --prepend-internal-module-dir
-  auto prependedPaths = prependedInternalModulePath(context);
+  auto& prependedPaths = prependedInternalModulePath(context);
   for (auto& path : prependedPaths) {
     if (filePath.startsWith(path)) return true;
   }
@@ -695,11 +695,11 @@ filePathIsInBundledModule(Context* context, UniqueString filePath) {
   return filePath.startsWith(prefix);
 }
 
-static bool
+bool
 filePathIsInStandardModule(Context* context, UniqueString filePath) {
   // check for prepended standard module paths that may have come in from
   // the command line flag --prepend-standard-module-dir
-  auto prependedPaths = prependedStandardModulePath(context);
+  auto& prependedPaths = prependedStandardModulePath(context);
   for (auto& path : prependedPaths) {
     if (filePath.startsWith(path)) return true;
   }
