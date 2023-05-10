@@ -652,7 +652,33 @@ module Map {
       :arg ch: A channel to read from.
     */
     proc readThis(ch: fileReader) throws {
-      _readWriteHelper(ch);
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+      if isJson then
+        _readJson(ch);
+      else
+        _readWriteHelper(ch);
+    }
+
+    @chpldoc.nodoc
+    proc _readJson(ch: fileReader) throws {
+      _enter(); defer _leave();
+      var first = true;
+
+      ch._readLiteral("{");
+
+      while !ch.matchLiteral("}") {
+        if first {
+          first = false;
+        } else {
+          ch._readLiteral(",");
+        }
+        var k : keyType;
+        ch.readf("%jt", k);
+        ch._readLiteral(":");
+        var v : valType;
+        ch.readf("%jt", v);
+        add(k, v);
+      }
     }
 
     //
@@ -681,7 +707,37 @@ module Map {
       :arg ch: A channel to write to.
     */
     proc writeThis(ch: fileWriter) throws {
-      _readWriteHelper(ch);
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+      if isJson then
+        _writeJson(ch);
+      else
+        _readWriteHelper(ch);
+    }
+
+    @chpldoc.nodoc
+    proc _writeJson(ch: fileWriter) throws {
+      _enter(); defer _leave();
+      var first = true;
+
+      ch._writeLiteral("{");
+
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) {
+          if first {
+            first = false;
+          } else {
+            ch._writeLiteral(", ");
+          }
+          ref tabEntry = table.table[slot];
+          ref key = tabEntry.key;
+          ref val = tabEntry.val;
+          ch.writef("%jt", key);
+          ch._writeLiteral(": ");
+          ch.writef("%jt", val);
+        }
+      }
+
+      ch._writeLiteral("}");
     }
 
     pragma "no doc"

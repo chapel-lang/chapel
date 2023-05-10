@@ -1704,6 +1704,12 @@ module List {
     */
     proc writeThis(ch: fileWriter) throws {
       var isBinary = ch.binary();
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+
+      if isJson {
+        _writeJson(ch);
+        return;
+      }
 
       _enter();
 
@@ -1731,6 +1737,25 @@ module List {
       _leave();
     }
 
+    @chpldoc.nodoc
+    proc _writeJson(ch: fileWriter) throws {
+      _enter();
+
+      ch._writeLiteral("[");
+
+      for i in 0..(_size - 2) {
+        ch.writef("%jt", _getRef(i));
+        ch._writeLiteral(", ");
+      }
+
+      if _size > 0 then
+        ch.writef("%jt", _getRef(_size-1));
+
+      ch._writeLiteral("]");
+
+      _leave();
+    }
+
     /*
      Read the contents of this list from a channel.
 
@@ -1742,6 +1767,11 @@ module List {
       // size.
       //
       const isBinary = ch.binary();
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+      if isJson then {
+        _readJson(ch);
+        return;
+      }
 
       _enter();
 
@@ -1792,6 +1822,33 @@ module List {
         if !hasReadEnd {
           ch._readLiteral("]");
         }
+      }
+
+      _leave();
+    }
+
+    @chpldoc.nodoc
+    proc _readJson(ch: fileReader) throws {
+      var isFirst = true;
+      var hasReadEnd = false;
+
+      _enter();
+      _clearLocked();
+
+      ch._readLiteral("[");
+
+      while !ch.matchLiteral("]") {
+        if isFirst {
+          isFirst = false;
+        } else {
+          ch._readLiteral(",");
+        }
+
+        // read an element
+        pragma "no auto destroy"
+        var elt: eltType;
+        ch.readf("%jt", elt);
+        _appendByRef(elt);
       }
 
       _leave();
