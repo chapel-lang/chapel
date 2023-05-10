@@ -37,21 +37,21 @@ module GPU
   use CTypes;
   use ChplConfig;
 
-  pragma "no doc"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc chpl_gpu_write(const str : c_string) : void;
 
-  pragma "no doc"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc chpl_gpu_clock() : uint;
 
-  pragma "no doc"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc chpl_gpu_printTimeDelta(
     msg : c_string, start : uint, stop : uint) : void;
 
-  pragma "no doc"
   pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
   /*
@@ -123,7 +123,7 @@ module GPU
     print the time elapsed between subsequent calls to 'gpuClock()'.
     To convert to seconds divide by 'gpuClocksPerSec()'
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc gpuPrintTimeDelta(msg : c_string, start : uint, stop : uint) : void {
     chpl_gpu_printTimeDelta(msg, start, stop);
   }
@@ -136,7 +136,7 @@ module GPU
     return chpl_gpu_device_clock_rate(devNum : int(32));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type GpuAsyncCommHandle = c_void_ptr;
 
   /*
@@ -146,7 +146,7 @@ module GPU
     Returns a handle that can be passed to `waitGpuComm` to pause execution
     until completion of this asynchronous transfer
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
     where isArrayType(t1) && isArrayType(t2)
   {
@@ -165,7 +165,7 @@ module GPU
      Wait for communication to complete, the handle passed in should be from the return
      value of a previous call to `asyncGpuComm`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc gpuCommWait(gpuHandle : GpuAsyncCommHandle) {
     extern proc chpl_gpu_comm_wait(stream : c_void_ptr);
 
@@ -201,7 +201,7 @@ module GPU
     __primitive("gpu set blockSize", blockSize);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc canAccessPeer(loc1 : locale, loc2 : locale) : bool {
     extern proc chpl_gpu_can_access_peer(i : c_int, j : c_int) : bool;
 
@@ -213,7 +213,7 @@ module GPU
     return chpl_gpu_can_access_peer(loc1Sid, loc2Sid);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setPeerAccess(loc1 : locale, loc2 : locale, shouldEnable : bool) {
     extern proc chpl_gpu_set_peer_access(
       i : c_int, j : c_int, shouldEnable : bool) : void;
@@ -341,17 +341,26 @@ module GPU
     chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
-  // I think to get any of this to work I'll need
-  // https://github.com/chapel-lang/chapel/issues/22114 to be resolved.
-  proc gpuAtomicAdd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("add", x, val); }
-  proc gpuAtomicSub(  ref x : ?T, val : T) : void { gpuAtomicBinOp("sub", x, val); }
-  proc gpuAtomicExch( ref x : ?T, val : T) : void { gpuAtomicBinOp("exch", x, val); }
-  proc gpuAtomicMin(  ref x : ?T, val : T) : void { gpuAtomicBinOp("min", x, val); }
-  proc gpuAtomicMax(  ref x : ?T, val : T) : void { gpuAtomicBinOp("max", x, val); }
-  proc gpuAtomicInc(  ref x : ?T, val : T) : void { gpuAtomicBinOp("inc", x, val); }
-  proc gpuAtomicDec(  ref x : ?T, val : T) : void { gpuAtomicBinOp("dec", x, val); }
-  proc gpuAtomicAnd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("and", x, val); }
-  proc gpuAtomicOr(   ref x : ?T, val : T) : void { gpuAtomicBinOp("or", x, val); }
-  proc gpuAtomicXor(  ref x : ?T, val : T) : void { gpuAtomicBinOp("xor", x, val); }
-  proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : void { gpuAtomicTernOp("CAS", x, cmp, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicAdd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("add", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicSub(  ref x : ?T, val : T) : void { gpuAtomicBinOp("sub", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicExch( ref x : ?T, val : T) : void { gpuAtomicBinOp("exch", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicMin(  ref x : ?T, val : T) : void { gpuAtomicBinOp("min", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicMax(  ref x : ?T, val : T) : void { gpuAtomicBinOp("max", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicInc(  ref x : ?T, val : T) : void { gpuAtomicBinOp("inc", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicDec(  ref x : ?T, val : T) : void { gpuAtomicBinOp("dec", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicAnd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("and", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicOr(   ref x : ?T, val : T) : void { gpuAtomicBinOp("or", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicXor(  ref x : ?T, val : T) : void { gpuAtomicBinOp("xor", x, val); }
+  @chpldoc.nodoc
+  inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : void { gpuAtomicTernOp("CAS", x, cmp, val); }
 }

@@ -28,7 +28,7 @@ proc check(orig, gpuRes, cpuRes, s) {
     writeln(s + " resulted in kernel launch");
 
   // To get this to work we'll need to resolve https://github.com/chapel-lang/chapel/issues/22114
-  /*var isCorrect = true;
+  var isCorrect = true;
   for (x,y) in zip(gpuRes,cpuRes) do isCorrect &= isclose(x,y);
   var printVals = false;
   if !isCorrect {
@@ -42,20 +42,27 @@ proc check(orig, gpuRes, cpuRes, s) {
     writeln("input values: ", orig);
     writeln("gpu result: ", gpuRes);
     writeln("cpu result: ", cpuRes);
-  }*/
+  }
 
   resetGpuDiagnostics();
   startGpuDiagnostics();
 }
 
 proc runTest(param op : string, type T) {
-  var origVals : 3*T;
-  var gpuVals  : 3*T;
-  var cpuVals  : 3*T;
+  stopGpuDiagnostics();
+
+  var origVals : [0..2] T;
+  var gpuVals  : [0..2] T;
+  var cpuVals  : [0..2] T;
   var rng = createRandomStream(eltType=T, parSafe=false);
-  for i in 0..2 do origVals[i] = rng.getNext();
-  gpuVals = origVals;
-  cpuVals = origVals;
+  for i in 0..2 {
+    origVals[i] = rng.getNext();
+    gpuVals[i] = origVals[i];
+    cpuVals[i] = origVals[i];
+  }
+
+  resetGpuDiagnostics();
+  startGpuDiagnostics();
 
   // It would be better if we could pass 'runTest' the gpu and cpu functions
   // that we want to test as first class functions instead of having this
