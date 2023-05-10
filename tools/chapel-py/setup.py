@@ -24,5 +24,5 @@ LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend"]
 
 setup(name = "chapel",
       version = "0.1",
-      ext_modules = [Extension("chapel", ["chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
+      ext_modules = [Extension("chapel.core", ["chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       );

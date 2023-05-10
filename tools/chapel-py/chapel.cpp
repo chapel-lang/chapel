@@ -151,7 +151,7 @@ static PyObject* AstIterObject_next(AstIterObject *self) {
 
 PyTypeObject AstIterType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "chapel.AstIter",
+  .tp_name = "AstIter",
   .tp_basicsize = sizeof(AstIterObject),
   .tp_itemsize = 0,
   .tp_dealloc = (destructor) AstIterObject_dealloc,
@@ -205,7 +205,7 @@ static PyObject* AstCallIterObject_next(AstCallIterObject *self) {
 
 PyTypeObject AstCallIterType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "chapel.AstCallIter",
+  .tp_name = "AstCallIter",
   .tp_basicsize = sizeof(AstCallIterObject),
   .tp_itemsize = 0,
   .tp_dealloc = (destructor) AstCallIterObject_dealloc,
@@ -250,7 +250,7 @@ static PyMethodDef LocationObject_methods[] = {
 
 PyTypeObject LocationType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "chapel.Location",
+  .tp_name = "Location",
   .tp_basicsize = sizeof(LocationObject),
   .tp_itemsize = 0,
   .tp_dealloc = (destructor) LocationObject_dealloc,
@@ -294,7 +294,7 @@ static PyMethodDef ContextObject_methods[] = {
 
 PyTypeObject ContextType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "chapel.Context",
+  .tp_name = "Context",
   .tp_basicsize = sizeof(ContextObject),
   .tp_itemsize = 0,
   .tp_dealloc = (destructor) ContextObject_dealloc,
@@ -375,7 +375,7 @@ static PyMethodDef AstNodeObject_methods[] = {
 
 PyTypeObject AstNodeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "chapel.AstNode",
+  .tp_name = "AstNode",
   .tp_basicsize = sizeof(AstNodeObject),
   .tp_itemsize = 0,
   .tp_dealloc = (destructor) AstNodeObject_dealloc,
@@ -517,7 +517,7 @@ METHOD_TABLE(Identifier,
   \
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
-    .tp_name = "chapel." #NAME, \
+    .tp_name = #NAME, \
     .tp_basicsize = sizeof(NAME##Object), \
     .tp_itemsize = 0, \
     .tp_flags = FLAGS, \
@@ -544,7 +544,7 @@ static PyMethodDef ChapelMethods[] = {
 
 static PyModuleDef ChapelModule {
   PyModuleDef_HEAD_INIT,
-  .m_name="chapel",
+  .m_name="core",
   .m_doc="A Python bridge for the Chapel frontend library",
   .m_size=-1 /* Per-interpreter memory (not used currently) */,
   .m_methods=ChapelMethods,
@@ -552,7 +552,7 @@ static PyModuleDef ChapelModule {
 
 extern "C" {
 
-PyMODINIT_FUNC PyInit_chapel() {
+PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
