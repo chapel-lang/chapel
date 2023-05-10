@@ -661,8 +661,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         // extern C arrays might be declared with type c_ptr(eltType)
         // (which is a lie but works OK in C). In that event, generate
         // a pointer to the first element when the variable is used.
-        if (valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-            info->lvt->isCArray(cname)) {
+        bool cArrayLie = valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+                         info->lvt->isCArray(cname);
+        if (cArrayLie) {
           auto global = llvm::cast<llvm::GlobalValue>(got.val);
           INT_ASSERT(global);
           llvm::Type* gepTy = global->getValueType();
@@ -695,6 +696,9 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           // if there is a mismatch for an enum constant, don't worry about it
           // c enum types are always 'int' but code might assume it is smaller
           // TODO: should we check this?
+        } else if (cArrayLie) {
+          // ignore mismatch for c arrays due to identifying it as the
+          // same as c_ptr.
         } else if (genCType && genChplType && genCType != genChplType) {
           USR_FATAL_CONT(this, "type conflict for extern variable '%s'",
                          name);
