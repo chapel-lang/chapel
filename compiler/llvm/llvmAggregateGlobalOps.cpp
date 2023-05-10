@@ -691,6 +691,8 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
       if (eltType) {
         Alignment = DL->getABITypeAlignment(eltType);
+      } else {
+        assert(false && "expected eltType when computing natural alignment");
       }
     }
 
