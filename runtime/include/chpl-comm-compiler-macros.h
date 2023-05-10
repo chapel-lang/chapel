@@ -30,6 +30,7 @@
 
 #include "chpl-prefetch.h" // for chpl_prefetch
 #include "chpl-cache.h" // chpl_cache_enabled, chpl_cache_comm_get etc
+#include "chpl-gpu.h" // for comm between device and host
 
 // Don't warn about chpl_comm_get e.g. in this file.
 #include "chpl-comm-no-warning-macros.h"
@@ -63,13 +64,26 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
 }
 
 static inline
-void chpl_gen_comm_get_gpu(c_sublocid_t to_subloc, void *addr,
+void chpl_gen_comm_complex() {
+  printf("complex comm\n");
+}
+
+static inline
+void chpl_gen_comm_get_gpu(void *addr,
                            c_nodeid_t from_node, c_sublocid_t from_subloc,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
   //printf("get between sublocs %d %d\n", to_subloc, from_subloc);
-  printf("get between sublocs\n");
+  if (chpl_nodeID == from_node) {
+    chpl_gpu_comm_get(addr, from_node, from_subloc, raddr, size, commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+    chpl_cache_comm_get(addr, from_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+    chpl_comm_get(addr, from_node, raddr, size, commID, ln, fn);
+  }
 }
 
 static inline
@@ -114,13 +128,22 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 }
 
 static inline
-void chpl_gen_comm_put_gpu(c_sublocid_t from_subloc, void* addr,
+void chpl_gen_comm_put_gpu(void* addr,
                            c_nodeid_t to_node, c_sublocid_t to_subloc,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
   //printf("put between sublocs %d %d\n", to_subloc, from_subloc);
   printf("put between sublocs\n");
+  if (chpl_nodeID == to_node) {
+    chpl_memmove(raddr, addr, size);
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+    chpl_cache_comm_put(addr, to_node, raddr, size, commID, ln, fn);
+#endif
+  } else {
+    chpl_comm_put(addr, to_node, raddr, size, commID, ln, fn);
+  }
 }
 
 static inline

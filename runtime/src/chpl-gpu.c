@@ -77,6 +77,7 @@ void chpl_gpu_init(void) {
   }
 }
 
+static bool can_do_comm = false;
 void chpl_gpu_support_module_finished_initializing(void) {
   // The standard module has some memory that we allocate when we  are "on" a
   // GPU sublocale when in fact we want to allocate it on the device. (As of
@@ -113,6 +114,9 @@ void chpl_gpu_support_module_finished_initializing(void) {
     CHPL_GPU_DEBUG("    array data: unified memory\n");
     CHPL_GPU_DEBUG("         other: unified memory\n");
   #endif
+
+  printf("setting can_do_comm\n");
+  can_do_comm = true;
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -195,6 +199,37 @@ void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
 
   // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
   return ret;
+}
+
+void chpl_gpu_comm_get(void *addr,
+                           c_nodeid_t from_node, c_sublocid_t from_subloc,
+                           void* raddr, size_t size, int32_t commID, int ln,
+                           int32_t fn) {
+  printf("gpu get\n");
+  if (!can_do_comm) {
+    printf("doing early memmove\n");
+    memmove(addr, raddr, size);
+    return;
+  }
+
+  c_sublocid_t cur_subloc = chpl_task_getRequestedSubloc();
+  const bool dst_on_host = cur_subloc<0;
+  const bool src_on_host = from_subloc<0;
+
+  if (!dst_on_host && !src_on_host) {
+    chpl_gpu_impl_copy_device_to_device(addr, raddr, size);
+  }
+  else if (!dst_on_host) {
+    chpl_gpu_impl_copy_host_to_device(addr, raddr, size);
+  }
+  else if (!src_on_host) {
+    chpl_gpu_impl_copy_device_to_host(addr, raddr, size);
+  }
+  else {
+    assert(dst_on_host && src_on_host);
+    memmove(addr, raddr, size);
+  }
+
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {

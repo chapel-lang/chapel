@@ -397,7 +397,10 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
       CUDA_CALL(cuMemAlloc(&ptr, size));
     }
     else {
+      c_sublocid_t cur_subloc = chpl_task_getRequestedSubloc();
+      chpl_task_setSubloc(c_sublocid_any);
       void* mem = chpl_mem_alloc(size, description, lineno, filename);
+      chpl_task_setSubloc(cur_subloc);
       CHPL_GPU_DEBUG("\tregistering %p\n", mem);
       CUDA_CALL(cuMemHostRegister(mem, size, CU_MEMHOSTREGISTER_PORTABLE));
       CUDA_CALL(cuMemHostGetDevicePointer(&ptr, mem, 0));
