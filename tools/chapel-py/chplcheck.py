@@ -36,8 +36,12 @@ IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 def check_camel_case(node):
     return re.fullmatch(r'[a-z]+([A-Z][a-z]+)*|[A-Z]+', node.name())
 
+def check_redundant_block(node):
+    return node.block_style() != "unnecessary"
+
 Rules = [
-    ("RequireCamelCase", chapel.core.NamedDecl, check_camel_case)
+    ("RequireCamelCase", chapel.core.NamedDecl, check_camel_case),
+    ("KeywordAndBlock", chapel.core.Loop, check_redundant_block)
 ]
 
 ctx = chapel.core.Context()

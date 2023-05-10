@@ -387,6 +387,14 @@ PyTypeObject AstNodeType = {
   .tp_new = PyType_GenericNew,
 };
 
+static const char* blockStyleToString(chpl::uast::BlockStyle blockStyle) {
+  switch (blockStyle) {
+    case chpl::uast::BlockStyle::EXPLICIT: return "explicit";
+    case chpl::uast::BlockStyle::IMPLICIT: return "implicit";
+    case chpl::uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
+  }
+}
+
 template <typename T>
 const char* toCString(T& t) { throw std::invalid_argument("Invalid conversion into C string"); }
 
@@ -423,6 +431,8 @@ PLAIN_GETTER(FnCall, called_expression, "O", return wrapAstNode(contextObject, n
 PLAIN_GETTER(Dot, field, "s", return node->field());
 PLAIN_GETTER(VisibilityClause, symbol, "O", return wrapAstNode(contextObject, node->symbol()));
 PLAIN_GETTER(Identifier, name, "s", return node->name());
+PLAIN_GETTER(SimpleBlockLike, block_style, "s", return blockStyleToString(node->blockStyle()));
+PLAIN_GETTER(Loop, block_style, "s", return blockStyleToString(node->blockStyle()));
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
@@ -505,9 +515,16 @@ METHOD_TABLE(VisibilityClause,
   {"symbol", VisibilityClauseObject_symbol, METH_NOARGS, "Get the symbol referenced by this VisibilityClause node"},
 );
 
-
 METHOD_TABLE(Identifier,
   {"name", IdentifierObject_name, METH_NOARGS, "Get the name of this Identifier node"},
+);
+
+METHOD_TABLE(START_SimpleBlockLike,
+  {"block_style", SimpleBlockLikeObject_block_style, METH_NOARGS, "Get the style of this block-like AST node"},
+);
+
+METHOD_TABLE(START_Loop,
+  {"block_style", LoopObject_block_style, METH_NOARGS, "Get the style of this loop AST node"},
 );
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
