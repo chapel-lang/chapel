@@ -179,6 +179,25 @@ def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     return ([ ], libs)
 
 #
+# Splits a linker argument string into a list of arguments. Args of the form
+# "-framework foo" must be treated as a single argument because of
+# de-duplication downstream, otherwise all but one "-framework" will be 
+# removed.
+#
+def parse_linker_args(str):
+    result = []
+    args = str.split()
+    i = 0
+    while (i < len(args)):
+        if args[i] == '-framework':
+            result.append(args[i] + " " + args[i+1])
+            i += 2
+        else:
+            result.append(args[i])
+            i += 1
+    return result
+
+#
 # Return linker arguments required to use a bundled library
 # based on a pkg-config .pc file.
 #
@@ -233,11 +252,12 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     libs = [ ]
     libs_private = [ ]
 
+
     if 'Libs' in d:
-        libs = d['Libs'].split()
+        libs = parse_linker_args(d['Libs'])
 
     if 'Libs.private' in d:
-        libs_private = d['Libs.private'].split()
+        libs_private = parse_linker_args(d['Libs.private'])
 
     # add the -rpath option if it was enabled by the caller
     if add_rpath:
