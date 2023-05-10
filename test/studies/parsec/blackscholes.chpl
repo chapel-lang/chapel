@@ -83,7 +83,7 @@ proc CNDF ( in InputX : fptype )  : fptype
 proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
                          volatility : fptype, time : fptype, otype : bool) : fptype
 {
-  use Math;
+	use Math;
 
 	// local private working variables for the calculation
 	var OptionPrice  : fptype ;
