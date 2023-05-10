@@ -313,7 +313,7 @@ module GPU
   private proc checkValidGpuAtomicOp(param opName, param rtFuncName, type T) param {
     if CHPL_GPU_CODEGEN == "rocm" && invalidGpuAtomicOpForRocm(rtFuncName) then
       compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string,
-        " when using the rocm runtime.");
+        " when using 'CHPL_GPU=amd'.");
 
     if(!validGpuAtomicOp(rtFuncName)) then
       compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string, ".");

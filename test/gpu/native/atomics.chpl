@@ -60,50 +60,50 @@ proc runTest(param op : string, type T) {
   // It would be better if we could pass 'runTest' the gpu and cpu functions
   // that we want to test as first class functions instead of having this
   // repetitive switchyard. Alas, those functions are generic so (as of today)
-  // can not be captured as FCF.
+  // can not be captured as a FCF.
   select(op) {
     when "add" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicAdd(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicAdd(gpuVals[0],  gpuVals[1]);
       cpuAtomicAdd(cpuVals[0],  cpuVals[1]);
     }
     when "sub" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicSub(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicSub(gpuVals[0],  gpuVals[1]);
       cpuAtomicSub(cpuVals[0],  cpuVals[1]);
     }
     when "exch" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicExch(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicExch(gpuVals[0],  gpuVals[1]);
       cpuAtomicExch(cpuVals[0],  cpuVals[1]);
     }
     when "min" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicMin(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicMin(gpuVals[0],  gpuVals[1]);
       cpuAtomicMin(cpuVals[0],  cpuVals[1]);
     }
     when "max" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicMax(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicMax(gpuVals[0],  gpuVals[1]);
       cpuAtomicMax(cpuVals[0],  cpuVals[1]);
     }
     when "inc" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicInc(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicInc(gpuVals[0],  gpuVals[1]);
       cpuAtomicInc(cpuVals[0],  cpuVals[1]);
     }
     when "dec" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicDec(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicDec(gpuVals[0],  gpuVals[1]);
       cpuAtomicDec(cpuVals[0],  cpuVals[1]);
     }
     when "and" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicAnd(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicAnd(gpuVals[0],  gpuVals[1]);
       cpuAtomicAnd(cpuVals[0],  cpuVals[1]);
     }
     when "or" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicOr(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicOr(gpuVals[0],  gpuVals[1]);
       cpuAtomicOr(cpuVals[0],  cpuVals[1]);
     }
     when "xor" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicXor(gpuVals[0],  gpuVals[1]); }
+      foreach n in 0..0 do gpuAtomicXor(gpuVals[0],  gpuVals[1]);
       cpuAtomicXor(cpuVals[0],  cpuVals[1]);
     }
     when "CAS" {
-      foreach n in 0..0 { assertOnGpu(); gpuAtomicCAS(gpuVals[0],  gpuVals[1], gpuVals[2]); }
+      foreach n in 0..0 do gpuAtomicCAS(gpuVals[0],  gpuVals[1], gpuVals[2]);
       cpuAtomicCAS(cpuVals[0],  cpuVals[1], cpuVals[2]);
     }
   }
