@@ -54,12 +54,12 @@ module SharedObject {
     }
 
     // decrement the strong reference count and return its new value
-    proc releaseStrong() {
+    inline proc releaseStrong() {
       return strongCount.fetchSub(1) - 1;
     }
 
     // decrement the total reference count and return its new value
-    proc releaseTotal() {
+    inline proc releaseTotal() {
       return totalCount.fetchSub(1) - 1;
     }
 
