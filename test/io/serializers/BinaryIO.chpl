@@ -188,7 +188,7 @@ module BinaryIO {
       dc._readOne(dc.kind, val, here);
     }
 
-    proc deserialize(reader:fileReader, type readType) : readType throws {
+    proc deserializeType(reader:fileReader, type readType) : readType throws {
       if isClassType(readType) {
         const notNil = reader.readByte();
         if notNil == 0 {
@@ -217,6 +217,15 @@ module BinaryIO {
       } else {
         var alias = reader.withDeserializer(_fork());
         return new readType(reader=alias, deserializer=alias.deserializer);
+      }
+    }
+
+    proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+      if canResolveMethod(val, "deserialize", reader, this) {
+        var alias = reader.withDeserializer(_fork());
+        val.deserialize(reader=alias, deserializer=alias.deserializer);
+      } else {
+        val = deserializeType(reader, readType);
       }
     }
 
@@ -282,7 +291,7 @@ module BinaryIO {
     where isNumericType(eltType) {
       const n = c_sizeof(eltType)*numElements;
       const got = r.readBinary(data, n.safeCast(int));
-      if verify && got < n then throw new UnexpectedEofError();
+      if got < n then throw new EofError();
       else _numElements -= numElements;
     }
 

@@ -537,7 +537,7 @@ import OS.POSIX.{EBADF};
 import OS.{errorCode};
 use CTypes;
 public use OS;
-use Reflection;
+private use Reflection;
 
 /*
 
@@ -2800,7 +2800,7 @@ record DefaultDeserializer {
   var _arrayDim = 0;
   var _arrayMax : int;
 
-  proc deserialize(reader:fileReader, type readType) : readType throws {
+  proc deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
         return nil:readType;
@@ -2822,6 +2822,15 @@ record DefaultDeserializer {
     } else {
       var alias = reader.withDeserializer(new DefaultDeserializer());
       return new readType(reader=alias, deserializer=alias.deserializer);
+    }
+  }
+
+  proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+    if Reflection.canResolveMethod(val, "deserialize", reader, this) {
+      var alias = reader.withDeserializer(new DefaultDeserializer());
+      val.deserialize(reader=alias, deserializer=alias.deserializer);
+    } else {
+      val = deserializeType(reader, readType);
     }
   }
 
@@ -5278,7 +5287,7 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
   if isGenericType(readType) then
     compilerError("reading generic types is not supported: '" + readType:string + "'");
 
-  return reader.deserializer.deserialize(reader, readType);
+  return reader.deserializer.deserializeType(reader, readType);
 }
 
 @chpldoc.nodoc
@@ -5297,7 +5306,7 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
     return;
   }
 
-  x = _deserializeOne(t, loc);
+  reader.deserializer.deserializeValue(reader, x);
 }
 
 //
@@ -5340,7 +5349,6 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
     writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     return;
   }
-  extern proc printf(str: c_string) : void;
 
   // TODO: Should this pass an unmanaged or borrowed version, to reduce
   // the number of instantiations for a type?

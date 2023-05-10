@@ -246,7 +246,7 @@ module Json {
       dc._readOne(dc.kind, val, here);
     }
 
-    proc deserialize(reader:fileReader, type readType) : readType throws {
+    proc deserializeType(reader:fileReader, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("null") {
         return nil:readType;
       }
@@ -276,6 +276,15 @@ module Json {
       } else {
         var alias = reader.withDeserializer(new JsonDeserializer());
         return new readType(reader=alias, deserializer=alias.deserializer);
+      }
+    }
+
+    proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+      if canResolveMethod(val, "deserialize", reader, this) {
+        var alias = reader.withDeserializer(new JsonDeserializer());
+        val.deserialize(reader=alias, deserializer=alias.deserializer);
+      } else {
+        val = deserializeType(reader, readType);
       }
     }
 

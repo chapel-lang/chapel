@@ -172,7 +172,7 @@ module ChplFormat {
       dc._readOne(dc.kind, val, here);
     }
 
-    proc deserialize(reader:fileReader, type readType) : readType throws {
+    proc deserializeType(reader:fileReader, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("nil") {
         return nil:readType;
       }
@@ -197,6 +197,15 @@ module ChplFormat {
       } else {
         var alias = reader.withDeserializer(new ChplDeserializer(_typename=readType:string));
         return new readType(reader=alias, deserializer=alias.deserializer);
+      }
+    }
+
+    proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+      if canResolveMethod(val, "deserialize", reader, this) {
+        var alias = reader.withDeserializer(new ChplDeserializer(_typename=readType:string));
+        val.deserialize(reader=alias, deserializer=alias.deserializer);
+      } else {
+        val = deserializeType(reader, readType);
       }
     }
 

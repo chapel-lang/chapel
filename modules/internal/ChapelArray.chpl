@@ -1616,6 +1616,11 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    pragma "no doc"
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
     @chpldoc.nodoc
