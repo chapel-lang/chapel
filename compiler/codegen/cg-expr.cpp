@@ -1251,7 +1251,13 @@ GenRet doCodegenFieldPtr(
       } else {
         ret.val = info->irBuilder->CreateStructGEP(baseTy, baseValue, fieldno);
 
-        if (isUnion(ct)) {
+        if (isUnion(ct) ||
+            // Workaround: since we don't store full function pointer types
+            // for interop and instead rely on c_fn_ptr, we need to cast
+            // an extern field access returning a pointer to c_fn_ptr
+            // to keep the types consistent. This should be removed once
+            // c_fn_ptr is replaced with something more accurate.
+            (ret.chplType == dtCFnPtr)) {
           // cast the returned pointer to the right type
           auto addrSpace = baseValue->getType()->getPointerAddressSpace();
           llvm::PointerType* ty =
