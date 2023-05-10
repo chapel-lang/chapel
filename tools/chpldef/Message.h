@@ -103,7 +103,7 @@ protected:
 
   static bool isIdValid(const JsonValue& id);
 
-  Message(Message::Tag tag, JsonValue&& id, Error error,
+  Message(Message::Tag tag, JsonValue id, Error error,
           std::string note)
       : tag_(tag),
         id_(std::move(id)),
@@ -116,7 +116,7 @@ public:
   virtual ~Message() = default;
 
   /** Create a request given a JSON value. */
-  static chpl::owned<Message> request(Server* ctx, JsonValue&& json);
+  static chpl::owned<Message> request(Server* ctx, const JsonValue& json);
 
   /** Create a response to a handled message. The status of the message
       must be COMPLETED or FAILED, or else nothing is returned. */
@@ -249,6 +249,8 @@ public:
     Result result;
 
     ComputedResult() = default;
+
+    /** For convenience when implementing 'compute' for a request. */
     ComputedResult(Result&& r)
         : isProgressingCallAgain(false),
           error(Message::OK),
@@ -262,15 +264,15 @@ protected:
   static Message::Error unpack(const JsonValue& json, Params& p,
                                std::string* note);
 
-  Request(Message::Tag tag, JsonValue&& id, Message::Error error,
-          std::string&& note,
-          Params&& params)
+  Request(Message::Tag tag, JsonValue id, Message::Error error,
+          std::string note,
+          Params params)
       : Message(tag, std::move(id), error, std::move(note)),
-        p(params) {}
+        p(std::move(params)) {}
 
   /** Use in message handlers to return failure. */
   inline ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
-                             std::string&& note=std::string()) const {
+                             std::string note=std::string()) const {
     return { false, error, std::move(note), {} };
   }
 
@@ -314,8 +316,8 @@ public: \
   using Result = name__##Result; \
   using ComputedResult = Request<Params, Result>::ComputedResult; \
 private: \
-  name__(JsonValue&& id, Message::Error error, std::string&& note, \
-         Params&& p) \
+  name__(JsonValue id, Message::Error error, std::string note, \
+         Params p) \
       : Request(Message::name__, std::move(id), error, \
                 std::move(note), \
                 std::move(p)) { \
@@ -326,7 +328,7 @@ private: \
   } \
 public: \
   virtual ~name__() = default; \
-  static chpl::owned<Message> create(JsonValue&& id, const JsonValue& json); \
+  static chpl::owned<Message> create(JsonValue id, const JsonValue& json); \
   virtual ComputedResult compute(Server* ctx); \
 };
 #include "./message-macro-list.h"
@@ -343,8 +345,8 @@ class Response : public Message {
 private:
   JsonValue data_;
 
-  Response(JsonValue&& id, Message::Error error, std::string&& note,
-           JsonValue&& data)
+  Response(JsonValue id, Message::Error error, std::string note,
+           JsonValue data)
       : Message(Message::RESPONSE, std::move(id), error, std::move(note)),
         data_(data) {
     CHPL_ASSERT(isResponse() && isOutbound());
@@ -358,10 +360,6 @@ public:
 
   /** Pack this response into a JSON value. */
   virtual JsonValue pack() const;
-
-  // Note no '&&' references for these formals, since the most common case
-  // when creating a response is to create it based off an existing
-  // request (so we have to make some copies).
 
   /** Create a response given an ID and a result value. */
   static Response create(JsonValue id, JsonValue data=nullptr);

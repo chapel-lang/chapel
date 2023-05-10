@@ -33,7 +33,7 @@ bool Message::isIdValid(const JsonValue& id) {
 // TODO: Need to build an error message or record what went wrong. Create
 // an 'Invalid' subclass and use that to record any error that occurs past
 // the point of parsing the message ID.
-chpl::owned<Message> Message::request(Server* ctx, JsonValue&& json) {
+chpl::owned<Message> Message::request(Server* ctx, const JsonValue& json) {
   auto objPtr = json.getAsObject();
   if (!objPtr) {
     ctx->verbose("Failed to unpack JSON object, found: %s\n",
@@ -71,7 +71,7 @@ chpl::owned<Message> Message::request(Server* ctx, JsonValue&& json) {
   CHPL_ASSERT(tag != Message::RESPONSE);
 
   // Before building a specific request, get the params.
-  JsonValue* params = nullptr;
+  const JsonValue* params = nullptr;
   if (auto ptr = objPtr->get("params")) {
     auto k = ptr->kind();
     if (k != JsonValue::Array && k != JsonValue::Object) {
@@ -210,7 +210,7 @@ Message::Error Request<P, R>::unpack(const JsonValue& json, P& p,
 
 /** Define factory functions that unpack and construct the message. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-chpl::owned<Message> name__::create(JsonValue&& id, const JsonValue& json) { \
+chpl::owned<Message> name__::create(JsonValue id, const JsonValue& json) { \
   name__::Params p; \
   std::string note; \
   auto error = unpack(json, p, &note); \
