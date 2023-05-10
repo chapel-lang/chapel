@@ -5276,11 +5276,13 @@ proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 
 @chpldoc.nodoc
 proc fileReader._deserializeOne(type readType, loc:locale) throws {
-  var reader = new fileReader(iokind.dynamic, locking=false,
-                              _deserializer=_deserializer,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var reader: fileReader(iokind.dynamic, locking=false, deserializerType);
+  reader._channel_internal = _channel_internal;
+  reader._deserializer = _deserializer;
+  reader._home = _home;
+  reader._readWriteThisFromLocale = loc;
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
           reader._deserializer = nil; }
 
@@ -5292,12 +5294,13 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
 
 @chpldoc.nodoc
 proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
-  // _read_one_internal
-  var reader = new fileReader(iokind.dynamic, locking=false,
-                              _deserializer=_deserializer,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var reader: fileReader(iokind.dynamic, locking=false, deserializerType);
+  reader._channel_internal = _channel_internal;
+  reader._deserializer = _deserializer;
+  reader._home = _home;
+  reader._readWriteThisFromLocale = loc;
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
           reader._deserializer = nil; }
 
@@ -5333,11 +5336,13 @@ private proc escapedNonUTF8ErrorMessage() : string {
 
 @chpldoc.nodoc
 proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
-  var writer = new fileWriter(iokind.dynamic, locking=false,
-                              _serializer=_serializer,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var writer : fileWriter(iokind.dynamic, locking=false, serializerType);
+  writer._channel_internal = _channel_internal;
+  writer._serializer = _serializer;
+  writer._home = _home;
+  writer._readWriteThisFromLocale = loc;
 
   // Set the fileWriter pointer to NULL to make the
   // destruction of the local writer record safe
@@ -5350,8 +5355,6 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
     return;
   }
 
-  // TODO: Should this pass an unmanaged or borrowed version, to reduce
-  // the number of instantiations for a type?
   try writer.serializer.serializeValue(writer, x);
 }
 
