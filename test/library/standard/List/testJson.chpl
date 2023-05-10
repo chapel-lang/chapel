@@ -63,4 +63,12 @@ proc main() {
     li.append(new Z("yellow", new R(0, 0.68)));
     testList(li);
   }
+  {
+    var li : list(list(int));
+    var x : list(int) = [1, 2, 3];
+    var y : list(int) = [4, 5, 6];
+    li.append(x);
+    li.append(y);
+    testList(li);
+  }
 }

@@ -42,3 +42,14 @@ Read list(Z,false):
 [(z = red, r = (x = 1, y = 0.31)), (z = yellow, r = (x = 0, y = 0.68))]
 Equals original: true
 ---------------------
+--- list(list(int(64),false),false) ---
+Writing list: 
+[[1, 2, 3], [4, 5, 6]]
+
+Wrote JSON: 
+[[1, 2, 3], [4, 5, 6]]
+
+Read list(list(int(64),false),false): 
+[[1, 2, 3], [4, 5, 6]]
+Equals original: true
+---------------------------------------

@@ -31,3 +31,14 @@ Read map(string,Z,false):
 {banana: (z = yellow, r = (x = 0, y = 0.68)), apple: (z = red, r = (x = 1, y = 0.31))}
 Equals original: true
 ---------------------------
+--- map(string,map(string,int(64),false),false) ---
+Writing map: 
+{y: {S: 33, R: 99}, x: {A: 5, B: 42}}
+
+Wrote JSON: 
+{"y": {"S": 33, "R": 99}, "x": {"A": 5, "B": 42}}
+
+Read map(string,map(string,int(64),false),false): 
+{y: {S: 33, R: 99}, x: {A: 5, B: 42}}
+Equals original: true
+---------------------------------------------------

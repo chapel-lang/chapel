@@ -56,4 +56,19 @@ proc main() {
     m.add("banana", new Z("yellow", new R(0, 0.68)));
     testMap(m);
   }
+  {
+    var x : map(string, int);
+    x.add("A", 5);
+    x.add("B", 42);
+
+    var y : map(string, int);
+    y.add("R", 99);
+    y.add("S", 33);
+
+    var m : map(string, map(string, int));
+    m.add("x", x);
+    m.add("y", y);
+
+    testMap(m);
+  }
 }
