@@ -144,18 +144,6 @@ void chpl_topo_init(void) {
     return;
   }
 
-  // Check hwloc API version.
-  // Require at least hwloc version 1.11 (we need 1.11.5 to not crash
-  // in some NUMA configurations).
-  // Check both at build time and run time.
-#define REQUIRE_HWLOC_VERSION 0x00010b00
-
-#if HWLOC_API_VERSION < REQUIRE_HWLOC_VERSION
-#error hwloc version 1.11.5 or newer is required
-#endif
-
-  CHK_ERR(hwloc_get_api_version() >= REQUIRE_HWLOC_VERSION);
-
   //
   // Allocate and initialize topology object.
   //
