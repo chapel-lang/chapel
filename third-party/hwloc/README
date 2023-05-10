@@ -31,3 +31,12 @@ follows, assuming the CWD is $CHPL_HOME/third-party/hwloc/:
 Note that these instructions are for simple 2.X API compatible updates.
 If the hwloc API changes, the runtime shim may need to be changed and
 incompatible versions need to be dropped from the whitelist.
+
+Chapel modifications to hwloc
+================================
+
+We made the following modifications to the official hwloc release:
+
+* Add HWLOC_DARWIN_LDFLAGS to Libs.private in hwloc.pc.in so that
+Chapel programs link correctly on a Mac.
+
