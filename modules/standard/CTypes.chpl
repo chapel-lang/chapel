@@ -277,6 +277,10 @@ module CTypes {
       ch.readWriteLiteral("]");
     }
 
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;

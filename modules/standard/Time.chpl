@@ -556,7 +556,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc date.init(reader: fileReader, ref deserializer) {
+  proc date.init(reader: fileReader, ref deserializer) throws {
     this.init();
     readThis(reader);
   }
@@ -869,7 +869,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc time.init(reader: fileReader, ref deserializer) {
+  proc time.init(reader: fileReader, ref deserializer) throws {
     this.init();
     readThis(reader);
   }
@@ -1522,7 +1522,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc dateTime.init(reader: fileReader, ref deserializer) {
+  proc dateTime.init(reader: fileReader, ref deserializer) throws {
     this.init();
     readThis(reader);
   }
