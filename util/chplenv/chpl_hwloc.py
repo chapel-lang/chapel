@@ -2,6 +2,7 @@
 import sys
 
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
+import subprocess
 from utils import error, memoize, warning
 
 
@@ -46,10 +47,9 @@ def get_link_args():
                                           'hwloc', ucp=get_uniq_cfg_path())
     elif hwloc_val == 'system':
         # Check that hwloc version is OK
-        okversions = ('1.11.5', '1.11.6', '1.11.7', '1.11.8', '1.11.9', '1.11.10', '1.11.11', '1.11.12', '1.11.13')
-        vers = third_party_utils.pkgconfig_get_system_version('hwloc')
-        if not vers in okversions:
-          err = "CHPL_HWLOC=system but unsupported version {0} was found.\nPlease use one of the following versions {1}\n".format(vers, ' '.join(okversions))
+        sub = subprocess.run(['pkg-config', '--exists', 'hwloc >= 2.0'])
+        if sub.returncode == 0:
+          err = "CHPL_HWLOC=system requires hwloc >= 2.0"
           error(err, ValueError)
 
         return ([ ], ['-lhwloc'])
