@@ -20,10 +20,3 @@ proc testXY(re:string) {
 // What should be the ending position in the channel?
 // When this is fixed, merge it into empty-channel-matches.chpl
 testXY("^"); 
-
-writeln();
-
-// This should match once at the end of the string, with byteOffset = 2.
-// When this is fixed, merge it into empty-string-matches.chpl
-var re = new regex("$");
-writeln(re.matches("xy"));
