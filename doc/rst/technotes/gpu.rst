@@ -141,7 +141,8 @@ before building Chapel.
 Chapel's build system will automatically try and deduce what type of GPU you
 have and where your installation of relevant runtime (e.g. CUDA or ROCm) are.
 If the type of GPU is not detected you may set ``CHPL_GPU`` manually to either
-``nvidia`` or ``amd`` . If the relevant runtime path is not automatically
+``nvidia``, ``amd`` or ``cpu`` (See :ref:`below <cpu-mode-label>` for more
+information on this mode). If the relevant runtime path is not automatically
 detected (or you would like to use a different installation) you may set
 ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH``.
 
@@ -158,7 +159,9 @@ for NVIDIA or "processor" values in `this table in the LLVM documentation
 sublocales created. For example, in a system where 8 physical GPUs per node,
 setting this environment variable to 4 will make Chapel use only the first 4
 GPUs. Setting this number to a value higher than the number of GPUs per node
-results in an error.
+results in an error; except for the ``CHPL_GPU==cpu`` mode, where this variable
+can be set to any non-negative number (See :ref:`below <cpu-mode-label>` for
+more information on this mode).
 
 GPU Support Features
 --------------------
@@ -270,6 +273,8 @@ it thwarts optimizations done by the backend assembler. In our experience, this
 can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
+
+.. _cpu-mode-label:
 
 ``CHPL_GPU=cpu``: Using ``CHPL_LOCALE_MODEL=gpu`` Without GPUs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
