@@ -885,15 +885,11 @@ module ZMQ {
         //
         // Note: the string factory below can throw DecodeError
         // var copy: string;
-        var copy;
-        if isString(T) {
-          var tmp:string = data;
-          copy = data;
-        }
-        else {
-          copy = parallelCreateBytesWithNewBuffer(data.localize().buff,
-                                                         length=data.size);
-        }
+        var copy = if isString(T)
+                      then data
+                      else parallelCreateBytesWithNewBuffer(
+                              data.localize().buff,
+                              length=data.size);
         copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
