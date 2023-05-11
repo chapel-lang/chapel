@@ -21,8 +21,18 @@
 #define CHPL_UTIL_MEMORY_H
 
 #include <memory>
+#include "llvm/Option/Option.h"
 
 namespace chpl {
+
+template <typename T>
+#if LLVM_VERSION_MAJOR >= 16
+using opt = std::optional<T>;
+const auto empty = std::nulopt;
+#else
+using opt = llvm::Optional<T>;
+const auto empty = llvm::None;
+#endif
 
 /**
  owned<T> is just a synonym for 'std::unique_ptr<T>'.

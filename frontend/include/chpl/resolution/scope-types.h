@@ -311,7 +311,7 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  llvm::Optional<BorrowedIdsWithName>
+  opt<BorrowedIdsWithName>
   borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /// \cond DO_NOT_DOCUMENT
@@ -454,7 +454,7 @@ class BorrowedIdsWithName {
   }
  public:
 
-  static llvm::Optional<BorrowedIdsWithName>
+  static opt<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isField, bool isMethod, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,
@@ -464,11 +464,7 @@ class BorrowedIdsWithName {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, std::move(excludeFlagSet));
     }
-#if LLVM_VERSION_MAJOR >= 16
-    return std::nullopt;
-#else
-    return llvm::None;
-#endif
+    return chpl::empty;
   }
 
   static BorrowedIdsWithName
@@ -482,13 +478,8 @@ class BorrowedIdsWithName {
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
                                        filterFlags, excludeFlagSet);
-#if LLVM_VERSION_MAJOR >= 16
-    CHPL_ASSERT(maybeIds.has_value());
-    return maybeIds.value();
-#else
-    CHPL_ASSERT(maybeIds.hasValue());
-    return maybeIds.getValue();
-#endif
+    CHPL_ASSERT(!!maybeIds);
+    return *maybeIds;
   }
 
   static BorrowedIdsWithName
