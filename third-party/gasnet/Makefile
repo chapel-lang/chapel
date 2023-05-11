@@ -17,16 +17,25 @@ endif
 
 # PSHM (inter-Process SHared Memory) provide a mechanism for gasnet instances
 # on the same node to communicate through shared memory instead of the real
-# conduit. In "production" we only run a single gasnet client per node so this
-# doesn't help, but for smp it's required, and we've noticed faster testing
-# times since we do local spawning, which will result in multiple gasnet
-# clients on the same node. Note that pshm only works with segment fast/large.
+# conduit. We cannot use it in "production" because it doesn't support a
+# blocking progress thread. It is required for smp, and we've noticed faster
+# testing times since we do local spawning, which will result in multiple
+# gasnet clients on the same node. Note that pshm only works with segment
+# fast/large.
+
 SUB_SEG = $(CHPL_MAKE_COMM_SUBSTRATE)-$(CHPL_MAKE_COMM_SEGMENT)
 ifneq (,$(findstring $(SUB_SEG), udp-fast udp-large smp-fast smp-large))
 CHPL_GASNET_CFG_OPTIONS += --enable-pshm
 else
 CHPL_GASNET_CFG_OPTIONS += --disable-pshm
 endif
+
+# Turn off the runtime warning that occurs when running multiple processes per
+# host and PSHM is not enabled. This should be removed once we support a
+# non-blocking progress thread and enable PSHM. See
+# https://github.com/Cray/chapel-private/issues/3906.
+
+GASNET_CFLAGS += -DGASNET_NO_PSHM_WARNING
 
 ifneq ($(CHPL_MAKE_COMM_SEGMENT),everything)
 CHPL_GASNET_CFG_OPTIONS += --disable-aligned-segments
