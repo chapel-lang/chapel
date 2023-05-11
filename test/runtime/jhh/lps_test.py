@@ -11,6 +11,7 @@ import subprocess
 import os
 import sys
 from pprint import pprint
+from packaging import version
 
 if not 'CHPL_HOME' in os.environ:
     print('CHPL_HOME is not set')
@@ -58,7 +59,13 @@ class LocalePerSocket(unittest.TestCase):
         global verbose
         if skipReason is not None:
             return
-        cmd = ["sinfo", "--format=%X %Y %Z %i", "--noheader", "--exact"]
+        v = runCmd("sinfo --version").split()[1]
+        if version.parse(v) < version.parse("23.02.0"):
+            # older versions of sinfo do not support %i
+            fmt = "%X %Y %Z"
+        else:
+            fmt = "%X %Y %Z %i"
+        cmd = ["sinfo", "--format=" + fmt, "--noheader", "--exact"]
         partition = os.environ.get('CHPL_LAUNCHER_PARTITION')
         if partition is not None:
             cmd += ["--partition", partition]
@@ -66,10 +73,6 @@ class LocalePerSocket(unittest.TestCase):
                 print("Partition: ", partition)
 
         output = runCmd(cmd)
-        if output.startswith("Invalid node format specification: i"):
-            # sinfo doesn't support %i (reservation name)
-            cmd[1] = "--format=%X %Y %Z"
-            output = runCmd(cmd)
         for line in output.splitlines():
             fields = line.split()
             # skip lines with reservation info
@@ -384,7 +387,7 @@ def main(argv):
         try:
             argv.remove("-f")
             argv.remove("--failfast")
-        except:
+        except ValueError:
             pass
     if "-v" in argv or "--verbose" in argv:
         verbose = True
