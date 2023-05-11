@@ -98,9 +98,9 @@ module Bytes {
     :returns: A new :type:`bytes`
   */
   inline proc type bytes.createBorrowingBuffer(x: c_string,
-                                            length=x.size) : bytes {
+                                               length=x.size) : bytes {
     return bytes.createBorrowingBuffer(x:bufferType, length=length,
-                                          size=length+1);
+                                       size=length+1);
   }
 
   pragma "no doc"
@@ -202,7 +202,7 @@ module Bytes {
   */
   inline proc type bytes.createAdoptingBuffer(x: c_string, length=x.size) : bytes {
     return bytes.createAdoptingBuffer(x: bufferType, length=length,
-                                       size=length+1);
+                                      size=length+1);
   }
 
   /*
@@ -239,8 +239,9 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
-  inline proc type bytes.createAdoptingBuffer(x: c_ptr(?t), length: int,
-                                         size: int) : bytes {
+  inline proc type bytes.createAdoptingBuffer(x: c_ptr(?t),
+                                              length: int,
+                                              size: int) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
@@ -309,7 +310,8 @@ module Bytes {
      :returns: A new :type:`bytes`
   */
   @deprecated("createBytesWithNewBuffer is deprecated - please use :proc:`bytes.createCopyingBuffer` instead")
-  inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
+  inline proc createBytesWithNewBuffer(x: c_ptr(?t),
+                                       length: int,
                                        size=length+1) : bytes {
     return bytes.createCopyingBuffer(x, length, size);
   }
@@ -326,8 +328,9 @@ module Bytes {
 
      :returns: A new :type:`bytes`
   */
-  inline proc type bytes.createCopyingBuffer(x: c_ptr(?t), length: int,
-                                       size=length+1) : bytes {
+  inline proc type bytes.createCopyingBuffer(x: c_ptr(?t),
+                                             length: int,
+                                             size=length+1) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }

@@ -438,7 +438,9 @@ module String {
   @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
   inline proc createStringWithBorrowedBuffer(x: c_string,
                                              length=x.size) : string throws {
-    return string.createBorrowingBuffer(x:c_ptr(uint(8)), length=length, size=length+1);
+    return string.createBorrowingBuffer(x:c_ptr(uint(8)),
+                                        length=length,
+                                        size=length+1);
   }
 
   /*
@@ -459,8 +461,9 @@ module String {
   */
   inline proc type string.createBorrowingBuffer(x: c_string,
                                              length=x.size) : string throws {
-    return string.createBorrowingBuffer(x:bufferType, length=length,
-                                           size=length+1);
+    return string.createBorrowingBuffer(x:bufferType,
+                                        length=length,
+                                        size=length+1);
   }
 
   pragma "no doc"
@@ -531,8 +534,8 @@ module String {
      :returns: A new `string`
   */
   proc type string.createBorrowingBuffer(x: c_ptr(?t),
-                                             length: int,
-                                             size: int) : string throws {
+                                         length: int,
+                                         size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -566,7 +569,9 @@ module String {
   @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
   inline proc createStringWithOwnedBuffer(x: c_string,
                                           length=x.size) : string throws {
-    return string.createAdoptingBuffer(x: bufferType, length=length, size=length+1);
+    return string.createAdoptingBuffer(x: bufferType,
+                                          length=length,
+                                          size=length+1);
   }
 
   /*
@@ -585,8 +590,10 @@ module String {
     :returns: A new `string`
   */
   proc type string.createAdoptingBuffer(x: c_string,
-                                          length=x.size) : string throws {
-    return string.createAdoptingBuffer(x:bufferType, length=length, size=length+1);
+                                        length=x.size) : string throws {
+    return string.createAdoptingBuffer(x:bufferType,
+                                       length=length,
+                                       size=length+1);
   }
 
   /*
@@ -633,8 +640,8 @@ module String {
      :returns: A new `string`
   */
   inline proc type string.createAdoptingBuffer(x: c_ptr(?t),
-                                          length: int,
-                                          size: int) : string throws {
+                                               length: int,
+                                               size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -711,11 +718,14 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc type string.createCopyingBuffer(x: c_string, length=x.size,
-                                        policy=decodePolicy.strict) : string throws {
-    return string.createCopyingBuffer(x: bufferType, length=length,
-                                     size=length+1, policy);
-
+  inline proc type string.createCopyingBuffer(x: c_string,
+                                              length=x.size,
+                                              policy=decodePolicy.strict
+                                              ) : string throws {
+    return string.createCopyingBuffer(x: bufferType,
+                                      length=length,
+                                      size=length+1,
+                                      policy);
   }
 
   /*
@@ -744,7 +754,8 @@ module String {
   */
   @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
   inline proc createStringWithNewBuffer(x: c_ptr(?t),
-                                        length: int, size=length+1,
+                                        length: int,
+                                        size=length+1,
                                         policy=decodePolicy.strict) : string throws {
     return string.createCopyingBuffer(x, length, size, policy);
   }
@@ -774,8 +785,9 @@ module String {
      :returns: A new `string`
   */
   proc type string.createCopyingBuffer(x: c_ptr(?t),
-                                        length: int, size=length+1,
-                                        policy=decodePolicy.strict) : string throws {
+                                       length: int,
+                                       size=length+1,
+                                       policy=decodePolicy.strict) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
