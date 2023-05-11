@@ -171,8 +171,6 @@ class GpuizableLoop {
   std::vector<Symbol*> lowerBounds_;
   bool shouldErrorIfNotGpuizable_;
 
-  std::vector<CallExpr*> gpuAssertions_; // should this be a single CallExpr* ?
-
 public:
   GpuizableLoop(BlockStmt* blk);
 
@@ -461,7 +459,7 @@ class GpuKernel {
   public:
   SymExpr* blockSize_;
 
-  GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
+  GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
   FnSymbol* fn() const { return fn_; }
   const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
