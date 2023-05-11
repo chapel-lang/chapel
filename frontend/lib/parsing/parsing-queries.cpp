@@ -1527,5 +1527,24 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
   unstableWarningForIdQuery(context, idMention, idTarget);
 }
 
+static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
+  Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
+  QUERY_BEGIN(getModuleKindQuery, context, moduleId);
+  const AstNode* ast = astForIDQuery(context, moduleId);
+  CHPL_ASSERT(ast && "could not find AST for module ID");
+  if (auto mod = ast->toModule()) {
+    ret = mod->kind();
+  } else {
+    CHPL_ASSERT(mod && "A module was expected, but not found");
+  }
+  return QUERY_END(ret);
+}
+
+Module::Kind idToModuleKind(Context* context, ID id) {
+  auto modID = getModuleForId(context, id);
+  return getModuleKindQuery(context, modID);
+}
+
+
 } // end namespace parsing
 } // end namespace chpl

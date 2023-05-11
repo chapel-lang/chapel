@@ -1963,6 +1963,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);
+  flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
+            fPermitUnhandledModuleErrors);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);
