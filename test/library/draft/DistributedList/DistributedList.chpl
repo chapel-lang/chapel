@@ -29,21 +29,21 @@ module DistributedList {
         type eltType;
         param blockSize: int;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const targetLocales = Locales;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
             dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var locks: [locDom] ChapelLocks.chpl_LocalSpinlock =
             [i in locDom] new ChapelLocks.chpl_LocalSpinlock();
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var blockLists: [locDom] blockList(eltType, blockSize);
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var numEntries: atomic int;
 
 
@@ -313,7 +313,7 @@ module DistributedList {
         }
 
         // non-locking pop
-        pragma "no doc"
+        @chpldoc.nodoc
         proc _pop(idx: int): eltType {
             const lastIdx = this.numEntries.read() - 1;
 
@@ -376,7 +376,7 @@ module DistributedList {
         }
 
         // non-locking find
-        pragma "no doc"
+        @chpldoc.nodoc
         proc _find(x: eltType, start: int = 0, end: int = -1): int {
             const last = if end == -1 then (this.numEntries.read() - 1) else end,
                   (_, maxBlockIdx, _) = indicesFor(last),
@@ -498,7 +498,7 @@ module DistributedList {
         // Helper methods
         // ---------------------
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc deinit() {
             for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 this.blockLists[locIdx]._empty();
@@ -506,7 +506,7 @@ module DistributedList {
             this.numEntries.write(0);
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         // convert a global list index to:
         //   (locale_idx, block_idx, entry_idx_in_block)
         inline proc indicesFor(idx: int): (int, int, int) {
@@ -517,30 +517,30 @@ module DistributedList {
             );
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc globalIndex(locIdx: int, blockIdx: int, eltIdx: int): int {
             return blockIdx * this.blockSize * this.locDom.size + // full rows
                    locIdx * this.blockSize + // full blocks on this row
                    eltIdx; // elements in this block
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc lockAll() {
             for lock in this.locks do lock.lock();
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc unlockAll() {
             for lock in this.locks do lock.unlock();
         }
 
         // TODO: toggle this with global bounds checking flag
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc boundsCheck(idx): bool {
             return idx >= 0 && idx < this.numEntries.read();
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         /* split a set of global indices across the corresponding blocks on each locale
 
             returns:
@@ -581,7 +581,7 @@ module DistributedList {
             return (startsAndRanges, numUsedPerLocale);
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc _destroy(ref item: eltType) {
             chpl__autoDestroy(item);
         }
@@ -773,14 +773,14 @@ module DistributedList {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         inline proc _destroy(ref item: eltType) {
             chpl__autoDestroy(item);
         }
     }
 
-    pragma "no doc"
     pragma "unsafe"
+    @chpldoc.nodoc
     inline proc _move(ref src: ?t, ref dst: t) lifetime src == dst {
       __primitive("=", dst, src);
     }

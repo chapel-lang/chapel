@@ -117,7 +117,7 @@ class RecordReader {
   var myReader;
   /* The regular expression to read (using match on the channel) */
   var matchRegex: regex(string);
-  pragma "no doc"
+  @chpldoc.nodoc
   param num_fields = numFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
@@ -224,7 +224,7 @@ class RecordReader {
      for parallel file IO
 
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _get_internal(offst: int(64) = 0, len: int(64) = -1) throws {
     var rec: t; // create record
     var once = false; // We havent populated yet

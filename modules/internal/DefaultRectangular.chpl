@@ -175,7 +175,7 @@ module DefaultRectangular {
       return dist;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _serialized_domain {
       param rank;
       type idxType;

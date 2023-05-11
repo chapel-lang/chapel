@@ -94,12 +94,12 @@ module UnorderedCopy {
     compilerError("unorderedCopy is only supported between identical trivially copyable types");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc unorderedCopy(ref dst:chpl_anyPOD, const ref src:chpl_anyPOD): void {
     unorderedCopyPrim(dst, src);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc unorderedCopy(ref dst:chpl_anyPOD, param src:chpl_anyPOD): void {
     const refSrc = src;
     unorderedCopyPrim(dst, refSrc);

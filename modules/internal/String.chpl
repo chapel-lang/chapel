@@ -70,13 +70,13 @@ module String {
 
   private config param debugStrings = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useCachedNumCodepoints = true;
 
   pragma "plain old data"
-  pragma "no doc"
+  @chpldoc.nodoc
   record byteIndex {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _bindex  : int;
 
     proc init() {
@@ -96,12 +96,12 @@ module String {
   }
 
   pragma "plain old data"
-  pragma "no doc"
+  @chpldoc.nodoc
   record codepointIndex {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _cpindex  : int;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       // Let compiler insert defaults
     }
@@ -119,255 +119,255 @@ module String {
 }
 
   // Helper routines in support of being able to use ranges of indices
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_bounded_range(low: byteIndex, high: byteIndex) do
     return new range(byteIndex, low=low, high=high);
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex) do
     return new range(codepointIndex, low=low, high=high);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_low_bounded_range(low: byteIndex) do
     return new range(low=low);
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_low_bounded_range(low: codepointIndex) do
     return new range(low=low);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_high_bounded_range(high: byteIndex) do
     return new range(high=high);
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_build_high_bounded_range(high: codepointIndex) do
     return new range(high=high);
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__rangeStrideType(type idxType: byteIndex) type do
     return int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__rangeStrideType(type idxType: codepointIndex) type do
     return int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__rangeUnsignedType(type idxType: byteIndex) type do
     return uint;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__rangeUnsignedType(type idxType: codepointIndex) type do
     return uint;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl__idxToInt(i: byteIndex) do
     return i:int;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl__idxToInt(i: codepointIndex) do
     return i:int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl__intToIdx(type idxType: byteIndex, i: int) do
     return i: byteIndex;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
     return int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
     return int;
 
-  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
     return x: int > y: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.>(x: codepointIndex, y: codepointIndex) {
     return x: int > y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.>(x: byteIndex, y: int) {
     return x: int > y;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.>(x: codepointIndex, y: int) do return x: int > y;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator byteIndex.>(x: int, y: byteIndex) do return x > y: int;
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.>(x: int, y: codepointIndex) do return x > y: int;
   // End range helper support
 
   // Index arithmetic support
 
   // index + int or int + index --> index
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator byteIndex.+(x: byteIndex, y: int) {
     return (x: int + y): byteIndex;
   }
 
-  pragma "no doc" inline operator codepointIndex.+(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.+(x: codepointIndex, y: int) {
     return (x: int + y): codepointIndex;
   }
 
-  pragma "no doc" inline operator byteIndex.+(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.+(x: int, y: byteIndex) {
     return (x + y: int): byteIndex;
   }
 
-  pragma "no doc" inline operator codepointIndex.+(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.+(x: int, y: codepointIndex) {
     return (x + y: int): codepointIndex;
   }
 
-  pragma "no doc" inline operator +(x: bufferType, y: byteIndex) do return x+(y:int);
+  @chpldoc.nodoc inline operator +(x: bufferType, y: byteIndex) do return x+(y:int);
 
   // index - int --> index
-  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.-(x: byteIndex, y: int) {
     return (x: int - y): byteIndex;
   }
 
-  pragma "no doc" inline operator codepointIndex.-(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.-(x: codepointIndex, y: int) {
     return (x: int - y): codepointIndex;
   }
 
   // index - index --> int
-  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.-(x: byteIndex, y: byteIndex) {
     return x: int - y: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.-(x: codepointIndex, y: codepointIndex) {
     return x: int - y: int;
   }
 
   // other relationals
-  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.<(x: byteIndex, y: byteIndex) {
     return x: int < y: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.<(x: codepointIndex, y: codepointIndex) {
     return x: int < y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.<(x: byteIndex, y: int) {
     return x: int < y;
   }
 
-  pragma "no doc" inline operator codepointIndex.<(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.<(x: codepointIndex, y: int) {
     return x: int < y;
   }
 
-  pragma "no doc" inline operator byteIndex.<(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.<(x: int, y: byteIndex) {
     return x < y: int;
   }
 
-  pragma "no doc" inline operator codepointIndex.<(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.<(x: int, y: codepointIndex) {
     return x < y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.>=(x: byteIndex, y: byteIndex) {
     return x: int >= y: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.>=(x: codepointIndex, y: codepointIndex) {
     return x: int >= y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.>=(x: byteIndex, y: int) {
     return x: int >= y;
   }
 
-  pragma "no doc" inline operator codepointIndex.>=(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.>=(x: codepointIndex, y: int) {
     return x: int >= y;
   }
 
-  pragma "no doc" inline operator byteIndex.>=(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.>=(x: int, y: byteIndex) {
     return x >= y: int;
   }
 
-  pragma "no doc" inline operator codepointIndex.>=(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.>=(x: int, y: codepointIndex) {
     return x >= y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.<=(x: byteIndex, y: byteIndex) {
     return x: int <= y: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.<=(x: codepointIndex, y: codepointIndex) {
     return x: int <= y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.<=(x: byteIndex, y: int) {
     return x: int <= y;
   }
 
-  pragma "no doc" inline operator codepointIndex.<=(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.<=(x: codepointIndex, y: int) {
     return x: int <= y;
   }
 
-  pragma "no doc" inline operator byteIndex.<=(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.<=(x: int, y: byteIndex) {
     return x <= y: int;
   }
 
-  pragma "no doc" inline operator codepointIndex.<=(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.<=(x: int, y: codepointIndex) {
     return x <= y: int;
   }
 
-  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.==(x: byteIndex, y: byteIndex) {
     return (x:int) == (y:int);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.==(x: codepointIndex, y: codepointIndex) {
     return (x:int) == (y:int);
   }
 
-  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.==(x: byteIndex, y: int) {
     return (x:int) == y;
   }
 
-  pragma "no doc" inline operator codepointIndex.==(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.==(x: codepointIndex, y: int) {
     return (x:int) == y;
   }
 
-  pragma "no doc" inline operator byteIndex.==(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.==(x: int, y: byteIndex) {
     return x == (y:int);
   }
 
-  pragma "no doc" inline operator codepointIndex.==(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.==(x: int, y: codepointIndex) {
     return x == (y:int);
   }
 
-  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.!=(x: byteIndex, y: byteIndex) {
     return (x:int) != (y:int);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator codepointIndex.!=(x: codepointIndex, y: codepointIndex) {
     return (x:int) != (y:int);
   }
 
-  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: int) {
+  @chpldoc.nodoc inline operator byteIndex.!=(x: byteIndex, y: int) {
     return (x:int) != y;
   }
 
-  pragma "no doc" inline operator codepointIndex.!=(x: codepointIndex, y: int) {
+  @chpldoc.nodoc inline operator codepointIndex.!=(x: codepointIndex, y: int) {
     return (x:int) != y;
   }
 
-  pragma "no doc" inline operator byteIndex.!=(x: int, y: byteIndex) {
+  @chpldoc.nodoc inline operator byteIndex.!=(x: int, y: byteIndex) {
     return x != (y:int);
   }
 
-  pragma "no doc" inline operator codepointIndex.!=(x: int, y: codepointIndex) {
+  @chpldoc.nodoc inline operator codepointIndex.!=(x: int, y: codepointIndex) {
     return x != (y:int);
   }
 
-  pragma "no doc" inline operator byteIndex.!(x: byteIndex) do return !(x:int);
-  pragma "no doc" inline operator codepointIndex.!(x: codepointIndex) {
+  @chpldoc.nodoc inline operator byteIndex.!(x: byteIndex) do return !(x:int);
+  @chpldoc.nodoc inline operator codepointIndex.!(x: codepointIndex) {
     return !(x:int);
   }
 
-  pragma "no doc" inline proc _cond_test(x: byteIndex) do      return x != 0;
-  pragma "no doc" inline proc _cond_test(x: codepointIndex) do return x != 0;
+  @chpldoc.nodoc inline proc _cond_test(x: byteIndex) do      return x != 0;
+  @chpldoc.nodoc inline proc _cond_test(x: codepointIndex) do return x != 0;
   // End index arithmetic support
 
   private proc validateEncoding(buf, len): int throws {
@@ -466,7 +466,7 @@ module String {
                                         size=length+1);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_createStringWithLiteral(buffer: c_string,
                                     offset: int,
                                     x: c_string,
@@ -545,7 +545,7 @@ module String {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc createStringWithOwnedBuffer(x: string) : string {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
@@ -799,7 +799,7 @@ module String {
 
   // non-validating string factory functions are in this submodule. This
   // submodule can be `private use`d from other String-supporting modules.
-  pragma "no doc"
+  @chpldoc.nodoc
   module NVStringFactory {
     use BytesStringCommon;
     use ByteBufferHelpers only bufferType;
@@ -847,7 +847,7 @@ module String {
   // in when possible.
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
-  pragma "no doc"
+  @chpldoc.nodoc
   record _string {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
@@ -1643,7 +1643,7 @@ module String {
     return getSlice(this, r);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc string.this(r: range(?)): string where r.idxType != byteIndex {
     // codepoint-based slicing should never throw
     return try! getSlice(this, r);
@@ -2220,11 +2220,11 @@ module String {
   /*
      Copies the int `rhs` into the byteIndex `lhs`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator byteIndex.=(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   operator byteIndex.=(ref lhs: byteIndex, const ref rhs: byteIndex) {
     lhs._bindex = rhs._bindex;
   }
@@ -2232,11 +2232,11 @@ module String {
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator codepointIndex.=(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   operator codepointIndex.=(ref lhs: codepointIndex,
                             const ref rhs: codepointIndex) {
     lhs._cpindex = rhs._cpindex;
@@ -2281,7 +2281,7 @@ module String {
     return doMultiply(s, n);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *(n: integral, s: string) {
     return doMultiply(s, n);
   }
@@ -2290,81 +2290,81 @@ module String {
   // Param procs
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.==(param s0: string, param s1: string) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.!=(param s0: string, param s1: string) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.<=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.>=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.<(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.>(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) > 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.+(param a: string, param b: string) param do
     return __primitive("string_concat", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.toByte() param : uint(8) {
     if this.numBytes != 1 then
       compilerError("string.toByte() only accepts single-byte strings");
     return __primitive("ascii", this);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.byte(param i: int) param : uint(8) {
     if i < 0 || i > this.numBytes-1 then
       compilerError("index " + i:string + " out of bounds for string with " + this.numBytes:string + " bytes");
     return __primitive("ascii", this, i);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.this(param i: int) param : string {
     if i < 0 || i > this.size-1 then
       compilerError("index " + i:string + " out of bounds for string with length " + this.size:string);
     return __primitive("string item", this, i);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.item(param i: int) param : string {
     if i < 0 || i > this.size-1 then
       compilerError("index " + i:string + " out of bounds for string with length " + this.size:string);
     return __primitive("string item", this, i);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.numBytes param do
     return __primitive("string_length_bytes", this);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.numCodepoints param do
     return __primitive("string_length_codepoints", this);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc param string.size param do
     return this.numCodepoints;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _string_contains(param a: string, param b: string) param do
     return __primitive("string_contains", a, b);
 
@@ -2395,7 +2395,7 @@ module String {
   //  "1000" < "101" < "1010".
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator string.==(a: string, b: string) : bool {
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
@@ -2414,26 +2414,26 @@ module String {
     return doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.!=(a: string, b: string) : bool {
     return !doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.<(a: string, b: string) : bool {
     return doLessThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.>(a: string, b: string) : bool {
     return doGreaterThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.<=(a: string, b: string) : bool {
     return doLessThanOrEq(a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator string.>=(a: string, b: string) : bool {
     return doGreaterThanOrEq(a, b);
   }
@@ -2448,7 +2448,7 @@ module String {
   // Portability Note:
   // wint_t will normally be a 32-bit int.
   // There may be systems where it is not.
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type wint_t = int(32);
 
   private inline proc codepoint_isUpper(c: int(32)) : bool {
@@ -2517,13 +2517,13 @@ module String {
   // Casts (casts to & from other primitive types are in StringCasts)
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(cs: c_string, type t: bufferType)  {
     return __primitive("cast", t, cs);
   }
 
   // Cast from c_string to string
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(cs: c_string, type t: string)  {
     try {
       return string.createCopyingBuffer(cs);
@@ -2534,13 +2534,13 @@ module String {
   }
 
   // Cast from byteIndex to int
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(cpi: byteIndex, type t: int)  {
     return cpi._bindex;
   }
 
   // Cast from int to byteIndex
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(i: int, type t: byteIndex)  {
     var cpi: byteIndex;
     cpi._bindex = i;
@@ -2548,13 +2548,13 @@ module String {
   }
 
   // Cast from codepointIndex to int
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(cpi: codepointIndex, type t: int)  {
     return cpi._cpindex;
   }
 
   // Cast from int to codepointIndex
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(i: int, type t: codepointIndex) {
     var cpi: codepointIndex;
     cpi._cpindex = i;
@@ -2565,12 +2565,12 @@ module String {
   // hashing support
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc string.hash(): uint {
     return getHash(this);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator string.<=>(ref x: string, ref y: string) {
     if (x.locale_id != y.locale_id) {
       // TODO: could we just change locale_id?

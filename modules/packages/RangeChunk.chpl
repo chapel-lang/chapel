@@ -212,7 +212,7 @@ module RangeChunk {
   // Private helpers for order pairs and thereby ranges.
   // Each corresponds with a remainder policy.
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderThru(nElems: ?I, nChunks: I, i: I): (I, I) {
     const m = nElems * i;
     const start = if i == 0
@@ -224,7 +224,7 @@ module RangeChunk {
     return (start, end);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderPack(chunkSize: ?I, nElems: I, i: I): (I, I) {
     const start = chunkSize * i;
     if start >= nElems then
@@ -236,7 +236,7 @@ module RangeChunk {
     return (start, end);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc chunkOrderMod(chunkSize: ?I, rem: I, nElems: I, nChunks: I,
                              i: I): (I, I) {
     var start, end: I;

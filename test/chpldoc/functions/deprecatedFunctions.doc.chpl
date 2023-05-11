@@ -21,8 +21,8 @@ proc foe() { }
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated proc uno() { }
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="Two can be as bad as one, it's the loneliest number since the #1")
 proc dos() { }

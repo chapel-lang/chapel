@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-pragma "no doc"
+@chpldoc.nodoc
 module ExportWrappers {
   use ChapelStandard;
   use CTypes;

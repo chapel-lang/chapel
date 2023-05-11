@@ -3465,7 +3465,7 @@ module HDF5 {
        makes difficult/impossible to use otherwise. The workaround wrappers are
        named the same thing as the original HDF5 name, but with a `_WAR` suffix.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
       use HDF5.C_HDF5;

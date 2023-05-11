@@ -124,7 +124,7 @@ record map {
     _readWriteHelper(ch);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _readWriteHelper(ch) throws {
     var first = true;
     proc rwLiteral(lit:string) throws {
@@ -151,7 +151,7 @@ record map {
 
   class KeyNotFoundError : Error {
     proc init() {}
-      
+
     proc init(k: string) {
       var msg = "key '" + k + "' not found";
       super.init(msg);

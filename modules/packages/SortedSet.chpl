@@ -53,7 +53,7 @@ module SortedSet {
     type comparatorType = defaultComparator.type;
 
     /* The underlying implementation */
-    pragma "no doc"
+    @chpldoc.nodoc
     var instance: treap(eltType, parSafe, comparatorType);
 
     /*

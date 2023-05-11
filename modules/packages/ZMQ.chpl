@@ -252,7 +252,7 @@ module ZMQ {
   private inline proc errno do return chpl_macro_int_errno():c_int;
 
   // Types
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type zmq_msg_t;
 
   // C API
@@ -416,10 +416,10 @@ module ZMQ {
   private extern const ZMQ_PLAIN: c_int;
   private extern const ZMQ_CURVE: c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const unset = -42;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   export proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
     chpl_here_free(data);
   }
@@ -436,7 +436,7 @@ module ZMQ {
     return (major:int, minor:int, patch:int);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class ContextClass: RefCountBase {
     var ctx: c_void_ptr;
     var home: locale;
@@ -474,7 +474,7 @@ module ZMQ {
     Note that this record contains private fields not listed below.
    */
   record Context {
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged ContextClass;
 
     /*
@@ -486,14 +486,14 @@ module ZMQ {
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(c: Context) {
       this.classRef = c.classRef;
       this.classRef.incRefCount();
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var rc = classRef.decRefCount();
       if rc == 1 {
@@ -515,7 +515,7 @@ module ZMQ {
 
   } // record Context
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Context.=(ref lhs: Context, rhs: Context) {
     // Retain
     rhs.classRef.incRefCount();
@@ -528,7 +528,7 @@ module ZMQ {
     lhs.classRef = rhs.classRef;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class SocketClass: RefCountBase {
     var socket: c_void_ptr;
     var home: locale;
@@ -578,25 +578,25 @@ module ZMQ {
     // options, users will need another way to work around that lack of support.
     // Currently, they can work around it by defining their own extern version
     // and using this field (see #13503)
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged SocketClass;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var context: Context;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       compilerError("Cannot create Socket directly; try Context.socket()");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(s: Socket) {
       this.classRef = s.classRef;
       this.classRef.incRefCount();
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(ctx: Context, sockType: int) {
 
       // This function exists because initializers are confused
@@ -617,7 +617,7 @@ module ZMQ {
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var rc = classRef.decRefCount();
       if rc == 1 {
@@ -791,7 +791,7 @@ module ZMQ {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc setSubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
@@ -831,7 +831,7 @@ module ZMQ {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc setUnsubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
@@ -848,7 +848,7 @@ module ZMQ {
     }
 
     // ZMQ serialization checker
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc isZMQSerializable(type T) param: bool {
       return isNumericType(T) || isEnumType(T) ||
         isBytes(T) || isString(T) || isRecordType(T);
@@ -867,13 +867,13 @@ module ZMQ {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int) where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // send, strings
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isString(T) || isBytes(T) {
       on classRef.home {
         // Deep-copy the string to the current locale and release ownership
@@ -913,7 +913,7 @@ module ZMQ {
     }
 
     // send, numeric types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isNumericType(T) {
       on classRef.home {
         var copy = data;
@@ -930,13 +930,13 @@ module ZMQ {
     }
 
     // send, enum types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
       try send(chpl__enumToOrder(data), flags);
     }
 
     // send, records (of other supported things)
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where (isRecordType(T) &&
                                                      (!isString(T)) &&
                                                      (!isBytes(T))) {
@@ -962,13 +962,13 @@ module ZMQ {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int): T where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // recv, strings and bytes
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isString(T) || isBytes(T) {
       proc innerRecv() throws {
         // Initialize an empty ZeroMQ message
@@ -1012,7 +1012,7 @@ module ZMQ {
     }
 
     // recv, numeric types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isNumericType(T) {
       var ret: T;
       on classRef.home {
@@ -1032,13 +1032,13 @@ module ZMQ {
     }
 
     // recv, enum types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
       return try chpl__orderToEnum(recv(int, flags), T);
     }
 
     // recv, records (of other supported things)
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where (isRecordType(T) &&
                                                    (!isString(T)) &&
                                                    (!isBytes(T))) {
@@ -1052,7 +1052,7 @@ module ZMQ {
       return ret;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
       import OS.errorCode;
       var errmsg_zmq: string;
@@ -1066,7 +1066,7 @@ module ZMQ {
     }
   } // record Socket
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Socket.=(ref lhs: Socket, rhs: Socket) {
     if lhs.classRef == rhs.classRef then return;
     // Retain

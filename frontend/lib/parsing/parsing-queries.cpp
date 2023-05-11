@@ -1348,13 +1348,28 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   if (id.isEmpty()) return ret;
 
   auto ast = parsing::idToAst(context, id);
-  if (ast && ast->isDecl()) {
-    auto decl = ast->toDecl();
-    ret = decl->attributeGroup();
+  ret = parsing::astToAttributeGroup(context, ast);
+
+  return ret;
+}
+
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* ast) {
+  const uast::AttributeGroup* ret = nullptr;
+  if (ast) {
+    auto parent = parentAst(context, ast);
+    bool done = ast->isMultiDecl() || !parent ||
+                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    // recurse if not done
+    return done
+           ? ast->attributeGroup()
+           : parsing::astToAttributeGroup(context, parent);
   }
 
   return ret;
 }
+
+
 
 //
 // TODO: The below queries on AST could be made into methods, and the

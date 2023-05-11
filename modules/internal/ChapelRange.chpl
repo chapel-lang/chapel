@@ -29,10 +29,10 @@ module ChapelRange {
   private use ChapelDebugPrint only chpl_debug_writeln;
 
   // Turns on range iterator debugging.
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugChapelRange = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
   /* Compile with ``-snewSliceRule`` to switch to using the new slicing rule
@@ -58,7 +58,7 @@ module ChapelRange {
     This is currently documented manually in the spec because it fit into
     the flow of the document better.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated("BoundedRangeType is deprecated; please use 'boundKind' instead")
   proc BoundedRangeType type do return boundKind;
 //was: enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
@@ -97,9 +97,9 @@ module ChapelRange {
 
   // I think the record itself should not be documented, but the above comment
   // should be moved to the top-level module documentation.
-  pragma "no doc"
   pragma "plain old data"
   pragma "range"
+  @chpldoc.nodoc
   record range
   {
     type idxType = int;                            // element type
@@ -130,7 +130,7 @@ module ChapelRange {
      This is no-doc'd because we currently are hoping it can
      be more of an implementation detail than a user-facing
      feature. */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.intIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
   }
@@ -200,7 +200,7 @@ module ChapelRange {
 
   // This is the initializer for a low..high bounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType, low: idxType, high: idxType) {
     this.idxType = idxType;
     this.bounds = boundKind.both;
@@ -210,7 +210,7 @@ module ChapelRange {
 
   // This is the initializer for a low.. unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(low: ?t) {
     this.idxType = t;
     this.bounds = boundKind.low;
@@ -223,7 +223,7 @@ module ChapelRange {
 
   // This is the initializer for a ..high unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(high: ?t) {
     this.idxType = t;
     this.bounds = boundKind.high;
@@ -236,7 +236,7 @@ module ChapelRange {
 
   // This is the initializer for a .. unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init() {
     this.idxType = int;
     this.bounds = boundKind.neither;
@@ -249,7 +249,7 @@ module ChapelRange {
 
   // This is an initializer for defining a default range value
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType,
                   param bounds: boundKind,
                   param stridable: bool) {
@@ -264,7 +264,7 @@ module ChapelRange {
   // This is an initializer for defining a range value in terms of its
   // internal field values
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType,
                   param bounds : boundKind,
                   param stridable : bool,
@@ -287,7 +287,7 @@ module ChapelRange {
 
   // This is the range copy initializer
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init=(other : range(?i,?b,?s)) {
     type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
     param bounds      = if this.type.bounds      == ? then b else this.type.bounds;
@@ -329,7 +329,7 @@ module ChapelRange {
 
   /////////////////////////////////
   // for debugging
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.displayRepresentation(msg: string = ""): void {
     chpl_debug_writeln(msg, "(", idxType:string, ",", bounds, ",", stridable,
                        " : ", low, ",", high, ",", stride, ",",
@@ -575,7 +575,7 @@ module ChapelRange {
 
   /* Returns the range's stride. */
   inline proc range.stride where stridable do  return _stride;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.stride param where !stridable do return 1 : strType;
 
   /* Returns the range's alignment. */
@@ -598,7 +598,7 @@ module ChapelRange {
   //#
 
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isBoundedRange(r)           param do
     return false;
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
@@ -606,7 +606,7 @@ module ChapelRange {
   proc isBoundedRange(r: range(?)) param do
     return isBoundedRange(r.bounds);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isBoundedRange(param B: boundKind) param do
     return B == boundKind.both;
 
@@ -677,7 +677,7 @@ module ChapelRange {
     return this.low;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.alignedLowAsInt {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
@@ -689,7 +689,7 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_alignedLowAsIntForIter {
     if stridable && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
@@ -774,7 +774,7 @@ module ChapelRange {
     return this.high;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.alignedHighAsInt {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
@@ -785,7 +785,7 @@ module ChapelRange {
       return helpAlignHigh(_high, _alignment, stride);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_alignedHighAsIntForIter {
     if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
@@ -825,7 +825,7 @@ module ChapelRange {
   proc range.isAmbiguous() param where !stridable do
     return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.isAmbiguous()       where stridable do
     return !aligned && (stride > 1 || stride < -1);
 
@@ -885,7 +885,7 @@ module ChapelRange {
     return sizeAsHelp(t);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.sizeAsHelp(type t: integral,
                         al = this.alignedLowAsInt,
                         ah = this.alignedHighAsInt): t {
@@ -905,7 +905,7 @@ module ChapelRange {
     return lenAsUint: t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.chpl_sizeAsForIter(type t: integral): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
@@ -928,11 +928,11 @@ module ChapelRange {
   proc range.hasFirst() param where !stridable && !hasHighBound() do
     return hasLowBound();
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.hasFirst() param where stridable && bounds == boundKind.neither do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.hasFirst() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasLowBound() else hasHighBound();
@@ -944,13 +944,13 @@ module ChapelRange {
     return chpl_intToIdx(this.firstAsInt);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.firstAsInt {
     if ! stridable then return _low;
     else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_firstAsIntForIter {
     if this.bounds == boundKind.both {
       return this.firstAsInt;
@@ -982,11 +982,11 @@ module ChapelRange {
   proc range.hasLast() param where !stridable && !hasLowBound() do
     return hasHighBound();
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.hasLast() param where stridable && bounds == boundKind.neither do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.hasLast() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasHighBound() else hasLowBound();
@@ -999,13 +999,13 @@ module ChapelRange {
     return chpl_intToIdx(this.lastAsInt);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.lastAsInt {
     if ! stridable then return _high;
     else return if stride > 0 then this.alignedHighAsInt else this.alignedLowAsInt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_lastAsIntForIter {
     if bounds == boundKind.both {
       return this.lastAsInt;
@@ -1085,12 +1085,12 @@ module ChapelRange {
     return other == slice;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)) param
     where r1.bounds != r2.bounds do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)): bool
     where r1.bounds == r2.bounds
   {
@@ -1128,28 +1128,28 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator !=(r1: range(?), r2: range(?)) do  return !(r1 == r2);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <(r1: range(?), r2: range(?))
     where r1.bounds != boundKind.both ||r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >(r1: range(?), r2: range(?))
     where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=(r1: range(?), r2: range(?))
     where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >=(r1: range(?), r2: range(?))
     where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
@@ -1179,7 +1179,7 @@ module ChapelRange {
   }
 
   // If the parameters don't match, then the two ranges cannot be identical.
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="ident() on ranges is deprecated; please let us know if this is problematic for you")
   proc ident(r1: range(?), r2: range(?)) param {
     return false;
@@ -1191,7 +1191,7 @@ module ChapelRange {
 /* Cast a range to another range type. If the old type is stridable and the
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
-pragma "no doc"
+@chpldoc.nodoc
 proc range.safeCast(type t: range(?)) {
   var tmp: t;
 
@@ -1217,7 +1217,7 @@ proc range.safeCast(type t: range(?)) {
 /* Cast a range to a new range type.  If the old type was stridable and the
    new type is not stridable, then force the new stride to be 1.
  */
-pragma "no doc"
+@chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
   var tmp: t;
 
@@ -1259,7 +1259,7 @@ operator :(r: range(?), type t: range(?)) {
     return true;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.boundsCheck(other: range(?e,?b,?s))
   {
     if this.isAmbiguous() || other.isAmbiguous()
@@ -1286,7 +1286,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Moves the low bound of the range up to the next alignment point.
-  pragma "no doc"
+  @chpldoc.nodoc
   /* private */ proc ref range.alignLow()
   {
     if boundsChecking && this.isAmbiguous() then
@@ -1297,7 +1297,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // Moves the high bound of the range down to the next alignment point.
-  pragma "no doc"
+  @chpldoc.nodoc
   /* private */ proc ref range.alignHigh()
   {
     if boundsChecking && this.isAmbiguous() then
@@ -1404,14 +1404,14 @@ operator :(r: range(?), type t: range(?)) {
   inline proc range.translate(offset: integral) do
     return this + offset;
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline proc range.translate(i)
   {
     compilerError("offsets must be of integral type");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.translate(offset: integral) where chpl__singleValIdxType(idxType) {
     compilerError("can't apply '.translate()' to a range whose 'idxType' only has one value");
 
@@ -1420,7 +1420,7 @@ operator :(r: range(?), type t: range(?)) {
 
     // Returns an expanded range, or a contracted range if offset < 0.
   // The existing absolute alignment is preserved.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.expand(offset: integral) where bounds != boundKind.both
   {
     compilerError("expand() is not supported on unbounded ranges");
@@ -1452,7 +1452,7 @@ operator :(r: range(?), type t: range(?)) {
                      _stride, _alignment, _aligned);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.expand(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
@@ -1463,15 +1463,15 @@ operator :(r: range(?), type t: range(?)) {
 
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range._effAlmt()       where stridable do return _alignment;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range._effAlmt() where !stridable do return 0;
 
   // Return an interior portion of this range.
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   proc range.interior(offset: integral) where bounds != boundKind.both
   {
     compilerError("interior is not supported on unbounded ranges");
@@ -1527,8 +1527,8 @@ operator :(r: range(?), type t: range(?)) {
                      _stride, _alignment, _aligned, false);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   proc range.exterior(offset: integral) where bounds != boundKind.both
   {
     compilerError("exterior is not supported on unbounded ranges");
@@ -1577,7 +1577,7 @@ operator :(r: range(?), type t: range(?)) {
                      _stride, _alignment, _aligned, false);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.exterior(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.exterior()' to a range whose 'idxType' only has one value");
@@ -1589,7 +1589,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Assignment
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
     if r1.bounds != r2.bounds then
@@ -1618,7 +1618,7 @@ operator :(r: range(?), type t: range(?)) {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +(r: range(?e, ?b, ?s), offset: integral)
   {
     const i = offset:r.intIdxType;
@@ -1633,17 +1633,17 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // TODO can this be removed?
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r + offset;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +(i:integral, r: range(?e,?b,?s)) do
     return r + i;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
     type strType = chpl__rangeStrideType(e);
@@ -1657,7 +1657,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // TODO can this be removed?
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r - offset;
@@ -1728,7 +1728,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // This is the definition of the 'by' operator for ranges.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
@@ -1736,14 +1736,14 @@ operator :(r: range(?), type t: range(?)) {
 
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline operator by(r, step) {
     compilerError("cannot apply 'by' to '", r.type:string, "'");
   }
@@ -1751,7 +1751,7 @@ operator :(r: range(?), type t: range(?)) {
   // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator align(r : range(?i, ?b, ?s), algn: i)
   {
     // Note that aligning an unstrided range will set the field value,
@@ -1760,14 +1760,15 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-  pragma "no doc" pragma "last resort"
+  pragma "last resort"
+  @chpldoc.nodoc
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline operator align(r, algn) {
     compilerError("cannot apply 'align' to '", r.type:string, "'");
   }
@@ -1801,7 +1802,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // Slicing, implementing the slice semantics in #20462.
   // Return the intersection of this and other.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc const range.this(other: range(?))
   {
     return this.chpl_slice(other, forceNewRule=false);
@@ -2191,26 +2192,26 @@ operator :(r: range(?), type t: range(?)) {
   // accept a boolean as a count value.  On the other hand, we permit
   // bools to coerce to ints in most cases, so this gives a similar
   // end-user experience
-  pragma "no doc"
+  @chpldoc.nodoc
   operator #(r:range(?), count:bool) {
     return chpl_count_help(r, count:int);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator #(r:range(?), count:integral) {
     return chpl_count_help(r, count);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator #(r, count) {
     compilerError("cannot apply '#' to '", r.type:string, "'");
   }
@@ -2260,7 +2261,7 @@ operator :(r: range(?), type t: range(?)) {
     return willOverFlow;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
     if isFiniteIdxType(idxType) then
       return false;
@@ -2581,8 +2582,8 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // An error overload for trying to iterate over '..'
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
@@ -2598,8 +2599,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // The serial iterator for 'lo.. [by s]' ranges
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
@@ -2633,8 +2634,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // The serial iterator for '..hi [by s]' ranges
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where !hasLowBoundForIter(this) && hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
@@ -2659,8 +2660,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // A bounded and strided range iterator
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these()
     where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == true {
     if chpl__singleValIdxType(idxType) {
@@ -2692,8 +2693,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // A bounded and non-strided (stride = 1) range iterator
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these()
   where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == false {
     if chpl__singleValIdxType(idxType) {
@@ -2736,8 +2737,8 @@ operator :(r: range(?), type t: range(?)) {
   // value to yield. This would mean you couldn't express maximal ranges for
   // int(64) and uint(64) but it's hard to see a case where those could ever be
   // desired.
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.generalIterator() {
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2759,7 +2760,7 @@ operator :(r: range(?), type t: range(?)) {
   //# Parallel Iterators
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
     !localeModelPartitionsIterationOnSublocales
   {
@@ -2803,7 +2804,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) then
@@ -2896,7 +2897,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
@@ -3018,7 +3019,7 @@ operator :(r: range(?), type t: range(?)) {
   //# Utilities
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: range(?), type t: string) {
     var ret: string;
 
@@ -3052,7 +3053,7 @@ operator :(r: range(?), type t: range(?)) {
   //# Internal helper functions.
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl__unTranslate(i) do
     return this - i;
 
@@ -3213,7 +3214,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isIntegralType(idxType) {
       // integer idxTypes are their own integer idxType
@@ -3229,7 +3230,7 @@ operator :(r: range(?), type t: range(?)) {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }

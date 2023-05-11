@@ -28,7 +28,7 @@ module ChapelGpuSupport {
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of
      GPUs that are eligible for peer-to-peer access within each locale. */
-  pragma "no doc"
+  @chpldoc.nodoc
   config const enableGpuP2P = false;
 
   extern proc chpl_gpu_support_module_finished_initializing() : void;

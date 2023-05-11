@@ -103,7 +103,7 @@ module Bytes {
                                        size=length+1);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_createBytesWithLiteral(buffer: c_string,
                                    offset: int,
                                    x: c_string,
@@ -165,7 +165,7 @@ module Bytes {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc createBytesWithOwnedBuffer(s: bytes) {
     // should we allow stealing ownership?
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
@@ -339,7 +339,7 @@ module Bytes {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record _bytes {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
@@ -1176,11 +1176,11 @@ module Bytes {
     return result;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: string, type t: bytes) {
     return bytes.createCopyingBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x: c_string, type t: bytes) {
     var length = x.size;
     return bytes.createCopyingBuffer(x: bufferType, length=length, size=length+1);
@@ -1221,7 +1221,7 @@ module Bytes {
     return doConcat(s0, s1);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.+(param s0: bytes, param s1: bytes) param do
     return __primitive("string_concat", s0, s1);
 
@@ -1247,66 +1247,66 @@ module Bytes {
     return doMultiply(s, n);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *(n: integral, s: bytes) {
     return doMultiply(s, n);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator bytes.==(a: bytes, b: bytes) : bool {
     return doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.!=(a: bytes, b: bytes) : bool {
     return !doEq(a,b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<(a: bytes, b: bytes) : bool {
     return doLessThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>(a: bytes, b: bytes) : bool {
     return doGreaterThan(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<=(a: bytes, b: bytes) : bool {
     return doLessThanOrEq(a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>=(a: bytes, b: bytes) : bool {
     return doGreaterThanOrEq(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.==(param s0: bytes, param s1: bytes) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.!=(param s0: bytes, param s1: bytes) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>=(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.<(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator bytes.>(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) > 0);
   }
@@ -1315,12 +1315,12 @@ module Bytes {
   // hashing support
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc bytes.hash(): uint {
     return getHash(this);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator bytes.<=>(ref x: bytes, ref y: bytes) {
     if (x.locale_id != y.locale_id) {
       // TODO: could we just change locale_id?

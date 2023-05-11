@@ -20,7 +20,7 @@
 
 module ExplicitRefCount {
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class RefCountBase {
 
     var refcnt: atomic int;

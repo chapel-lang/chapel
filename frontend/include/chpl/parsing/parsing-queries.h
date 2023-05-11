@@ -470,10 +470,19 @@ void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
 const AttributeToolNamesList& AttributeToolNames(Context* context);
 
 /**
-  Given an ID, returns the attributes associated with the ID. Only
-  declarations can have associated attributes.
+  Given an ID, returns the attributes associated with the ID. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
  */
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
+
+/**
+  Given an AstNode, returns the attributes associated with it. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
+ */
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* node);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an

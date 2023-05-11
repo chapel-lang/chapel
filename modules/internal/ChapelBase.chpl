@@ -23,15 +23,15 @@
 
 module ChapelBase {
 
-  pragma "no doc"
   pragma "locale private"
+  @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
   use CTypes;
   use ChplConfig;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="the '_file' type is deprecated; please use 'CTypes.c_FILE' instead")
   type _file = c_FILE;
 
@@ -51,7 +51,7 @@ module ChapelBase {
                                             // the iterator to yield zero times.
 
   // Used to test "--warn-unstable-internal", ignore.
-  pragma "no doc"
+  @chpldoc.nodoc
   @unstable
   var chpl_unstableInternalSymbolForTesting: int;
   chpl_unstableInternalSymbolForTesting;
@@ -979,10 +979,10 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
@@ -2610,15 +2610,15 @@ module ChapelBase {
   }
 
   // c_fn_ptr stuff
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }

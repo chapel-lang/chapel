@@ -294,7 +294,11 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
-    auto attr = node->attributeGroup();
+
+    const uast::AttributeGroup* attr;
+    // use the query to get the AttributeGroup or you might miss the attributes
+    // for children of multiDecl or tupleDecl
+    attr = parsing::astToAttributeGroup(context, node);
 
     if (!attr) return;
 
