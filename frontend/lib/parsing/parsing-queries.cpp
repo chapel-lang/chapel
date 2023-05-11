@@ -458,6 +458,45 @@ void setModuleSearchPath(Context* context,
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
 }
 
+static const std::vector<UniqueString>&
+prependedStandardModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedStandardModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedStandardModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context) {
+  return prependedStandardModulePathQuery(context);
+}
+
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedStandardModulePathQuery, context, paths);
+}
+
+
+static const std::vector<UniqueString>&
+prependedInternalModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedInternalModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedInternalModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context) {
+  return prependedInternalModulePathQuery(context);
+}
+
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedInternalModulePathQuery, context, paths);
+}
+
 
 static const UniqueString&
 internalModulePathQuery(Context* context) {
@@ -540,10 +579,16 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
+  std::vector<UniqueString> uPrependedInternalModulePaths;
+  std::vector<UniqueString> uPrependedStandardModulePaths;
 
   for (auto& path : prependInternalModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedInternalModulePaths.push_back(uPath);
   }
+
+  setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
   // TODO: Shouldn't these use the internal path we just set?
   searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
@@ -557,8 +602,10 @@ void setupModuleSearchPaths(
 
   searchPath.push_back(modRoot + "/internal");
 
-  for (auto& path : prependInternalModulePaths) {
+  for (auto& path : prependStandardModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedStandardModulePaths.push_back(uPath);
   }
 
   // TODO: Shouldn't these use the standard path we just set?
@@ -627,8 +674,15 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
-static bool
+bool
 filePathIsInInternalModule(Context* context, UniqueString filePath) {
+  // check for prepended internal module paths that may have come in from
+  // the command line flag --prepend-internal-module-dir
+  auto& prependedPaths = prependedInternalModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
   UniqueString prefix = internalModulePath(context);
   if (prefix.isEmpty()) return false;
   return filePath.startsWith(prefix);
@@ -641,8 +695,15 @@ filePathIsInBundledModule(Context* context, UniqueString filePath) {
   return filePath.startsWith(prefix);
 }
 
-static bool
+bool
 filePathIsInStandardModule(Context* context, UniqueString filePath) {
+  // check for prepended standard module paths that may have come in from
+  // the command line flag --prepend-standard-module-dir
+  auto& prependedPaths = prependedStandardModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
   UniqueString prefix1 = bundledModulePath(context);
   if (prefix1.isEmpty()) return false;
   auto concat = prefix1.endsWith("/") ? "standard" : "/standard";

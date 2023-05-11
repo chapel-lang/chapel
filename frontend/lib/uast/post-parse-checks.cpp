@@ -1330,6 +1330,10 @@ void Visitor::visit(const ExternBlock* node) {
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
   if (modules.isEmpty()) return true;
+  // check for internal module paths
+  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
+  // check for standard module paths
+  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
   bool ret = !filepath.startsWith(modules);
   return ret;
 }
