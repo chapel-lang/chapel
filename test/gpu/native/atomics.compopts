@@ -1,0 +1,7 @@
+#! /bin/sh
+
+if [ $CHPL_GPU_CODEGEN == "rocm" ]; then
+  echo -sexcludeForRocm=true
+else
+  echo -sexcludeForRocm=false
+fi
