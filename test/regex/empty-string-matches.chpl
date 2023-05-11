@@ -3,10 +3,14 @@
 
 use Regex;
 
-var str = "";
+proc test(str: string) {
+  writeln((new regex("")).matches(str));
+  writeln((new regex("^")).matches(str));
+  writeln((new regex("$")).matches(str));
+  writeln((new regex("^$")).matches(str));
+  writeln((new regex(".*")).matches(str));
+}
 
-writeln((new regex("")).matches(str));
-writeln((new regex("^")).matches(str));
-writeln((new regex("$")).matches(str));
-writeln((new regex("^$")).matches(str));
-writeln((new regex(".*")).matches(str));
+test("");
+writeln();
+test("xy");
