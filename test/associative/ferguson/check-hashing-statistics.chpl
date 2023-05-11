@@ -1,4 +1,5 @@
 use Random;
+use Math;
 use List;
 use Set;
 use SHA256Implementation;

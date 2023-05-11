@@ -1,5 +1,5 @@
 module HPCCProblemSize {
-  use MemDiagnostics, Types;
+  use MemDiagnostics, Types, Math;
 
   proc computeProblemSize(
     type elemType, numArrays, returnLog2 = false, memRatio=4)

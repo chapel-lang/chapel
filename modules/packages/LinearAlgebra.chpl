@@ -188,6 +188,7 @@ module LinearAlgebra {
 
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
+use Math;
 
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';

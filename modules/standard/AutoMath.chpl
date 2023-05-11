@@ -1436,35 +1436,81 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_log and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the natural logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc log(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc log(x: real(64)): real(64) {
+    return chpl_log(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_log(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log(x: real(64)): real(64);
+    return log(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_log and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the natural logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log(x : real(32)): real(32) {
+    return chpl_log(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc logf(x: real(32)): real(32);
     return logf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the natural logarithm of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log(z: complex(64)): complex(64) {
+    return chpl_log(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc clogf(z: complex(64)): complex(64);
     return clogf(z);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the natural logarithm of the argument `z`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log(z: complex(128)): complex(128) {
+    return chpl_log(z);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc clog(z: complex(128)): complex(128);
@@ -1472,19 +1518,45 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_log10 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc log10(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log10' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc log10(x: real(64)): real(64) {
+    return chpl_log10(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_log10(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log10(x: real(64)): real(64);
+    return log10(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_log10 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log10' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log10(x : real(32)): real(32) {
+    return chpl_log10(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log10(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc log10f(x: real(32)): real(32);
@@ -1542,19 +1614,45 @@ module AutoMath {
     return chpl_logBasePow2(val, baseLog2);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc log2(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc log2(x: real(64)): real(64) {
+    return chpl_log2(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_log2(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log2(x: real(64)): real(64);
+    return log2(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log2(x : real(32)): real(32) {
+    return chpl_log2(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log2(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc log2f(x: real(32)): real(32);
@@ -1596,6 +1694,9 @@ module AutoMath {
     return _logBasePow2Help(val, baseLog2);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`,
      rounded down.
 
@@ -1603,10 +1704,20 @@ module AutoMath {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log2(val: int(?w)) {
+    return chpl_log2(val);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log2(val: int(?w)) {
     return chpl_logBasePow2(val, 1);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_log2 and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the base 2 logarithm of the argument `x`,
      rounded down.
 
@@ -1614,7 +1725,14 @@ module AutoMath {
 
      It is an error if `x` is less than or equal to zero.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'log2' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc log2(val: uint(?w)) {
+    return chpl_log2(val);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_log2(val: uint(?w)) {
     return chpl_logBasePow2(val, 1);
   }
 

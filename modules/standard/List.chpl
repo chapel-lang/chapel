@@ -56,6 +56,7 @@ module List {
   import ChapelLocks;
   private use HaltWrappers;
   private use Sort;
+  private use Math;
 
   pragma "no doc"
   private const _initialCapacity = 8;

@@ -372,6 +372,48 @@ module Math {
     return chpl_lgamma(x);
   }
 
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log(x: real(64)): real(64) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log(x : real(32)): real(32) {
+    return chpl_log(x);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(64)): complex(64) {
+    return chpl_log(z);
+  }
+
+  /* Returns the natural logarithm of the argument `z`. */
+  inline proc log(z: complex(128)): complex(128) {
+    return chpl_log(z);
+  }
+
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log10(x: real(64)): real(64) {
+    return chpl_log10(x);
+  }
+
+  /* Returns the base 10 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log10(x : real(32)): real(32) {
+    return chpl_log10(x);
+  }
+
   /* Returns the natural logarithm of `x` + 1.
 
      It is an error if `x` is less than or equal to -1.
@@ -408,6 +450,44 @@ module Math {
   */
   inline proc logBasePow2(val: uint(?w), baseLog2) {
     return chpl_logBasePow2(val, baseLog2);
+  }
+
+  /* Returns the base 2 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(x: real(64)): real(64) {
+    return chpl_log2(x);
+  }
+
+  /* Returns the base 2 logarithm of the argument `x`.
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(x : real(32)): real(32) {
+    return chpl_log2(x);
+  }
+
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
+
+     :rtype: `int`
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(val: int(?w)) {
+    return chpl_log2(val);
+  }
+
+  /* Returns the base 2 logarithm of the argument `x`,
+     rounded down.
+
+     :rtype: `int`
+
+     It is an error if `x` is less than or equal to zero.
+  */
+  inline proc log2(val: uint(?w)) {
+    return chpl_log2(val);
   }
 
   /* Returns the sine of the argument `x`. */

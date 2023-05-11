@@ -1,5 +1,3 @@
-use Math;
-
 var a: real(64) = 1;
 var b: real(32) = 2.72;
 var c: complex(128) = 9;
