@@ -2383,6 +2383,8 @@ arkouda-comp:
     - Default to jemalloc for host allocator on most platforms (#20774)
   03/08/23:
     - Yield tuples by value when appropriate (#21789)
+  05/02/23:
+    - Generate write method stubs for FCF superclass types (#22195)
 
 shoc-triad-bw-lg:
   11/10/22:
