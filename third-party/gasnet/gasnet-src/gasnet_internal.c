@@ -2172,7 +2172,7 @@ extern void gasneti_nodemapParse(void) {
     }
   #endif
   
-#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING
+#if GASNET_NDEBUG && !GASNET_PSHM && !GASNET_SEGMENT_EVERYTHING && !GASNET_NO_PSHM_WARNING
   if (!gasneti_mynode && (gasneti_nodes != gasneti_myhost.grp_count)) {
     // at least one host holds more than one process
     gasneti_console_message("WARNING",
