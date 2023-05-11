@@ -14,7 +14,7 @@ for i in 1..nIterations {
   }
   buf[nBytes] = 0;
 
-  const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+  const randomBytes = bytes.createAdoptingBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
   if randomBytes.size != nBytes {
@@ -25,7 +25,7 @@ for i in 1..nIterations {
   try {
      randomEscapedString =
         if useFactory then
-          createStringWithNewBuffer(buf, length=nBytes, size=nBytes+1,
+          string.createCopyingBuffer(buf, length=nBytes, size=nBytes+1,
                                     policy=decodePolicy.escape)
         else
           randomBytes.decode(policy=decodePolicy.escape);

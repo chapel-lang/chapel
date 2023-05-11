@@ -635,7 +635,7 @@ module Buffers {
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);
-        value = try! createStringWithOwnedBuffer(buf, length=len, size=len+1);
+        value = try! string.createAdoptingBuffer(buf, length=len, size=len+1);
         ret = end;
       }
     }

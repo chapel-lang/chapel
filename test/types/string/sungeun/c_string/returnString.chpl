@@ -2,7 +2,7 @@ use checkType;
 
 proc rcs() {
   var s = c"hi";
-  var ss = createStringWithNewBuffer(s) + createStringWithNewBuffer(s);
+  var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
   var cs = ss.c_str();
   return cs;
 }
@@ -11,9 +11,9 @@ checkType(c_string, rcs().type);
 
 proc rcss():string {
   var s = c"hi";
-  var ss = createStringWithNewBuffer(s) + createStringWithNewBuffer(s);
+  var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
   var cs = ss.c_str();
-  return createStringWithNewBuffer(cs);
+  return string.createCopyingBuffer(cs);
 }
 
 checkType(rcss().type);

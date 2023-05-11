@@ -1071,7 +1071,7 @@ module OS {
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
+        err_msg = string.createAdoptingBuffer(errstr);
       }
 
       if !details.isEmpty() then
@@ -1095,7 +1095,7 @@ module OS {
     var errstr = sys_strerror_syserr_str(err, strerror_err);
     var err_msg: string;
     try! {
-      err_msg = createStringWithOwnedBuffer(errstr);
+      err_msg = string.createAdoptingBuffer(errstr);
     }
 
     // return appropriate error
@@ -1361,7 +1361,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1403,7 +1403,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1440,7 +1440,7 @@ module OS {
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
         var errorcode_msg: string;
         try! {
-          errorcode_msg = createStringWithOwnedBuffer(errstr);
+          errorcode_msg = string.createAdoptingBuffer(errstr);
         }
         generatedMsg += errorcode_msg;
       }
@@ -1497,8 +1497,8 @@ module OS {
     // version in QIO, but I'm not sure how that was used.
 
     try! {
-      if err then return createStringWithOwnedBuffer(qio_strdup("<error>"));
-      return createStringWithOwnedBuffer(ret);
+      if err then return string.createAdoptingBuffer(qio_strdup("<error>"));
+      return string.createAdoptingBuffer(ret);
     }
 }
 
@@ -1576,7 +1576,7 @@ module OS {
     var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
-      return createStringWithOwnedBuffer(errstr);
+      return string.createAdoptingBuffer(errstr);
     }
   }
 

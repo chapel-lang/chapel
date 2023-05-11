@@ -8,7 +8,7 @@ proc readPrefixEnv() {
 
   var prefix: c_string;
   if sys_getenv(pathPrefixEnvName, prefix) {
-    return createStringWithNewBuffer(prefix);
+    return string.createCopyingBuffer(prefix);
   } else {
     return "";
   }

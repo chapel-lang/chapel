@@ -276,7 +276,7 @@ module BytesStringCommon {
         // if other is remote, copy and own the buffer no matter what
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x.buffLen = otherLen+1;
+        x.buffSize = otherLen+1;
         if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
@@ -516,7 +516,7 @@ module BytesStringCommon {
           size=buffSize, numCodepoints=numCodepoints);
     }
     else {
-      return createBytesWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
+      return bytes.createAdoptingBuffer(x=buff, length=buffLen, size=buffSize);
     }
   }
 
@@ -901,7 +901,7 @@ module BytesStringCommon {
                                                   numCodepoints=numCodepoints);
       }
       else {
-        return createBytesWithOwnedBuffer(x=newBuff,
+        return bytes.createAdoptingBuffer(x=newBuff,
                                           length=joinedSize,
                                           size=allocSize);
       }
@@ -1207,7 +1207,7 @@ module BytesStringCommon {
                                                 x.cachedNumCodepoints*n);
     }
     else {
-      return createBytesWithOwnedBuffer(buff, buffLen, allocSize);
+      return bytes.createAdoptingBuffer(buff, buffLen, allocSize);
     }
   }
 

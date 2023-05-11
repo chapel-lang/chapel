@@ -524,14 +524,14 @@ module BigInteger {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
         try! {
-          ret = createStringWithOwnedBuffer(tmpvar);
+          ret = string.createAdoptingBuffer(tmpvar);
         }
 
       } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
         try! {
-          ret = createStringWithOwnedBuffer(tmpvar);
+          ret = string.createAdoptingBuffer(tmpvar);
         }
 
       } else {
@@ -541,7 +541,7 @@ module BigInteger {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
           try! {
-            ret = createStringWithOwnedBuffer(tmpvar);
+            ret = string.createAdoptingBuffer(tmpvar);
           }
         }
       }

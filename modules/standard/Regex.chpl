@@ -657,7 +657,7 @@ record regex {
       var err_str = qio_regex_error(this._regex);
       var err_msg: string;
       try! {
-        err_msg = createStringWithOwnedBuffer(err_str) +
+        err_msg = string.createAdoptingBuffer(err_str) +
                     " when compiling regex '" + patternStr + "'";
       }
       // this is a workaround for a known limitation in throwing initializers
@@ -701,12 +701,7 @@ record regex {
       var patternTemp: c_string;
       var len:int;
       qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
-      if exprType == string then {
-        try! pattern = createStringWithBorrowedBuffer(patternTemp, len).chpl__serialize();
-      }
-      else {
-        pattern = createBytesWithBorrowedBuffer(patternTemp, len).chpl__serialize();
-      }
+      try! pattern = exprType.createBorrowingBuffer(patternTemp, len).chpl__serialize();
 
       var localOptions: qio_regex_options_t;
       qio_regex_get_options(_regexCopy, localOptions);
@@ -1068,14 +1063,7 @@ record regex {
       var patternTemp:c_string;
       var len:int;
       qio_regex_borrow_pattern(this._regex, patternTemp, len);
-      if exprType == string then {
-        try! {
-          pattern = createStringWithNewBuffer(patternTemp, len);
-        }
-      }
-      else {
-        pattern = createBytesWithNewBuffer(patternTemp, len);
-      }
+      try! pattern = exprType.createCopyingBuffer(patternTemp, len);
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
@@ -1129,32 +1117,13 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
   }
 }
 
-// Cast regex to string.
-pragma "no doc"
-inline operator :(x: regex(string), type t: string) {
+inline operator :(x: regex(?exprType), type t: exprType) {
   var pattern: t;
   on x.home {
     var cs: c_string;
     var len:int;
     qio_regex_borrow_pattern(x._regex, cs, len);
-    if t == string {
-      try! {
-        pattern = createStringWithNewBuffer(cs, len);
-      }
-    }
-  }
-  return pattern;
-}
-
-// Cast regex to bytes.
-pragma "no doc"
-inline operator :(x: regex(bytes), type t: bytes) {
-  var pattern: t;
-  on x.home {
-    var cs: c_string;
-    var len:int;
-    qio_regex_borrow_pattern(x._regex, cs, len);
-    pattern = createBytesWithNewBuffer(cs, len);
+    try! pattern = t.createCopyingBuffer(cs, len);
   }
   return pattern;
 }
@@ -1327,14 +1296,8 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
                       dst_off=writeIdx, src_off=readIdx);
   }
 
-  var ret: t;
-
-  if t == string then
-    ret = try! createStringWithOwnedBuffer(newBuff, length=numBytesInResult,
-                                           size=buffSize);
-  else
-    ret = createBytesWithOwnedBuffer(newBuff, length=numBytesInResult,
-                                     size=buffSize);
+  var ret = try! t.createAdoptingBuffer(newBuff, length=numBytesInResult,
+                                         size=buffSize);
 
   return (ret, totalChunksToRemove);
 }
@@ -1351,23 +1314,14 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
   pos = 0;
   endpos = pos + x.numBytes;
 
-  var ret: t;
-  var nreplaced:int;
-
   var replaced:c_string;
   var replaced_len:int(64);
-  nreplaced = qio_regex_replace(localRegex, replacement.localize().c_str(),
-                                replacement.numBytes, x.localize().c_str(),
-                                x.numBytes, pos:int, endpos:int, global,
-                                replaced, replaced_len);
-  if t==string {
-    try! {
-      ret = createStringWithOwnedBuffer(replaced, replaced_len);
-    }
-  }
-  else {
-    ret = createBytesWithOwnedBuffer(replaced, replaced_len);
-  }
+  var nreplaced: int = qio_regex_replace(localRegex, replacement.localize().c_str(),
+                                    replacement.numBytes, x.localize().c_str(),
+                                    x.numBytes, pos:int, endpos:int, global,
+                                    replaced, replaced_len);
+
+  var ret = try! t.createAdoptingBuffer(replaced, replaced_len);
 
   return (ret, nreplaced);
 }

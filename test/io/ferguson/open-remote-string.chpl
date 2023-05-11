@@ -21,7 +21,7 @@ for f in DistFiles {
     var from = f;
     var base = basename(f);
     const uname = getenv(c"USER"):c_string;
-    var to = "/tmp/" + createStringWithNewBuffer(uname)+ base;
+    var to = "/tmp/" + string.createCopyingBuffer(uname)+ base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);
     f = to;

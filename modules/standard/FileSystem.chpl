@@ -602,7 +602,7 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
+      ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
@@ -852,7 +852,7 @@ private module GlobWrappers {
   inline proc glob_index_w(glb: glob_t, idx: int): string {
     extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
     try! {
-      return createStringWithNewBuffer(chpl_glob_index(glb,
+      return string.createCopyingBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
@@ -1116,7 +1116,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
     while (!is_c_nil(ent)) {
       var filename: string;
       try! {
-        filename = createStringWithNewBuffer(ent.d_name(),
+        filename = string.createCopyingBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
       if (hidden || filename[0] != '.') {

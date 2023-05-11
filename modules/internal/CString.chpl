@@ -150,7 +150,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anybool) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -161,7 +161,7 @@ module CString {
   inline operator :(x:c_string, type t:integral) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -172,7 +172,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyreal)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -180,7 +180,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyimag) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -191,7 +191,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anycomplex)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }

@@ -2461,7 +2461,7 @@ module ChapelBase {
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      ch.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
