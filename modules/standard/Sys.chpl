@@ -554,7 +554,7 @@ module Sys {
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
-  @deprecated(notes="'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead")
+  @deprecated(notes="'Sys.sys_getenv' is deprecated")
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
   /* The type corresponding to C's mode_t */
