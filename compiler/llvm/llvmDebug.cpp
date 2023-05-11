@@ -74,6 +74,11 @@ for more information on LLVM debug information.
 char current_dir[128];
 llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
+// Ifdef'd to avoid unused warning, because its only usage has the same ifdef.
+// If this gets used elsewhere the ifdef can be removed; besides the warning,
+// there is nothing wrong with this code being included without
+// HAVE_LLVM_TYPED_POINTERS.
+#ifdef HAVE_LLVM_TYPED_POINTERS
 static
 std::string myGetTypeName(llvm::Type *ty) {
   std::string TypeName;
@@ -85,6 +90,7 @@ std::string myGetTypeName(llvm::Type *ty) {
   TypeStream.flush();
   return TypeName;
 }
+#endif
 
 static
 llvm::MDNode *myGetType(const Type *type) {
