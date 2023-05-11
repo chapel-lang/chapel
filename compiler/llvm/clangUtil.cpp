@@ -3830,7 +3830,8 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createGlobalToWide(&info->globalToWideInfo, info->clangInfo->asmTargetLayoutStr));
+    PM.add(createLegacyGlobalToWidePass(&info->globalToWideInfo,
+                                        info->clangInfo->asmTargetLayoutStr));
   }
 }
 

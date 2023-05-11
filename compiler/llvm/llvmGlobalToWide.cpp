@@ -1145,44 +1145,10 @@ namespace {
     //
     RemapInstruction(I, VM, RF_IgnoreMissingLocals, TypeMapper);
   }
+} // anon namespace
 
-
-
-
-  // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide final : public ModulePass {
-    static char ID; // Pass identification, replacement for typeid
-
-    GlobalToWideInfo * info;
-    std::string layoutAfterwards;
-
-    bool debugPassOne;
-    bool debugPassTwo;
-
-    /* info->globalSpace is the address space storing global pointers that
-     *   need to be converted to wide pointers
-     * layout is the target layout we should set the module to
-     *   (could remove p record for address space 'space')
-     */
-    GlobalToWide(GlobalToWideInfo* _info, std::string layout)
-      : ModulePass(ID), info(_info), layoutAfterwards(layout),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-    // Constructor for running within opt, for testing and
-    // bugpoint.
-    GlobalToWide()
-      : ModulePass(ID), info(NULL), layoutAfterwards(""),
-        debugPassOne(false),
-        debugPassTwo(false)
-    {
-    }
-
-
-
-    bool runOnModule(Module &M) override {
+// GlobalToWide implementation
+bool GlobalToWide::run(Module &M) {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {
@@ -1959,21 +1925,38 @@ namespace {
       }
 
       return true;
-    }
-  };
 }
 
-char GlobalToWide::ID = 0;
-static RegisterPass<GlobalToWide> X("global-to-wide", "GlobalToWide Pass");
+// LegacyGlobalToWidePass implementation
+bool LegacyGlobalToWidePass::runOnModule(Module &M) {
+  return pass.run(M);
+}
 
-ModulePass *createGlobalToWide(GlobalToWideInfo* info, std::string setLayout)
+char LegacyGlobalToWidePass::ID = 0;
+static RegisterPass<LegacyGlobalToWidePass> X("global-to-wide", "GlobalToWide Pass");
+
+ModulePass *createLegacyGlobalToWidePass(GlobalToWideInfo* info,
+                                         std::string setLayout)
 {
   assert(info->getFn);
   assert(info->putFn);
   assert(info->getPutFn);
   assert(info->memsetFn);
-  return new GlobalToWide(info, setLayout);
+  return new LegacyGlobalToWidePass(info, setLayout);
 }
+
+// GlobalToWidePass implementation
+llvm::PreservedAnalyses
+GlobalToWidePass::run(llvm::Module &M, llvm::ModuleAnalysisManager &AM) {
+  bool changed = pass.run(M);
+  if (!changed) {
+    return PreservedAnalyses::all();
+  }
+
+  // TODO: figure out which analyses can be preserved
+  return PreservedAnalyses::none();
+}
+
 
 static
 bool containsGlobalPointers(unsigned gSpace, SmallSet<Type*, 10> & set, Type* t)
