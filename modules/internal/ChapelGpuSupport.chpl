@@ -58,10 +58,11 @@ module ChapelGpuSupport {
     // calling this so we make this call here in ChapelGpuSupport.
     coforall loc in Locales do on loc do
       chpl_gpu_support_module_finished_initializing();
+  }
 
   private proc isEnvSet(name: string): bool {
     extern proc getenv(name : c_string) : c_string;
-    var env = createBytesWithBorrowedBuffer(getenv(name.localize().c_str()));
+    var env = bytes.createBorrowingBuffer(getenv(name.localize().c_str()));
     return !env.isEmpty();
   }
 }

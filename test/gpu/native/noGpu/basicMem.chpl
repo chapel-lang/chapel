@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 startVerboseMem();
 on here.gpus[0] {

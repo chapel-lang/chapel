@@ -1,5 +1,5 @@
 use GPU;
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config param triggerAssert = false;
 
