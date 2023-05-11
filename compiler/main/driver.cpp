@@ -1556,8 +1556,6 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_CPU:
         gGpuSdkPath = "";
         break;
-      default:
-        INT_FATAL("Unknown value returned from getGpuCodegenType()");
     }
   }
 

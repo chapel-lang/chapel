@@ -483,7 +483,7 @@ class GpuKernel {
   Symbol* addLocalVariable(Symbol* symInLoop);
 };
 
-GpuKernel::GpuKernel(GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
+GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
   , lateGpuizationFailure_(false)
   , blockSize_(nullptr)
