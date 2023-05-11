@@ -39,8 +39,8 @@ void chpl_gpu_init(void) {
   chpl_gpu_impl_init();
 }
 
-void chpl_gpu_on_std_modules_finished_initializing(void) {
-  chpl_gpu_impl_on_std_modules_finished_initializing();
+void chpl_gpu_support_module_finished_initializing(void) {
+  chpl_gpu_impl_support_module_finished_initializing();
 
   // this function is something that we're not proud of already. The following
   // adds the function more meaning and I am not happy about it. It looks like

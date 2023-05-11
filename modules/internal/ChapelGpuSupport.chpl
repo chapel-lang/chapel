@@ -31,10 +31,12 @@ module ChapelGpuSupport {
   pragma "no doc"
   config const enableGpuP2P = false;
 
+  extern proc chpl_gpu_support_module_finished_initializing() : void;
+
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
 
-  if CHPL_LOCALE_MODEL == 'gpu' then
+  if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {
       use GPU;
       for loc in Locales do on loc do
@@ -42,4 +44,16 @@ module ChapelGpuSupport {
           for gpu2 in here.gpus do
             if canAccessPeer(gpu1,gpu2) then setPeerAccess(gpu1,gpu2,true);
     }
+
+    // There are some allocations that occur in the locale model's
+    // `helpSetupLocaleGPU` where we
+    // set the current sublocale to a GPU but we still want the allocations
+    // to actually be performed on the CPU. To do this we start the GPU
+    // runtime library in a mode where all allocations will be done on the
+    // host until this "finished_initializing" function is called.
+    // We also want the value of 'chpl_gpu_debug' to be assigned before
+    // calling this so we make this call here in ChapelGpuSupport.
+    coforall loc in Locales do on loc do
+      chpl_gpu_support_module_finished_initializing();
+  }
 }

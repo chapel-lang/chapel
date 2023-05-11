@@ -149,24 +149,7 @@ void chpl_gpu_impl_init() {
 
 static bool chpl_gpu_device_alloc = false;
 
-void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
-  // The standard module has some memory that we allocate when we  are "on" a
-  // GPU sublocale when in fact we want to allocate it on the device. (As of
-  // the writing of this comment this is in `helpSetupLocaleGPU` in
-  // `LocaleModelHelpSetup`).
-  //
-  // Basically during the setup of the locale model we need to be "on" a given
-  // sublocale when we instantiate the object for it (the expectation is that
-  // the wide pointer for a sublocale appears to be on that sublocale),
-  // but in practice we don't actually want the data for the GPU sublocale
-  // object to be on the GPU).
-  //
-  // It's a bit of a hack but to handle this we start off setting
-  // `chpl_gpu_device_alloc` to false indicating that we shouldn't actually
-  // do any allocations on the device. Once the standard modules have finished
-  // loading this callback function
-  // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
-  // flip the flag.
+void chpl_gpu_impl_support_module_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
 }
 
