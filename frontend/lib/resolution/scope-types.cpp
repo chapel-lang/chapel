@@ -155,7 +155,7 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-opt<BorrowedIdsWithName>
+optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
                          const IdAndFlags::FlagSet& excludeFlagSet) const {
   // Are all of the filter flags present in flagsOr?

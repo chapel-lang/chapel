@@ -1080,7 +1080,7 @@ class KindProperties {
   bool valid() const { return isValid; }
 };
 
-static opt<QualifiedType>
+static optional<QualifiedType>
 findByPassing(Context* context,
               const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
@@ -1098,7 +1098,7 @@ findByPassing(Context* context,
   return chpl::empty;
 }
 
-opt<QualifiedType>
+optional<QualifiedType>
 commonType(Context* context,
            const std::vector<QualifiedType>& types,
            KindRequirement requiredKind) {

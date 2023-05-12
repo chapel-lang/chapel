@@ -311,7 +311,7 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  opt<BorrowedIdsWithName>
+  optional<BorrowedIdsWithName>
   borrow(IdAndFlags::Flags filterFlags, const IdAndFlags::FlagSet& excludeFlagSet) const;
 
   /// \cond DO_NOT_DOCUMENT
@@ -454,7 +454,7 @@ class BorrowedIdsWithName {
   }
  public:
 
-  static opt<BorrowedIdsWithName>
+  static optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isField, bool isMethod, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,

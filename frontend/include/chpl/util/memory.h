@@ -27,10 +27,10 @@ namespace chpl {
 
 template <typename T>
 #if LLVM_VERSION_MAJOR >= 16
-using opt = std::optional<T>;
+using optional = std::optional<T>;
 const auto empty = std::nulopt;
 #else
-using opt = llvm::Optional<T>;
+using optional = llvm::Optional<T>;
 const auto empty = llvm::None;
 #endif
 
