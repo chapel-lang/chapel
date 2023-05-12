@@ -186,6 +186,44 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name);
 }
 
+static void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
+                            c_sublocid_t src_subloc, const void* src,
+                            size_t n) {
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
+  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
+
+  if (!dst_on_host && !src_on_host) {
+    chpl_gpu_impl_copy_device_to_device_new(dst_subloc, dst, src_subloc, src, n);
+  }
+  else if (!dst_on_host) {
+    chpl_gpu_impl_copy_host_to_device_new(dst_subloc, dst, src, n);
+  }
+  else if (!src_on_host) {
+    chpl_gpu_impl_copy_device_to_host_new(dst, src_subloc, src, n);
+  }
+  else {
+    assert(dst_on_host && src_on_host);
+    memmove(dst, src, n);
+  }
+  #else
+
+  // for unified memory strategy we don't want to generate calls to copy
+  // data from the device to host (since it can just be accessed directly)
+   memmove(dst, src, n);
+  #endif
+
+}
+
+void chpl_gpu_put(c_sublocid_t dst_subloc, void* dst, const void* src,
+                   size_t n) {
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+
+}
+  
+
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
   // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
 

@@ -145,7 +145,7 @@ void chpl_gen_comm_put_gpu(void* addr,
       chpl_memmove(raddr, addr, size);
     } else {
       //printf("put to subloc %d\n", to_subloc);
-      chpl_gpu_memmove(raddr, addr, size);
+      chpl_gpu_put(to_subloc, raddr, addr, size);
     }
   } else {
     assert(to_subloc < 0); // otherwise, put to remote GPU memory

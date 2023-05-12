@@ -349,14 +349,40 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
 
+void chpl_gpu_impl_copy_device_to_host_new(void* dst, c_sublocid_t src_dev,
+                                           const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(src));
+
+  chpl_gpu_switch_context(src_dev);
+  CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
+}
+
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
+void chpl_gpu_impl_copy_host_to_device_new(c_sublocid_t dst_dev, void* dst,
+                                           const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst));
+
+  chpl_gpu_switch_context(dst_dev);
+  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
+}
+
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
+
+  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
+}
+
+void chpl_gpu_impl_copy_device_to_device_new(c_sublocid_t dst_dev, void* dst,
+                                             c_sublocid_t src_dev,
+                                             const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
+
+  chpl_gpu_switch_context(dst_dev);
 
   CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
 }
