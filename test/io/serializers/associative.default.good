@@ -1,1 +1,6 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: error: Formatter 'DefaultDeserializer' does not support reading associative arrays
+===== writing: =====
+25 64 1 36 4 100 9
+--------------------
+25 64 1 36 4 100 9
+====================
+SUCCESS: [DefaultAssociativeDom(int(64),true)] int(64)

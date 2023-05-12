@@ -679,19 +679,25 @@ module DefaultAssociative {
     where chpl_useIOSerializers && _isDefaultDeser(f) {
       ref fmt = if f.writing then f.serializer else f.deserializer;
 
-      if f.writing then
+      if f.writing {
         fmt.startArray(f, dom.dsiNumIndices:uint);
-      else
+        fmt.startArrayDim(f, dom.dsiNumIndices:uint);
+      } else {
         fmt.startArray(f);
+        fmt.startArrayDim(f);
+      }
 
       if f.writing {
         for (key, val) in zip(this.dom, this) {
           fmt.writeArrayElement(f, val);
         }
       } else {
-        compilerError("Formatter '" + f.deserializerType:string + "' does not support reading associative arrays");
+        for (key, val) in zip(this.dom, this) {
+          val = fmt.readArrayElement(f, val.type);
+        }
       }
 
+      fmt.endArrayDim(f);
       fmt.endArray(f);
     }
 
