@@ -36,7 +36,7 @@ namespace cmd {
     added by this program will be shown. */
 void doParseOptions(Server* ctx, int argc, char** argv);
 
-/** Alias for LLVM's command-line option type. */ 
+/** Alias for LLVM's command-line option type. */
 template <typename T> using Flag = llvm::cl::opt<T>;
 
 /** A string representing a log file name. Defaults to the empty string. */
