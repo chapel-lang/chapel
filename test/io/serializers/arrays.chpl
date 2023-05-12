@@ -26,12 +26,18 @@ proc test(A) {
     writeln("ERROR: ", e);
   }
   try {
-    var B : A.type;
-    f.reader().withDeserializer(FormatReader).read(B);
+    var B = f.reader().withDeserializer(FormatReader).read(A.type);
 
     var match = false;
     if isArray(A) {
-      match = && reduce (A == B);
+      if isArrayType(A.eltType) {
+        match = true;
+        for (x,y) in zip(A,B) do
+          for (a,b) in zip(x,y) do
+            match &&= (a == b);
+      } else {
+        match = && reduce (A == B);
+      }
     } else {
       match = (A == B);
     }
@@ -46,11 +52,28 @@ proc test(A) {
   }
 }
 
+record R {
+  var x : [1..4] int = 1..4;
+}
+
 // TODO: sparse?
 proc main() {
   for param i in 1..5 {
     writeln("----- ", i:string, "D -----");
     var A = makeND(i);
     test(A);
+  }
+  {
+    writeln("--- array of arrays ---");
+    var A : [1..3] [1..3] int;
+    for i in 1..3 do
+      for j in 1..3 do
+        A[i][j] = i*j;
+    test(A);
+  }
+  {
+    writeln("--- record with array field ---");
+    var r = new R();
+    test(r);
   }
 }

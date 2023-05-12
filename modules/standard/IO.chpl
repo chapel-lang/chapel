@@ -8437,15 +8437,11 @@ proc fileReader.read(type t) throws {
   if isBorrowedClass(t) then
     compilerError("reading borrowed class types is not supported: '" + t:string + "'");
 
-  // TODO: can't return an array here because 'ret' is RVF'd across the locale,
-  // which means we're not 'move'-ing into a reference. Most likely need to
-  // create a pointer to 'ret' and do some kind of chpl_comm_put. Also probably
-  // need to make it a specialized function to avoid issues with other types,
-  // like 'nothing'. Either that or make 'nothing' its own thing.
-  if isArrayType(t) then
-    compilerError("reading array types is not supported, please try reading an array value instead.");
-
+  // Need 'do not RVF' here so that 'ret' is passed by reference across the
+  // on-stmt. Otherwise it would be serialized/bit-copied and we couldn't
+  // return the value that we just read.
   pragma "no init"
+  pragma "do not RVF"
   var ret : t;
 
   on this._home {

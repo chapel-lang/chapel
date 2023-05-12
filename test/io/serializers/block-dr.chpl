@@ -19,8 +19,7 @@ proc main() {
     f.writer(serializer=FormatWriter).writeln(B);
   }
   {
-    var DR : [D] int;
-    f.reader(deserializer=FormatReader).read(DR);
+    var DR = f.reader(deserializer=FormatReader).read([D] int);
     printDebugFmt(DR);
 
     assert(&& reduce (B == DR));
