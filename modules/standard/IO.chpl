@@ -8414,6 +8414,9 @@ proc fileReader.read(type t) throws {
   // create a pointer to 'ret' and do some kind of chpl_comm_put. Also probably
   // need to make it a specialized function to avoid issues with other types,
   // like 'nothing'. Either that or make 'nothing' its own thing.
+  if isArrayType(t) then
+    compilerError("reading array types is not supported, please try reading an array value instead.");
+
   pragma "no init"
   var ret : t;
 

@@ -26,7 +26,8 @@ proc test(A) {
     writeln("ERROR: ", e);
   }
   try {
-    var B = f.reader().withDeserializer(FormatReader).read(A.type);
+    var B : A.type;
+    f.reader().withDeserializer(FormatReader).read(B);
 
     var match = false;
     if isArray(A) {

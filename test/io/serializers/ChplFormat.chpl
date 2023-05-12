@@ -202,6 +202,8 @@ module ChplFormat {
 
     proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
+        if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
+          throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
         var alias = reader.withDeserializer(new ChplDeserializer(_typename=readType:string));
         val.deserialize(reader=alias, deserializer=alias.deserializer);
       } else {
