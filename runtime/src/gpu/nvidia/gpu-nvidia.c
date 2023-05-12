@@ -121,12 +121,10 @@ void chpl_gpu_impl_init(int* num_devices) {
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
-    CUDA_CALL(cuCtxPushCurrent(context));
+    CUDA_CALL(cuCtxSetCurrent(context));
     // load the module and setup globals within
     CUmodule module = chpl_gpu_load_module(chpl_gpuBinary);
-    chpl_gpu_impl_set_globals(module);
     chpl_gpu_cuda_modules[i] = module;
-    CUDA_CALL(cuCtxPopCurrent(&context));
 
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
@@ -135,17 +133,11 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
     // between runtime layers?
-    CUDA_CALL(cuCtxSetCurrent(context));
-    CUdeviceptr ptr;
-    size_t glob_size;
-    CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, chpl_gpu_cuda_modules[i],
-                                "chpl_nodeID"));
-    assert(glob_size == sizeof(c_nodeid_t));
-    chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+    chpl_gpu_impl_set_globals(module);
   }
 }
 
-static bool chpl_gpu_device_alloc = false;
+static bool chpl_gpu_device_alloc = true;
 
 void chpl_gpu_impl_support_module_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
@@ -359,6 +351,16 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
+
+  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
+}
+
+
+void chpl_gpu_impl_copy_host_to_device_new(c_sublocid_t dev, void* dst,
+                                           const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst));
+
+  chpl_gpu_switch_context(dev);
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }

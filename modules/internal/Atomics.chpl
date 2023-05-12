@@ -282,8 +282,14 @@ module Atomics {
       extern externFunc("load", bool)
         proc atomic_load(const ref obj:externT(bool), order:memory_order): bool;
 
+      extern proc printf(s...): void;
+      extern proc chpl_task_getRequestedSubloc(): int;
+
       var ret:bool;
-      on this do ret = atomic_load(_v, c_memory_order(order));
+      on this {
+        printf("atomics on %d\n", chpl_task_getRequestedSubloc());
+        ret = atomic_load(_v, c_memory_order(order));
+      }
       return ret;
     }
 

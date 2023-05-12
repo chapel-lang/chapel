@@ -506,13 +506,13 @@ module ChapelLocale {
     if casted == nil then
       halt("cannot call chpl_getSingletonCurrentLocaleArray on nil or rootLocale");
 
-    return casted!.chpl_singletonThisLocaleArray;
+    return [here];
   }
 
   @chpldoc.nodoc
   class AbstractLocaleModel : BaseLocale {
     // Used in chpl_getSingletonLocaleArray -- see the comment there
-    var chpl_singletonThisLocaleArray:[0..0] locale;
+    /*var chpl_singletonThisLocaleArray:[0..0] locale;*/
 
     // This will be used for interfaces that will be common to all
     // (non-RootLocale) locale models
@@ -613,7 +613,7 @@ module ChapelLocale {
                                           c_sublocid_any)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
-          chpl_singletonCurrentLocaleInitPrivate(locIdx);
+          /*chpl_singletonCurrentLocaleInitPrivate(locIdx);*/
           warmupRuntime();
         }
       }

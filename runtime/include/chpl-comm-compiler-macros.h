@@ -134,15 +134,25 @@ void chpl_gen_comm_put_gpu(void* addr,
                            int32_t fn)
 {
   //printf("put between sublocs %d %d\n", to_subloc, from_subloc);
-  printf("put between sublocs\n");
+  //printf("put between sublocs\n");
   if (chpl_nodeID == to_node) {
-    chpl_memmove(raddr, addr, size);
-#ifdef HAS_CHPL_CACHE_FNS
-  } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put(addr, to_node, raddr, size, commID, ln, fn);
-#endif
+    if (to_subloc < 0) {
+      chpl_memmove(raddr, addr, size);
+    } else {
+      printf("put to subloc %d\n", to_subloc);
+      chpl_gpu_comm_put(addr, to_subloc, raddr, size, commID, ln, fn);
+    }
   } else {
-    chpl_comm_put(addr, to_node, raddr, size, commID, ln, fn);
+    assert(to_subloc < 0); // otherwise, put to remote GPU memory
+#ifdef HAS_CHPL_CACHE_FNS
+    if( chpl_cache_enabled() ) {
+      chpl_cache_comm_put(addr, to_node, raddr, size, commID, ln, fn);
+    } else {
+#endif
+      chpl_comm_put(addr, to_node, raddr, size, commID, ln, fn);
+#ifdef HAS_CHPL_CACHE_FNS
+    }
+#endif
   }
 }
 

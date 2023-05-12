@@ -21,7 +21,7 @@
 // section due to the fact that GpuDiagnostics module accesses it (and this
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
-bool chpl_gpu_debug = false;
+bool chpl_gpu_debug = true;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
 
@@ -205,6 +205,8 @@ void chpl_gpu_comm_get(void *addr,
                            c_nodeid_t from_node, c_sublocid_t from_subloc,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn) {
+  CHPL_GPU_DEBUG("Doing GPU get of %zu bytes from %p to %p commID %d. %s:%d\n\n", size,
+                 addr, raddr, commID, chpl_lookupFilename(fn), ln);
   printf("gpu get\n");
   if (!can_do_comm) {
     printf("doing early memmove\n");
@@ -229,6 +231,18 @@ void chpl_gpu_comm_get(void *addr,
     assert(dst_on_host && src_on_host);
     memmove(addr, raddr, size);
   }
+
+}
+
+// for now, just local host to local device
+void chpl_gpu_comm_put(void* addr, c_sublocid_t to_subloc,
+                       void* raddr, size_t size, int32_t commID, int ln,
+                       int32_t fn) {
+
+  CHPL_GPU_DEBUG("Doing GPU put of %zu bytes from %p to %p commID %d. %s:%d\n\n", size,
+                 addr, raddr, commID, chpl_lookupFilename(fn), ln);
+
+  chpl_gpu_impl_copy_host_to_device_new(to_subloc, raddr, addr, size);
 
 }
 

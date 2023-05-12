@@ -39,6 +39,7 @@
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
 #include "wellknown.h"
+#include "view.h"
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
@@ -365,6 +366,8 @@ enum WideThingField {
 static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 
 static GenRet genCommID(GenInfo* info) {
+  std::cout << "Generating comm id " << info->filename << ":" <<
+               commIDMap[info->filename] << std::endl;
   return baseASTCodegen(new_CommIDSymbol(commIDMap[info->filename]++));
 }
 
@@ -3830,6 +3833,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           codegenCopy(to_ptr, from, type);
         } else {
           if (usingGpuLocaleModel()) {
+            std::cout << "Generating get\n";
+            nprint_view(type);
             codegenCall("chpl_gen_comm_get_gpu",
                         codegenCastToVoidStar(to_ptr),
                         codegenRnode(from),
@@ -3864,6 +3869,8 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           codegenCopy(to_ptr, from, type);
         } else {
           if (usingGpuLocaleModel()) {
+            std::cout << "Generating put\n";
+            nprint_view(type);
             codegenCall("chpl_gen_comm_put_gpu",
                         codegenCastToVoidStar(codegenValuePtr(from)),
                         codegenRnode(to_ptr),
