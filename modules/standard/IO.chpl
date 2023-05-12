@@ -8567,7 +8567,8 @@ proc __isSerializer(writer, ser) param : bool {
     } else {
       pragma "no init"
       var alias: fileReader(writer.kind, false, ser.type);
-      return canResolveMethod(ser, "startClass", alias, "", 1);
+      return __primitive("method call and fn resolves", ser, "deserializeType",
+                         alias, int);
     }
   } else {
     return false;
