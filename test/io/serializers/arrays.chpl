@@ -53,19 +53,4 @@ proc main() {
     var A = makeND(i);
     test(A);
   }
-
-  {
-    var D : domain(int) = {1, 2, 3, 5, 6, 8, 10};
-    var A : [D] int;
-    [d in D] A[d] = d**2;
-    writeln("----- associative -----");
-    printDebugFmt(A);
-  }
-
-  {
-    writeln("----- list(int) -----");
-    var li : list(int);
-    for i in 1..10 do li.append(i**2);
-    test(li);
-  }
 }

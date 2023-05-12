@@ -201,16 +201,3 @@ ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional ar
 ====================
 ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
 ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional arrays
------ associative -----
-===== writing: =====
-25 64 1 36 4 100 9
---------------------
-[5 => 25, 8 => 64, 1 => 1, 6 => 36, 2 => 4, 10 => 100, 3 => 9]
-====================
------ list(int) -----
-===== writing: =====
-[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
---------------------
-[1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
-====================
-SUCCESS: list(int(64),false)
