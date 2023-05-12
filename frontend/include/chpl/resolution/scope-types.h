@@ -478,7 +478,7 @@ class BorrowedIdsWithName {
     auto maybeIds = createWithSingleId(std::move(id), vis,
                                        isField, isMethod, isParenfulFunction,
                                        filterFlags, excludeFlagSet);
-    CHPL_ASSERT(!!maybeIds);
+    CHPL_ASSERT((bool) maybeIds);
     return *maybeIds;
   }
 

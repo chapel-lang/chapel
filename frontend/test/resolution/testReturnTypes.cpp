@@ -123,7 +123,7 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;
-  func(!!commonTypeResult, qt);
+  func((bool) commonTypeResult, qt);
 }
 
 static void test1() {
