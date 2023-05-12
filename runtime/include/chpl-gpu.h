@@ -109,15 +109,6 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
 void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
-void chpl_gpu_comm_get(void *addr,
-                       c_nodeid_t from_node, c_sublocid_t from_subloc,
-                       void* raddr, size_t size, int32_t commID, int ln,
-                       int32_t fn);
-
-void chpl_gpu_comm_put(void* addr, c_sublocid_t to_subloc,
-                       void* raddr, size_t size, int32_t commID, int ln,
-                       int32_t fn);
-
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);

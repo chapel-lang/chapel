@@ -355,16 +355,6 @@ void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-
-void chpl_gpu_impl_copy_host_to_device_new(c_sublocid_t dev, void* dst,
-                                           const void* src, size_t n) {
-  assert(chpl_gpu_is_device_ptr(dst));
-
-  chpl_gpu_switch_context(dev);
-
-  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
-}
-
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
