@@ -27,10 +27,30 @@ namespace chpl {
 
 template <typename T>
 #if LLVM_VERSION_MAJOR >= 16
+/**
+ optional<T> is just a synonym for 'std::optional<T>'.
+
+ It allows for easy migration in the event that we switch
+ underlying optional types.
+ */
 using optional = std::optional<T>;
+
+/**
+  This is the "empty" value for the above optional<T> type.
+ */
 const auto empty = std::nulopt;
 #else
+/**
+ optional<T> is just a synonym for 'llvm::Optional<T>'.
+
+ It allows for easy migration in the event that we switch
+ underlying optional types.
+ */
 using optional = llvm::Optional<T>;
+
+/**
+  This is the "empty" value for the above optional<T> type.
+ */
 const auto empty = llvm::None;
 #endif
 
