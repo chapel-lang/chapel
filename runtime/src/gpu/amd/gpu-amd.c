@@ -161,10 +161,6 @@ void chpl_gpu_impl_support_module_finished_initializing() {
   chpl_gpu_device_alloc = true;
 }
 
-void chpl_gpu_get_device_count(int* into) {
-  hipGetDeviceCount(into);
-}
-
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);
