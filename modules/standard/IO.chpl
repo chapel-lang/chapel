@@ -2968,7 +2968,8 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
-  lhs._deserializer = new unmanaged _serializeWrapper(rhs.deserializerType, rhs.deserializer);
+  if rhs._deserializer != nil then
+    lhs._deserializer = new unmanaged _serializeWrapper(rhs.deserializerType, rhs.deserializer);
 }
 
 @chpldoc.nodoc
@@ -2985,7 +2986,8 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
-  lhs._serializer = new unmanaged _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
+  if rhs._serializer != nil then
+    lhs._serializer = new unmanaged _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
 }
 
 @chpldoc.nodoc
