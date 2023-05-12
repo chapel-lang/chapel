@@ -84,7 +84,7 @@ namespace {
   static const bool debugAllPassTwo = false;
   static const bool extraChecks = true;
   // Set a function name here to get lots of debugging output.
-  static const char* debugThisFn = "";//"deinit6";
+  static const char* debugThisFn = "";
 
   AllocaInst* makeAlloca(llvm::Type* type,
                          const char* name,
@@ -308,24 +308,7 @@ namespace {
     #endif
   }
 
-
-  struct TypeFixer : public ValueMapTypeRemapper {
-  public:
-    /// remapType - The client should implement this method if they want to
-    /// remap types while mapping values.
-    Type *remapType(Type *SrcTy) override = 0;
-
-    // When remapping things with remapped types, these functions
-    // provide an opportunity to do the remapping. They should return
-    // NULL if that specific thing does not need to be remapped. They
-    // do not need to handle remapping e.g. structure or arrays
-    //  if only elements need remapping.
-    virtual Constant* remapConstant(const Constant* C,
-                                    ValueToValueMapTy &VM,
-                                    RemapFlags Flags) = 0;
-  };
-
-  struct GlobalTypeFixer : TypeFixer {
+  struct GlobalTypeFixer : ValueMapTypeRemapper {
     Module & M;
     GlobalToWideInfo * info;
     bool debugPassTwo;
@@ -971,13 +954,20 @@ namespace {
       }
     }
 
+    /// remapType - The client should implement this method if they want to
+    /// remap types while mapping values.
     Type *remapType(Type *SrcTy) override {
       return convertTypeGlobalToWide(&M, info, SrcTy);
     }
 
-    Constant* remapConstant(const Constant* C,
-                          ValueToValueMapTy &VM,
-                          RemapFlags Flags) override {
+    // When remapping things with remapped types, these functions
+    // provide an opportunity to do the remapping. They should return
+    // NULL if that specific thing does not need to be remapped. They
+    // do not need to handle remapping e.g. structure or arrays
+    //  if only elements need remapping.
+    Constant* helpRemapConstant(const Constant* C,
+                                ValueToValueMapTy &VM,
+                                RemapFlags Flags) {
       Type* CT = C->getType();
       if( isa<PointerType>(CT) &&
           CT->getPointerAddressSpace() == info->globalSpace) {
@@ -1004,9 +994,10 @@ namespace {
           assert(0);
         }
       }
-      // Otherwise, return NULL to indicate we opted out
+
+      // Otherwise, return nullptr to indicate we opted out
       //  of modifying the constant directly.
-      return NULL;
+      return nullptr;
     }
   };
 
@@ -1014,7 +1005,7 @@ namespace {
   Constant* typeMapConstant(Constant* C,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(C);
 
     // If the value already exists in the map, use it.
@@ -1075,8 +1066,8 @@ namespace {
     // If the type needs to change, offer it up to fixConstant,
     // which returns NULL if MapValue will handle it (ie it's
     // just the arguments that change).
-    if( ty != C->getType() ) {
-      Constant* newC = TypeMapper->remapConstant(C, VM, Flags);
+    if (ty != C->getType()) {
+      Constant* newC = TypeMapper->helpRemapConstant(C, VM, Flags);
       if( newC ) {
         VM[C] = newC;
         return newC;
@@ -1097,7 +1088,7 @@ namespace {
   Value* typeMapValue(const Value* V,
                       ValueToValueMapTy &VM,
                       RemapFlags Flags,
-                      TypeFixer *TypeMapper) {
+                      GlobalTypeFixer *TypeMapper) {
     ValueToValueMapTy::iterator I = VM.find(V);
 
     // If the value already exists in the map, use it.
@@ -1120,7 +1111,7 @@ namespace {
   void typeRemapInstruction(Instruction *I,
                             ValueToValueMapTy &VM,
                             RemapFlags Flags,
-                            TypeFixer *TypeMapper) {
+                            GlobalTypeFixer *TypeMapper) {
     // Put any operands that need to change into the map.
     unsigned i = 0;
     for (User::op_iterator op = I->op_begin(), E = I->op_end();
