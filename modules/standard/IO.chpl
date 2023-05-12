@@ -5286,11 +5286,6 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
           reader._deserializer = nil; }
 
-  if isGenericType(readType) then
-    compilerError("reading generic types is not supported: '" + readType:string + "'");
-  if isBorrowedClass(readType) then
-    compilerError("reading borrowed class types is not supported: '" + readType:string + "'");
-
   return reader.deserializer.deserializeType(reader, readType);
 }
 
@@ -8408,6 +8403,11 @@ proc fileReader.readlnHelper(ref args ...?k,
  */
 proc fileReader.read(type t) throws {
   const origLocale = this.getLocaleOfIoRequest();
+
+  if isGenericType(t) then
+    compilerError("reading generic types is not supported: '" + t:string + "'");
+  if isBorrowedClass(t) then
+    compilerError("reading borrowed class types is not supported: '" + t:string + "'");
 
   // TODO: can't return an array here because 'ret' is RVF'd across the locale,
   // which means we're not 'move'-ing into a reference. Most likely need to
