@@ -48,6 +48,8 @@ module LocaleModel {
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
 
+  extern var chpl_gpu_num_devices: c_int;
+
   // Note that there are 2 nearly identical chpl_here_alloc() functions. This
   // one takes an int(64) size and is marked with "locale model alloc" while
   // the second version takes a generic `integral` size and is not marked
@@ -295,12 +297,8 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      extern proc chpl_gpu_get_device_count(ref n: int);
-      var nDevices: int;
-      chpl_gpu_get_device_count(nDevices);
-
       //number of GPU devices on a node
-      numSublocales = nDevices;
+      numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
       this.complete();
@@ -317,12 +315,8 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      extern proc chpl_gpu_get_device_count(ref n: int);
-      var nDevices: int;
-      chpl_gpu_get_device_count(nDevices);
-
       //1 cpu and number of GPU devices on a node
-      numSublocales = nDevices;
+      numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
       this.complete();

@@ -2320,6 +2320,8 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
             break;
+          case GpuCodegenType::GPU_CG_CPU:
+            break;
         }
       } else {
         // This is a function called from a GPU kernel
@@ -2330,6 +2332,8 @@ void FnSymbol::codegenPrototype() {
             break; // no visibility change for NVIDIA
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setVisibility(llvm::Function::HiddenVisibility);
+            break;
+          case GpuCodegenType::GPU_CG_CPU:
             break;
         }
       }

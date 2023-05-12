@@ -190,8 +190,15 @@ module GPU
     :arg size: the number of elements in each GPU thread block's copy of the array.
    */
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
-    const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
-    return voidPtr : c_ptr(eltType);
+    if CHPL_GPU != "cpu" {
+      const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
+      return voidPtr : c_ptr(eltType);
+    }
+    else {
+      // this works because the function is inlined.
+      var alloc = new c_array(eltType, size);
+      return c_ptrTo(alloc[0]);
+    }
   }
 
   /*
@@ -311,7 +318,7 @@ module GPU
   }
 
   private proc checkValidGpuAtomicOp(param opName, param rtFuncName, type T) param {
-    if CHPL_GPU_CODEGEN == "rocm" && invalidGpuAtomicOpForRocm(rtFuncName) then
+    if CHPL_GPU == "amd" && invalidGpuAtomicOpForRocm(rtFuncName) then
       compilerError("Chapel does not support atomic ", opName, " operation on type ", T : string,
         " when using 'CHPL_GPU=amd'.");
 

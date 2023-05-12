@@ -153,6 +153,6 @@ module ChplConfig {
   CHPL_GPU_MEM_STRATEGY = __primitive("get compiler variable", "CHPL_GPU_MEM_STRATEGY");
 
   @chpldoc.nodoc
-  param CHPL_GPU_CODEGEN:string;
-  CHPL_GPU_CODEGEN = __primitive("get compiler variable", "CHPL_GPU_CODEGEN");
+  param CHPL_GPU:string;
+  CHPL_GPU = __primitive("get compiler variable", "CHPL_GPU");
 }

@@ -2498,7 +2498,7 @@ static void embedGpuCode() {
   std::string err;
   chpl::readfile(fatbinFilename.c_str(), buffer, err);
   if (!err.empty()) {
-    USR_FATAL("%s", err.c_str());
+    USR_FATAL("Error while reading GPU binary: %s", err.c_str());
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
@@ -2581,7 +2581,7 @@ static void codegenPartTwo() {
     // processes. In one process gCodegenGPU is true and we generate a .fatbin file,
     // in the other gCodegenGpu is false and we'll consume the fatbin file
     // and embed its contents into the generated code.
-    if (usingGpuLocaleModel() && !gCodegenGPU) {
+    if (isFullGpuCodegen() && !gCodegenGPU) {
       embedGpuCode();
     }
 
@@ -2714,7 +2714,7 @@ void codegen() {
 
   codegenPartOne();
 
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).

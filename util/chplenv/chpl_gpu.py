@@ -4,6 +4,7 @@ import glob
 import json
 import chpl_locale_model
 import chpl_llvm
+import chpl_compiler
 import re
 from utils import error, warning, memoize, run_command, which, is_ver_in_range
 
@@ -13,23 +14,50 @@ def _validate_cuda_version():
 def _validate_rocm_version():
     return _validate_rocm_version_impl()
 
-# Format:
-#   SDK path environment variable
-#   program to locate SDK folder
-#   depth of program within SDK folder
-#   Default GPU architecure for the vendor
-#   LLVM target
+class gpu_type:
+    def __init__(self, sdk_path_env, compiler, bin_depth, default_arch,
+                 llvm_target, runtime_impl, version_validator):
+        self.sdk_path_env = sdk_path_env
+        self.compiler = compiler
+        self.bin_depth = bin_depth
+        self.default_arch = default_arch
+        self.llvm_target = llvm_target
+        self.runtime_impl = runtime_impl
+        self.version_validator = version_validator
+
+    def validate_sdk_version(self):
+        return self.version_validator()
+
+
 GPU_TYPES = {
-    "cuda": ("CHPL_CUDA_PATH", "nvcc",  2,"sm_60",  "NVPTX",
-             _validate_cuda_version),
-    "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906", "AMDGPU",
-             _validate_rocm_version)
+    "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
+                       compiler="nvcc",
+                       bin_depth=2,
+                       default_arch="sm_60",
+                       llvm_target="NVPTX",
+                       runtime_impl="cuda",
+                       version_validator=_validate_cuda_version),
+    "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
+                    compiler="hipcc",
+                    bin_depth=3,
+                    default_arch="gfx908",
+                    llvm_target="AMDGPU",
+                    runtime_impl="rocm",
+                    version_validator=_validate_rocm_version),
+    "cpu": gpu_type(sdk_path_env="",
+                    compiler="",
+                    bin_depth=-1,
+                    default_arch="",
+                    llvm_target="",
+                    runtime_impl="cpu",
+                    version_validator=lambda: None),
 }
+
 
 def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
     if suggestNone:
         msg += " To avoid this issue, you can have GPU code run on the CPU "
-        msg += "by setting 'CHPL_GPU_CODEGEN=none'."
+        msg += "by setting 'CHPL_GPU=cpu'."
 
     if allowExempt and os.environ.get('CHPLENV_GPU_REQ_ERRS_AS_WARNINGS'):
         warning(msg)
@@ -41,12 +69,12 @@ def _reportMissingGpuReq(msg, allowExempt=True, suggestNone=True):
     error(msg)
 
 
-def determineGpuType():
-    typesFound = [gpuType for gpuType in GPU_TYPES.keys() if which(GPU_TYPES[gpuType][1])]
+def determine_gpu_type():
+    typesFound = [val for (val, gpu_type) in GPU_TYPES.items() if which(gpu_type.compiler)]
     if len(typesFound) == 1:
       return typesFound[0]
 
-    error("Unable to determine GPU type%s, assign 'CHPL_GPU_CODEGEN' to one of: [%s]" %
+    error("Unable to determine GPU type%s, assign 'CHPL_GPU' to one of: [%s]" %
       ("" if len(typesFound) == 0 else " (detected: [%s])" %  ", ".join(typesFound),
        ", ".join(GPU_TYPES.keys())))
     return None;
@@ -56,14 +84,14 @@ def get():
     if chpl_locale_model.get() != 'gpu':
         return 'none'
 
-    chpl_gpu_codegen = os.environ.get("CHPL_GPU_CODEGEN")
-    if chpl_gpu_codegen:
-        if chpl_gpu_codegen not in GPU_TYPES:
-            error("Only {} supported for 'CHPL_GPU_CODEGEN'".format(GPU_TYPES.keys()))
+    chpl_gpu_env = os.environ.get("CHPL_GPU")
+    if chpl_gpu_env:
+        if chpl_gpu_env not in GPU_TYPES:
+            error("Only {} supported for 'CHPL_GPU'".format(list(GPU_TYPES.keys())))
         else:
-            return chpl_gpu_codegen
+            return chpl_gpu_env
     else:
-        return determineGpuType();
+        return determine_gpu_type();
 
 @memoize
 def get_arch():
@@ -71,7 +99,7 @@ def get_arch():
 
     # No arch if GPU is not being used.
     if gpu_type == 'none':
-        return ''
+        return 'none'
 
     # Check if user is overriding the arch.
     arch = os.environ.get("CHPL_GPU_ARCH")
@@ -79,30 +107,29 @@ def get_arch():
         return arch
 
     # Return vendor-specific default architecture
-    _, _, _, gpu_default_arch, _, _ = GPU_TYPES[gpu_type]
-    return gpu_default_arch
+    return GPU_TYPES[gpu_type].default_arch
 
 @memoize
 def get_sdk_path(for_gpu):
     gpu_type = get()
 
     # No SDK path if GPU is not being used.
-    if gpu_type == 'none':
-        return ''
+    if gpu_type == 'cpu':
+        return 'none'
 
     # Check vendor-specific environment variable for SDK path
-    gpu_variable, gpu_program, gpu_bin_depth, _, _, _ = GPU_TYPES[for_gpu]
-    chpl_sdk_path = os.environ.get(gpu_variable)
+    gpu = GPU_TYPES[for_gpu]
+    chpl_sdk_path = os.environ.get(gpu.sdk_path_env)
     if chpl_sdk_path:
         return chpl_sdk_path
 
     # try to find the SDK by running `which` on a vendor-specific program.
     exists, returncode, my_stdout, my_stderr = utils.try_run_command(["which",
-                                                                      gpu_program])
+                                                                      gpu.compiler])
 
     if exists and returncode == 0:
         real_path = os.path.realpath(my_stdout.strip()).strip()
-        chpl_sdk_path = "/".join(real_path.split("/")[:-gpu_bin_depth])
+        chpl_sdk_path = "/".join(real_path.split("/")[:-gpu.bin_depth])
         return chpl_sdk_path
     elif gpu_type == for_gpu:
         _reportMissingGpuReq("Can't find {} toolkit.".format(get()))
@@ -121,9 +148,9 @@ def get_gpu_mem_strategy():
 
 
 def get_cuda_libdevice_path():
-    if get() == 'cuda':
+    if get() == 'nvidia':
         # TODO this only makes sense when we are generating for nvidia
-        chpl_cuda_path = get_sdk_path('cuda')
+        chpl_cuda_path = get_sdk_path('nvidia')
 
         # there can be multiple libdevices for multiple compute architectures. Not
         # sure how realistic that is, nor I see multiple instances in the systems I
@@ -136,19 +163,7 @@ def get_cuda_libdevice_path():
         else:
             return libdevices[0]
 
-    return ""
-
-
-def get_runtime():
-    # For now, the runtime and codegen targets match one-for-one.
-    chpl_gpu_runtime = os.environ.get("CHPL_GPU_RUNTIME")
-    if chpl_gpu_runtime:
-        valid_runtimes = list(GPU_TYPES.keys()) + ['none']
-        if chpl_gpu_runtime not in valid_runtimes:
-            error("Only {} supported for 'CHPL_GPU_RUNTIME'".format(valid_runtimes))
-        else:
-            return chpl_gpu_runtime
-    return get()
+    return "none"
 
 def validateLlvmBuiltForTgt(expectedTgt):
     # If we're using the bundled LLVM, llvm-config may not have been built
@@ -174,7 +189,7 @@ def _validate_cuda_version_impl():
     MIN_REQ_VERSION = "7"
     MAX_REQ_VERSION = "12"
 
-    chpl_cuda_path = get_sdk_path('cuda')
+    chpl_cuda_path = get_sdk_path('nvidia')
     version_file_json = '%s/version.json' % chpl_cuda_path
     version_file_txt = '%s/version.txt' % chpl_cuda_path
     cudaVersion = None
@@ -217,7 +232,7 @@ def _validate_rocm_version_impl():
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "6"
 
-    chpl_rocm_path = get_sdk_path('rocm')
+    chpl_rocm_path = get_sdk_path('amd')
     files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
         '%s/.info/version-libs' % chpl_rocm_path]
 
@@ -256,12 +271,27 @@ def validate(chplLocaleModel, chplComm):
     if chplLocaleModel != "gpu":
         return True
 
-    # Run function to validate that we have a satisfactory version of our SDK
-    # (e.g. cuda or rocm)
-    GPU_TYPES[get()][5]()
+    gpu = GPU_TYPES[get()]
 
-    llvmTgt = GPU_TYPES[get()][4]
-    if not validateLlvmBuiltForTgt(llvmTgt):
-        _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." % llvmTgt, allowExempt=False)
+    # Run function to validate that we have a satisfactory version of our SDK
+    # (e.g. CUDA or ROCm)
+    gpu.validate_sdk_version()
+
+    if get() == 'cpu':
+        return True
+
+    if chpl_compiler.get('target') != 'llvm':
+        error("The 'gpu' locale model can only be used with "
+              "CHPL_TARGET_COMPILER=llvm.")
+
+    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+        _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
+                             gpu.llvm_target, allowExempt=False)
+
+    for depr_env in ("CHPL_GPU_CODEGEN", "CHPL_GPU_RUNTIME"):
+        if os.environ.get(depr_env):
+            warning(depr_env + " is deprecated and now ignored. Please use " +
+                    "'CHPL_GPU=[nvidia|amd|cpu]' to choose a GPU target " +
+                    "explicitly.")
 
     return True

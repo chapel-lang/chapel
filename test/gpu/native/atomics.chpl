@@ -1,7 +1,7 @@
-use GPU, CTypes, GpuDiagnostics, Types, Random;
+use GPU, CTypes, GpuDiagnostics, Types, Random, ChplConfig;
 
 config const verbose = false;
-config param excludeForRocm;
+config param excludeForRocm = (CHPL_GPU == "amd");
 
 // CPU versions of associated GPU functions. These aren't actually atomic but
 // are used for test verification:

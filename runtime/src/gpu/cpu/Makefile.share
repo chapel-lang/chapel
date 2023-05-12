@@ -15,8 +15,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-SRCS = gpu-rocm.c
+SRCS = gpu-cpu.c
 
-GPU_SRCS = gpu-rocm.c
+GPU_SRCS = gpu-cpu.c
 
 GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)

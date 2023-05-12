@@ -125,8 +125,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
-const char* CHPL_ROCM_PATH = NULL;
-const char* CHPL_GPU_CODEGEN = NULL;
+const char* CHPL_GPU = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -1545,8 +1544,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
-    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
-    CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
+    CHPL_GPU= envMap["CHPL_GPU"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -1555,8 +1553,9 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
         break;
-      default:
-        INT_ASSERT(0 && "Should be unreachable");
+      case GpuCodegenType::GPU_CG_CPU:
+        gGpuSdkPath = "";
+        break;
     }
   }
 

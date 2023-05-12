@@ -2356,7 +2356,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2364,6 +2364,10 @@ static std::string generateClangGpuLangArgs() {
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
         args += "hip";
+        break;
+      case GpuCodegenType::GPU_CG_CPU:
+        args += "c++";
+        args += " -lstdc++";
         break;
     }
   }
@@ -2605,7 +2609,7 @@ void runClang(const char* just_parse_filename) {
                        clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
 
@@ -3938,7 +3942,7 @@ static void linkGpuDeviceLibraries() {
   } else {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
-    auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
+    auto libPath = gGpuSdkPath + std::string("/amdgcn/bitcode");
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());
@@ -4285,6 +4289,8 @@ void makeBinaryLLVM(void) {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         artifactFilename = genIntermediateFilename("chpl__gpu.o");
         break;
+      case GpuCodegenType::GPU_CG_CPU:
+        break;
     }
   }
 
@@ -4564,6 +4570,8 @@ void makeBinaryLLVM(void) {
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
           makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_CPU:
           break;
       }
     }

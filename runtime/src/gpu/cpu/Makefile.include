@@ -16,10 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GPU_SUBDIR = src/gpu/cuda
+GPU_SUBDIR = src/gpu/cpu
 
 GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
-
-ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.c
 
 include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share

@@ -23,12 +23,6 @@ def validate_compiler(compiler_val, flag):
         if not os.path.isfile(comp_makefile):
             warning('Unknown compiler: "{0}"'.format(compiler_val))
 
-    if chpl_locale_model.get() == 'gpu' and flag == 'target':
-        if compiler_val != 'llvm':
-            error("The 'gpu' locale model can only be used with "
-                  "CHPL_TARGET_COMPILER=llvm.")
-
-
 
 @memoize
 def get_prgenv_compiler():
