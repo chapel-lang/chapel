@@ -411,18 +411,7 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
   if (size > 0) {
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    if (chpl_gpu_device_alloc) {
-      CUDA_CALL(cuMemAlloc(&ptr, size));
-    }
-    else {
-      c_sublocid_t cur_subloc = chpl_task_getRequestedSubloc();
-      chpl_task_setSubloc(c_sublocid_any);
-      void* mem = chpl_mem_alloc(size, description, lineno, filename);
-      chpl_task_setSubloc(cur_subloc);
-      CHPL_GPU_DEBUG("\tregistering %p\n", mem);
-      CUDA_CALL(cuMemHostRegister(mem, size, CU_MEMHOSTREGISTER_PORTABLE));
-      CUDA_CALL(cuMemHostGetDevicePointer(&ptr, mem, 0));
-    }
+    CUDA_CALL(cuMemAlloc(&ptr, size));
 #else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
