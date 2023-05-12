@@ -34,6 +34,7 @@
 
 namespace chpldef {
 
+/** Forward declare some message subclasses. */
 template <typename P, typename R>
 class Request;
 class Response;
@@ -43,9 +44,8 @@ class Response;
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
-/**
-  Attempts to model a LSP message. A message may be either incoming or
-  outgoing (most are incoming).
+/** Attempts to model a LSP message. A message may be either incoming or
+    outgoing (most are incoming).
 */
 class Message {
 public:
@@ -86,13 +86,22 @@ public:
   };
 
 private:
-  Tag tag_;
-  JsonValue id_;
+  Tag tag_ = Message::UNSET;
+  JsonValue id_ = nullptr;
   Error error_ = Message::OK;
   Status status_ = Message::PENDING;
   std::string note_;
 
 protected:
+  Message(Message::Tag tag, JsonValue id, Error error,
+          std::string note)
+      : tag_(tag),
+        id_(std::move(id)),
+        error_(error),
+        note_(std::move(note)) {
+    CHPL_ASSERT(isIdValid(id_));
+  }
+
   inline void markProgressing() { status_ = Message::PROGRESSING; }
   inline void markCompleted() { status_ = Message::COMPLETED; }
   inline void markFailed(Error error, std::string note=std::string()) {
@@ -102,15 +111,6 @@ protected:
   }
 
   static bool isIdValid(const JsonValue& id);
-
-  Message(Message::Tag tag, JsonValue id, Error error,
-          std::string note)
-      : tag_(tag),
-        id_(std::move(id)),
-        error_(error),
-        note_(std::move(note)) {
-    CHPL_ASSERT(isIdValid(id_));
-  }
 
 public:
   virtual ~Message() = default;
@@ -125,14 +125,23 @@ public:
   /** The tag for this message. */
   inline Tag tag() const { return tag_; }
 
+  /** Print a message tag as a string. */
+  static const char* tagToString(Tag tag);
+
+  /** Print this message's tag as a string. */
+  inline const char* tagToString() const { return tagToString(tag_); }
+
   /** Returns 'true' if this message has an error value. */
   inline bool hasError() const { return error_ != Message::OK; }
 
   /** If this message failed, return the reason why. */
   inline Message::Error error() const { return error_; }
 
-  /** If this message failed, return a possible note explaining why. */
-  const std::string& note() const { return note_; }
+  /** Print a message error code as a string. */
+  static const char* errorToString(Error error);
+
+  /** Print this message's error code as a string. */
+  inline const char* errorToString() const  { return errorToString(error_); }
 
   /** Get the numeric value of an error code. */
   static inline int64_t errorToInt(Error e) {
@@ -141,6 +150,9 @@ public:
 
   /** Get the numeric value of an error code. */
   inline int64_t errorToInt() const { return errorToInt(error_); }
+
+  /** If this message failed, return a possible note explaining why. */
+  const std::string& note() const { return note_; }
 
   /** Return the current status of this message. */
   inline Message::Status status() const { return status_; }
@@ -230,6 +242,9 @@ public:
 
   /** May handle a message, but does not send or receive. */
   static opt<Response> handle(Server* ctx, Message* msg);
+
+  /** Compute results and store them in this request for later use. */
+  virtual void handle(Server* ctx) = 0;
 };
 
 /** Most messages are incoming and are modelled as a 'Request'. A request
@@ -243,32 +258,32 @@ class Request : public Message {
 public:
   /** Stores computation results for this request. */
   struct ComputedResult {
-    bool isProgressingCallAgain;
-    Message::Error error;
+    bool isProgressingCallAgain = false;
+    Message::Error error = Message::OK;
     std::string note;
     Result result;
-
-    ComputedResult() = default;
 
     /** For convenience when implementing 'compute' for a request. */
     ComputedResult(Result&& r)
         : isProgressingCallAgain(false),
           error(Message::OK),
           result(r) {}
+
+    ComputedResult() = default;
   };
 
 protected:
   const Params p;
   Result r = {};
 
-  static Message::Error unpack(const JsonValue& json, Params& p,
-                               std::string* note);
-
   Request(Message::Tag tag, JsonValue id, Message::Error error,
           std::string note,
           Params params)
       : Message(tag, std::move(id), error, std::move(note)),
         p(std::move(params)) {}
+
+  static Message::Error unpack(const JsonValue& json, Params& p,
+                               std::string* note);
 
   /** Use in message handlers to return failure. */
   inline ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
@@ -288,13 +303,13 @@ public:
       the result of a request into a JSON value, either do so manually
       or create a Response. This is method is used for sending outbound
       requests from server to client. */
-  virtual JsonValue pack() const;
+  virtual JsonValue pack() const override;
 
   /** Compute the answer to this request, doing meaningful work. */
   virtual ComputedResult compute(Server* ctx) = 0;
 
-  /** Compute results and store them in this request for later use. */
-  void handle(Server* ctx);
+  /** Compute results and save for later use. */
+  virtual void handle(Server* ctx) override = 0;
 
   /** If computed, get the result of this request. */
   const Result* result() const;
@@ -321,15 +336,16 @@ private: \
       : Request(Message::name__, std::move(id), error, \
                 std::move(note), \
                 std::move(p)) { \
-    static_assert(std::is_base_of<ProtocolStruct, Params>::value, \
-                  "Must be derived from 'ProtocolStruct'"); \
-    static_assert(std::is_base_of<ProtocolStruct, Result>::value, \
-                  "Must be derived from 'ProtocolStruct'"); \
+    static_assert(std::is_base_of<ProtocolType, Params>::value, \
+                  "Must be derived from 'ProtocolType'"); \
+    static_assert(std::is_base_of<ProtocolType, Result>::value, \
+                  "Must be derived from 'ProtocolType'"); \
   } \
 public: \
   virtual ~name__() = default; \
   static chpl::owned<Message> create(JsonValue id, const JsonValue& json); \
-  virtual ComputedResult compute(Server* ctx); \
+  virtual void handle(Server* ctx) override; \
+  virtual ComputedResult compute(Server* ctx) override; \
 };
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
@@ -350,17 +366,10 @@ private:
       : Message(Message::RESPONSE, std::move(id), error, std::move(note)),
         data_(data) {
     CHPL_ASSERT(isResponse() && isOutbound());
+    this->markCompleted();
   }
 
 public:
-  virtual ~Response() = default;
-
-  /** Get the JSON data this response stores. */
-  inline const JsonValue& data() const { return data_; }
-
-  /** Pack this response into a JSON value. */
-  virtual JsonValue pack() const;
-
   /** Create a response given an ID and a result value. */
   static Response create(JsonValue id, JsonValue data=nullptr);
 
@@ -372,6 +381,17 @@ public:
   static Response create(JsonValue id, Message::Error error,
                          std::string note=std::string(),
                          JsonValue data=nullptr);
+
+  virtual ~Response() = default;
+
+  /** Get the JSON data this response stores. */
+  inline const JsonValue& data() const { return data_; }
+
+  /** Pack this response into a JSON value. */
+  virtual JsonValue pack() const override;
+
+  /** Handling a response does nothing. */
+  virtual void handle(Server* ctx) override {}
 };
 
 /** Define visitor dispatch now that all subclasses have been defined. */

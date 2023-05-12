@@ -27,9 +27,10 @@
 using namespace chpldef;
 
 int main(int argc, char** argv) {
-  llvm::cl::ParseCommandLineOptions(argc, argv);
   Server context;
   Server* ctx = &context;
+
+  cmd::doParseOptions(ctx, argc, argv);
 
   // Configure the logger instance that the context will use.
   auto setupLogger = !cmd::logFile.empty()
@@ -45,7 +46,7 @@ int main(int argc, char** argv) {
   auto& logger = ctx->logger();
   logger.setLevel(cmd::logLevel);
 
-  // Flush every message to avoid losing info when we crash.
+  // Flush every log message immediately to avoid losing info on crash.
   logger.setFlushImmediately(true);
 
   ctx->message("Log beginning on: %s\n", logger.filePath().c_str());
@@ -69,10 +70,12 @@ int main(int argc, char** argv) {
     //    -- We can do it ourselves using C++ threads, CVs, and locks, and
     //       wrap it up in a neat little function that populates a queue
     //       of messages for the context.
-    bool err = Transport::readJsonBlocking(ctx, std::cin, json);
-    CHPL_ASSERT(!err);
+    bool ok = Transport::readJsonBlocking(ctx, std::cin, json);
+    CHPL_ASSERT(ok);
 
-    ctx->trace("Raw JSON on read is: %s\n", jsonToString(json).c_str());
+    if (logger.level() == Logger::TRACE) {
+      ctx->trace("Incoming JSON is: %s\n", jsonToString(json).c_str());
+    }
 
     // Create a message from the incoming JSON...
     auto msg = Message::request(ctx, std::move(json));
@@ -95,8 +98,14 @@ int main(int argc, char** argv) {
 
     // Send the response.
     auto& rsp = *optRsp;
-    err = Transport::sendJsonBlocking(ctx, std::cout, rsp.pack());
-    CHPL_ASSERT(!err);
+
+    if (logger.level() == Logger::TRACE) {
+      auto str = jsonToString(rsp.data());
+      ctx->trace("Outgoing JSON is: %s\n", str.c_str());
+    }
+
+    ok = Transport::sendJsonBlocking(ctx, std::cout, rsp.pack());
+    CHPL_ASSERT(ok);
 
     // Flush the log in case something goes wrong.
     logger.flush();

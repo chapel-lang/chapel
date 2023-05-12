@@ -63,12 +63,12 @@ public:
   inline const std::string& filePath() const { return filePath_; }
   bool isLoggingToBuiltin() const;
   bool isLogging() const;
-  Level level() const;
-  Output output() const;
+  inline Level level() const { return level_; }
+  inline Output output() const { return output_; }
   inline void setLevel(Level level) { this->level_ = level; }
   void setFlushImmediately(bool flushImmediately);
   inline bool flushImmediately() const { return flushImmediately_; }
-  /** Returns 'true' if there was an error starting the log. */
+  /** Returns 'true' if the log was started. */
   bool start();
   void stop();
   void flush();

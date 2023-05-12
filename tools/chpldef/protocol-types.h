@@ -23,9 +23,10 @@
 
 #include "./Logger.h"
 #include "./misc.h"
+#include <type_traits>
 
 /** Bunch up some redundant overrides for protocol structs into a macro. */
-#define CHPLDEF_PROTOCOL_STRUCT_OVERRIDES()               \
+#define CHPLDEF_PROTOCOL_TYPE_OVERRIDES() \
   virtual bool fromJson(const JsonValue& j, JsonPath p);  \
   virtual JsonValue toJson() const;
 
@@ -40,26 +41,26 @@
 */
 namespace chpldef {
 
-struct ProtocolStruct {
+struct ProtocolType {
   virtual bool fromJson(const JsonValue& j, JsonPath p) = 0;
   virtual JsonValue toJson() const = 0;
 
   /** By default, convert to JSON and then print the JSON. */
   virtual std::string toString() const;
-  virtual ~ProtocolStruct() = default;
+  virtual ~ProtocolType() = default;
 };
 
 /** Information about the client. */
-struct ClientInfo : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct ClientInfo : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   std::string name;
   opt<std::string> version;
 };
 
 /** TODO: Used to store 'chpldef' specific initialization options. */
-struct ChpldefInit : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct ChpldefInit : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 };
 
 /** As defined by the spec, this structure is deeply nested and absolutely
@@ -71,25 +72,25 @@ struct ChpldefInit : ProtocolStruct {
 
     TODO: If you add a field here, then adjust the (de)serializer methods.
 */
-struct ClientCapabilities : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct ClientCapabilities : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 };
 
-struct WorkspaceFolder : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct WorkspaceFolder : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   std::string uri;
   std::string name;
 };
 
-struct TraceLevel : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct TraceLevel : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   Logger::Level level;
 };
 
-struct InitializeParams : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct InitializeParams : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   opt<int> processId;
   opt<ClientInfo> clientInfo;
@@ -103,33 +104,38 @@ struct InitializeParams : ProtocolStruct {
 };
 
 /** TODO: Build this up in conjunction with 'ClientCapabilities'. */
-struct ServerCapabilities : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct ServerCapabilities : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 };
 
-struct ServerInfo : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct ServerInfo : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   std::string name;
   opt<std::string> version;
 };
 
-struct InitializeResult : ProtocolStruct {
-  CHPLDEF_PROTOCOL_STRUCT_OVERRIDES();
+struct InitializeResult : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
 
   ServerCapabilities capabilities;
   opt<ServerInfo> serverInfo;
 };
 
-} // end namespace 'chpldef'
+/** Instantiate only if 'T' is derived from 'ProtocolType'. */
+template <typename T>
+CHPLDEF_ENABLE_IF_DERIVED(T, ProtocolType, bool)
+fromJSON(const JsonValue& j, T& x, JsonPath p) {
+  return x.fromJson(j, p);
+}
 
-/** Teach the LLVM JSON library how to use the protocol structs. */
-namespace llvm {
-namespace json {
-  bool fromJSON(const llvm::json::Value& j, chpldef::ProtocolStruct& x,
-                llvm::json::Path p);
-  llvm::json::Value toJSON(const chpldef::ProtocolStruct& x);
-} // end namespace 'json'
-} // end namespace 'llvm'
+/** Instantiate only if 'T' is derived from 'ProtocolType'. */
+template <typename T>
+CHPLDEF_ENABLE_IF_DERIVED(T, ProtocolType, JsonValue)
+toJSON(const T& x) {
+  return x.toJson();
+}
+
+} // end namespace 'chpldef'
 
 #endif

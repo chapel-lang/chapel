@@ -31,7 +31,7 @@ namespace chpldef {
 static bool readLineTrimCarriageReturn(std::istream& is, std::string& out) {
   std::getline(is, out);
   if (!out.empty() && out.back() == '\r') out.pop_back();
-  bool ret = is.bad() || is.fail();
+  bool ret = !is.bad() && !is.fail();
   return ret;
 }
 
@@ -42,7 +42,7 @@ static bool readLength(std::istream& is, int length, std::string& out) {
     is.read(&out[0], bytes);
     read = is.gcount();
   }
-  return false;
+  return true;
 }
 
 // TODO: Remove the asserts by logging and returning an error/message.
@@ -57,7 +57,7 @@ bool Transport::readJsonBlocking(Server* ctx, std::istream& is,
   // if we fail to read a line in the protocol, it's difficult or
   // impossible for the server to recover. At any rate, we can worry about
   // recovering later (and ideally, not reinvent the wheel).
-  err |= readLineTrimCarriageReturn(is, line);
+  err |= !readLineTrimCarriageReturn(is, line);
   if (err) CHPLDEF_FATAL(ctx, "Reading first line of message data");
 
   const char* prefix = "Content-Length:";
@@ -68,33 +68,39 @@ bool Transport::readJsonBlocking(Server* ctx, std::istream& is,
   err |= str.empty();
   if (err) CHPLDEF_FATAL(ctx, "Expected length following %s", prefix);
 
-  err |= chpldef::cast(str, length);
+  err |= !chpldef::cast(str, length);
   err |= length <= 0;
   if (err) CHPLDEF_FATAL(ctx, "Message length %s is invalid", str.c_str());
 
-  err |= readLineTrimCarriageReturn(is, line);
+  err |= !readLineTrimCarriageReturn(is, line);
   err |= !line.empty();
   if (err) CHPLDEF_FATAL(ctx, "Expected CRLF before payload");
 
-  err |= readLength(is, length, line);
+  err |= !readLength(is, length, line);
   if (err) CHPLDEF_FATAL(ctx, "Failed to read payload data");
 
   // Create and write out the JSON now. No need to move the string into
   // the parse call because the JSON value will always copy.
   if (auto json = llvm::json::parse(line)) {
     out = std::move(*json);
-  } else {
-    ctx->verbose("Failed to parse JSON object of length: %d\n", length);
-    ctx->trace("String is: %s\n", line.c_str());
+    return true;
   }
 
+  // Failed to parse.
+  ctx->verbose("Failed to parse JSON object of length: %d\n", length);
+  ctx->trace("String is: %s\n", line.c_str());
   return false;
 }
 
+// TODO: Is there a way to write to a 'std::ostream' with LLVM?
 bool Transport::sendJsonBlocking(Server* ctx, std::ostream& os,
                                  const JsonValue& json) {
-  CHPLDEF_TODO();
-  return true;
+  const bool pretty = false;
+  std::string s = jsonToString(json, pretty);
+  os << std::move(s);
+  os.flush();
+  bool ret = !os.bad() && !os.fail();
+  return ret;
 }
 
 } // end namespace 'chpldef'

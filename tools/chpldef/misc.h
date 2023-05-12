@@ -31,6 +31,15 @@
 #include "llvm/Support/JSON.h"
 #include <cstdlib>
 #include <string>
+#include <type_traits>
+
+#if __cplusplus < 201703L
+  #error "Expected C++17 standard!"
+#endif
+
+// Enable a declaration if 'U' is derived from 'T', for return type 'RT'.
+#define CHPLDEF_ENABLE_IF_DERIVED(child__, parent__, rtype__) \
+  std::enable_if_t<std::is_base_of<parent__, child__>::value, rtype__>
 
 #define CHPLDEF_IMPOSSIBLE() \
   do { CHPL_ASSERT(false && "Should not be possible!"); } while (0)
@@ -75,13 +84,13 @@ inline opt<T> option(T&& t) { return opt<T>(std::move(t)); }
 template <typename T>
 inline opt<T> option(const T& t) { return opt<T>(t); }
 
-/** Cast a string to an integer, return 'true' if there was an error. */
+/** Cast a string to an integer, return 'false' if there was an error. */
 inline bool cast(std::string str, int& out) {
   try {
     out = std::stoi(str);
-    return false;
+    return true;
   } catch (const std::exception& ex) { std::ignore = ex; }
-  return true;
+  return false;
 }
 
 /** Print a JSON value's tag as a string. */

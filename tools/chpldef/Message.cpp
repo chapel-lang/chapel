@@ -119,7 +119,7 @@ opt<Response> Message::response(Server* ctx, const Message* msg) {
 
   switch (msg->status()) {
     case COMPLETED: {
-      CHPL_ASSERT(msg->error() == Message::OK);
+      CHPL_ASSERT(!msg->hasError());
       switch (msg->tag()) {
         #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
         case name__: return createSuccessfulResponse(msg->to##name__());
@@ -129,9 +129,8 @@ opt<Response> Message::response(Server* ctx, const Message* msg) {
       }
     } break;
     case FAILED: {
-      CHPL_ASSERT(msg->error() != Message::OK);
-      // TODO: What debug JSON to embed here, if any?
-      JsonValue data = nullptr;
+      CHPL_ASSERT(msg->hasError());
+      JsonValue data(nullptr);
       ret = Response::create(msg->id(), msg->error(), msg->note(),
                              std::move(data));
     } break;
@@ -198,10 +197,8 @@ template <typename P, typename R>
 Message::Error Request<P, R>::unpack(const JsonValue& json, P& p,
                                      std::string* note) {
   llvm::json::Path::Root root;
-  // Appropriate 'fromJson' must be defined in 'protocol-types.h'!
-  bool err = p.fromJson(json, root);
-  if (!err) return Message::OK;
-  if (note) *note = "Failed to unpack JSON";
+  if (p.fromJson(json, root)) return Message::OK;
+  *note = "Failed to unpack JSON";
   return Message::ERR_INVALID_PARAMS;
 }
 
@@ -223,8 +220,8 @@ static JsonObject
 createResponseError(Message::Error e, std::string note,
                     JsonValue data) {
   JsonObject ret {
-    { "code"    , Message::errorToInt(e) },
-    { "message" , std::move(note)        }
+    { "code", Message::errorToInt(e) },
+    { "message", std::move(note) }
   };
 
   if (data.kind() != JsonValue::Null) ret["data"] = std::move(data);
@@ -233,8 +230,8 @@ createResponseError(Message::Error e, std::string note,
 
 JsonValue Response::pack() const {
   JsonObject ret {
-    { "jsonrpc" , "2.0"      },
-    { "id"      , this->id() }
+    { "jsonrpc", "2.0" },
+    { "id", this->id() }
   };
 
   if (hasError()) {
@@ -290,5 +287,101 @@ class name__* Message::to##name__() { \
 }
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
+
+const char* Message::tagToString(Tag tag) {
+  if (tag == Message::INVALID) return "Invalid";
+  if (tag == Message::UNSET) return "Unset";
+  if (tag == Message::RESPONSE) return "Response";
+  #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
+  if (tag == name__) return #name__;
+  #include "./message-macro-list.h"
+  #undef CHPLDEF_MESSAGE
+  return nullptr;
+}
+
+const char* Message::errorToString(Error error) {
+  switch (error) {
+    case OK: return "Ok";
+    case ERR_PARSE: return "Parse";
+    case ERR_INVALID_REQUEST: return "InvalidRequest";
+    case ERR_METHOD_NOT_FOUND: return "MethodNotFound";
+    case ERR_INVALID_PARAMS: return "InvalidParams";
+    case ERR_INTERNAL: return "Internal";
+    case ERR_SERVER_NOT_INITIALIZED: return "ServerNotInitialized";
+    case ERR_UNKNOWN_ERROR_CODE: return "UnknownErrorCode";
+    case ERR_REQUEST_FAILED: return "RequestFailed";
+    case ERR_SERVER_CANCELLED: return "ServerCancelled";
+    case ERR_CONTENT_MODIFIED: return "ContentModified";
+    case ERR_REQUEST_CANCELLED: return "RequestCancelled";
+  }
+
+  CHPLDEF_IMPOSSIBLE();
+  return nullptr;
+}
+
+namespace {
+template <typename T, typename X>
+static bool doHandleMessage(Server* ctx, T* msg, X& x) {
+  if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
+  if (msg->status() != Message::PENDING) return true;
+
+  ctx->message("Handling request '%s' with ID '%s'\n",
+               msg->tagToString(),
+               msg->idToString().c_str());
+
+  x = msg->compute(ctx);
+
+  if (x.isProgressingCallAgain) CHPLDEF_TODO();
+
+  if (x.error != Message::OK) {
+    auto cstr = Message::errorToString(x.error);
+    ctx->message("Request failed with code '%s'\n", cstr);
+  }
+
+  if (ctx->logger().level() != Logger::OFF) {
+    auto str = x.result.toString();
+    ctx->message("Request completed with result %s\n", str.c_str());
+  }
+
+  return false;
+}
+}
+
+/** Call the request handler above and then mark completed or failed. */
+#define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
+void name__::handle(Server* ctx) { \
+  ComputedResult x; \
+  if (doHandleMessage(ctx, this, x)) { \
+    this->r = std::move(x.result); \
+    this->markCompleted(); \
+  } else { \
+    this->markFailed(x.error, std::move(x.note)); \
+  } \
+}
+#include "./message-macro-list.h"
+#undef CHPLDEF_MESSAGE
+
+opt<Response> Message::handle(Server* ctx, Message* msg) {
+  if (!ctx || !msg || msg->isResponse()) return {};
+  if (msg->status() != Message::PENDING) return {};
+
+  // TODO: Notification will have empty 'Result' type.
+  if (msg->isNotification()) {
+    CHPLDEF_TODO();
+    return {};
+  }
+
+  msg->handle(ctx);
+
+  if (msg->status() == Message::COMPLETED) {
+    if (auto ret = Message::response(ctx, msg)) {
+      CHPL_ASSERT(ret->id() == msg->id());
+      CHPL_ASSERT(ret->status() == Message::COMPLETED);
+      return ret;
+    }
+  }
+
+  return {};
+}
 
 } // end namespace 'chpldef'

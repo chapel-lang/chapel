@@ -102,9 +102,9 @@ bool Logger::start() {
   if (isLogging()) return false;
   CHPL_ASSERT(!isLoggingToBuiltin());
   stream_.open(filePath_);
-  bool ret = !stream_.is_open() || stream_.bad() || stream_.fail();
-  if (ret) stream_.close();
-  return ret;
+  bool error = !stream_.is_open() || stream_.bad() || stream_.fail();
+  if (error) stream_.close();
+  return !error;
 }
 
 void Logger::stop() {

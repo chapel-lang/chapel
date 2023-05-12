@@ -24,17 +24,17 @@
 
 namespace chpldef {
 
-std::string ProtocolStruct::toString() const {
+std::string ProtocolType::toString() const {
   auto ret = jsonToString(toJson());
   return ret;
 }
 
 bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
-  if (!m) return true;
+  if (!m) return false;
   m.map("name", name);
   m.map("version", version);
-  return false;
+  return true;
 }
 
 JsonValue ClientInfo::toJson() const {
@@ -43,7 +43,7 @@ JsonValue ClientInfo::toJson() const {
 }
 
 bool ChpldefInit::fromJson(const JsonValue& j, JsonPath p) {
-  return false;
+  return true;
 }
 
 JsonValue ChpldefInit::toJson() const {
@@ -52,7 +52,7 @@ JsonValue ChpldefInit::toJson() const {
 }
 
 bool ClientCapabilities::fromJson(const JsonValue& j, JsonPath p) {
-  return false;
+  return true;
 }
 
 JsonValue ClientCapabilities::toJson() const {
@@ -62,7 +62,7 @@ JsonValue ClientCapabilities::toJson() const {
 
 bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
-  if (!m) return true;
+  if (!m) return false;
   m.map("processId", processId);
   m.map("clientInfo", clientInfo);
   m.map("locale", locale);
@@ -72,7 +72,7 @@ bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
   m.map("capabilities", capabilities);
   m.map("trace", trace);
   m.map("workspaceFolders", workspaceFolders);
-  return false;
+  return true;
 }
 
 JsonValue InitializeParams::toJson() const {
@@ -82,28 +82,31 @@ JsonValue InitializeParams::toJson() const {
 
 bool InitializeResult::fromJson(const JsonValue& j, JsonPath p) {
   CHPLDEF_IMPOSSIBLE();
-  return false;
+  return true;
 }
 
 JsonValue InitializeResult::toJson() const {
-  CHPLDEF_TODO();
-  return nullptr;
+  JsonObject ret {
+    { "capabilities", capabilities },
+    { "serverInfo", serverInfo }
+  };
+  return ret;
 }
 
 bool TraceLevel::fromJson(const JsonValue& j, JsonPath p) {
   if (auto s = j.getAsString()) {
     if (*s == "off") {
       level = Logger::OFF;
-      return false;
+      return true;
     } else if (*s == "messages") {
       level = Logger::MESSAGES;
-      return false;
+      return true;
     } else if (*s == "verbose") {
       level = Logger::VERBOSE;
-      return false;
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 JsonValue TraceLevel::toJson() const {
@@ -113,7 +116,7 @@ JsonValue TraceLevel::toJson() const {
 
 bool WorkspaceFolder::fromJson(const JsonValue& j, JsonPath p) {
   CHPLDEF_TODO();
-  return false;
+  return true;
 }
 
 JsonValue WorkspaceFolder::toJson() const {
@@ -123,7 +126,7 @@ JsonValue WorkspaceFolder::toJson() const {
 
 bool ServerInfo::fromJson(const JsonValue& j, JsonPath p) {
   CHPLDEF_IMPOSSIBLE();
-  return false;
+  return true;
 }
 
 JsonValue ServerInfo::toJson() const {
@@ -133,7 +136,7 @@ JsonValue ServerInfo::toJson() const {
 
 bool ServerCapabilities::fromJson(const JsonValue& j, JsonPath p) {
   CHPLDEF_IMPOSSIBLE();
-  return false;
+  return true;
 }
 
 JsonValue ServerCapabilities::toJson() const {
@@ -142,21 +145,3 @@ JsonValue ServerCapabilities::toJson() const {
 }
 
 } // end namespace 'chpldef'
-
-namespace llvm {
-namespace json {
-
-  bool fromJSON(const llvm::json::Value& j, chpldef::ProtocolStruct& x,
-                llvm::json::Path p) {
-    bool error = x.fromJson(j, p);
-    if (error) return false;
-    return true;
-  }
-
-  llvm::json::Value toJSON(const chpldef::ProtocolStruct& x) {
-    auto ret = x.toJson();
-    return ret;
-  }
-
-} // end namespace 'json'
-} // end namespace 'llvm'

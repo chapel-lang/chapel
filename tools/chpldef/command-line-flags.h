@@ -22,16 +22,28 @@
 #define CHPL_TOOLS_CHPLDEF_COMMAND_LINE_FLAGS_H
 
 #include "./Logger.h"
+#include "./Server.h"
 #include "llvm/Support/CommandLine.h"
 
+/** This header provides a thin wrapper around LLVM's CommandLine support
+    header. When you are ready to parse command-line options, call the
+    'doParseOptions' function. Note that this will interpret the options
+    (e.g., if '--help' was thrown, the program will exit). */
 namespace chpldef {
 namespace cmd {
 
-/** Flag to set a file to write logging output to (default is <stderr>). */
-extern llvm::cl::opt<std::string> logFile;
+/** Call this in 'main' to parse command-line options. Only the options
+    added by this program will be shown. */
+void doParseOptions(Server* ctx, int argc, char** argv);
 
-/** Flag to set the log verbosity level. */
-extern llvm::cl::opt<Logger::Level> logLevel;
+/** Alias for LLVM's command-line option type. */ 
+template <typename T> using Flag = llvm::cl::opt<T>;
+
+/** A string representing a log file name. Defaults to the empty string. */
+extern Flag<std::string> logFile;
+
+/** The log level. Defaults to 'Logger::OFF'. */
+extern Flag<Logger::Level> logLevel;
 
 } // end namespace 'cmd'
 } // end namespace 'chpldef'

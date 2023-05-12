@@ -37,7 +37,7 @@ class Transport {
 public:
 
   /** Helper which reads a message from a stream in a blocking way.
-      Returns 'true' if there was an error. If there was not an
+      Returns 'false' if there was an error. If there was not an
       error, then the formal 'outJson' will contain the JSON for the
       message. */
   static bool
@@ -45,7 +45,7 @@ public:
                    JsonValue& out);
 
   /** Helper which sends JSON to a stream in a blocking way.
-      Returns 'true' if there was an error. */
+      Returns 'false' if there was an error. */
   static bool
   sendJsonBlocking(chpldef::Server* ctx, std::ostream& os,
                    const JsonValue& json);

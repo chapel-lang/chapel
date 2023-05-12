@@ -19,6 +19,7 @@
  */
 
 #include "./command-line-flags.h"
+#include "llvm/Support/CommandLine.h"
 
 namespace chpldef {
 namespace cmd {
@@ -27,13 +28,44 @@ llvm::cl::opt<std::string> logFile("log-file",
   llvm::cl::desc("Specify log file path"),
   llvm::cl::value_desc("filename"));
 
-llvm::cl::opt<Logger::Level> logLevel(
+llvm::cl::opt<Logger::Level> logLevel("log-level",
   llvm::cl::desc("Specify log verbosity level"),
     llvm::cl::values(
-      clEnumValN(Logger::OFF, "off", "No logging output"),
       clEnumValN(Logger::MESSAGES, "messages", "Log messages only"),
       clEnumValN(Logger::VERBOSE, "verbose", "Messages and details"),
       clEnumValN(Logger::TRACE, "trace", "Full trace of execution")));
+
+template <typename T>
+static bool isFlagEquivalent(const llvm::cl::opt<T>& f1,
+                             const llvm::cl::Option* f2) {
+  static_assert(std::is_base_of<llvm::cl::Option, llvm::cl::opt<T>>::value);
+  auto& ref = static_cast<const llvm::cl::Option&>(f1);
+  bool ret = &ref == f2;
+  return ret;
+}
+
+// TODO: Get these things in an array so we don't have O(n) code?
+static bool isChpldefRegisteredFlag(const llvm::cl::Option* f) {
+  if (isFlagEquivalent(logFile, f)) return true;
+  if (isFlagEquivalent(logLevel, f)) return true;
+  return false;
+}
+
+static void disableNonChpldefOptions() {
+  auto& m = llvm::cl::getRegisteredOptions();
+  for (auto k : m.keys()) {
+    if (k == "help") continue;
+    auto& f = m[k];
+    if (!isChpldefRegisteredFlag(f)) {
+      f->setHiddenFlag(llvm::cl::ReallyHidden);
+    }
+  }
+}
+
+void doParseOptions(Server* ctx, int argc, char** argv) {
+  disableNonChpldefOptions();
+  llvm::cl::ParseCommandLineOptions(argc, argv);
+}
 
 } // end namespace 'cmd'
 } // end namespace 'chpldef'

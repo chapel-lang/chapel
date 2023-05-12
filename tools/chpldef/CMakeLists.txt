@@ -20,7 +20,7 @@ add_executable(chpldef
     command-line-flags.cpp
     Logger.cpp
     Message.cpp
-    message-handle.cpp
+    message-compute.cpp
     misc.cpp
     protocol-types.cpp
     Server.cpp
