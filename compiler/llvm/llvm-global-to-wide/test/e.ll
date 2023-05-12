@@ -6,18 +6,21 @@ target datalayout = "e-p:64:64:64-i1:8:8-i8:8:8-i16:16:16-i32:32:32-i64:64:64-f3
 %struct.c_localeid_t = type { i32, i32 }
 
 
-declare i64* @.gf.addr.1(i64 addrspace(100)*) readnone
-declare i32 @.gf.node.1(i64 addrspace(100)*) readnone
-declare %struct.c_localeid_t @.gf.loc.1(i64 addrspace(100)*) readnone
-declare i64 addrspace(100)* @.gf.make.1(%struct.c_localeid_t, i64*) readnone
+declare ptr @.gf.addr.1(ptr addrspace(100)) readnone
+declare i32 @.gf.node.1(ptr addrspace(100)) readnone
+declare %struct.c_localeid_t @.gf.loc.1(ptr addrspace(100)) readnone
+declare ptr addrspace(100) @.gf.make.1(%struct.c_localeid_t, ptr) readnone
 
-%mystruct = type { i64 addrspace(100)*, i64 addrspace(100)*, i32 *}
-; CHECK: %mystruct = type { { %struct.c_localeid_t, i64* }, { %struct.c_localeid_t, i64* }, i32* }
+; mystruct uses opaque pointers but with typed ptrs it would be:
+; %mystruct = type { i64 addrspace(100)*, i64 addrspace(100)*, i32 *}
 
-declare %mystruct* @.gf.addr.2(%mystruct addrspace(100)*) readnone
-declare i32 @.gf.node.2(%mystruct addrspace(100)*) readnone
-declare %struct.c_localeid_t @.gf.loc.2(%mystruct addrspace(100)*) readnone
-declare %mystruct addrspace(100)* @.gf.make.2(%struct.c_localeid_t, %mystruct*) readnone
+%mystruct = type { ptr addrspace(100), ptr addrspace(100), ptr }
+; CHECK: %mystruct = type { { %struct.c_localeid_t, ptr }, { %struct.c_localeid_t, ptr }, ptr }
+
+declare ptr @.gf.addr.2(ptr addrspace(100)) readnone
+declare i32 @.gf.node.2(ptr addrspace(100)) readnone
+declare %struct.c_localeid_t @.gf.loc.2(ptr addrspace(100)) readnone
+declare ptr addrspace(100) @.gf.make.2(%struct.c_localeid_t, ptr) readnone
 
 ; A function to keep those types from dissapearing
 define void @test(%mystruct %a) {
@@ -50,15 +53,13 @@ E_end:
 
 
 
-define void @G(i1 %a, %mystruct addrspace(100)* %s) {
+define void @G(i1 %a, ptr addrspace(100) %s) {
 entry:
   br label %G_loop
 G_loop:
-  %in = phi %mystruct addrspace(100)* [ %s, %entry ], [ %ptr, %G_loop ]
-  %ptr = getelementptr inbounds %mystruct, %mystruct addrspace(100)* %in, i32 1
+  %in = phi ptr addrspace(100) [ %s, %entry ], [ %ptr, %G_loop ]
+  %ptr = getelementptr inbounds %mystruct, ptr addrspace(100) %in, i32 1
   br i1 %a, label %G_loop, label %G_end
 G_end:
   ret void
 }
-
-
