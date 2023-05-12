@@ -91,6 +91,20 @@ module Json {
       writer.writeLiteral("]");
     }
 
+    proc startList(writer: _writeType, _size: uint) throws {
+      writer._writeLiteral("[");
+      firstField = true;
+    }
+    proc writeListElement(writer: _writeType, const val: ?) throws {
+      if !firstField then writer._writeLiteral(", ");
+      else firstField = false;
+
+      writer.write(val);
+    }
+    proc endList(writer: _writeType) throws {
+      writer._writeLiteral("]");
+    }
+
     proc startArray(w: _writeType, _size:uint) throws {
     }
 
@@ -369,6 +383,19 @@ module Json {
         r.readLiteral("}");
       }
       _inheritLevel -= 1;
+    }
+
+    proc startList(r: fileReader) throws {
+      r._readLiteral("[");
+    }
+    proc readListElement(r: fileReader, type eltType) throws {
+      if !firstField then r._readLiteral(",");
+      else firstField = false;
+
+      return r.read(eltType);
+    }
+    proc endList(r: fileReader) throws {
+      r._readLiteral("]");
     }
 
     proc startArray(r: fileReader) throws {

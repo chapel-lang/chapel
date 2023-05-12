@@ -1758,31 +1758,13 @@ module List {
     }
 
     @chpldoc.nodoc
-    proc serialize(writer: fileWriter(?), ref serializer: IO.DefaultSerializer) throws {
-      _enter();
-
-      writer._writeLiteral("[");
-      var first = true;
-      for i in 0..<this._size {
-        if !first then writer._writeLiteral(", ");
-        first = false;
-        writer.write(_getRef(i));
-      }
-      writer._writeLiteral("]");
-
-      _leave();
-    }
-
-    @chpldoc.nodoc
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter();
 
-      serializer.startArray(writer, this._size);
-      serializer.startArrayDim(writer, this._size);
+      serializer.startList(writer, this._size);
       for i in 0..<this._size do
-        serializer.writeArrayElement(writer, _getRef(i));
-      serializer.endArrayDim(writer);
-      serializer.endArray(writer);
+        serializer.writeListElement(writer, _getRef(i));
+      serializer.endList(writer);
 
       _leave();
     }
@@ -1897,24 +1879,19 @@ module List {
       _readHelper(reader);
     }
 
-    proc _readHelper(r: fileReader(deserializerType=DefaultDeserializer)) throws {
-      readThis(r);
-    }
-
     proc _readHelper(r: fileReader) throws {
       _enter();
 
       _clearLocked();
 
       ref fmt = r.deserializer;
-      fmt.startArray(r);
-      fmt.startArrayDim(r);
+      fmt.startList(r);
 
       var done = false;
       while !done {
         try {
           pragma "no auto destroy"
-          var elt = fmt.readArrayElement(r, eltType);
+          var elt = fmt.readListElement(r, eltType);
           // read an element
           _appendByRef(elt);
         } catch {
@@ -1922,8 +1899,7 @@ module List {
         }
       }
 
-      fmt.endArrayDim(r);
-      fmt.endArray(r);
+      fmt.endList(r);
 
       _leave();
     }

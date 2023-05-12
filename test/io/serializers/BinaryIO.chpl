@@ -105,6 +105,16 @@ module BinaryIO {
         throw new Error("Wrote fewer fields than specified");
     }
 
+    // TODO: could add some verification here...
+    proc startList(w: _writeType, size: uint) throws {
+      w.write(size);
+    }
+    proc writeListElement(w: _writeType, const val: ?) throws {
+      w.write(val);
+    }
+    proc endList(w: _writeType) throws {
+    }
+
     // TODO: add stuff for known sizes, size 'hints'
     // TODO: add support for 'hasNext' kind of thing
     //
@@ -282,6 +292,23 @@ module BinaryIO {
       _nesting -= 1;
       if verify && _nesting == 0 && _size != 0 then
         throw new Error("Wrote fewer fields than specified");
+    }
+
+    proc startList(r: fileReader) throws {
+      _numElements = r.read(uint);
+      _sizeKnown = _numElements != 0;
+    }
+    proc readListElement(r: fileReader, type eltType) throws {
+      if _sizeKnown && _numElements <= 0 then
+        throw new BadFormatError("no more list elements remain");
+
+      if _sizeKnown then _numElements -= 1;
+
+      return r.read(eltType);
+    }
+    proc endList(r: fileReader) throws {
+      if _sizeKnown && _numElements != 0 then
+        throw new Error("read too few elements for list");
     }
 
     proc startArray(r: fileReader) throws {

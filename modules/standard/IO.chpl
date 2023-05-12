@@ -2695,6 +2695,20 @@ record DefaultSerializer {
       w._writeLiteral(")");
   }
 
+  proc startList(writer: fileWriter, size: int) throws {
+    writer._writeLiteral("[");
+    firstField = true;
+  }
+  proc writeListElement(writer: fileWriter, const val: ?) throws {
+    if !firstField then writer._writeLiteral(", ");
+    else firstField = false;
+
+    writer.write(val);
+  }
+  proc endList(writer: fileWriter) throws {
+    writer._writeLiteral("]");
+  }
+
   // BHARSH TODO: what should we do for sparse arrays? The current format is
   // kind of weird. I'd personally lean towards writing them as a map.
   proc startArray(w: fileWriter, numElements : uint) throws {
@@ -2870,6 +2884,20 @@ record DefaultDeserializer {
   }
   proc endTuple(r: fileReader) throws {
     r.readLiteral(")");
+  }
+
+  proc startList(r: fileReader) throws {
+    r._readLiteral("[");
+    firstField = true;
+  }
+  proc readListElement(r: fileReader, type eltType) throws {
+    if !firstField then r._readLiteral(",");
+    else firstField = false;
+
+    return r.read(eltType);
+  }
+  proc endList(r: fileReader) throws {
+    r._readLiteral("]");
   }
 
   proc startArray(r: fileReader) throws {

@@ -101,8 +101,21 @@ module ChplFormat {
       writer.writeLiteral(")");
     }
 
-    proc startArray(w: _writeType, _size:uint = 0) throws {
+    proc startList(w: _writeType, _size: uint) throws {
       w._writeLiteral("[");
+    }
+    proc writeListElement(w: _writeType, const val: ?) throws {
+      if !firstField then w._writeLiteral(", ");
+      else firstField = false;
+
+      w.write(val);
+    }
+    proc endList(w: _writeType) throws {
+      w._writeLiteral("]");
+    }
+
+    proc startArray(w: _writeType, _size:uint = 0) throws {
+      startList(w, _size);
     }
 
     proc startArrayDim(w: _writeType, len: uint) throws {
@@ -111,15 +124,11 @@ module ChplFormat {
     }
 
     proc writeArrayElement(w: _writeType, const val: ?) throws {
-      if !firstField then
-        w._writeLiteral(", ");
-      else
-        firstField = false;
-      w.write(val);
+      writeListElement(w, val);
     }
 
     proc endArray(w: _writeType) throws {
-      w._writeLiteral("]");
+      endList(w);
     }
 
     proc startMap(w: _writeType, _size:uint = 0) throws {
@@ -260,8 +269,22 @@ module ChplFormat {
       _inheritLevel -= 1;
     }
 
-    proc startArray(r: fileReader) throws {
+    proc startList(r: fileReader) throws {
       r._readLiteral("[");
+    }
+    proc readListElement(r: fileReader, type eltType) throws {
+      if !firstField then
+        r._readLiteral(", ");
+      else
+        firstField = false;
+      return r.read(eltType);
+    }
+    proc endList(r: fileReader) throws {
+      r._readLiteral("]");
+    }
+
+    proc startArray(r: fileReader) throws {
+      startList(r);
     }
 
     proc startArrayDim(w: _readerT) throws {
@@ -270,15 +293,11 @@ module ChplFormat {
     }
 
     proc readArrayElement(r: fileReader, type eltType) throws {
-      if !firstField then
-        r._readLiteral(", ");
-      else
-        firstField = false;
-      return r.read(eltType);
+      return readListElement(r, eltType);
     }
 
     proc endArray(r: fileReader) throws {
-      r._readLiteral("]");
+      endList(r);
     }
 
     proc startMap(r: fileReader) throws {
