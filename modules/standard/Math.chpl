@@ -367,6 +367,23 @@ module Math {
     return chpl_cosh(z);
   }
 
+  /* Returns :proc:`ceil`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divceil(param m: integral, param n: integral) param do
+    return chpl_divceil(m, n);
+
+  /* Returns :proc:`ceil`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);

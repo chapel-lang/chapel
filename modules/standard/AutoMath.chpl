@@ -1032,13 +1032,22 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_divceil and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divceil(param m: integral, param n: integral) param do
+    return chpl_divceil(m, n);
+
+  @chpldoc.nodoc
+  proc chpl_divceil(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -1046,13 +1055,21 @@ module AutoMath {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divceil and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+
+  @chpldoc.nodoc
+  proc chpl_divceil(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
