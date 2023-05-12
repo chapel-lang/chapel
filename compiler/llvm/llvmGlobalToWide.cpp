@@ -1035,9 +1035,38 @@ namespace {
       }
     }
 
+    if (GEPOperator *gepOp = dyn_cast<GEPOperator>(C)) {
+      // TODO: this should be handled by LLVM's ValueMapper.cpp
+
+      auto srcTy = gepOp->getSourceElementType();
+      auto resTy = gepOp->getResultElementType();
+
+      auto newSrcTy = TypeMapper->remapType(srcTy);
+      auto newResTy = TypeMapper->remapType(resTy);
+
+      if (newSrcTy != srcTy || newResTy != resTy) {
+        // gather the indices
+        SmallVector<Constant*> idxList;
+        for (const auto& v : gepOp->indices()) {
+          idxList.push_back(cast<Constant>(v));
+        }
+        // Create a new GetElementPtrConstantExpr while changing the types
+        auto C1 = ConstantExpr::getGetElementPtr(
+                     newSrcTy,
+                     cast<Constant>(gepOp->getPointerOperand()),
+                     idxList,
+                     gepOp->isInBounds(),
+                     gepOp->getInRangeIndex());
+        // Use MapValue to change the operands
+        Constant* ret = MapValue(C1, VM, Flags, TypeMapper);
+        if( ! ret ) ret = C1;
+        return ret;
+      }
+    }
+
     // Check: are all of the elements the same?
     //        is the type the same?
-    if( ty == C->getType() && !newElement ) {
+    if (ty == C->getType() && !newElement) {
       // Nothing else to do. Just return the constant.
       VM[C] = C;
       return C;
@@ -2030,10 +2059,14 @@ void populateFunctionsForGlobalType(Module *module, GlobalToWideInfo* info, Type
   if (isOpaquePointer(globalPtrTy)) {
 #if HAVE_LLVM_VER >= 140
     ptrTy = llvm::PointerType::getUnqual(module->getContext());
+#else
+    assert(false && "Should not be reachable");
 #endif
   } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
     ptrTy = llvm::PointerType::getUnqual(globalPtrTy->getPointerElementType());
+#else
+    assert(false && "Should not be reachable");
 #endif
   }
 
@@ -2188,10 +2221,14 @@ Type* createWidePointerToType(Module* module, GlobalToWideInfo* i, Type* eltTy)
   if (eltTy) {
 #ifdef HAVE_LLVM_TYPED_POINTERS
     ptrTy = llvm::PointerType::getUnqual(eltTy);
+#else
+    assert(false && "Should not be reachable");
 #endif
   } else {
 #if HAVE_LLVM_VER >= 140
     ptrTy = llvm::PointerType::getUnqual(context);
+#else
+    assert(false && "Should not be reachable");
 #endif
   }
   assert(ptrTy);
@@ -2288,6 +2325,8 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
       } else {
           return PointerType::get(context, t->getPointerAddressSpace());
       }
+#else
+      assert(false && "Should not be reachable");
 #endif
     } else {
 #ifdef HAVE_LLVM_TYPED_POINTERS
@@ -2301,6 +2340,8 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
       } else {
           return PointerType::get(wideEltType, t->getPointerAddressSpace());
       }
+#else
+      assert(false && "Should not be reachable");
 #endif
     }
   }
