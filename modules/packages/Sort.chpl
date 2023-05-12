@@ -1999,6 +1999,7 @@ module ShallowCopy {
 }
 @chpldoc.nodoc
 module SequentialInPlacePartitioning {
+  private use Math;
   private param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
 
   // Returns the count for each bucket
