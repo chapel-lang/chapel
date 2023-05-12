@@ -5288,6 +5288,8 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
 
   if isGenericType(readType) then
     compilerError("reading generic types is not supported: '" + readType:string + "'");
+  if isBorrowedClass(readType) then
+    compilerError("reading borrowed class types is not supported: '" + readType:string + "'");
 
   return reader.deserializer.deserializeType(reader, readType);
 }

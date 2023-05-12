@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/IO.chpl:8414: In method 'read':
+$CHPL_HOME/modules/standard/IO.chpl:8429: error: reading borrowed class types is not supported: 'borrowed C'
+  read-borrowed.chpl:13: called as (fileReader(dynamic,true,DefaultDeserializer)).read(type t = borrowed C)
