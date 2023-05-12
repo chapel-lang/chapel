@@ -1821,8 +1821,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasWriteThis             = false;
   bool makeReadThisAndWriteThis = true;
 
-  bool hasEncodeTo              = false;
-  bool makeEncodeTo             = fUseIOSerializers;
+  bool hasSerialize             = false;
+  bool makeSerialize            = fUseIOSerializers;
 
   //
   // We have no QIO when compiling with --minimal-modules, so no need
@@ -1851,7 +1851,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   }
 
   if (functionExists("serialize", dtMethodToken, ct, dtAny, dtAny)) {
-    hasEncodeTo = true;
+    hasSerialize = true;
   }
 
   // We'll make a writeThis and a readThis if neither exist.
@@ -1861,8 +1861,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     makeReadThisAndWriteThis = false;
   }
 
-  if (hasEncodeTo) {
-    makeEncodeTo = false;
+  if (hasSerialize) {
+    makeSerialize = false;
   }
 
   // Make writeThis when appropriate
@@ -1884,7 +1884,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   // Keep generating the 'serialize' method so that the override versions don't
   // cause errors.
   //
-  if (makeEncodeTo && !hasEncodeTo && ct != dtObject) {
+  if (makeSerialize && !hasSerialize && ct != dtObject) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "serialize");
     ArgSymbol* serializer = fn->getFormal(fn->numFormals());
@@ -1893,7 +1893,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->throwsErrorInit();
 
     if (fUseIOSerializers) {
-      if (hasWriteThis) {
+      if (!fNoIOSerializeWriteThis && hasWriteThis) {
         // TODO: we probably want to have a warning here to help users migrate
         // their code to use formatters.
         fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));

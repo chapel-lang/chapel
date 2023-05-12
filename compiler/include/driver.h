@@ -299,6 +299,7 @@ extern bool fDynoVerifySerialization;
 extern size_t fDynoBreakOnHash;
 
 extern bool fUseIOSerializers;
+extern bool fNoIOSerializeWriteThis;
 
 namespace chpl {
   class Context;

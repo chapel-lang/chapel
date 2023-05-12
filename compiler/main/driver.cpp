@@ -347,6 +347,7 @@ bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
 bool fUseIOSerializers = false;
+bool fNoIOSerializeWriteThis = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
@@ -1314,6 +1315,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
  {"use-io-serializers", ' ', NULL, "Enable [disable] use of experimental IO serializers", "N", &fUseIOSerializers, "CHPL_USE_IO_SERIALIZERS", NULL},
+ {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
  {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
   {0}
 };
