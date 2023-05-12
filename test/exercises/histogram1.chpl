@@ -5,7 +5,7 @@
 //
 
 // import standard modules to generate random number and use timers
-use Random, Time;
+use Random, Time, Math;
 
 // configuration constants
 config const printRandomNumbers: bool = true, // print random numbers to screen

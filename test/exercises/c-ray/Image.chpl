@@ -1,5 +1,5 @@
-// Allow access to stderr, stdout, ioMode
-private use IO;
+// Allow access to stderr, stdout, ioMode, divceil
+private use IO, Math;
 
 //
 // Configuration params/types
