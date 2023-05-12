@@ -36,6 +36,7 @@
    by the enum ``RemElems``.
 */
 module RangeChunk {
+  private use Math;
 
   /*
      ``RemElems`` specifies the distribution of remainder elements:
