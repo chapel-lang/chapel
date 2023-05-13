@@ -82,6 +82,17 @@ bool Logger::isLoggingToBuiltin() const {
   return output_ != Logger::FILEPATH;
 }
 
+const char* Logger::levelToString(Level level) {
+  switch (level) {
+    case Logger::OFF: return "off";
+    case Logger::MESSAGES: return "messages";
+    case Logger::VERBOSE: return "verbose";
+    case Logger::TRACE: return "trace";
+  }
+  CHPLDEF_IMPOSSIBLE();
+  return nullptr;
+}
+
 bool Logger::isLogging() const {
   if (isLoggingToBuiltin()) return true;
   return !filePath_.empty() && stream_.is_open();

@@ -217,10 +217,7 @@ public:
 
     /** Default visitor body is trivial enough that we define it here. */
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-      virtual T visit(const class name__* req) { \
-        T ret; \
-        return ret; \
-      }
+      virtual T visit(const class name__* req) { T ret; return ret; }
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
 
@@ -232,8 +229,8 @@ public:
   };
 
   /** Dispatch a visitor using a message as the receiver. */
-  template <typename T, typename U>
-  inline T accept(Message::Visitor<U>& v) { return v.dispatch(*this); }
+  template <typename T>
+  inline T accept(Message::Visitor<T>& v) { return v.dispatch(*this); }
 
   /** Some messages can defer, but not sure which at this moment. */
   virtual bool defer() const { return false; }

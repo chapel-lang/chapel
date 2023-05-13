@@ -41,6 +41,8 @@
 */
 namespace chpldef {
 
+using OPT_TODO_TYPE = opt<int>;
+
 struct ProtocolType {
   virtual bool fromJson(const JsonValue& j, JsonPath p) = 0;
   virtual JsonValue toJson() const = 0;
@@ -103,9 +105,50 @@ struct InitializeParams : ProtocolType {
   opt<std::vector<WorkspaceFolder>> workspaceFolders;
 };
 
-/** TODO: Build this up in conjunction with 'ClientCapabilities'. */
+struct TextDocumentSyncOptions : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+};
+
+/** Some of the 'provider' queries have more advanced types we can swap
+    in to configure further -- see 'DeclarationRegistrationOptions'. */
 struct ServerCapabilities : ProtocolType {
   CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+
+  opt<std::string> positionEncoding;
+  OPT_TODO_TYPE textDocumentSync;
+  OPT_TODO_TYPE notebookDocumentSync;
+  OPT_TODO_TYPE completionProvider;
+  opt<bool> hoverProvider;
+  OPT_TODO_TYPE signatureHelpProvider;
+  opt<bool> declarationProvider;
+  opt<bool> definitionProvider;
+  opt<bool> typeDefinitionProvider;
+  opt<bool> implementationProvider;
+  opt<bool> referencesProvider;
+  opt<bool> documentHighlightProvider;
+  opt<bool> documentSymbolProvider;
+  opt<bool> codeActionProvider;
+  OPT_TODO_TYPE codeLensProvider;
+  OPT_TODO_TYPE documentLinkProvider;
+  opt<bool> colorProvider;
+  opt<bool> documentFormattingProvider;
+  opt<bool> documentRangeFormattingProvider;
+  OPT_TODO_TYPE documentOnTypeFormattingProvider;
+  opt<bool> renameProvider;
+  opt<bool> foldingRangeProvider;
+  OPT_TODO_TYPE executeCommandProvider;
+  opt<bool> selectionRangeProvider;
+  opt<bool> linkEditingRangeProvider;
+  opt<bool> callHierarchyProvider;
+  OPT_TODO_TYPE semanticTokensProvider;
+  opt<bool> monikerProvider;
+  opt<bool> typeHierarchyProvider;
+  opt<bool> inlineValueProvider;
+  opt<bool> inlayHintProvider;
+  OPT_TODO_TYPE diagnosticProvider;
+  opt<bool> workspaceSymbolProvider;
+  OPT_TODO_TYPE workspace;
+  OPT_TODO_TYPE experimental;
 };
 
 struct ServerInfo : ProtocolType {

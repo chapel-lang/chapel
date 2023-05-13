@@ -315,13 +315,12 @@ const char* Message::errorToString(Error error) {
   return nullptr;
 }
 
-namespace {
 template <typename T, typename X>
 static bool doHandleMessage(Server* ctx, T* msg, X& x) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
-  if (msg->status() != Message::PENDING) return true;
+  if (msg->status() != Message::PENDING) return false;
 
-  ctx->message("Handling request '%s' with ID '%s'\n",
+  ctx->message("Handling request '%s' with ID %s\n",
                msg->tagToString(),
                msg->idToString().c_str());
 
@@ -334,13 +333,9 @@ static bool doHandleMessage(Server* ctx, T* msg, X& x) {
     ctx->message("Request failed with code '%s'\n", cstr);
   }
 
-  if (ctx->logger().level() != Logger::OFF) {
-    auto str = x.result.toString();
-    ctx->message("Request completed with result %s\n", str.c_str());
-  }
+  ctx->message("Request '%s' complete...\n", msg->idToString().c_str());
 
-  return false;
-}
+  return true;
 }
 
 /** Call the request handler above and then mark completed or failed. */

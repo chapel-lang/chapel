@@ -49,7 +49,8 @@
 
 #define CHPLDEF_FATAL(server__, ...) \
   do { \
-    server__->message("FATAL [%s:%d]...\n", __FUNCTION__, __LINE__); \
+    server__->message("FATAL [%s:%s:%d]...\n", \
+                      __FILE__, __FUNCTION__, __LINE__); \
     server__->message(__VA_ARGS__); \
     std::abort(); \
   } while (0)

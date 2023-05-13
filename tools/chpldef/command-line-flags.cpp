@@ -30,14 +30,15 @@ Flag<std::string> logFile("log-file",
 
 Flag<Logger::Level> logLevel("log-level",
   llvm::cl::desc("Specify log verbosity level"),
-    llvm::cl::values(
-      clEnumValN(Logger::MESSAGES, "messages", "Log messages only"),
-      clEnumValN(Logger::VERBOSE, "verbose", "Messages and details"),
-      clEnumValN(Logger::TRACE, "trace", "Full trace of execution")));
+  llvm::cl::init(Logger::OFF),
+  llvm::cl::values(
+    clEnumValN(Logger::MESSAGES, "messages", "Log messages only"),
+    clEnumValN(Logger::VERBOSE, "verbose", "Messages and details"),
+    clEnumValN(Logger::TRACE, "trace", "Full trace of execution")));
 
 template <typename T>
-static bool isFlagEquivalent(const llvm::cl::opt<T>& f1,
-                             const llvm::cl::Option* f2) {
+static bool isSameMemoryLocation(const llvm::cl::opt<T>& f1,
+                                 const llvm::cl::Option* f2) {
   static_assert(std::is_base_of<llvm::cl::Option, llvm::cl::opt<T>>::value);
   auto ptr = static_cast<const llvm::cl::Option*>(&f1);
   return ptr == f2;
@@ -45,8 +46,8 @@ static bool isFlagEquivalent(const llvm::cl::opt<T>& f1,
 
 // TODO: Get these things in an array so we don't have O(n) code?
 static bool isChpldefRegisteredFlag(const llvm::cl::Option* f) {
-  if (isFlagEquivalent(logFile, f)) return true;
-  if (isFlagEquivalent(logLevel, f)) return true;
+  if (isSameMemoryLocation(logFile, f)) return true;
+  if (isSameMemoryLocation(logLevel, f)) return true;
   return false;
 }
 

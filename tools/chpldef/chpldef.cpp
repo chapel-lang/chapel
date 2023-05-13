@@ -49,7 +49,9 @@ int main(int argc, char** argv) {
   // Flush every log message immediately to avoid losing info on crash.
   logger.setFlushImmediately(true);
 
-  ctx->message("Log beginning on: %s\n", logger.filePath().c_str());
+  ctx->message("Logging to '%s' with level '%s'\n",
+               logger.filePath().c_str(),
+               logger.levelToString());
 
   int run = 1;
   while (run) {
@@ -89,23 +91,23 @@ int main(int argc, char** argv) {
     CHPL_ASSERT(msg->status() == Message::PENDING);
     CHPL_ASSERT(!msg->isOutbound());
 
-    auto optRsp = Message::handle(ctx, msg.get());
+    // We have an immediate response, so send it.
+    if (auto optRsp = Message::handle(ctx, msg.get())) {
+      auto pack = optRsp->pack();
+      if (logger.level() == Logger::TRACE) {
+        auto str = jsonToString(pack);
+        ctx->trace("Outgoing JSON is: %s\n", str.c_str());
+      }
 
-    // Always expect an immediate response for now.
-    if (!optRsp && !msg->isNotification()) {
-      CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
+      ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));
+      CHPL_ASSERT(ok);
+
+    // Response was delayed.
+    } else {
+      if (!msg->isNotification()) {
+        CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
+      }
     }
-
-    // Send the response.
-    auto& rsp = *optRsp;
-
-    if (logger.level() == Logger::TRACE) {
-      auto str = jsonToString(rsp.data());
-      ctx->trace("Outgoing JSON is: %s\n", str.c_str());
-    }
-
-    ok = Transport::sendJsonBlocking(ctx, std::cout, rsp.pack());
-    CHPL_ASSERT(ok);
 
     // Flush the log in case something goes wrong.
     logger.flush();
