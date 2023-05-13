@@ -1,4 +1,4 @@
---use-io-serializers -sformat=FormatKind.default # lists.default.good
---use-io-serializers -sformat=FormatKind.json # lists.json.good
---use-io-serializers -sformat=FormatKind.little # lists.little.good
---use-io-serializers -sformat=FormatKind.syntax # lists.syntax.good
+-sformat=FormatKind.default # lists.default.good
+-sformat=FormatKind.json # lists.json.good
+-sformat=FormatKind.little # lists.little.good
+-sformat=FormatKind.syntax # lists.syntax.good

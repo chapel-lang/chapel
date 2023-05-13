@@ -641,8 +641,13 @@ module DefaultAssociative {
       }
     }
 
+    proc _usingSerializers(f) param : bool {
+      if f.writing then return f.serializerType != nothing;
+      else return f.deserializerType != nothing;
+    }
+
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
-    where chpl_useIOSerializers && !_isDefaultDeser(f) {
+    where _usingSerializers(f) && !_isDefaultDeser(f) {
       ref fmt = if f.writing then f.serializer else f.deserializer;
 
       if f.writing then
@@ -676,7 +681,7 @@ module DefaultAssociative {
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
-    where chpl_useIOSerializers && _isDefaultDeser(f) {
+    where _isDefaultDeser(f) {
       ref fmt = if f.writing then f.serializer else f.deserializer;
 
       if f.writing {

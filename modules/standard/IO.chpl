@@ -2426,14 +2426,16 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
+config param useIOSerializers = false;
+
 private proc defaultSerializeType(param writing : bool) type {
-  if !chpl_useIOSerializers then return nothing;
+  if !useIOSerializers then return nothing;
   if writing then return DefaultSerializer;
   else return DefaultDeserializer;
 }
 
 private proc defaultSerializeVal(param writing : bool) {
-  if !chpl_useIOSerializers then return none;
+  if !useIOSerializers then return none;
   if writing then return new DefaultSerializer();
   else return new DefaultDeserializer();
 }
@@ -5598,7 +5600,7 @@ proc fileReader.readIt(ref x) throws {
   on this._home {
     try! this.lock(); defer { this.unlock(); }
 
-    if chpl_useIOSerializers {
+    if deserializerType != nothing {
       _deserializeOne(x, origLocale);
     } else {
       _readOne(kind, x, origLocale);
@@ -6163,7 +6165,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      if chpl_useIOSerializers {
+      if deserializerType != nothing {
         _deserializeOne(args[i], origLocale);
       } else {
         _readOne(kind, args[i], origLocale);
@@ -6223,7 +6225,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
       this._set_styleInternal(style);
 
       for param i in 0..k-1 {
-        if chpl_useIOSerializers {
+        if deserializerType != nothing {
           _deserializeOne(args[i], origLocale);
         } else {
           _readOne(kind, args[i], origLocale);
@@ -8449,7 +8451,7 @@ proc fileReader.read(type t) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    if chpl_useIOSerializers {
+    if deserializerType != nothing {
       __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
       pragma "no auto destroy"
@@ -8550,7 +8552,7 @@ inline proc fileWriter.write(const args ...?k) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      if chpl_useIOSerializers {
+      if serializerType != nothing {
         this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(kind, args(i), origLocale);
@@ -8603,7 +8605,7 @@ proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
     }
 
     for param i in 0..k-1 {
-      if chpl_useIOSerializers {
+      if serializerType != nothing {
         this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(iokind.dynamic, args(i), origLocale);
@@ -10779,7 +10781,7 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
-        if chpl_useIOSerializers {
+        if serializerType != nothing {
           try _serializeOne(arg, origLocale);
         } else {
           try _writeOne(iokind.dynamic, arg, origLocale);
@@ -11117,7 +11119,7 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
-              if chpl_useIOSerializers {
+              if deserializerType != nothing {
                 try _deserializeOne(args(i), origLocale);
               } else {
                 try _readOne(iokind.dynamic, args(i), origLocale);

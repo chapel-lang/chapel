@@ -1728,8 +1728,13 @@ module DefaultRectangular {
       return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
   }
 
+  proc _supportsSerializers(f) param : bool {
+    if f.writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
-  where chpl_useIOSerializers {
+  where _supportsSerializers(f) {
     if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
        _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
        arr.isDataContiguous(dom) {
