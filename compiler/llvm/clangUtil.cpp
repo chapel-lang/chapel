@@ -2173,6 +2173,13 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
 }
 #endif
 
+void simplifyFunction(llvm::Function* func) {
+  // Run per-function optimization / simplification
+  // to potentially keep the fn in cache while it is simplified.
+  // Big optimizations happen later.
+  gGenInfo->FPM_postgen->run(*func);
+}
+
 // This has code based on clang's EmitAssemblyHelper::CreatePasses
 // in BackendUtil.cpp.
 static
