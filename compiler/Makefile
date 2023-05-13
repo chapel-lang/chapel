@@ -210,6 +210,9 @@ $(CHPLDEF): FORCE $(CHPLDEF_OBJS) | $(CHPL_BIN_DIR) $(CHPL)
 
 chpldef: FORCE $(CHPLDEF)
 
+chpldef-fast: FORCE
+	@cd $(COMPILER_BUILD) && $(MAKE) chpldef
+
 $(COMPILER_BUILD):
 	mkdir -p $@
 

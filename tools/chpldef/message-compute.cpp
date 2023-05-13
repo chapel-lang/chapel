@@ -26,9 +26,18 @@
     source file with a name that matches the message name. */
 namespace chpldef {
 
+static TextDocumentSyncOptions
+configureTextDocumentSyncOptions(Server* ctx) {
+  TextDocumentSyncOptions ret;
+  ret.openClose = true;
+  ret.change = TextDocumentSyncOptions::Full;   /** TODO: Incremental? */
+  return ret;
+}
+
 static void
 doConfigureStaticCapabilities(Server* ctx, ServerCapabilities& x) {
   x.positionEncoding = "utf-16";
+  x.textDocumentSync = configureTextDocumentSyncOptions(ctx);
   x.hoverProvider = false;
   x.declarationProvider = false;
   x.definitionProvider = false;
@@ -66,7 +75,7 @@ Initialize::compute(Server* ctx, const Params& p) {
   // Set the log verbosity level if it was requested.
   if (auto trace = p.trace) {
     auto level = trace->level;
-    ctx->message("Client requested log level: '%s'\n",
+    ctx->message("Client requested log level '%s'\n",
                  Logger::levelToString(level));
     auto &logger = ctx->logger();
     if (level < logger.level()) {
@@ -106,6 +115,12 @@ Shutdown::compute(Server* ctx, const Params& p) {
 Exit::ComputedResult
 Exit::compute(Server* ctx, const Params& p) {
   CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
+  return {};
+}
+
+DidOpen::ComputedResult
+DidOpen::compute(Server* ctx, const Params& p) {
+  CHPLDEF_TODO();
   return {};
 }
 
