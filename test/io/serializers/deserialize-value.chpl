@@ -30,16 +30,16 @@ proc main() {
   var f = openMemFile();
   writeln("r = ", r);
   {
-    f.writer().write(42, serializer=FormatWriter);
+    f.writer(serializer=FormatWriter).write(42);
   }
   {
-    f.reader().read(r, deserializer=FormatReader);
+    f.reader(deserializer=FormatReader).read(r);
   }
   writeln("r = ", r);
 
   var A : [1..10] int = 1..10;
   {
-    f.writer().write(A, serializer=FormatWriter);
+    f.writer(serializer=FormatWriter).write(A);
     A = 0;
   }
   {

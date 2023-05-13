@@ -6199,12 +6199,6 @@ inline proc fileReader.read(ref args ...?k):bool throws {
   return true;
 }
 
-pragma "no doc"
-inline proc fileReader.read(ref args ...?k, in deserializer: ?dt): bool throws
-where __isSerializer(this, deserializer) {
-  return this.withDeserializer(deserializer).read((...args));
-}
-
 @unstable("read with a style argument is unstable")
 proc fileReader.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
@@ -8395,12 +8389,6 @@ proc fileReader.readln(ref args ...?k):bool throws {
   return try this.read((...args), nl);
 }
 
-pragma "no doc"
-inline proc fileReader.readln(ref args ...?k, in deserializer: ?dt): bool throws
-where __isSerializer(this, deserializer) {
-  return this.withDeserializer(deserializer).read((...args));
-}
-
 @unstable("readln with a style argument is unstable")
 proc fileReader.readln(ref args ...?k,
                        style:iostyle):bool throws {
@@ -8462,12 +8450,6 @@ proc fileReader.read(type t) throws {
   }
 
   return ret;
-}
-
-pragma "no doc"
-inline proc fileReader.read(type t, in deserializer: ?dt) throws
-where __isSerializer(this, deserializer) {
-  return this.withDeserializer(deserializer).read(t);
 }
 
 /*
@@ -8561,30 +8543,6 @@ inline proc fileWriter.write(const args ...?k) throws {
   }
 }
 
-pragma "fn exempt instantiation limit"
-proc __isSerializer(writer, ser) param : bool {
-  if isRecordType(ser.type) {
-    if (writer.writing) {
-      pragma "no init"
-      var alias: fileWriter(writer.kind, false, ser.type);
-      return canResolveMethod(ser, "serializeValue", alias, 1);
-    } else {
-      pragma "no init"
-      var alias: fileReader(writer.kind, false, ser.type);
-      return __primitive("method call and fn resolves", ser, "deserializeType",
-                         alias, int);
-    }
-  } else {
-    return false;
-  }
-}
-
-pragma "no doc"
-inline proc fileWriter.write(const args...?k, serializer:?st) throws
-where __isSerializer(this, serializer) {
-  this.withSerializer(serializer).write((...args));
-}
-
 @unstable("write with a style argument is unstable")
 proc fileWriter.write(const args ...?k, style:iostyle) throws {
   this.writeHelper((...args), style: iostyleInternal);
@@ -8640,12 +8598,6 @@ proc fileWriter.writeln() throws {
  */
 proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
-}
-
-pragma "no doc"
-inline proc fileWriter.writeln(const args...?k, serializer:?st) throws
-where __isSerializer(this, serializer) {
-  this.withSerializer(serializer).writeln((...args));
 }
 
 @unstable("writeln with a style argument is unstable")
@@ -8842,12 +8794,6 @@ proc read(ref args ...?n):bool throws {
 /* Equivalent to ``stdin.read``. See :proc:`fileReader.read` for types */
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
-}
-
-pragma "no doc"
-proc read(type t ...?numTypes, in deserializer: ?dt) throws
-where __isSerializer(stdin, deserializer) {
-  return stdin.withDeserializer(deserializer).read((...t));
 }
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */

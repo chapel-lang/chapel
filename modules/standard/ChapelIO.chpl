@@ -882,17 +882,6 @@ module ChapelIO {
     try! stdout.writeln((...args));
   }
 
-  pragma "no doc"
-  proc write(const args ...?n, serializer:?st)
-  where IO.__isSerializer(stdout, serializer) {
-    try! stdout.write((...args), serializer=serializer);
-  }
-  pragma "no doc"
-  proc writeln(const args ...?n, serializer:?st)
-  where IO.__isSerializer(stdout, serializer) {
-    try! stdout.writeln((...args), serializer=serializer);
-  }
-
   // documented in the arguments version.
   @chpldoc.nodoc
   proc writeln() {
