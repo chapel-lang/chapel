@@ -21,13 +21,30 @@
 #include "./protocol-types.h"
 #include "./misc.h"
 #include "llvm/Support/JSON.h"
+#include <cstdlib>
+#include <iostream>
 
 /** Helper to make populating JSON object fields less painful. */
 #define FIELD_(name__) { #name__, name__ }
 
+/** Helper to make reading JSON object fields less painful. */
+#define MAP_(m__, name__) (m__.map(#name__, name__))
+
 namespace chpldef {
 
-std::string ProtocolType::toString() const {
+bool BaseProtocolType::fromJson(const JsonValue& j, JsonPath p) {
+  std::cerr << "Called 'BaseProtocolTypefromJson'!" << std::endl;
+  std::abort();
+  return false;
+}
+
+JsonValue BaseProtocolType::toJson() const {
+  std::cerr << "Called 'BaseProtocolType::toJson'!" << std::endl;
+  std::abort();
+  return nullptr;
+}
+
+std::string BaseProtocolType::toString() const {
   auto ret = jsonToString(toJson());
   return ret;
 }
@@ -37,8 +54,7 @@ bool EmptyProtocolType::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue EmptyProtocolType::toJson() const {
-  JsonValue ret(nullptr);
-  return ret;
+  return nullptr;
 }
 
 bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
@@ -49,27 +65,12 @@ bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
   return true;
 }
 
-JsonValue ClientInfo::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool ChpldefInit::fromJson(const JsonValue& j, JsonPath p) {
   return true;
 }
 
-JsonValue ChpldefInit::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool ClientCapabilities::fromJson(const JsonValue& j, JsonPath p) {
   return true;
-}
-
-JsonValue ClientCapabilities::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
 }
 
 bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
@@ -84,16 +85,6 @@ bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
   m.map("capabilities", capabilities);
   m.map("trace", trace);
   m.map("workspaceFolders", workspaceFolders);
-  return true;
-}
-
-JsonValue InitializeParams::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
-bool InitializeResult::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
   return true;
 }
 
@@ -121,34 +112,14 @@ bool TraceLevel::fromJson(const JsonValue& j, JsonPath p) {
   return false;
 }
 
-JsonValue TraceLevel::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
 bool WorkspaceFolder::fromJson(const JsonValue& j, JsonPath p) {
   CHPLDEF_TODO();
-  return true;
-}
-
-JsonValue WorkspaceFolder::toJson() const {
-  CHPLDEF_IMPOSSIBLE();
-  return nullptr;
-}
-
-bool ServerInfo::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
   return true;
 }
 
 JsonValue ServerInfo::toJson() const {
   JsonObject ret { FIELD_(name), FIELD_(version) };
   return ret;
-}
-
-bool ServerCapabilities::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_IMPOSSIBLE();
-  return true;
 }
 
 JsonValue ServerCapabilities::toJson() const {
@@ -190,6 +161,28 @@ JsonValue ServerCapabilities::toJson() const {
     FIELD_(experimental)
   };
   return ret;
+}
+
+JsonValue TextDocumentSyncOptions::toJson() const {
+  JsonObject ret;
+  if (openClose) ret["openClose"] = *openClose;
+  if (change) ret["change"] = static_cast<int>(*change);
+  return ret;
+}
+
+bool TextDocumentItem::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  bool ret = m;
+  ret &= MAP_(m, uri);
+  ret &= MAP_(m, languageId);
+  ret &= MAP_(m, version);
+  ret &= MAP_(m, text);
+  return ret;
+}
+
+bool DidOpenParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
 }
 
 } // end namespace 'chpldef'

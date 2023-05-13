@@ -352,10 +352,10 @@ public:
         : Request(Message::name__, std::move(id), error, \
                   std::move(note), \
                   std::move(p)) { \
-      static_assert(std::is_base_of<ProtocolType, Params>::value, \
-                    "Must be derived from 'ProtocolType'"); \
-      static_assert(std::is_base_of<ProtocolType, Result>::value, \
-                    "Must be derived from 'ProtocolType'"); \
+      static_assert(std::is_base_of<BaseProtocolType, Params>::value, \
+                    "Must be derived from 'BaseProtocolType'"); \
+      static_assert(std::is_base_of<BaseProtocolType, Result>::value, \
+                    "Must be derived from 'BaseProtocolType'"); \
     } \
   public: \
     virtual ~name__() = default; \

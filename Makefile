@@ -135,6 +135,9 @@ chpldef: compiler third-party-chpldef-venv
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	cd compiler && $(MAKE) chpldef
 
+chpldef-fast:
+	cd compiler && $(MAKE) chpldef-fast
+
 always-build-test-venv: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_TEST_VENV" ]; then \
 	$(MAKE) test-venv; \
