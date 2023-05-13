@@ -60,10 +60,12 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
+#include "llvm/Passes/OptimizationLevel.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -2130,11 +2132,39 @@ void finishCodegenLLVM() {
   setupForGlobalToWide();
 
   // Finish up our cleanup optimizers...
-  info->FPM_postgen->doFinalization();
+  if (info->FPM_postgen) {
+    info->FPM_postgen->doFinalization();
 
-  // We don't need our postgen function pass manager anymore.
-  delete info->FPM_postgen;
-  info->FPM_postgen = NULL;
+    // We don't need our postgen function pass manager anymore.
+    delete info->FPM_postgen;
+    info->FPM_postgen = nullptr;
+  }
+
+  // clean up new pass manager values
+  if (info->FunctionSimplificationPM) {
+    delete info->FunctionSimplificationPM;
+    info->FunctionSimplificationPM = nullptr;
+  }
+
+  if (info->LAM) {
+    delete info->LAM;
+    info->LAM = nullptr;
+  }
+
+  if (info->FAM) {
+    delete info->FAM;
+    info->FAM = nullptr;
+  }
+
+  if (info->CGAM) {
+    delete info->CGAM;
+    info->CGAM = nullptr;
+  }
+
+  if (info->MAM) {
+    delete info->MAM;
+    info->MAM = nullptr;
+  }
 
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
@@ -2177,8 +2207,35 @@ void simplifyFunction(llvm::Function* func) {
   // Run per-function optimization / simplification
   // to potentially keep the fn in cache while it is simplified.
   // Big optimizations happen later.
+#ifdef LLVM_USE_OLD_PASSES
   gGenInfo->FPM_postgen->run(*func);
+#else
+  if (gGenInfo->FunctionSimplificationPM) {
+    gGenInfo->FunctionSimplificationPM->run(*func, *gGenInfo->FAM);
+  }
+#endif
 }
+
+#ifndef LLVM_USE_OLD_PASSES
+// if optLevel is provided, use that; otherwise use the value
+// from clangInfo->codegenOptions.
+static llvm::OptimizationLevel translateOptLevel(int optLevel=-1) {
+  if (optLevel < 0) {
+    ClangInfo* clangInfo = gGenInfo->clangInfo;
+    INT_ASSERT(clangInfo);
+    clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
+    optLevel = CodeGenOpts.OptimizationLevel;
+  }
+
+  switch (optLevel) {
+    case 0: return OptimizationLevel::O0;
+    case 1: return OptimizationLevel::O1;
+    case 2: return OptimizationLevel::O2;
+    case 3: return OptimizationLevel::O3;
+    default: return OptimizationLevel::O0;
+  }
+}
+#endif
 
 // This has code based on clang's EmitAssemblyHelper::CreatePasses
 // in BackendUtil.cpp.
@@ -2264,9 +2321,11 @@ void prepareCodegenLLVM()
   configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
-  info->FPM_postgen = fpm;
-
-  info->FPM_postgen->doInitialization();
+  // Even when using the new pass manager,
+  // we run doInitialization with the legacy passes to make sure to
+  // update the module's DataLayout based on the target information.
+  // TODO: there is probably a nicer way to do this using the new pass manager
+  fpm->doInitialization();
 
   // Set the floating point optimization level
   // see also code setting targetOptions.UnsafeFPMath etc
@@ -2289,6 +2348,37 @@ void prepareCodegenLLVM()
   }
 
   checkAdjustedDataLayout();
+
+#ifdef LLVM_USE_OLD_PASSES
+  info->FPM_postgen = fpm;
+#else
+  // if not using the old optimization pipeline, we didn't save
+  // fpm in info, so need to delete it now.
+  delete fpm;
+
+  // if using the new optimization pipeline, set up the various
+  // AnalysisManagers
+  info->LAM = new LoopAnalysisManager();
+  info->FAM = new FunctionAnalysisManager();
+  info->CGAM = new CGSCCAnalysisManager();
+  info->MAM = new ModuleAnalysisManager;
+
+  // Construct a function simplification pass manager
+  PassBuilder PB;
+
+  // Register all the basic analyses with the managers.
+  PB.registerModuleAnalyses(*info->MAM);
+  PB.registerCGSCCAnalyses(*info->CGAM);
+  PB.registerFunctionAnalyses(*info->FAM);
+  PB.registerLoopAnalyses(*info->LAM);
+  PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
+
+  auto lvl = translateOptLevel();
+  if (lvl != OptimizationLevel::O0) {
+    info->FunctionSimplificationPM = new FunctionPassManager(
+        PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+  }
+#endif
 }
 
 #if HAVE_LLVM_VER >= 140

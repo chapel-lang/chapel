@@ -2811,9 +2811,7 @@ GenInfo::GenInfo()
              noAliasScopes(),
              noAliasScopeLists(),
              noAliasLists(),
-             globalToWideInfo(),
-             FPM_postgen(nullptr),
-             clangInfo(nullptr)
+             globalToWideInfo()
 #endif
 {
 #ifdef LLVM_NO_OPAQUE_POINTERS
