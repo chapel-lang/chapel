@@ -30,6 +30,10 @@
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;  \
   virtual JsonValue toJson() const override;
 
+/** Use this to declare protocol types that are empty. */
+#define CHPLDEF_PROTOCOL_EMPTY_TYPE(name__) \
+  struct name__ : EmptyProtocolType {}
+
 /** This header contains types which help form the Microsoft language server
     protocol. The types attempt to follow the specification as faithfully
     as possible, but liberty is taken in cases where definitions are too
@@ -50,6 +54,12 @@ struct ProtocolType {
   /** By default, convert to JSON and then print the JSON. */
   virtual std::string toString() const;
   virtual ~ProtocolType() = default;
+};
+
+struct EmptyProtocolType : ProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  virtual ~EmptyProtocolType() = default;
 };
 
 /** Information about the client. */
@@ -164,6 +174,9 @@ struct InitializeResult : ProtocolType {
   ServerCapabilities capabilities;
   opt<ServerInfo> serverInfo;
 };
+
+CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedResult);
 
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
 template <typename T>

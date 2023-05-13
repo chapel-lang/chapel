@@ -32,6 +32,15 @@ std::string ProtocolType::toString() const {
   return ret;
 }
 
+bool EmptyProtocolType::fromJson(const JsonValue& j, JsonPath p) {
+  return true;
+}
+
+JsonValue EmptyProtocolType::toJson() const {
+  JsonValue ret(nullptr);
+  return ret;
+}
+
 bool ClientInfo::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
   if (!m) return false;

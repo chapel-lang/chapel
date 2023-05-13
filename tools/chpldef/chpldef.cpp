@@ -76,7 +76,7 @@ int main(int argc, char** argv) {
     CHPL_ASSERT(ok);
 
     if (logger.level() == Logger::TRACE) {
-      ctx->trace("Incoming JSON is: %s\n", jsonToString(json).c_str());
+      ctx->trace("Incoming JSON is %s\n", jsonToString(json).c_str());
     }
 
     // Create a message from the incoming JSON...
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
       auto pack = optRsp->pack();
       if (logger.level() == Logger::TRACE) {
         auto str = jsonToString(pack);
-        ctx->trace("Outgoing JSON is: %s\n", str.c_str());
+        ctx->trace("Outgoing JSON is %s\n", str.c_str());
       }
 
       ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));

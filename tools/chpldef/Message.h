@@ -101,6 +101,7 @@ protected:
         error_(error),
         note_(std::move(note)) {
     CHPL_ASSERT(isIdValid(id_));
+    if (id.kind() == JsonValue::Null) CHPL_ASSERT(isNotification());
   }
 
   inline void markProgressing() { status_ = Message::PROGRESSING; }
@@ -142,7 +143,7 @@ public:
   static const char* errorToString(Error error);
 
   /** Print this message's error code as a string. */
-  inline const char* errorToString() const  { return errorToString(error_); }
+  inline const char* errorToString() const { return errorToString(error_); }
 
   /** Get the numeric value of an error code. */
   static inline int64_t errorToInt(Error e) {
@@ -167,8 +168,11 @@ public:
   /** If 'true', the server is sending this message to the client. */
   bool isOutbound() const;
 
+  /** If 'true', then the Tag 'tag' does not need a response. */
+  static bool isNotification(Tag tag);
+
   /** If 'true', then this message does not need a response. */
-  bool isNotification() const;
+  inline bool isNotification() const { return isNotification(tag_); }
 
   /** Returns the expected JSON-RPC method name for this message. */
   const char* jsonRpcMethodName() const;

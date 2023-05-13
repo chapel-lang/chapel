@@ -83,4 +83,8 @@ Initialize::ComputedResult Initialize::compute(Server* ctx) {
   return ret;
 }
 
+Initialized::ComputedResult Initialized::compute(Server* ctx) {
+  return {};
+}
+
 } // end namespace 'chpldef'
