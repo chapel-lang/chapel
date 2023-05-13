@@ -872,6 +872,10 @@ module ChapelIO {
     serializer.startClass(writer, "object", 0);
     serializer.endClass(writer);
   }
+  proc object.deserialize(reader, ref deserializer) throws {
+    deserializer.startClass(reader, "object", 0);
+    deserializer.endClass(reader);
+  }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */
   proc write(const args ...?n) {

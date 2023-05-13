@@ -300,6 +300,7 @@ extern size_t fDynoBreakOnHash;
 
 extern bool fUseIOSerializers;
 extern bool fNoIOSerializeWriteThis;
+extern bool fNoIODeserializeReadThis;
 
 namespace chpl {
   class Context;
