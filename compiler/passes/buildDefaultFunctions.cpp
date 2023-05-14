@@ -1794,6 +1794,13 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const c
   fn->insertFormalAtTail(fn->_this);
   fn->insertFormalAtTail(fileArg);
 
+  // Create the arg here so that caller doesn't have to.
+  if (isSerialize) {
+    CallExpr* initExpr = new CallExpr(".", fileArg, new_StringSymbol("serializerType"));
+    ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtUnknown, initExpr);
+    fn->insertFormalAtTail(serializer);
+  }
+
   fn->retType = dtVoid;
 
   DefExpr* def = new DefExpr(fn);
@@ -1924,10 +1931,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (makeSerialize && !hasSerialize && ct != dtObject) {
     ArgSymbol* fileArg = NULL;
     FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "serialize");
-
-    CallExpr* initExpr = new CallExpr(".", fileArg, new_StringSymbol("serializerType"));
-    ArgSymbol* serializer = new ArgSymbol(INTENT_REF, "serializer", dtUnknown, initExpr);
-    fn->insertFormalAtTail(serializer);
+    ArgSymbol* serializer = fn->getFormal(fn->numFormals());
 
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
