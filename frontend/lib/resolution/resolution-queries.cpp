@@ -3575,6 +3575,37 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+static const QualifiedType&
+computeCustomInferTypeQuery(Context* context,
+                            const CompositeType* t,
+                            const Scope* inScope,
+                            const PoiScope* inPoiScope) {
+  QUERY_BEGIN(computeCustomInferTypeQuery, context, t, inScope, inPoiScope);
+  QualifiedType ret;
+
+  auto name = UniqueString::get(context, "chpl__inferCopyType");
+  QualifiedType calledType = QualifiedType(QualifiedType::CONST_REF, t);
+  auto receiver = CallInfoActual(calledType, USTR("this"));
+  std::vector<CallInfoActual> actuals = {std::move(receiver)};
+
+  auto ci = CallInfo(name, calledType, true, false, false, std::move(actuals));
+  auto rr = resolveGeneratedCall(context, nullptr, ci, inScope, inPoiScope);
+  if (rr.mostSpecific().only() != nullptr) {
+    ret = rr.exprType();
+  } else {
+    context->error(t->id(), "'chpl__inferCopyType' is unimplemented");
+  }
+
+  return QUERY_END(ret);
+}
+
+const Type* computeCustomInferType(Context* context,
+                                   const CompositeType* t,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope) {
+  return computeCustomInferTypeQuery(context, t, inScope, inPoiScope).type();
+}
+
 
 
 } // end namespace resolution

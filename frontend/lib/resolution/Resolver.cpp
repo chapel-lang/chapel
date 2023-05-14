@@ -874,10 +874,27 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
-    // init but no declared type, so use init type
-    typePtr = initExprType.type();
-    if (inferParam) {
-      paramPtr = initExprType.param();
+    bool infersCustomType = false;
+    if (auto rec = initExprType.type()->getCompositeType()) {
+      if (rec->id().isEmpty() == false) {
+        if (const auto node = parsing::idToAst(context, rec->id())) {
+          if (const auto attr = node->attributeGroup()) {
+            if (attr->hasPragma(PRAGMA_INFER_CUSTOM_TYPE)) {
+              infersCustomType = true;
+            }
+          }
+        }
+      }
+    }
+
+    if (infersCustomType) {
+      typePtr = computeCustomInferType(context, initExprType.type()->getCompositeType(), scopeStack.back(), poiScope);
+    } else {
+      // init but no declared type, so use init type
+      typePtr = initExprType.type();
+      if (inferParam) {
+        paramPtr = initExprType.param();
+      }
     }
   } else {
     // otherwise both declaredType and initExprType are provided.
