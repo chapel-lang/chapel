@@ -54,6 +54,8 @@ int main(int argc, char** argv) {
                logger.levelToString());
 
   int run = 1;
+  int ret = 0;
+
   while (run) {
     ctx->message("Server awaiting message...\n");
 
@@ -91,6 +93,11 @@ int main(int argc, char** argv) {
     CHPL_ASSERT(msg->status() == Message::PENDING);
     CHPL_ASSERT(!msg->isOutbound());
 
+    if (msg->tag() == Message::Exit) {
+      CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
+      run = 0;
+    }
+
     // We have an immediate response, so send it.
     if (auto optRsp = Message::handle(ctx, msg.get())) {
       auto pack = optRsp->pack();
@@ -113,5 +120,8 @@ int main(int argc, char** argv) {
     logger.flush();
   }
 
-  return 0;
+  ctx->message("Server exiting with code '%d'\n", ret);
+  logger.flush();
+
+  return ret;
 }

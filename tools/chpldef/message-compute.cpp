@@ -60,7 +60,8 @@ static ServerInfo configureServerInfo(Server* ctx) {
   return ret;
 }
 
-Initialize::ComputedResult Initialize::compute(Server* ctx) {
+Initialize::ComputedResult
+Initialize::compute(Server* ctx, const Params& p) {
 
   // Set the log verbosity level if it was requested.
   if (auto trace = p.trace) {
@@ -75,15 +76,36 @@ Initialize::ComputedResult Initialize::compute(Server* ctx) {
     }
   }
 
+  // Set the server to the 'INIT' state.
+  CHPL_ASSERT(ctx->state() == Server::UNINIT);
+  ctx->setState(Server::INIT);
+
   Result ret;
 
   doConfigureStaticCapabilities(ctx, ret.capabilities);
+
   ret.serverInfo = configureServerInfo(ctx);
 
   return ret;
 }
 
-Initialized::ComputedResult Initialized::compute(Server* ctx) {
+Initialized::ComputedResult
+Initialized::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::INIT);
+  ctx->setState(Server::READY);
+  return {};
+}
+
+Shutdown::ComputedResult
+Shutdown::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::READY);
+  ctx->setState(Server::SHUTDOWN);
+  return {};
+}
+
+Exit::ComputedResult
+Exit::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
   return {};
 }
 

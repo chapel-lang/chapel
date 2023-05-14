@@ -299,13 +299,13 @@ protected:
                                std::string* note);
 
   /** Use in message handlers to return failure. */
-  inline ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
-                             std::string note=std::string()) const {
+  static ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
+                             std::string note=std::string()) {
     return { false, error, std::move(note), {} };
   }
 
   /** Use in message handlers to delay. */
-  inline ComputedResult delay() const {
+  static ComputedResult delay() {
     return { true, Message::OK, {}, {} };
   }
 
@@ -318,11 +318,11 @@ public:
       requests from server to client. */
   virtual JsonValue pack() const override;
 
-  /** Compute the answer to this request, doing meaningful work. */
-  virtual ComputedResult compute(Server* ctx) = 0;
-
   /** Compute results and save for later use. */
   virtual void handle(Server* ctx) override = 0;
+
+  /** Get the parameters of this request if they were deserialized. */
+  const Params* params() const;
 
   /** If computed, get the result of this request. */
   inline const Result* result() const {
@@ -362,7 +362,7 @@ public:
     static chpl::owned<BaseRequest> \
     create(JsonValue id, const JsonValue& j); \
     virtual void handle(Server* ctx) override; \
-    virtual ComputedResult compute(Server* ctx) override; \
+    static ComputedResult compute(Server* ctx, const Params& p); \
   };
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE

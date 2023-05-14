@@ -178,6 +178,12 @@ struct InitializeResult : ProtocolType {
 CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedParams);
 CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedResult);
 
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownResult);
+
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitResult);
+
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
 template <typename T>
 CHPLDEF_ENABLE_IF_DERIVED(T, ProtocolType, bool)

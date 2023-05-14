@@ -329,24 +329,26 @@ const char* Message::errorToString(Error error) {
   return nullptr;
 }
 
-template <typename T, typename X>
-static bool doHandleNotification(Server* ctx, T* msg, X& x) {
+template <typename M, typename P, typename R>
+static bool
+doHandleNotification(Server* ctx, M* msg, const P& p, R& r) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
   if (msg->status() != Message::PENDING) return false;
 
   ctx->message("Handling notification '%s'\n", msg->tagToString());
 
-  std::ignore = msg->compute(ctx);
+  r = M::compute(ctx, p);
 
-  if (x.isProgressingCallAgain) CHPLDEF_TODO();
+  if (r.isProgressingCallAgain) CHPLDEF_TODO();
 
   ctx->message("Notification complete...\n");
 
   return true;
 }
 
-template <typename T, typename X>
-static bool doHandleRequest(Server* ctx, T* msg, X& x) {
+template <typename M, typename P, typename R>
+static bool
+doHandleRequest(Server* ctx, M* msg, const P& p, R& r) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
   if (msg->status() != Message::PENDING) return false;
 
@@ -354,13 +356,14 @@ static bool doHandleRequest(Server* ctx, T* msg, X& x) {
                msg->tagToString(),
                msg->idToString().c_str());
 
-  x = msg->compute(ctx);
+  r = M::compute(ctx, p);
 
-  if (x.isProgressingCallAgain) CHPLDEF_TODO();
+  if (r.isProgressingCallAgain) CHPLDEF_TODO();
 
-  if (x.error != Message::OK) {
-    auto cstr = Message::errorToString(x.error);
+  if (r.error != Message::OK) {
+    auto cstr = Message::errorToString(r.error);
     ctx->message("Request failed with code '%s'\n", cstr);
+    return false;
   }
 
   ctx->message("Request '%s' complete...\n", msg->idToString().c_str());
@@ -368,21 +371,22 @@ static bool doHandleRequest(Server* ctx, T* msg, X& x) {
   return true;
 }
 
-template <typename T, typename X>
-static bool doHandleMessage(Server* ctx, T* msg, X& x) {
-  if (msg->isNotification()) return doHandleNotification(ctx, msg, x);
-  return doHandleRequest(ctx, msg, x);
+template <typename M, typename P, typename R>
+static bool
+doHandleMessage(Server* ctx, M* msg, const P& p, R& r) {
+  if (msg->isNotification()) return doHandleNotification(ctx, msg, p, r);
+  return doHandleRequest(ctx, msg, p, r);
 }
 
 /** Call the request handler above and then mark completed or failed. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
   void name__::handle(Server* ctx) { \
-    ComputedResult x; \
-    if (doHandleMessage(ctx, this, x)) { \
-      this->r = std::move(x.result); \
+    ComputedResult r; \
+    if (doHandleMessage(ctx, this, p, r)) { \
+      this->r = std::move(r.result); \
       this->markCompleted(); \
     } else { \
-      this->markFailed(x.error, std::move(x.note)); \
+      this->markFailed(r.error, std::move(r.note)); \
     } \
   }
 #include "./message-macro-list.h"
