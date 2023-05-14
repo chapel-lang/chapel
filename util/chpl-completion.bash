@@ -109,6 +109,7 @@ _chpl ()
 --instantiate-max \
 --interleave-memory \
 --interprocedural-alias-analysis \
+--io-deserialize-readThis \
 --io-serialize-writeThis \
 --launcher \
 --ldflags \
@@ -206,6 +207,7 @@ _chpl ()
 --no-inline-iterators \
 --no-interleave-memory \
 --no-interprocedural-alias-analysis \
+--no-io-deserialize-readThis \
 --no-io-serialize-writeThis \
 --no-library-ml-debug \
 --no-lifetime-checking \
