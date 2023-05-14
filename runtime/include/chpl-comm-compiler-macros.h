@@ -80,7 +80,7 @@ void chpl_gen_comm_get_gpu(void *addr,
       chpl_memmove(addr, raddr, size);
     } else {
       //printf("put to subloc %d\n", to_subloc);
-      chpl_gpu_memmove(addr, raddr, size);
+      chpl_gpu_get(addr, from_subloc, raddr, size);
     }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {

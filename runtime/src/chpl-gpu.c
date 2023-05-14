@@ -21,7 +21,7 @@
 // section due to the fact that GpuDiagnostics module accesses it (and this
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
-bool chpl_gpu_debug = true;
+bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
 
@@ -215,14 +215,25 @@ static void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
 
 }
 
-void chpl_gpu_put(c_sublocid_t dst_subloc, void* dst, const void* src,
-                   size_t n) {
-  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+void chpl_gpu_get(void* dst, c_sublocid_t src_subloc, const void* src,
+                  size_t n) {
+  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
+
+  CHPL_GPU_DEBUG("chpl_gpu_get between sublocs %d->%d of size %zu\n",
+                 src_subloc, dst_subloc, n);
 
   chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
-
 }
-  
+
+void chpl_gpu_put(c_sublocid_t dst_subloc, void* dst, const void* src,
+                  size_t n) {
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  CHPL_GPU_DEBUG("chpl_gpu_put between sublocs %d->%d of size %zu\n",
+                 src_subloc, dst_subloc, n);
+
+  chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+}
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
   // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
@@ -289,6 +300,8 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
 
   void *ptr = NULL;
   if (size > 0) {
+    chpl_gpu_use_device(chpl_task_getRequestedSubloc());
+
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(size);
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
@@ -330,11 +343,14 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     void *host_mem = chpl_mem_calloc(number, size, description, lineno,
                                      filename);
 
+    c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+    chpl_gpu_use_device(dev_id);
+
     chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
 
-    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
+    chpl_gpu_impl_copy_host_to_device_new(dev_id, ptr, host_mem, total_size);
 
     chpl_mem_free(host_mem, lineno, filename);
 
@@ -355,6 +371,9 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
+  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+  chpl_gpu_use_device(dev_id);
+
 #ifdef GPU_RUNTIME_CPU
     return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
 #else
@@ -370,7 +389,8 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
   const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
+  chpl_gpu_impl_copy_device_to_device_new(dev_id, new_alloc, dev_id, memAlloc,
+                                      copy_size);
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
   return new_alloc;

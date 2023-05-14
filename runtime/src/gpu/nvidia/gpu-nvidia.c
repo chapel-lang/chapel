@@ -89,16 +89,21 @@ extern c_nodeid_t chpl_nodeID;
 
 // we can put this logic in chpl-gpu.c. However, it needs to execute
 // per-context/module. That's currently too low level for that layer.
-static void chpl_gpu_impl_set_globals(CUmodule module) {
+static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
-  chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
+  chpl_gpu_impl_copy_host_to_device_new(dev_id, (void*)ptr, &chpl_nodeID,
+                                        glob_size);
 }
 
 static void chpl_gpu_ensure_context(void) {
   chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
+}
+
+void chpl_gpu_use_device(c_sublocid_t dev_id) {
+  chpl_gpu_switch_context(dev_id);
 }
 
 void chpl_gpu_impl_init(int* num_devices) {
@@ -133,7 +138,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
     // between runtime layers?
-    chpl_gpu_impl_set_globals(module);
+    chpl_gpu_impl_set_globals(i, module);
   }
 }
 
@@ -188,7 +193,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  CUmodule cuda_module = chpl_gpu_cuda_modules[chpl_task_getRequestedSubloc()];
+  c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
+  CUmodule cuda_module = chpl_gpu_cuda_modules[dev_id];
   void* function = chpl_gpu_load_function(cuda_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
@@ -224,7 +230,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      chpl_gpu_impl_copy_host_to_device_new(dev_id, *kernel_params[i], cur_arg,
+                                            cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -428,8 +435,6 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
-  chpl_gpu_ensure_context();
-
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   void* ptr = 0;
   CUDA_CALL(cuMemAllocHost(&ptr, size));
