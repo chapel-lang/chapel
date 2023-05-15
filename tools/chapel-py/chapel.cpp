@@ -290,7 +290,6 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   for (auto i = 0; i < listSize; i++) {
     PyObject* node = wrapAstNode(self, builderResult.topLevelExpression(i));
     PyList_SetItem(topExprs, i, node);
-    Py_DECREF(node);
   }
   return topExprs;
 }
