@@ -25,6 +25,15 @@
 
 namespace chpl {
 
+// Below, the underlying type of optional is selected based on the available
+// LLVM version (which implies an available C++ version, since LLVM16 requires
+// C++17). The two types (llvm::Optional and std::optional) don't have an
+// exactly equal API: the former has getValue while the latter has get_value,
+// and so on. To use either without knowing which implementation is in use, you
+// can instead use unary operator* (dereference) and operator bool (boolean
+// coercion). Thus, `o.getValue()` becomes `*o`, and `o.hasValue()` becomes
+// `(bool) o`, or even just `o` in some contexts like if conditions.
+
 template <typename T>
 #if LLVM_VERSION_MAJOR >= 16
 /**
