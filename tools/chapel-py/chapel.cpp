@@ -333,6 +333,12 @@ static PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(igno
   return Py_BuildValue("s", nodeType);
 }
 
+static PyObject* AstNodeObject_uniqueID(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto uniqueID = (intptr_t)self->astNode;
+  return Py_BuildValue("K", uniqueID);
+}
+
+
 static PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
   auto attributeGroup = self->astNode->attributeGroup();
   if (attributeGroup != nullptr) {
@@ -370,6 +376,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
   {"location", (PyCFunction) AstNodeObject_location, METH_NOARGS, "Get the location of this AST node in its file"},
   {"parent", (PyCFunction) AstNodeObject_parent, METH_NOARGS, "Get the parent node of this AST node"},
+  {"uniqueID", (PyCFunction) AstNodeObject_uniqueID, METH_NOARGS, "Get a unique identifer for this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
