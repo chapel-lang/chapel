@@ -38,7 +38,7 @@ using optional = std::optional<T>;
 /**
   This is the "empty" value for the above optional<T> type.
  */
-const auto empty = std::nulopt;
+static const auto empty = std::nullopt;
 #else
 /**
  optional<T> is just a synonym for 'llvm::Optional<T>'.
@@ -51,7 +51,7 @@ using optional = llvm::Optional<T>;
 /**
   This is the "empty" value for the above optional<T> type.
  */
-const auto empty = llvm::None;
+static const auto empty = llvm::None;
 #endif
 
 /**
