@@ -155,17 +155,13 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-llvm::Optional<BorrowedIdsWithName>
+optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
                          const IdAndFlags::FlagSet& excludeFlagSet) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
-#if LLVM_VERSION_MAJOR >= 16
-    return std::nullopt;
-#else
-    return llvm::None;
-#endif
+    return chpl::empty;
   }
 
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlagSet)) {
@@ -173,11 +169,7 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
-#if LLVM_VERSION_MAJOR >= 16
-    return std::nullopt;
-#else
-    return llvm::None;
-#endif
+    return chpl::empty;
   }
 
   // Are all of the filter flags present in flagsAnd?
@@ -200,11 +192,7 @@ OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
   }
 
   // No ID was visible, so we can't borrow.
-#if LLVM_VERSION_MAJOR >= 16
-  return std::nullopt;
-#else
-  return llvm::None;
-#endif
+  return chpl::empty;
 }
 
 int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
@@ -325,17 +313,10 @@ bool Scope::lookupInScope(UniqueString name,
     // There might not be any IDs that are visible to us, so borrow returns
     // an optional list.
     auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
-#if LLVM_VERSION_MAJOR >= 16
-    if (borrowedIds.has_value()) {
-      result.push_back(std::move(borrowedIds.value()));
+    if (borrowedIds) {
+      result.push_back(std::move(*borrowedIds));
       return true;
     }
-#else
-    if (borrowedIds.hasValue()) {
-      result.push_back(std::move(borrowedIds.getValue()));
-      return true;
-    }
-#endif
   }
   return false;
 }

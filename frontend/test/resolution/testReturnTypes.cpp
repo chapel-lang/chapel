@@ -123,11 +123,7 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
   std::cout << "return type:" << std::endl;
   qt.dump();
   std::cout << std::endl;
-#if LLVM_VERSION_MAJOR >= 16
-  func(commonTypeResult.has_value(), qt);
-#else
-  func(commonTypeResult.hasValue(), qt);
-#endif
+  func((bool) commonTypeResult, qt);
 }
 
 static void test1() {

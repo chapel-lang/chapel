@@ -2011,11 +2011,7 @@ bool Resolver::enter(const uast::Conditional* cond) {
       r.setType(CHPL_TYPE_ERROR(context, IncompatibleIfBranches, cond,
                                 returnTypes[0], returnTypes[1]));
     } else if (ifType) {
-#if LLVM_VERSION_MAJOR >= 16
-      r.setType(ifType.value());
-#else
-      r.setType(ifType.getValue());
-#endif
+      r.setType(*ifType);
     }
   }
   return false;
@@ -2636,11 +2632,7 @@ void Resolver::exit(const Range* range) {
                                  suppliedTypes[0], suppliedTypes[1]));
       return;
     } else {
-#if LLVM_VERSION_MAJOR >= 16
-      idxType = idxTypeResult.value();
-#else
-      idxType = idxTypeResult.getValue();
-#endif
+      idxType = *idxTypeResult;
     }
   } else {
     // No bounds. Use default.

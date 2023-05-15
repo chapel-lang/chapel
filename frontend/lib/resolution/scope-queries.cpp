@@ -653,11 +653,7 @@ bool LookupHelper::doLookupInImportsAndUses(
             traceResult->push_back(std::move(t));
           }
 
-#if LLVM_VERSION_MAJOR >= 16
-          result.push_back(std::move(foundIds.value()));
-#else
-          result.push_back(std::move(foundIds.getValue()));
-#endif
+          result.push_back(std::move(*foundIds));
           found = true;
         }
       }
@@ -868,11 +864,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
           t.visibleThrough.push_back(std::move(elt));
           traceResult->push_back(std::move(t));
         }
-#if LLVM_VERSION_MAJOR >= 16
-        result.push_back(std::move(foundIds.value()));
-#else
-        result.push_back(std::move(foundIds.getValue()));
-#endif
+        result.push_back(std::move(*foundIds));
       }
     }
   }
