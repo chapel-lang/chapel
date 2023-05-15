@@ -284,7 +284,13 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   auto fileNameUS = chpl::UniqueString::get(context, fileName);
   auto parentPathUS = chpl::UniqueString();
   auto& builderResult = chpl::parsing::parseFileToBuilderResult(context, fileNameUS, parentPathUS);
-  return wrapAstNode(self, builderResult.topLevelExpression(0));
+
+  PyObject* topExprs = PyList_New(builderResult.numTopLevelExpressions());
+  for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
+    PyObject* node = wrapAstNode(self, builderResult.topLevelExpression(i));
+    PyList_SetItem(topExprs, i, node);
+  }
+  return topExprs;
 }
 
 static PyMethodDef ContextObject_methods[] = {
