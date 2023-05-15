@@ -285,10 +285,12 @@ static PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   auto parentPathUS = chpl::UniqueString();
   auto& builderResult = chpl::parsing::parseFileToBuilderResult(context, fileNameUS, parentPathUS);
 
-  PyObject* topExprs = PyList_New(builderResult.numTopLevelExpressions());
-  for (auto i = 0; i < builderResult.numTopLevelExpressions(); i++) {
+  int listSize = builderResult.numTopLevelExpressions();
+  PyObject* topExprs = PyList_New(listSize);
+  for (auto i = 0; i < listSize; i++) {
     PyObject* node = wrapAstNode(self, builderResult.topLevelExpression(i));
     PyList_SetItem(topExprs, i, node);
+    Py_DECREF(node);
   }
   return topExprs;
 }
