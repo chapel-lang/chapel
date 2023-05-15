@@ -391,9 +391,9 @@ bool isTypeDefaultInitializable(Context* context, const types::Type* t);
   Given a type 't', compute the custom inferred type for copy-initialization.
 */
 const types::Type* computeCustomInferType(Context* context,
-                                   const types::CompositeType* t,
-                                   const Scope* inScope,
-                                   const PoiScope* inPoiScope);
+                                          const types::CompositeType* t,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope);
 
 
 } // end namespace resolution

@@ -844,6 +844,26 @@ const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
   return nullptr;
 }
 
+static const CompositeType*
+getTypeWithCustomInfer(Context* context, const Type* type) {
+  if (auto rec = type->getCompositeType()) {
+    if (rec->id().isEmpty() == false) {
+      // TODO 2023-05: This might return null for a type like 'string' which
+      // we force to exist whether the module is present or not. Is this
+      // necessary in the long-term?
+      if (const auto node = parsing::idToAst(context, rec->id())) {
+        if (const auto attr = node->attributeGroup()) {
+          if (attr->hasPragma(PRAGMA_INFER_CUSTOM_TYPE)) {
+            return rec;
+          }
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -874,21 +894,9 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
-    bool infersCustomType = false;
-    if (auto rec = initExprType.type()->getCompositeType()) {
-      if (rec->id().isEmpty() == false) {
-        if (const auto node = parsing::idToAst(context, rec->id())) {
-          if (const auto attr = node->attributeGroup()) {
-            if (attr->hasPragma(PRAGMA_INFER_CUSTOM_TYPE)) {
-              infersCustomType = true;
-            }
-          }
-        }
-      }
-    }
-
-    if (infersCustomType) {
-      typePtr = computeCustomInferType(context, initExprType.type()->getCompositeType(), scopeStack.back(), poiScope);
+    // Check if this type requires custom type inference
+    if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+      typePtr = computeCustomInferType(context, rec, scopeStack.back(), poiScope);
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();
