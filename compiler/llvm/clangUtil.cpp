@@ -129,10 +129,6 @@ void cleanupExternC(void) {
 
 #else
 
-using namespace clang;
-using namespace llvm;
-using namespace CodeGen;
-
 #define GLOBAL_PTR_SPACE 100
 #define WIDE_PTR_SPACE 101
 #define GLOBAL_PTR_SIZE 128
@@ -144,6 +140,10 @@ using namespace CodeGen;
 #include "llvmGlobalToWide.h"
 #include "llvmAggregateGlobalOps.h"
 #include "llvmDumpIR.h"
+
+using namespace clang;
+using namespace llvm;
+using namespace CodeGen;
 
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
@@ -3824,7 +3824,8 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
+    auto globalSpace = info->globalToWideInfo.globalSpace;
+    PM.add(createLegacyAggregateGlobalOpsOptPass(globalSpace));
   }
 }
 
@@ -3833,7 +3834,8 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createGlobalToWide(&info->globalToWideInfo, info->clangInfo->asmTargetLayoutStr));
+    PM.add(createLegacyGlobalToWidePass(&info->globalToWideInfo,
+                                        info->clangInfo->asmTargetLayoutStr));
   }
 }
 
@@ -3882,7 +3884,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
 static
 void addDumpIrPass(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
-  PM.add(createDumpIrPass(llvmPrintIrStageNum));
+  PM.add(createLegacyDumpIrPass(llvmPrintIrStageNum));
 }
 
 static void linkBitCodeFile(const char *bitCodeFilePath) {
@@ -4359,7 +4361,7 @@ void makeBinaryLLVM(void) {
               point,
               [stage] (const PassManagerBuilder &Builder,
                        llvm::legacy::PassManagerBase &PM) -> void {
-                PM.add(createDumpIrPass(stage));
+                PM.add(createLegacyDumpIrPass(stage));
               });
       }
 
