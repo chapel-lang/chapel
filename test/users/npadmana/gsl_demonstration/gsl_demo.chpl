@@ -1,4 +1,5 @@
 use CTypes;
+use Math;
 require '-lgsl','-lgslcblas';
 
 /* Put in the usual GSL includes here */
