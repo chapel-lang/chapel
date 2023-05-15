@@ -60,7 +60,6 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
-#include "llvm/Passes/OptimizationLevel.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
@@ -77,6 +76,7 @@
 
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Passes/OptimizationLevel.h"
 #else
 #include "llvm/Support/TargetRegistry.h"
 #endif
