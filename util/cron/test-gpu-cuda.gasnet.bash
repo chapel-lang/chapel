@@ -8,6 +8,7 @@ source $CWD/common-native-gpu.bash
 module load cudatoolkit
 
 export CHPL_GPU=nvidia
+export CHPL_COMM=gasnet
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gpu-cuda.gasnet"
 $CWD/nightly -cron ${nightly_args}
