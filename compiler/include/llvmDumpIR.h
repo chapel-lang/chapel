@@ -26,6 +26,12 @@
 #include "llvmUtil.h"
 #include "symbol.h"
 
+namespace llvm {
+  class Loop;
+  class LPMUpdater;
+}
+
+#include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
@@ -49,6 +55,10 @@ struct DumpIRPass : public llvm::PassInfoMixin<DumpIRPass> {
   explicit DumpIRPass(llvmStageNum_t stage) : pass(stage) { }
   llvm::PreservedAnalyses run(llvm::Function& function,
                               llvm::FunctionAnalysisManager& analysisManager);
+  llvm::PreservedAnalyses run(llvm::Loop& L,
+                              llvm::LoopAnalysisManager& AM,
+                              llvm::LoopStandardAnalysisResults& AR,
+                              llvm::LPMUpdater& U);
 };
 // old pass manager version
 struct LegacyDumpIRPass : public llvm::FunctionPass {
