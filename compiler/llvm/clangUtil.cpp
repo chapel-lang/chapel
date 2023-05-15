@@ -77,8 +77,10 @@
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Passes/OptimizationLevel.h"
+using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #else
 #include "llvm/Support/TargetRegistry.h"
+using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #endif
 
 #if HAVE_LLVM_VER >= 90
@@ -2219,7 +2221,7 @@ void simplifyFunction(llvm::Function* func) {
 #ifndef LLVM_USE_OLD_PASSES
 // if optLevel is provided, use that; otherwise use the value
 // from clangInfo->codegenOptions.
-static llvm::OptimizationLevel translateOptLevel(int optLevel=-1) {
+static LlvmOptimizationLevel translateOptLevel(int optLevel=-1) {
   if (optLevel < 0) {
     ClangInfo* clangInfo = gGenInfo->clangInfo;
     INT_ASSERT(clangInfo);
@@ -2228,11 +2230,11 @@ static llvm::OptimizationLevel translateOptLevel(int optLevel=-1) {
   }
 
   switch (optLevel) {
-    case 0: return OptimizationLevel::O0;
-    case 1: return OptimizationLevel::O1;
-    case 2: return OptimizationLevel::O2;
-    case 3: return OptimizationLevel::O3;
-    default: return OptimizationLevel::O0;
+    case 0: return LlvmOptimizationLevel::O0;
+    case 1: return LlvmOptimizationLevel::O1;
+    case 2: return LlvmOptimizationLevel::O2;
+    case 3: return LlvmOptimizationLevel::O3;
+    default: return LlvmOptimizationLevel::O0;
   }
 }
 #endif
@@ -2374,7 +2376,7 @@ void prepareCodegenLLVM()
   PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
 
   auto lvl = translateOptLevel();
-  if (lvl != OptimizationLevel::O0) {
+  if (lvl != LlvmOptimizationLevel::O0) {
     info->FunctionSimplificationPM = new FunctionPassManager(
         PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
   }
