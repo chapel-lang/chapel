@@ -422,7 +422,15 @@ PLAIN_GETTER(NamedDecl, name, "s", return node->name());
 PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
 PLAIN_GETTER(Attribute, name, "s", return node->name());
 PLAIN_GETTER(Comment, text, "s", return node->c_str());
-PLAIN_GETTER(StringLiteral, value, "s", return node->value());
+
+PLAIN_GETTER(BoolLiteral, value, "s",
+             return (node->value() ? "true" : "false"));
+PLAIN_GETTER(ImagLiteral, text, "s", return node->text());
+PLAIN_GETTER(IntLiteral, text, "s", return node->text());
+PLAIN_GETTER(RealLiteral, text, "s", return node->text());
+PLAIN_GETTER(UintLiteral, text, "s", return node->text());
+PLAIN_GETTER(StringLikeLiteral, value, "s", return node->value());
+
 PLAIN_GETTER(Function, kind, "s", return chpl::uast::Function::kindToString(node->kind()));
 PLAIN_GETTER(Function, is_method, "b", return node->isMethod());
 PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
@@ -433,6 +441,9 @@ PLAIN_GETTER(VisibilityClause, symbol, "O", return wrapAstNode(contextObject, no
 PLAIN_GETTER(Identifier, name, "s", return node->name());
 PLAIN_GETTER(SimpleBlockLike, block_style, "s", return blockStyleToString(node->blockStyle()));
 PLAIN_GETTER(Loop, block_style, "s", return blockStyleToString(node->blockStyle()));
+PLAIN_GETTER(Class, parentClass, "O", return wrapAstNode(contextObject, node->parentClass()));
+PLAIN_GETTER(EnumElement, initExpression, "O", return wrapAstNode(contextObject, node->initExpression()));
+
 
 static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
   auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
@@ -487,8 +498,23 @@ METHOD_TABLE(Comment,
   {"text", CommentObject_text, METH_NOARGS, "Get the text of the Comment node"},
 );
 
-METHOD_TABLE(StringLiteral,
-  {"value", StringLiteralObject_value, METH_NOARGS, "Get the value of the StringLiteral node"},
+METHOD_TABLE(BoolLiteral,
+             {"value", BoolLiteralObject_value, METH_NOARGS,
+              "Get the value of the BoolLiteral node"}, );
+METHOD_TABLE(ImagLiteral,
+             {"text", ImagLiteralObject_text, METH_NOARGS,
+              "Get the value of the ImagLiteral node"}, );
+METHOD_TABLE(IntLiteral,
+             {"text", IntLiteralObject_text, METH_NOARGS,
+              "Get the value of the IntLiteral node"}, );
+METHOD_TABLE(RealLiteral,
+             {"text", RealLiteralObject_text, METH_NOARGS,
+              "Get the value of the RealLiteral node"}, );
+METHOD_TABLE(UintLiteral,
+             {"text", UintLiteralObject_text, METH_NOARGS,
+              "Get the value of the UintLiteral node"}, );
+METHOD_TABLE(START_StringLikeLiteral,
+  {"value", StringLikeLiteralObject_value, METH_NOARGS, "Get the value of the StringLikeLiteral node"},
 );
 
 METHOD_TABLE(Function,
@@ -525,6 +551,13 @@ METHOD_TABLE(START_SimpleBlockLike,
 
 METHOD_TABLE(START_Loop,
   {"block_style", LoopObject_block_style, METH_NOARGS, "Get the style of this loop AST node"},
+);
+
+METHOD_TABLE(Class,
+  {"parentClass", ClassObject_parentClass, METH_NOARGS, "Get the parent class of this class AST node"},
+);
+METHOD_TABLE(EnumElement,
+  {"initExpression", EnumElementObject_initExpression, METH_NOARGS, "Get the initExpression of this enum element AST node"},
 );
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
