@@ -862,6 +862,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case INFER_TYPE:
+      return "infer-type";
     // no default to get a warning if new Actions are added
   }
 

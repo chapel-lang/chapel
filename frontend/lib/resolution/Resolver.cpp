@@ -864,6 +864,30 @@ getTypeWithCustomInfer(Context* context, const Type* type) {
   return nullptr;
 }
 
+const Type*
+Resolver::computeCustomInferType(const AstNode* decl,
+                                 const CompositeType* ct) {
+  QualifiedType ret;
+  auto name = UniqueString::get(context, "chpl__inferCopyType");
+  QualifiedType calledType = QualifiedType(QualifiedType::CONST_REF, ct);
+  auto receiver = CallInfoActual(calledType, USTR("this"));
+  std::vector<CallInfoActual> actuals = {std::move(receiver)};
+
+  auto ci = CallInfo(name, calledType, true, false, false, std::move(actuals));
+  auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
+  if (rr.mostSpecific().only() != nullptr) {
+    gdbShouldBreakHere();
+    ret = rr.exprType();
+    handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
+                                 AssociatedAction::INFER_TYPE,
+                                 decl->id());
+  } else {
+    context->error(ct->id(), "'chpl__inferCopyType' is unimplemented");
+  }
+
+  return ret.type();
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -896,7 +920,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
     // Check if this type requires custom type inference
     if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
-      typePtr = computeCustomInferType(context, rec, scopeStack.back(), poiScope);
+      typePtr = computeCustomInferType(declForErr, rec);
     } else {
       // init but no declared type, so use init type
       typePtr = initExprType.type();

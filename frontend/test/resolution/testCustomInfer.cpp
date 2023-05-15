@@ -82,6 +82,18 @@ module M {
   QualifiedType z = findVarType(m, rr, "z");
   assert(z.type() == x.type());
 
+  auto yVar = findOnlyNamed(m, "y")->toVariable();
+  const ResolvedExpression* re = rr.byAstOrNull(yVar);
+  bool foundAction = false;
+  if (re != nullptr) {
+    for (auto act : re->associatedActions()) {
+      if (act.action() == AssociatedAction::INFER_TYPE) {
+        foundAction = true;
+      }
+    }
+  }
+  assert(foundAction);
+
   assert(guard.errors().size() == 0);
 }
 
