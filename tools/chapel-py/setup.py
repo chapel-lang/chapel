@@ -5,22 +5,29 @@ import os
 import sys
 
 chpl_home = os.getenv('CHPL_HOME')
-chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
-chpl_variables = subprocess.check_output([chpl_printchplenv, "--internal"]).decode(sys.stdout.encoding).strip().splitlines()
-chpl_lib_path = os.path.join(chpl_home, "lib", "compiler")
 
-chpl_bin_prefix = "CHPL_HOST_BIN_SUBDIR: "
-for line in chpl_variables:
-    if line.startswith(chpl_bin_prefix):
-        chpl_lib_path = os.path.join(chpl_lib_path, line[len(chpl_bin_prefix):])
+sys.path.append(os.path.join(chpl_home, 'util', 'chplenv'))
+import printchplenv
+
+printchplenv.compute_all_values()
+printchplenv.compute_internal_values()
+chpl_variables = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
+
+llvm_config = chpl_variables.get("CHPL_LLVM_CONFIG")
+
+chpl_frontend_path = os.path.join(chpl_home, "build", "compiler", chpl_variables.get("CHPL_COMPILER_SUBDIR"))
+chpl_lib_path = os.path.join(chpl_frontend_path, "frontend", "lib")
+chpl_include_path = os.path.join(chpl_home, "frontend", "include")
 
 CXXFLAGS = []
 CXXFLAGS += ["-Wno-c99-designator"]
-CXXFLAGS += subprocess.check_output(["llvm-config", "--cxxflags"]).decode(sys.stdout.encoding).strip().split(" ")
-CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
+CXXFLAGS += subprocess.check_output([llvm_config, "--cppflags"]).decode(sys.stdout.encoding).strip().split(" ")
+CXXFLAGS += ["-std=c++17", f"-I{chpl_include_path}"]
 
 LDFLAGS = []
-LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend"]
+LDFLAGS += [f"-L{chpl_lib_path}", "-lChplFrontend"]
+LDFLAGS += chpl_variables.get("CHPL_HOST_BUNDLED_LINK_ARGS").split(" ")
+LDFLAGS += subprocess.check_output([llvm_config, "--system-libs"]).decode(sys.stdout.encoding).strip().split(" ")
 
 setup(name = "chapel",
       version = "0.1",
