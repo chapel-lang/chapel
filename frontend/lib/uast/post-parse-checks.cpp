@@ -133,6 +133,8 @@ struct Visitor {
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
+  void checkLambdaDeprecated(const Function* node);
+
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -780,6 +782,12 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaDeprecated(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+  error(node, "'lambda' syntax is deprecated, please construct anonymous "
+              "procedures using the 'proc' keyword instead");
+}
+
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
@@ -1223,6 +1231,7 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaDeprecated(node);
   checkLambdaReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
 }

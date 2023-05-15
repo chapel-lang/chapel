@@ -2498,8 +2498,14 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func() type { return __primitive("create fn type", void); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;
