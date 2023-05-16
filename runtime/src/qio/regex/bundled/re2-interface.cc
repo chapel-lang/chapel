@@ -482,6 +482,10 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   MAYBE_STACK_ALLOC(FilePiece, use_captures, locs, caps_onstack);
   memset((void*)locs, 0, sizeof(FilePiece) * use_captures);
 
+  // if we allow MatchFile to search the buffer, given the string "xy", it will
+  // incorrectly match "^y". This seems to be an issue with RE2 rather than our
+  // shim. As a TODO: we should either fix this (buffer would be faster) or
+  // remove the unneeded buffer setup code
   old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
   gFileStringAllowBufferSearch = 0;
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
