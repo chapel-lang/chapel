@@ -359,6 +359,7 @@ int fGPUBlockSize = 0;
 char fGpuArch[16];
 bool fGpuPtxasEnforceOpt;
 const char* gGpuSdkPath = NULL;
+char gpuArch[16];
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1678,7 +1679,23 @@ static void setGPUFlags() {
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
     }
+    //
+    // set up gpuArch
+    if (strlen(fGpuArch) > 0) {
+      strncpy(gpuArch, fGpuArch, 16);
+    }
+    else {
+      if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
+        USR_FATAL("CHPL_GPU_ARCH must be set. See "
+                  "https://chapel-lang.org/docs/technotes/gpu.html "
+                  "for more information");
+      }
+      else {
+        strncpy(gpuArch, CHPL_GPU_ARCH, 16);
+      }
+    }
   }
+
 }
 
 static void checkLLVMCodeGen() {
