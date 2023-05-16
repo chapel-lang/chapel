@@ -25,11 +25,13 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of nested call temps for an '=' living to end of block
+# Test perf of LLVM 15
 GITHUB_USER=mppf
-GITHUB_BRANCH=issue-21001-option-2
-SHORT_NAME=temp-assign-lifetime
-START_DATE=02/15/23
+GITHUB_BRANCH=bundled-llvm-15
+SHORT_NAME=llvm-15
+START_DATE=05/16/23
+# this is just for testing LLVM 15
+export CHPL_LLVM=bundled
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
@@ -37,4 +39,4 @@ git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks
+$CWD/nightly -cron ${perf_args} ${nightly_args}
