@@ -11509,7 +11509,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
   }
   commit();
   if i < maxmatches {
-    // we stopped becasuse eof, move to end 
+    // we stopped becasuse eof, move to end
     // TODO: is there a better way to get to the end?
     // seeking on an unbounded reader doesn't work
     error = qio_channel_advance_past_byte(false, _channel_internal, 0, /* consume */ false);
