@@ -873,10 +873,14 @@ Resolver::computeCustomInferType(const AstNode* decl,
   auto receiver = CallInfoActual(calledType, USTR("this"));
   std::vector<CallInfoActual> actuals = {std::move(receiver)};
 
-  auto ci = CallInfo(name, calledType, true, false, false, std::move(actuals));
+  auto ci = CallInfo(/* name */ name,
+                     /* calledType */ calledType,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     std::move(actuals));
   auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
   if (rr.mostSpecific().only() != nullptr) {
-    gdbShouldBreakHere();
     ret = rr.exprType();
     handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
                                  AssociatedAction::INFER_TYPE,
