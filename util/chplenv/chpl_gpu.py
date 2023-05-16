@@ -110,7 +110,7 @@ def get_arch():
     arch = GPU_TYPES[gpu_type].default_arch
     if arch != "":
         return arch
-    else
+    else:
         error("CHPL_GPU={} requires also setting CHPL_GPU_ARCH. "
               "Please check the GPU programming technote "
               "<https://chapel-lang.org/docs/technotes/gpu.html> "

@@ -263,6 +263,7 @@ extern int fGPUBlockSize;
 extern char fGpuArch[16];
 extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
+extern char gpuArch[16];
 
 extern char stopAfterPass[128];
 
