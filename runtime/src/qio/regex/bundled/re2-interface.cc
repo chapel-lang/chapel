@@ -399,6 +399,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   int i;
   int use_captures = ncaptures;
   bool atEOF = false;
+  int old_gFileStringAllowBufferSearch;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
   if( ncaptures > INT_MAX || ncaptures < 0 )
@@ -481,7 +482,10 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   MAYBE_STACK_ALLOC(FilePiece, use_captures, locs, caps_onstack);
   memset((void*)locs, 0, sizeof(FilePiece) * use_captures);
 
+  old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
+  gFileStringAllowBufferSearch = 0;
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
+  gFileStringAllowBufferSearch = old_gFileStringAllowBufferSearch;
 
   // Copy capture groups if we found something
   if( found ) {
