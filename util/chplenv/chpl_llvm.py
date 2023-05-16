@@ -776,7 +776,7 @@ def filter_llvm_link_flags(flags):
         # LLVM 15 detects libzstd on some systems but doesn't include
         # the -L path from pkg-config (this can happen in a Spack configuration)
         # So, if we have '-lzstd', use pkg-config to get the link flags.
-        if flag == '-lzstd':
+        if flag == '-lzstd' and sys.platform != "darwin":
           import third_party_utils
           link_bundled_args, link_system_args = (
               third_party_utils.pkgconfig_get_system_link_args('libzstd'))
