@@ -1133,6 +1133,7 @@ class AssociatedAction {
     ITERATE,      // aka "these"
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
+    INFER_TYPE,
   };
 
  private:

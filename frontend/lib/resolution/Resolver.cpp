@@ -844,6 +844,54 @@ const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
   return nullptr;
 }
 
+static const CompositeType*
+getTypeWithCustomInfer(Context* context, const Type* type) {
+  if (auto rec = type->getCompositeType()) {
+    if (rec->id().isEmpty() == false) {
+      // TODO 2023-05: This might return null for a type like 'string' which
+      // we force to exist whether the module is present or not. Is this
+      // necessary in the long-term?
+      if (const auto node = parsing::idToAst(context, rec->id())) {
+        if (const auto attr = node->attributeGroup()) {
+          if (attr->hasPragma(PRAGMA_INFER_CUSTOM_TYPE)) {
+            return rec;
+          }
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+const Type*
+Resolver::computeCustomInferType(const AstNode* decl,
+                                 const CompositeType* ct) {
+  QualifiedType ret;
+  auto name = UniqueString::get(context, "chpl__inferCopyType");
+  QualifiedType calledType = QualifiedType(QualifiedType::CONST_REF, ct);
+  auto receiver = CallInfoActual(calledType, USTR("this"));
+  std::vector<CallInfoActual> actuals = {std::move(receiver)};
+
+  auto ci = CallInfo(/* name */ name,
+                     /* calledType */ calledType,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     std::move(actuals));
+  auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
+  if (rr.mostSpecific().only() != nullptr) {
+    ret = rr.exprType();
+    handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
+                                 AssociatedAction::INFER_TYPE,
+                                 decl->id());
+  } else {
+    context->error(ct->id(), "'chpl__inferCopyType' is unimplemented");
+  }
+
+  return ret.type();
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -874,10 +922,15 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     // declared type but no init, so use declared type
     typePtr = declaredType.type();
   } else if (!declaredType.hasTypePtr() && initExprType.hasTypePtr()) {
-    // init but no declared type, so use init type
-    typePtr = initExprType.type();
-    if (inferParam) {
-      paramPtr = initExprType.param();
+    // Check if this type requires custom type inference
+    if (auto rec = getTypeWithCustomInfer(context, initExprType.type())) {
+      typePtr = computeCustomInferType(declForErr, rec);
+    } else {
+      // init but no declared type, so use init type
+      typePtr = initExprType.type();
+      if (inferParam) {
+        paramPtr = initExprType.param();
+      }
     }
   } else {
     // otherwise both declaredType and initExprType are provided.
