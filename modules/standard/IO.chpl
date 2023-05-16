@@ -11366,8 +11366,12 @@ private inline proc _searchHelp(ref fr: fileReader,
         // TODO: this can be qio_channel_advance_unlocked since we have already locked
         error = qio_channel_advance(false, fr._channel_internal, target - cur);
       } else {
-        // If we didn't match... leave the fileReader position at EOF
+        // If we didn't match... advance the fileReader position to EOF
         qio_channel_commit_unlocked(fr._channel_internal);
+        // TODO: is there a better way to get to the end?
+        // seeking on an unbounded reader doesn't work
+        error = qio_channel_advance_past_byte(false, fr._channel_internal, 0, /* consume */ false);
+        if error == EEOF then error = 0;
       }
     }
     _ddata_free(matches, nm);
@@ -11504,6 +11508,13 @@ iter fileReader.matches(re:regex(?), param captures=0,
     i += 1;
   }
   commit();
+  if i < maxmatches {
+    // we stopped becasuse eof, move to end 
+    // TODO: is there a better way to get to the end?
+    // seeking on an unbounded reader doesn't work
+    error = qio_channel_advance_past_byte(false, _channel_internal, 0, /* consume */ false);
+    if error == EEOF then error = 0;
+  }
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;
