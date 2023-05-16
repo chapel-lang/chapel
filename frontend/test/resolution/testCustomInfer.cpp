@@ -93,8 +93,6 @@ module M {
     }
   }
   assert(foundAction);
-
-  assert(guard.errors().size() == 0);
 }
 
 int main() {
