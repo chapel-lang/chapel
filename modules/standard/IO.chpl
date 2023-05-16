@@ -11392,11 +11392,11 @@ proc fileReader.search(re:regex(?)):regexMatch throws
   return ret;
 }
 
-/*  Search for an offset in the fileReader matching the
-    passed regular expression, possibly pulling out capture groups.
-    If there is a match, leaves the fileReader offset at the
-    match. If there is no match, the fileReader offset will be
-    advanced to the end of the fileReader (or end of the file).
+/*  Search for an offset in the fileReader from the current offset matching the
+    passed regular expression, possibly pulling out capture groups. If there is
+    a match, leaves the fileReader offset at the match. If there is no match,
+    the fileReader offset will be advanced to the end of the fileReader (or end
+    of the file).
 
     Throws a SystemError if an error occurs.
 
@@ -11430,7 +11430,7 @@ proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
 
    In the end, leaves the fileReader offset at the end of the
    last reported match (if we ran out of maxmatches)
-   or at the end of the fileReader (if we no longer matched)
+   or at the end of the fileReader (if we no longer matched).
 
    Holds the fileReader lock for the duration of the search.
 
