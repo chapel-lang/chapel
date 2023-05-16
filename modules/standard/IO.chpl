@@ -11326,52 +11326,64 @@ proc fileReader._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
 }
 
 // Private implementation helper for fileReader.search(re:regex(?))
-// Todo: inline it into its single callsite.
 @chpldoc.nodoc
-proc fileReader._searchHelp(re:regex(?), ref error:errorCode):regexMatch
+private inline proc _searchHelp(ref fr: fileReader,
+                                re:regex(?),
+                                ref error:errorCode,
+                                param numMatches,
+                                param doCapture: bool,
+                                ref captures):regexMatch
 {
   var m:regexMatch;
-  on this._home {
-    try! this.lock();
-    var nm = 1;
+  on fr._home {
+    try! fr.lock(); defer { fr.unlock(); }
+    param nm = numMatches;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    error = qio_channel_mark(false, _channel_internal);
+    error = qio_channel_mark(false, fr._channel_internal);
     if !error {
       error = qio_regex_channel_match(re._regex,
-                                       false, _channel_internal, max(int(64)),
-                                       QIO_REGEX_ANCHOR_UNANCHORED,
-                                       /* can_discard */ true,
-                                       /* keep_unmatched */ false,
-                                       /* keep_whole_pattern */ true,
-                                       matches, nm);
+                                     false, fr._channel_internal, max(int(64)),
+                                     QIO_REGEX_ANCHOR_UNANCHORED,
+                                     /* can_discard */ true,
+                                     /* keep_unmatched */ false,
+                                     /* keep_whole_pattern */ true,
+                                     matches, nm);
     }
     // Don't report "didn't match" errors
     if error == EFORMAT || error == EEOF then error = 0;
     if !error {
       m = _to_regexMatch(matches[0]);
       if m.matched {
+        if doCapture {
+          // Extract the capture groups.
+          fr._ch_handle_captures(matches, nm, captures, error);
+        }
+
         // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
+        qio_channel_revert_unlocked(fr._channel_internal);
+        var cur = qio_channel_offset_unlocked(fr._channel_internal);
         var target = m.byteOffset:int;
-        error = qio_channel_advance(false, _channel_internal, target - cur);
+        // TODO: this can be qio_channel_advance_unlocked since we have already locked
+        error = qio_channel_advance(false, fr._channel_internal, target - cur);
       } else {
         // If we didn't match... leave the fileReader position at EOF
-        qio_channel_commit_unlocked(_channel_internal);
+        qio_channel_commit_unlocked(fr._channel_internal);
       }
     }
     _ddata_free(matches, nm);
-    this.unlock();
   }
   return m;
 }
+
+
 
 // documented in the version with captures
 @chpldoc.nodoc
 proc fileReader.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = 0;
-  var ret = this._searchHelp(re, error=e);
+  var dummy:int;
+  var ret = _searchHelp(this, re, e, 1, false, dummy);
   if e then try this._ch_ioerror(e, "in fileReader.search");
   return ret;
 }
@@ -11393,44 +11405,10 @@ proc fileReader.search(re:regex(?)):regexMatch throws
  */
 proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
-  var m:regexMatch;
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    var nm = captures.size + 1;
-    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    err = qio_channel_mark(false, _channel_internal);
-    if ! err {
-      err = qio_regex_channel_match(re._regex,
-                                     false, _channel_internal, max(int(64)),
-                                     QIO_REGEX_ANCHOR_UNANCHORED,
-                                     /* can_discard */ true,
-                                     /* keep_unmatched */ false,
-                                     /* keep_whole_pattern */ true,
-                                     matches, nm);
-    }
-    if err == EFORMAT || err == EEOF then err = 0;
-    if !err {
-      m = _to_regexMatch(matches[0]);
-      if m.matched {
-        // Extract the capture groups.
-        _ch_handle_captures(matches, nm, captures, err);
-
-        // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.byteOffset:int;
-        err = qio_channel_advance(false, _channel_internal, target - cur);
-      } else {
-        // If we didn't match... leave the fileReader position at EOF
-        qio_channel_commit_unlocked(_channel_internal);
-      }
-    }
-    _ddata_free(matches, nm);
-  }
-
-  if err then try this._ch_ioerror(err, "in fileReader.search");
-  return m;
+  var e:errorCode = 0;
+  var ret = _searchHelp(this, re, e, captures.size + 1, true, captures);
+  if e then try this._ch_ioerror(e, "in fileReader.search");
+  return ret;
 }
 
 /* Enumerates matches in the string as well as capture groups.
