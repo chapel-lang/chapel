@@ -215,7 +215,7 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, uast::Decl::PUBLIC, atFieldLevel);
+    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
     return false;
   }
   void exit(const Include* d) { }
