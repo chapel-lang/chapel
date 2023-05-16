@@ -859,7 +859,8 @@ struct Converter {
     ID moduleId, targetId;
     types::QualifiedType targetType;
     if (!isDotOnModule(node, moduleId, targetId, targetType) ||
-        targetId.isEmpty()) return nullptr;
+        targetId.isEmpty() ||
+        targetId.isFabricatedId()) return nullptr;
     storeReferencedMod(findConvertedSym(moduleId));
 
     // If it's just a variable, turn it into a direct reference to said
@@ -2074,6 +2075,9 @@ struct Converter {
     types::QualifiedType targetType;
     auto dot = node->calledExpression()->toDot();
     if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
+
+    // Don't know how to convert fabricated IDs yet.
+    if (targetId.isFabricatedId()) return nullptr;
 
     if (!targetId.isEmpty() && targetType.kind() != types::QualifiedType::FUNCTION) {
       // an empty ID indicates that it's an overloaded function or otherwise unknown,
