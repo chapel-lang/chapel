@@ -59,22 +59,26 @@ The directory $CHPL_HOME/third-party/llvm/llvm-src/ contains the
 un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
-1.  git rm -r llvm-src cmake
-2.  un-tarball the new LLVM version into the directory it specifies,
+1.  download the new release and signature and verify them with e.g.
+    gpg --verify llvm-15.0.7.src.tar.xz.sig
+2.  git rm -r llvm-src cmake
+3.  un-tarball the new LLVM version into the directory it specifies,
     for example llvm-14.0.0.src
-3.  un-tarball the new Clang version into the directory it specifies,
+4.  un-tarball the new Clang version into the directory it specifies,
     for example clang-14.0.0.src
-4.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
-5.  mv llvm-14.0.0.src llvm-src
-6.  rm -r llvm-src/test llvm-src/tools/clang/test
-7.  git add --force llvm-src cmake
+5.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
+6.  mv llvm-14.0.0.src llvm-src
+7.  rm -r llvm-src/test llvm-src/tools/clang/test
+8.  git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
-8.  update the util/chplenv/chpl_llvm.py llvm_versions function
-    to record that the new version is available.
-9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
-10. update this README file
-11. commit
-12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
+9.  commit these changes
+10. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
     set LLVM_INCLUDE_BENCHMARKS to OFF, and check above for any
     additional patches to apply 
-13. PR, merge, etc.
+11. commit the CMakeLists.txt changes
+12. update the util/chplenv/chpl_llvm.py llvm_versions function
+    to record that the new version is available.
+13. update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
+14. update this README file
+15. commit with the docs and chplenv changes
+16. PR, test, merge, etc.
