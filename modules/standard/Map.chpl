@@ -699,6 +699,10 @@ module Map {
       fmt.endMap(r);
     }
 
+    proc deserialize(reader: fileReader, ref deserializer) throws {
+      _readHelper(reader);
+    }
+
     //
     // TODO: rewrite to use formatter interface
     //

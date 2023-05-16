@@ -1904,6 +1904,10 @@ module List {
       _leave();
     }
 
+    proc deserialize(reader: fileReader, ref deserializer) throws {
+      _readHelper(reader);
+    }
+
     /*
       Returns `true` if this list contains zero elements.
 
