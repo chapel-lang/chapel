@@ -1037,10 +1037,17 @@ namespace {
 
       if (newSrcTy != srcTy || newResTy != resTy) {
         // gather the indices
+#if HAVE_LLVM_VER >= 130
         SmallVector<Constant*> idxList;
         for (const auto& v : gepOp->indices()) {
           idxList.push_back(cast<Constant>(v));
         }
+#else
+        SmallVector<Constant*, 8> idxList;
+        for (auto it = gepOp->idx_begin(); it != gepOp->idx_end(); ++it) {
+          idxList.push_back(cast<Constant>(*it));
+        }
+#endif
         // Create a new GetElementPtrConstantExpr while changing the types
         auto C1 = ConstantExpr::getGetElementPtr(
                      newSrcTy,
