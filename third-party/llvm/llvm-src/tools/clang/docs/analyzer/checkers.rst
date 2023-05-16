@@ -66,7 +66,20 @@ Check for null pointers passed as arguments to a function whose arguments are re
 
 core.NullDereference (C, C++, ObjC)
 """""""""""""""""""""""""""""""""""
-Check for dereferences of null pointers.
+Check for dereferences of null pointers. 
+
+This checker specifically does
+not report null pointer dereferences for x86 and x86-64 targets when the
+address space is 256 (x86 GS Segment), 257 (x86 FS Segment), or 258 (x86 SS
+segment). See `X86/X86-64 Language Extensions
+<https://clang.llvm.org/docs/LanguageExtensions.html#memory-references-to-specified-segments>`__
+for reference.
+
+The ``SuppressAddressSpaces`` option suppresses 
+warnings for null dereferences of all pointers with address spaces. You can
+disable this behavior with the option
+``-analyzer-config core.NullDereference:SuppressAddressSpaces=false``.
+*Defaults to true*.
 
 .. code-block:: objc
 
@@ -934,12 +947,12 @@ Check the size argument passed into C string functions for common erroneous patt
      // warn: potential buffer overflow
  }
 
-.. _unix-cstrisng-NullArg:
+.. _unix-cstring-NullArg:
 
-unix.cstrisng.NullArg (C)
+unix.cstring.NullArg (C)
 """""""""""""""""""""""""
 Check for null pointers being passed as arguments to C string functions:
-``strlen, strnlen, strcpy, strncpy, strcat, strncat, strcmp, strncmp, strcasecmp, strncasecmp``.
+``strlen, strnlen, strcpy, strncpy, strcat, strncat, strcmp, strncmp, strcasecmp, strncasecmp, wcslen, wcsnlen``.
 
 .. code-block:: c
 
@@ -2255,6 +2268,25 @@ Finds calls to the ``putenv`` function which pass a pointer to an automatic vari
     return putenv(env); // putenv function should not be called with auto variables
   }
 
+Limitations:
+
+   - Technically, one can pass automatic variables to ``putenv``,
+     but one needs to ensure that the given environment key stays
+     alive until it's removed or overwritten.
+     Since the analyzer cannot keep track of which envvars get overwritten
+     and when, it needs to be slightly more aggressive and warn for such
+     cases too, leading in some cases to false-positive reports like this:
+
+     .. code-block:: c
+
+        void baz() {
+          char env[] = "NAME=value";
+          putenv(env); // false-positive warning: putenv function should not be called...
+          // More code...
+          putenv((char *)"NAME=anothervalue");
+          // This putenv call overwrites the previous entry, thus that can no longer dangle.
+        } // 'env' array becomes dead only here.
+
 alpha.security.cert.env
 ^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -2355,10 +2387,10 @@ There are built-in sources, propagations and sinks defined in code inside ``Gene
 These operations are handled even if no external taint configuration is provided.
 
 Default sources defined by ``GenericTaintChecker``:
-``fdopen``, ``fopen``, ``freopen``, ``getch``, ``getchar``, ``getchar_unlocked``, ``gets``, ``scanf``, ``socket``, ``wgetch``
+ ``_IO_getc``, ``fdopen``, ``fopen``, ``freopen``, ``get_current_dir_name``, ``getch``, ``getchar``, ``getchar_unlocked``, ``getwd``, ``getcwd``, ``getgroups``, ``gethostname``, ``getlogin``, ``getlogin_r``, ``getnameinfo``, ``gets``, ``gets_s``, ``getseuserbyname``, ``readlink``, ``readlinkat``, ``scanf``, ``scanf_s``, ``socket``, ``wgetch``
 
 Default propagations defined by ``GenericTaintChecker``:
-``atoi``, ``atol``, ``atoll``, ``fgetc``, ``fgetln``, ``fgets``, ``fscanf``, ``sscanf``, ``getc``, ``getc_unlocked``, ``getdelim``, ``getline``, ``getw``, ``pread``, ``read``, ``strchr``, ``strrchr``, ``tolower``, ``toupper``
+``atoi``, ``atol``, ``atoll``, ``basename``, ``dirname``, ``fgetc``, ``fgetln``, ``fgets``, ``fnmatch``, ``fread``, ``fscanf``, ``fscanf_s``, ``index``, ``inflate``, ``isalnum``, ``isalpha``, ``isascii``, ``isblank``, ``iscntrl``, ``isdigit``, ``isgraph``, ``islower``, ``isprint``, ``ispunct``, ``isspace``, ``isupper``, ``isxdigit``, ``memchr``, ``memrchr``, ``sscanf``, ``getc``, ``getc_unlocked``, ``getdelim``, ``getline``, ``getw``, ``memcmp``, ``memcpy``, ``memmem``, ``memmove``, ``mbtowc``, ``pread``, ``qsort``, ``qsort_r``, ``rawmemchr``, ``read``, ``recv``, ``recvfrom``, ``rindex``, ``strcasestr``, ``strchr``, ``strchrnul``, ``strcasecmp``, ``strcmp``, ``strcspn``, ``strlen``, ``strncasecmp``, ``strncmp``, ``strndup``, ``strndupa``, ``strnlen``, ``strpbrk``, ``strrchr``, ``strsep``, ``strspn``, ``strstr``, ``strtol``, ``strtoll``, ``strtoul``, ``strtoull``, ``tolower``, ``toupper``, ``ttyname``, ``ttyname_r``, ``wctomb``, ``wcwidth``
 
 Default sinks defined in ``GenericTaintChecker``:
 ``printf``, ``setproctitle``, ``system``, ``popen``, ``execl``, ``execle``, ``execlp``, ``execv``, ``execvp``, ``execvP``, ``execve``, ``dlopen``, ``memcpy``, ``memmove``, ``strncpy``, ``strndup``, ``malloc``, ``calloc``, ``alloca``, ``memccpy``, ``realloc``, ``bcopy``
@@ -2434,7 +2466,7 @@ Here, ``ptr`` is the buffer, and its minimum size is ``size * nmemb``
 
     // Below we receive a warning because the 3rd parameter should be the
     // number of elements to read, not the size in bytes. This case is a known
-    // vulnerability described by the the ARR38-C SEI-CERT rule.
+    // vulnerability described by the ARR38-C SEI-CERT rule.
     fread(wbuf, size, nitems, file);
   }
 
@@ -2487,6 +2519,75 @@ Check improper use of chroot.
    chroot("/usr/local");
    f(); // warn: no call of chdir("/") immediately after chroot
  }
+
+.. _alpha-unix-Errno:
+
+alpha.unix.Errno (C)
+""""""""""""""""""""
+
+Check for improper use of ``errno``.
+This checker implements partially CERT rule
+`ERR30-C. Set errno to zero before calling a library function known to set errno,
+and check errno only after the function returns a value indicating failure
+<https://wiki.sei.cmu.edu/confluence/pages/viewpage.action?pageId=87152351>`_.
+The checker can find the first read of ``errno`` after successful standard
+function calls.
+
+The C and POSIX standards often do not define if a standard library function
+may change value of ``errno`` if the call does not fail.
+Therefore, ``errno`` should only be used if it is known from the return value
+of a function that the call has failed.
+There are exceptions to this rule (for example ``strtol``) but the affected
+functions are not yet supported by the checker.
+The return values for the failure cases are documented in the standard Linux man
+pages of the functions and in the `POSIX standard <https://pubs.opengroup.org/onlinepubs/9699919799/>`_.
+
+.. code-block:: c
+
+ int unsafe_errno_read(int sock, void *data, int data_size) {
+   if (send(sock, data, data_size, 0) != data_size) {
+     // 'send' can be successful even if not all data was sent
+     if (errno == 1) { // An undefined value may be read from 'errno'
+       return 0;
+     }
+   }
+   return 1;
+ }
+
+The supported functions are the same that are modeled by checker
+:ref:`alpha-unix-StdCLibraryFunctionArgs`.
+The ``ModelPOSIX`` option of that checker affects the set of checked functions.
+
+**Parameters**
+
+The ``AllowErrnoReadOutsideConditionExpressions`` option allows read of the
+errno value if the value is not used in a condition (in ``if`` statements,
+loops, conditional expressions, ``switch`` statements). For example ``errno``
+can be stored into a variable without getting a warning by the checker.
+
+.. code-block:: c
+
+ int unsafe_errno_read(int sock, void *data, int data_size) {
+   if (send(sock, data, data_size, 0) != data_size) {
+     int err = errno;
+     // warning if 'AllowErrnoReadOutsideConditionExpressions' is false
+     // no warning if 'AllowErrnoReadOutsideConditionExpressions' is true
+   }
+   return 1;
+ }
+
+Default value of this option is ``true``. This allows save of the errno value
+for possible later error handling.
+
+**Limitations**
+
+ - Only the very first usage of ``errno`` is checked after an affected function
+   call. Value of ``errno`` is not followed when it is stored into a variable
+   or returned from a function.
+ - Documentation of function ``lseek`` is not clear about what happens if the
+   function returns different value than the expected file position but not -1.
+   To avoid possible false-positives ``errno`` is allowed to be used in this
+   case.
 
 .. _alpha-unix-PthreadLock:
 
@@ -2598,7 +2699,7 @@ Check stream handling functions: ``fopen, tmpfile, fclose, fread, fwrite, fseek,
 
 alpha.unix.cstring.BufferOverlap (C)
 """"""""""""""""""""""""""""""""""""
-Checks for overlap in two buffer arguments. Applies to:  ``memcpy, mempcpy``.
+Checks for overlap in two buffer arguments. Applies to:  ``memcpy, mempcpy, wmemcpy``.
 
 .. code-block:: c
 
@@ -2611,7 +2712,7 @@ Checks for overlap in two buffer arguments. Applies to:  ``memcpy, mempcpy``.
 
 alpha.unix.cstring.NotNullTerminated (C)
 """"""""""""""""""""""""""""""""""""""""
-Check for arguments which are not null-terminated strings; applies to: ``strlen, strnlen, strcpy, strncpy, strcat, strncat``.
+Check for arguments which are not null-terminated strings; applies to: ``strlen, strnlen, strcpy, strncpy, strcat, strncat, wcslen, wcsnlen``.
 
 .. code-block:: c
 
@@ -2623,15 +2724,59 @@ Check for arguments which are not null-terminated strings; applies to: ``strlen,
 
 alpha.unix.cstring.OutOfBounds (C)
 """"""""""""""""""""""""""""""""""
-Check for out-of-bounds access in string functions; applies to:`` strncopy, strncat``.
+Check for out-of-bounds access in string functions, such as:
+``memcpy, bcopy, strcpy, strncpy, strcat, strncat, memmove, memcmp, memset`` and more.
 
+This check also works with string literals, except there is a known bug in that
+the analyzer cannot detect embedded NULL characters when determining the string length.
 
 .. code-block:: c
 
- void test() {
-   int y = strlen((char *)&test); // warn
+ void test1() {
+   const char str[] = "Hello world";
+   char buffer[] = "Hello world";
+   memcpy(buffer, str, sizeof(str) + 1); // warn
  }
 
+ void test2() {
+   const char str[] = "Hello world";
+   char buffer[] = "Helloworld";
+   memcpy(buffer, str, sizeof(str)); // warn
+ }
+
+.. _alpha-unix-cstring-UninitializedRead:
+
+alpha.unix.cstring.UninitializedRead (C)
+""""""""""""""""""""""""""""""""""""""""
+Check for uninitialized reads from common memory copy/manipulation functions such as:
+ ``memcpy, mempcpy, memmove, memcmp, strcmp, strncmp, strcpy, strlen, strsep`` and many more.
+
+.. code-block:: c 
+
+ void test() {
+  char src[10];
+  char dst[5];
+  memcpy(dst,src,sizeof(dst)); // warn: Bytes string function accesses uninitialized/garbage values
+ }
+
+Limitations:
+  
+   - Due to limitations of the memory modeling in the analyzer, one can likely
+     observe a lot of false-positive reports like this:
+
+      .. code-block:: c
+  
+        void false_positive() {
+          int src[] = {1, 2, 3, 4};
+          int dst[5] = {0};
+          memcpy(dst, src, 4 * sizeof(int)); // false-positive:
+          // The 'src' buffer was correctly initialized, yet we cannot conclude
+          // that since the analyzer could not see a direct initialization of the
+          // very last byte of the source buffer.
+        }
+  
+     More details at the corresponding `GitHub issue <https://github.com/llvm/llvm-project/issues/43459>`_.
+  
 .. _alpha-nondeterminism-PointerIteration:
 
 alpha.nondeterminism.PointerIteration (C++)

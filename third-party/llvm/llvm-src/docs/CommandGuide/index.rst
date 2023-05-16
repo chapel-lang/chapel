@@ -24,6 +24,7 @@ Basic Commands
    llvm-diff
    llvm-dis
    llvm-dwarfdump
+   llvm-dwarfutil
    llvm-lib
    llvm-libtool-darwin
    llvm-link
@@ -32,6 +33,7 @@ Basic Commands
    llvm-otool
    llvm-profdata
    llvm-readobj
+   llvm-remark-size-diff
    llvm-stress
    llvm-symbolizer
    opt
@@ -79,6 +81,7 @@ Developer Tools
    mlir-tblgen
    lit
    llvm-exegesis
+   llvm-ifs
    llvm-locstats
    llvm-pdbutil
    llvm-profgen

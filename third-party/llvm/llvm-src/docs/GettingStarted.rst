@@ -48,7 +48,7 @@ This is an example workflow and configuration to get and build the LLVM source:
    * ``cd llvm-project``
    * ``mkdir build``
    * ``cd build``
-   * ``cmake -G <generator> [options] ../llvm``
+   * ``cmake -G <generator> -DCMAKE_BUILD_TYPE=<type> [options] ../llvm``
 
      Some common build system generators are:
 
@@ -72,8 +72,11 @@ This is an example workflow and configuration to get and build the LLVM source:
        pathname of where you want the LLVM tools and libraries to be installed
        (default ``/usr/local``).
 
-     * ``-DCMAKE_BUILD_TYPE=type`` --- Valid options for *type* are Debug,
-       Release, RelWithDebInfo, and MinSizeRel. Default is Debug.
+     * ``-DCMAKE_BUILD_TYPE=type`` --- Controls optimization level and debug information
+       of the build. The default value is ``Debug`` which fits people who want
+       to work on LLVM or its libraries. ``Release`` is a better fit for most
+       users of LLVM and Clang. For more detailed information see
+       :ref:`CMAKE_BUILD_TYPE <cmake_build_type>`.
 
      * ``-DLLVM_ENABLE_ASSERTIONS=On`` --- Compile with assertion checks enabled
        (default is Yes for Debug builds, No for all other build types).
@@ -175,7 +178,7 @@ uses the package and provides other details.
 Package                                                     Version      Notes
 =========================================================== ============ ==========================================
 `CMake <http://cmake.org/>`__                               >=3.13.4     Makefile/workspace generator
-`GCC <http://gcc.gnu.org/>`_                                >=5.1.0      C/C++ compiler\ :sup:`1`
+`GCC <http://gcc.gnu.org/>`_                                >=7.1.0      C/C++ compiler\ :sup:`1`
 `python <http://www.python.org/>`_                          >=3.6        Automated test suite\ :sup:`2`
 `zlib <http://zlib.net>`_                                   >=1.2.3.4    Compression library\ :sup:`3`
 `GNU Make <http://savannah.gnu.org/projects/make>`_         3.79, 3.79.1 Makefile/build processor\ :sup:`4`
@@ -235,10 +238,10 @@ LLVM is written using the subset of C++ documented in :doc:`coding
 standards<CodingStandards>`. To enforce this language version, we check the most
 popular host toolchains for specific minimum versions in our build systems:
 
-* Clang 3.5
-* Apple Clang 6.0
-* GCC 5.1
-* Visual Studio 2019
+* Clang 5.0
+* Apple Clang 9.3
+* GCC 7.1
+* Visual Studio 2019 16.7
 
 Anything older than these toolchains *may* work, but will require forcing the
 build system with a special option and is not really a supported host platform.
@@ -303,11 +306,11 @@ GCC from source. It is also quite easy to do these days.
 .. _github gist:
   https://gist.github.com/application2000/73fd6f4bf1be6600a2cf9f56315a2d91
 
-Easy steps for installing GCC 5.1.0:
+Easy steps for installing GCC 7.1.0:
 
 .. code-block:: console
 
-  % gcc_version=5.1.0
+  % gcc_version=7.1.0
   % wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_version}/gcc-${gcc_version}.tar.bz2
   % wget https://ftp.gnu.org/gnu/gcc/gcc-${gcc_version}/gcc-${gcc_version}.tar.bz2.sig
   % wget https://ftp.gnu.org/gnu/gnu-keyring.gpg
@@ -455,107 +458,7 @@ command.  Use `git tag -l` to list all of them.
 Sending patches
 ^^^^^^^^^^^^^^^
 
-Please read `Developer Policy <DeveloperPolicy.html#one-off-patches>`_, too.
-
-We don't currently accept github pull requests, so you'll need to send patches
-either via emailing to llvm-commits, or, preferably, via :ref:`Phabricator
-<phabricator-reviews>`.
-
-You'll generally want to make sure your branch has a single commit,
-corresponding to the review you wish to send, up-to-date with the upstream
-``origin/main`` branch, and doesn't contain merges. Once you have that, you
-can start `a Phabricator review <Phabricator.html>`_ (or use ``git show`` or
-``git format-patch`` to output the diff, and attach it to an email message).
-
-However, using the "Arcanist" tool is often easier. After `installing arcanist`_, you
-will also need to apply a fix to your arcanist repo in order to submit a patch:
-
-.. code-block:: console
-
-  % cd arcanist
-  % git fetch https://github.com/rashkov/arcanist update_cacerts
-  % git cherry-pick e3659d43d8911e91739f3b0c5935598bceb859aa
-
-Once this is all done, you can upload the latest commit using:
-
-.. code-block:: console
-
-  % arc diff HEAD~1
-
-Additionally, before sending a patch for review, please also try to ensure it's
-formatted properly. We use ``clang-format`` for this, which has git integration
-through the ``git-clang-format`` script. On some systems, it may already be
-installed (or be installable via your package manager). If so, you can simply
-run it -- the following command will format only the code changed in the most
-recent commit:
-
-.. code-block:: console
-
-  % git clang-format HEAD~1
-
-Note that this modifies the files, but doesn't commit them -- you'll likely want
-to run
-
-.. code-block:: console
-
-  % git commit --amend -a
-
-in order to update the last commit with all pending changes.
-
-.. note::
-  If you don't already have ``clang-format`` or ``git clang-format`` installed
-  on your system, the ``clang-format`` binary will be built alongside clang, and
-  the git integration can be run from
-  ``clang/tools/clang-format/git-clang-format``.
-
-
-.. _commit_from_git:
-
-For developers to commit changes from Git
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Once a patch is reviewed, you should rebase it, re-test locally, and commit the
-changes to LLVM's main branch. This is done using `git push` if you have the
-required access rights. See `committing a change
-<Phabricator.html#committing-a-change>`_ for Phabricator based commits or
-`obtaining commit access <DeveloperPolicy.html#obtaining-commit-access>`_
-for commit access.
-
-Here is an example workflow using git. This workflow assumes you have an
-accepted commit on the branch named `branch-with-change`.
-
-.. code-block:: console
-
-  # Go to the branch with your accepted commit.
-  % git checkout branch-with-change
-  # Rebase your change onto the latest commits on Github.
-  % git pull --rebase origin main
-  # Rerun the appropriate tests if needed.
-  % ninja check-$whatever
-  # Check that the list of commits about to be pushed is correct.
-  % git log origin/main...HEAD --oneline
-  # Push to Github.
-  % git push origin HEAD:main
-
-LLVM currently has a linear-history policy, which means that merge commits are
-not allowed. The `llvm-project` repo on github is configured to reject pushes
-that include merges, so the `git rebase` step above is required.
-
-Please ask for help if you're having trouble with your particular git workflow.
-
-
-.. _git_pre_push_hook:
-
-Git pre-push hook
-^^^^^^^^^^^^^^^^^
-
-We include an optional pre-push hook that run some sanity checks on the revisions
-you are about to push and ask confirmation if you push multiple commits at once.
-You can set it up (on Unix systems) by running from the repository root:
-
-.. code-block:: console
-
-  % ln -sf ../../llvm/utils/git/pre-push.py .git/hooks/pre-push
+See :ref:`Contributing <submit_patch>`.
 
 Bisecting commits
 ^^^^^^^^^^^^^^^^^
@@ -662,7 +565,7 @@ To configure LLVM, follow these steps:
 
    .. code-block:: console
 
-     % cmake -G "Unix Makefiles" -DCMAKE_INSTALL_PREFIX=/install/path
+     % cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=<type> -DCMAKE_INSTALL_PREFIX=/install/path
        [other options] SRC_ROOT
 
 Compiling the LLVM Suite Source Code
@@ -674,7 +577,7 @@ invocation:
 
    .. code-block:: console
 
-     % cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=type SRC_ROOT
+     % cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=<type> -DCMAKE_BUILD_TYPE=type SRC_ROOT
 
 Between runs, CMake preserves the values set for all options. CMake has the
 following build types defined:
@@ -781,7 +684,7 @@ platforms or configurations using the same source tree.
 
   .. code-block:: console
 
-    % cmake -G "Unix Makefiles" SRC_ROOT
+    % cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release SRC_ROOT
 
 The LLVM build will create a structure underneath *OBJ_ROOT* that matches the
 LLVM source tree. At each level where source files are present in the source
@@ -1185,15 +1088,9 @@ following options with cmake:
    you may want to use the gold linker as a faster alternative to GNU ld.
 
  * -DCMAKE_BUILD_TYPE
-
-    - Debug --- This is the default build type. This disables optimizations while
-      compiling LLVM and enables debug info. On ELF-based platforms (e.g. Linux)
-      linking with debug info may consume a large amount of memory.
-
-    - Release --- Turns on optimizations and disables debug info. Combining the
-      Release build type with -DLLVM_ENABLE_ASSERTIONS=ON may be a good trade-off
-      between speed and debugability during development, particularly for running
-      the test suite.
+   Controls optimization level and debug information of the build.  This setting
+   can affect RAM and disk usage, see :ref:`CMAKE_BUILD_TYPE <cmake_build_type>`
+   for more information.
 
  * -DLLVM_ENABLE_ASSERTIONS
    This option defaults to ON for Debug builds and defaults to OFF for Release
@@ -1251,5 +1148,3 @@ write something up!).  For more information about LLVM, check out:
 * `LLVM Homepage <https://llvm.org/>`_
 * `LLVM Doxygen Tree <https://llvm.org/doxygen/>`_
 * `Starting a Project that Uses LLVM <https://llvm.org/docs/Projects.html>`_
-
-.. _installing arcanist: https://secure.phabricator.com/book/phabricator/article/arcanist_quick_start/
