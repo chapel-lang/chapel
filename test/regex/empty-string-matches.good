@@ -70,18 +70,18 @@ search
 [y|b]   (matched = true, byteOffset = 1, numBytes = 1)
 
 search and extract
-[]   (matched = true, byteOffset = 0, numBytes = 0) <>
-[^]   (matched = true, byteOffset = 0, numBytes = 0) <>
-[^[^\s]]   (matched = true, byteOffset = 0, numBytes = 1) <x>
-[^x]   (matched = true, byteOffset = 0, numBytes = 1) <x>
-[^y]   (matched = false, byteOffset = -1, numBytes = 0) <>
-[^z]   (matched = false, byteOffset = -1, numBytes = 0) <>
-[$]   (matched = true, byteOffset = 4, numBytes = 0) <>
-[^$]   (matched = false, byteOffset = -1, numBytes = 0) <>
-[.*]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
-[.+]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
-[.]   (matched = true, byteOffset = 0, numBytes = 1) <x>
-[x]   (matched = true, byteOffset = 0, numBytes = 1) <x>
-[y]   (matched = true, byteOffset = 1, numBytes = 1) <y>
-[z]   (matched = false, byteOffset = -1, numBytes = 0) <>
-[y|b]   (matched = true, byteOffset = 1, numBytes = 1) <y>
+[()]   (matched = true, byteOffset = 0, numBytes = 0) <>
+[(^)]   (matched = true, byteOffset = 0, numBytes = 0) <>
+[(^[^\s])]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(^x)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(^y)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(^z)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[($)]   (matched = true, byteOffset = 4, numBytes = 0) <>
+[(^$)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(.*)]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
+[(.+)]   (matched = true, byteOffset = 0, numBytes = 4) <xyab>
+[(.)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(x)]   (matched = true, byteOffset = 0, numBytes = 1) <x>
+[(y)]   (matched = true, byteOffset = 1, numBytes = 1) <y>
+[(z)]   (matched = false, byteOffset = -1, numBytes = 0) <>
+[(y|b)]   (matched = true, byteOffset = 1, numBytes = 1) <y>

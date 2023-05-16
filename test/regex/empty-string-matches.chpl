@@ -100,9 +100,11 @@ if doTestSearchExtract {
     var ss: string;
     // is this really needed? why not automatically get group 0 is the whole match?
     // this would be same as python
-    // also doesnt match io
-    // var re_ = "(" + re + ")";
-    writeln("[", re, "]   ", (new regex(re)).search(myString, ss), " <", ss, ">");
+    // also doesnt match io patterns
+    // Note: this is caused by `_handle_captures`, which always skips the first match
+    // But we have tests that lock in the old behavior
+    var re_ = "(" + re + ")";
+    writeln("[", re_, "]   ", (new regex(re_)).search(myString, ss), " <", ss, ">");
   }
 
   testSearchExtract("");
