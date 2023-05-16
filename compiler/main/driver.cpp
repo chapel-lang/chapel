@@ -1679,22 +1679,23 @@ static void setGPUFlags() {
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
     }
-  }
-
-  // set up gpuArch
-  if (strlen(fGpuArch) > 0) {
-    strncpy(gpuArch, fGpuArch, 16);
-  }
-  else {
-    if (strlen(CHPL_GPU_ARCH) == 0) {
-      USR_FATAL("CHPL_GPU_ARCH must be set. See "
-                "https://chapel-lang.org/docs/technotes/gpu.html "
-                "for more information");
+    //
+    // set up gpuArch
+    if (strlen(fGpuArch) > 0) {
+      strncpy(gpuArch, fGpuArch, 16);
     }
     else {
-      strncpy(gpuArch, CHPL_GPU_ARCH, 16);
+      if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
+        USR_FATAL("CHPL_GPU_ARCH must be set. See "
+                  "https://chapel-lang.org/docs/technotes/gpu.html "
+                  "for more information");
+      }
+      else {
+        strncpy(gpuArch, CHPL_GPU_ARCH, 16);
+      }
     }
   }
+
 }
 
 static void checkLLVMCodeGen() {
