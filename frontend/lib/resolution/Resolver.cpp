@@ -1256,7 +1256,22 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
-void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
+void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
+                                            ID moduleId,
+                                            LookupConfig config) {
+  LookupConfig configWithPrivate = config & ~LOOKUP_SKIP_PRIVATE_VIS;
+  bool thereButPrivate = false;
+  // No need to do the search if we already did search for private symbols
+  if (configWithPrivate != config) {
+    auto modScope = scopeForModule(context, moduleId);
+    auto vec = lookupNameInScope(context, modScope,
+                                 /* receiverScopes */ {},
+                                 dot->field(), configWithPrivate);
+    if (!vec.empty()) {
+      thereButPrivate = true;
+    }
+  }
+
   // figure out what name was used for the module in the Dot expression
   auto modName = moduleId.symbolName(context);
   auto dotModName = modName;
@@ -1287,7 +1302,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
     }
   }
 
-  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
+  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId, thereButPrivate);
 
 }
 
@@ -2997,6 +3012,10 @@ void Resolver::exit(const Dot* dot) {
                           LOOKUP_IMPORT_AND_USE |
                           LOOKUP_EXTERN_BLOCKS;
 
+    if (!moduleId.contains(dot->id())) {
+      config |= LOOKUP_SKIP_PRIVATE_VIS;
+    }
+
     auto modScope = scopeForModule(context, moduleId);
     auto vec = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
@@ -3004,7 +3023,7 @@ void Resolver::exit(const Dot* dot) {
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
       // emit a "can't find that thing" error
-      issueErrorForFailedModuleDot(dot, moduleId);
+      issueErrorForFailedModuleDot(dot, moduleId, config);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function

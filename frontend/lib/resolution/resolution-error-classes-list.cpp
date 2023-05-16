@@ -663,9 +663,15 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //ID moduleId = std::get<1>(info);
   UniqueString moduleName = std::get<2>(info);
   ID renameClauseId = std::get<3>(info);
+  bool thereButPrivate = std::get<bool>(info);
 
-  wr.heading(kind_, type_, dot,
-             "cannot find '", dot->field(), "' in module '", moduleName, "'");
+  if (thereButPrivate) {
+    wr.heading(kind_, type_, dot,
+               "cannot access '", dot->field(), "' as it is private to '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, dot,
+               "cannot find '", dot->field(), "' in module '", moduleName, "'.");
+  }
 
   wr.code(dot, { dot });
 
@@ -683,7 +689,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
     } else {
       wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' here");
+              " '", dotModName, "' here:");
       wr.code<ID>(renameClauseId, { renameClauseId });
     }
   }
