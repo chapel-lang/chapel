@@ -40,7 +40,7 @@ static bool isFlagEquivalent(const llvm::cl::opt<T>& f1,
                              const llvm::cl::Option* f2) {
   static_assert(std::is_base_of<llvm::cl::Option, llvm::cl::opt<T>>::value);
   auto ptr = static_cast<const llvm::cl::Option*>(&f1);
-  return ptr == f3;
+  return ptr == f2;
 }
 
 // TODO: Get these things in an array so we don't have O(n) code?
