@@ -35,8 +35,8 @@
 namespace chpldef {
 
 /** Forward declare some message subclasses. */
-template <typename P, typename R>
-class Request;
+class BaseRequest;
+template <typename P, typename R> class Request;
 class Response;
 
 /** Forward declare requests. */
@@ -82,7 +82,8 @@ public:
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) name__ ,
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
-    NUM_MESSAGES
+    NUM_MESSAGES_INNER,
+    NUM_MESSAGES          = (NUM_MESSAGES_INNER - 1)
   };
 
 private:
@@ -116,7 +117,7 @@ public:
   virtual ~Message() = default;
 
   /** Create a request given a JSON value. */
-  static chpl::owned<Message> request(Server* ctx, const JsonValue& json);
+  static chpl::owned<BaseRequest> request(Server* ctx, const JsonValue& j);
 
   /** Create a response to a handled message. The status of the message
       must be COMPLETED or FAILED, or else nothing is returned. */
@@ -148,7 +149,7 @@ public:
     return static_cast<int64_t>(e);
   }
 
-  /** Get the numeric value of an error code. */
+  /** Get the numeric value of this message's error code. */
   inline int64_t errorToInt() const { return errorToInt(error_); }
 
   /** If this message failed, return a possible note explaining why. */
@@ -195,8 +196,8 @@ public:
 
   /** Dynamic cast to other message subclasses, const and non-const. */
   #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-  const class name__* to##name__() const; \
-  class name__* to##name__();
+    const class name__* to##name__() const; \
+    class name__* to##name__();
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
 
@@ -216,10 +217,10 @@ public:
 
     /** Default visitor body is trivial enough that we define it here. */
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-    virtual T visit(const class name__* req) { \
-      T ret; \
-      return ret; \
-    }
+      virtual T visit(const class name__* req) { \
+        T ret; \
+        return ret; \
+      }
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
 
@@ -247,6 +248,16 @@ public:
   virtual void handle(Server* ctx) = 0;
 };
 
+class BaseRequest : public Message {
+protected:
+  BaseRequest(Message::Tag tag, JsonValue id, Message::Error error,
+              std::string note)
+      : Message(tag, std::move(id), error, std::move(note)) {}
+public:
+  virtual JsonValue pack() const override = 0;
+  virtual void handle(Server* ctx) override = 0;
+};
+
 /** Most messages are incoming and are modelled as a 'Request'. A request
     consists of a set of parameter values, that can be used to compute
     a result (it is analogous to a function call). Some requests can be
@@ -254,8 +265,9 @@ public:
     and should provide a definition for the 'pack()' method.
 */
 template <typename Params, typename Result>
-class Request : public Message {
+class Request : public BaseRequest {
 public:
+
   /** Stores computation results for this request. */
   struct ComputedResult {
     bool isProgressingCallAgain = false;
@@ -279,10 +291,10 @@ protected:
   Request(Message::Tag tag, JsonValue id, Message::Error error,
           std::string note,
           Params params)
-      : Message(tag, std::move(id), error, std::move(note)),
+      : BaseRequest(tag, std::move(id), error, std::move(note)),
         p(std::move(params)) {}
 
-  static Message::Error unpack(const JsonValue& json, Params& p,
+  static Message::Error unpack(const JsonValue& j, Params& p,
                                std::string* note);
 
   /** Use in message handlers to return failure. */
@@ -312,7 +324,10 @@ public:
   virtual void handle(Server* ctx) override = 0;
 
   /** If computed, get the result of this request. */
-  const Result* result() const;
+  inline const Result* result() const {
+    if (status() != Message::COMPLETED) return nullptr;
+    return &this->r;
+  }
 };
 
 /** Expand each LSP message into its own subclass of Request. Each message
@@ -325,28 +340,29 @@ public:
     to look up the message, as that is unambiguous.
 */
 #define CHPLDEF_MESSAGE(name__, outbound__, notification__, rpc__) \
-class name__ : public Request<name__##Params, name__##Result> { \
-public: \
-  using Params = name__##Params; \
-  using Result = name__##Result; \
-  using ComputedResult = Request<Params, Result>::ComputedResult; \
-private: \
-  name__(JsonValue id, Message::Error error, std::string note, \
-         Params p) \
-      : Request(Message::name__, std::move(id), error, \
-                std::move(note), \
-                std::move(p)) { \
-    static_assert(std::is_base_of<ProtocolType, Params>::value, \
-                  "Must be derived from 'ProtocolType'"); \
-    static_assert(std::is_base_of<ProtocolType, Result>::value, \
-                  "Must be derived from 'ProtocolType'"); \
-  } \
-public: \
-  virtual ~name__() = default; \
-  static chpl::owned<Message> create(JsonValue id, const JsonValue& json); \
-  virtual void handle(Server* ctx) override; \
-  virtual ComputedResult compute(Server* ctx) override; \
-};
+  class name__ : public Request<name__##Params, name__##Result> { \
+  public: \
+    using Params = name__##Params; \
+    using Result = name__##Result; \
+    using ComputedResult = Request<Params, Result>::ComputedResult; \
+  private: \
+    name__(JsonValue id, Message::Error error, std::string note, \
+           Params p) \
+        : Request(Message::name__, std::move(id), error, \
+                  std::move(note), \
+                  std::move(p)) { \
+      static_assert(std::is_base_of<ProtocolType, Params>::value, \
+                    "Must be derived from 'ProtocolType'"); \
+      static_assert(std::is_base_of<ProtocolType, Result>::value, \
+                    "Must be derived from 'ProtocolType'"); \
+    } \
+  public: \
+    virtual ~name__() = default; \
+    static chpl::owned<BaseRequest> \
+    create(JsonValue id, const JsonValue& j); \
+    virtual void handle(Server* ctx) override; \
+    virtual ComputedResult compute(Server* ctx) override; \
+  };
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
@@ -402,10 +418,10 @@ T Message::Visitor<T>::dispatch(const Message* req) {
       return visit(req->toResponse());
     } break;
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-    case name__: { \
-      auto casted = static_cast<const class name__*>(req); \
-      return visit(casted); \
-    } break;
+      case name__: { \
+        auto casted = static_cast<const class name__*>(req); \
+        return visit(casted); \
+      } break;
     #include "message-macro-list.h"
     #undef CHPLDEF_MESSAGE
     default: break;

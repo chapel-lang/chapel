@@ -60,7 +60,7 @@ bool Transport::readJsonBlocking(Server* ctx, std::istream& is,
   err |= !readLineTrimCarriageReturn(is, line);
   if (err) CHPLDEF_FATAL(ctx, "Reading first line of message data");
 
-  const char* prefix = "Content-Length:";
+  static constexpr const char* prefix = "Content-Length:";
   err |= !(line.rfind(prefix) == 0);
   if (err) CHPLDEF_FATAL(ctx, "Expected message prefix %s", prefix);
 

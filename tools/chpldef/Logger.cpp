@@ -49,12 +49,7 @@ Logger::Logger(Output output, std::string filePath)
 }
 
 Logger::Logger(Logger&& other) {
-  output_ = other.output_;
-  filePath_ = other.filePath_;
-  flushImmediately_ = other.flushImmediately_;
-  level_ = other.level_;
-  stream_.swap(other.stream_);
-  if (other.stream_.is_open()) other.stream_.close();
+  *this = std::move(other);
 }
 
 Logger::Logger() : Logger(Logger::STDERR, "<stderr>") {}

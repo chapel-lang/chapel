@@ -24,11 +24,11 @@
 namespace chpldef {
 namespace cmd {
 
-llvm::cl::opt<std::string> logFile("log-file",
+Flag<std::string> logFile("log-file",
   llvm::cl::desc("Specify log file path"),
   llvm::cl::value_desc("filename"));
 
-llvm::cl::opt<Logger::Level> logLevel("log-level",
+Flag<Logger::Level> logLevel("log-level",
   llvm::cl::desc("Specify log verbosity level"),
     llvm::cl::values(
       clEnumValN(Logger::MESSAGES, "messages", "Log messages only"),
@@ -39,9 +39,8 @@ template <typename T>
 static bool isFlagEquivalent(const llvm::cl::opt<T>& f1,
                              const llvm::cl::Option* f2) {
   static_assert(std::is_base_of<llvm::cl::Option, llvm::cl::opt<T>>::value);
-  auto& ref = static_cast<const llvm::cl::Option&>(f1);
-  bool ret = &ref == f2;
-  return ret;
+  auto ptr = static_cast<const llvm::cl::Option*>(&f1);
+  return ptr == f3;
 }
 
 // TODO: Get these things in an array so we don't have O(n) code?

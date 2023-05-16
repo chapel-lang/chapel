@@ -33,11 +33,11 @@ bool Message::isIdValid(const JsonValue& id) {
 // TODO: Need to build an error message or record what went wrong. Create
 // an 'Invalid' subclass and use that to record any error that occurs past
 // the point of parsing the message ID.
-chpl::owned<Message> Message::request(Server* ctx, const JsonValue& json) {
-  auto objPtr = json.getAsObject();
+chpl::owned<BaseRequest> Message::request(Server* ctx, const JsonValue& j) {
+  auto objPtr = j.getAsObject();
   if (!objPtr) {
     ctx->verbose("Failed to unpack JSON object, found: %s\n",
-                 jsonTagStr(json));
+                 jsonTagStr(j));
     return nullptr;
   }
 
@@ -82,7 +82,7 @@ chpl::owned<Message> Message::request(Server* ctx, const JsonValue& json) {
 
   switch (tag) {
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-    case name__: return name__::create(std::move(id), *params);
+      case name__: return name__::create(std::move(id), *params);
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
     default: break;
@@ -122,7 +122,7 @@ opt<Response> Message::response(Server* ctx, const Message* msg) {
       CHPL_ASSERT(!msg->hasError());
       switch (msg->tag()) {
         #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-        case name__: return createSuccessfulResponse(msg->to##name__());
+          case name__: return createSuccessfulResponse(msg->to##name__());
         #include "./message-macro-list.h"
         #undef CHPLDEF_MESSAGE
         default: break;
@@ -143,7 +143,7 @@ opt<Response> Message::response(Server* ctx, const Message* msg) {
 bool Message::isOutbound() const {
   if (tag_ == Message::RESPONSE) return true;
   #define CHPLDEF_MESSAGE(name__, outbound__, x2__, x3__) \
-  if (tag_ == Message::name__) return outbound__;
+    if (tag_ == Message::name__) return outbound__;
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
   return false;
@@ -152,7 +152,7 @@ bool Message::isOutbound() const {
 bool Message::isNotification() const {
   if (tag_ == Message::RESPONSE) return true;
   #define CHPLDEF_MESSAGE(name__, x1__, notification__, x3__) \
-  if (tag_ == Message::name__) return notification__;
+    if (tag_ == Message::name__) return notification__;
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
   return false;
@@ -165,7 +165,7 @@ const char* Message::jsonRpcMethodName() const {
 const char* Message::tagToJsonRpcMethodName(Message::Tag tag) {
   switch (tag) {
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, rpc__) \
-    case name__: return #rpc__;
+      case name__: return #rpc__;
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
     default: break;
@@ -174,9 +174,10 @@ const char* Message::tagToJsonRpcMethodName(Message::Tag tag) {
   return nullptr;
 }
 
+// TODO: Can use a trie if this becomes a performance bottleneck.
 Message::Tag Message::jsonRpcMethodNameToTag(const char* str) {
   #define CHPLDEF_MESSAGE(name__, x1__, x2__, rpc__) \
-  if (!strcmp(#rpc__, str)) return name__;
+    if (!strcmp(#rpc__, str)) return name__;
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
   return Message::INVALID;
@@ -194,25 +195,26 @@ std::string Message::idToString() const {
 }
 
 template <typename P, typename R>
-Message::Error Request<P, R>::unpack(const JsonValue& json, P& p,
+Message::Error Request<P, R>::unpack(const JsonValue& j, P& p,
                                      std::string* note) {
   llvm::json::Path::Root root;
-  if (p.fromJson(json, root)) return Message::OK;
+  if (p.fromJson(j, root)) return Message::OK;
   *note = "Failed to unpack JSON";
   return Message::ERR_INVALID_PARAMS;
 }
 
 /** Define factory functions that unpack and construct the message. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-chpl::owned<Message> name__::create(JsonValue id, const JsonValue& json) { \
-  name__::Params p; \
-  std::string note; \
-  auto error = unpack(json, p, &note); \
-  auto req = new name__(std::move(id), error, std::move(note), \
-                        std::move(p)); \
-  auto ret = chpl::toOwned(req); \
-  return ret; \
-}
+  chpl::owned<BaseRequest> \
+  name__::create(JsonValue id, const JsonValue& j) { \
+    name__::Params p; \
+    std::string note; \
+    auto error = unpack(j, p, &note); \
+    auto req = new name__(std::move(id), error, std::move(note), \
+                          std::move(p)); \
+    auto ret = chpl::toOwned<BaseRequest>(req); \
+    return ret; \
+  }
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
@@ -259,41 +261,35 @@ Response Response::create(JsonValue id, Message::Error error,
   return ret;
 }
 
-template <typename P, typename R>
-const R* Request<P, R>::result() const {
-  if (status() != Message::COMPLETED) return nullptr;
-  return &this->r;
-}
-
 const Response* Message::toResponse() const {
-  if (tag_ == Message::RESPONSE) return (const Response*) this;
+  if (tag_ == Message::RESPONSE) return static_cast<const Response*>(this);
   return nullptr;
 }
 
 Response* Message::toResponse() {
-  if (tag_ == Message::RESPONSE) return (Response*) this;
+  if (tag_ == Message::RESPONSE) return static_cast<Response*>(this);
   return nullptr;
 }
 
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-const class name__* Message::to##name__() const { \
-  if (tag_ == Message::name__) \
-    return static_cast<const class name__*>(this); \
-  return nullptr; \
-} \
-class name__* Message::to##name__() { \
-  if (tag_ == Message::name__) return static_cast<class name__*>(this); \
-  return nullptr; \
-}
+  const class name__* Message::to##name__() const { \
+    if (tag_ == Message::name__) \
+      return static_cast<const class name__*>(this); \
+    return nullptr; \
+  } \
+  class name__* Message::to##name__() { \
+    if (tag_ == Message::name__) return static_cast<class name__*>(this); \
+    return nullptr; \
+  }
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
 const char* Message::tagToString(Tag tag) {
-  if (tag == Message::INVALID) return "Invalid";
   if (tag == Message::UNSET) return "Unset";
+  if (tag == Message::INVALID) return "Invalid";
   if (tag == Message::RESPONSE) return "Response";
   #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-  if (tag == name__) return #name__;
+    if (tag == name__) return #name__;
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
   return nullptr;
@@ -349,15 +345,15 @@ static bool doHandleMessage(Server* ctx, T* msg, X& x) {
 
 /** Call the request handler above and then mark completed or failed. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-void name__::handle(Server* ctx) { \
-  ComputedResult x; \
-  if (doHandleMessage(ctx, this, x)) { \
-    this->r = std::move(x.result); \
-    this->markCompleted(); \
-  } else { \
-    this->markFailed(x.error, std::move(x.note)); \
-  } \
-}
+  void name__::handle(Server* ctx) { \
+    ComputedResult x; \
+    if (doHandleMessage(ctx, this, x)) { \
+      this->r = std::move(x.result); \
+      this->markCompleted(); \
+    } else { \
+      this->markFailed(x.error, std::move(x.note)); \
+    } \
+  }
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
