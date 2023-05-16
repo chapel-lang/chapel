@@ -17,12 +17,12 @@ iter myiter(N /* adding :int makes it work */) {
   var r = new myrecord(0);
   var r2 = new myrecord(2);
   r.add(2);
-  li.append(r);
+  li.pushBack(r);
 
   for i in 1..N {
     r2 = new myrecord(i);
     r2.add(i);
-    li.append(r2);
+    li.pushBack(r2);
   }
 
   for r in li {

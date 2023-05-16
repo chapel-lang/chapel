@@ -105,7 +105,7 @@ class MultiMap {
 	  if (el == d) then return false;
       }
     }
-    list_head.append(d);
+    list_head.pushBack(d);
     return true;
   }
 
@@ -226,12 +226,12 @@ class Graph {
     for edge in edges do {
       var e = edge!;
       if( e.src == n ){
-	outEdges[n.id].append(e);
-	adjacent[n.id].append(e.dst.id);
+	outEdges[n.id].pushBack(e);
+	adjacent[n.id].pushBack(e.dst.id);
       }
       if( e.dst == n ){
-	inEdges[n.id].append(e);
-	undir_adjacent[n.id].append(e.src.id);
+	inEdges[n.id].pushBack(e);
+	undir_adjacent[n.id].pushBack(e.src.id);
       }
     }
   }

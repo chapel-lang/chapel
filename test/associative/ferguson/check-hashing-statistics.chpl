@@ -163,7 +163,7 @@ proc runTest() {
     counts3[shrink(l)] += 1;
 
     pairs[shrink(j), shrink(k)] += 1;
-    pairsInput[shrink(j), shrink(k)].append(i);
+    pushBack[shrink(j), shrink(k)].append(i);
 
     triples[shrink(j), shrink(k), shrink(l)] += 1;
   }
@@ -183,7 +183,7 @@ proc runTest() {
   /*for (i, count) in zip(pairs.domain, pairs) {
     if count != 0 {
       writef("[% 8t] = %i ", i, count);
-      var n = pairsInput[i].size;
+      var n = pushBack[i].size;
       if n > 10 then n = 10;
       for j in 1..n {
         writef("%016xu ", pairsInput[i][j]);
@@ -251,5 +251,3 @@ useTop = true;
 writeln("Using PCG seeds, defaultHash, defaultHashCombine, shift top down");
 runTest();
 writeln();
-
-

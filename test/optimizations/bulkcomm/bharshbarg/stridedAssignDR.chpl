@@ -50,22 +50,22 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
     var mine : list(range(stridable=true));
 
     if cur.size == 1 {
-      mine.append(cur by str);
+      mine.pushBack(cur by str);
     } else {
       // dense ranges
-      mine.append(cur by str);
-      mine.append(low..#size/2 by str);
+      mine.pushBack(cur by str);
+      mine.pushBack(low..#size/2 by str);
 
       // Try to have a case where we test something like this:
       // {1..10, 1..5} = {1..10, 1..10 by 2}
-      mine.append(low..high by 2*str);
+      mine.pushBack(low..high by 2*str);
 
       // single-element slice
-      mine.append(low..low by str);
+      mine.pushBack(low..low by str);
 
       if rank <= 2 {
         // single-element due to really large stride
-        mine.append(low..high by (size+1)*str);
+        mine.pushBack(low..high by (size+1)*str);
       }
       if rank <= 3 {
         // strides that either do or do not fit in the ranges
@@ -73,11 +73,11 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
         while !(size % even == 0) do even += str;
         while (size % odd == 0) do odd += str;
 
-        mine.append(low..high by even);
-        mine.append(low..high by odd);
-        mine.append((low+quart)..high by even);
-        mine.append((low+quart)..high by odd);
-        mine.append(low..mid by even);
+        mine.pushBack(low..high by even);
+        mine.pushBack(low..high by odd);
+        mine.pushBack((low+quart)..high by even);
+        mine.pushBack((low+quart)..high by odd);
+        mine.pushBack(low..mid by even);
       }
     }
 
@@ -87,7 +87,7 @@ proc buildSlices(param rank : int, Orig : domain(rank, stridable=true)) {
 
   for r in helper(1, rank, perDim) {
     var dom : domain(rank, stridable=true) = r;
-    ret.append(dom);
+    ret.pushBack(dom);
   }
   
   return ret;

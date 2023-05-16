@@ -11,7 +11,7 @@ var spsDomCSC: sparse subdomain(parentDomCSC);
 var indices: list(2*int);
 
 for i in {1..10 by 3, 1..10 by 3} do
-  indices.append(i);
+  indices.pushBack(i);
 
 const arr = indices.toArray();
 

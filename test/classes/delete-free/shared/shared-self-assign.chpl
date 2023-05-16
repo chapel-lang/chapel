@@ -32,7 +32,7 @@
     var _data: list((shared T, shared T));
 
     proc push(in element) {
-      _data.append(element);
+      _data.pushBack(element);
     }
 
     proc pop() {

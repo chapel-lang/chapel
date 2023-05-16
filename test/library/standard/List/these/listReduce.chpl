@@ -5,7 +5,7 @@ config const testIters = 138;
 var l: list(int);
 
 for i in 1..testIters do
-  l.append(i);
+  l.pushBack(i);
 
 // standalone iterator
 var sum1 = + reduce l;

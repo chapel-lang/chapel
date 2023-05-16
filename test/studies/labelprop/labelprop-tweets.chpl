@@ -72,10 +72,10 @@ proc main(args:[] string) {
     if isDir(arg) {
       // Go through files in directories.
       for f in findFiles(arg, true) {
-        todo.append(f);
+        todo.pushBack(f);
       }
     } else {
-      todo.append(arg);
+      todo.pushBack(arg);
     }
   }
 
@@ -541,5 +541,3 @@ proc create_and_analyze_graph(ref Pairs)
 
   delete G;
 }
-
-

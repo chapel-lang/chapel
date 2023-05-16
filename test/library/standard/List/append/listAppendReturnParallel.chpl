@@ -14,7 +14,7 @@ var checkArr : [1..stop] int;
 
 coforall i in 1..stop with (ref lst, ref checkArr) {
   var x = i:listType;
-  var ind = lst.append(x);
+  var ind = lst.pushBack(x);
   checkArr[i] = ind; 
 }
 

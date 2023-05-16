@@ -5,7 +5,7 @@ config const testIters = 8;
 var lst: list(int);
 
 for i in 1..testIters do
-  lst.append(i);
+  lst.pushBack(i);
 
 assert(lst.size == testIters);
 
@@ -25,5 +25,3 @@ removed = lst.remove(testIters);
 
 assert(removed == 0);
 assert(lst.size == oldSize);
-
-

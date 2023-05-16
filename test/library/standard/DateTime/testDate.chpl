@@ -197,7 +197,7 @@ proc test_date_iso_long_years() {
     assert(d.isoCalendar()(1) == d1.isoCalendar()(1) &&
            d.isoCalendar()(2) == d1.isoCalendar()(2));
     if d.isoCalendar()(1) == 53 then
-      L.append(i);
+      L.pushBack(i);
   }
 
   assert(L.size == ISO_LONG_YEARS_TABLE.size);

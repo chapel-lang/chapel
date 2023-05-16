@@ -47,7 +47,7 @@ proc main() {
   {
     var lines: list(R);
 
-    lines.append(r);
+    lines.pushBack(r);
 
     const elem = lines.pop(0);
   }

@@ -56,7 +56,7 @@ record path {
   proc init(xs:int...) {
     this.complete();
     for x in xs do
-      steps.append(x);
+      steps.pushBack(x);
   }
 }
 

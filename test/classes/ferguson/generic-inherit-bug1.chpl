@@ -85,11 +85,10 @@ module Impl {
 
     var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
     var d = (new owned ListerParent(rank=1, idxType=int, stridable=false)).borrow();
-    d.lst.append(a);
+    d.lst.pushBack(a);
 
     test(d);
 
     delete a, aa;
   }
 }
-
