@@ -4,9 +4,14 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-native-gpu.bash
+
+module load cudatoolkit
+
+export CHPL_GPU=nvidia
 export CHPL_COMM=none
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native/array_on_device"
 export CHPL_GPU_MEM_STRATEGY=array_on_device
+
 
 export CHPL_TEST_PERF_CONFIG_NAME='gpu'
 source $CWD/common-perf.bash
