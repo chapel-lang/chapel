@@ -859,8 +859,11 @@ struct Converter {
     ID moduleId, targetId;
     types::QualifiedType targetType;
     if (!isDotOnModule(node, moduleId, targetId, targetType) ||
-        targetId.isEmpty() ||
-        targetId.isFabricatedId()) return nullptr;
+        targetId.isEmpty()) return nullptr;
+    if (targetId.isFabricatedId()) {
+      CHPL_ASSERT(targetId.fabricatedIdKind() == ID::ExternBlockElement);
+      return nullptr;
+    }
     storeReferencedMod(findConvertedSym(moduleId));
 
     // If it's just a variable, turn it into a direct reference to said
@@ -2077,7 +2080,10 @@ struct Converter {
     if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
 
     // Don't know how to convert fabricated IDs yet.
-    if (targetId.isFabricatedId()) return nullptr;
+    if (targetId.isFabricatedId()) {
+      CHPL_ASSERT(targetId.fabricatedIdKind() == ID::ExternBlockElement);
+      return nullptr;
+    }
 
     if (!targetId.isEmpty() && targetType.kind() != types::QualifiedType::FUNCTION) {
       // an empty ID indicates that it's an overloaded function or otherwise unknown,
@@ -3252,7 +3258,7 @@ struct Converter {
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);
 
-    // Pop the module after converting children, and note the moduels used
+    // Pop the module after converting children, and note the modules used
     // within.
     INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
     for (auto usedMod : modStack.back().usedModules) {
