@@ -88,4 +88,4 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 Updating LLVM versions may also have impacts on GPU support.  See the test
 $CHPL_HOME/test/gpu/native/llvmMoved.chpl for a description of these
-considerations.
+impacts.

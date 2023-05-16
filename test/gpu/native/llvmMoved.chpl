@@ -29,7 +29,7 @@
               version.
 
         - [ ] Look at util/chplenv/chpl_gpu.py, in here we have code that
-              checks to see if youre using a compatible version of CUDA/ROCm
+              checks to see if you're using a compatible version of CUDA/ROCm
               (as of writing this comment this is in the
               `_validate_cuda_version_impl` and `_validate_rocm_version_impl`
               functions).  Update this code.
