@@ -318,7 +318,15 @@ module Json {
 
     proc deserializeField(r: _readerT, key: string, type T) throws {
       if _names.contains(key) {
-        r.seek(_offsets[key]..);
+        // Use 'advance' instead of 'seek' to support reading in a marked
+        // channel, which can happen during 'readf'.
+        //
+        // Use 'mark' to rewind the position since 'advance' doesn't support
+        // negative values. This means that 'deserializeField' does not advance
+        // the channel's position until 'endClass' or 'endRecord' are called.
+        r.mark();
+        const dist =  _offsets[key] - r.offset();
+        r.advance(dist);
       } else if !key.isEmpty() {
         throw new Error("field not found...");
       }
@@ -327,6 +335,8 @@ module Json {
 
       // note: trailing commas not allowed in json
       r.matchLiteral(",");
+      if !key.isEmpty() then
+        r.revert();
 
       return ret;
     }
@@ -379,7 +389,8 @@ module Json {
 
     proc _endComposite(r: fileReader) throws {
       if _inheritLevel == 1 {
-        r.seek(_lastPos..);
+        const dist =  _lastPos - r.offset();
+        r.advance(dist);
         r.readLiteral("}");
       }
       _inheritLevel -= 1;
