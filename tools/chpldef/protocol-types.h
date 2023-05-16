@@ -27,8 +27,8 @@
 
 /** Bunch up some redundant overrides for protocol structs into a macro. */
 #define CHPLDEF_PROTOCOL_TYPE_OVERRIDES() \
-  virtual bool fromJson(const JsonValue& j, JsonPath p);  \
-  virtual JsonValue toJson() const;
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;  \
+  virtual JsonValue toJson() const override;
 
 /** This header contains types which help form the Microsoft language server
     protocol. The types attempt to follow the specification as faithfully

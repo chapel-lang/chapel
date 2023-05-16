@@ -43,9 +43,7 @@ Logger::Logger(Output output, std::string filePath)
     : output_(output), filePath_(std::move(filePath)) {
   if (output == Logger::STDERR) filePath_ = "<stderr>";
   if (output == Logger::STDOUT) filePath_ = "<stdout>";
-  if (bool err = start()) {
-    CHPL_ASSERT(!isLoggingToBuiltin());
-  }
+  if (!start()) CHPL_ASSERT(!isLoggingToBuiltin());
 }
 
 Logger::Logger(Logger&& other) {
@@ -94,12 +92,12 @@ void Logger::setFlushImmediately(bool flushImmediately) {
 }
 
 bool Logger::start() {
-  if (isLogging()) return false;
+  if (isLogging()) return true;
   CHPL_ASSERT(!isLoggingToBuiltin());
   stream_.open(filePath_);
-  bool error = !stream_.is_open() || stream_.bad() || stream_.fail();
-  if (error) stream_.close();
-  return !error;
+  bool ret = stream_.is_open() && !stream_.bad() && !stream_.fail();
+  if (!ret) stream_.close();
+  return ret;
 }
 
 void Logger::stop() {
