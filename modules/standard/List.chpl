@@ -1494,11 +1494,16 @@ module List {
       return slot.borrow();
     }
 
+    @deprecated(notes="'list.set' has been deprecated; please use 'list.replace' instead.")
+    proc ref set(i: int, in x: eltType): bool {
+      return this.replace(i, x);
+    }
+
     /*
-      Sets the element at a given index in this list. This method returns
+      Replaces the value at a given index with a new value. This method returns
       `false` if the index is out of bounds.
 
-      :arg i: The index of the element to set
+      :arg i: The index of the element to replace
       :type i: int
 
       :arg x: The value to set at index `i`
@@ -1507,7 +1512,7 @@ module List {
                and `false` otherwise.
       :rtype: bool
     */
-    proc ref set(i: int, pragma "no auto destroy" in x: eltType): bool {
+    proc ref replace(i: int, pragma "no auto destroy" in x: eltType): bool {
       _enter(); defer _leave();
 
       if !_withinBounds(i) {
