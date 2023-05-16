@@ -1,2 +1,2 @@
 test_module_access2.chpl:1: In module 'OuterModule':
-test_module_access2.chpl:13: error: cannot access 'x' as it is private to 'M'
+test_module_access2.chpl:13: error: cannot find 'x' in module 'M'

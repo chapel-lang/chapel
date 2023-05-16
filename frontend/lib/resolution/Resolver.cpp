@@ -1267,8 +1267,16 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
     auto vec = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
                                  dot->field(), configWithPrivate);
-    if (!vec.empty()) {
-      thereButPrivate = true;
+    for (auto& bids : vec) {
+      for (auto& id : bids) {
+        // Only report "bla is private" if it's originally declared in the
+        // given module (i.e., don't do so if the found ID is imported from
+        // elsewhere)
+        auto modId = parsing::idToParentModule(context, id);
+        if (modId != moduleId) continue;
+
+        thereButPrivate = true;
+      }
     }
   }
 
