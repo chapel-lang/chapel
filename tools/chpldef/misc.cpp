@@ -32,6 +32,8 @@ const char* jsonTagStr(const JsonValue& json) {
     case JsonValue::Array: return "array";
     case JsonValue::Object: return "object";
   }
+  CHPLDEF_IMPOSSIBLE();
+  return nullptr;
 }
 
 /** Print a JSON value. */
