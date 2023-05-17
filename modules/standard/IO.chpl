@@ -11394,9 +11394,9 @@ proc fileReader.search(re:regex(?)):regexMatch throws
 
 /*  Search for an offset in the fileReader from the current offset matching the
     passed regular expression, possibly pulling out capture groups. If there is
-    a match, leaves the fileReader offset at the match. If there is no match,
-    the fileReader offset will be advanced to the end of the fileReader (or end
-    of the file).
+    a match, leaves the fileReader offset at the begininng of the match. If
+    there is no match, the fileReader offset will be advanced to the end of the
+    fileReader (or end of the file).
 
     Throws a SystemError if an error occurs.
 
@@ -11424,7 +11424,7 @@ proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
    of that match. Note though that you would have to use
    :proc:`IO.fileReader.advance` to get to the offset of a capture group.
 
-   After returning each match, advances to just after that
+   After yielding each match, advances to just after that
    match and looks for another match. Thus, it will not return
    overlapping matches.
 
