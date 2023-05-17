@@ -295,8 +295,9 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributeGroup()) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext, "chpldoc.nodoc"));
+  if (auto attrs = parsing::astToAttributeGroup(gContext, e)) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
+                                                           "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
     }
@@ -2000,7 +2001,7 @@ module M {
 
   private proc privateProc { return 37; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc procNoDoc { return 42; }
 
   // got a comment for ya
@@ -2010,7 +2011,7 @@ module M {
   var x : [1..3] int = [1, 2, 3];
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module N { }
 /* comment 4 */;
 )RAW";

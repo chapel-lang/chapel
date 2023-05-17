@@ -193,6 +193,17 @@ def get(flag, map_to_compiler=False, get_lcd=False):
 
     return cpu_tuple(argname or 'none', cpu or 'unknown')
 
+@memoize
+def get_llvm_target_cpu():
+    cpu_tuple = collections.namedtuple('cpu_tuple', ['flag', 'cpu'])
+
+    x = get('target')
+    cpu = x.cpu
+    argname = x.flag
+    # support additional cpu synonyms for llvm
+    if cpu in cpu_llvm_synonyms:
+        cpu = cpu_llvm_synonyms[cpu]
+    return cpu_tuple(argname or 'none', cpu or 'unknown')
 
 # Returns the default machine.  The flag argument is 'host' or 'target'.
 #

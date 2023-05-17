@@ -382,7 +382,7 @@ static void test16() {
   testCopyElision("test16",
     R""""(
       module M {
-        proc test() {
+        proc test() throws {
           var x:int;
           try {
             var y = x;

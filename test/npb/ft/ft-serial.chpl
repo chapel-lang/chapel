@@ -1,6 +1,6 @@
 // NAS FT - Initial port to Chapel based on ZPL
 
-use BitOps, Time;
+use BitOps, Time, Math;
 
 config const
   verbose         = true,

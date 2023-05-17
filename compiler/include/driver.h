@@ -108,7 +108,7 @@ extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_RUNTIME_CPU;
-extern const char* CHPL_TARGET_BACKEND_CPU;
+extern const char* CHPL_LLVM_TARGET_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_COMPILER_PRGENV;
@@ -145,8 +145,7 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
-extern const char* CHPL_ROCM_PATH;
-extern const char* CHPL_GPU_CODEGEN;
+extern const char* CHPL_GPU;
 extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
@@ -264,6 +263,7 @@ extern int fGPUBlockSize;
 extern char fGpuArch[16];
 extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
+extern char gpuArch[16];
 
 extern char stopAfterPass[128];
 

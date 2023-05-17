@@ -132,6 +132,7 @@ struct Visitor {
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
+  void checkExternBlockAtModuleScope(const ExternBlock* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -173,6 +174,7 @@ struct Visitor {
   void visit(const Yield* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const ExternBlock* node);
 };
 
 /**
@@ -1104,10 +1106,26 @@ void Visitor::visit(const BracketLoop* node) {
 
 void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
   // determine if the module is user code
-  if (!isUserCode() || !isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!isUserCode()) return;
 
+  bool pragmaNoDocFound = false;
+  int pragmaCount = 0;
+  for (auto pragma : node->pragmas()) {
+    pragmaCount++;
+    if (pragma == pragmatags::PRAGMA_NO_DOC) {
+      // issue a deprecation warning about pragma 'no doc' and continue
+      warn(node, "pragma 'no doc' is deprecated, use '@chpldoc.nodoc' instead");
+      pragmaNoDocFound = true;
+      continue;
+    }
+  }
+  // don't check if warn_unstable isn't set
+  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+
+  // don't warn if the only pragma is 'no doc', which is deprecated
+  bool noDocIsOnlyPragma = (pragmaNoDocFound && pragmaCount == 1);
   // issue a warning once for the symbol
-  if (node->pragmas().begin() != node->pragmas().end()) {
+  if (node->pragmas().begin() != node->pragmas().end() && !noDocIsOnlyPragma) {
     auto parentNode = parsing::parentAst(context_, node);
     UniqueString parentName;
     if (auto decl = parentNode->toNamedDecl()) {
@@ -1311,12 +1329,27 @@ void Visitor::visit(const Continue* node) {
   }
 }
 
+void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
+  const AstNode* p = parent();
+  if (!p->isModule()) {
+    error(node, "extern blocks are currently only supported at module scope");
+  }
+}
+
+void Visitor::visit(const ExternBlock* node) {
+  checkExternBlockAtModuleScope(node);
+}
+
 // Duplicate the contents of 'idIsInBundledModule', while skipping the
 // call to 'filePathForId', because at this point the `setFilePathForId`
 // setter query may not have been run yet.
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
   if (modules.isEmpty()) return true;
+  // check for internal module paths
+  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
+  // check for standard module paths
+  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
   bool ret = !filepath.startsWith(modules);
   return ret;
 }

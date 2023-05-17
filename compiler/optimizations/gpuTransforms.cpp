@@ -93,15 +93,17 @@ static void errorForOuterVarAccesses(FnSymbol* fn) {
 }
 
 static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint,
-   const char* name, Type* type) {
+                                     const char* name, Type* type) {
   VarSymbol *var = new VarSymbol(name, type);
   var->defPoint = new DefExpr(var);
   insertionPoint->insertAtTail(var->defPoint);
   return var;
 }
 
-static VarSymbol* generateAssignmentToPrimitive(
-    FnSymbol* fn, const char *varName, PrimitiveTag prim, Type *primReturnType) {
+static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
+                                                const char *varName,
+                                                PrimitiveTag prim,
+                                                Type *primReturnType) {
 
   VarSymbol *var = insertNewVarAndDef(fn->body, varName, primReturnType);
   CallExpr *c1 = new CallExpr(PRIM_MOVE, var, new CallExpr(prim));
@@ -181,6 +183,7 @@ public:
     return std::find(loopIndices_.begin(), loopIndices_.end(), sym) !=
       loopIndices_.end();
   }
+
 
 private:
   bool determineIfShouldErrorIfNotGpuizable();
@@ -552,28 +555,30 @@ void GpuKernel::generateIndexComputation() {
     Symbol* loopIndex  = gpuLoop.loopIndices()[i];
     Symbol* lowerBound = gpuLoop.lowerBounds()[i];
 
+    // we want some of these variables to be 64-bits to be able to avoid
+    // overflows in number of threads.
     VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn_, "blockIdxX",
-      PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
+      PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_64]);
     VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn_, "blockDimX",
       PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
     VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn_, "threadIdxX",
       PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
 
     VarSymbol *tempVar = insertNewVarAndDef(fn_->body, "t0",
-      dtInt[INT_SIZE_32]);
+      dtInt[INT_SIZE_64]);
     CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(
       PRIM_MULT, varBlockIdxX, varBlockDimX));
     fn_->insertAtTail(c1);
 
     VarSymbol *tempVar1 = insertNewVarAndDef(fn_->body, "t1",
-      dtInt[INT_SIZE_32]);
+      dtInt[INT_SIZE_64]);
     CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(
       PRIM_ADD, tempVar, varThreadIdxX));
     fn_->insertAtTail(c2);
 
     Symbol* startOffset = addKernelArgument(lowerBound);
     VarSymbol* index = insertNewVarAndDef(fn_->body, "chpl_simt_index",
-                                          dtInt[INT_SIZE_32]);
+                                          dtInt[INT_SIZE_64]);
     fn_->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(
       PRIM_ADD, tempVar1, startOffset)));
 
@@ -852,10 +857,10 @@ static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
 
   VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
                                                 "chpl_block_delta",
-                                                dtInt[INT_SIZE_DEFAULT]);
+                                                dtInt[INT_SIZE_64]);
   VarSymbol *numThreads = insertNewVarAndDef(gpuLaunchBlock,
                                              "chpl_num_gpu_threads",
-                                             dtInt[INT_SIZE_DEFAULT]);
+                                             dtInt[INT_SIZE_64]);
 
   CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
                               new CallExpr(PRIM_SUBTRACT,
@@ -898,29 +903,44 @@ static void generateGpuAndNonGpuPaths(const GpuizableLoop &gpuLoop,
   // if (chpl_task_getRequestedSubloc() >= 0) {
   //   code to determine number of threads to launch kernel with
   //   call the generated GPU kernel
-  // } else {
+  // } [else] {
   //   run the existing loop on the CPU
   // }
-  Expr* condExpr =
-      new CallExpr(PRIM_GREATEROREQUAL,
-                   new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
-                   new_IntSymbol(0));
-  BlockStmt* thenBlock = new BlockStmt();
-  BlockStmt* elseBlock = new BlockStmt();
-  CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
-  BlockStmt* gpuLaunchBlock = new BlockStmt();
+  //
+  // Normally, We put the CPU block as the else block. If we are not doing GPU
+  // codegen, we put it as an anonymous block right after the conditional. This
+  // will make sure that we call the runtime support as if there's a GPU, yet
+  // still executing the loop always.
 
-  gpuLoop.loop()->insertBefore(loopCloneCond);
-  thenBlock->insertAtHead(gpuLaunchBlock);
-  elseBlock->insertAtHead(gpuLoop.loop()->remove());
+  BlockStmt* cpuBlock = new BlockStmt();
+  BlockStmt* gpuBlock = new BlockStmt();
 
-  VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, gpuLoop);
+  // populate the gpu block
+  VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
-  gpuLaunchBlock->insertAtTail(gpuCall);
-  gpuLaunchBlock->flattenAndRemove();
+  gpuBlock->insertAtTail(gpuCall);
+
+  CallExpr* condExpr = new CallExpr(PRIM_GREATEROREQUAL,
+                                    new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                                    new_IntSymbol(0));
+
+  // we can't add elseStmt later on
+  CondStmt* cond = new CondStmt(condExpr, gpuBlock,
+                                isFullGpuCodegen() ? cpuBlock : NULL);
+
+  // first, make sure the conditional is in place
+  gpuLoop.loop()->insertBefore(cond);
+
+  // then relocate the loop
+  cpuBlock->insertAtHead(gpuLoop.loop()->remove());
+
+  // if not doing GPU codegen, just add cpuBlock after the conditional
+  if (!isFullGpuCodegen()) {
+    cond->insertAfter(cpuBlock);
+  }
 }
 
-static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
+static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
   SET_LINENO(gpuLoop.loop());
 
   // Construction of the GpuKernel will create the outlined function

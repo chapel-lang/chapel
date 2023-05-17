@@ -7,7 +7,6 @@ export OFFICIAL_SYSTEM_LLVM=true
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 
-module load cudatoolkit
 export CHPL_LLVM=system
 export CHPL_LOCALE_MODEL=gpu
 export CHPL_TEST_GPU=true

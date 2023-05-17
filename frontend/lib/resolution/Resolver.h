@@ -303,6 +303,9 @@ struct Resolver {
                                                types::QualifiedType lhsType,
                                                types::QualifiedType rhsType);
 
+  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+                                            const types::CompositeType* ct);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.

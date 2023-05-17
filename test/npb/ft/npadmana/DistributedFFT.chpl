@@ -6,7 +6,7 @@
      * Currently only supports complex-complex and real-real transforms
      * Only out-of-place transforms are supported, and the output array
        has its first two indices transposed. The input array is unchanged.
-     * Requires FFTW for the local 1D transforms. 
+     * Requires FFTW for the local 1D transforms.
      * The data are slab-distributed along the first dimension.
 
 
@@ -60,7 +60,7 @@ prototype module DistributedFFT {
   */
   config param usePrimitiveComm=true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc deinit() {
     cleanup();
   }
@@ -86,13 +86,13 @@ prototype module DistributedFFT {
   /*                              int ostride, int odist, */
   /*                              const fftw_r2r_kind *kind, unsigned flags); */
   // https://github.com/chapel-lang/chapel/issues/13319
-  pragma "no doc"
   pragma "default intent is ref"
+  @chpldoc.nodoc
   record FFTWplan {
     param ftType : FFTtype;
     var plan : fftw_plan;
 
-    // Mimic the advanced interface 
+    // Mimic the advanced interface
     proc init(param ftType : FFTtype, args ...?k) {
       this.ftType = ftType;
       this.complete();
@@ -202,7 +202,7 @@ prototype module DistributedFFT {
      This implementation closely follows a pencil-paper
      algorithm, but is not very performant.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc doFFT_Transposed_Naive(param ftType : FFTtype,
                               Src: [?SrcDom] ?T,
                               Dst : [?DstDom] T,
@@ -263,7 +263,7 @@ prototype module DistributedFFT {
 
      Performant version of the algorithm.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc doFFT_Transposed_Performant(param ftType : FFTtype,
                                    Src: [?SrcDom] ?T,
                                    Dst : [?DstDom] T,
@@ -342,7 +342,7 @@ prototype module DistributedFFT {
   */
   iter offset(r: range) { halt("Serial offset not implemented"); }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter offset(param tag: iterKind, r: range) where (tag==iterKind.standalone) {
     forall i in r + (r.size/numLocales * here.id) do {
       yield i % r.size + r.first;
@@ -368,8 +368,8 @@ prototype module DistributedFFT {
     }
   }
 
-  pragma "no doc"
   pragma "default intent is ref"
+  @chpldoc.nodoc
   record BatchedFFTWplan {
     param ftType : FFTtype;
     const parRange: range;
@@ -405,14 +405,14 @@ prototype module DistributedFFT {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setupBatchPlan(type arrType, param ftType : FFTtype, dom : domain(2), parDim : int, signOrKind, in flags : c_uint) {
     return new BatchedFFTWplan(arrType, ftType, dom, parDim, signOrKind, flags);
   }
 
 
   // Set up many 1D in place plans on a 2D array
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setupPlan(type arrType, param ftType : FFTtype, dom : domain(2), parDim : int, numTransforms : int, signOrKind, in flags : c_uint) {
     // Pull signOrKind locally since this may be an array
     // we need to take a pointer to.
@@ -482,7 +482,7 @@ prototype module DistributedFFT {
     if zSrc != zDst then halt("Mismatched z ranges");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module FFT_Locks {
     // https://github.com/chapel-lang/chapel/issues/9881
     // https://github.com/chapel-lang/chapel/issues/12300
@@ -491,7 +491,7 @@ prototype module DistributedFFT {
     var plannerLock : chpl_LocalSpinlock;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module FFT_Timers {
     use Time;
     // Time the various FFT steps.

@@ -140,6 +140,9 @@ attachSuperThis(AggregateType* super,
                 Type* retType,
                 bool throws);
 
+static FnSymbol*
+attachSuperWriteMethod(AggregateType* super, const char* name);
+
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
                             FnSymbol* payload);
@@ -149,8 +152,9 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
                 FnSymbol* payload);
 
 static FnSymbol*
-attachChildWriteThis(const SharedFcfSuperInfo info, AggregateType* child,
-                     FnSymbol* payload, const char* name);
+attachChildWriteMethod(const SharedFcfSuperInfo info, AggregateType* child,
+                       FnSymbol* payload,
+                       const char* name);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -170,14 +174,10 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
 *                                                                            *
 ************************************** | ************************************/
 
-
-
 static bool isIntentSameAsDefault(IntentTag tag, Type* t) {
   auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(tag, t);
   return ret;
 }
-
-
 
 static Type* buildSharedWrapperType(AggregateType* super) {
   Type* ret = NULL;
@@ -316,6 +316,11 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
+  std::ignore = attachSuperWriteMethod(v->type, "writeThis");
+  if (fUseIOFormatters) {
+    std::ignore = attachSuperWriteMethod(v->type, "encodeTo");
+  }
+
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
   // This ordering matters to prevent a circular dependency in 'toString'.
@@ -545,6 +550,15 @@ attachSuperThis(AggregateType* super,
   return ret;
 }
 
+static FnSymbol*
+attachSuperWriteMethod(AggregateType* super, const char* name) {
+  ArgSymbol* fileArg = nullptr;
+  auto ret = buildWriteThisFnSymbol(super, &fileArg, name);
+  ret->throwsErrorInit();
+  normalize(ret);
+  return ret;
+}
+
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
                             FnSymbol* payload) {
@@ -641,7 +655,7 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
 }
 
 static FnSymbol*
-attachChildWriteThis(const SharedFcfSuperInfo info,
+attachChildWriteMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
                      FnSymbol* payload,
                      const char* name) {
@@ -774,9 +788,9 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   auto child = insertChildWrapperAtPayload(info, fn);
   std::ignore = attachChildThis(info, child, fn);
 
-  std::ignore = attachChildWriteThis(info, child, fn, "writeThis");
+  std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
   if (fUseIOFormatters) {
-    std::ignore = attachChildWriteThis(info, child, fn, "encodeTo");
+    std::ignore = attachChildWriteMethod(info, child, fn, "encodeTo");
   }
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);

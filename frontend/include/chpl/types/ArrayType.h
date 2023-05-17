@@ -72,7 +72,7 @@ class ArrayType final : public CompositeType {
                                        const QualifiedType& domainType,
                                        const QualifiedType& eltType);
 
-  const QualifiedType domainType() const {
+  QualifiedType domainType() const {
     auto it = subs_.find(domainId);
     if (it != subs_.end()) {
       return it->second;
@@ -81,7 +81,7 @@ class ArrayType final : public CompositeType {
     }
   }
 
-  const QualifiedType eltType() const {
+  QualifiedType eltType() const {
     auto it = subs_.find(eltTypeId);
     if (it != subs_.end()) {
       return it->second;

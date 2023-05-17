@@ -87,7 +87,7 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_TARGET_CPU = NULL;
 const char* CHPL_RUNTIME_CPU = NULL;
-const char* CHPL_TARGET_BACKEND_CPU = NULL;
+const char* CHPL_LLVM_TARGET_CPU = NULL;
 const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER_PRGENV = NULL;
@@ -125,8 +125,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
-const char* CHPL_ROCM_PATH = NULL;
-const char* CHPL_GPU_CODEGEN = NULL;
+const char* CHPL_GPU = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -360,6 +359,7 @@ int fGPUBlockSize = 0;
 char fGpuArch[16];
 bool fGpuPtxasEnforceOpt;
 const char* gGpuSdkPath = NULL;
+char gpuArch[16];
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1506,7 +1506,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_TARGET_CPU      = envMap["CHPL_TARGET_CPU"];
   CHPL_RUNTIME_CPU     = envMap["CHPL_RUNTIME_CPU"];
-  CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
+  CHPL_LLVM_TARGET_CPU = envMap["CHPL_LLVM_TARGET_CPU"];
   CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
   CHPL_TARGET_COMPILER_PRGENV = envMap["CHPL_TARGET_COMPILER_PRGENV"];
@@ -1545,8 +1545,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
-    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
-    CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
+    CHPL_GPU= envMap["CHPL_GPU"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -1555,8 +1554,9 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
         break;
-      default:
-        INT_ASSERT(0 && "Should be unreachable");
+      case GpuCodegenType::GPU_CG_CPU:
+        gGpuSdkPath = "";
+        break;
     }
   }
 
@@ -1679,7 +1679,23 @@ static void setGPUFlags() {
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
     }
+    //
+    // set up gpuArch
+    if (strlen(fGpuArch) > 0) {
+      strncpy(gpuArch, fGpuArch, 16);
+    }
+    else {
+      if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
+        USR_FATAL("CHPL_GPU_ARCH must be set. See "
+                  "https://chapel-lang.org/docs/technotes/gpu.html "
+                  "for more information");
+      }
+      else {
+        strncpy(gpuArch, CHPL_GPU_ARCH, 16);
+      }
+    }
   }
+
 }
 
 static void checkLLVMCodeGen() {
@@ -1963,6 +1979,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);
+  flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
+            fPermitUnhandledModuleErrors);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);

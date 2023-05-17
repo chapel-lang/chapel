@@ -105,7 +105,7 @@ module CopyAggregation {
    */
   record DstAggregator {
     type elemType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
     inline proc copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
@@ -123,7 +123,7 @@ module CopyAggregation {
    */
   record SrcAggregator {
     type elemType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
     inline proc copy(ref dst: elemType, const ref src: elemType) {
       if aggregate then agg.copy(dst, src);
@@ -134,7 +134,7 @@ module CopyAggregation {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record DstAggregatorImpl {
     type elemType;
     type aggType = (c_ptr(elemType), elemType);
@@ -229,7 +229,7 @@ module CopyAggregation {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record SrcAggregatorImpl {
     type elemType;
     type aggType = c_ptr(elemType);
@@ -337,8 +337,8 @@ module CopyAggregation {
       myRSrcVals.GET(myLSrcVals, myBufferIdx);
 
       // Assign the srcVal to the dstAddrs
-      var dstAddrPtr = c_ptrTo(dstAddrs[loc][0]);
-      var srcValPtr = c_ptrTo(myLSrcVals[0]);
+      var dstAddrPtr = c_addrOf(dstAddrs[loc][0]);
+      var srcValPtr = c_addrOf(myLSrcVals[0]);
       for i in 0..<myBufferIdx {
         dstAddrPtr[i].deref() = srcValPtr[i];
       }
@@ -349,7 +349,7 @@ module CopyAggregation {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module AggregationPrimitives {
   use CTypes;
   use Communication;

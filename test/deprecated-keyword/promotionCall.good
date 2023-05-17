@@ -1,4 +1,9 @@
 0
 0
+3
+3
+3
 7
+promotionCall.chpl:11: warning: foo is deprecated
+promotionCall.chpl:6: In function 'main':
 promotionCall.chpl:9: warning: foo is deprecated

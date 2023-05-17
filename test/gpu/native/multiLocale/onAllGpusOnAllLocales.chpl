@@ -30,9 +30,9 @@ stopGpuDiagnostics();
 // more than 1 GPU per locale:
 writeln("here.gpus.size > 1:  ", here.gpus.size > 1);
 
-// Should match the number of locales specified by NUMLOCALES file
+// Should match the number of locales
 var numLaunches = getGpuDiagnostics().kernel_launch;
-writeln("numLaunches.size:   ", numLaunches.size);
+writeln("numLaunches.size == Locales.size: ", numLaunches.size == Locales.size);
 
 // We expect the first locale to have 1 more launch than all subsequent locales
 writeln("numLaunches[0] == numLaunches[1] + 1:  ",

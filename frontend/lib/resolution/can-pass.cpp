@@ -1080,7 +1080,7 @@ class KindProperties {
   bool valid() const { return isValid; }
 };
 
-static llvm::Optional<QualifiedType>
+static optional<QualifiedType>
 findByPassing(Context* context,
               const std::vector<QualifiedType>& types) {
   for (auto& type : types) {
@@ -1095,10 +1095,10 @@ findByPassing(Context* context,
     }
     if (fitsOthers) return type;
   }
-  return llvm::Optional<QualifiedType>();
+  return chpl::empty;
 }
 
-llvm::Optional<QualifiedType>
+optional<QualifiedType>
 commonType(Context* context,
            const std::vector<QualifiedType>& types,
            KindRequirement requiredKind) {
@@ -1120,13 +1120,13 @@ commonType(Context* context,
   if (requiredKind) {
     // The caller enforces a particular kind on us. Make sure that the
     // computed properties line up with the kind.
-    auto requiredProperties = KindProperties::fromKind(requiredKind.getValue());
+    auto requiredProperties = KindProperties::fromKind(*requiredKind);
     requiredProperties.strictCombineWith(properties);
     properties = requiredProperties;
   }
 
   // We can't reconcile the intents. Return with error.
-  if (!properties.valid()) return llvm::Optional<QualifiedType>();
+  if (!properties.valid()) return chpl::empty;
   auto bestKind = properties.toKind();
 
   // Create a new list of types with their kinds adjusted.
@@ -1151,7 +1151,8 @@ commonType(Context* context,
   }
 
   bool paramRequired = requiredKind &&
-    requiredKind.getValue() == QualifiedType::PARAM;
+                       *requiredKind == QualifiedType::PARAM;
+
   if (bestKind == QualifiedType::PARAM && !paramRequired) {
     // We couldn't unify the types as params, but maybe if we downgrade
     // them to values, it'll work.
@@ -1167,7 +1168,7 @@ commonType(Context* context,
       return commonType;
     }
   }
-  return llvm::Optional<QualifiedType>();
+  return chpl::empty;
 }
 
 } // end namespace resolution

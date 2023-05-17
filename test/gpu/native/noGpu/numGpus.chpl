@@ -1,0 +1,1 @@
+writeln(here.gpus.size);

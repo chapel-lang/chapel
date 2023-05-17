@@ -38,6 +38,7 @@
 #include "prims.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
+#include "try-catch-analysis.h"
 
 #include <cstdio>
 #include <set>
@@ -154,6 +155,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           }
         }
       }
+      checkThrows(context, result, mod);
     }
   }
 
@@ -222,7 +224,12 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     const auto& resolvedStmt = resolveModuleStmt(context, id);
-    result = resolvedStmt.byId(id).type();
+    if (resolvedStmt.hasId(id)) {
+      result = resolvedStmt.byId(id).type();
+    } else {
+      // fall back to default value
+      result = QualifiedType();
+    }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
     const Type* t = nullptr;
@@ -1702,6 +1709,20 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
+// this wrapper around resolveFunctionByPoisQuery helps to avoid
+// 'possibly dangling reference to a temporary' warnings from GCC 13.
+static const owned<ResolvedFunction>&
+resolveFunctionByPoisQueryWrapper(Context* context,
+                                  const TypedFnSignature* sig,
+                                  const PoiInfo& poiInfo) {
+  auto poiFnIdsUsedCopy = poiInfo.poiFnIdsUsed();
+  auto recursiveFnsUsedCopy = poiInfo.recursiveFnsUsed();
+
+  return resolveFunctionByPoisQuery(context, sig,
+                                    std::move(poiFnIdsUsedCopy),
+                                    std::move(recursiveFnsUsedCopy));
+}
+
 static const ResolvedFunction* const&
 resolveFunctionByInfoQuery(Context* context,
                            const TypedFnSignature* sig,
@@ -1760,9 +1781,8 @@ resolveFunctionByInfoQuery(Context* context,
                          resolvedPoiInfo.poiFnIdsUsed(),
                          resolvedPoiInfo.recursiveFnsUsed());
       auto& saved =
-        resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                   resolvedPoiInfo.poiFnIdsUsed(),
-                                   resolvedPoiInfo.recursiveFnsUsed());
+        resolveFunctionByPoisQueryWrapper(context, newTfsForInitializer,
+                                          resolvedPoiInfo);
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1812,6 +1832,9 @@ resolveFunctionByInfoQuery(Context* context,
     // then, handle return intent overloads and maybe-const formals
     adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
+    // check that throws are handled or forwarded
+    checkThrows(context, resolutionById, fn);
+
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.setResolved(true);
@@ -1840,9 +1863,7 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig,
-                               resolvedPoiInfo.poiFnIdsUsed(),
-                               resolvedPoiInfo.recursiveFnsUsed());
+    resolveFunctionByPoisQueryWrapper(context, sig, resolvedPoiInfo);
 
   const ResolvedFunction* result = resolved.get();
 
@@ -2251,6 +2272,15 @@ filterCandidatesInitial(Context* context,
   }
 
   return QUERY_END(result);
+}
+
+// this wrapper around filterCandidatesInitial helps to avoid
+// 'possibly dangling reference to a temporary' warnings from GCC 13.
+static const std::vector<const TypedFnSignature*>&
+filterCandidatesInitialWrapper(Context* context,
+                               std::vector<BorrowedIdsWithName>&& lst,
+                               const CallInfo& call) {
+  return filterCandidatesInitial(context, std::move(lst), call);
 }
 
 void
@@ -2755,6 +2785,10 @@ lookupCalledExpr(Context* context,
     config |= LOOKUP_ONLY_METHODS_FIELDS;
   }
 
+  if (ci.isOpCall()) {
+    config |= LOOKUP_METHODS;
+  }
+
   UniqueString name = ci.name();
 
   auto ret = lookupNameInScopeWithSet(context, scope, receiverScopes, name,
@@ -2791,10 +2825,6 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
                                     ForwardingInfoVec& poiForwardingTo) {
-  nonPoiCandidates.empty();
-  poiCandidates.empty();
-  nonPoiForwardingTo.empty();
-  poiForwardingTo.empty();
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -2878,7 +2908,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         const auto& initialCandidates =
-          filterCandidatesInitial(context, v, fci);
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2914,7 +2944,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
         auto v = lookupCalledExpr(context, curPoi->inScope(), fci, visited[i]);
 
         // filter without instantiating yet
-        auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+        auto& initialCandidates =
+          filterCandidatesInitialWrapper(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -2988,7 +3019,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -3014,7 +3046,8 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+    const auto& initialCandidates =
+      filterCandidatesInitialWrapper(context, std::move(v), ci);
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,

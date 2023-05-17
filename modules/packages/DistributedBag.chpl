@@ -202,7 +202,7 @@ module DistributedBag {
   /*
     Reference counter for DistributedBag
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedBagRC {
     type eltType;
     var _pid : int;
@@ -234,21 +234,21 @@ module DistributedBag {
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid : int = -1;
 
     // Reference Counting...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _rc : shared DistributedBagRC(eltType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");
@@ -256,7 +256,7 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerError("Reading a DistBag is not supported");
     }
@@ -266,7 +266,7 @@ module DistributedBag {
       compilerError("Reading a DistBag is not supported");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
       var size = this.getSize();
@@ -281,18 +281,18 @@ module DistributedBag {
   }
 
   class DistributedBagImpl : CollectionImpl {
-    pragma "no doc"
+    @chpldoc.nodoc
     var targetLocDom : domain(1);
     /*
       The locales to allocate bags for and load balance across.
     */
     var targetLocales : [targetLocDom] locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid : int = -1;
 
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
-    pragma "no doc"
+    @chpldoc.nodoc
     var bag : unmanaged Bag(eltType)?;
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
@@ -307,7 +307,7 @@ module DistributedBag {
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, pid, type eltType = other.eltType) {
       super.init(eltType);
 
@@ -320,27 +320,27 @@ module DistributedBag {
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       delete bag;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(pid) {
       return new unmanaged DistributedBagImpl(this, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData() {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedThis {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter targetLocalesNotHere() {
       foreach loc in targetLocales {
         if loc != here {
@@ -634,7 +634,7 @@ module DistributedBag {
     It should be noted that the block itself is not parallel-safe, and access must be
     synchronized.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class BagSegmentBlock {
     type eltType;
 
@@ -708,7 +708,7 @@ module DistributedBag {
     A segment is, in and of itself an unrolled linked list. We maintain one per core
     to ensure maximum parallelism.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record BagSegment {
     type eltType;
 
@@ -921,7 +921,7 @@ module DistributedBag {
     We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
     which is required for work stealing.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class Bag {
     type eltType;
 

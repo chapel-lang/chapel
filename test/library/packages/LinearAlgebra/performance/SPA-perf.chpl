@@ -157,7 +157,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Sparse-accumulator */
 record _SPA {
   var cols: domain(1);

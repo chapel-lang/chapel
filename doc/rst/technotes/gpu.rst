@@ -121,14 +121,14 @@ Requirements
     version as the bundled version (currently 14). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* Either the CUDA toolkit (for NVIDIA), or ROCM (for AMD) must be installed.
+* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed.
 
   * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
     (inclusive). If using version 10.x you must set
     ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
     although we have not tested this.
 
-  * If targeting AMD GPUs, we require ROCM version 4.x; we suspect version 5.x
+  * If targeting AMD GPUs, we require ROCm version 4.x; we suspect version 5.x
     will work as well although we have not tested so.
 
 
@@ -139,21 +139,30 @@ To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
 before building Chapel.
 
 Chapel's build system will automatically try and deduce what type of GPU you
-have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
-If the type of GPU is not detected you may set ``CHPL_GPU_CODEGEN`` manually to
-either ``cuda`` (for NVIDIA GPUs) or ``rocm`` (for AMD GPUs). If the relevant
-runtime path is not automatically detected (or you would like to use a
-different installation) you may set ``CHPL_CUDA_PATH`` and/or
-``CHPL_ROCM_PATH``.
+have and where your installation of relevant runtime (e.g. CUDA or ROCm) are.
+If the type of GPU is not detected you may set ``CHPL_GPU`` manually to either
+``nvidia``, ``amd`` or ``cpu`` (See :ref:`below <cpu-mode-label>` for more
+information on this mode). If the relevant runtime path is not automatically
+detected (or you would like to use a different installation) you may set
+``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH``.
 
 ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
-architecture to compile for.  The default value is ``sm_60`` for
-``CHPL_GPU_CODEGEN=cuda`` and ``gfx906`` for ``CHPL_GPU_CODEGEN=rocm``. You may
-also use the ``--gpu-arch`` compiler flag to set GPU architecture. For a list
-of possible values please refer to `CUDA Programming Guide
+architecture to compile for. For ``CHPL_GPU=nvidia``, this defaults to
+``sm_60``. For ``CHPL_GPU=amd`` it needs to be set explicitly. The environment
+setting can be overridden by the ``--gpu-arch`` compiler flag.  For a list of
+possible values please refer to "processor" values in `this table in the LLVM
+documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or
+the `CUDA Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
-for NVIDIA or "processor" values in `this table in the LLVM documentation
-<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD.
+for NVIDIA.
+
+``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be used to control the number of GPU
+sublocales created. For example, in a system where 8 physical GPUs per node,
+setting this environment variable to 4 will make Chapel use only the first 4
+GPUs. Setting this number to a value higher than the number of GPUs per node
+results in an error; except for the ``CHPL_GPU==cpu`` mode, where this variable
+can be set to any non-negative number (See :ref:`below <cpu-mode-label>` for
+more information on this mode).
 
 GPU Support Features
 --------------------
@@ -188,10 +197,10 @@ an error if one of the aforementioned requirements is not met.  This check
 might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
 depending on the presence of control flow.
 
-Utilities in :mod:`Memory.Diagnostics <Diagnostics>` module can be used to
+Utilities in the :mod:`MemDiagnostics` module can be used to
 monitor GPU memory allocations and detect memory leaks. For example,
-:proc:`startVerboseMem() <Diagnostics.startVerboseMem()>` and
-:proc:`stopVerboseMem() <Diagnostics.stopVerboseMem()>` can be used to enable
+:proc:`startVerboseMem() <MemDiagnostics.startVerboseMem()>` and
+:proc:`stopVerboseMem() <MemDiagnostics.stopVerboseMem()>` can be used to enable
 and disable output from memory allocations and deallocations. GPU-based
 operations will be marked in the generated output.
 
@@ -265,6 +274,50 @@ it thwarts optimizations done by the backend assembler. In our experience, this
 can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
+
+.. _cpu-mode-label:
+
+``CHPL_GPU=cpu``: Using ``CHPL_LOCALE_MODEL=gpu`` Without GPUs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``CHPL_GPU`` environment variable can be set to ``cpu`` to enable many GPU
+features to be used without actual GPUs and/or vendors' SDKs not installed. This
+mode is mainly for initial development steps or quick feature tests where access
+to GPUs may be limited. In this mode:
+
+* the compiler will generate GPU kernels from order-independent loops normally,
+
+* it will call the internal runtime API for GPU operations, so that features
+  outlined under `Diagnostics and Utilities`_ will work as expected
+
+  * e.g, ``assertOnGpu`` will fail at compile time normally. This can allow
+    testing if a loop is GPU-eligible.
+
+  * but it will generate a warning per-iteration at execution time.
+
+  * ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress these
+    warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
+    application to the same effect.
+
+* even though the GPU diagnostics are collected, the loop will be executed for
+  correctness testing and there will not be any kernel launch
+
+* advanced features like ``syncThreads`` and ``createSharedArray`` will compile
+  and run, but in all likelihood code that uses those features will not
+  generate correct results
+
+* ``asyncGpuComm`` will do a blocking memcpy and ``gpuCommWait`` will return
+  immediately
+
+* there will be one GPU sublocale per locale by default.
+  ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
+  will be created per locale.
+
+
+.. warning::
+
+  This mode should not be used for performance studies. Application correctness
+  is not guaranteed in complex cases.
+
 
 Known Limitations
 -----------------

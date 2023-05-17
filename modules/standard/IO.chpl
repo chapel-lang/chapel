@@ -712,7 +712,7 @@ enum iostringstyle {
 }
 
 /* Internal version of iostringstyle for interim use */
-pragma "no doc"
+@chpldoc.nodoc
 enum iostringstyleInternal {
   len1b_data = -1,
   len2b_data = -2,
@@ -754,7 +754,7 @@ enum iostringformat {
 }
 
 /* Internal version of iostringformat for interim use */
-pragma "no doc"
+@chpldoc.nodoc
 enum iostringformatInternal {
   word = 0,
   basic = 1,
@@ -798,7 +798,7 @@ proc stringStyleNullTerminated() {
   This method returns the appropriate :record:`iostyle` ``str_style`` value
   to indicate a string format where strings have an exact length.
  */
-pragma "no doc"
+@chpldoc.nodoc
 @unstable
 (reason="stringStyleExactLen is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleExactLen(len:int(64)) {
@@ -810,7 +810,7 @@ proc stringStyleExactLen(len:int(64)) {
   to indicate a string format where string data is preceded by a variable-byte
   length as described in :type:`iostringstyle`.
  */
-pragma "no doc"
+@chpldoc.nodoc
 @unstable
 (reason="stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleWithVariableLength() {
@@ -833,7 +833,7 @@ proc stringStyleWithLength(lengthBytes:int) throws {
 
 // Replacement for stringStyleWithLength, though it shouldn't be relied upon by
 // users as it will likely be replaced in the future
-pragma "no doc"
+@chpldoc.nodoc
 proc stringStyleWithLengthInternal(lengthBytes:int) throws {
   var x = iostringstyleInternal.lenVb_data;
   select lengthBytes {
@@ -850,88 +850,88 @@ proc stringStyleWithLengthInternal(lengthBytes:int) throws {
   return x;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_FDFLAG_UNK:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_FDFLAG_READABLE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_FDFLAG_WRITEABLE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_FDFLAG_SEEKABLE:c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_CH_ALWAYS_UNBUFFERED:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_CH_ALWAYS_BUFFERED:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_CH_BUFFERED:c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHOD_DEFAULT:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHOD_READWRITE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHOD_PREADPWRITE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHOD_FREADFWRITE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHOD_MMAP:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_METHODMASK:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_RANDOM:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_SEQUENTIAL:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_LATENCY:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_BANDWIDTH:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_CACHED:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_PARALLEL:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_DIRECT:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_NOREUSE:c_int;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_HINT_OWNED:c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern type qio_file_ptr_t;
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
 
-pragma "no doc"
+@chpldoc.nodoc
 extern record qiovec_t {
   var iov_base: c_void_ptr;
   var iov_len: c_size_t;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 extern type qio_channel_ptr_t;
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
 // also the type for a buffer for qio_file_open_mem.
-pragma "no doc"
+@chpldoc.nodoc
 extern type qbuffer_ptr_t;
-pragma "no doc"
+@chpldoc.nodoc
 extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern type style_char_t = uint(8);
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_WORD:uint(8);
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_BASIC:uint(8);
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_CHPL:uint(8);
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_JSON:uint(8);
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_TOEND:uint(8);
-pragma "no doc"
+@chpldoc.nodoc
 extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 
 /*
@@ -942,7 +942,7 @@ defining how Chapel's basic types should be read or written.
 It replaces the now unstable `iostyle` type, and will eventually
 be migrated into a new strategy, likely involving encoders/decoders
 */
-pragma "no doc"
+@chpldoc.nodoc
 extern record iostyleInternal { // aka qio_style_t
   /* Perform binary I/O? 1 - yes, 0 - no.
      This field is ignored for :type:`iokind` values other than ``dynamic``.
@@ -1061,7 +1061,7 @@ type iostyle = iostyleInternal;
 // e.g. chpl_qio_read_atleast. These work by casting to
 // this type and then invoking the method with virtual dispatch.
 
-pragma "no doc"
+@chpldoc.nodoc
 class QioPluginFile {
   // Assume instance has a link to filesystem if needed
 
@@ -1113,7 +1113,7 @@ class QioPluginFile {
 
 // This class helps with C runtime I/O plugins. It represents additional
 // information for a channel.
-pragma "no doc"
+@chpldoc.nodoc
 class QioPluginChannel {
   /* Read at least ``amt`` bytes and store these in the related channel. */
   proc readAtLeast(amt:int(64)):errorCode {
@@ -1131,7 +1131,7 @@ class QioPluginChannel {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
@@ -1140,17 +1140,17 @@ export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_
   return ret;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
   var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
@@ -1158,27 +1158,27 @@ export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
   return err;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_fsync(file:c_void_ptr):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
     end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):errorCode {
   var strPtr:c_ptr(c_string);
@@ -1187,7 +1187,7 @@ export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
   localeNames = strPtr:c_void_ptr;
   return ret;
 }
-pragma "no doc"
+@chpldoc.nodoc
 export proc chpl_qio_file_close(file:c_void_ptr):errorCode {
   var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
@@ -1209,7 +1209,7 @@ private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_str
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyleInternal):errorCode;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_file_close(f:qio_file_ptr_t):errorCode;
 
 
@@ -1253,12 +1253,12 @@ private extern proc qio_channel_style_element(ch:qio_channel_ptr_t, element:int(
 
 private extern proc qio_channel_flush(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 private extern proc qio_channel_close(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_channel_isclosed(threadsafe:c_int, ch:qio_channel_ptr_t):bool;
 
 private extern proc qio_channel_read(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t, ref amt_read:c_ssize_t):errorCode;
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ref ptr, len:c_ssize_t):errorCode;
-pragma "no doc"
+@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_read_amt(threadsafe:c_int, ch:qio_channel_ptr_t, ptr:_ddata, len:c_ssize_t):errorCode;
 // and for c_ptr
@@ -1267,7 +1267,7 @@ private extern proc qio_channel_read_byte(threadsafe:c_int, ch:qio_channel_ptr_t
 
 private extern proc qio_channel_write(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t, ref amt_written:c_ssize_t):errorCode;
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ref ptr, len:c_ssize_t):errorCode;
-pragma "no doc"
+@chpldoc.nodoc
 // A specialization is needed for _ddata as the value is the pointer its memory
 private extern proc qio_channel_write_amt(threadsafe:c_int, ch:qio_channel_ptr_t, const ptr:_ddata, len:c_ssize_t):errorCode;
 private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:uint(8)):errorCode;
@@ -1379,7 +1379,7 @@ private extern proc qio_channel_print_literal_2(threadsafe:c_int, ch:qio_channel
 
 private extern proc qio_channel_skip_json_field(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern record qio_conv_t {
   var preArg1:uint(8);
   var preArg2:uint(8);
@@ -1435,7 +1435,7 @@ private extern proc qio_conv_parse(const fmt:c_string, start:c_size_t, ref end:u
 private extern proc qio_format_error_too_many_args():errorCode;
 private extern proc qio_format_error_too_few_args():errorCode;
 private extern proc qio_format_error_arg_mismatch(arg:int):errorCode;
-pragma "no doc"
+@chpldoc.nodoc
 extern proc qio_format_error_bad_regex():errorCode;
 private extern proc qio_format_error_write_regex():errorCode;
 
@@ -1450,7 +1450,7 @@ proc defaultIOStyle():iostyle {
   return defaultIOStyleInternal() : iostyle;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc defaultIOStyleInternal(): iostyleInternal {
   var ret:iostyleInternal;
   qio_style_init_default(ret);
@@ -1458,7 +1458,7 @@ proc defaultIOStyleInternal(): iostyleInternal {
 }
 
 /* Get an iostyleInternal indicating binary I/O in native byte order. */
-pragma "no doc"
+@chpldoc.nodoc
 proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
@@ -1468,7 +1468,7 @@ proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):i
 }
 
 /* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
-pragma "no doc"
+@chpldoc.nodoc
 proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
@@ -1478,7 +1478,7 @@ proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iost
 }
 
 /* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
-pragma "no doc"
+@chpldoc.nodoc
 proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
@@ -1489,7 +1489,7 @@ proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):i
 
 // TODO -- add arguments to this function
 /* Get an iostyleInternal indicating text I/O. */
-pragma "no doc"
+@chpldoc.nodoc
 proc iostyleInternal.text(/* args coming later */):iostyleInternal {
   var ret = this;
   ret.binary = 0;
@@ -1504,7 +1504,7 @@ proc iostyleInternal.text(/* args coming later */):iostyleInternal {
   QIO_FDFLAG_WRITEABLE,
   QIO_FDFLAG_SEEKABLE
 */
-pragma "no doc"
+@chpldoc.nodoc
 extern type fdflag_t = c_int;
 
 //  note - QIO supports
@@ -1549,7 +1549,7 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
     }
 */
 record ioHintSet {
-  pragma "no doc"
+  @chpldoc.nodoc
   var _internal : c_int;
 
   /* Defines an empty set, which provides no hints.
@@ -1591,7 +1591,7 @@ record ioHintSet {
   @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintSet.mmap(false)` instead")
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
 
@@ -1636,20 +1636,20 @@ It is illegal to perform any I/O operations on the default value.
 */
 pragma "ignore noinit"
 record file {
-  pragma "no doc"
+  @chpldoc.nodoc
   var _home: locale = here;
-  pragma "no doc"
+  @chpldoc.nodoc
   var _file_internal:qio_file_ptr_t = QIO_FILE_PTR_NULL;
 
   // INIT TODO: This would be a useful case for requesting a default initializer
   // be built even when handwritten initializers (copy init) exist.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init() {
   }
 }
 
 // TODO -- shouldn't have to write this this way!
-pragma "no doc"
+@chpldoc.nodoc
 proc file.init(x: file) {
   this._home = x._home;
   this._file_internal = x._file_internal;
@@ -1659,12 +1659,12 @@ proc file.init(x: file) {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.init=(x: file) {
   this.init(x);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator file.=(ref ret:file, x:file) {
   // retain -- release
   on x._home {
@@ -1698,7 +1698,7 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
-                           else createStringWithNewBuffer(path_cs,
+                           else string.createCopyingBuffer(path_cs,
                                                           policy=decodePolicy.replace);
     chpl_free_c_string(path_cs);
     try ioerror(err, "in init", path);
@@ -1769,7 +1769,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
-                           else createStringWithNewBuffer(path_cs,
+                           else string.createCopyingBuffer(path_cs,
                                                           policy=decodePolicy.replace);
     try ioerror(err, "in file.init", path);
   }
@@ -1822,7 +1822,7 @@ proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
   initHelper2(this, fileDescriptor.safeCast(c_int), hints, own=own);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
@@ -1852,7 +1852,7 @@ proc file.isOpen(): bool {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc ref file.deinit() {
   on this._home {
     qio_file_release(_file_internal);
@@ -1876,7 +1876,7 @@ proc file.unlock() {
 }
 */
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.filePlugin() : QioPluginFile? {
   return qio_file_get_plugin(this._channel_internal);
 }
@@ -1885,7 +1885,7 @@ proc file.filePlugin() : QioPluginFile? {
 // this prevents race conditions;
 // fileReader or fileWriter style is protected by fileReader or fileWriter lock,
 // can be modified.
-pragma "no doc"
+@chpldoc.nodoc
 proc file._style:iostyleInternal throws {
   var ret:iostyleInternal;
   on this._home {
@@ -1987,7 +1987,7 @@ proc file.path : string throws where filePathAbsolute {
 }
 
 // helper for relative-path deprecation
-pragma "no doc"
+@chpldoc.nodoc
 proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = 0;
@@ -1996,7 +1996,7 @@ proc file._abspath: string throws {
     var tmp:c_string;
     err = qio_file_path(_file_internal, tmp);
     if !err {
-      ret = createStringWithNewBuffer(tmp,
+      ret = string.createCopyingBuffer(tmp,
                                       policy=decodePolicy.escape);
     }
     chpl_free_c_string(tmp);
@@ -2007,7 +2007,7 @@ proc file._abspath: string throws {
 
 // internal version of 'file.path' used to generate error messages in other IO methods
 // produces a relative path when available
-pragma "no doc"
+@chpldoc.nodoc
 proc file._tryGetPath() : string {
   try {
     return fileRelPathHelper(this);
@@ -2029,7 +2029,7 @@ private proc fileRelPathHelper(f: file): string throws {
     }
     chpl_free_c_string(tmp);
     if !err {
-      ret = createStringWithNewBuffer(tmp2,
+      ret = string.createCopyingBuffer(tmp2,
                                       policy=decodePolicy.escape);
     }
     chpl_free_c_string(tmp2);
@@ -2065,7 +2065,7 @@ private param _rw  = "r+";
 private param _cw = "w";
 private param _cwr = "w+";
 
-pragma "no doc"
+@chpldoc.nodoc
 proc _modestring(mode:ioMode) {
   import HaltWrappers;
   select mode {
@@ -2077,8 +2077,8 @@ proc _modestring(mode:ioMode) {
   }
 }
 
-pragma "no doc"
 pragma "compiler generated"
+@chpldoc.nodoc
 proc convertIoMode(mode:iomode):ioMode {
   import HaltWrappers;
   select mode {
@@ -2154,7 +2154,7 @@ private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
   return ret;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
                 seekable:bool, style:iostyleInternal) throws {
   import HaltWrappers;
@@ -2200,7 +2200,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
         path = "unknown";
       } else {
         // doesn't throw with decodePolicy.replace
-        path = createStringWithNewBuffer(str, len,
+        path = string.createCopyingBuffer(str, len,
                                          policy=decodePolicy.replace);
       }
     }
@@ -2262,7 +2262,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
     var path_cs:c_string;
     var path_err = qio_file_path_for_fd(fd, path_cs);
     var path = if path_err then "unknown"
-                           else createStringWithNewBuffer(path_cs,
+                           else string.createCopyingBuffer(path_cs,
                                                           policy=decodePolicy.replace);
     try ioerror(err, "in openfd", path);
   }
@@ -2323,7 +2323,7 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
     var path_cs:c_string;
     var path_err = qio_file_path_for_fp(fp, path_cs);
     var path = if path_err then "unknown"
-                           else createStringWithNewBuffer(path_cs,
+                           else string.createCopyingBuffer(path_cs,
                                                           policy=decodePolicy.replace);
     chpl_free_c_string(path_cs);
     try ioerror(err, "in openfp", path);
@@ -2469,15 +2469,15 @@ record fileReader {
    */
   param locking:bool;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type fmtType = defaultFmtType(/* writing= */ false);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _home:locale = here;
-  pragma "no doc"
+  @chpldoc.nodoc
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _fmt : fmtType;
 
   // The member variable _readWriteThisFromLocale is used to support
@@ -2487,7 +2487,7 @@ record fileReader {
   // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
   // we are working on a fileReader created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
-  pragma "no doc"
+  @chpldoc.nodoc
   var _readWriteThisFromLocale = nilLocale;
 }
 
@@ -2497,7 +2497,7 @@ proc fileReader.writing param: bool {
   return false;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.formatter const ref {
   return _fmt;
 }
@@ -2534,15 +2534,15 @@ record fileWriter {
    */
   param locking:bool;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type fmtType = defaultFmtType(/* writing */ true);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _home:locale = here;
-  pragma "no doc"
+  @chpldoc.nodoc
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _fmt : fmtType;
 
   // The member variable _readWriteThisFromLocale is used to support
@@ -2552,7 +2552,7 @@ record fileWriter {
   // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
   // we are working on a fileWriter created for running writeThis/readThis.
   // Therefore further locking by the same task is not necessary.
-  pragma "no doc"
+  @chpldoc.nodoc
   var _readWriteThisFromLocale = nilLocale;
 }
 
@@ -2563,7 +2563,7 @@ proc fileWriter.writing param: bool {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.formatter const ref {
   return _fmt;
 }
@@ -2593,7 +2593,7 @@ proc fileWriter.formatter const ref {
 // The compiler is expected to generate a default implementation of encodeTo
 // methods for records and classes.
 //
-pragma "no doc"
+@chpldoc.nodoc
 record DefaultWriter {
   var firstField = true;
   var _wroteStart, _wroteEnd : bool;
@@ -2720,7 +2720,7 @@ record DefaultWriter {
 //
 //   proc type MyType.decodeFrom(reader: fileReader) throws
 //
-pragma "no doc"
+@chpldoc.nodoc
 record DefaultReader {
   var firstField = true;
   var _inheritLevel = 0;
@@ -2789,7 +2789,7 @@ record DefaultReader {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
   // retain -- release
   on rhs._home {
@@ -2804,7 +2804,7 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
   lhs._channel_internal = rhs._channel_internal;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
   // retain -- release
   on rhs._home {
@@ -2819,13 +2819,13 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
   lhs._channel_internal = rhs._channel_internal;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.init(param kind:iokind, param locking:bool, type fmtType) {
   var default : fmtType;
   this.init(kind, locking, default);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?) {
   this.kind = kind;
   this.locking = locking;
@@ -2833,14 +2833,14 @@ proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?) {
   this._fmt = formatter;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.init(param kind:iokind, param locking:bool, type fmtType) {
   var default : fmtType;
   this.init(kind, locking, default);
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
   this.kind = kind;
   this.locking = locking;
@@ -2848,7 +2848,7 @@ proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
   this._fmt = formatter;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.init=(x: fileReader) {
   // allow the kind and locking fields to be modified in initialization
   this.kind = if this.type.kind != ? then this.type.kind else x.kind;
@@ -2867,7 +2867,7 @@ proc fileReader.init=(x: fileReader) {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.init=(x: fileWriter) {
   // allow the kind and locking fields to be modified in initialization
   this.kind = if this.type.kind != ? then this.type.kind else x.kind;
@@ -2886,19 +2886,19 @@ proc fileWriter.init=(x: fileWriter) {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator :(rhs: fileReader, type t: fileReader) {
   var tmp: t = rhs; // just run init=
   return tmp;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 operator :(rhs: fileWriter, type t: fileWriter) {
   var tmp: t = rhs; // just run init=
   return tmp;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
@@ -2912,7 +2912,7 @@ proc fileReader.init(param kind:iokind, param locking:bool,
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?,
                      f:file, out error:errorCode, hints: ioHintSet,
                      start:int(64), end:int(64),
@@ -2932,7 +2932,7 @@ proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?,
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
@@ -2946,7 +2946,7 @@ proc fileWriter.init(param kind:iokind, param locking:bool,
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?,
                      f:file, out error:errorCode, hints: ioHintSet,
                      start:int(64), end:int(64),
@@ -2966,7 +2966,7 @@ proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?,
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc ref fileReader.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
@@ -2974,7 +2974,7 @@ proc ref fileReader.deinit() {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc ref fileWriter.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
@@ -2983,13 +2983,13 @@ proc ref fileWriter.deinit() {
 }
 
 // Convenience for forms like 'r.withFormatter(DefaultReader)`
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.withFormatter(type fmtType) {
   var fmt : fmtType;
   return withFormatter(fmt);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.withFormatter(f: ?) {
   var ret = new fileReader(this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
@@ -3001,13 +3001,13 @@ proc fileReader.withFormatter(f: ?) {
   return ret;
 }
 // Convenience for forms like 'w.withFormatter(DefaultWriter)`
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.withFormatter(type fmtType) {
   var fmt : fmtType;
   return withFormatter(fmt);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.withFormatter(f: ?) {
   var ret = new fileWriter(this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
@@ -3021,11 +3021,11 @@ proc fileWriter.withFormatter(f: ?) {
 
 // represents a Unicode codepoint
 // used to pass codepoints to read and write to avoid duplicating code
-pragma "no doc"
+@chpldoc.nodoc
 record _internalIoChar {
   /* The codepoint value */
   var ch:int(32);
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
@@ -3043,12 +3043,12 @@ write a single Unicode codepoint.
 @deprecated(notes="ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead")
 type ioChar = _internalIoChar;
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x: _internalIoChar, type t:string) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   try! {
-    return createStringWithOwnedBuffer(csc);
+    return string.createAdoptingBuffer(csc);
   }
 }
 
@@ -3073,19 +3073,19 @@ record ioNewline {
     if we run into non-space characters other than ``\n``.
    */
   var skipWhitespaceOnly: bool = false;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc encodeTo(w) throws {
     w.writeNewline();
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x: ioNewline, type t:string) {
   return "\n";
 }
@@ -3114,12 +3114,12 @@ record ioLiteral {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x: ioLiteral, type t:string) {
   return x.val;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 record _internalIoBits {
   /* The bottom ``numBits`` of x will be read or written */
   var x:uint(64);
@@ -3134,7 +3134,7 @@ record _internalIoBits {
 @deprecated(notes="ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead")
 type ioBits = _internalIoBits;
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x: _internalIoBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
@@ -3147,7 +3147,7 @@ inline operator :(x: _internalIoBits, type t:string) {
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
-pragma "no doc"
+@chpldoc.nodoc
 private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
@@ -3155,7 +3155,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
-pragma "no doc"
+@chpldoc.nodoc
 private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
@@ -3163,11 +3163,11 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
-pragma "no doc"
+@chpldoc.nodoc
 private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
@@ -3178,7 +3178,7 @@ proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
       // shouldn't throw
-      path = createStringWithNewBuffer(tmp_path,
+      path = string.createCopyingBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
     } else {
@@ -3189,7 +3189,7 @@ proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
   try ioerror(error, msg, path, offset);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
@@ -3200,7 +3200,7 @@ proc fileReader._ch_ioerror(errstr:string, msg:string) throws {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
       // shouldn't throw
-      path = createStringWithNewBuffer(tmp_path,
+      path = string.createCopyingBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
     } else {
@@ -3211,7 +3211,7 @@ proc fileReader._ch_ioerror(errstr:string, msg:string) throws {
   try ioerror(errstr, msg, path, offset);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._ch_ioerror(error:errorCode, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
@@ -3222,7 +3222,7 @@ proc fileWriter._ch_ioerror(error:errorCode, msg:string) throws {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
       // shouldn't throw
-      path = createStringWithNewBuffer(tmp_path,
+      path = string.createCopyingBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
     } else {
@@ -3233,7 +3233,7 @@ proc fileWriter._ch_ioerror(error:errorCode, msg:string) throws {
   try ioerror(error, msg, path, offset);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
@@ -3244,7 +3244,7 @@ proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
     err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
     if !err {
       // shouldn't throw
-      path = createStringWithNewBuffer(tmp_path,
+      path = string.createCopyingBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
     } else {
@@ -3474,7 +3474,7 @@ proc fileReader.advancePastByte(byte:uint(8)) throws {
                                found. The ``fileWriter`` offset is left at EOF.
    :throws SystemError: Thrown if data could not be read from the ``file``.
  */
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
 proc fileWriter.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
@@ -3632,7 +3632,7 @@ private inline proc markHelper(fileRW) throws {
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileReader failed
+  :throws SystemError: if marking the fileReader failed
  */
 proc fileReader.mark() throws do return markHelper(this);
 
@@ -3670,7 +3670,7 @@ proc fileReader.mark() throws do return markHelper(this);
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileWriter failed
+  :throws SystemError: if marking the fileWriter failed
  */
 proc fileWriter.mark() throws do return markHelper(this);
 
@@ -3896,7 +3896,7 @@ proc fileWriter._offset():int(64) {
    discipline.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileReader failed
+  :throws SystemError: if marking the fileReader failed
  */
 @deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
 proc fileReader._mark() throws {
@@ -3915,7 +3915,7 @@ proc fileReader._mark() throws {
    discipline.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the fileWriter failed
+  :throws SystemError: if marking the fileWriter failed
  */
 @deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
 proc fileWriter._mark() throws {
@@ -4007,7 +4007,7 @@ proc fileWriter._style():iostyle {
 
 // Replacement for fileReader._style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._styleInternal(): iostyleInternal {
   var ret:iostyleInternal;
   on this._home {
@@ -4020,7 +4020,7 @@ proc fileReader._styleInternal(): iostyleInternal {
 
 // Replacement for fileWriter._style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._styleInternal(): iostyleInternal {
   var ret:iostyleInternal;
   on this._home {
@@ -4061,7 +4061,7 @@ proc fileWriter._set_style(style:iostyle) {
 
 // Replacement for fileReader._set_style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._set_styleInternal(style: iostyleInternal) {
   on this._home {
     var local_style:iostyleInternal = style;
@@ -4071,7 +4071,7 @@ proc fileReader._set_styleInternal(style: iostyleInternal) {
 
 // Replacement for fileWriter._set_style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._set_styleInternal(style: iostyleInternal) {
   on this._home {
     var local_style:iostyleInternal = style;
@@ -4109,7 +4109,7 @@ proc fileWriter.readWriteThisFromLocale() {
 // If readWriteThisFromLocale returns nil, that means the fileReader
 // was not created to call readThis/writeThis and
 // so the original locale of the I/O is `here`.
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileReader.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
@@ -4124,7 +4124,7 @@ proc fileReader.getLocaleOfIoRequest() {
 // If readWriteThisFromLocale returns nil, that means the fileWriter
 // was not created to call readThis/writeThis and
 // so the original locale of the I/O is `here`.
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileWriter.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
@@ -4135,24 +4135,24 @@ proc fileWriter.getLocaleOfIoRequest() {
 
 // QIO plugins don't have stable interface yet, hence no-doc
 // only works when called on locale owning fileReader.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.channelPlugin() : borrowed QioPluginChannel? {
   var vptr = qio_channel_get_plugin(this._channel_internal);
   return vptr:borrowed QioPluginChannel?;
 }
 // only works when called on locale owning fileWriter.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.channelPlugin() : borrowed QioPluginChannel? {
   var vptr = qio_channel_get_plugin(this._channel_internal);
   return vptr:borrowed QioPluginChannel?;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.filePlugin() : borrowed QioPluginFile? {
   var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
   return vptr:borrowed QioPluginFile?;
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.filePlugin() : borrowed QioPluginFile? {
   var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
   return vptr:borrowed QioPluginFile?;
@@ -4494,7 +4494,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 
 // TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
 // are removed
-pragma "no doc"
+@chpldoc.nodoc
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
@@ -4604,7 +4604,7 @@ proc file.lines(param locking:bool = true, region: range(?) = 0..,
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
                       hints = ioHintSet.empty,
                       in local_style:iostyleInternal = this._style) throws {
@@ -4733,7 +4733,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, region, hints);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
@@ -4791,15 +4791,15 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc _isSimpleIoType(type t) param do return
   isBoolType(t) || isNumericType(t) || isEnumType(t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc _isIoPrimitiveType(type t) param do return
   _isSimpleIoType(t) || (t == string) || (t == bytes);
 
-pragma "no doc"
+@chpldoc.nodoc
  proc _isIoPrimitiveTypeOrNewline(type t) param do return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == _internalIoChar || t == _internalIoBits;
 
@@ -4841,14 +4841,14 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_string(false, _channel_internal, tx, len, -1);
-    x = try! createStringWithOwnedBuffer(tx, length=len);
+    x = try! string.createAdoptingBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes
     var len:int(64);
     var tx: c_string;
     var ret = qio_channel_scan_bytes(false, _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createAdoptingBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var err:errorCode = 0;
@@ -4927,7 +4927,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
   return EINVAL;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 config param chpl_testReadBinaryInternalEIO = false;
 
 private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, ref x:?t):errorCode where _isIoPrimitiveType(t) {
@@ -5005,7 +5005,7 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = try! createStringWithOwnedBuffer(tx, length=len);
+    x = try! string.createAdoptingBuffer(tx, length=len);
     return ret;
   } else if t == bytes {
     // handle _bytes (nothing special for bytes vs string in this case)
@@ -5014,7 +5014,7 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
     var ret = qio_channel_read_string(false, byteorder:c_int,
                                       qio_channel_str_style(_channel_internal),
                                       _channel_internal, tx, len, -1);
-    x = createBytesWithOwnedBuffer(tx, length=len);
+    x = bytes.createAdoptingBuffer(tx, length=len);
     return ret;
   } else if isEnumType(t) {
     var i:chpl_enum_mintype(t);
@@ -5029,7 +5029,7 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
   return EINVAL;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 config param chpl_testWriteBinaryInternalEIO = false;
 
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):errorCode where _isIoPrimitiveType(t) {
@@ -5104,7 +5104,7 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
   return EINVAL;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   var result: string = "while reading ";
   result += t:string;
@@ -5117,7 +5117,7 @@ proc fileReader._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   return result;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   var result: string = "while writing ";
   result += t:string;
@@ -5130,7 +5130,7 @@ proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   return result;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._decodeOne(type readType, loc:locale) throws {
   var reader = new fileReader(iokind.dynamic, locking=false,
                               formatter=_fmt,
@@ -5162,7 +5162,7 @@ proc fileReader._decodeOne(type readType, loc:locale) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._decodeOne(ref x:?t, loc:locale) throws {
   // _read_one_internal
   var reader = new fileReader(iokind.dynamic, locking=false,
@@ -5184,7 +5184,7 @@ proc fileReader._decodeOne(ref x:?t, loc:locale) throws {
 // The fileReader must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
 //
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._readOne(param kind: iokind, ref x:?t,
                              loc:locale) throws {
   // TODO: Make _read_one_internal(s) a method instead.
@@ -5202,7 +5202,7 @@ private proc escapedNonUTF8ErrorMessage() : string {
   return ret;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._encodeOne(const x:?t, loc:locale) throws {
   var writer = new fileWriter(iokind.dynamic, locking=false,
                               formatter=formatter,
@@ -5223,7 +5223,7 @@ proc fileWriter._encodeOne(const x:?t, loc:locale) throws {
 //
 // The fileWriter must be locked and running on this._home.
 //
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
   // TODO: Make _write_one_internal(s) a method instead.
   var err = _write_one_internal(_channel_internal, kind, x, loc);
@@ -5424,7 +5424,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return err;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.readIt(ref x) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -5439,7 +5439,7 @@ proc fileReader.readIt(ref x) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.writeIt(const x) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -5497,7 +5497,7 @@ private proc literalErrorHelper(x: ?t, action: string,
   return msg;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc fileReader._checkLiteralError(x:?t, err:errorCode, action:string,
                                           isLiteral:bool) : void throws {
   if err != 0 {
@@ -5511,7 +5511,7 @@ inline proc fileReader._checkLiteralError(x:?t, err:errorCode, action:string,
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc fileWriter._checkLiteralError(x:?t, err:errorCode, action:string,
                                           isLiteral:bool) : void throws {
   if err != 0 {
@@ -5525,7 +5525,7 @@ inline proc fileWriter._checkLiteralError(x:?t, err:errorCode, action:string,
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
                                           param isMatch:bool) throws {
   if t != string && t != bytes then
@@ -5544,7 +5544,7 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 }
 
 // non-unstable version we can use internally
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileReader._readLiteral(literal:string,
                              ignoreWhitespace=true) : void throws {
@@ -5605,7 +5605,7 @@ proc fileReader.readLiteral(literal:bytes,
 //
 // Note: We can add an 'ignoreWhitespace' optional argument that defaults
 // to 'true' without changing behavior in existing programs.
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileReader._readNewlineCommon(param isMatch:bool) throws {
   on this._home {
@@ -5619,7 +5619,7 @@ proc fileReader._readNewlineCommon(param isMatch:bool) throws {
 }
 
 // non-unstable version we can use internally
-pragma "no doc"
+@chpldoc.nodoc
 inline proc fileReader._readNewline() : void throws {
   var ionl = new ioNewline(true);
   this.readIt(ionl);
@@ -5644,7 +5644,7 @@ proc fileReader.readNewline() : void throws {
   _readNewlineCommon(isMatch=false);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   try {
@@ -5739,7 +5739,7 @@ proc fileReader.matchNewline() : bool throws {
   return true;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileWriter._writeLiteralCommon(x:?t) : void throws {
   if t != string && t != bytes then
@@ -5754,7 +5754,7 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline
 proc fileWriter._writeLiteral(literal:string) : void throws {
   var iolit = new ioLiteral(literal);
@@ -5835,7 +5835,7 @@ proc fileWriter.binary():bool {
 }
 
 /* return other style elements. */
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.styleElement(element:int):int {
   var ret:int = 0;
   on this._home {
@@ -5845,7 +5845,7 @@ proc fileReader.styleElement(element:int):int {
 }
 
 /* return other style elements. */
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.styleElement(element:int):int {
   var ret:int = 0;
   on this._home {
@@ -5866,7 +5866,7 @@ proc fileWriter.writeBytes(x, len:c_ssize_t) throws {
   try this._writeBytes(x, len);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
   var err:errorCode = 0;
   on this._home {
@@ -5965,7 +5965,7 @@ proc stringify(const args ...?k):string {
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
-      const ret = createStringWithNewBuffer(buf, offset, offset+1,
+      const ret = string.createCopyingBuffer(buf, offset, offset+1,
                                             decodePolicy.replace);
       c_free(buf);
       return ret;
@@ -5989,7 +5989,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
   return err_args;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc fileReader._readInner(ref args ...?k):void throws {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -6035,7 +6035,7 @@ proc fileReader.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -6202,8 +6202,8 @@ proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
 
 }
 
-pragma "no doc"
 pragma "last resort"
+@chpldoc.nodoc
 inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                                 stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
@@ -6253,7 +6253,7 @@ proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // it is already locked.
 // Passing -1 to 'nCodepoints' tells this function to compute the number
 // of codepoints itself, and store the result in 'cachedNumCodepoints'.
-pragma "no doc"
+@chpldoc.nodoc
 proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
                                  nBytes: int,
@@ -7205,14 +7205,8 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
       ch._set_styleInternal(save_style);
     }
 
-    if t == string {
-      var tmp = createStringWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
-    else {
-      var tmp = createBytesWithOwnedBuffer(tx, length=lenread);
-      out_var <=> tmp;
-    }
+    var tmp = t.createAdoptingBuffer(tx, length=lenread);
+    out_var <=> tmp;
   }
 
   return (err, lenread);
@@ -7864,7 +7858,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
                                 this._channel_internal, tx, len, maxSize:c_ssize_t);
 
     if len > 0 then didRead = true;
-    s = try! createStringWithOwnedBuffer(tx, length=len);
+    s = try! string.createAdoptingBuffer(tx, length=len);
   }
 
   if e == EEOF {
@@ -7903,7 +7897,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
                                 this._channel_internal, tx, len, maxSize:c_ssize_t);
 
     if len > 0 then didRead = true;
-    b = try! createBytesWithOwnedBuffer(tx, length=len);
+    b = try! bytes.createAdoptingBuffer(tx, length=len);
   }
 
   if e == EEOF {
@@ -8029,7 +8023,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
       if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {
-       for (i, b) in zip(data.domain, data) {
+      for (i, b) in zip(data.domain, data) {
         select (endian) {
           when ioendian.native {
             e = try _read_binary_internal(this._channel_internal, iokind.native, b);
@@ -8117,7 +8111,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
                         due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
-  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false && !d.isSparse()) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var nr: int = 0;
@@ -8198,7 +8192,7 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
 
 
 // Documented in the varargs version
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
@@ -8232,7 +8226,7 @@ proc fileReader.readln(ref args ...?k,
   return this.readlnHelper((...args), style: iostyleInternal);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.readlnHelper(ref args ...?k,
                           style:iostyleInternal):bool throws {
   var nl = new ioNewline();
@@ -8377,7 +8371,7 @@ proc fileWriter.write(const args ...?k, style:iostyle) throws {
 }
 
 // helper function for iostyle deprecation
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -8401,7 +8395,7 @@ proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
 }
 
 // documented in varargs version
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.writeln() throws {
   try this.write(new ioNewline());
 }
@@ -8462,7 +8456,7 @@ proc fileWriter.flush() throws {
 }
 
 // documented in throws version
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter.flush(out error:errorCode) {
   error = 0;
   try {
@@ -8488,7 +8482,7 @@ proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
 
    Inherently racy for channels, hence no doc.
  */
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.atEOF(): bool throws {
   var tmp:uint(8);
   return !(try this.read(tmp));
@@ -8556,15 +8550,15 @@ proc fileWriter.isClosed() : bool {
 // in this function for it to become user-facing. Right now, errors
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
     throw new owned IllegalArgumentError("bad remote fileReader._readBytes");
-  var err = qio_channel_read_amt(false, _channel_internal, x, len);
+  var err = qio_channel_read_amt(false, _channel_internal, x[0], len);
   if err then try this._ch_ioerror(err, "in fileReader._readBytes");
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 record itemReaderInternal {
   /* What type do we read and yield? */
   type ItemType;
@@ -8602,14 +8596,14 @@ record itemReaderInternal {
 const stdin:fileReader(iokind.dynamic, true);
 stdin = try! (new file(0)).reader();
 
-pragma "no doc"
+@chpldoc.nodoc
 extern proc chpl_cstdout():c_FILE;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
-pragma "no doc"
+@chpldoc.nodoc
 extern proc chpl_cstderr():c_FILE;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
@@ -8631,7 +8625,7 @@ proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
 }
 
 pragma "last resort"
-pragma "no doc"
+@chpldoc.nodoc
 proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
@@ -8671,7 +8665,7 @@ proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
 }
 // documented in the arguments version.
-pragma "no doc"
+@chpldoc.nodoc
 proc readln():bool throws {
   return stdin.readln();
 }
@@ -8695,7 +8689,7 @@ proc unicodeSupported():bool {
 private extern const FTYPE_NONE   : c_int;
 private extern const FTYPE_LUSTRE : c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc file.fstype():int throws {
   var t:c_int;
   var err:errorCode = 0;
@@ -8820,8 +8814,8 @@ Chapel format specifiers.
 ========  ===========  ==========================================
 C         Chapel       Meaning
 ========  ===========  ==========================================
-%i        %i           an integer in decimal
-%d        %i           an integer in decimal
+%i        %i           a signed integer in decimal
+%d        %i           a signed integer in decimal
 %u        %u           an unsigned integer in decimal
 %x        %xu          an unsigned integer in hexadecimal
 %g        %r           real number in exponential or decimal (if compact)
@@ -9874,7 +9868,7 @@ proc _toRegex(x:?t)
   return (r, false);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 class _channel_regex_info {
   var hasRegex = false;
   var matchedRegex = false;
@@ -9918,7 +9912,7 @@ class _channel_regex_info {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._match_regex_if_needed(cur:c_size_t, len:c_size_t,
                                        ref error:errorCode,
                                        ref style:iostyleInternal,
@@ -9984,7 +9978,7 @@ proc fileReader._match_regex_if_needed(cur:c_size_t, len:c_size_t,
 // be returned in conv and with gotConv = true.
 // Assumes, for a fileReader, that we are within a mark/revert/commit
 //  in readf. (used in the regex handling here).
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
@@ -10079,7 +10073,7 @@ proc fileReader._format_reader(
 // Handles literals and regexes itself; everything else will
 // be returned in conv and with gotConv = true.
 // (used in the regex handling here).
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
@@ -10116,7 +10110,7 @@ proc fileWriter._format_reader(
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc _conv_helper(
     ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool,
@@ -10163,7 +10157,7 @@ private proc _conv_helper(
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private proc _conv_sethandler(
     ref error:errorCode,
     argtypei:c_int,
@@ -10255,7 +10249,7 @@ private proc _conv_sethandler(
   return false;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._write_signed(width:uint(32), t:int, i:int):errorCode
 {
   var err:errorCode;
@@ -10278,7 +10272,7 @@ proc fileWriter._write_signed(width:uint(32), t:int, i:int):errorCode
   return err;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._read_signed(width:uint(32), out t:int, i:int):errorCode
 {
   var err:errorCode;
@@ -10305,7 +10299,7 @@ proc fileReader._read_signed(width:uint(32), out t:int, i:int):errorCode
   return err;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._write_unsigned(width:uint(32), t:uint, i:int)
 {
   var err:errorCode;
@@ -10327,7 +10321,7 @@ proc fileWriter._write_unsigned(width:uint(32), t:uint, i:int)
   }
   return err;
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._read_unsigned(width:uint(32), out t:uint, i:int)
 {
   var err:errorCode;
@@ -10355,7 +10349,7 @@ proc fileReader._read_unsigned(width:uint(32), out t:uint, i:int)
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._write_real(width:uint(32), t:real, i:int)
 {
   var err:errorCode;
@@ -10371,7 +10365,7 @@ proc fileWriter._write_real(width:uint(32), t:real, i:int)
   }
   return err;
 }
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._read_real(width:uint(32), out t:real, i:int)
 {
   var err:errorCode;
@@ -10391,7 +10385,7 @@ proc fileReader._read_real(width:uint(32), out t:real, i:int)
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._write_complex(width:uint(32), t:complex, i:int)
 {
   var err:errorCode = 0;
@@ -10418,7 +10412,7 @@ proc fileWriter._write_complex(width:uint(32), t:complex, i:int)
   return err;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 {
   var err:errorCode = 0;
@@ -10454,7 +10448,7 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // note here that the main benefit of this helper is that we don't pass all the
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
-pragma "no doc"
+@chpldoc.nodoc
 proc fileWriter._writefOne(fmtStr, ref arg, i: int,
                            ref cur: c_size_t, ref j: int,
                            ref r: unmanaged _channel_regex_info?,
@@ -10976,7 +10970,7 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
 }
 
 // documented in varargs version
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.readf(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
@@ -11037,7 +11031,7 @@ proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
 // documented in string version
-pragma "no doc"
+@chpldoc.nodoc
 proc readf(fmt:string):bool throws {
   return try stdin.readf(fmt);
 }
@@ -11186,10 +11180,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
   // Add the terminating NULL byte to make C string conversion easy.
   buf[offset] = 0;
 
-  if isStringType(t) then
-    return createStringWithOwnedBuffer(buf, offset, offset+1);
-  else
-    return createBytesWithOwnedBuffer(buf, offset, offset+1);
+  return t.createAdoptingBuffer(buf, offset, offset+1);
 }
 
 
@@ -11205,14 +11196,14 @@ use Regex;
 
 private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._extractMatch(m:regexMatch, ref arg:regexMatch,
                               ref error:errorCode) {
   // If the argument is a match record, just return it.
   arg = m;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._extractMatch(m:regexMatch, ref arg:bytes,
                               ref error:errorCode) {
   var cur:int(64);
@@ -11245,7 +11236,7 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:bytes,
     error =
         qio_channel_read_string(false, iokind.native:c_int, len: int(64),
                                 _channel_internal, ts, gotlen, len: c_ssize_t);
-    s = createBytesWithOwnedBuffer(ts, length=gotlen);
+    s = bytes.createAdoptingBuffer(ts, length=gotlen);
   }
 
   if ! error {
@@ -11260,7 +11251,7 @@ proc fileReader._extractMatch(m:regexMatch, ref arg:bytes,
     qio_channel_advance(false, _channel_internal, oldPosition - cur);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
       where t != regexMatch && t != bytes {
   // If there was no match, return the default value of the type
@@ -11323,7 +11314,7 @@ proc fileReader.extractMatch(m:regexMatch, ref arg) throws {
 
 // Assumes that the fileReader has been marked where the search began
 // (or at least before the capture groups if discarding)
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
                                     nmatches:int,
                                     ref captures, ref error:errorCode) {
@@ -11335,61 +11326,77 @@ proc fileReader._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
 }
 
 // Private implementation helper for fileReader.search(re:regex(?))
-// Todo: inline it into its single callsite.
-pragma "no doc"
-proc fileReader._searchHelp(re:regex(?), ref error:errorCode):regexMatch
+@chpldoc.nodoc
+private inline proc _searchHelp(ref fr: fileReader,
+                                re:regex(?),
+                                ref error:errorCode,
+                                param numMatches,
+                                param doCapture: bool,
+                                ref captures):regexMatch
 {
   var m:regexMatch;
-  on this._home {
-    try! this.lock();
-    var nm = 1;
+  on fr._home {
+    try! fr.lock(); defer { fr.unlock(); }
+    param nm = numMatches;
     var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    error = qio_channel_mark(false, _channel_internal);
+    error = qio_channel_mark(false, fr._channel_internal);
     if !error {
       error = qio_regex_channel_match(re._regex,
-                                       false, _channel_internal, max(int(64)),
-                                       QIO_REGEX_ANCHOR_UNANCHORED,
-                                       /* can_discard */ true,
-                                       /* keep_unmatched */ false,
-                                       /* keep_whole_pattern */ true,
-                                       matches, nm);
+                                     false, fr._channel_internal, max(int(64)),
+                                     QIO_REGEX_ANCHOR_UNANCHORED,
+                                     /* can_discard */ true,
+                                     /* keep_unmatched */ false,
+                                     /* keep_whole_pattern */ true,
+                                     matches, nm);
     }
     // Don't report "didn't match" errors
     if error == EFORMAT || error == EEOF then error = 0;
     if !error {
       m = _to_regexMatch(matches[0]);
       if m.matched {
+        if doCapture {
+          // Extract the capture groups.
+          fr._ch_handle_captures(matches, nm, captures, error);
+        }
+
         // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
+        qio_channel_revert_unlocked(fr._channel_internal);
+        var cur = qio_channel_offset_unlocked(fr._channel_internal);
         var target = m.byteOffset:int;
-        error = qio_channel_advance(false, _channel_internal, target - cur);
+        // TODO: this can be qio_channel_advance_unlocked since we have already locked
+        error = qio_channel_advance(false, fr._channel_internal, target - cur);
       } else {
-        // If we didn't match... leave the fileReader position at EOF
-        qio_channel_commit_unlocked(_channel_internal);
+        // If we didn't match... advance the fileReader position to EOF
+        qio_channel_commit_unlocked(fr._channel_internal);
+        // TODO: is there a better way to get to the end?
+        // seeking on an unbounded reader doesn't work
+        error = qio_channel_advance_past_byte(false, fr._channel_internal, 0, /* consume */ false);
+        if error == EEOF then error = 0;
       }
     }
     _ddata_free(matches, nm);
-    this.unlock();
   }
   return m;
 }
 
+
+
 // documented in the version with captures
-pragma "no doc"
+@chpldoc.nodoc
 proc fileReader.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = 0;
-  var ret = this._searchHelp(re, error=e);
+  var dummy:int;
+  var ret = _searchHelp(this, re, e, 1, false, dummy);
   if e then try this._ch_ioerror(e, "in fileReader.search");
   return ret;
 }
 
-/*  Search for an offset in the fileReader matching the
-    passed regular expression, possibly pulling out capture groups.
-    If there is a match, leaves the fileReader offset at the
-    match. If there is no match, the fileReader offset will be
-    advanced to the end of the fileReader (or end of the file).
+/*  Search for an offset in the fileReader from the current offset matching the
+    passed regular expression, possibly pulling out capture groups. If there is
+    a match, leaves the fileReader offset at the begininng of the match. If
+    there is no match, the fileReader offset will be advanced to the end of the
+    fileReader (or end of the file).
 
     Throws a SystemError if an error occurs.
 
@@ -11402,44 +11409,10 @@ proc fileReader.search(re:regex(?)):regexMatch throws
  */
 proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
-  var m:regexMatch;
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    var nm = captures.size + 1;
-    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    err = qio_channel_mark(false, _channel_internal);
-    if ! err {
-      err = qio_regex_channel_match(re._regex,
-                                     false, _channel_internal, max(int(64)),
-                                     QIO_REGEX_ANCHOR_UNANCHORED,
-                                     /* can_discard */ true,
-                                     /* keep_unmatched */ false,
-                                     /* keep_whole_pattern */ true,
-                                     matches, nm);
-    }
-    if err == EFORMAT || err == EEOF then err = 0;
-    if !err {
-      m = _to_regexMatch(matches[0]);
-      if m.matched {
-        // Extract the capture groups.
-        _ch_handle_captures(matches, nm, captures, err);
-
-        // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.byteOffset:int;
-        err = qio_channel_advance(false, _channel_internal, target - cur);
-      } else {
-        // If we didn't match... leave the fileReader position at EOF
-        qio_channel_commit_unlocked(_channel_internal);
-      }
-    }
-    _ddata_free(matches, nm);
-  }
-
-  if err then try this._ch_ioerror(err, "in fileReader.search");
-  return m;
+  var e:errorCode = 0;
+  var ret = _searchHelp(this, re, e, captures.size + 1, true, captures);
+  if e then try this._ch_ioerror(e, "in fileReader.search");
+  return ret;
 }
 
 /* Enumerates matches in the string as well as capture groups.
@@ -11451,13 +11424,13 @@ proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
    of that match. Note though that you would have to use
    :proc:`IO.fileReader.advance` to get to the offset of a capture group.
 
-   After returning each match, advances to just after that
+   After yielding each match, advances to just after that
    match and looks for another match. Thus, it will not return
    overlapping matches.
 
    In the end, leaves the fileReader offset at the end of the
    last reported match (if we ran out of maxmatches)
-   or at the end of the fileReader (if we no longer matched)
+   or at the end of the fileReader (if we no longer matched).
 
    Holds the fileReader lock for the duration of the search.
 
@@ -11535,6 +11508,13 @@ iter fileReader.matches(re:regex(?), param captures=0,
     i += 1;
   }
   commit();
+  if i < maxmatches {
+    // we stopped becasuse eof, move to end
+    // TODO: is there a better way to get to the end?
+    // seeking on an unbounded reader doesn't work
+    error = qio_channel_advance_past_byte(false, _channel_internal, 0, /* consume */ false);
+    if error == EEOF then error = 0;
+  }
   unlock();
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;

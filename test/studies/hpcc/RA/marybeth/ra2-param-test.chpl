@@ -13,7 +13,9 @@
  *  will be made to make it a true Chapel program.
  *
  *  last revised 9/18/2008 by marybeth
- */  
+ */
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 

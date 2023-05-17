@@ -252,7 +252,7 @@ module ZMQ {
   private inline proc errno do return chpl_macro_int_errno():c_int;
 
   // Types
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type zmq_msg_t;
 
   // C API
@@ -416,10 +416,10 @@ module ZMQ {
   private extern const ZMQ_PLAIN: c_int;
   private extern const ZMQ_CURVE: c_int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   const unset = -42;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   export proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
     chpl_here_free(data);
   }
@@ -436,7 +436,7 @@ module ZMQ {
     return (major:int, minor:int, patch:int);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class ContextClass: RefCountBase {
     var ctx: c_void_ptr;
     var home: locale;
@@ -448,7 +448,7 @@ module ZMQ {
       if this.ctx == nil {
         var errmsg: string;
         try! {
-          errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+          errmsg = string.createCopyingBuffer(zmq_strerror(errno));
         }
         halt("Error in ContextClass.init(): %s\n", errmsg);
       }
@@ -460,7 +460,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           halt("Error in ContextClass.deinit(): %s\n", errmsg);
         }
@@ -474,7 +474,7 @@ module ZMQ {
     Note that this record contains private fields not listed below.
    */
   record Context {
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged ContextClass;
 
     /*
@@ -486,14 +486,14 @@ module ZMQ {
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(c: Context) {
       this.classRef = c.classRef;
       this.classRef.incRefCount();
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var rc = classRef.decRefCount();
       if rc == 1 {
@@ -515,7 +515,7 @@ module ZMQ {
 
   } // record Context
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Context.=(ref lhs: Context, rhs: Context) {
     // Retain
     rhs.classRef.incRefCount();
@@ -528,7 +528,7 @@ module ZMQ {
     lhs.classRef = rhs.classRef;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class SocketClass: RefCountBase {
     var socket: c_void_ptr;
     var home: locale;
@@ -540,7 +540,7 @@ module ZMQ {
       if this.socket == nil {
         var errmsg: string;
         try! {
-          errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+          errmsg = string.createCopyingBuffer(zmq_strerror(errno));
         }
         halt("Error in SocketClass.init(): %s\n", errmsg);
       }
@@ -553,7 +553,7 @@ module ZMQ {
           if ret == -1 {
             var errmsg: string;
             try! {
-              errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+              errmsg = string.createCopyingBuffer(zmq_strerror(errno));
             }
             halt("Error in SocketClass.deinit(): %s\n", errmsg);
           }
@@ -578,25 +578,25 @@ module ZMQ {
     // options, users will need another way to work around that lack of support.
     // Currently, they can work around it by defining their own extern version
     // and using this field (see #13503)
-    pragma "no doc"
+    @chpldoc.nodoc
     var classRef: unmanaged SocketClass;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var context: Context;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       compilerError("Cannot create Socket directly; try Context.socket()");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(s: Socket) {
       this.classRef = s.classRef;
       this.classRef.incRefCount();
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(ctx: Context, sockType: int) {
 
       // This function exists because initializers are confused
@@ -617,7 +617,7 @@ module ZMQ {
       this.complete();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       var rc = classRef.decRefCount();
       if rc == 1 {
@@ -650,7 +650,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           halt("Error in Socket.bind(): ", errmsg);
         }
@@ -667,7 +667,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           writef("Error in Socket.connect(): %s\n", errmsg);
         }
@@ -694,7 +694,7 @@ module ZMQ {
         if err == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
@@ -702,7 +702,7 @@ module ZMQ {
                                    errmsg);
         }
         try! {
-          ret = createStringWithOwnedBuffer(str);
+          ret = string.createAdoptingBuffer(str);
         }
       }
       return ret;
@@ -726,7 +726,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
@@ -755,7 +755,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
@@ -782,7 +782,7 @@ module ZMQ {
         if ret == -1 {
           var errmsg: string;
           try! {
-            errmsg = createStringWithNewBuffer(zmq_strerror(errno));
+            errmsg = string.createCopyingBuffer(zmq_strerror(errno));
           }
           // It would be good to use a factory method for a ZMQError subclass,
           // see #12397
@@ -791,7 +791,7 @@ module ZMQ {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc setSubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
@@ -831,7 +831,7 @@ module ZMQ {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc setUnsubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
@@ -848,7 +848,7 @@ module ZMQ {
     }
 
     // ZMQ serialization checker
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc isZMQSerializable(type T) param: bool {
       return isNumericType(T) || isEnumType(T) ||
         isBytes(T) || isString(T) || isRecordType(T);
@@ -867,13 +867,13 @@ module ZMQ {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int) where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // send, strings
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isString(T) || isBytes(T) {
       on classRef.home {
         // Deep-copy the string to the current locale and release ownership
@@ -884,9 +884,12 @@ module ZMQ {
         // conditionally have ZeroMQ free the memory.
         //
         // Note: the string factory below can throw DecodeError
-        var copy = if isString(T) then createStringWithNewBuffer(x=data)
-                   else parallelCreateBytesWithNewBuffer(data.localize().buff,
-                                                         length=data.size);
+        // var copy: string;
+        var copy = if isString(T)
+                      then data
+                      else parallelCreateBytesWithNewBuffer(
+                              data.localize().buff,
+                              length=data.size);
         copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
@@ -910,7 +913,7 @@ module ZMQ {
     }
 
     // send, numeric types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isNumericType(T) {
       on classRef.home {
         var copy = data;
@@ -927,13 +930,13 @@ module ZMQ {
     }
 
     // send, enum types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where isEnumType(T) {
       try send(chpl__enumToOrder(data), flags);
     }
 
     // send, records (of other supported things)
-    pragma "no doc"
+    @chpldoc.nodoc
     proc send(data: ?T, flags: int = 0) throws where (isRecordType(T) &&
                                                      (!isString(T)) &&
                                                      (!isBytes(T))) {
@@ -959,13 +962,13 @@ module ZMQ {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int): T where !isZMQSerializable(T) {
       compilerError("Type \"", T:string, "\" is not serializable by ZMQ");
     }
 
     // recv, strings and bytes
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isString(T) || isBytes(T) {
       proc innerRecv() throws {
         // Initialize an empty ZeroMQ message
@@ -988,7 +991,7 @@ module ZMQ {
         // from the message object; then, release the message object
         var len = zmq_msg_size(msg):int;
         const val = if isString(T) then
-                      createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+                      string.createCopyingBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                                 length=len, size=len+1)
                     else
                       parallelCreateBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
@@ -1009,7 +1012,7 @@ module ZMQ {
     }
 
     // recv, numeric types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isNumericType(T) {
       var ret: T;
       on classRef.home {
@@ -1029,13 +1032,13 @@ module ZMQ {
     }
 
     // recv, enum types
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where isEnumType(T) {
       return try chpl__orderToEnum(recv(int, flags), T);
     }
 
     // recv, records (of other supported things)
-    pragma "no doc"
+    @chpldoc.nodoc
     proc recv(type T, flags: int = 0) throws where (isRecordType(T) &&
                                                    (!isString(T)) &&
                                                    (!isBytes(T))) {
@@ -1049,12 +1052,12 @@ module ZMQ {
       return ret;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc throw_socket_error(socket_errno: c_int, err_fn: string) throws {
       import OS.errorCode;
       var errmsg_zmq: string;
       try! {
-        errmsg_zmq = createStringWithNewBuffer(zmq_strerror(socket_errno));
+        errmsg_zmq = string.createCopyingBuffer(zmq_strerror(socket_errno));
       }
       var errmsg_fmt = "Error in Socket.%s(%s): %s\n";
       var errmsg_str = errmsg_fmt.format(err_fn, string:string, errmsg_zmq);
@@ -1063,7 +1066,7 @@ module ZMQ {
     }
   } // record Socket
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Socket.=(ref lhs: Socket, rhs: Socket) {
     if lhs.classRef == rhs.classRef then return;
     // Retain
@@ -1084,7 +1087,7 @@ module ZMQ {
   // assignment can likely be parallelized similarly, but was not
   // included in this temporary effort.
   private proc parallelCreateBytesWithNewBuffer(x: c_ptr(?t), length: int, size=length+1) {
-    if size < parallelAssignThreshold then return createBytesWithNewBuffer(x, length, size);
+    if size < parallelAssignThreshold then return bytes.createCopyingBuffer(x, length, size);
     use ByteBufferHelpers;
     use DSIUtil;
     var ret: bytes;

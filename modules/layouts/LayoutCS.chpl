@@ -20,31 +20,31 @@
 
 import RangeChunk;
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Debug flag */
 config param debugCS = false;
 
-pragma "no doc"
+@chpldoc.nodoc
 config param csLayoutSupportsAutoLocalAccess = true;
 
 /* Default sparse dimension index sorting mode for LayoutCS.
 Sparse dimension indices will default to sorted order if true, inserted order if false */
 config param LayoutCSDefaultToSorted = true;
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
   proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 const _columnComparator: _ColumnComparator;
 
 
 //
 // Necessary since `t == CS` does not support classes with param fields
 //
-pragma "no doc"
+@chpldoc.nodoc
 proc isCSType(type t) param do return isSubtype(_to_borrowed(t), CS);
 
 /*

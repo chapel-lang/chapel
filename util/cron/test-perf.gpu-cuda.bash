@@ -4,6 +4,9 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-native-gpu.bash
+module load cudatoolkit
+
+export CHPL_GPU=nvidia
 export CHPL_COMM=none
 
 export CHPL_TEST_PERF_CONFIG_NAME='gpu'

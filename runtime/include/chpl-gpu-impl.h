@@ -25,8 +25,8 @@
 extern "C" {
 #endif
 
-void chpl_gpu_impl_init(void);
-void chpl_gpu_impl_on_std_modules_finished_initializing(void);
+void chpl_gpu_impl_init(int* num_devices);
+void chpl_gpu_impl_support_module_finished_initializing(void);
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  const char* name,
@@ -35,7 +35,7 @@ void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  int nargs, va_list args);
 void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                  const char* name,
-                                 int num_threads, int blk_dim,
+                                 int64_t num_threads, int blk_dim,
                                  int nargs, va_list args);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);

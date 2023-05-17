@@ -100,7 +100,7 @@ class DomainType final : public CompositeType {
                                               const QualifiedType& idxType,
                                               const QualifiedType& parSafe);
 
-  const Kind kind() const {
+  Kind kind() const {
     return kind_;
   }
 

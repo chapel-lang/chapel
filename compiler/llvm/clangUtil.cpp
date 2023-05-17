@@ -129,10 +129,6 @@ void cleanupExternC(void) {
 
 #else
 
-using namespace clang;
-using namespace llvm;
-using namespace CodeGen;
-
 #define GLOBAL_PTR_SPACE 100
 #define WIDE_PTR_SPACE 101
 #define GLOBAL_PTR_SIZE 128
@@ -144,6 +140,10 @@ using namespace CodeGen;
 #include "llvmGlobalToWide.h"
 #include "llvmAggregateGlobalOps.h"
 #include "llvmDumpIR.h"
+
+using namespace clang;
+using namespace llvm;
+using namespace CodeGen;
 
 static void setupForGlobalToWide();
 static void adjustLayoutForGlobalToWide();
@@ -410,13 +410,18 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 
 
 
+#if HAVE_LLVM_VER >= 150
+typedef MacroInfo::const_tokens_iterator tokens_iterator;
+#else
+typedef MacroInfo::tokens_iterator tokens_iterator;
+#endif
 
 static const bool debugPrintMacros = false;
 
 static void handleMacroExpr(const MacroInfo* inMacro,
                             const IdentifierInfo* origID,
-                            MacroInfo::tokens_iterator start,
-                            MacroInfo::tokens_iterator end,
+                            tokens_iterator start,
+                            tokens_iterator end,
                             VarSymbol*& varRet,
                             TypeDecl*& cTypeRet,
                             ValueDecl*& cValueRet,
@@ -435,7 +440,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
   // expect 'LAPACK_GLOBAL' '(' 'actual1' ',' 'actual2' ')'
   Token actual1, actual2;
   int count = 0;
-  for (MacroInfo::tokens_iterator tok = inMacro->tokens_begin();
+  for (tokens_iterator tok = inMacro->tokens_begin();
        tok != inMacro->tokens_end(); ++tok) {
     count++;
     if (count == 3)
@@ -459,7 +464,7 @@ static void handleCallMacro(const IdentifierInfo* origID,
   // expecting 'identifier' ## '_'
   count = 0;
   Token body1, body2, body3;
-  for (MacroInfo::tokens_iterator tok = calledMacro->tokens_begin();
+  for (tokens_iterator tok = calledMacro->tokens_begin();
        tok != calledMacro->tokens_end(); ++tok) {
     count++;
     if (count == 1) {
@@ -560,8 +565,8 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
 }
 
 static void removeMacroOuterParens(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator &start,
-                                   MacroInfo::tokens_iterator &end) {
+                                   tokens_iterator &start,
+                                   tokens_iterator &end) {
 
   if (start == end)
     return;
@@ -569,14 +574,14 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
   // Remove any number of outer parens e.g. (1), ((1)) -> 1
   int left_parens = 0;
   int right_parens = 0;
-  for (MacroInfo::tokens_iterator cur = end - 1;
+  for (tokens_iterator cur = end - 1;
        cur != start;
        --cur) {
     if(cur->getKind() == tok::r_paren) right_parens++;
     else break;
   }
 
-  for (MacroInfo::tokens_iterator cur = start;
+  for (tokens_iterator cur = start;
        cur != end;
        ++cur) {
     if(cur->getKind() == tok::l_paren) left_parens++;
@@ -585,8 +590,8 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 
   int min_parens = (left_parens < right_parens) ? left_parens : right_parens;
   if (min_parens > 0) {
-    MacroInfo::tokens_iterator oldStart = start;
-    MacroInfo::tokens_iterator oldEnd = end;
+    tokens_iterator oldStart = start;
+    tokens_iterator oldEnd = end;
     start = oldStart + min_parens;
     end = oldEnd - min_parens;
     INT_ASSERT(start != oldStart);
@@ -597,12 +602,12 @@ static void removeMacroOuterParens(const MacroInfo* inMacro,
 // finds a parenthesized expression at the start of start..end
 // the expression does not necessarily cover the entire expression.
 static bool findParenthesizedExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
-                                  MacroInfo::tokens_iterator &pStart,
-                                  MacroInfo::tokens_iterator &pEnd) {
+                                  tokens_iterator start,
+                                  tokens_iterator end,
+                                  tokens_iterator &pStart,
+                                  tokens_iterator &pEnd) {
   int inparens = 0;
-  for (MacroInfo::tokens_iterator cur = start; cur != end; ++cur) {
+  for (tokens_iterator cur = start; cur != end; ++cur) {
 
     if (cur->getKind() == tok::l_paren) inparens++;
     if (cur->getKind() == tok::r_paren) inparens--;
@@ -631,8 +636,8 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 // Returns a type/identifier/macro name or NULL if it was not handled
 static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
                                               const IdentifierInfo* origID,
-                                              MacroInfo::tokens_iterator start,
-                                              MacroInfo::tokens_iterator end,
+                                              tokens_iterator start,
+                                              tokens_iterator end,
                                               IdentifierInfo*& ii) {
   GenInfo* info = gGenInfo;
   ii = NULL;
@@ -774,8 +779,8 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
 }
 
 static const char* handleStringExpr(const MacroInfo* inMacro,
-                                    MacroInfo::tokens_iterator start,
-                                    MacroInfo::tokens_iterator end) {
+                                    tokens_iterator start,
+                                    tokens_iterator end) {
   removeMacroOuterParens(inMacro, start, end);
 
   Token tok = *start; // the main token
@@ -800,26 +805,26 @@ static ::Type* getTypeForMacro(const char* name) {
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
+                                  tokens_iterator start,
+                                  tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet);
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
-                                         MacroInfo::tokens_iterator start,
-                                         MacroInfo::tokens_iterator end,
+                                         tokens_iterator start,
+                                         tokens_iterator end,
                                          Immediate* imm);
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
-                                     MacroInfo::tokens_iterator start,
-                                     MacroInfo::tokens_iterator end,
+                                     tokens_iterator start,
+                                     tokens_iterator end,
                                      Immediate* imm);
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator start,
-                                   MacroInfo::tokens_iterator end,
+                                   tokens_iterator start,
+                                   tokens_iterator end,
                                    Immediate* imm);
 
 static bool handleNumericExpr(const MacroInfo* inMacro,
-                              MacroInfo::tokens_iterator start,
-                              MacroInfo::tokens_iterator end,
+                              tokens_iterator start,
+                              tokens_iterator end,
                               Immediate* imm,
                               const char*& cCastToTypeRet) {
 
@@ -846,8 +851,8 @@ static bool handleNumericExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericCastExpr(const MacroInfo* inMacro,
-                                  MacroInfo::tokens_iterator start,
-                                  MacroInfo::tokens_iterator end,
+                                  tokens_iterator start,
+                                  tokens_iterator end,
                                   Immediate* imm,
                                   const char*& cCastToTypeRet) {
 
@@ -855,8 +860,8 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     return false;
 
   // Check for a cast like '(unsigned int) 12'
-  MacroInfo::tokens_iterator castStart = start;
-  MacroInfo::tokens_iterator castEnd = start;
+  tokens_iterator castStart = start;
+  tokens_iterator castEnd = start;
 
   if (findParenthesizedExpr(inMacro, start, end, castStart, castEnd)) {
     if (castEnd == end)
@@ -926,8 +931,8 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
 
 static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
-                                         MacroInfo::tokens_iterator start,
-                                         MacroInfo::tokens_iterator end,
+                                         tokens_iterator start,
+                                         tokens_iterator end,
                                          Immediate* imm) {
   if (start == end)
     return false;
@@ -961,8 +966,8 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
-                                     MacroInfo::tokens_iterator start,
-                                     MacroInfo::tokens_iterator end,
+                                     tokens_iterator start,
+                                     tokens_iterator end,
                                      Immediate* imm) {
   if (start == end)
     return false;
@@ -1073,16 +1078,16 @@ static bool handleNumericLiteralExpr(const MacroInfo* inMacro,
 }
 
 static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
-                                   MacroInfo::tokens_iterator start,
-                                   MacroInfo::tokens_iterator end,
+                                   tokens_iterator start,
+                                   tokens_iterator end,
                                    Immediate* imm) {
   // handle select binary operators
   // this only works if the LHS and RHS are either:
   //  parenthesized expressions; or
   //  numeric constants
   bool lhsOk = false;
-  MacroInfo::tokens_iterator lhsStart = start;
-  MacroInfo::tokens_iterator lhsEnd = start;
+  tokens_iterator lhsStart = start;
+  tokens_iterator lhsEnd = start;
 
   // find a LHS constant or parenthesized-expression
   if (start->getKind() == tok::numeric_constant) {
@@ -1097,9 +1102,9 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
     return false;
 
   bool rhsOk = false;
-  MacroInfo::tokens_iterator op = lhsEnd;
-  MacroInfo::tokens_iterator rhsStart = op + 1;
-  MacroInfo::tokens_iterator rhsEnd = rhsStart;
+  tokens_iterator op = lhsEnd;
+  tokens_iterator rhsStart = op + 1;
+  tokens_iterator rhsEnd = rhsStart;
 
   // find a RHS constant or parenthesized-expression
   if (rhsStart->getKind() == tok::numeric_constant) {
@@ -1143,8 +1148,8 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
 
 static void handleMacroExpr(const MacroInfo* inMacro,
                             const IdentifierInfo* origID,
-                            MacroInfo::tokens_iterator start,
-                            MacroInfo::tokens_iterator end,
+                            tokens_iterator start,
+                            tokens_iterator end,
                             VarSymbol*& varRet,
                             TypeDecl*& cTypeRet,
                             ValueDecl*& cValueRet,
@@ -1170,7 +1175,7 @@ static void handleMacroExpr(const MacroInfo* inMacro,
   }
 
   if (debugPrint) {
-    for (MacroInfo::tokens_iterator cur = start;
+    for (tokens_iterator cur = start;
          cur != end;
          ++cur) {
       Token t = *cur;
@@ -1329,6 +1334,9 @@ class CCodeGenConsumer final : public ASTConsumer {
         Builder = CreateLLVMCodeGen(
           *Diags,
           LLVM_MODULE_NAME,
+#if HAVE_LLVM_VER >= 150
+          &info->clangInfo->Clang->getVirtualFileSystem(),
+#endif
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
@@ -1943,7 +1951,13 @@ static llvm::TargetOptions getTargetOptions(
   Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
   Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
   Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
+#if HAVE_LLVM_VER >= 150
+  Options.MCOptions.MCUseDwarfDirectory =
+    CodeGenOpts.NoDwarfDirectoryAsm ? llvm::MCTargetOptions::DisableDwarfDirectory
+                                    : llvm::MCTargetOptions::EnableDwarfDirectory;
+#else
   Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
+#endif
   Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
   Options.MCOptions.MCIncrementalLinkerCompatible =
       CodeGenOpts.IncrementalLinkerCompatible;
@@ -2196,12 +2210,14 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
   PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
   PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
+#if HAVE_LLVM_VER < 150
 #if HAVE_LLVM_VER > 60
   PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
 #else
   PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
 #endif
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
+#endif
   PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
 
   if (gGenInfo->targetMachine)
@@ -2331,7 +2347,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
     }
     bool targetCpuValid = false;
     auto ptr = tgt->createMCSubtargetInfo(triple, "", "");
-    targetCpuValid = ptr->isCPUStringValid(CHPL_TARGET_BACKEND_CPU);
+    targetCpuValid = ptr->isCPUStringValid(CHPL_LLVM_TARGET_CPU);
     delete ptr;
 
     return targetCpuValid;
@@ -2340,7 +2356,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2348,6 +2364,10 @@ static std::string generateClangGpuLangArgs() {
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
         args += "hip";
+        break;
+      case GpuCodegenType::GPU_CG_CPU:
+        args += "c++";
+        args += " -lstdc++";
         break;
     }
   }
@@ -2492,18 +2512,18 @@ static void helpComputeClangArgs(std::string& clangCC,
   // Add specialization flags
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
-      CHPL_TARGET_BACKEND_CPU != NULL &&
+      CHPL_LLVM_TARGET_CPU != NULL &&
       CHPL_TARGET_CPU_FLAG[0] != '\0' &&
-      CHPL_TARGET_BACKEND_CPU[0] != '\0' &&
+      CHPL_LLVM_TARGET_CPU[0] != '\0' &&
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
-      0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
+      0 != strcmp(CHPL_LLVM_TARGET_CPU, "none") &&
+      0 != strcmp(CHPL_LLVM_TARGET_CPU, "unknown")) {
 
     // Check that the requested CPU is valid
-    bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
+    bool targetCpuValid = isTargetCpuValid(CHPL_LLVM_TARGET_CPU);
     if (!targetCpuValid) {
       USR_WARN("Unknown target CPU %s -- not specializing",
-               CHPL_TARGET_BACKEND_CPU);
+               CHPL_LLVM_TARGET_CPU);
       std::string triple = getConfiguredTargetTriple();
       USR_PRINT("To see available CPU types, run "
                 "%s --target=%s --print-supported-cpus",
@@ -2513,7 +2533,7 @@ static void helpComputeClangArgs(std::string& clangCC,
       std::string march = "-m";
       march += CHPL_TARGET_CPU_FLAG;
       march += "=";
-      march += CHPL_TARGET_BACKEND_CPU;
+      march += CHPL_LLVM_TARGET_CPU;
       clangCCArgs.push_back(march);
     }
   }
@@ -2589,7 +2609,7 @@ void runClang(const char* just_parse_filename) {
                        clangCCArgs, clangOtherArgs, clangLDArgs);
 
   // tell clang to use CUDA/AMD support
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
 
@@ -2597,8 +2617,8 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
 
-    std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
-    clangOtherArgs.push_back(gpuArch);
+    std::string archFlag = std::string("--offload-arch=") + gpuArch;
+    clangOtherArgs.push_back(archFlag);
   }
 
   // Always include sys_basic because it might change the
@@ -3038,6 +3058,7 @@ void LayeredValueTable::addGlobalValue(
   store.u.value = value;
   store.isLVPtr = isLVPtr;
   store.isUnsigned = isUnsigned;
+  store.chplType = type;
   (layers.back())[name] = store;
 }
 
@@ -3803,7 +3824,8 @@ void addAggregateGlobalOps(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createAggregateGlobalOpsOptPass(info->globalToWideInfo.globalSpace));
+    auto globalSpace = info->globalToWideInfo.globalSpace;
+    PM.add(createLegacyAggregateGlobalOpsOptPass(globalSpace));
   }
 }
 
@@ -3812,7 +3834,8 @@ void addGlobalToWide(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   GenInfo* info = gGenInfo;
   if( fLLVMWideOpt ) {
-    PM.add(createGlobalToWide(&info->globalToWideInfo, info->clangInfo->asmTargetLayoutStr));
+    PM.add(createLegacyGlobalToWidePass(&info->globalToWideInfo,
+                                        info->clangInfo->asmTargetLayoutStr));
   }
 }
 
@@ -3861,7 +3884,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
 static
 void addDumpIrPass(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
-  PM.add(createDumpIrPass(llvmPrintIrStageNum));
+  PM.add(createLegacyDumpIrPass(llvmPrintIrStageNum));
 }
 
 static void linkBitCodeFile(const char *bitCodeFilePath) {
@@ -3885,14 +3908,14 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 static std::string determineOclcVersionLib(std::string libPath) {
   std::string result;
 
-  // Extract version number from CHPL_GPU_ARCH string (e.g. extract
+  // Extract version number from gpuArch string (e.g. extract
   // the 908 from "gfx908")
-  std::regex pattern("gfx(\\d+)");
+  std::regex pattern("[[:alpha:]]+([[:digit:]]+[[:alpha:]]?)");
   std::cmatch match;
-  if (std::regex_search(CHPL_GPU_ARCH, match, pattern)) {
+  if (std::regex_search(gpuArch, match, pattern)) {
     result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
   } else {
-    USR_FATAL("Unable to determine oclc version from CHPL_GPU_ARCH");
+    USR_FATAL("Unable to determine oclc version from gpuArch");
   }
 
   // Ensure file exists (and can be opened)
@@ -3921,7 +3944,7 @@ static void linkGpuDeviceLibraries() {
   } else {
     // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
     // on what these various libraries are.
-    auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
+    auto libPath = gGpuSdkPath + std::string("/amdgcn/bitcode");
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
     linkBitCodeFile((libPath + "/ockl.bc").c_str());
@@ -4180,7 +4203,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   // avoid warning about not statically knowing the stack size when recursive
   // functions are called from the kernel
   ptxasFlags += " --suppress-stack-size-warning ";
-  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
+  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
                        ptxObjectFilename.c_str() +
@@ -4188,16 +4211,16 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
 
   mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-  if (strncmp(CHPL_GPU_ARCH, "sm_", 3) != 0 || strlen(CHPL_GPU_ARCH) != 5) {
+  if (strncmp(gpuArch, "sm_", 3) != 0 || strlen(gpuArch) != 5) {
     USR_FATAL("Unrecognized CUDA arch");
   }
 
-  std::string computeCap = std::string("compute_") + CHPL_GPU_ARCH[3] +
-                                                     CHPL_GPU_ARCH[4];
+  std::string computeCap = std::string("compute_") + gpuArch[3] +
+                                                     gpuArch[4];
   std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                              std::string("--create ") +
                              fatbinFilename.c_str() +
-                             std::string(" --image=profile=") + CHPL_GPU_ARCH +
+                             std::string(" --image=profile=") + gpuArch +
                              ",file=" + ptxObjectFilename.c_str() +
                              std::string(" --image=profile=") + computeCap +
                              ",file=" + artifactFilename.c_str();
@@ -4211,7 +4234,8 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                       "/llvm/bin/lld -flavor gnu" +
                        " --no-undefined -shared" +
                        " -plugin-opt=-amdgpu-internalize-symbols" +
-                       " -plugin-opt=mcpu=gfx906 -plugin-opt=O3" +
+                       " -plugin-opt=mcpu=" + gpuArch +
+                       " -plugin-opt=O3" +
                        " -plugin-opt=-amdgpu-early-inline-all=true" +
                        " -plugin-opt=-amdgpu-function-calls=false -o " +
                        outFilename + " " + artifactFilename;
@@ -4219,7 +4243,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                           "/llvm/bin/clang-offload-bundler" +
                            " -type=o -bundle-align=4096" +
                            " -targets=host-x86_64-unknown-linux," +
-                           "hipv4-amdgcn-amd-amdhsa--" + CHPL_GPU_ARCH +
+                           "hipv4-amdgcn-amd-amdhsa--" + gpuArch +
                            " -inputs=/dev/null," + outFilename +
                            " -outputs=" + fatbinFilename;
 
@@ -4266,6 +4290,8 @@ void makeBinaryLLVM(void) {
         break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
         artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        break;
+      case GpuCodegenType::GPU_CG_CPU:
         break;
     }
   }
@@ -4335,7 +4361,7 @@ void makeBinaryLLVM(void) {
               point,
               [stage] (const PassManagerBuilder &Builder,
                        llvm::legacy::PassManagerBase &PM) -> void {
-                PM.add(createDumpIrPass(stage));
+                PM.add(createLegacyDumpIrPass(stage));
               });
       }
 
@@ -4546,6 +4572,8 @@ void makeBinaryLLVM(void) {
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
           makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_CPU:
           break;
       }
     }

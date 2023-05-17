@@ -39,10 +39,10 @@ module GpuDiagnostics
   // I am leaving these here, because the runtime already inherits them from the
   // comm diagnostics support, and technically there's support for them. We just
   // don't need or don't know how to use them
-  pragma "no doc"
+  @chpldoc.nodoc
   param gpuDiagsStacktrace = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param gpuDiagsPrintUnstable = false;
 
   /*

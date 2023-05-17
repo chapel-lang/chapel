@@ -199,12 +199,12 @@ module Version {
     /* The commit ID of the version (e.g., a Git SHA) */
     param commit: string = "";
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(s) throws {
       s.write(this:string);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(param major: int,
               param minor: int,
               param update: int = 0,
@@ -217,13 +217,13 @@ module Version {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: versionValue(?), type t: version) {
     return new version(x.major, x.minor, x.update, x.commit);
   }
 
   // cast from versionValue to string
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: versionValue(?), type t: string) param {
     if (x.commit == "") then
       return (x.major:string + "." + x.minor:string + "." +
@@ -263,7 +263,7 @@ module Version {
   }
 
   // Comparisons between sourceVersions
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.==(v1: versionValue(?),
                            v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) == 0;
@@ -274,13 +274,13 @@ module Version {
     :type:`versionValue` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.!=(v1: versionValue(?),
                            v2: versionValue(?)) param : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.<(v1: versionValue(?),
                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
@@ -289,7 +289,7 @@ module Version {
     return retval < 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.<=(v1: versionValue(?),
                            v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
@@ -298,7 +298,7 @@ module Version {
     return retval <= 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.>(v1: versionValue(?),
                           v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
@@ -320,7 +320,7 @@ module Version {
     the former is considered an official release and the latter a
     pre-release.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator versionValue.>=(v1: versionValue(?),
                            v2: versionValue(?)) param : bool {
     param retval = spaceship(v1, v2);
@@ -363,12 +363,12 @@ module Version {
     var commit: string = "";
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(s) throws {
       s.write(this:string);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(major: int = -1,
               minor: int = -1,
               update: int = 0,
@@ -379,7 +379,7 @@ module Version {
       this.commit = commit;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(otherVersion: version) {
       this.major = otherVersion.major;
       this.minor = otherVersion.minor;
@@ -387,7 +387,7 @@ module Version {
       this.commit = otherVersion.commit;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(otherVersion: version) {
       major = otherVersion.major;
       minor = otherVersion.minor;
@@ -395,7 +395,7 @@ module Version {
       commit = otherVersion.commit;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(otherVersion: versionValue(?)) {
       major = otherVersion.major;
       minor = otherVersion.minor;
@@ -405,7 +405,7 @@ module Version {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
     operator = (ref LHS:version, otherVersion: version) {
       LHS.major = otherVersion.major;
       LHS.minor = otherVersion.minor;
@@ -413,7 +413,7 @@ module Version {
       LHS.commit = otherVersion.commit;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     operator = (ref LHS:version, otherVersion: versionValue) {
       LHS.major = otherVersion.major;
       LHS.minor = otherVersion.minor;
@@ -423,7 +423,7 @@ module Version {
 
 
   // cast from version to string
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: version, type t: string) const {
     if (x.commit == "") then
       return (x.major:string + "." + x.minor:string + "." +
@@ -466,19 +466,19 @@ module Version {
     :type:`version` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.==(v1: version,
                       v2: version) : bool {
     return spaceship(v1, v2) == 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.!=(v1: version,
                              v2: version) : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.<(v1: version,
                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -487,7 +487,7 @@ module Version {
     return retval < 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.<=(v1: version,
                              v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -496,7 +496,7 @@ module Version {
     return retval <= 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.>(v1: version,
                             v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -517,7 +517,7 @@ module Version {
     after (be greater than) a non-empty value, as the former is considered
     an official release and the latter a pre-release.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator version.>=(v1: version,
                       v2: version) : bool throws {
     const retval = spaceship(v1, v2);
@@ -534,31 +534,31 @@ module Version {
     check whether or not the two have identical major, minor, update,
     and commit values.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(v1: version,
               v2: versionValue) : bool {
     return spaceship(v1, v2) == 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(v1: versionValue,
               v2: version) : bool {
     return v2 == v1;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator !=(v1: version,
               v2: versionValue) : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator !=(v1: versionValue,
               v2: version) : bool {
     return v2 != v1;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <(v1: version,
              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -567,13 +567,13 @@ module Version {
     return retval < 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <(v1: versionValue,
              v2: version) : bool throws {
     return v2 > v1;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=(v1: version,
               v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -582,13 +582,13 @@ module Version {
     return retval <= 0;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=(v1: versionValue,
               v2: version) : bool throws {
     return v2 >= v1;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >(v1: version,
              v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -597,13 +597,13 @@ module Version {
     return retval > 0 && retval != 2;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >(v1: versionValue,
              v2: version) : bool throws {
     return v2 < v1;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >=(v1: version,
               v2: versionValue) : bool throws {
     const retval = spaceship(v1, v2);
@@ -612,7 +612,7 @@ module Version {
     return retval >= 0 && retval != 2;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >=(v1: versionValue,
               v2: version) : bool throws {
     return v2 <= v1;

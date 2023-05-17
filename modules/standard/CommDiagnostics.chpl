@@ -465,7 +465,8 @@ module CommDiagnostics
     :type printEmptyColumns: `bool`
   */
   proc printCommDiagnosticsTable(printEmptyColumns=false) {
-    use Reflection;
+    use Reflection, Math;
+
     param unstable = "unstable";
 
     // grab all comm diagnostics

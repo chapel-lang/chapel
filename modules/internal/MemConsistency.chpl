@@ -30,9 +30,9 @@ module MemConsistency {
   //  return memory_order_seq_cst;
 
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _defaultOf(type t:memory_order) {
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc _defaultOfMemoryOrder(): memory_order;
 
     return _defaultOfMemoryOrder();
@@ -107,24 +107,24 @@ module MemConsistency {
   // Calls to them are added by the compiler when --cache-remote is used.
 
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
+  @chpldoc.nodoc
   extern proc chpl_rmem_consist_release();
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
+  @chpldoc.nodoc
   extern proc chpl_rmem_consist_acquire();
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
+  @chpldoc.nodoc
   extern proc chpl_rmem_consist_maybe_release(order:memory_order);
   pragma "compiler added remote fence"
   proc chpl_rmem_consist_maybe_release(param order:memoryOrder) {
     chpl_rmem_consist_maybe_release(c_memory_order(order));
   }
   pragma "insert line file info"
-  pragma "no doc"
   pragma "compiler added remote fence"
+  @chpldoc.nodoc
   extern proc chpl_rmem_consist_maybe_acquire(order:memory_order);
   pragma "compiler added remote fence"
   proc chpl_rmem_consist_maybe_acquire(param order:memoryOrder) {
@@ -133,7 +133,7 @@ module MemConsistency {
 
   // This one can be used in module code.
   pragma "insert line file info"
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc chpl_rmem_consist_fence(order:memory_order);
   proc chpl_rmem_consist_fence(param order:memoryOrder) {
     chpl_rmem_consist_fence(c_memory_order(order));

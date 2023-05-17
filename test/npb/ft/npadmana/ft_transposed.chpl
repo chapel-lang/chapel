@@ -12,7 +12,7 @@
 */
 use DistributedFFT;
 use Time;
-import Math.pi;
+import Math.{pi, exp, log};
 
 // Define the classes
 enum NPB {S,W,A,B,C,D,E,F};
