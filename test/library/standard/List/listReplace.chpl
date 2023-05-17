@@ -20,7 +20,7 @@ proc test2() {
 
   writeln(lst);
 
-  coforall i in 0..3 with (ref lst) do lst.set(i, new r(i));
+  coforall i in 0..3 with (ref lst) do lst.replace(i, new r(i));
 
   writeln(lst);
 }

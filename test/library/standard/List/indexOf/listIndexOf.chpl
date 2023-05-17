@@ -19,7 +19,7 @@ idx = lst.find(testIters, testIters, -1);
 
 assert(idx >= 0);
 
-lst.pop();
+lst.popBack();
 
 idx = lst.find(testIters, testIters);
 

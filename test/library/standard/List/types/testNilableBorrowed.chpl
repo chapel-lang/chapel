@@ -12,5 +12,5 @@ l.pushBack(b);
 
 assert(l.size == 1);
 
-var value = l.pop();
+var value = l.popBack();
 assert(l.size == 0);
