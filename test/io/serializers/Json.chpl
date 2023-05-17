@@ -30,31 +30,31 @@ module Json {
       dc._writeOne(dc.kind, val, here);
     }
 
-    proc serializeValue(writer: _writeType, const x:?t) throws {
+    proc serializeValue(writer: _writeType, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
         // for quotes around things
-        _oldWrite(writer, x);
+        _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
-        _oldWrite(writer, x);
+        _oldWrite(writer, val);
       } else if isClassType(t) {
-        if x == nil {
+        if val == nil {
           writer._writeLiteral("null");
         } else {
           var alias = writer.withSerializer(new JsonSerializer());
-          x!.serialize(writer=alias, serializer=alias.serializer);
+          val!.serialize(writer=alias, serializer=alias.serializer);
         }
       } else {
         var alias = writer.withSerializer(new JsonSerializer());
-        x.serialize(writer=alias, serializer=alias.serializer);
+        val.serialize(writer=alias, serializer=alias.serializer);
       }
     }
 
-    proc serializeField(writer: _writeType, key: string, const val: ?T) throws {
+    proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
       if !firstField then
         writer.writeLiteral(", ");
 
-      if !key.isEmpty() {
-        writer.write(key);
+      if !name.isEmpty() {
+        writer.write(name);
         writer.writeLiteral(":");
       }
 
@@ -91,7 +91,7 @@ module Json {
       writer.writeLiteral("]");
     }
 
-    proc startList(writer: _writeType, _size: uint) throws {
+    proc startList(writer: _writeType, size: uint) throws {
       writer._writeLiteral("[");
       firstField = true;
     }
@@ -105,10 +105,10 @@ module Json {
       writer._writeLiteral("]");
     }
 
-    proc startArray(w: _writeType, _size:uint) throws {
+    proc startArray(writer: _writeType, size: uint) throws {
     }
 
-    proc startArrayDim(w: _writeType, len: uint) throws {
+    proc startArrayDim(writer: _writeType, size: uint) throws {
       _arrayDim += 1;
       if _arrayFirst.size < _arrayDim {
         _arrayFirst.append(true);
@@ -117,24 +117,24 @@ module Json {
       if _arrayFirst[_arrayDim-1] {
         _arrayFirst[_arrayDim-1] = false;
       } else {
-        w._writeLiteral(",");
+        writer._writeLiteral(",");
       }
 
       _arrayMax = max(_arrayMax, _arrayDim);
 
       if _arrayDim > 1 {
-        w.writeNewline();
-        w.writeLiteral(" " * (_arrayDim-1));
+        writer.writeNewline();
+        writer.writeLiteral(" " * (_arrayDim-1));
       }
-      w._writeLiteral("[");
+      writer._writeLiteral("[");
     }
 
-    proc endArrayDim(w: _writeType) throws {
+    proc endArrayDim(writer: _writeType) throws {
       if _arrayDim < _arrayMax {
-        w.writeNewline();
-        w._writeLiteral(" " * (_arrayDim-1));
+        writer.writeNewline();
+        writer._writeLiteral(" " * (_arrayDim-1));
       }
-      w._writeLiteral("]");
+      writer._writeLiteral("]");
 
       if _arrayDim < _arrayFirst.size then
       _arrayFirst[_arrayDim] = true;
@@ -143,34 +143,34 @@ module Json {
       firstField = true;
     }
 
-    proc writeArrayElement(w: _writeType, const val: ?) throws {
+    proc writeArrayElement(writer: _writeType, const val: ?) throws {
       if !firstField then
-        w._writeLiteral(", ");
+        writer._writeLiteral(", ");
       else
         firstField = false;
-      w.write(val);
+      writer.write(val);
     }
 
-    proc endArray(w: _writeType) throws {
+    proc endArray(writer: _writeType) throws {
     }
 
-    proc startMap(w: _writeType, _size:uint = 0) throws {
-      w._writeLiteral("{");
+    proc startMap(writer: _writeType, size: uint) throws {
+      writer._writeLiteral("{");
     }
 
-    proc writeKey(w: _writeType, const key: ?) throws {
+    proc writeKey(writer: _writeType, const key: ?) throws {
       if !firstField {
-        w._writeLiteral(", ");
-        w.writeNewline();
-        w._writeLiteral("  ");
+        writer._writeLiteral(", ");
+        writer.writeNewline();
+        writer._writeLiteral("  ");
       } else {
-        w.writeNewline();
-        w._writeLiteral("  ");
+        writer.writeNewline();
+        writer._writeLiteral("  ");
         firstField = false;
       }
 
       if key.type == string {
-        w.write(key);
+        writer.write(key);
       } else {
         // Write the key as json, then turn it into a json string to use
         // it as a proper key for the map.
@@ -180,18 +180,18 @@ module Json {
         }
         var tmp : string;
         f.reader().readAll(tmp);
-        w.write(tmp);
+        writer.write(tmp);
       }
     }
 
-    proc writeValue(w: _writeType, const val: ?) throws {
-      w._writeLiteral(": ");
-      w.write(val);
+    proc writeValue(writer: _writeType, const val: ?) throws {
+      writer._writeLiteral(": ");
+      writer.write(val);
     }
 
-    proc endMap(w: _writeType) throws {
-      w.writeNewline();
-      w._writeLiteral("}");
+    proc endMap(writer: _writeType) throws {
+      writer.writeNewline();
+      writer._writeLiteral("}");
     }
   }
 
@@ -302,12 +302,12 @@ module Json {
       }
     }
 
-    proc _readFieldName(r: _readerT, key: string) throws {
+    proc _readFieldName(reader: _readerT, key: string) throws {
       try {
-        r._readLiteral('"');
-        r._readLiteral(key);
-        r._readLiteral('"');
-        r._readLiteral(":");
+        reader._readLiteral('"');
+        reader._readLiteral(key);
+        reader._readLiteral('"');
+        reader._readLiteral(":");
       } catch e: BadFormatError {
         return false;
       }
@@ -316,53 +316,53 @@ module Json {
     }
 
 
-    proc deserializeField(r: _readerT, key: string, type T) throws {
-      if _names.contains(key) {
+    proc deserializeField(reader: _readerT, name: string, type T) throws {
+      if _names.contains(name) {
         // Use 'advance' instead of 'seek' to support reading in a marked
         // channel, which can happen during 'readf'.
         //
         // Use 'mark' to rewind the position since 'advance' doesn't support
         // negative values. This means that 'deserializeField' does not advance
         // the channel's position until 'endClass' or 'endRecord' are called.
-        r.mark();
-        const dist =  _offsets[key] - r.offset();
-        r.advance(dist);
-      } else if !key.isEmpty() {
+        reader.mark();
+        const dist =  _offsets[name] - reader.offset();
+        reader.advance(dist);
+      } else if !name.isEmpty() {
         throw new Error("field not found...");
       }
 
-      var ret = r.read(T);
+      var ret = reader.read(T);
 
       // note: trailing commas not allowed in json
-      r.matchLiteral(",");
-      if !key.isEmpty() then
-        r.revert();
+      reader.matchLiteral(",");
+      if !name.isEmpty() then
+        reader.revert();
 
       return ret;
     }
 
-    proc startTuple(r: fileReader) throws {
-      r.readLiteral("[");
+    proc startTuple(reader: fileReader) throws {
+      reader.readLiteral("[");
     }
-    proc endTuple(r: fileReader) throws {
-      r.readLiteral("]");
-    }
-
-    proc startClass(r: fileReader, name: string) throws {
-      _startComposite(r);
-    }
-    proc endClass(r: fileReader) throws {
-      _endComposite(r);
+    proc endTuple(reader: fileReader) throws {
+      reader.readLiteral("]");
     }
 
-    proc startRecord(r: fileReader, name: string) throws {
-      _startComposite(r);
+    proc startClass(reader: fileReader, name: string) throws {
+      _startComposite(reader);
     }
-    proc endRecord(r: fileReader) throws {
-      _endComposite(r);
+    proc endClass(reader: fileReader) throws {
+      _endComposite(reader);
     }
 
-    proc _startComposite(r: fileReader) throws {
+    proc startRecord(reader: fileReader, name: string) throws {
+      _startComposite(reader);
+    }
+    proc endRecord(reader: fileReader) throws {
+      _endComposite(reader);
+    }
+
+    proc _startComposite(reader: fileReader) throws {
       if _inheritLevel == 0 {
         //
         // TODO: When should we try to do this? Use of '_startComposite', etc.
@@ -375,44 +375,44 @@ module Json {
         // TODO: Should we only compute the mapping if the fields are being
         // read out of order?
         //
-        var (m, last) = helper(r);
+        var (m, last) = helper(reader);
         for (k, v) in zip(m.keys(), m.values()) {
           _names.add(k);
           _offsets[k] = v;
         }
         _lastPos = last;
-        r.readLiteral("{");
+        reader.readLiteral("{");
       }
 
       _inheritLevel += 1;
     }
 
-    proc _endComposite(r: fileReader) throws {
+    proc _endComposite(reader: fileReader) throws {
       if _inheritLevel == 1 {
-        const dist =  _lastPos - r.offset();
-        r.advance(dist);
-        r.readLiteral("}");
+        const dist =  _lastPos - reader.offset();
+        reader.advance(dist);
+        reader.readLiteral("}");
       }
       _inheritLevel -= 1;
     }
 
-    proc startList(r: fileReader) throws {
-      r._readLiteral("[");
+    proc startList(reader: fileReader) throws {
+      reader._readLiteral("[");
     }
-    proc readListElement(r: fileReader, type eltType) throws {
-      if !firstField then r._readLiteral(",");
+    proc readListElement(reader: fileReader, type eltType) throws {
+      if !firstField then reader._readLiteral(",");
       else firstField = false;
 
-      return r.read(eltType);
+      return reader.read(eltType);
     }
-    proc endList(r: fileReader) throws {
-      r._readLiteral("]");
-    }
-
-    proc startArray(r: fileReader) throws {
+    proc endList(reader: fileReader) throws {
+      reader._readLiteral("]");
     }
 
-    proc startArrayDim(r: fileReader) throws {
+    proc startArray(reader: fileReader) throws {
+    }
+
+    proc startArrayDim(reader: fileReader) throws {
       _arrayDim += 1;
       if _arrayFirst.size < _arrayDim {
         _arrayFirst.append(true);
@@ -421,7 +421,7 @@ module Json {
       if _arrayFirst[_arrayDim-1] {
         _arrayFirst[_arrayDim-1] = false;
       } else {
-        r._readLiteral(",");
+        reader._readLiteral(",");
       }
 
       _arrayMax = max(_arrayMax, _arrayDim);
@@ -429,27 +429,27 @@ module Json {
       // Don't need to read the newline and pretty-printed spaces, as JSON
       // arrays can come in other forms. Relies on 'readLiteral' ignoring
       // whitespace by default.
-      r._readLiteral("[");
+      reader._readLiteral("[");
     }
 
-    proc readArrayElement(r: fileReader, type eltType) throws {
+    proc readArrayElement(reader: fileReader, type eltType) throws {
       if !firstField then
-        r._readLiteral(", ");
+        reader._readLiteral(", ");
       else
         firstField = false;
-      return r.read(eltType);
+      return reader.read(eltType);
     }
 
-    proc endArrayDim(r: fileReader) throws {
+    proc endArrayDim(reader: fileReader) throws {
       if _arrayDim < _arrayMax {
-        r.readNewline();
-        r._readLiteral(" " * (_arrayDim-1));
+        reader.readNewline();
+        reader._readLiteral(" " * (_arrayDim-1));
       }
 
       // Don't need to read the newline and pretty-printed spaces, as JSON
       // arrays can come in other forms. Relies on 'readLiteral' ignoring
       // whitespace by default.
-      r._readLiteral("]");
+      reader._readLiteral("]");
 
       if _arrayDim < _arrayFirst.size then
         _arrayFirst[_arrayDim] = true;
@@ -458,25 +458,25 @@ module Json {
       firstField = true;
     }
 
-    proc endArray(r: fileReader) throws {
+    proc endArray(reader: fileReader) throws {
     }
 
-    proc startMap(r: fileReader) throws {
-      r._readLiteral("{");
+    proc startMap(reader: fileReader) throws {
+      reader._readLiteral("{");
     }
 
-    proc readKey(r: fileReader, type keyType) throws {
+    proc readKey(reader: fileReader, type keyType) throws {
       if !firstField {
-        r._readLiteral(",");
+        reader._readLiteral(",");
       } else {
         firstField = false;
       }
 
       if keyType == string {
-        return r.read(string);
+        return reader.read(string);
       } else {
         var f = openMemFile();
-        var s = r.read(string);
+        var s = reader.read(string);
         {
           f.writer().withSerializer(DefaultSerializer).write(s);
         }
@@ -484,13 +484,13 @@ module Json {
       }
     }
 
-    proc readValue(r: fileReader, type valType) throws {
-      r._readLiteral(":");
-      return r.read(valType);
+    proc readValue(reader: fileReader, type valType) throws {
+      reader._readLiteral(":");
+      return reader.read(valType);
     }
 
-    proc endMap(r: fileReader) throws {
-      r._readLiteral("}");
+    proc endMap(reader: fileReader) throws {
+      reader._readLiteral("}");
     }
   }
 }

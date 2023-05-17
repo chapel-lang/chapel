@@ -40,33 +40,33 @@ module BinaryIO {
       dc._writeOne(dc.kind, val, here);
     }
 
-    proc serializeValue(writer: _writeType, const x:?t) throws {
+    proc serializeValue(writer: _writeType, const val:?t) throws {
       if isNumericType(t) {
         select endian {
-          when ioendian.native do writer.writeBinary(x, ioendian.native);
-          when ioendian.little do writer.writeBinary(x, ioendian.little);
-          when ioendian.big do writer.writeBinary(x, ioendian.big);
+          when ioendian.native do writer.writeBinary(val, ioendian.native);
+          when ioendian.little do writer.writeBinary(val, ioendian.little);
+          when ioendian.big do writer.writeBinary(val, ioendian.big);
         }
       } else if t == string  || isEnumType(t) || t == bytes ||
          isBoolType(t) {
-        _oldWrite(writer, x);
+        _oldWrite(writer, val);
       } else if t == nothing {
         // nothing...
       } else if isClassType(t) {
-        if x == nil {
+        if val == nil {
           writer.writeByte(0);
         } else {
           writer.writeByte(1);
           var alias = writer.withSerializer(_fork());
-          x!.serialize(writer=alias, serializer=alias.serializer);
+          val!.serialize(writer=alias, serializer=alias.serializer);
         }
       } else {
         var alias = writer.withSerializer(_fork());
-        x.serialize(writer=alias, serializer=alias.serializer);
+        val.serialize(writer=alias, serializer=alias.serializer);
       }
     }
 
-    proc serializeField(writer: _writeType, key: string, const val: ?T) throws {
+    proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
       _size -= 1;
       if verify && _size < 0 then throw new Error("Attempted to write more fields than specified");
       writer.write(val);
@@ -106,13 +106,13 @@ module BinaryIO {
     }
 
     // TODO: could add some verification here...
-    proc startList(w: _writeType, size: uint) throws {
-      w.write(size);
+    proc startList(writer: _writeType, size: uint) throws {
+      writer.write(size);
     }
-    proc writeListElement(w: _writeType, const val: ?) throws {
-      w.write(val);
+    proc writeListElement(writer: _writeType, const val: ?) throws {
+      writer.write(val);
     }
-    proc endList(w: _writeType) throws {
+    proc endList(writer: _writeType) throws {
     }
 
     // TODO: add stuff for known sizes, size 'hints'
@@ -123,51 +123,51 @@ module BinaryIO {
     //   - idea: serialize into internal buffer, count calls, then actually write things
     // - TODO: check size mismatches
 
-    proc startArray(w: _writeType, numElements: uint) throws {
+    proc startArray(writer: _writeType, size: uint) throws {
       if verify {
-        w.write(numElements);
-        _size = numElements;
+        writer.write(size);
+        _size = size;
       }
     }
 
-    proc startArrayDim(w: _writeType, len: uint) throws {
+    proc startArrayDim(writer: _writeType, size: uint) throws {
     }
-    proc endArrayDim(w: _writeType) throws {
+    proc endArrayDim(writer: _writeType) throws {
     }
 
-    proc writeArrayElement(w: _writeType, const val: ?) throws {
+    proc writeArrayElement(writer: _writeType, const val: ?) throws {
       // TODO: validate number of elements being written...
-      w.write(val);
+      writer.write(val);
     }
 
-    proc writeBulkElements(w: _writeType, data: c_ptr(?eltType), numElements: uint) throws
+    proc writeBulkElements(writer: _writeType, data: c_ptr(?eltType), numElements: uint) throws
     where isNumericType(eltType) {
       if verify && numElements > _size then throw new IllegalArgumentError("len", "Cannot write more elements than specified in 'startArray'");
       const n = c_sizeof(eltType)*numElements;
-      w.writeBinary(data, n.safeCast(int));
+      writer.writeBinary(data, n.safeCast(int));
     }
 
-    proc endArray(w: _writeType) throws {
+    proc endArray(writer: _writeType) throws {
     }
 
-    proc startMap(w: _writeType) throws {
+    proc startMap(writer: _writeType) throws {
       throw new Error("maps of unknown size are not yet supported by BinarySerializer");
     }
 
-    proc startMap(w: _writeType, size: uint) throws {
-      w.write(size);
+    proc startMap(writer: _writeType, size: uint) throws {
+      writer.write(size);
       _size = size;
     }
 
-    proc writeKey(w: _writeType, const key: ?) throws {
-      w.write(key);
+    proc writeKey(writer: _writeType, const key: ?) throws {
+      writer.write(key);
     }
 
-    proc writeValue(w: _writeType, const val: ?) throws {
-      w.write(val);
+    proc writeValue(writer: _writeType, const val: ?) throws {
+      writer.write(val);
     }
 
-    proc endMap(w: _writeType) throws {
+    proc endMap(writer: _writeType) throws {
     }
   }
 
@@ -256,112 +256,112 @@ module BinaryIO {
       }
     }
 
-    proc deserializeField(r: _readerT, key: string, type T) throws {
+    proc deserializeField(reader: _readerT, name: string, type T) throws {
       _size -= 1;
-      return r.read(T);
+      return reader.read(T);
     }
 
-    proc startClass(r: fileReader, name: string) throws {
-      _startComposite(r);
+    proc startClass(reader: fileReader, name: string) throws {
+      _startComposite(reader);
     }
-    proc endClass(r: fileReader) throws {
-    }
-
-    proc startRecord(r: fileReader, name: string) throws {
-      _startComposite(r);
-    }
-    proc endRecord(r: fileReader) throws {
+    proc endClass(reader: fileReader) throws {
     }
 
-    proc startTuple(r: fileReader) throws {
-      _startComposite(r);
+    proc startRecord(reader: fileReader, name: string) throws {
+      _startComposite(reader);
     }
-    proc endTuple(r: fileReader) throws {
+    proc endRecord(reader: fileReader) throws {
     }
 
-    proc _startComposite(r: fileReader) throws {
+    proc startTuple(reader: fileReader) throws {
+      _startComposite(reader);
+    }
+    proc endTuple(reader: fileReader) throws {
+    }
+
+    proc _startComposite(reader: fileReader) throws {
       var size : int;
       if verify && _nesting == 0 {
-        size = r.read(int);
+        size = reader.read(int);
       }
       _size += size.safeCast(uint);
       _nesting += 1;
     }
-    proc _endComposite(r: fileReader) throws {
+    proc _endComposite(reader: fileReader) throws {
       _nesting -= 1;
       if verify && _nesting == 0 && _size != 0 then
         throw new Error("Wrote fewer fields than specified");
     }
 
-    proc startList(r: fileReader) throws {
-      _numElements = r.read(uint);
+    proc startList(reader: fileReader) throws {
+      _numElements = reader.read(uint);
       _sizeKnown = _numElements != 0;
     }
-    proc readListElement(r: fileReader, type eltType) throws {
+    proc readListElement(reader: fileReader, type eltType) throws {
       if _sizeKnown && _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
 
       if _sizeKnown then _numElements -= 1;
 
-      return r.read(eltType);
+      return reader.read(eltType);
     }
-    proc endList(r: fileReader) throws {
+    proc endList(reader: fileReader) throws {
       if _sizeKnown && _numElements != 0 then
         throw new Error("read too few elements for list");
     }
 
-    proc startArray(r: fileReader) throws {
+    proc startArray(reader: fileReader) throws {
       if verify {
-        _numElements = r.read(uint);
+        _numElements = reader.read(uint);
         _sizeKnown = _numElements != 0;
       }
     }
 
-    proc startArrayDim(r: fileReader) throws {
+    proc startArrayDim(reader: fileReader) throws {
     }
-    proc endArrayDim(r: fileReader) throws {
+    proc endArrayDim(reader: fileReader) throws {
     }
 
-    proc readArrayElement(r: fileReader, type eltType) throws {
+    proc readArrayElement(reader: fileReader, type eltType) throws {
       if verify && _sizeKnown && _numElements <= 0 then
         throw new BadFormatError("no more array elements remain!");
 
       if _sizeKnown then _numElements -= 1;
-      return r.read(eltType);
+      return reader.read(eltType);
     }
 
-    proc readBulkElements(r: fileReader, data: c_ptr(?eltType), numElements: uint) throws
+    proc readBulkElements(reader: fileReader, data: c_ptr(?eltType), numElements: uint) throws
     where isNumericType(eltType) {
       const n = c_sizeof(eltType)*numElements;
-      const got = r.readBinary(data, n.safeCast(int));
+      const got = reader.readBinary(data, n.safeCast(int));
       if got < n then throw new EofError();
       else _numElements -= numElements;
     }
 
-    proc endArray(r: fileReader) throws {
+    proc endArray(reader: fileReader) throws {
       if verify && _sizeKnown && _numElements != 0 then
         throw new Error("failed to read all expected elements in array!");
     }
 
-    proc startMap(r: fileReader) throws {
+    proc startMap(reader: fileReader) throws {
       _sizeKnown = true;
-      _numElements = r.read(uint);
+      _numElements = reader.read(uint);
     }
 
-    proc readKey(r: fileReader, type keyType) throws {
+    proc readKey(reader: fileReader, type keyType) throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
 
       _numElements -= 1;
 
-      return r.read(keyType);
+      return reader.read(keyType);
     }
 
-    proc readValue(r: fileReader, type valType) throws {
-      return r.read(valType);
+    proc readValue(reader: fileReader, type valType) throws {
+      return reader.read(valType);
     }
 
-    proc endMap(r: fileReader) throws {
+    proc endMap(reader: fileReader) throws {
       if _numElements != 0 then
         throw new Error("failed to read all expected elements in map!");
     }

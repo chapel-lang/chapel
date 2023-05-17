@@ -2630,28 +2630,28 @@ record DefaultSerializer {
     }
   }
 
-  // Writes value 'x' in the Default IO format
-  proc serializeValue(writer:fileWriter, const x: ?t) : void throws {
+  // Writes 'val' in the Default IO format
+  proc serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
-      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+      writer._writeOne(writer.kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
     } else if isClassType(t) || isAnyCPtr(t) {
-      _serializeClassOrPtr(writer, x);
+      _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
-      x.writeThis(writer);
+      val.writeThis(writer);
     } else {
       var alias = writer.withSerializer(new DefaultSerializer());
-      x.serialize(writer=alias, serializer=alias.serializer);
+      val.serialize(writer=alias, serializer=alias.serializer);
     }
   }
 
   //
   // Writes a field name, followed by the literal string " = ", then writes
-  // the value of 'x'.
+  // the value of 'val'.
   //
-  proc serializeField(writer:fileWriter, name: string, const x: ?) : void throws {
+  proc serializeField(writer:fileWriter, name: string, const val: ?) : void throws {
     if !firstField then
       writer._writeLiteral(", ");
 
@@ -2660,44 +2660,44 @@ record DefaultSerializer {
       writer._writeLiteral(" = ");
     }
 
-    writer.write(x);
+    writer.write(val);
     firstField = false;
   }
 
   // TODO: If this is called in a nested way for inheriting classes, then we
   // can increment 'size' internally to track the total number of fields...?
-  proc startClass(w: fileWriter, name: string, size: int) throws {
+  proc startClass(writer: fileWriter, name: string, size: int) throws {
     if _inheritLevel == 0 {
-      w._writeLiteral("{");
+      writer._writeLiteral("{");
     }
     _inheritLevel += 1;
   }
-  proc endClass(w: fileWriter) throws {
+  proc endClass(writer: fileWriter) throws {
     if _inheritLevel == 1 {
-      w._writeLiteral("}");
+      writer._writeLiteral("}");
     }
     _inheritLevel -= 1;
   }
 
-  proc startRecord(w: fileWriter, name: string, size: int) throws {
-    w._writeLiteral("(");
+  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("(");
   }
-  proc endRecord(w: fileWriter) throws {
-    w._writeLiteral(")");
+  proc endRecord(writer: fileWriter) throws {
+    writer._writeLiteral(")");
   }
 
-  proc startTuple(w: fileWriter, size: int) throws {
+  proc startTuple(writer: fileWriter, size: int) throws {
     this._curSize = size;
-    w._writeLiteral("(");
+    writer._writeLiteral("(");
   }
-  proc endTuple(w: fileWriter) throws {
+  proc endTuple(writer: fileWriter) throws {
     if _curSize == 1 then
-      w._writeLiteral(",)");
+      writer._writeLiteral(",)");
     else
-      w._writeLiteral(")");
+      writer._writeLiteral(")");
   }
 
-  proc startList(writer: fileWriter, size: int) throws {
+  proc startList(writer: fileWriter, size: uint) throws {
     writer._writeLiteral("[");
     firstField = true;
   }
@@ -2713,53 +2713,53 @@ record DefaultSerializer {
 
   // BHARSH TODO: what should we do for sparse arrays? The current format is
   // kind of weird. I'd personally lean towards writing them as a map.
-  proc startArray(w: fileWriter, numElements : uint) throws {
+  proc startArray(writer: fileWriter, size: uint) throws {
   }
 
-  proc startArrayDim(w: fileWriter, len: uint) throws {
+  proc startArrayDim(writer: fileWriter, size: uint) throws {
     _arrayDim += 1;
     if _arrayMax >= _arrayDim then
-      w.writeNewline();
+      writer.writeNewline();
     else
       _arrayMax = _arrayDim;
   }
 
-  proc endArrayDim(w: fileWriter) throws {
+  proc endArrayDim(writer: fileWriter) throws {
     _arrayDim -= 1;
     firstField = true;
   }
 
-  proc writeArrayElement(w: fileWriter, const val: ?) throws {
+  proc writeArrayElement(writer: fileWriter, const val: ?) throws {
     if !firstField then
-      w._writeLiteral(" ");
+      writer._writeLiteral(" ");
     else
       firstField = false;
-    w.write(val);
+    writer.write(val);
   }
 
-  proc endArray(w: fileWriter) throws {
+  proc endArray(writer: fileWriter) throws {
   }
 
-  proc startMap(w: fileWriter, _size : uint = 0) throws {
-    w._writeLiteral("{ ");
+  proc startMap(writer: fileWriter, size: uint) throws {
+    writer._writeLiteral("{ ");
   }
 
-  proc writeKey(w: fileWriter, const key: ?) throws {
+  proc writeKey(writer: fileWriter, const key: ?) throws {
     if !firstField then
-      w._writeLiteral(" , ");
+      writer._writeLiteral(" , ");
     else
       firstField = false;
 
-    w.write(key);
+    writer.write(key);
   }
 
-  proc writeValue(w: fileWriter, const val: ?) throws {
-    w._writeLiteral(" : ");
-    w.write(val);
+  proc writeValue(writer: fileWriter, const val: ?) throws {
+    writer._writeLiteral(" : ");
+    writer.write(val);
   }
 
-  proc endMap(w: fileWriter) throws {
-    w._writeLiteral(" }");
+  proc endMap(writer: fileWriter) throws {
+    writer._writeLiteral(" }");
   }
 
   // TODO: How should we handle types that don't have a format-specific
@@ -2850,109 +2850,109 @@ record DefaultDeserializer {
     }
   }
 
-  proc deserializeField(r:fileReader, key: string, type T) throws {
-    if !key.isEmpty() {
-      r.readLiteral(key);
-      r.readLiteral("=");
+  proc deserializeField(reader:fileReader, name: string, type T) throws {
+    if !name.isEmpty() {
+      reader.readLiteral(name);
+      reader.readLiteral("=");
     }
 
-    var ret = r.read(T);
-    r.matchLiteral(",");
+    var ret = reader.read(T);
+    reader.matchLiteral(",");
     return ret;
   }
 
-  proc startClass(r: fileReader, name: string) throws {
+  proc startClass(reader: fileReader, name: string) throws {
     if _inheritLevel == 0 {
-      r.readLiteral("{");
+      reader.readLiteral("{");
     }
     _inheritLevel += 1;
   }
-  proc endClass(r: fileReader) throws {
+  proc endClass(reader: fileReader) throws {
     if _inheritLevel == 1 {
-      r.readLiteral("}");
+      reader.readLiteral("}");
     }
     _inheritLevel -= 1;
   }
 
-  proc startRecord(r: fileReader, name: string) throws {
-    r.readLiteral("(");
+  proc startRecord(reader: fileReader, name: string) throws {
+    reader.readLiteral("(");
   }
-  proc endRecord(r: fileReader) throws {
-    r.readLiteral(")");
-  }
-
-  proc startTuple(r: fileReader) throws {
-    r.readLiteral("(");
-  }
-  proc endTuple(r: fileReader) throws {
-    r.readLiteral(")");
+  proc endRecord(reader: fileReader) throws {
+    reader.readLiteral(")");
   }
 
-  proc startList(r: fileReader) throws {
-    r._readLiteral("[");
+  proc startTuple(reader: fileReader) throws {
+    reader.readLiteral("(");
+  }
+  proc endTuple(reader: fileReader) throws {
+    reader.readLiteral(")");
+  }
+
+  proc startList(reader: fileReader) throws {
+    reader._readLiteral("[");
     firstField = true;
   }
-  proc readListElement(r: fileReader, type eltType) throws {
-    if !firstField then r._readLiteral(",");
+  proc readListElement(reader: fileReader, type eltType) throws {
+    if !firstField then reader._readLiteral(",");
     else firstField = false;
 
-    return r.read(eltType);
+    return reader.read(eltType);
   }
-  proc endList(r: fileReader) throws {
-    r._readLiteral("]");
-  }
-
-  proc startArray(r: fileReader) throws {
+  proc endList(reader: fileReader) throws {
+    reader._readLiteral("]");
   }
 
-  proc startArrayDim(r: fileReader) throws {
+  proc startArray(reader: fileReader) throws {
+  }
+
+  proc startArrayDim(reader: fileReader) throws {
     _arrayDim += 1;
     if _arrayMax >= _arrayDim {
       // use 'match' rather than 'read' to allow for reading in a non-shaped
       // sequence of numbers into an N-D array...
-      r.matchNewline();
+      reader.matchNewline();
     } else {
       _arrayMax = _arrayDim;
     }
   }
 
-  proc endArrayDim(r: fileReader) throws {
+  proc endArrayDim(reader: fileReader) throws {
     _arrayDim -= 1;
 
     firstField = true;
   }
 
-  proc readArrayElement(r: fileReader, type eltType) throws {
+  proc readArrayElement(reader: fileReader, type eltType) throws {
     if !firstField then
-      r._readLiteral(" ");
+      reader._readLiteral(" ");
     else
       firstField = false;
-    return r.read(eltType);
+    return reader.read(eltType);
   }
 
-  proc endArray(r: fileReader) throws {
+  proc endArray(reader: fileReader) throws {
   }
 
-  proc startMap(r: fileReader) throws {
-    r._readLiteral("{");
+  proc startMap(reader: fileReader) throws {
+    reader._readLiteral("{");
   }
 
-  proc readKey(r: fileReader, type keyType) : keyType throws {
+  proc readKey(reader: fileReader, type keyType) : keyType throws {
     if !firstField then
-      r._readLiteral(", ");
+      reader._readLiteral(", ");
     else
       firstField = false;
 
-    return r.read(keyType);
+    return reader.read(keyType);
   }
 
-  proc readValue(r: fileReader, type valType) throws {
-    r._readLiteral(": ");
-    return r.read(valType);
+  proc readValue(reader: fileReader, type valType) throws {
+    reader._readLiteral(": ");
+    return reader.read(valType);
   }
 
-  proc endMap(r: fileReader) throws {
-    r._readLiteral("}");
+  proc endMap(reader: fileReader) throws {
+    reader._readLiteral("}");
   }
 }
 

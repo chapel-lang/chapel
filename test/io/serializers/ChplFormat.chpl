@@ -32,32 +32,32 @@ module ChplFormat {
       dc._writeOne(dc.kind, val, here);
     }
 
-    proc serializeValue(writer: _writeType, const x:?t) throws {
+    proc serializeValue(writer: _writeType, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
-        _oldWrite(writer, x);
+        _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
-        _oldWrite(writer, x);
+        _oldWrite(writer, val);
       } else if isClassType(t) {
-        if x == nil {
+        if val == nil {
           writer._writeLiteral("nil");
         } else {
           var alias = writer.withSerializer(new ChplSerializer(_typename=t:string));
-          x!.serialize(writer=alias, serializer=alias.serializer);
+          val!.serialize(writer=alias, serializer=alias.serializer);
         }
       } else {
-        if isArray(x) && x.rank > 1 then
+        if isArray(val) && val.rank > 1 then
           throw new IllegalArgumentError("ChplSerializer does not support multidimensional arrays");
         var alias = writer.withSerializer(new ChplSerializer(_typename=t:string));
-        x.serialize(writer=alias, serializer=alias.serializer);
+        val.serialize(writer=alias, serializer=alias.serializer);
       }
     }
 
-    proc serializeField(writer: _writeType, key: string, const val: ?T) throws {
+    proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
       if !firstField then
         writer.writeLiteral(", ");
 
-      if !key.isEmpty() {
-        writer.writeLiteral(key);
+      if !name.isEmpty() {
+        writer.writeLiteral(name);
         writer.writeLiteral(" = ");
       }
 
@@ -101,57 +101,57 @@ module ChplFormat {
       writer.writeLiteral(")");
     }
 
-    proc startList(w: _writeType, _size: uint) throws {
-      w._writeLiteral("[");
+    proc startList(writer: _writeType, size: uint) throws {
+      writer._writeLiteral("[");
     }
-    proc writeListElement(w: _writeType, const val: ?) throws {
-      if !firstField then w._writeLiteral(", ");
+    proc writeListElement(writer: _writeType, const val: ?) throws {
+      if !firstField then writer._writeLiteral(", ");
       else firstField = false;
 
-      w.write(val);
+      writer.write(val);
     }
-    proc endList(w: _writeType) throws {
-      w._writeLiteral("]");
-    }
-
-    proc startArray(w: _writeType, _size:uint = 0) throws {
-      startList(w, _size);
+    proc endList(writer: _writeType) throws {
+      writer._writeLiteral("]");
     }
 
-    proc startArrayDim(w: _writeType, len: uint) throws {
-    }
-    proc endArrayDim(w: _writeType) throws {
-    }
-
-    proc writeArrayElement(w: _writeType, const val: ?) throws {
-      writeListElement(w, val);
+    proc startArray(writer: _writeType, size: uint) throws {
+      startList(writer, size);
     }
 
-    proc endArray(w: _writeType) throws {
-      endList(w);
+    proc startArrayDim(writer: _writeType, size: uint) throws {
+    }
+    proc endArrayDim(writer: _writeType) throws {
     }
 
-    proc startMap(w: _writeType, _size:uint = 0) throws {
-      w._writeLiteral("[");
+    proc writeArrayElement(writer: _writeType, const val: ?) throws {
+      writeListElement(writer, val);
     }
 
-    proc writeKey(w: _writeType, const key: ?) throws {
+    proc endArray(writer: _writeType) throws {
+      endList(writer);
+    }
+
+    proc startMap(writer: _writeType, size: uint) throws {
+      writer._writeLiteral("[");
+    }
+
+    proc writeKey(writer: _writeType, const key: ?) throws {
       if !firstField {
-        w._writeLiteral(", ");
+        writer._writeLiteral(", ");
       } else {
         firstField = false;
       }
 
-      w.write(key);
+      writer.write(key);
     }
 
-    proc writeValue(w: _writeType, const val: ?) throws {
-      w._writeLiteral(" => ");
-      w.write(val);
+    proc writeValue(writer: _writeType, const val: ?) throws {
+      writer._writeLiteral(" => ");
+      writer.write(val);
     }
 
-    proc endMap(w: _writeType) throws {
-      w._writeLiteral("]");
+    proc endMap(writer: _writeType) throws {
+      writer._writeLiteral("]");
     }
   }
 
@@ -220,71 +220,71 @@ module ChplFormat {
       }
     }
 
-    proc deserializeField(r: _readerT, key: string, type T) throws {
+    proc deserializeField(reader: _readerT, name: string, type T) throws {
       if !firstField then
-        r.readLiteral(",");
+        reader.readLiteral(",");
       firstField = false;
 
-      if !key.isEmpty() {
-        r.readLiteral(key);
-        r.readLiteral("=");
+      if !name.isEmpty() {
+        reader.readLiteral(name);
+        reader.readLiteral("=");
       }
-      return r.read(T);
+      return reader.read(T);
     }
 
-    proc startTuple(r: fileReader) throws {
-      r.readLiteral("(");
+    proc startTuple(reader: fileReader) throws {
+      reader.readLiteral("(");
     }
-    proc endTuple(r: fileReader) throws {
-      r.readLiteral(")");
-    }
-
-    proc startClass(r: fileReader, name: string) throws {
-      _startComposite(r, _typename);
-    }
-    proc endClass(r: fileReader) throws {
-      _endComposite(r);
+    proc endTuple(reader: fileReader) throws {
+      reader.readLiteral(")");
     }
 
-    proc startRecord(r: fileReader, name: string) throws {
-      _startComposite(r, _typename);
+    proc startClass(reader: fileReader, name: string) throws {
+      _startComposite(reader, _typename);
     }
-    proc endRecord(r: fileReader) throws {
-      _endComposite(r);
+    proc endClass(reader: fileReader) throws {
+      _endComposite(reader);
     }
 
-    proc _startComposite(r: fileReader, name: string) throws {
+    proc startRecord(reader: fileReader, name: string) throws {
+      _startComposite(reader, _typename);
+    }
+    proc endRecord(reader: fileReader) throws {
+      _endComposite(reader);
+    }
+
+    proc _startComposite(reader: fileReader, name: string) throws {
       if _inheritLevel == 0 {
-        r.readLiteral("new " + name);
-        r.readLiteral("(");
+        reader.readLiteral("new " + name);
+        reader.readLiteral("(");
       }
 
       _inheritLevel += 1;
     }
 
-    proc _endComposite(r: fileReader) throws {
+    proc _endComposite(reader: fileReader) throws {
       if _inheritLevel == 1 {
-        r.readLiteral(")");
+        reader.readLiteral(")");
       }
       _inheritLevel -= 1;
     }
 
-    proc startList(r: fileReader) throws {
-      r._readLiteral("[");
+    proc startList(reader: fileReader) throws {
+      reader._readLiteral("[");
     }
-    proc readListElement(r: fileReader, type eltType) throws {
+    proc readListElement(reader: fileReader, type eltType) throws {
       if !firstField then
-        r._readLiteral(", ");
+        reader._readLiteral(", ");
       else
         firstField = false;
-      return r.read(eltType);
+      return reader.read(eltType);
     }
-    proc endList(r: fileReader) throws {
-      r._readLiteral("]");
+    proc endList(reader: fileReader) throws {
+      reader._readLiteral("]");
     }
 
-    proc startArray(r: fileReader) throws {
-      startList(r);
+    proc startArray(reader: fileReader) throws {
+      startList(reader);
     }
 
     proc startArrayDim(w: _readerT) throws {
@@ -292,35 +292,35 @@ module ChplFormat {
     proc endArrayDim(w: _readerT) throws {
     }
 
-    proc readArrayElement(r: fileReader, type eltType) throws {
-      return readListElement(r, eltType);
+    proc readArrayElement(reader: fileReader, type eltType) throws {
+      return readListElement(reader, eltType);
     }
 
-    proc endArray(r: fileReader) throws {
-      endList(r);
+    proc endArray(reader: fileReader) throws {
+      endList(reader);
     }
 
-    proc startMap(r: fileReader) throws {
-      r._readLiteral("[");
+    proc startMap(reader: fileReader) throws {
+      reader._readLiteral("[");
     }
 
-    proc readKey(r: fileReader, type keyType) throws {
+    proc readKey(reader: fileReader, type keyType) throws {
       if !firstField {
-        r._readLiteral(",");
+        reader._readLiteral(",");
       } else {
         firstField = false;
       }
 
-      return r.read(keyType);
+      return reader.read(keyType);
     }
 
-    proc readValue(r: fileReader, type valType) throws {
-      r._readLiteral("=>");
-      return r.read(valType);
+    proc readValue(reader: fileReader, type valType) throws {
+      reader._readLiteral("=>");
+      return reader.read(valType);
     }
 
-    proc endMap(r: fileReader) throws {
-      r._readLiteral("]");
+    proc endMap(reader: fileReader) throws {
+      reader._readLiteral("]");
     }
   }
 }
