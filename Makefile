@@ -129,11 +129,11 @@ chpldoc: third-party-chpldoc-venv
 	@cd modules && $(MAKE)
 	@test -r Makefile.devel && $(MAKE) man-chpldoc || echo ""
 
-chpldef: compiler third-party-chpldef-venv
+chpldef: third-party-chpldef-venv FORCE
 	@echo "Making chpldef..."
 	@cd third-party && $(MAKE) llvm
-	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	cd compiler && $(MAKE) chpldef
+	@cd modules && $(MAKE)
 
 chpldef-fast:
 	cd compiler && $(MAKE) chpldef-fast
