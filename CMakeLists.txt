@@ -348,7 +348,13 @@ message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
-add_subdirectory(tools/chpldef)
+
+# We are not ready to include 'chpldef' in an official release just yet.
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+  if (EXISTS tools/chpldef)
+    add_subdirectory(tools/chpldef)
+  endif()
+endif()
 
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")

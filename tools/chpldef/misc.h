@@ -85,13 +85,7 @@ template <typename T>
 inline opt<T> option(const T& t) { return opt<T>(t); }
 
 /** Cast a string to an integer, return 'false' if there was an error. */
-inline bool cast(std::string str, int& out) {
-  try {
-    out = std::stoi(str);
-    return true;
-  } catch (const std::exception& ex) { std::ignore = ex; }
-  return false;
-}
+bool cast(std::string str, int& out) noexcept;
 
 /** Print a JSON value's tag as a string. */
 const char* jsonTagStr(const JsonValue& json);
