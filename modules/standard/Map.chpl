@@ -682,34 +682,33 @@ module Map {
     }
 
     @chpldoc.nodoc
-    proc _readHelper(r: fileReader) throws {
+    proc _readHelper(r: fileReader, ref des) throws {
       _enter(); defer _leave();
-      ref fmt = r.deserializer;
 
-      fmt.startMap(r);
+      des.startMap(r);
 
       var done = false;
       while !done {
         try {
-          add(fmt.readKey(r, keyType), fmt.readValue(r, valType));
+          add(des.readKey(r, keyType), des.readValue(r, valType));
         } catch e: BadFormatError {
           done = true;
         }
       }
 
-      fmt.endMap(r);
+      des.endMap(r);
     }
 
     @chpldoc.nodoc
     proc deserialize(reader: fileReader, ref deserializer) throws {
-      _readHelper(reader);
+      _readHelper(reader, deserializer);
     }
 
     @chpldoc.nodoc
     proc init(type keyType, type valType,
               reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
-      _readHelper(reader);
+      _readHelper(reader, deserializer);
     }
 
     @chpldoc.nodoc
@@ -717,7 +716,7 @@ module Map {
     proc init(type keyType, type valType, param parSafe,
               reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
-      _readHelper(reader);
+      _readHelper(reader, deserializer);
     }
 
     /*
@@ -767,18 +766,18 @@ module Map {
     proc serialize(writer: fileWriter(?), ref serializer) throws {
       _enter(); defer _leave();
 
-      ref fmt = serializer;
-      fmt.startMap(writer, _size);
+      ref ser = serializer;
+      ser.startMap(writer, _size);
 
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
-          fmt.writeKey(writer, tabEntry.key);
-          fmt.writeValue(writer, tabEntry.val);
+          ser.writeKey(writer, tabEntry.key);
+          ser.writeValue(writer, tabEntry.val);
         }
       }
 
-      fmt.endMap(writer);
+      ser.endMap(writer);
     }
 
     @chpldoc.nodoc

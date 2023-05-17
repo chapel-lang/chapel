@@ -1873,23 +1873,22 @@ module List {
       // TODO: a couple of silly initializer things I noticed:
       // - why can't we have a try with a catch? probably old rule...
       // - still some error that says we can't have throws stmts...
-      _readHelper(reader);
+      _readHelper(reader, deserializer);
     }
 
     @chpldoc.nodoc
-    proc _readHelper(r: fileReader) throws {
+    proc _readHelper(r: fileReader, ref des) throws {
       _enter();
 
       _clearLocked();
 
-      ref fmt = r.deserializer;
-      fmt.startList(r);
+      des.startList(r);
 
       var done = false;
       while !done {
         try {
           pragma "no auto destroy"
-          var elt = fmt.readListElement(r, eltType);
+          var elt = des.readListElement(r, eltType);
           // read an element
           _appendByRef(elt);
         } catch {
@@ -1897,14 +1896,14 @@ module List {
         }
       }
 
-      fmt.endList(r);
+      des.endList(r);
 
       _leave();
     }
 
     @chpldoc.nodoc
     proc deserialize(reader: fileReader, ref deserializer) throws {
-      _readHelper(reader);
+      _readHelper(reader, deserializer);
     }
 
     /*

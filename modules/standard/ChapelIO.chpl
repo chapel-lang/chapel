@@ -725,17 +725,16 @@ module ChapelIO {
 
   @chpldoc.nodoc
   proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
-    const ref f = reader;
-    ref fmt = deserializer;
+    ref des = deserializer;
     pragma "no init"
     var ret : this;
-    fmt.startTuple(f);
+    des.startTuple(reader);
     for param i in 0..<this.size {
       pragma "no auto destroy"
-      var elt = fmt.deserializeField(f, "", this(i));
+      var elt = des.deserializeField(reader, "", this(i));
       __primitive("=", ret(i), elt);
     }
-    fmt.endTuple(f);
+    des.endTuple(reader);
     return ret;
   }
 
