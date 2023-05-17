@@ -1,7 +1,7 @@
+ChapelSysCTypes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.HaltWrappers.ChapelSysCTypes
 HaltWrappers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.HaltWrappers
-ChapelSysCTypes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.ChapelSysCTypes
 Reflection
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Reflection
 AutoMath

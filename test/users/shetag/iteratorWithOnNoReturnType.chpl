@@ -1,3 +1,6 @@
+private use CTypes;
+private use ChapelSysCTypes;
+
 config const n = 10;
 
 extern proc printf(fmt:c_string, x...);

@@ -28,6 +28,8 @@ var A1: [3..5] string = [ "hi", "bye", "why" ];
 checkType(A1.eltType);
 
 // classes with scalars
+private use ChapelSysCTypes;
+private use CTypes;
 {
   class C {
     var blah = "blah";

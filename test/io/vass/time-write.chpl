@@ -57,7 +57,7 @@ that does not lock the FILE* so it's only safe to use in a serial context.]
 */
 
 use Time, IO;
-
+private use ChapelSysCTypes, CTypes;
 config const n = 3;
 config const tries = 2;
 config const fmt = "%7.3dr";

@@ -1,4 +1,5 @@
 use checkType;
+private use ChapelSysCTypes, CTypes;
 
 proc rcs() {
   var s = c"hi";

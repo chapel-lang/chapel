@@ -1,6 +1,7 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
 use Random.PCGRandom only PCGRandomStream;
+private use ChapelSysCTypes, CTypes;
 
 config const count = 100;
 

@@ -1,3 +1,5 @@
+private use ChapelSysCTypes, CTypes;
+
 extern proc print_c_string(arg: c_string);
 
 var str = "Hello";

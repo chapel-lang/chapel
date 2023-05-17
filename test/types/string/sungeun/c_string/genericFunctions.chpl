@@ -1,4 +1,5 @@
 use checkType;
+private use ChapelSysCTypes, CTypes;
 
 param psl = "bye";
 const cs: string;

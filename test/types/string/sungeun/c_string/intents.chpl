@@ -1,4 +1,6 @@
 use checkType;
+private use CTypes;
+private use ChapelSysCTypes;
 
 config param errorCase = 0;
 

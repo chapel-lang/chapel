@@ -4,6 +4,7 @@
 use Sort;
 use Random;
 use Time;
+private use ChapelSysCTypes, CTypes;
 
 config const printStats = true;
 config const minSize = 1;
