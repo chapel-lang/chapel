@@ -964,7 +964,8 @@ record regex {
     }
   }
 
-  /* Enumerates matches in the text as well as capture groups.
+  /* Yields matches and capture groups in the text, continuing until the end of
+     the text or ``maxMatches`` is reached.
 
      :arg text: the string or bytes to search
      :arg captures: (compile-time constant) the size of the captures to return
