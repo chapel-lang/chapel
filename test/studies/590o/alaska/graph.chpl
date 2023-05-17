@@ -105,7 +105,7 @@ class MultiMap {
 	  if (el == d) then return false;
       }
     }
-    list_head.pushBack(d);
+    list_head.append(d);
     return true;
   }
 
@@ -230,8 +230,8 @@ class Graph {
 	adjacent[n.id].append(e.dst.id);
       }
       if( e.dst == n ){
-	inEdges[n.id].pushBack(e);
-	undir_adjacent[n.id].pushBack(e.src.id);
+	inEdges[n.id].append(e);
+	undir_adjacent[n.id].append(e.src.id);
       }
     }
   }
