@@ -696,7 +696,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       }
       if (eltType) {
 #if HAVE_LLVM_VER >= 160
-        Alignment = DL->getABITypeAlign(eltType);
+        Alignment = DL->getABITypeAlign(eltType).value();
 #else
         Alignment = DL->getABITypeAlignment(eltType);
 #endif
