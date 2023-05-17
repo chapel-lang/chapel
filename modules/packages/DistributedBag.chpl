@@ -261,6 +261,7 @@ module DistributedBag {
       compilerError("Reading a DistBag is not supported");
     }
 
+    @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
       this.init(eltType);
       compilerError("Reading a DistBag is not supported");

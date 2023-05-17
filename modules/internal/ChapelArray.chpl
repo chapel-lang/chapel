@@ -1616,7 +1616,7 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc ref deserialize(reader, ref deserializer) throws {
       readThis(reader);
     }

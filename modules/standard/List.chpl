@@ -1867,9 +1867,6 @@ module List {
       _leave();
     }
 
-    //
-    // TODO: rewrite to use formatter interface
-    //
     @chpldoc.nodoc
     proc init(type eltType, param parSafe : bool, reader: fileReader, ref deserializer) throws {
       this.init(eltType, parSafe);
@@ -1879,6 +1876,7 @@ module List {
       _readHelper(reader);
     }
 
+    @chpldoc.nodoc
     proc _readHelper(r: fileReader) throws {
       _enter();
 
@@ -1904,6 +1902,7 @@ module List {
       _leave();
     }
 
+    @chpldoc.nodoc
     proc deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader);
     }

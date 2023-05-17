@@ -185,6 +185,7 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
+    @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
@@ -1235,6 +1236,7 @@ private module AlignedTSupport {
     this = f.read(uint(64)) : aligned_t;
   }
 
+  @chpldoc.nodoc
   proc aligned_t.serialize(writer, ref serializer) throws {
     writeThis(writer);
   }

@@ -378,6 +378,7 @@ record LinkedList {
 
   // TODO: temporary implementation to get some tests passing, but needs to
   // go through the formatter eventually.
+  @chpldoc.nodoc
   proc init(type eltType, reader: fileReader, ref deserializer) throws {
     this.init(eltType);
     readThis(reader);

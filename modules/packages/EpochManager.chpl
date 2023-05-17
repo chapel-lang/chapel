@@ -517,6 +517,7 @@ module EpochManager {
         compilerError("Reading a Vector is not supported");
       }
 
+      @chpldoc.nodoc
       proc init(type eltType, reader: fileReader, ref deserializer) {
         this.init(eltType);
         compilerError("Reading a Vector is not supported");

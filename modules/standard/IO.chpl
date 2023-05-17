@@ -940,7 +940,7 @@ The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
 It replaces the now unstable `iostyle` type, and will eventually
-be migrated into a new strategy, likely involving serializers/deserializers 
+be migrated into a new strategy, likely involving serializers/deserializers
 */
 @chpldoc.nodoc
 extern record iostyleInternal { // aka qio_style_t
@@ -2440,7 +2440,7 @@ private proc defaultSerializeVal(param writing : bool) {
   else return new DefaultDeserializer();
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 class _serializeWrapper {
   type T;
   var member: T;

@@ -286,7 +286,7 @@ module ChapelIO {
       }
     }
 
-    proc __numIOFields(type t) : int {
+    private proc __numIOFields(type t) : int {
       param n = __primitive("num fields", t);
       var ret = 0;
       pragma "no init"
@@ -305,6 +305,7 @@ module ChapelIO {
     // TODO: would any formats want to print type or param fields?
     // - more useful for param fields, e.g., an enum
     //
+    @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t, name: string) throws {
       const numIO = __numIOFields(t);
@@ -722,6 +723,7 @@ module ChapelIO {
     }
   }
 
+  @chpldoc.nodoc
   proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
     const ref f = reader;
     ref fmt = deserializer;
@@ -737,6 +739,7 @@ module ChapelIO {
     return ret;
   }
 
+  @chpldoc.nodoc
   proc const _tuple.serialize(writer, ref serializer) throws {
     serializer.startTuple(writer, this.size);
     for param i in 0..<size {
@@ -806,6 +809,7 @@ module ChapelIO {
     }
   }
 
+  @chpldoc.nodoc
   proc range.init(type idxType = int,
                   param bounds : boundKind = boundKind.both,
                   param stridable : bool = false,
@@ -862,14 +866,17 @@ module ChapelIO {
     f.write(chpl_describe_error(this));
   }
 
+  @chpldoc.nodoc
   override proc Error.serialize(writer, ref serializer) throws {
     writer.write(chpl_describe_error(this));
   }
 
+  @chpldoc.nodoc
   proc object.serialize(writer, ref serializer) throws {
     serializer.startClass(writer, "object", 0);
     serializer.endClass(writer);
   }
+  @chpldoc.nodoc
   proc object.deserialize(reader, ref deserializer) throws {
     deserializer.startClass(reader, "object");
     deserializer.endClass(reader);

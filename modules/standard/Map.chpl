@@ -681,6 +681,7 @@ module Map {
       }
     }
 
+    @chpldoc.nodoc
     proc _readHelper(r: fileReader) throws {
       _enter(); defer _leave();
       ref fmt = r.deserializer;
@@ -699,13 +700,11 @@ module Map {
       fmt.endMap(r);
     }
 
+    @chpldoc.nodoc
     proc deserialize(reader: fileReader, ref deserializer) throws {
       _readHelper(reader);
     }
 
-    //
-    // TODO: rewrite to use formatter interface
-    //
     @chpldoc.nodoc
     proc init(type keyType, type valType,
               reader: fileReader, ref deserializer) throws {
