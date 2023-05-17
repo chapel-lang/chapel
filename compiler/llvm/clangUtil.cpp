@@ -2334,6 +2334,57 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
 
+#ifndef LLVM_USE_OLD_PASSES
+
+static void registerDumpIrExtensions(PassBuilder& PB);
+
+static void runModuleOptPipeline(bool addWideOpts) {
+  GenInfo* info = gGenInfo;
+
+  LoopAnalysisManager LAM;
+  FunctionAnalysisManager FAM;
+  CGSCCAnalysisManager CGAM;
+  ModuleAnalysisManager MAM;
+
+  PassBuilder PB(info->targetMachine, createPipelineOptions(false));
+
+  std::unique_ptr<TargetLibraryInfoImpl> TLII(
+      new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
+  FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
+
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  // Add IR dumping pass(es) if necessary
+  if (llvmPrintIrStageNum != llvmStageNum::NOPRINT) {
+    registerDumpIrExtensions(PB);
+  }
+
+  // Build the pipeline
+  auto optLvl = translateOptLevel();
+  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+
+  // Add the Global to Wide optimization if necessary.
+  // This is done in this way to be added even with -O0
+  if (addWideOpts) {
+    if (optLvl != LlvmOptimizationLevel::O0) {
+      auto globalSpace = info->globalToWideInfo.globalSpace;
+      MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
+                           AggregateGlobalOpsOptPass(globalSpace)));
+    }
+    MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
+                                 info->clangInfo->asmTargetLayoutStr));
+  }
+
+  // Run the opts
+  MPM.run(*info->module, MAM);
+}
+
+#endif
+
 void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
@@ -2397,6 +2448,8 @@ void prepareCodegenLLVM()
   info->FAM = new FunctionAnalysisManager();
   info->CGAM = new CGSCCAnalysisManager();
   info->MAM = new ModuleAnalysisManager;
+
+  info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
 
   // Construct a function simplification pass manager
   PassBuilder PB(info->targetMachine, createPipelineOptions(true));
@@ -4036,24 +4089,6 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
   }
 }
 
-static void registerLlvmWideOptExtensions(PassBuilder& PB) {
-  GenInfo* info = gGenInfo;
-  PB.registerOptimizerLastEPCallback([&](ModulePassManager &MPM,
-                                         LlvmOptimizationLevel v) {
-    if (v != LlvmOptimizationLevel::O0) {
-      auto globalSpace = info->globalToWideInfo.globalSpace;
-      MPM.addPass(
-          llvm::createModuleToFunctionPassAdaptor(
-            AggregateGlobalOpsOptPass(globalSpace)));
-    }
-  });
-  PB.registerOptimizerLastEPCallback([&](ModulePassManager &MPM,
-                                         LlvmOptimizationLevel v) {
-    MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
-                                 info->clangInfo->asmTargetLayoutStr));
-  });
-}
-
 #else
 
 static
@@ -4686,66 +4721,14 @@ void makeBinaryLLVM(void) {
 #else
 
   // Run optimizations with the new PassManager
-  {
-    LoopAnalysisManager LAM;
-    FunctionAnalysisManager FAM;
-    CGSCCAnalysisManager CGAM;
-    ModuleAnalysisManager MAM;
-
-    PassBuilder PB(info->targetMachine, createPipelineOptions(false));
-
-    PB.registerModuleAnalyses(MAM);
-    PB.registerCGSCCAnalyses(CGAM);
-    PB.registerFunctionAnalyses(FAM);
-    PB.registerLoopAnalyses(LAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-    // Add IR dumping pass(es) if necessary
-    if (llvmPrintIrStageNum != llvmStageNum::NOPRINT) {
-      registerDumpIrExtensions(PB);
-    }
-
-    // Add the Global to Wide optimization if necessary.
-    if (fLLVMWideOpt) {
-      registerLlvmWideOptExtensions(PB);
-    }
-
-    // Build the pipeline
-    auto optLvl = translateOptLevel();
-    ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
-
-    // Run the opts
-    MPM.run(*info->module, MAM);
-
-    saveIrToBcFileIfNeeded(opt1Filename);
-  }
+  runModuleOptPipeline(fLLVMWideOpt);
+  saveIrToBcFileIfNeeded(opt1Filename);
 
   if (fLLVMWideOpt) {
     // the GlobalToWide pass creates calls to inline functions, among
     // other things, that will need to be optimized. So run an additional
     // battery of optimizations now.
-    LoopAnalysisManager LAM;
-    FunctionAnalysisManager FAM;
-    CGSCCAnalysisManager CGAM;
-    ModuleAnalysisManager MAM;
-
-    PassBuilder PB(info->targetMachine, createPipelineOptions(false));
-
-    PB.registerModuleAnalyses(MAM);
-    PB.registerCGSCCAnalyses(CGAM);
-    PB.registerFunctionAnalyses(FAM);
-    PB.registerLoopAnalyses(LAM);
-    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
-
-    // Add IR dumping pass(es) if necessary
-    if (llvmPrintIrStageNum != llvmStageNum::NOPRINT) {
-      registerDumpIrExtensions(PB);
-    }
-
-    ModulePassManager MPM =
-      PB.buildPerModuleDefaultPipeline(LlvmOptimizationLevel::O1);
-
-    MPM.run(*info->module, MAM);
+    runModuleOptPipeline(/* don't add global to wide opts */ false);
 
     saveIrToBcFileIfNeeded(opt2Filename);
   }
