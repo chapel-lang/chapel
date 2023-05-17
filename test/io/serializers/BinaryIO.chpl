@@ -16,7 +16,6 @@ module BinaryIO {
 
   record BinarySerializer {
     const endian : IO.ioendian = IO.ioendian.native;
-    const verify = false;
     var _size: uint;
     var _nesting = 0;
 
@@ -68,7 +67,6 @@ module BinaryIO {
 
     proc serializeField(writer: _writeType, name: string, const val: ?T) throws {
       _size -= 1;
-      if verify && _size < 0 then throw new Error("Attempted to write more fields than specified");
       writer.write(val);
     }
 
@@ -94,15 +92,11 @@ module BinaryIO {
     }
 
     proc _startComposite(writer: _writeType, size: int) throws {
-      if verify && _nesting == 0 then
-        writer.write(size);
       _size += size.safeCast(uint);
       _nesting += 1;
     }
     proc _endComposite(writer: _writeType) throws {
       _nesting -= 1;
-      if verify && _nesting == 0 && _size != 0 then
-        throw new Error("Wrote fewer fields than specified");
     }
 
     // TODO: could add some verification here...
@@ -124,10 +118,6 @@ module BinaryIO {
     // - TODO: check size mismatches
 
     proc startArray(writer: _writeType, size: uint) throws {
-      if verify {
-        writer.write(size);
-        _size = size;
-      }
     }
 
     proc startArrayDim(writer: _writeType, size: uint) throws {
@@ -142,7 +132,6 @@ module BinaryIO {
 
     proc writeBulkElements(writer: _writeType, data: c_ptr(?eltType), numElements: uint) throws
     where isNumericType(eltType) {
-      if verify && numElements > _size then throw new IllegalArgumentError("len", "Cannot write more elements than specified in 'startArray'");
       const n = c_sizeof(eltType)*numElements;
       writer.writeBinary(data, n.safeCast(int));
     }
@@ -173,7 +162,6 @@ module BinaryIO {
 
   record BinaryDeserializer {
     const endian : IO.ioendian = IO.ioendian.native;
-    const verify = false;
 
     var _sizeKnown : bool = false;
     var _numElements : uint;
@@ -280,17 +268,10 @@ module BinaryIO {
     }
 
     proc _startComposite(reader: fileReader) throws {
-      var size : int;
-      if verify && _nesting == 0 {
-        size = reader.read(int);
-      }
-      _size += size.safeCast(uint);
       _nesting += 1;
     }
     proc _endComposite(reader: fileReader) throws {
       _nesting -= 1;
-      if verify && _nesting == 0 && _size != 0 then
-        throw new Error("Wrote fewer fields than specified");
     }
 
     proc startList(reader: fileReader) throws {
@@ -311,10 +292,6 @@ module BinaryIO {
     }
 
     proc startArray(reader: fileReader) throws {
-      if verify {
-        _numElements = reader.read(uint);
-        _sizeKnown = _numElements != 0;
-      }
     }
 
     proc startArrayDim(reader: fileReader) throws {
@@ -323,9 +300,6 @@ module BinaryIO {
     }
 
     proc readArrayElement(reader: fileReader, type eltType) throws {
-      if verify && _sizeKnown && _numElements <= 0 then
-        throw new BadFormatError("no more array elements remain!");
-
       if _sizeKnown then _numElements -= 1;
       return reader.read(eltType);
     }
@@ -339,8 +313,6 @@ module BinaryIO {
     }
 
     proc endArray(reader: fileReader) throws {
-      if verify && _sizeKnown && _numElements != 0 then
-        throw new Error("failed to read all expected elements in array!");
     }
 
     proc startMap(reader: fileReader) throws {
