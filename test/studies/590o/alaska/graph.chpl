@@ -226,8 +226,8 @@ class Graph {
     for edge in edges do {
       var e = edge!;
       if( e.src == n ){
-	outEdges[n.id].pushBack(e);
-	adjacent[n.id].pushBack(e.dst.id);
+	outEdges[n.id].append(e);
+	adjacent[n.id].append(e.dst.id);
       }
       if( e.dst == n ){
 	inEdges[n.id].pushBack(e);

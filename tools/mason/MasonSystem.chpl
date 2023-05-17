@@ -185,7 +185,7 @@ proc getPkgVariable(pkgName: string, option: string) {
   var line:string;
   for line in sub.stdout.lines() {
     if line.size > 1 then
-      lines.append(line);
+      lines.pushBack(line);
   }
 
   return lines;

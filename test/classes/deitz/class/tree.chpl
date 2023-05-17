@@ -32,10 +32,10 @@ iter BinaryTree.postOrder(): eltType {
   var last: Tree? = nil;
   var nodes: list(Tree);
 
-  nodes.append(this:unmanaged);
+  nodes.pushBack(this:unmanaged);
 
   while !nodes.isEmpty() {
-    var node = nodes.pop();
+    var node = nodes.popBack();
     var next: Tree? = nil;
 
     if node.left != nil && isDescending {
@@ -46,8 +46,8 @@ iter BinaryTree.postOrder(): eltType {
     }
 
     if next {
-      nodes.append(node);
-      nodes.append(next!);
+      nodes.pushBack(node);
+      nodes.pushBack(next!);
       continue;
     }
 

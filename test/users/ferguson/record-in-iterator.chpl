@@ -22,7 +22,7 @@ iter myiter(N /* adding :int makes it work */) {
   for i in 1..N {
     r2 = new myrecord(i);
     r2.add(i);
-    li.pushBack(r2);
+    li.append(r2);
   }
 
   for r in li {

@@ -37,7 +37,7 @@
 
     proc pop() {
       _data(0) <=> _data(_data.size-1);
-      var ret = _data.pop();
+      var ret = _data.popBack();
       return ret;
     }
   }

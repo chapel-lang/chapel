@@ -20,12 +20,12 @@ forall (command, lineno) in zip(navSubSys, 1..) {
   var stack: list(string);
   for ch in command {
     if Pairs.domain.contains(ch) then
-      stack.append(ch);
+      stack.pushBack(ch);
     else {
       const tail = stack.last();
       const expected = Pairs[tail];
       if ch == expected then
-        stack.pop();
+        stack.popBack();
       else {
         if debug then
           writeln("line ", lineno, ": expected ", expected, " but got ", ch);

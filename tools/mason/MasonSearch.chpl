@@ -42,7 +42,7 @@ use TOML;
 //
 proc masonSearch(args: [?d] string) {
   var listArgs: list(string);
-  for x in args do listArgs.append(x);
+  for x in args do listArgs.pushBack(x);
   masonSearch(listArgs);
 }
 
@@ -91,10 +91,10 @@ proc masonSearch(ref args: list(string)) {
           const ver = findLatest(searchDir + dir);
           const versionZero = new VersionInfo(0, 0, 0);
           if ver != versionZero {
-            results.append(name + " (" + ver.str() + ")");
-            packages.append(name);
-            versions.append(ver.str());
-            registries.append(registry);
+            results.pushBack(name + " (" + ver.str() + ")");
+            packages.pushBack(name);
+            versions.pushBack(ver.str());
+            registries.pushBack(registry);
           }
         }
       }

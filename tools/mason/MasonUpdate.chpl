@@ -207,7 +207,7 @@ proc chplVersionError(brick:borrowed Toml) {
     const hi   = info(2);
     const name = brick["name"]!.s + "-" + brick["version"]!.s;
     const msg  = name + " :  expecting " + prettyVersionRange(low, hi);
-    failedChapelVersion.append(msg);
+    failedChapelVersion.pushBack(msg);
   }
 }
 
@@ -239,7 +239,7 @@ private proc createDepTree(root: Toml) {
 
     // add dependencies found in TOML files of git deps
     for m in gitManifests do
-      manifests.append(m);
+      manifests.pushBack(m);
 
     depTree = createDepTrees(depTree, manifests, "root");
     depTree = addGitDeps(depTree, gitDeps);
@@ -301,7 +301,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
       chplVersion = verToUse["chplVersion"]!.s;
     }
 
-    depList.append(new shared Toml(package));
+    depList.pushBack(new shared Toml(package));
 
     if depTree.pathExists(package) == false {
       var dt: domain(string);
@@ -410,7 +410,7 @@ private proc getManifests(deps: list((string, shared Toml?))) {
     var name = dep(0);
     var version: string = dep(1)!.s;
     var toAdd = retrieveDep(name, version);
-    manifests.append(toAdd);
+    manifests.pushBack(toAdd);
   }
   return manifests;
 }
@@ -437,7 +437,7 @@ private proc getGitManifests(deps: list((string, string, string, string))) {
   var manifests: list(shared Toml);
   for dep in deps {
     var toAdd = retrieveGitDep(dep(0), dep(2));
-    manifests.append(toAdd);
+    manifests.pushBack(toAdd);
   }
   return manifests;
 }
@@ -465,7 +465,7 @@ private proc getDependencies(tomlTbl: Toml) {
   for k in tomlTbl.A.keys() {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
-        deps.append((a, d));
+        deps.pushBack((a, d));
       }
     }
   }
@@ -477,7 +477,7 @@ private proc getGitDeps(tomlTbl: Toml) {
   for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
-      gitDeps.append((k, a, d));
+      gitDeps.pushBack((k, a, d));
     }
   }
   return gitDeps;
@@ -534,7 +534,7 @@ private proc pullGitDeps(gitDeps, show=false) {
         var revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
-      gitDepsWithRevision.append((val, srcURL, branch, revision));
+      gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     } else {
       if revision != "" {
         writeln("Fetching latest changes for: " + nameVers + "...");
@@ -567,7 +567,7 @@ private proc pullGitDeps(gitDeps, show=false) {
         var revParse = "git rev-parse HEAD";
         revision = gitC(destination, revParse, true).strip();
       }
-      gitDepsWithRevision.append((val, srcURL, branch, revision));
+      gitDepsWithRevision.pushBack((val, srcURL, branch, revision));
     }
   }
   return gitDepsWithRevision;

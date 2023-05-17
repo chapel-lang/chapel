@@ -190,7 +190,7 @@ module Shlex {
       while true {
         if this.tokindex == -1 then break;
         if (this.punctuation_chars != '' && !this._pushback_chars.isEmpty()) {
-          nextchar = this._pushback_chars.pop();
+          nextchar = this._pushback_chars.popBack();
         }
         else if(this.tokindex < this.instream.size) {
           nextchar = this.instream[this.tokindex];

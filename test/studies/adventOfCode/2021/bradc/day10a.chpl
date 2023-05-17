@@ -25,7 +25,7 @@ forall (command, lineno) in zip(navSubSys, 1..) with (ref scores) {
       const tail = stack.last();
       const expected = Pairs[tail];
       if ch == expected then
-        stack.pop();
+        stack.popBack();
       else {
         stack.clear();
         break;
