@@ -737,12 +737,10 @@ module ChapelIO {
     return ret;
   }
 
-  // TODO: what about tuples-of-types?
   proc const _tuple.serialize(writer, ref serializer) throws {
     serializer.startTuple(writer, this.size);
     for param i in 0..<size {
       const ref elt = this(i);
-      // TODO: should probably have something like 'writeElement'
       serializer.serializeField(writer, "", elt);
     }
     serializer.endTuple(writer);

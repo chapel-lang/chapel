@@ -1768,9 +1768,6 @@ module DefaultRectangular {
           if f.writing then
             fmt.writeArrayElement(f, arr.dsiAccess(idx));
           else {
-            // TODO: does it make sense to just ignore the idx here?
-            // I guess it's a way for the type authors to assert they know
-            // more about their own type...
             arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
           }
         }
