@@ -2130,19 +2130,15 @@ static void setupModule()
 static void cleanupFunctionOptManagers() {
   GenInfo* info = gGenInfo;
 
+  // note: the order of deleting these is important
   if (info->FunctionSimplificationPM) {
     delete info->FunctionSimplificationPM;
     info->FunctionSimplificationPM = nullptr;
   }
 
-  if (info->LAM) {
-    delete info->LAM;
-    info->LAM = nullptr;
-  }
-
-  if (info->FAM) {
-    delete info->FAM;
-    info->FAM = nullptr;
+  if (info->MAM) {
+    delete info->MAM;
+    info->MAM = nullptr;
   }
 
   if (info->CGAM) {
@@ -2150,9 +2146,14 @@ static void cleanupFunctionOptManagers() {
     info->CGAM = nullptr;
   }
 
-  if (info->MAM) {
-    delete info->MAM;
-    info->MAM = nullptr;
+  if (info->FAM) {
+    delete info->FAM;
+    info->FAM = nullptr;
+  }
+
+  if (info->LAM) {
+    delete info->LAM;
+    info->LAM = nullptr;
   }
 }
 
