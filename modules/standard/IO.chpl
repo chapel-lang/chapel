@@ -2509,7 +2509,7 @@ proc fileReader.writing param: bool {
 }
 
 @chpldoc.nodoc
-proc fileReader.deserializer ref {
+proc fileReader.deserializer ref : deserializerType {
   return _deserializer!.member;
 }
 
@@ -2575,7 +2575,7 @@ proc fileWriter.writing param: bool {
 
 
 @chpldoc.nodoc
-proc fileWriter.serializer ref {
+proc fileWriter.serializer ref : serializerType {
   return _serializer!.member;
 }
 
@@ -3147,15 +3147,16 @@ proc ref fileWriter.deinit() {
 
 // Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
 @chpldoc.nodoc
-proc fileReader.withDeserializer(type dt) : fileReader(this.kind, this.locking, dt) {
-  var des : dt;
+proc fileReader.withDeserializer(type deserializerType) :
+  fileReader(this.kind, this.locking, deserializerType) {
+  var des : deserializerType;
   return withDeserializer(des);
 }
 
 @chpldoc.nodoc
-proc fileReader.withDeserializer(d: ?dt) : fileReader(this.kind, this.locking, dt) {
+proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.kind, this.locking, dt) {
   var ret = new fileReader(this.kind, this.locking, dt);
-  ret._deserializer = new unmanaged _serializeWrapper(dt, d);
+  ret._deserializer = new unmanaged _serializeWrapper(dt, deserializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -3167,15 +3168,16 @@ proc fileReader.withDeserializer(d: ?dt) : fileReader(this.kind, this.locking, d
 
 // Convenience for forms like 'w.withSerializer(DefaultSerializer)`
 @chpldoc.nodoc
-proc fileWriter.withSerializer(type st) : fileWriter(this.kind, this.locking, st) {
-  var ser : st;
+proc fileWriter.withSerializer(type serializerType) :
+  fileWriter(this.kind, this.locking, serializerType) {
+  var ser : serializerType;
   return withSerializer(ser);
 }
 
 @chpldoc.nodoc
-proc fileWriter.withSerializer(s: ?st) : fileWriter(this.kind, this.locking, st) {
+proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this.kind, this.locking, st) {
   var ret = new fileWriter(this.kind, this.locking, st);
-  ret._serializer = new unmanaged _serializeWrapper(st, s);
+  ret._serializer = new unmanaged _serializeWrapper(st, serializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -4894,7 +4896,7 @@ config param useNewFileWriterRegionBounds = false;
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 serializer:?st = defaultSerializeVal(true)):
+                 in serializer:?st = defaultSerializeVal(true)):
                  fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
                                                         useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
@@ -4926,9 +4928,9 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // The error code should be checked to avoid double-deletion errors.
   var ret : fileWriter(kind, locking, st);
   var err:errorCode = 0;
-  var start : region.idxType;
-  var end : region.idxType;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
