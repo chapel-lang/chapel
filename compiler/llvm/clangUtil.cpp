@@ -1831,7 +1831,7 @@ getCodeModel(const CodeGenOptions &CodeGenOpts) {
                            .Default(~0u);
   assert(CodeModel != ~0u && "invalid code model!");
   if (CodeModel == ~1u)
-    return None;
+    return chpl::empty;
   return static_cast<llvm::CodeModel::Model>(CodeModel);
 }
 

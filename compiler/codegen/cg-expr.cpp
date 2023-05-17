@@ -3391,7 +3391,11 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 
   INT_ASSERT(type->isSized());
   llvm::TypeSize ret = dl.getTypeAllocSize(type);
+#if HAVE_LLVM_VER >= 160
+  auto intValue = ret.getKnownMinValue();
+#else
   auto intValue = ret.getKnownMinSize();
+#endif
   llvm::Type* sizeTy = dl.getIntPtrType(ctx);
 
   return llvm::ConstantInt::get(sizeTy, intValue);

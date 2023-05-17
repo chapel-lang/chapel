@@ -170,7 +170,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
         get_type(type->getValType()),//it should return the pointee's DIType
         layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
         0, /* alignment */
-        llvm::None,
+        chpl::empty,
         name);
 
       myTypeDescriptors[type] = N;
@@ -193,7 +193,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteIntDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-            llvm::None,
+            chpl::empty,
             name);
 
           myTypeDescriptors[type] = N;
@@ -222,7 +222,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
             pteStrDIType,
             layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
             0,
-            llvm::None,
+            chpl::empty,
             name);
 
           myTypeDescriptors[type] = N;
@@ -250,7 +250,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               get_type(vt),
               layout.getPointerSizeInBits(ty->getPointerAddressSpace()),
               0,
-              llvm::None,
+              chpl::empty,
               name);
 
             myTypeDescriptors[type] = N;

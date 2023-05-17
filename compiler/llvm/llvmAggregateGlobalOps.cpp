@@ -695,7 +695,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         eltType = st->getValueOperand()->getType();
       }
       if (eltType) {
+#if HAVE_LLVM_VER >= 160
+        Alignment = DL->getABITypeAlign(eltType);
+#else
         Alignment = DL->getABITypeAlignment(eltType);
+#endif
       } else {
         assert(false && "expected eltType when computing natural alignment");
       }
