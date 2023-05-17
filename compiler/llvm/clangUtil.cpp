@@ -61,6 +61,7 @@
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
@@ -2346,15 +2347,36 @@ static void runModuleOptPipeline(bool addWideOpts) {
   CGSCCAnalysisManager CGAM;
   ModuleAnalysisManager MAM;
 
-  PassBuilder PB(info->targetMachine, createPipelineOptions(false));
+  PassInstrumentationCallbacks PIC;
+  StandardInstrumentations SI(
+#if HAVE_LLVM >= 160
+                              info->llvmContext,
+#endif
+                              /* DebugLogging */ false);
+  SI.registerCallbacks(PIC, &FAM);
 
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(info->targetMachine, createPipelineOptions(false),
+                 PGOOpt, &PIC);
+
+
+  // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
       new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
+  // TODO: handle CodeGenOptions::LIBMVEC etc to support
+  // vectorizing the math library.
+
+  // not sure if this one is needed
+  FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
+
+  // clang does this one
   FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
 
   PB.registerModuleAnalyses(MAM);
   PB.registerCGSCCAnalyses(CGAM);
   PB.registerFunctionAnalyses(FAM);
+  // note: registerFunctionAnalyses creates and registers
+  // the default alias analysis pipeline (from buildDefaultAAPipeline)
   PB.registerLoopAnalyses(LAM);
   PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
