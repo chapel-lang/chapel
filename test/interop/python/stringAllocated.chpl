@@ -4,7 +4,7 @@ export proc g(size: int, ptr: c_ptr(uint(8))): int {
   if s.numBytes >= size {
     return -1;
   } else {
-    c_memcpy(ptr, s.c_str(): c_void_ptr, s.numBytes);
+    c_memcpy(ptr, s:c_ptrConst(c_char):c_string: c_void_ptr, s.numBytes);
     return s.numBytes;
   }
 }

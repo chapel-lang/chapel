@@ -15,7 +15,7 @@ extern proc printf(fmt: c_string, x...);
 
 on Locales(1) {
   for param i in 0..255 do
-    printf("%s\n", (x(i):string).c_str());
+    printf("%s\n", (x(i):string):c_ptrConst(c_char):c_string);
 }
 
 stopVerboseComm();

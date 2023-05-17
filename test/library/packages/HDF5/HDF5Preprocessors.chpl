@@ -35,7 +35,7 @@ module HDF5Preprocessors {
         f.close();
 
         // give the file executable permission
-        chmod(scriptName.c_str(), 0o755:mode_t);
+        chmod(scriptName:c_ptrConst(c_char):c_string, 0o755:mode_t);
 
         // spawn the script, connect stdin and stdout
         var sub = spawn([scriptName], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);

@@ -23,8 +23,8 @@ proc main() {
     var s2 = get_str_with_join(x, y);
     assert(s1 == s2);
 
-    var s1c = s1.c_str();
-    var s2c = s2.c_str();  // edit: Oops, was s1.c_str();
+    var s1c = s1:c_ptrConst(c_char):c_string;
+    var s2c = s2:c_ptrConst(c_char):c_string;  // edit: Oops, was s1:c_ptrConst(c_char):c_string;
     if s1c != s2c {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);

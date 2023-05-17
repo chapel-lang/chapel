@@ -7,10 +7,10 @@ proc foo() {
   on Locales(1) {
     begin {
       sleep(2);
-      printf("%s\n", (here.id:string + " x=" + x:string).c_str());
+      printf("%s\n", (here.id:string + " x=" + x:string):c_ptrConst(c_char):c_string);
     }
   }
-  printf("%s\n", (here.id:string + " x=" + x:string).c_str());
+  printf("%s\n", (here.id:string + " x=" + x:string):c_ptrConst(c_char):c_string);
 }
 
 foo();

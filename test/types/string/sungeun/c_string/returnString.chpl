@@ -3,7 +3,7 @@ use checkType;
 proc rcs() {
   var s = c"hi";
   var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
-  var cs = ss.c_str();
+  var cs = ss:c_ptrConst(c_char):c_string;
   return cs;
 }
 
@@ -12,7 +12,7 @@ checkType(c_string, rcs().type);
 proc rcss():string {
   var s = c"hi";
   var ss = string.createCopyingBuffer(s) + string.createCopyingBuffer(s);
-  var cs = ss.c_str();
+  var cs = ss:c_ptrConst(c_char):c_string;
   return string.createCopyingBuffer(cs);
 }
 

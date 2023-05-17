@@ -76,7 +76,7 @@ proc doString() param {
 proc makeInput(array, inputStrings) {
   if doString() {
     if eltType == c_string {
-      var result = forall a in inputStrings do a.c_str();
+      var result = forall a in inputStrings do a:c_ptrConst(c_char):c_string;
       return result;
     } else {
       return inputStrings;

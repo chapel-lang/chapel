@@ -49,9 +49,9 @@ proc main(args:[] string)
     // The extern block above included everything in openssl/sha.h,
     // including the SHA1 function. But, in order to call it, we
     // need to create C types from some Chapel data.
-    //   string.c_str() returns a C string referring to the string's data
+    //   string:c_ptrConst(c_char):c_string returns a C string referring to the string's data
     //   c_ptrTo(something) returns a C pointer referring to something
-    SHA1(data.c_str(), data.numBytes:uint, c_ptrTo(mdArray));
+    SHA1(data:c_ptrConst(c_char):c_string, data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;
     for i in 0..19 do
       hash(i) = mdArray(i);

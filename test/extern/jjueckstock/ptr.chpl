@@ -28,7 +28,7 @@ module OuterModule {
     static inline int* get_int_ref(void) {
       return &foo;
     }
-    
+
     static inline void struct_ptr_test(struct st* s) {
       printf("struct s contains %s and %d\n", s->c, s->foo);
     }
@@ -44,7 +44,7 @@ module OuterModule {
   use CTypes;
 
   var a: C.st;
-  a.c = "a string".c_str();
+  a.c = "a string":c_ptrConst(c_char):c_string;
   a.foo = 897234;
 
   var b: c_ptr(C.st) = get_struct_ref();

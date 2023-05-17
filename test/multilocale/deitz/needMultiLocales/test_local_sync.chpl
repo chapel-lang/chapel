@@ -7,13 +7,13 @@ proc main {
 
   on Locales(1) {
     var i = s.readFE();
-    printf("%s\n", (here.id:string + " " + i:string).c_str());
+    printf("%s\n", (here.id:string + " " + i:string):c_ptrConst(c_char):c_string);
   }
 
   s.writeEF(3);
 
   on Locales(1) {
     var i = s.readFE();
-    printf("%s\n", (here.id:string + " " + i:string).c_str());
+    printf("%s\n", (here.id:string + " " + i:string):c_ptrConst(c_char):c_string);
   }
 }

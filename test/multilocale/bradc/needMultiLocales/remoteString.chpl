@@ -8,7 +8,7 @@ proc main() {
   s1 = "foo";
   on Locales(1) do begin with (ref s1) {
     const tmp = flag1.readFE();
-    printf("%s\n", ("s1 is: " + s1).c_str());
+    printf("%s\n", ("s1 is: " + s1):c_ptrConst(c_char):c_string);
     done.writeEF(true);
   }
   s1 = "boohoo";
@@ -22,7 +22,7 @@ proc main() {
     s2 = "foo";
     on Locales(1) do begin with (ref s2) {
         const tmp = flag2.readFE();
-        printf("%s\n", ("s2 is: " + s2).c_str());
+        printf("%s\n", ("s2 is: " + s2):c_ptrConst(c_char):c_string);
       }
     s2 = "boohoo";
     flag2.writeEF(true);

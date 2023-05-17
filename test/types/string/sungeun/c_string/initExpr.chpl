@@ -43,8 +43,8 @@ checkType(A1.eltType);
  const blah = "blah";
  var c0: borrowed C = (new owned C()).borrow();
  c0.checkMe();
- var c1 = (new owned C("hi", "hi", blah.c_str())).borrow();
+ var c1 = (new owned C("hi", "hi", blah:c_ptrConst(c_char):c_string)).borrow();
  c1.checkMe();
- var c2 = (new owned C(blah, blah, blah.c_str())).borrow();
+ var c2 = (new owned C(blah, blah, blah:c_ptrConst(c_char):c_string)).borrow();
  c2.checkMe();
 }
