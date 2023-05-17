@@ -563,7 +563,7 @@ module Channel {
     var lockOrder = new list(shared SelectBaseClass);
     for idx in cases.domain {
       if idx == 0 || cases[idx].getAddr() != cases[idx - 1].getAddr() {
-        lockOrder.append(cases[idx]);
+        lockOrder.pushBack(cases[idx]);
       }
     }
     var done = -1;

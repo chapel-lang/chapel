@@ -2214,7 +2214,7 @@ module TwoArrayPartitioning {
                                                 false);
       assert(!t.isEmpty());
       this.complete();
-      tasks.append(t);
+      tasks.pushBack(t);
     }
     proc writeThis(f) throws {
       f.write("TwoArrayDistSortTask");
@@ -2531,12 +2531,12 @@ module TwoArrayPartitioning {
     const maxSequentialSize = max(n / state.nTasks,
                                   state.nTasks*state.sequentialSizePerTask);
 
-    state.bigTasks.append(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
+    state.bigTasks.pushBack(new TwoArraySortTask(start_n, n, startbit, inA=true, doSort=true));
     assert(state.bigTasks.size == 1);
     assert(state.smallTasks.size == 0);
 
     while !state.bigTasks.isEmpty() {
-      const task = state.bigTasks.pop();
+      const task = state.bigTasks.popBack();
       const taskEnd = task.start + task.size - 1;
 
       assert(task.doSort);
@@ -2590,7 +2590,7 @@ module TwoArrayPartitioning {
         } else if !nowInA && !sortit {
           // Enqueue a small task to do the copy.
           // TODO: handle large copies in big tasks, or enqueue several tasks here
-          state.smallTasks.append(
+          state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else if binStartBit > state.endbit ||
@@ -2601,7 +2601,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a small task to sort and possibly copy.
-          state.smallTasks.append(
+          state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
         } else {
@@ -2610,7 +2610,7 @@ module TwoArrayPartitioning {
           }
 
           // Enqueue a big task
-          state.bigTasks.append(
+          state.bigTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
         }
       }
@@ -3056,7 +3056,7 @@ module TwoArrayPartitioning {
               if debugDist then
                 writeln(bktLocId, " Adding small task ", small);
 
-              smallTasksPerLocale[theLocaleId].append(small);
+              smallTasksPerLocale[theLocaleId].pushBack(small);
             } else {
               // Create a distributed sorting task
               var firstLocId = firstLoc.id;
@@ -3081,7 +3081,7 @@ module TwoArrayPartitioning {
               if debugDist then
                 writeln(bktLocId, " Adding big subtask", t);
 
-              nextDistTaskElts.append(t);
+              nextDistTaskElts.pushBack(t);
             }
           }
         }
@@ -3124,7 +3124,7 @@ module TwoArrayPartitioning {
 
       while true {
         if smallTasksPerLocale[tid].isEmpty() then break;
-        const task = smallTasksPerLocale[tid].pop();
+        const task = smallTasksPerLocale[tid].popBack();
 
         if debugDist then
           writeln(tid, " Doing small task ", task);

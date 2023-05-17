@@ -335,7 +335,7 @@ module TomlParser {
             }
             else {
               var toParse = parseValue();
-              array.append(toParse);
+              array.pushBack(toParse);
             }
           }
           skipNext(source);
@@ -1251,21 +1251,21 @@ module TomlReader {
             strippedToken = dateTimeToken[0];
           var isComment = (new regex(comments)).match(strippedToken);
           if isComment.matched && idx <= 1 {
-            linetokens.append(strippedToken);
+            linetokens.pushBack(strippedToken);
           } else if !isComment.matched {
-            linetokens.append(strippedToken);
+            linetokens.pushBack(strippedToken);
           }
         }
       }
 
       // If no non-empty-chars => token is a blank line
       if(nonEmptyChar == false){
-        linetokens.append("\n");
+        linetokens.pushBack("\n");
       }
 
       if !linetokens.isEmpty() {
         var tokens = new unmanaged Tokens(linetokens);
-        tokenlist.append(tokens);
+        tokenlist.pushBack(tokens);
       }
     }
 
