@@ -2055,9 +2055,11 @@ module DefaultRectangular {
     const Aidx = A.getDataIndex(Alo);
     const Adata = _ddata_shift(A.eltType, A.theData, Aidx);
     const Alocid = Adata.locale.id;
+    const Asublocid = chpl_sublocFromLocaleID(Adata.locale.chpl_localeid());
     const Bidx = B.getDataIndex(Blo);
     const Bdata = _ddata_shift(B.eltType, B.theData, Bidx);
     const Blocid = Bdata.locale.id;
+    const Bsublocid = chpl_sublocFromLocaleID(Bdata.locale.chpl_localeid());
 
     type t = A.eltType;
     const elemsizeInBytes = if isNumericType(t) then numBytes(t)
@@ -2083,14 +2085,18 @@ module DefaultRectangular {
     }
 
     if doParallelAssign {
-      _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
+      _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid,
+                                    Blocid, Bsublocid, len);
     }
     else{
-      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid, Blocid,
+                            Bsublocid, len);
     }
   }
 
-  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len) {
+  private proc _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid,
+                                             Asublocid, Blocid, Bsublocid,
+                                             len) {
     const numTasks = if __primitive("task_get_serial") then 1
                         else _computeNumChunks(len);
     const lenPerTask = len:int/numTasks;
@@ -2102,11 +2108,13 @@ module DefaultRectangular {
       const myOffset = tid*lenPerTask;
       const myLen = if tid == numTasks-1 then len:int-myOffset else lenPerTask;
 
-      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, myLen, myOffset);
+      _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid, Blocid,
+                            Bsublocid, myLen, myOffset);
     }
   }
 
-  private proc _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len, offset=0) {
+  private proc _simpleTransferHelper(A, B, Adata, Bdata, Alocid, Asublocid,
+                                     Blocid, Bsublocid, len, offset=0) {
     if Adata == Bdata then return;
 
     // NOTE: This does not work with --heterogeneous, but heterogeneous
@@ -2115,17 +2123,17 @@ module DefaultRectangular {
     if Alocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal get() from ", Blocid, " of size ", len);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
                   Bdata[offset], len);
     } else if Blocid==here.id {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tlocal put() to ", Alocid);
-      __primitive("chpl_comm_array_put", Bdata[offset], Alocid,
+      __primitive("chpl_comm_array_put", Bdata[offset], Alocid, Asublocid,
                   Adata[offset], len);
     } else on Adata.locale {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("\tremote get() on ", here.id, " from ", Blocid);
-      __primitive("chpl_comm_array_get", Adata[offset], Blocid,
+      __primitive("chpl_comm_array_get", Adata[offset], Blocid, Bsublocid,
                   Bdata[offset], len);
     }
   }
