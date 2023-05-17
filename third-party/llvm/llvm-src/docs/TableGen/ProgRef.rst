@@ -208,7 +208,9 @@ identifiers::
    multiclass string        then          true
 
 .. warning::
-  The ``field`` reserved word is deprecated.
+  The ``field`` reserved word is deprecated, except when used with the
+  CodeEmitterGen backend where it's used to distinguish normal record
+  fields from encoding fields.
 
 Bang operators
 --------------
@@ -1224,8 +1226,6 @@ The statement list establishes an inner scope. Variables local to a
 values do not carry over from one iteration to the next. Foreach loops may
 be nested.
 
-The ``foreach`` statement can also be used in a record :token:`Body`.
-
 .. Note that the productions involving RangeList and RangePiece have precedence
    over the more generic value parsing based on the first token.
 
@@ -1723,6 +1723,10 @@ and non-0 as true.
 ``!isa<``\ *type*\ ``>(``\ *a*\ ``)``
     This operator produces 1 if the type of *a* is a subtype of the given *type*; 0
     otherwise.
+
+``!exists<``\ *type*\ ``>(``\ *name*\ ``)``
+    This operator produces 1 if a record of the given *type* whose name is *name*
+    exists; 0 otherwise. *name* should be of type *string*.
 
 ``!le(``\ *a*\ ``,`` *b*\ ``)``
     This operator produces 1 if *a* is less than or equal to *b*; 0 otherwise.
