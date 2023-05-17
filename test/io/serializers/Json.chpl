@@ -328,7 +328,7 @@ module Json {
         const dist =  _offsets[name] - reader.offset();
         reader.advance(dist);
       } else if !name.isEmpty() {
-        throw new Error("field not found...");
+        throw new IllegalArgumentError("field '" + name + "' not found.");
       }
 
       var ret = reader.read(T);

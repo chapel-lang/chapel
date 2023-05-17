@@ -2,6 +2,6 @@
 (x = 5, y = 42.0, z = hello)
 (y = 42.0, x = 5, z = hello)
 (x = 5, z = hello)
-uncaught Error: field not found...
+uncaught IllegalArgumentError: field 'w' not found.
   Json.chpl:nnnn: thrown here
   Json.chpl:nnnn: uncaught here
