@@ -1,4 +1,6 @@
 use ecgIO;
+import Math.log2;
+
 config const nLevels = 3;
 config param plotResults = false;
 
