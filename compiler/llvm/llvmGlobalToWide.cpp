@@ -1649,7 +1649,11 @@ bool GlobalToWide::run(Module &M) {
                 Instruction *New;
                 New = fixer.callGlobalToWideFn(RI->getReturnValue(), RI);
                 New = ReturnInst::Create(M.getContext(), New, RI);
+#if HAVE_LLVM_VER >= 160
+                RI->eraseFromParent();
+#else
                 BB->getInstList().erase(RI);
+#endif
               }
             }
           }

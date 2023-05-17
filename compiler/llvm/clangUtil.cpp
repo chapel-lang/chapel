@@ -1931,7 +1931,7 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.UniqueBasicBlockSectionNames;
   Options.TLSSize = CodeGenOpts.TLSSize;
   Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
-  Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.ExplicitEmulatedTLS = true;
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
 #if HAVE_LLVM_VER >= 130
@@ -2314,10 +2314,15 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 #endif
   PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
 #endif
-  PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
 
+#if HAVE_LLVM_VER < 160
+  PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
+#endif
+
+#if HAVE_LLVM_VER < 160
   if (gGenInfo->targetMachine)
     gGenInfo->targetMachine->adjustPassManager(PMBuilder);
+#endif
 
   // Enable Region Vectorizer aka Outer Loop Vectorizer
 #ifdef HAVE_LLVM_RV
@@ -2345,7 +2350,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
 
   PassInstrumentationCallbacks PIC;
   StandardInstrumentations SI(
-#if HAVE_LLVM >= 160
+#if HAVE_LLVM_VER >= 160
                               info->llvmContext,
 #endif
                               /* DebugLogging */ false);
@@ -3966,7 +3971,12 @@ llvm::MaybeAlign getPointerAlign(int addrSpace) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
+#if HAVE_LLVM_VER >= 160
+  auto AS = LangAS::Default;
+#else
+  auto AS = 0;
+#endif
+  uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(AS);
   return llvm::MaybeAlign(align);
 }
 llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td) {
