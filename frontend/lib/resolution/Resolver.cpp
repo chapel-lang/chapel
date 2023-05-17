@@ -1793,10 +1793,46 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   return false;
 }
 
+bool Resolver::resolveSpecialKeywordCall(const Call* call) {
+  if (!call->isFnCall()) return false;
+
+  auto fnCall = call->toFnCall();
+  if (!fnCall->calledExpression()->isIdentifier()) return false;
+
+  auto fnName = fnCall->calledExpression()->toIdentifier()->name();
+  if (fnName == "index") {
+    auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      auto ci = CallInfo::create(context, call, byPostorder,
+                                 /* raiseErrors */ true,
+                                 /* actualAsts */ nullptr,
+                                 /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
+      auto scope = scopeStack.back();
+      auto result = resolveGeneratedCall(context, call, ci, scope, poiScope);
+
+      auto& r = byPostorder.byAst(call);
+      handleResolvedCall(r, call, ci, result);
+      return result;
+    });
+
+    if (!runResult.ranWithoutErrors()) {
+      auto firstActual = QualifiedType();
+      if (call->numActuals() > 0) {
+        firstActual = byPostorder.byAst(call->actual(0)).type();
+      }
+      CHPL_REPORT(context, InvalidIndexCall, fnCall, firstActual);
+    }
+    return true;
+  }
+
+  return false;
+}
+
 bool Resolver::resolveSpecialCall(const Call* call) {
   if (resolveSpecialOpCall(call)) {
     return true;
   } else if (resolveSpecialNewCall(call)) {
+    return true;
+  } else if (resolveSpecialKeywordCall(call)) {
     return true;
   }
 
@@ -2365,7 +2401,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       return;
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
-      result.setIsPrimitive(true);
+      result.setIsBuiltin(true);
       result.setToId(id);
       result.setType(type);
       return;
