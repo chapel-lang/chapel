@@ -261,29 +261,28 @@ module BinaryIO {
       return r.read(T);
     }
 
-    proc startClass(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, size);
+    proc startClass(r: fileReader, name: string) throws {
+      _startComposite(r);
     }
     proc endClass(r: fileReader) throws {
     }
 
-    proc startRecord(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, size);
+    proc startRecord(r: fileReader, name: string) throws {
+      _startComposite(r);
     }
     proc endRecord(r: fileReader) throws {
     }
 
-    proc startTuple(r: fileReader, size: int) throws {
-      _startComposite(r, size);
+    proc startTuple(r: fileReader) throws {
+      _startComposite(r);
     }
     proc endTuple(r: fileReader) throws {
     }
 
-    proc _startComposite(r: fileReader, size: int) throws {
+    proc _startComposite(r: fileReader) throws {
+      var size : int;
       if verify && _nesting == 0 {
-        const n = r.read(int);
-        if n != size then
-          throw new Error("Mismatch in number of fields expected");
+        size = r.read(int);
       }
       _size += size.safeCast(uint);
       _nesting += 1;

@@ -232,28 +232,28 @@ module ChplFormat {
       return r.read(T);
     }
 
-    proc startTuple(r: fileReader, size: int) throws {
+    proc startTuple(r: fileReader) throws {
       r.readLiteral("(");
     }
     proc endTuple(r: fileReader) throws {
       r.readLiteral(")");
     }
 
-    proc startClass(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, _typename, size);
+    proc startClass(r: fileReader, name: string) throws {
+      _startComposite(r, _typename);
     }
     proc endClass(r: fileReader) throws {
       _endComposite(r);
     }
 
-    proc startRecord(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, _typename, size);
+    proc startRecord(r: fileReader, name: string) throws {
+      _startComposite(r, _typename);
     }
     proc endRecord(r: fileReader) throws {
       _endComposite(r);
     }
 
-    proc _startComposite(r: fileReader, name: string, size: int) throws {
+    proc _startComposite(r: fileReader, name: string) throws {
       if _inheritLevel == 0 {
         r.readLiteral("new " + name);
         r.readLiteral("(");

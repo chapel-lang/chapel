@@ -2261,23 +2261,6 @@ static bool hasFullyGenericField(AggregateType* at) {
   return false;
 }
 
-static int numIOFields(AggregateType* ag) {
-  int ret = 0;
-
-  for_fields(fieldDefExpr, ag) {
-
-    if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-      if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
-        if (field->hasEitherFlag(FLAG_PARAM, FLAG_TYPE_VARIABLE) == false) {
-          ret += 1;
-        }
-      }
-    }
-  }
-
-  return ret;
-}
-
 void AggregateType::buildReaderInitializer() {
   if (!fUseIOSerializers) return;
 
@@ -2337,7 +2320,7 @@ void AggregateType::buildReaderInitializer() {
 
         auto startKind = this->isClass() ? "startClass" : "startRecord";
         CallExpr* readStart = new CallExpr(startKind, gMethodToken, deser,
-                                           reader, new_StringSymbol(this->symbol->name), new_IntSymbol(numIOFields(this)));
+                                           reader, new_StringSymbol(this->symbol->name));
         fn->insertAtHead(readStart);
 
         // Parent fields before child fields

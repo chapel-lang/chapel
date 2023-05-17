@@ -341,28 +341,28 @@ module Json {
       return ret;
     }
 
-    proc startTuple(r: fileReader, size: int) throws {
+    proc startTuple(r: fileReader) throws {
       r.readLiteral("[");
     }
     proc endTuple(r: fileReader) throws {
       r.readLiteral("]");
     }
 
-    proc startClass(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, size);
+    proc startClass(r: fileReader, name: string) throws {
+      _startComposite(r);
     }
     proc endClass(r: fileReader) throws {
       _endComposite(r);
     }
 
-    proc startRecord(r: fileReader, name: string, size: int) throws {
-      _startComposite(r, size);
+    proc startRecord(r: fileReader, name: string) throws {
+      _startComposite(r);
     }
     proc endRecord(r: fileReader) throws {
       _endComposite(r);
     }
 
-    proc _startComposite(r: fileReader, size: int) throws {
+    proc _startComposite(r: fileReader) throws {
       if _inheritLevel == 0 {
         //
         // TODO: When should we try to do this? Use of '_startComposite', etc.

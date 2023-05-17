@@ -2861,7 +2861,7 @@ record DefaultDeserializer {
     return ret;
   }
 
-  proc startClass(r: fileReader, name: string, size: int) throws {
+  proc startClass(r: fileReader, name: string) throws {
     if _inheritLevel == 0 {
       r.readLiteral("{");
     }
@@ -2874,14 +2874,14 @@ record DefaultDeserializer {
     _inheritLevel -= 1;
   }
 
-  proc startRecord(r: fileReader, name: string, size: int) throws {
+  proc startRecord(r: fileReader, name: string) throws {
     r.readLiteral("(");
   }
   proc endRecord(r: fileReader) throws {
     r.readLiteral(")");
   }
 
-  proc startTuple(r: fileReader, size: int) throws {
+  proc startTuple(r: fileReader) throws {
     r.readLiteral("(");
   }
   proc endTuple(r: fileReader) throws {
@@ -2937,7 +2937,7 @@ record DefaultDeserializer {
     r._readLiteral("{");
   }
 
-  proc readKey(r: fileReader, type keyType) throws {
+  proc readKey(r: fileReader, type keyType) : keyType throws {
     if !firstField then
       r._readLiteral(", ");
     else

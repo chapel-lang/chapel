@@ -727,7 +727,7 @@ module ChapelIO {
     ref fmt = deserializer;
     pragma "no init"
     var ret : this;
-    fmt.startTuple(f, this.size);
+    fmt.startTuple(f);
     for param i in 0..<this.size {
       pragma "no auto destroy"
       var elt = fmt.deserializeField(f, "", this(i));
@@ -873,7 +873,7 @@ module ChapelIO {
     serializer.endClass(writer);
   }
   proc object.deserialize(reader, ref deserializer) throws {
-    deserializer.startClass(reader, "object", 0);
+    deserializer.startClass(reader, "object");
     deserializer.endClass(reader);
   }
 
