@@ -5432,25 +5432,21 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
 
 
     if (isGpu) {
-      std::cout << 100 << std::endl;
       GenRet subloc;
+
       if (hasSubloc) {
         curArg = call->get(curArgIdx++);
-        std::cout << 150 << std::endl;
+
         if (curArg->isRefOrWideRef()) {
-          std::cout << 160 << std::endl;
           subloc = codegenValue(codegenDeref(curArg));
         } else {
-          std::cout << 170 << std::endl;
           subloc = codegenValue(curArg);
         }
       }
       else {
-        std::cout << 180 << " " << call->numActuals() << std::endl;
-        nprint_view(call);
-
         subloc = codegenUseGlobal("c_sublocid_any");
       }
+
       args.push_back(subloc);
     }
 
