@@ -164,6 +164,13 @@ struct Converter {
      ForwardingDecls will add a method that does not exist in the uAST. */
   std::vector<Symbol*> methodThisStack;
 
+  /* Some actions in the production scope resolver (particularly using a module)
+     cause a search up the chain of scopes until they encounter a Block node.
+     Rather than implementing this search, just keep track of a stack of
+     scope-producing nodes. To properly keep track of them, code in the
+     converter that would normally call `new BlockExpr()`, creating a new
+     scope-producing block but not tracking it, would need to instead call
+     pushScopefulBlock, making the new block appear on this stack. */
   std::vector<BlockStmt*> blockStack;
 
 
