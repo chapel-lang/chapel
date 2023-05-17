@@ -1501,15 +1501,9 @@ GenRet createTempVar(Type* t)
 
     llvm::AllocaInst* alloca = createVarLLVM(llTy);
     llvm::MaybeAlign alignment = getAlignment(t);
-#if HAVE_LLVM_VER >= 160
-    if (alignment.has_value()) {
-      alloca->setAlignment(alignment.value());
+    if (alignment) {
+      alloca->setAlignment(*alignment);
     }
-#else
-    if (alignment.hasValue()) {
-      alloca->setAlignment(alignment.getValue());
-    }
-#endif
     ret.isLVPtr = GEN_PTR;
     ret.val = alloca;
 #endif
@@ -2748,15 +2742,9 @@ static GenRet codegenCallExprInner(GenRet function,
         // Create a temporary for holding the return value
         sret = createVarLLVM(chapelRetTy);
 
-#if HAVE_LLVM_VER >= 160
-        if (retAlignment.has_value()) {
-          sret->setAlignment(retAlignment.value());
+        if (retAlignment) {
+          sret->setAlignment(*retAlignment);
         }
-#else
-        if (retAlignment.hasValue()) {
-          sret->setAlignment(retAlignment.getValue());
-        }
-#endif
         llArgs.push_back(sret);
       }
     }
@@ -6059,11 +6047,7 @@ llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
                                     const char* name) {
 
   auto scopeName = llvm::MDString::get(ctx, name);
-#if HAVE_LLVM_VER >= 160
-  auto dummy = llvm::MDNode::getTemporary(ctx, std::nullopt);
-#else
-  auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
-#endif
+  auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
   llvm::Metadata* Args[] = {dummy.get(), domain, scopeName};
   auto scope = llvm::MDNode::get(ctx, Args);
   // Remove the dummy and replace it with a self-reference.
@@ -6087,11 +6071,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
-#if HAVE_LLVM_VER >= 160
-      auto dummy = llvm::MDNode::getTemporary(ctx, std::nullopt);
-#else
-      auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
-#endif
+      auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
       llvm::Metadata* Args[] = {dummy.get(), domainName};
       info->noAliasDomain = llvm::MDNode::get(ctx, Args);
       // Remove the dummy and replace it with a self-reference.

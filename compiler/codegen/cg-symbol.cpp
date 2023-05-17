@@ -971,16 +971,9 @@ void VarSymbol::codegenDef() {
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
 
     // Update the alignment if necessary
-#if HAVE_LLVM_VER >= 160
-    if (alignment.has_value()) {
-      varAlloca->setAlignment(alignment.value());
+    if (alignment) {
+      varAlloca->setAlignment(*alignment);
     }
-#else
-    if (alignment.hasValue()) {
-      varAlloca->setAlignment(alignment.getValue());
-    }
-#endif
-
 
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 

@@ -49,11 +49,7 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
 
   std::vector<llvm::Metadata*> args;
   // Resolve operand 0 for the loop id self reference
-#if HAVE_LLVM_VER >= 160
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, std::nullopt);
-#else
-  auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
-#endif
+  auto tmpNode        = llvm::MDNode::getTemporary(ctx, chpl::empty);
   args.push_back(tmpNode.get());
 
   // llvm.loop.vectorize.enable metadata is only used by LoopVectorizer to:
