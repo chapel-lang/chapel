@@ -1,0 +1,192 @@
+8 - owned A to owned A is legal
+18 - owned Child to owned Parent is legal
+28 - owned Parent to owned Child is legal
+38 - owned A to shared A is legal
+47 - compiler error
+56 - compiler error
+66 - owned A to unmanaged A is legal
+76 - owned Child to unmanaged Parent is legal
+86 - owned Parent to unmanaged Child is legal
+96 - owned A to borrowed A is legal
+106 - owned Child to borrowed Parent is legal
+116 - owned Parent to borrowed Child is legal
+126 - owned A to owned A? is legal
+136 - owned Child to owned Parent? is legal
+146 - owned Parent to owned Child? is legal
+155 - compiler error
+164 - compiler error
+173 - compiler error
+183 - owned A to unmanaged A? is legal
+193 - owned Child to unmanaged Parent? is legal
+203 - owned Parent to unmanaged Child? is legal
+213 - owned A to borrowed A? is legal
+223 - owned Child to borrowed Parent? is legal
+233 - owned Parent to borrowed Child? is legal
+242 - compiler error
+251 - compiler error
+260 - compiler error
+270 - shared A to shared A is legal
+280 - shared Child to shared Parent is legal
+290 - shared Parent to shared Child is legal
+300 - shared A to unmanaged A is legal
+310 - shared Child to unmanaged Parent is legal
+320 - shared Parent to unmanaged Child is legal
+330 - shared A to borrowed A is legal
+340 - shared Child to borrowed Parent is legal
+350 - shared Parent to borrowed Child is legal
+359 - compiler error
+368 - compiler error
+377 - compiler error
+387 - shared A to shared A? is legal
+397 - shared Child to shared Parent? is legal
+407 - shared Parent to shared Child? is legal
+417 - shared A to unmanaged A? is legal
+427 - shared Child to unmanaged Parent? is legal
+437 - shared Parent to unmanaged Child? is legal
+447 - shared A to borrowed A? is legal
+457 - shared Child to borrowed Parent? is legal
+467 - shared Parent to borrowed Child? is legal
+476 - compiler error
+485 - compiler error
+494 - compiler error
+503 - compiler error
+512 - compiler error
+521 - compiler error
+531 - unmanaged A to unmanaged A is legal
+541 - unmanaged Child to unmanaged Parent is legal
+551 - unmanaged Parent to unmanaged Child is legal
+561 - unmanaged A to borrowed A is legal
+571 - unmanaged Child to borrowed Parent is legal
+581 - unmanaged Parent to borrowed Child is legal
+590 - compiler error
+599 - compiler error
+608 - compiler error
+617 - compiler error
+626 - compiler error
+635 - compiler error
+645 - unmanaged A to unmanaged A? is legal
+655 - unmanaged Child to unmanaged Parent? is legal
+665 - unmanaged Parent to unmanaged Child? is legal
+675 - unmanaged A to borrowed A? is legal
+685 - unmanaged Child to borrowed Parent? is legal
+695 - unmanaged Parent to borrowed Child? is legal
+704 - compiler error
+713 - compiler error
+722 - compiler error
+731 - compiler error
+740 - compiler error
+749 - compiler error
+759 - borrowed A to unmanaged A is legal
+769 - borrowed Child to unmanaged Parent is legal
+779 - borrowed Parent to unmanaged Child is legal
+789 - borrowed A to borrowed A is legal
+799 - borrowed Child to borrowed Parent is legal
+809 - borrowed Parent to borrowed Child is legal
+818 - compiler error
+827 - compiler error
+836 - compiler error
+845 - compiler error
+854 - compiler error
+863 - compiler error
+873 - borrowed A to unmanaged A? is legal
+883 - borrowed Child to unmanaged Parent? is legal
+893 - borrowed Parent to unmanaged Child? is legal
+903 - borrowed A to borrowed A? is legal
+913 - borrowed Child to borrowed Parent? is legal
+923 - borrowed Parent to borrowed Child? is legal
+933 - owned A? to owned A is legal
+943 - owned Child? to owned Parent is legal
+953 - owned Parent? to owned Child is legal
+962 - compiler error
+971 - compiler error
+980 - compiler error
+990 - owned A? to unmanaged A is legal
+1000 - owned Child? to unmanaged Parent is legal
+1010 - owned Parent? to unmanaged Child is legal
+1020 - owned A? to borrowed A is legal
+1030 - owned Child? to borrowed Parent is legal
+1040 - owned Parent? to borrowed Child is legal
+1050 - owned A? to owned A? is legal
+1060 - owned Child? to owned Parent? is legal
+1070 - owned Parent? to owned Child? is legal
+1080 - owned A? to shared A? is legal
+1089 - compiler error
+1098 - compiler error
+1108 - owned A? to unmanaged A? is legal
+1118 - owned Child? to unmanaged Parent? is legal
+1128 - owned Parent? to unmanaged Child? is legal
+1138 - owned A? to borrowed A? is legal
+1148 - owned Child? to borrowed Parent? is legal
+1158 - owned Parent? to borrowed Child? is legal
+1167 - compiler error
+1176 - compiler error
+1185 - compiler error
+1195 - shared A? to shared A is legal
+1205 - shared Child? to shared Parent is legal
+1215 - shared Parent? to shared Child is legal
+1225 - shared A? to unmanaged A is legal
+1235 - shared Child? to unmanaged Parent is legal
+1245 - shared Parent? to unmanaged Child is legal
+1255 - shared A? to borrowed A is legal
+1265 - shared Child? to borrowed Parent is legal
+1275 - shared Parent? to borrowed Child is legal
+1284 - compiler error
+1293 - compiler error
+1302 - compiler error
+1312 - shared A? to shared A? is legal
+1322 - shared Child? to shared Parent? is legal
+1332 - shared Parent? to shared Child? is legal
+1342 - shared A? to unmanaged A? is legal
+1352 - shared Child? to unmanaged Parent? is legal
+1362 - shared Parent? to unmanaged Child? is legal
+1372 - shared A? to borrowed A? is legal
+1382 - shared Child? to borrowed Parent? is legal
+1392 - shared Parent? to borrowed Child? is legal
+1401 - compiler error
+1410 - compiler error
+1419 - compiler error
+1428 - compiler error
+1437 - compiler error
+1446 - compiler error
+1456 - unmanaged A? to unmanaged A is legal
+1466 - unmanaged Child? to unmanaged Parent is legal
+1476 - unmanaged Parent? to unmanaged Child is legal
+1486 - unmanaged A? to borrowed A is legal
+1496 - unmanaged Child? to borrowed Parent is legal
+1506 - unmanaged Parent? to borrowed Child is legal
+1515 - compiler error
+1524 - compiler error
+1533 - compiler error
+1542 - compiler error
+1551 - compiler error
+1560 - compiler error
+1570 - unmanaged A? to unmanaged A? is legal
+1580 - unmanaged Child? to unmanaged Parent? is legal
+1590 - unmanaged Parent? to unmanaged Child? is legal
+1600 - unmanaged A? to borrowed A? is legal
+1610 - unmanaged Child? to borrowed Parent? is legal
+1620 - unmanaged Parent? to borrowed Child? is legal
+1629 - compiler error
+1638 - compiler error
+1647 - compiler error
+1656 - compiler error
+1665 - compiler error
+1674 - compiler error
+1684 - borrowed A? to unmanaged A is legal
+1694 - borrowed Child? to unmanaged Parent is legal
+1704 - borrowed Parent? to unmanaged Child is legal
+1714 - borrowed A? to borrowed A is legal
+1724 - borrowed Child? to borrowed Parent is legal
+1734 - borrowed Parent? to borrowed Child is legal
+1743 - compiler error
+1752 - compiler error
+1761 - compiler error
+1770 - compiler error
+1779 - compiler error
+1788 - compiler error
+1798 - borrowed A? to unmanaged A? is legal
+1808 - borrowed Child? to unmanaged Parent? is legal
+1818 - borrowed Parent? to unmanaged Child? is legal
+1828 - borrowed A? to borrowed A? is legal
+1838 - borrowed Child? to borrowed Parent? is legal
+1848 - borrowed Parent? to borrowed Child? is legal
