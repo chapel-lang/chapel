@@ -19,7 +19,8 @@ if [ $? -ne 0 ]
      exit 1
    else
      log_info "./chapel-quickstart.sh succeeded"  
-   fi 
+fi 
+
 # Commented out to just test chapel-quickstart in Jenkins.
 # Will add this once we know what configurations will fail(most/all of the non-llvm) have the logic to fail the test 
 # if [ $? -ne 0 ] 
