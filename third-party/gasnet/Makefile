@@ -97,6 +97,13 @@ CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
 # Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
 CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp
 
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
+# If we are using LLVM 15+, it defaults to -fPIE, so use that here as well
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
+GASNET_CFLAGS += -fPIE
+endif
+endif
+
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 
 CHPL_GASNET_CFG_OPTIONS += $(CHPL_GASNET_MORE_CFG_OPTIONS)
