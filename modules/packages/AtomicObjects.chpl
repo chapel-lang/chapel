@@ -640,7 +640,8 @@ prototype module AtomicObjects {
     proc init(type objType,
               param hasABASupport: bool,
               param hasGlobalSupport: bool,
-              r: fileReader) {
+              reader: fileReader,
+              ref deserializer) {
       init(objType, hasABASupport, hasGlobalSupport);
       compilerWarning("Reading an AtomicObject is not supported");
     }
