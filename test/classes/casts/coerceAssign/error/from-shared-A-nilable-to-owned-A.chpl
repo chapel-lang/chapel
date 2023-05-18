@@ -4,10 +4,8 @@ class Parent {}
 class Child : Parent {}
 proc foo() {
   // coercing from shared A? to owned A
-  var allocFrom = new shared A();
-  var allocTo = new owned A();
-  var a:shared A? = allocFrom;
-  var a_:owned A = allocTo;
+  var a = new shared A?();
+  var a_ = new owned A();
   a_ = a;
 }
 proc main() {

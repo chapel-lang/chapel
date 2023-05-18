@@ -4,8 +4,7 @@ class Parent {}
 class Child : Parent {}
 proc foo() {
   // coercing from unmanaged Parent to borrowed Child
-  var alloc = new unmanaged Parent();
-  var a:unmanaged Parent = alloc;
+  var a = new unmanaged Parent();
   var a_:borrowed Child = a;
 }
 proc main() {

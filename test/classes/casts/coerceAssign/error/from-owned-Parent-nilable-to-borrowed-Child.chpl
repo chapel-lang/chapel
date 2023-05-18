@@ -4,9 +4,8 @@ class Parent {}
 class Child : Parent {}
 proc foo() {
   // coercing from owned Parent? to borrowed Child
-  var allocFrom = new owned Parent();
+  var a = new owned Parent?();
   var allocTo = new owned Child();
-  var a:owned Parent? = allocFrom;
   var a_:borrowed Child = allocTo;
   a_ = a;
 }

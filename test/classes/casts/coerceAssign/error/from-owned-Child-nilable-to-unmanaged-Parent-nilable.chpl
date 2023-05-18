@@ -4,10 +4,8 @@ class Parent {}
 class Child : Parent {}
 proc foo() {
   // coercing from owned Child? to unmanaged Parent?
-  var allocFrom = new owned Child();
-  var allocTo = new unmanaged Parent();
-  var a:owned Child? = allocFrom;
-  var a_:unmanaged Parent? = allocTo;
+  var a = new owned Child?();
+  var a_ = new unmanaged Parent?();
   a_ = a;
 }
 proc main() {

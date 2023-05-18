@@ -4,8 +4,7 @@ class Parent {}
 class Child : Parent {}
 proc foo() {
   // casting from owned A? to borrowed A
-  var alloc = new owned A();
-  var a:owned A? = alloc;
+  var a = new owned A?();
   var a_ = a:borrowed A;
 }
 proc main() {
