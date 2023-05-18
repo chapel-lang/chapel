@@ -11,8 +11,9 @@ proc getType(managment, cls) {
 }
 
 proc getAllocationType(managment, cls) {
-  var allocation = managment.strip("?");
+  var allocation = managment;
   if allocation == "borrowed" then allocation = "owned";
+  if allocation == "borrowed?" then allocation = "owned?";
 
   return getType(allocation, cls);
 }
@@ -95,6 +96,7 @@ proc generate(modName: string,
               allowedDowncast: set(2*string),
               writeEachTestCase) {
   
+  if FS.exists(modName) then FS.rmTree(modName);
   const (noerrorPath, errorPath) = generateDirectoryStructure(modName);
 
   proc writeTestCase(const ref allowList: set(2*string),
@@ -189,8 +191,13 @@ proc generateExplicitCasts() {
 
     chplLines.append("proc foo() {");
     chplLines.append("  // casting from %s to %s".format(fromType, toType));
-    chplLines.append("  var alloc = new %s();".format(allocFromType));
-    chplLines.append("  var a:%s = alloc;".format(fromType));
+    if allocFromType != fromType {
+      chplLines.append("  var alloc = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = alloc;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
     chplLines.append("  var a_ = a:%s;".format(toType));
     chplLines.append("}");
     return chplLines;
@@ -220,7 +227,7 @@ proc generateCoerceInitAndAssign() {
     allowed.add(("unmanaged", x));
   
   // coerce borrowed to ...
-  for x in ["borrowed", "unmanaged?", "borrowed?"] do
+  for x in ["borrowed", "borrowed?"] do
     allowed.add(("borrowed", x));
 
   // coerce owned? to ...
@@ -256,8 +263,13 @@ proc generateCoerceInitAndAssign() {
     var chplLines: list(string);
     chplLines.append("proc foo() {");
     chplLines.append("  // coercing from %s to %s".format(fromType, toType));
-    chplLines.append("  var alloc = new %s();".format(allocFromType));
-    chplLines.append("  var a:%s = alloc;".format(fromType));
+    if allocFromType != fromType {
+      chplLines.append("  var alloc = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = alloc;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
     chplLines.append("  var a_:%s = a;".format(toType));
     chplLines.append("}");
     return chplLines;
@@ -272,10 +284,20 @@ proc generateCoerceInitAndAssign() {
     var chplLines: list(string);
     chplLines.append("proc foo() {");
     chplLines.append("  // coercing from %s to %s".format(fromType, toType));
-    chplLines.append("  var allocFrom = new %s();".format(allocFromType));
-    chplLines.append("  var allocTo = new %s();".format(allocToType));
-    chplLines.append("  var a:%s = allocFrom;".format(fromType));
-    chplLines.append("  var a_:%s = allocTo;".format(toType));
+    if allocFromType != fromType {
+      chplLines.append("  var allocFrom = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = allocFrom;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
+    if allocToType != toType {
+      chplLines.append("  var allocTo = new %s();".format(allocToType));
+      chplLines.append("  var a_:%s = allocTo;".format(toType));
+    }
+    else {
+      chplLines.append("  var a_ = new %s();".format(toType));
+    }
     chplLines.append("  a_ = a;");
     chplLines.append("}");
     return chplLines;
