@@ -171,6 +171,8 @@ void* chpl_memmove(void* dest, const void* src, size_t num)
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
     return chpl_gpu_memmove(dest, src, num);
 #else
+// GCC 13.1 compplains about the following without this pragma...
+#pragma GCC diagnostic ignored "-Wstringop-overread"
     return memmove(dest, src, num);
 #endif
 }
