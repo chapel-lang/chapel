@@ -276,6 +276,40 @@ module M {
   guard.clearErrors();
 }
 
+static void testIndex(std::string domainType,
+                      std::string expectedType) {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = DomainModule + ArrayModule +
+R"""(
+module M {
+  use ChapelDomain;
+  use ChapelArray;
+
+  var d : )""" + domainType + R"""(;
+  type t = )""" + expectedType + R"""(;
+  type i = index(d);
+
+  param equal = i == t;
+}
+)""";
+
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(program));
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  const Module* m = vec[2];
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  findVarType(m, rr, "d").dump();
+  findVarType(m, rr, "t").dump();
+  findVarType(m, rr, "i").dump();
+
+  assert(findVarType(m, rr, "equal").isParamTrue());
+}
+
 int main() {
   testRectangular("domain(1)", 1, "int", false);
   testRectangular("domain(2)", 2, "int", false);
@@ -291,6 +325,13 @@ int main() {
   testBadPass("domain(1)", "domain(2)");
   testBadPass("domain(int)", "domain(string)");
   testBadPass("domain(1)", "domain(int)");
+
+  testIndex("domain(1)", "int");
+  testIndex("domain(2)", "2*int");
+  testIndex("domain(1, bool)", "bool");
+  testIndex("domain(2, bool)", "2*bool");
+  testIndex("domain(int)", "int");
+  testIndex("domain(string)", "string");
 
   return 0;
 }

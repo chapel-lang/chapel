@@ -104,6 +104,12 @@ class DomainType final : public CompositeType {
     return kind_;
   }
 
+  // Returns the integer representing the rank of this domain. This is more
+  // general than `rank`, because `rank` returns the substitution
+  // corresponding to the rank, which only exists for rectangular domains.
+  // This method, however, works on associative domains, too.
+  int rankInt() const;
+
   const QualifiedType& rank() const {
     CHPL_ASSERT(kind_ == Kind::Rectangular);
     return subs_.at(ID(UniqueString(), 0, 0));
