@@ -84,7 +84,7 @@ static hipModule_t *chpl_gpu_rocm_modules;
 static int *deviceClockRates;
 
 
-static void chpl_gpu_ensure_context() {
+static void chpl_gpu_ensure_context(void) {
   // Some hipCtx* functions are deprecated so we're using `hipSetDevice`
   // in its place
   ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
@@ -157,7 +157,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
 static bool chpl_gpu_device_alloc = false;
 
-void chpl_gpu_impl_support_module_finished_initializing() {
+void chpl_gpu_impl_support_module_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
 }
 
