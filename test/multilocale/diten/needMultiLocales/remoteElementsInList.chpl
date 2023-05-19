@@ -2,10 +2,10 @@ use LinkedLists;
 
 proc main {
   var lst: LinkedList(int);
-  lst.pushBack(1);
+  lst.append(1);
   on Locales(1) do
-    lst.pushBack(2);
-  lst.pushBack(3);
+    lst.append(2);
+  lst.append(3);
 
   lst.remove(2);
   writeln(lst);
