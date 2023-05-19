@@ -67,10 +67,10 @@ do
       #exit 1
       ;;
     esac
-    rm -rF
-    cd "$DIR"
     rm -Rf chapel
     rm -Rf image.sif
+    cd "$DIR"
+   
     ((i++))
   fi
 done
