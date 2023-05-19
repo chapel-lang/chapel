@@ -3,8 +3,6 @@ use ecgIO, Math;
 config const nLevels = 3,
              plotResults = false;
 
-const SERIALIZE_THRESHOLD = 1024;
-
 proc main() {
     // read sample data
     //  (data pulled from: http://paulbourke.net/dataformats/holter/)
@@ -38,8 +36,10 @@ proc hwRec(const signal: [], ref output: [], fmax: int, fstop: int) {
         // store the final layer of high-pass coefficients
         output[0..<fmax] = signal;
     } else {
-        if signal.size > SERIALIZE_THRESHOLD {
-            // compute the next two layers in parallel
+        // serialize this block if we've already created enough tasks to occupy all cores
+        serial (here.runningTasks() >= here.maxTaskPar) {
+
+            // spawn two tasks to compute the next layer of filtrations in parallel
             cobegin {
                 // compute and store the low-pass coefficients
                 output[fmax/2..<fmax] = downSample2(haarLP(signal));
@@ -47,12 +47,7 @@ proc hwRec(const signal: [], ref output: [], fmax: int, fstop: int) {
                 // compute the high-pass coefficients and start the next layer of filtering
                 hwRec(downSample2(haarHP(signal)), output, fmax/2, fstop);
             }
-        } else {
-            // if the problem size is too small, do the same computation sequentially instead
-            output[fmax/2..<fmax] = downSample2(haarLP(signal));
-            hwRec(downSample2(haarHP(signal)), output, fmax/2, fstop);
         }
-
     }
 }
 
