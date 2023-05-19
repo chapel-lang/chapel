@@ -138,12 +138,6 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 }
 
-static bool chpl_gpu_device_alloc = true;
-
-void chpl_gpu_impl_support_module_finished_initializing(void) {
-  chpl_gpu_device_alloc = true;
-}
-
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
 }

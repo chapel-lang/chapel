@@ -26,7 +26,6 @@ extern "C" {
 #endif
 
 void chpl_gpu_impl_init(int* num_devices);
-void chpl_gpu_impl_support_module_finished_initializing(void);
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  const char* name,

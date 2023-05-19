@@ -155,12 +155,6 @@ void chpl_gpu_impl_init(int* num_devices) {
   }
 }
 
-static bool chpl_gpu_device_alloc = false;
-
-void chpl_gpu_impl_support_module_finished_initializing(void) {
-  chpl_gpu_device_alloc = true;
-}
-
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   hipPointerAttribute_t res;
   hipError_t ret_val = hipPointerGetAttributes(&res, (hipDeviceptr_t)ptr);

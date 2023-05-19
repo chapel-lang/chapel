@@ -39,8 +39,6 @@ void chpl_gpu_impl_init(int* num_devices) {
   *num_devices = 1;
 }
 
-void chpl_gpu_impl_support_module_finished_initializing(void) { }
-
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return false;  // this OK? maybe we want assertions to go through?
 }
