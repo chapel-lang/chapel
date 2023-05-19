@@ -599,22 +599,22 @@ module ChapelRange {
 
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   @chpldoc.nodoc
-  @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
+  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' instead")
   proc isBoundedRange(r)           param do
     return false;
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
      ``false`` otherwise. */
-  @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
+  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' and check the range's '.bounds' field directly instead")
   proc isBoundedRange(r: range(?)) param do
     return isBoundedRange(r.bounds);
 
   @chpldoc.nodoc
-  @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
+  @deprecated("'isBoundedRange()' is deprecated; compare against 'boundKind.both' directly instead")
   proc isBoundedRange(param B: boundKind) param do
     return B == boundKind.both;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
-  @deprecated("'range.isBounded()' is deprecated; check 'boundedType' directly")
+  @deprecated("'range.isBounded()' is deprecated; check the range's '.bounds' field directly, comparing to 'boundKind.both'")
   proc range.isBounded() param do
     return bounds == boundKind.both;
 
