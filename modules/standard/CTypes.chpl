@@ -1009,8 +1009,8 @@ module CTypes {
     :returns: a c_ptr(eltType) to allocated memory
    */
   @unstable("'allocate' returning a c_ptr is unstable, and may be renamed or moved")
-  inline proc allocate(type eltType, size: c_size_t, clear: bool,
-      alignment: c_size_t) : c_ptr(eltType) {
+  inline proc allocate(type eltType, size: c_size_t, clear: bool = false,
+      alignment: c_size_t = 0) : c_ptr(eltType) {
     const alloc_size = size * c_sizeof(eltType);
     const aligned : bool = (alignment != 0);
     var ptr : c_ptr(eltType) = nil;
