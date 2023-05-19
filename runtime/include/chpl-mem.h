@@ -167,12 +167,7 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 static inline
 void* chpl_memmove(void* dest, const void* src, size_t num)
 {
-  // check for GPU_RUNTIME_CPU is needed to break recursion
-//#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
-    //return chpl_gpu_memmove(dest, src, num);
-//#else
-    return memmove(dest, src, num);
-//#endif
+  return memmove(dest, src, num);
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

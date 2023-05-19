@@ -214,7 +214,7 @@
 //
 
 //#define PRINT_WIDEN_SUMMARY
-#define PRINT_WIDE_ANALYSIS
+//#define PRINT_WIDE_ANALYSIS
 
 #ifdef PRINT_WIDE_ANALYSIS
   #define DEBUG_PRINTF(...) printf(__VA_ARGS__)
