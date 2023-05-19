@@ -1008,7 +1008,7 @@ module CTypes {
                     is invalid and taken to mean default alignment.
     :returns: a c_ptr(eltType) to allocated memory
    */
-  @unstable("'allocate' returning a c_ptr is unstable, and may be renamed or moved")
+  @unstable("'allocate' is unstable, and may be renamed or moved")
   inline proc allocate(type eltType, size: c_size_t, clear: bool = false,
       alignment: c_size_t = 0) : c_ptr(eltType) {
     const alloc_size = size * c_sizeof(eltType);
@@ -1063,7 +1063,7 @@ module CTypes {
     :arg data: the c_ptr to memory that was allocated. Note that both
                `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
-  @unstable("'deallocate' corresponding to 'allocate' returning a c_ptr is unstable, and may be renamed or moved")
+  @unstable("'deallocate' is unstable, and may be renamed or moved")
   inline proc deallocate(data: c_void_ptr) {
     chpl_here_free(data);
   }
