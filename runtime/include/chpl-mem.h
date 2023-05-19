@@ -171,9 +171,22 @@ void* chpl_memmove(void* dest, const void* src, size_t num)
 #if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
     return chpl_gpu_memmove(dest, src, num);
 #else
-// GCC 13.1 compplains about the following without this pragma...
+    // GCC 13.1 compplains about the following memmove() without this
+    // pragma to squash it...
+    //
+    // I was unable to convince myself the warning was reasonable or
+    // that GCC could even determine that the memmove() was
+    // unreasonable from the callchains I inspected, so chose to
+    // squash it and rely on our asan testing to keep us safe.  It may
+    // be that if we followed this path for a chpl_comm_get() that was
+    // local rather than remote we'd have a problem, and that our
+    // logic is guarding us in a way that GCC can't determine?
+    //
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overread"
     return memmove(dest, src, num);
+#pragma GCC diagnostic pop
+
 #endif
 }
 
