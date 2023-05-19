@@ -4,5 +4,5 @@ var elems = new map(int, real);
 
 elems[5] += 1;
 
-writeln("indices is: ", elems.keysToArray());
+writeln("indices are: ", elems.keysToArray());
 writeln("elems is: ", elems.valuesToArray());
