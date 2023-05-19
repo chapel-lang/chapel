@@ -1013,7 +1013,7 @@ module CTypes {
       alignment: c_size_t = 0) : c_ptr(eltType) {
     const alloc_size = size * c_sizeof(eltType);
     const aligned : bool = (alignment != 0);
-    var ptr : c_ptr(eltType) = nil;
+    var ptr : c_void_ptr = nil;
 
     // pick runtime allocation function based on requested zeroing + alignment
     if (!aligned) {
@@ -1055,7 +1055,7 @@ module CTypes {
       }
     }
 
-    return ptr;
+    return ptr : c_ptr(eltType);
   }
 
   /* Free memory that was allocated with :proc:`allocate`.
