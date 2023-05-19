@@ -995,6 +995,79 @@ module CTypes {
     compilerError("Cannot call c_offsetof on type that is not a record");
   }
 
+  /* Allocate memory.
+
+     This uses the Chapel allocator. Memory allocated with this function should
+     eventually be freed with :proc:`deallocate`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :arg clear: whether to initialize all bits of allocated memory to 0
+    :arg alignment: Memory alignment of the allocation, which must be a power of
+                    two and a multiple of `c_sizeof(c_void_ptr)`. Alignment of 0
+                    is invalid and taken to mean default alignment.
+    :returns: a c_ptr(eltType) to allocated memory
+   */
+  @unstable("'allocate' returning a c_ptr is unstable, and may be renamed or moved")
+  inline proc allocate(type eltType, size: c_size_t, clear: bool,
+      alignment: c_size_t) : c_ptr(eltType) {
+    const alloc_size = size * c_sizeof(eltType);
+    const aligned : bool = (alignment != 0);
+    var ptr : c_ptr(eltType) = nil;
+
+    // pick runtime allocation function based on requested zeroing + alignment
+    if (!aligned) {
+      if (clear) {
+        // normal calloc
+        ptr = chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS);
+      } else {
+        // normal malloc
+        ptr = chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS);
+      }
+    } else {
+      // check alignment, size restriction
+      // Alignment of 0 is our sentinel value for no specified alignment,
+      // so no need to check for it.
+      if boundsChecking {
+        use Math;
+        var one:c_size_t = 1;
+        // Round the alignment up to the nearest power of 2
+        var p = log2(alignment); // power of 2 rounded down
+        // compute alignment rounded up
+        if (one << p) < alignment then
+          p += 1;
+        assert(alignment <= (one << p));
+        if alignment != (one << p) then
+          halt("c_aligned_alloc called with non-power-of-2 alignment ", alignment);
+        if alignment < c_sizeof(c_void_ptr) then
+          halt("c_aligned_alloc called with alignment smaller than pointer size");
+      }
+
+      if (clear) {
+        // there is no aligned calloc; have to aligned_alloc + memset to 0
+        ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+                                       offset_ARRAY_ELEMENTS);
+        c_memset(ptr, 0, alloc_size);
+      } else {
+        // normal aligned_alloc
+        ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+                                       offset_ARRAY_ELEMENTS);
+      }
+    }
+
+    return ptr;
+  }
+
+  /* Free memory that was allocated with :proc:`allocate`.
+
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+    */
+  @unstable("'deallocate' corresponding to 'allocate' returning a c_ptr is unstable, and may be renamed or moved")
+  inline proc deallocate(data: c_void_ptr) {
+    chpl_here_free(data);
+  }
+
   /*
     Allocate memory and initialize all bits to 0. Note that this simply zeros
     memory, it does not call Chapel initializers (it is meant for primitive
