@@ -1,0 +1,2 @@
+ctypes_allocate.chpl:1: warning: 'allocate' is unstable, and may be renamed or moved
+ctypes_allocate.chpl:2: warning: 'deallocate' is unstable, and may be renamed or moved
