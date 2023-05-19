@@ -48,6 +48,7 @@ ERROR_CLASS(IncompatibleIfBranches, const uast::Conditional*, types::QualifiedTy
 ERROR_CLASS(IncompatibleKinds, types::QualifiedType::Kind, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(IncompatibleRangeBounds, const uast::Range*, types::QualifiedType, types::QualifiedType)
 ERROR_CLASS(IncompatibleTypeAndInit, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*, const types::Type*, const types::Type*)
+ERROR_CLASS(InvalidIndexCall, const uast::FnCall*, types::QualifiedType)
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
 ERROR_CLASS(InvalidSuper, const uast::Identifier*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)

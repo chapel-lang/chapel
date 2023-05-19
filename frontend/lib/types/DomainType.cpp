@@ -106,6 +106,16 @@ DomainType::getAssociativeType(Context* context,
                        DomainType::Kind::Associative).get();
 }
 
+int DomainType::rankInt() const {
+  if (kind_ == Kind::Rectangular) {
+    return rank().param()->toIntParam()->value();
+  } else if (kind_ == Kind::Associative) {
+    return 1;
+  }
+
+  // TODO: what's the rank of a generic domain type?
+  return 0;
+}
 
 } // end namespace types
 } // end namespace chpl

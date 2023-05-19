@@ -84,6 +84,20 @@ module ChapelArray {
 
   // TODO: 'this' accessor can't work because accessing 'this.domain' in the
   // formal's type-expr is resolved as an ErroneousType
+
+  proc chpl__buildIndexType(param rank: int, type idxType) type where rank == 1 {
+    return idxType;
+  }
+
+  proc chpl__buildIndexType(param rank: int, type idxType) type where __primitive(">", rank, 1) {
+    return rank*idxType;
+  }
+
+  proc chpl__buildIndexType(param rank: int) type do
+    return chpl__buildIndexType(rank, int);
+
+  proc chpl__buildIndexType(d: domain) type do
+    return chpl__buildIndexType(d.rank, d.idxType);
 }
 )""";
 
