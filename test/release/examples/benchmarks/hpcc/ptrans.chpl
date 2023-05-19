@@ -7,9 +7,10 @@
 
 
 //
-// Use standard Chapel modules for Block-Cyclic distributions and timings
+// Use standard Chapel modules for Block-Cyclic distributions, timings and math
+// functions that aren't included by default
 //
-use BlockCycDist, Time;
+use BlockCycDist, Time, Math;
 
 
 //

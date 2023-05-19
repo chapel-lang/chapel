@@ -29,7 +29,7 @@
 
 static inline void __gnix_init_block(gnix_bitmap_block_t *block)
 {
-	fastlock_init(&block->lock);
+	ofi_spin_init(&block->lock);
 	block->val = 0llu;
 }
 
@@ -38,9 +38,9 @@ static inline void __gnix_set_block(gnix_bitmap_t *bitmap, int index,
 {
 	gnix_bitmap_block_t *block = &bitmap->arr[index];
 
-	fastlock_acquire(&block->lock);
+	ofi_spin_lock(&block->lock);
 	block->val = value;
-	fastlock_release(&block->lock);
+	ofi_spin_unlock(&block->lock);
 }
 
 static inline uint64_t __gnix_load_block(gnix_bitmap_t *bitmap, int index)
@@ -48,9 +48,9 @@ static inline uint64_t __gnix_load_block(gnix_bitmap_t *bitmap, int index)
 	gnix_bitmap_block_t *block = &bitmap->arr[index];
 	uint64_t ret;
 
-	fastlock_acquire(&block->lock);
+	ofi_spin_lock(&block->lock);
 	ret = block->val;
-	fastlock_release(&block->lock);
+	ofi_spin_unlock(&block->lock);
 
 	return ret;
 }
@@ -60,10 +60,10 @@ static inline uint64_t __gnix_set_bit(gnix_bitmap_t *bitmap, int bit)
 	gnix_bitmap_block_t *block = &bitmap->arr[GNIX_BUCKET_INDEX(bit)];
 	uint64_t ret;
 
-	fastlock_acquire(&block->lock);
+	ofi_spin_lock(&block->lock);
 	ret = block->val;
 	block->val |= GNIX_BIT_VALUE(bit);
-	fastlock_release(&block->lock);
+	ofi_spin_unlock(&block->lock);
 
 	return ret;
 }
@@ -73,10 +73,10 @@ static inline uint64_t __gnix_clear_bit(gnix_bitmap_t *bitmap, int bit)
 	gnix_bitmap_block_t *block = &bitmap->arr[GNIX_BUCKET_INDEX(bit)];
 	uint64_t ret;
 
-	fastlock_acquire(&block->lock);
+	ofi_spin_lock(&block->lock);
 	ret = block->val;
 	block->val &= ~GNIX_BIT_VALUE(bit);
-	fastlock_release(&block->lock);
+	ofi_spin_unlock(&block->lock);
 
 	return ret;
 }
@@ -86,9 +86,9 @@ static inline int __gnix_test_bit(gnix_bitmap_t *bitmap, int bit)
 	gnix_bitmap_block_t *block = &bitmap->arr[GNIX_BUCKET_INDEX(bit)];
 	int ret;
 
-	fastlock_acquire(&block->lock);
+	ofi_spin_lock(&block->lock);
 	ret = (block->val & GNIX_BIT_VALUE(bit)) != 0;
-	fastlock_release(&block->lock);
+	ofi_spin_unlock(&block->lock);
 
 	return ret;
 }

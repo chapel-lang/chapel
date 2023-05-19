@@ -2,7 +2,7 @@
 // Measures both array iteration and array access time
 //
 
-use Memory.Diagnostics, Time, Types;
+use MemDiagnostics, Time, Types;
 
 config const zipIter = false;
 config const memFraction = 1000;

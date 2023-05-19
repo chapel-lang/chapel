@@ -656,20 +656,61 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       // check LVT for value
       GenRet got = info->lvt->getValue(cname);
       got.chplType = typeInfo();
-      // extern C arrays might be declared with type c_ptr(eltType)
-      // (which is a lie but works OK in C). In that event, generate
-      // a pointer to the first element when the variable is used.
-      if (got.val &&
-          hasFlag(FLAG_EXTERN) &&
-          getValType()->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-          info->lvt->isCArray(cname)) {
-        llvm::Type* eltTy = nullptr;
-#if HAVE_LLVM_VER >= 130
-        eltTy = llvm::cast<llvm::PointerType>(got.val->getType()->getScalarType())->getPointerElementType();
-#endif
+      Type* valType = getValType();
+      if (got.val && hasFlag(FLAG_EXTERN)) {
+        // extern C arrays might be declared with type c_ptr(eltType)
+        // (which is a lie but works OK in C). In that event, generate
+        // a pointer to the first element when the variable is used.
+        bool cArrayLie = valType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+                         info->lvt->isCArray(cname);
+        if (cArrayLie) {
+          auto global = llvm::cast<llvm::GlobalValue>(got.val);
+          INT_ASSERT(global);
+          llvm::Type* gepTy = global->getValueType();
+          got.val = info->irBuilder->CreateStructGEP(gepTy, got.val, 0);
+          got.isLVPtr = GEN_VAL;
+        }
+        // check for extern global variables where there is a different
+        // type provided by clang
+        clang::TypeDecl* unusedCType = nullptr;
+        clang::ValueDecl* cValue = nullptr;
+        const char* cCastToType = nullptr;
+        astlocT cLoc(0, nullptr);
+        Type* chapelType = got.chplType;
+        info->lvt->getCDecl(cname, &unusedCType, &cValue, &cCastToType, &cLoc);
 
-        got.val = info->irBuilder->CreateStructGEP(eltTy, got.val, 0);
-        got.isLVPtr = GEN_VAL;
+        llvm::Type* genCType = nullptr;
+        llvm::Type* genChplType = nullptr;
+        if (cCastToType) {
+          genCType = getTypeLLVM(cCastToType);
+        } else if (cValue) {
+          genCType = codegenCType(cValue->getType());
+        }
+
+        {
+          GenRet tmp = chapelType->codegen();
+          genChplType = tmp.type;
+        }
+
+        if (cValue && llvm::isa<clang::EnumConstantDecl>(cValue)) {
+          // if there is a mismatch for an enum constant, don't worry about it
+          // c enum types are always 'int' but code might assume it is smaller
+          // TODO: should we check this?
+        } else if (cArrayLie) {
+          // ignore mismatch for c arrays due to identifying it as the
+          // same as c_ptr.
+        } else if (genCType && genChplType && genCType != genChplType) {
+          USR_FATAL_CONT(this, "type conflict for extern variable '%s'",
+                         name);
+          if (cCastToType) {
+            USR_PRINT(cLoc, "the C type is '%s'", cCastToType);
+          } else {
+            clang::QualType qt = cValue->getType();
+            USR_PRINT(cLoc, "the C type is '%s'", qt.getAsString().c_str());
+          }
+          USR_PRINT(this, "the Chapel type is '%s'", toString(chapelType));
+          USR_STOP();
+        }
       }
       if (got.val) {
         return got;
@@ -685,23 +726,16 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           return ret;
         }
         llvm::Value *constString = codegenImmediateLLVM(immediate);
+        auto globalConstString = llvm::cast<llvm::GlobalValue>(constString);
+        llvm::Type* gepTy = globalConstString->getValueType();
         llvm::GlobalVariable *globalValue =
           llvm::cast<llvm::GlobalVariable>(
               info->module->getOrInsertGlobal
                   (name, info->irBuilder->getInt8PtrTy()));
         globalValue->setConstant(true);
-#if HAVE_LLVM_VER >= 130
-        llvm::Type* ty = llvm::cast<llvm::PointerType>(
-          constString->getType()->getScalarType())->getPointerElementType();
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               info->irBuilder->CreateConstInBoundsGEP2_32(
-              ty, constString, 0, 0)));
-#else
-        globalValue->setInitializer(llvm::cast<llvm::Constant>(
-              info->irBuilder->CreateConstInBoundsGEP2_32(
-              NULL, constString, 0, 0)));
-
-#endif
+                gepTy, globalConstString, 0, 0)));
         ret.val = globalValue;
         ret.isLVPtr = GEN_PTR;
       } else {
@@ -1023,6 +1057,7 @@ transformTypeForPointer(Type* type) {
     return referenced->codegen().c + " *";
 
   } else if (type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
+    // TODO: add const qualifier for const pointers?
     Type* pointedTo = getDataClassType(type->symbol)->typeInfo();
     return pointedTo->codegen().c + " *";
   }
@@ -1402,7 +1437,7 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    llvmImplType = type;
+    if (llvmImplType == nullptr) llvmImplType = type;
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
@@ -2285,6 +2320,21 @@ void FnSymbol::codegenPrototype() {
           case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
             break;
+          case GpuCodegenType::GPU_CG_CPU:
+            break;
+        }
+      } else {
+        // This is a function called from a GPU kernel
+        // hipcc marks such functions as hidden visibility
+        // so we do the same here.
+        switch (getGpuCodegenType()) {
+          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+            break; // no visibility change for NVIDIA
+          case GpuCodegenType::GPU_CG_AMD_HIP:
+            func->setVisibility(llvm::Function::HiddenVisibility);
+            break;
+          case GpuCodegenType::GPU_CG_CPU:
+            break;
         }
       }
     }
@@ -2654,13 +2704,8 @@ void FnSymbol::codegenDef() {
               // consume the next LLVM argument
               llvm::Value* val = &*ai++;
               // store it into the addr
-#if HAVE_LLVM_VER >= 130
-              llvm::Type* eltTy = llvm::cast<llvm::PointerType>(storeAdr->getType()->getScalarType())->getPointerElementType();
               llvm::Value* eltPtr =
-                irBuilder->CreateStructGEP(eltTy, storeAdr, i);
-#else
-              llvm::Value* eltPtr = irBuilder->CreateStructGEP(storeAdr, i);
-#endif
+                irBuilder->CreateStructGEP(sTy, storeAdr, i);
               irBuilder->CreateStore(val, eltPtr);
             }
 

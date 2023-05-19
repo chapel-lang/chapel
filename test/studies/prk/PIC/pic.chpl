@@ -6,6 +6,7 @@
 
 require "random_draw.h", "random_draw.c";
 use Time, CTypes;
+import Math.pi;
 
 // use random_draw library from PRK repo
 extern proc LCG_init();
@@ -196,6 +197,7 @@ proc initializeGeometric() {
 }
 
 proc initializeSinusoidal() {
+  use Math;
 
   const step = pi/L;
 

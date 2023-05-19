@@ -75,7 +75,7 @@ module VisualDebug
    This code is O(log n), n the number of Locales.
 */
 
-pragma "no doc"
+@chpldoc.nodoc
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
 private iter hc_id2com ( id: int, off: int ) {

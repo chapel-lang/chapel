@@ -300,6 +300,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     // Nothing
   } else if (blockingAst->isForall()) {
     blockingName = "'forall' statement";
+  } else if (blockingAst->isForeach()) {
+    blockingName = "'foreach' statement";
   } else if (blockingAst->isCoforall()) {
     blockingName = "'coforall' statement";
   } else if (blockingAst->isOn()) {
@@ -342,9 +344,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
                  blockingName, " is not allowed.");
       wr.code(invalidAst, { invalidAst });
       wr.note(locationOnly(blockingAst), "cannot '", astType, "' "
-              "out of ", blockingNameArticle, " ", blockingName, ".");
-      // TODO: Re-enable when code printing doesn't dump whole code blocks
-      // wr.code(blockingAst, { blockingAst });
+              "out of ", blockingNameArticle, " ", blockingName, ":");
+      wr.codeForLocation(blockingAst);
     }
 
   } else if (!blockingAst || blockingAst->isFunction()) {
@@ -367,19 +368,16 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     if (blockingAst && allowingAst) {
       CHPL_ASSERT(invalidAst->isBreak() || invalidAst->isContinue());
       wr.note(locationOnly(blockingAst), "cannot '", astType, "' "
-              "out of ", blockingNameArticle, " ", blockingName, ".");
-      // TODO: Re-enable when code printing doesn't dump whole code blocks
-      // wr.code(blockingAst, { blockingAst });
+              "out of ", blockingNameArticle, " ", blockingName, ":");
+      wr.codeForLocation(blockingAst);
     }
   } else {
     // any piece of control flow banned within a particular language feature
     wr.heading(kind_, type_, invalidAst, "'", astType, "' is not allowed in ",
                blockingNameArticle, " ", blockingName, ".");
     wr.code(invalidAst, { invalidAst });
-
-    // TODO: Re-enable when code printing doesn't dump whole code blocks
-    // wr.message("The ", blockingName, " is here:");
-    // wr.code(blockingAst);
+    wr.message("The relevant ", blockingName, " is here:");
+    wr.codeForLocation(blockingAst);
   }
 }
 

@@ -1,37 +1,37 @@
 module Foo {
-  pragma "no doc"
+  @chpldoc.nodoc
   config var blah: int; // No comment, should have nothing printed out
 
   /* This config var has a comment before it. */
-  pragma "no doc"
+  @chpldoc.nodoc
   config var blah2: int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
     /* This config var has a comment after the pragma */
   config var blah3: int;
 
   config var blah4: int; // Should be printed, but without comment
 
   /* This type should not be doc'd. */
-  pragma "no doc"
+  @chpldoc.nodoc
   type myint = int(64);
 
   /* This external type should not be doc'd. */
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type exT = 2*real(64);
 
   /* This opaque external type should not be doc'd. */
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type MyExT;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc a () {  }
 
   /* This function has a comment before it. */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc b () {  }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* This function has a comment after the pragma. */
   proc c () {  }
 
@@ -39,13 +39,13 @@ module Foo {
     // Should be printed, but without comment
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class alsoIgnoreMe {
     type t;
     var b: t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
     /* This class has a comment after the pragma */
   class alsoIgnoreMe2 {
     type t;
@@ -53,7 +53,7 @@ module Foo {
   }
 
   /* This class has a comment before the pragma */
-  pragma "no doc"
+  @chpldoc.nodoc
   class alsoIgnoreMe3 {
     type t;
     var b: t;
@@ -62,14 +62,14 @@ module Foo {
   class bar {
     // No class comment.  Should not grab previous class comment.
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var ignoreMe: bool;
 
     /* This field has a comment before it */
-    pragma "no doc"
+    @chpldoc.nodoc
     var ignoreMe2: bool;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* This field has a comment after the pragma */
     var ignoreMe3: bool;
 
@@ -78,7 +78,7 @@ module Foo {
   }
 
   /* This is an undocumented module. */
-  pragma "no doc"
+  @chpldoc.nodoc
   module invisible {
 
     /* This class is undocumented, since its module is undocumented. */
@@ -86,7 +86,7 @@ module Foo {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module toBeIgnored {
 
   class otherwiseSeen {

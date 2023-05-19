@@ -36,10 +36,10 @@ module Map {
 
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
     var lock$ = new _lockType();
 
@@ -95,19 +95,19 @@ module Map {
     */
     const resizeThreshold = defaultHashTableResizeThreshold;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var table: chpl__hashtable(keyType, valType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
         _lock$.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
         _lock$.unlock();
@@ -293,7 +293,7 @@ module Map {
     }
 
     /* As above, but the parSafe lock must be held on entry */
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _size {
       return table.tableNumFullSlots;
     }
@@ -365,7 +365,7 @@ module Map {
 
       :arg updater: A class or record used to update the value at `i`
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :return: What the updater returns
     */
@@ -390,7 +390,7 @@ module Map {
       return updater(key, val);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _warnForParSafeIndexing() {
       if parSafe then
         compilerError('cannot index into a map initialized with ',
@@ -398,18 +398,26 @@ module Map {
     }
 
     /*
-      Get the value mapped to the given key, or add the mapping if key does not
-      exist.
+      If the key exists in the map, get a reference to the value mapped
+      to the given key. If the key does not exist in the map, the value
+      type is default initializable, and this proc is called in an attempt
+      to modify the map, then the mapping is added and a reference to
+      that value is returned. If the key does not exist in the map and
+      either the value type is not default initializable or this proc
+      is called without attempting to modify the map, then an error will
+      be thrown.
 
       :arg k: The key to access
       :type k: keyType
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map, `valType` is not
+              default initializable, and proc is called in an attempt
+              to modify the map.
 
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref throws
-    where isDefaultInitializable(valType) {
+      where isDefaultInitializable(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -419,26 +427,25 @@ module Map {
         var val: valType;
         table.fillSlot(slot, k, val);
       }
-      return table.table[slot].val;
-    }
-
-    pragma "no doc"
-    proc const this(k: keyType) const throws
-      where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k:string);
-      const result = table.table[slot].val;
+      ref result = table.table[slot].val;
       return result;
     }
 
-    pragma "no doc"
-    proc const this(k: keyType) const ref throws
-      where !isNonNilableClass(valType) {
+    proc ref this(k: keyType) ref throws {
+      _warnForParSafeIndexing();
+
+      _enter(); defer _leave();
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        throw new KeyNotFoundError(k:string);
+      }
+      ref result = table.table[slot].val;
+      return result;
+    }
+
+    @chpldoc.nodoc
+    proc const this(k: keyType) const ref throws {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -447,23 +454,6 @@ module Map {
         throw new KeyNotFoundError(k:string);
       const ref result = table.table[slot].val;
       return result;
-    }
-
-    pragma "no doc"
-    proc const this(k: keyType) throws
-      where isNonNilableClass(valType) {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        throw new KeyNotFoundError(k:string);
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
@@ -505,7 +495,7 @@ module Map {
 
       :arg k: The key to lookup in the map
 
-      :throws: `KeyNotFoundError` if `k` not in map
+      :throws KeyNotFoundError: if `k` not in map
 
       :returns: A copy of the value at position `k`
      */
@@ -642,7 +632,7 @@ module Map {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter values() const where isNonNilableClass(valType) {
       try! {
         foreach slot in table.allSlots() {
@@ -662,19 +652,45 @@ module Map {
       :arg ch: A channel to read from.
     */
     proc readThis(ch: fileReader) throws {
-      _readWriteHelper(ch);
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+      if isJson then
+        _readJson(ch);
+      else
+        _readWriteHelper(ch);
+    }
+
+    @chpldoc.nodoc
+    proc _readJson(ch: fileReader) throws {
+      _enter(); defer _leave();
+      var first = true;
+
+      ch._readLiteral("{");
+
+      while !ch.matchLiteral("}") {
+        if first {
+          first = false;
+        } else {
+          ch._readLiteral(",");
+        }
+        var k : keyType;
+        ch.readf("%jt", k);
+        ch._readLiteral(":");
+        var v : valType;
+        ch.readf("%jt", v);
+        add(k, v);
+      }
     }
 
     //
     // TODO: rewrite to use formatter interface
     //
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type keyType, type valType, r: fileReader) {
       this.init(keyType, valType, parSafe);
       readThis(r);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     @unstable("'Map.parSafe' is unstable")
     proc init(type keyType, type valType, param parSafe, r: fileReader) {
       this.init(keyType, valType, parSafe);
@@ -691,10 +707,40 @@ module Map {
       :arg ch: A channel to write to.
     */
     proc writeThis(ch: fileWriter) throws {
-      _readWriteHelper(ch);
+      const isJson = ch.styleElement(QIO_STYLE_ELEMENT_AGGREGATE) == QIO_AGGREGATE_FORMAT_JSON;
+      if isJson then
+        _writeJson(ch);
+      else
+        _readWriteHelper(ch);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
+    proc _writeJson(ch: fileWriter) throws {
+      _enter(); defer _leave();
+      var first = true;
+
+      ch._writeLiteral("{");
+
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) {
+          if first {
+            first = false;
+          } else {
+            ch._writeLiteral(", ");
+          }
+          ref tabEntry = table.table[slot];
+          ref key = tabEntry.key;
+          ref val = tabEntry.val;
+          ch.writef("%jt", key);
+          ch._writeLiteral(": ");
+          ch.writef("%jt", val);
+        }
+      }
+
+      ch._writeLiteral("}");
+    }
+
+    @chpldoc.nodoc
     proc _readWriteHelper(ch) throws {
       _enter(); defer _leave();
       var first = true;
@@ -893,7 +939,7 @@ module Map {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator map.:(x: map(?k1, ?v1, ?p1), type t: map(?k2, ?v2, ?p2)) {
     // TODO: Allow coercion between element types? If we do then init=
     // should also be changed accordingly.

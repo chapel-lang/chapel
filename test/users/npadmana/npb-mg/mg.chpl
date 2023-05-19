@@ -6,7 +6,7 @@
 //   -- use the Stencil distribution
 //   -- NOTE : We will make a number of optimizations assuming that the third dimension is
 //             fully local. TODO : This should be enforced in the dmapped statement itself.
-use Time;
+use Time, Math;
 use StencilDist;
 
 // Definitions of NPB parameters etc

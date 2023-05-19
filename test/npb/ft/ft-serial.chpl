@@ -1,6 +1,6 @@
 // NAS FT - Initial port to Chapel based on ZPL
 
-use BitOps, Time;
+use BitOps, Time, Math;
 
 config const
   verbose         = true,
@@ -122,7 +122,7 @@ var u : [0..nz-1] complex;
 
 proc fft_init() {
   var t : real, ti : real;
-  var m = popcount((nz-1):uint);
+  var m = popCount((nz-1):uint);
   var ku = 2;
   var ln = 1;
   u(0) = m+0i;
@@ -167,7 +167,7 @@ proc cffts1(dir, n, X1, X2, ny, ny1, x, y) {
   for j in DXYZ.dim(1) {
     for kk in DXYZ.dim(2) by ny {
       [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] x(i1,i3-kk) = X1(i1,j,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
       [(i1,_,i3) in {0..n-1,j..j,kk..kk+ny-1}] X2(i1,j,i3) = x(i1,i3-kk);
     }
   }
@@ -177,7 +177,7 @@ proc cffts2(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ.dim(0) {
     for kk in DXYZ.dim(2) by ny {
       [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] x(i2,i3-kk) = X1(i,i2,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
       [(_,i2,i3) in {i..i,0..n-1,kk..kk+ny-1}] X2(i,i2,i3) = x(i2,i3-kk);
     }
   }
@@ -187,7 +187,7 @@ proc cffts3(dir, n, X1, X2, ny, ny1, x, y) {
   for i in DXYZ.dim(0) {
     for jj in DXYZ.dim(1) by ny {
       [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] x(i3,i2-jj) = X1(i,i2,i3);
-      cfftz(dir, popcount((n-1):uint), n, ny, ny1, x, y);
+      cfftz(dir, popCount((n-1):uint), n, ny, ny1, x, y);
       [(_,i2,i3) in {i..i,jj..jj+ny-1,0..n-1}] X2(i,i2,i3) = x(i3,i2-jj);
     }
   }

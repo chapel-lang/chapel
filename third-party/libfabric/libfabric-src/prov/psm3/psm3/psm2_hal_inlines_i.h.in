@@ -50,9 +50,30 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+#ifndef _PSM2_HAL_INLINES_I_H_
+#define _PSM2_HAL_INLINES_I_H_
 
-#if PSMI_HAL_INST_CNT == 1
+#include "psm2_hal_inlines_d.h" // get PSMI_HAL_INST_CNT
 
-#include "psm_hal_@PSM_HAL_INST@/psm_hal_inline_i.h"
+// some PSM offline log analysis tools use this header (via psm2_hal.h)
+// but don't need/want the HAL inline functions
+#ifndef PSM_TOOL
+
+#if PSMI_HAL_INST_CNT == 1 && ! defined(PSM_DEBUG)
+// Predeclare all the functions as inline. Helps to confirm implementation
+// matches expected API, especially for functions only using DISPATCH macro.
+#define PSMI_HAL_INLINE inline
+#define PSMI_HAL_CAT_INL_SYM(KERNEL) psm3_hfp_@PSM3_HAL_INST@_##KERNEL
+#include "psm2_hal_inline_t.h"
+// pull in inline functions for the single HAL
+#include "hal_@PSM3_HAL_INST@/@PSM3_HAL_INST@_hal_inline_i.h"
+
+#else
+// The HAL will be declaring it's own non-inline functions in it's
+// own .c file.  Only need the PSMI_HAL_INLINE macro here
+#define PSMI_HAL_INLINE /* nothing */
 
 #endif
+#endif /* PSM_TOOL */
+
+#endif /* _PSM2_HAL_INLINES_I_H_ */

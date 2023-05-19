@@ -1,3 +1,5 @@
+use Math;
+
 proc testTypes(x: complex(?w)) {
   const res1 = abs(x);
   assert(res1.type == real(w/2));

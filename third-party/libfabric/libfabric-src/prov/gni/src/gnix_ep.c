@@ -76,7 +76,7 @@ int _gnix_ep_int_tx_pool_grow(struct gnix_fid_ep *ep)
 	struct gnix_fid_mem_desc *md = NULL;
 	struct gnix_int_tx_buf *tx_buf_list;
 	struct gnix_int_tx_ptrs *tx_ptrs;
-	
+
 	assert(ep);
 
 	if (ep->int_tx_pool.nbufs >= GNIX_INT_TX_POOL_COUNT) {
@@ -116,7 +116,7 @@ int _gnix_ep_int_tx_pool_grow(struct gnix_fid_ep *ep)
 
 	md = container_of(auto_mr, struct gnix_fid_mem_desc, mr_fid);
 
-	fastlock_acquire(&ep->int_tx_pool.lock);
+	ofi_spin_lock(&ep->int_tx_pool.lock);
 
 	for (i = 0; i < GNIX_INT_TX_POOL_SIZE; i++) {
 		GNIX_DEBUG(FI_LOG_EP_DATA,
@@ -134,7 +134,7 @@ int _gnix_ep_int_tx_pool_grow(struct gnix_fid_ep *ep)
 
 	ep->int_tx_pool.nbufs++;
 
-	fastlock_release(&ep->int_tx_pool.lock);
+	ofi_spin_unlock(&ep->int_tx_pool.lock);
 
 	return FI_SUCCESS;
 
@@ -157,7 +157,7 @@ int _gnix_ep_int_tx_pool_init(struct gnix_fid_ep *ep)
 	ep->int_tx_pool.nbufs = 0;
 	slist_init(&ep->int_tx_pool.sl);
 	slist_init(&ep->int_tx_pool.bl);
-	fastlock_init(&ep->int_tx_pool.lock);
+	ofi_spin_init(&ep->int_tx_pool.lock);
 
 	ret = _gnix_ep_int_tx_pool_grow(ep);
 	if (ret != FI_SUCCESS)
@@ -179,7 +179,7 @@ void _gnix_ep_int_tx_pool_fini(struct gnix_fid_ep *ep)
 	if (ep->int_tx_pool.enabled == false)
 		return;
 
-	fastlock_acquire(&ep->int_tx_pool.lock);
+	ofi_spin_lock(&ep->int_tx_pool.lock);
 
 	while (!slist_empty(&ep->int_tx_pool.bl)) {
 		e = slist_remove_head(&ep->int_tx_pool.bl);
@@ -208,7 +208,7 @@ void _gnix_ep_int_tx_pool_fini(struct gnix_fid_ep *ep)
 
 	ep->int_tx_pool.enabled = false;
 
-	fastlock_release(&ep->int_tx_pool.lock);
+	ofi_spin_unlock(&ep->int_tx_pool.lock);
 }
 
 static int __fr_freelist_init(struct gnix_fid_ep *ep)
@@ -2173,7 +2173,7 @@ static int _gnix_ep_nic_init(struct gnix_fid_domain *domain,
 				  ep->src_addr.gnix_addr.cdm_id);
 			}
 	} else {
-		fastlock_acquire(&domain->cm_nic_lock);
+		ofi_spin_lock(&domain->cm_nic_lock);
 
 		/* Allocate a domain CM NIC, if needed. */
 		if (domain->cm_nic == NULL) {
@@ -2191,7 +2191,7 @@ static int _gnix_ep_nic_init(struct gnix_fid_domain *domain,
 				GNIX_WARN(FI_LOG_EP_CTRL,
 					  "_gnix_cm_nic_alloc returned %s\n",
 					  fi_strerror(-ret));
-				fastlock_release(&domain->cm_nic_lock);
+				ofi_spin_unlock(&domain->cm_nic_lock);
 				return ret;
 			}
 
@@ -2222,7 +2222,7 @@ static int _gnix_ep_nic_init(struct gnix_fid_domain *domain,
 					GNIX_WARN(FI_LOG_EP_CTRL,
 					    "_gnix_nic_alloc call returned %d\n",
 					     ret);
-					fastlock_release(&domain->cm_nic_lock);
+					ofi_spin_unlock(&domain->cm_nic_lock);
 					return ret;
 				}
 
@@ -2232,7 +2232,7 @@ static int _gnix_ep_nic_init(struct gnix_fid_domain *domain,
 			}
 		}
 
-		fastlock_release(&domain->cm_nic_lock);
+		ofi_spin_unlock(&domain->cm_nic_lock);
 
 		ep->src_addr.gnix_addr.device_addr =
 			ep->cm_nic->my_name.gnix_addr.device_addr;
@@ -2341,7 +2341,7 @@ DIRECT_FN int gnix_ep_open(struct fid_domain *domain, struct fi_info *info,
 	ep_priv->domain = domain_priv;
 	_gnix_ref_init(&ep_priv->ref_cnt, 1, __ep_destruct);
 	ep_priv->min_multi_recv = GNIX_OPT_MIN_MULTI_RECV_DEFAULT;
-	fastlock_init(&ep_priv->vc_lock);
+	ofi_spin_init(&ep_priv->vc_lock);
 	ep_priv->progress_fn = NULL;
 	ep_priv->rx_progress_fn = NULL;
 	ep_priv->tx_enabled = false;
@@ -2592,7 +2592,7 @@ int _gnix_ep_alloc(struct fid_domain *domain, struct fi_info *info,
 		 * to reduce demand on Aries hw resources.
 		 */
 
-		fastlock_acquire(&domain_priv->cm_nic_lock);
+		ofi_spin_lock(&domain_priv->cm_nic_lock);
 		if (domain_priv->cm_nic == NULL) {
 			ret = _gnix_cm_nic_alloc(domain_priv, info,
 						 cdm_id,
@@ -2602,7 +2602,7 @@ int _gnix_ep_alloc(struct fid_domain *domain, struct fi_info *info,
 				GNIX_WARN(FI_LOG_EP_CTRL,
 					"_gnix_cm_nic_alloc returned %s\n",
 					fi_strerror(-ret));
-				fastlock_release(
+				ofi_spin_unlock(
 					 &domain_priv->cm_nic_lock);
 				goto err;
 			}
@@ -2614,7 +2614,7 @@ int _gnix_ep_alloc(struct fid_domain *domain, struct fi_info *info,
 			_gnix_ref_get(ep_priv->cm_nic);
 		}
 
-		fastlock_release(&domain_priv->cm_nic_lock);
+		ofi_spin_unlock(&domain_priv->cm_nic_lock);
 
 	}
 
@@ -2647,7 +2647,7 @@ int _gnix_ep_alloc(struct fid_domain *domain, struct fi_info *info,
 		goto err;
 	}
 
-	fastlock_init(&ep_priv->vc_lock);
+	ofi_spin_init(&ep_priv->vc_lock);
 
 	ep_priv->progress_fn = NULL;
 	ep_priv->rx_progress_fn = NULL;

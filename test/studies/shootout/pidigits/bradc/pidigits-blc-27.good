@@ -1,0 +1,4 @@
+pidigits-blc.chpl:25: warning: bigint.divQR method is deprecated - please use the standalone function divQR
+3141592653	:10
+5897932384	:20
+6264338   	:27

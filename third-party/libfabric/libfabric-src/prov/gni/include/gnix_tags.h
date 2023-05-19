@@ -129,20 +129,20 @@
  *
  * On receipt of a message:
  *
- * fastlock_acquire(&ep->tag_lock);
+ * ofi_spin_lock(&ep->tag_lock);
  * req = _gnix_remove_by_tag(&ep->posted_recvs, msg->tag, 0);
  * if (!req)
  *     _gnix_insert_by_tag(&ep->unexpected_recvs, msg->tag, msg->req);
- * fastlock_release(&ep->tag_lock);
+ * ofi_spin_unlock(&ep->tag_lock);
  *
  * On post of receive:
  *
- * fastlock_acquire(&ep->tag_lock);
+ * ofi_spin_lock(&ep->tag_lock);
  * tag_req = _gnix_remove_by_tag(&ep->unexpected_recvs,
  *           req->tag, req->ignore);
  * if (!tag_req)
  *     _gnix_insert_by_tag(&ep->posted_recvs, tag, req);
- * fastlock_release(&ep->tag_lock);
+ * ofi_spin_unlock(&ep->tag_lock);
  *
  */
 

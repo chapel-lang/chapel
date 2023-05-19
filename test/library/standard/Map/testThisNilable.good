@@ -1,0 +1,12 @@
+{1: {i = 1}}
+{i = 1}
+shared C?
+{1: {i = 2}}
+{i = 2}
+shared C?
+{1: {i = 1}}
+{i = 1}
+owned C?
+{1: {i = 2}}
+{i = 2}
+owned C?

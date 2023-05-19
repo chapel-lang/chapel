@@ -5,15 +5,14 @@ const targetLocale = Locales[numLocales-1];
 
 var chplStr = "A Chapel string";
 on targetLocale {
-  // there should be 2 allocations, 2 frees
+  
+  var localChplStr = "A local Chapel string";
   writeln("Initialize from string");
-  var sNew = createStringWithNewBuffer(chplStr);
-  var sBorrowed = createStringWithBorrowedBuffer(sNew);
-  var sNewFromNew = createStringWithNewBuffer(sNew);
+  var sBorrowedFromRemote = string.createBorrowingBuffer(chplStr);
+  var sBorrowedFromLocal = string.createBorrowingBuffer(localChplStr);
 
-  writeln(sNew);
-  writeln(sBorrowed);
-  writeln(sNewFromNew);
+  writeln(sBorrowedFromRemote);
+  writeln(sBorrowedFromLocal);
 }
 
 writeln();
@@ -28,9 +27,9 @@ var cStr = cPtrTmp:c_string;
   // there should be 1 allocation 1 free
   writeln("Initialize from c_string");
   try! {
-    var sNew = createStringWithNewBuffer(cStr);
-    var sBorrowed = createStringWithBorrowedBuffer(cStr);
-    var sOwned = createStringWithOwnedBuffer(cStr);
+    var sNew = string.createCopyingBuffer(cStr);
+    var sBorrowed = string.createBorrowingBuffer(cStr);
+    var sOwned = string.createAdoptingBuffer(cStr);
     /*var sOwned = new string(cStr, isowned=true, needToCopy=false);*/
 
     writeln(sNew);
@@ -51,9 +50,9 @@ cPtr[3] = 0:uint(8);
   writeln("Initialize from c_ptr(uint(8))");
 
   try! {
-    var sNew = createStringWithNewBuffer(cPtr, length=3, size=4);
-    var sBorrowed = createStringWithBorrowedBuffer(cPtr, length=3, size=4);
-    var sOwned = createStringWithOwnedBuffer(cPtr, length=3, size=4);
+    var sNew = string.createCopyingBuffer(cPtr, length=3, size=4);
+    var sBorrowed = string.createBorrowingBuffer(cPtr, length=3, size=4);
+    var sOwned = string.createAdoptingBuffer(cPtr, length=3, size=4);
 
     writeln(sNew);
     writeln(sBorrowed);
@@ -79,9 +78,9 @@ cCharPtr[3] = 0:uint(8);
   writeln("Initialize from c_ptr(c_char)");
 
   try! {
-    var sNew = createStringWithNewBuffer(cCharPtr, length=3, size=4);
-    var sBorrowed = createStringWithBorrowedBuffer(cCharPtr, length=3, size=4);
-    var sOwned = createStringWithOwnedBuffer(cCharPtr, length=3, size=4);
+    var sNew = string.createCopyingBuffer(cCharPtr, length=3, size=4);
+    var sBorrowed = string.createBorrowingBuffer(cCharPtr, length=3, size=4);
+    var sOwned = string.createAdoptingBuffer(cCharPtr, length=3, size=4);
 
     writeln(sNew);
     writeln(sBorrowed);

@@ -911,6 +911,17 @@ static Symbol* substitutionForField(Symbol* field, SymbolMap& subs) {
   return retval;
 }
 
+// Deprecated by Vass in 1.31: given `range(boundedType=...),
+// redirect it to `range(bounds=...)`, with a deprecation warning.
+static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
+                                   Symbol*& field) {
+  if (!strcmp(ne->name, "boundedType") && at->symbol->hasFlag(FLAG_RANGE)) {
+    USR_WARN(ne,
+      "range.boundedType is deprecated; please use '.bounds' instead");
+    field = at->getField("bounds", false);
+  }
+}
+
 AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
 
   checkNumArgsErrors(this, call, callString);
@@ -932,6 +943,7 @@ AggregateType* AggregateType::generateType(CallExpr* call, const char* callStrin
     Expr* actual = call->get(i);
     if (NamedExpr* ne = toNamedExpr(actual)) {
       Symbol* field = getField(ne->name, false);
+      checkRangeDeprecations(this, ne, field); // may update 'field'
       if (field == NULL) {
         USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);
         USR_PRINT(call, "type specifier did not match: %s", typeSignature);
@@ -2895,9 +2907,7 @@ AggregateType* AggregateType::discoverParentAndCheck(Expr* storesName) {
     USR_FATAL(storesName, "Illegal super class");
   }
 
-  if (ts->hasFlag(FLAG_DEPRECATED)) {
-    ts->generateDeprecationWarning(storesName);
-  }
+  ts->maybeGenerateDeprecationWarning(storesName);
 
   AggregateType* pt = toAggregateType(ts->type);
 
@@ -3132,7 +3142,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     // scope-resolving an AggregateType that contains a reference to itself
     // (e.g. a linked-list with a 'next' node). The 'convert-uast' pass is
     // meant to manually insert these defPoints later.
-    if (!fDynoCompilerLibrary || isAlive(symbol->defPoint)) {
+    if (!fDynoScopeResolve || isAlive(symbol->defPoint)) {
       DefExpr* defDec = new DefExpr(tsDec);
       symbol->defPoint->insertAfter(defDec);
     }

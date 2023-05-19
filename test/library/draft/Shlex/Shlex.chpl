@@ -35,7 +35,7 @@ module Shlex {
     /* Parsing rules can be set as POSIX or non-POSIX. */
     var posix: bool;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var lineno: int;
 
     /* Make the program verbose. */
@@ -59,19 +59,19 @@ module Shlex {
     /* Characters that are considered as string quotes. */
     var quotes: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var escapse: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var escapsedquotes: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var state: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var token: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var tokindex: int;
 
     /* String of characters that will be considered as a punctuation.
@@ -79,10 +79,10 @@ module Shlex {
     */
     var punctuation_chars: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var pushback: list(string);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pushback_chars: list(string);
 
     /*
@@ -412,7 +412,7 @@ module Shlex {
     return lst;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _find_unsafe = try! new regex("[^\\w@%+=:,./-]");
 
   /*

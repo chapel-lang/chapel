@@ -625,6 +625,7 @@ void qbuffer_reposition(qbuffer_t* buf, int64_t new_offset_start)
   while( ! deque_it_equals(iter, end) ) {
     qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
     qbp->end_offset += diff;
+    deque_it_forward_one(sizeof(qbuffer_part_t), &iter);
   }
 }
 

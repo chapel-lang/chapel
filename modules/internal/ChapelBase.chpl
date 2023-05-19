@@ -23,15 +23,15 @@
 
 module ChapelBase {
 
-  pragma "no doc"
   pragma "locale private"
+  @chpldoc.nodoc
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
   use CTypes;
   use ChplConfig;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="the '_file' type is deprecated; please use 'CTypes.c_FILE' instead")
   type _file = c_FILE;
 
@@ -50,6 +50,12 @@ module ChapelBase {
   config param warnMaximalRange = false;    // Warns if integer rollover will cause
                                             // the iterator to yield zero times.
 
+  // Used to test "--warn-unstable-internal", ignore.
+  @chpldoc.nodoc
+  @unstable
+  var chpl_unstableInternalSymbolForTesting: int;
+  chpl_unstableInternalSymbolForTesting;
+
   pragma "object class"
   pragma "global type symbol"
   pragma "no object"
@@ -64,7 +70,7 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
-  // This is a compatability flag to maintain old behavior for applications
+  // This is a compatibility flag to maintain old behavior for applications
   // that rely on it (e.g., Arkouda). The tests for new features will run
   // with this set to FALSE. At a certain point the old behavior will be
   // deprecated, and this flag will be removed.
@@ -973,10 +979,10 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
@@ -1902,7 +1908,7 @@ module ChapelBase {
 
   /*
   inline proc chpl__tounmanaged(ref arg:Owned) {
-    return arg.release();
+    return owned.release(arg);
   }
   inline proc chpl__tounmanaged(arg) where arg:object {
     return arg;
@@ -2455,7 +2461,7 @@ module ChapelBase {
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
-      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      ch.writef("chpl_ModuleDeinit(%s)",string.createCopyingBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
@@ -2604,15 +2610,15 @@ module ChapelBase {
   }
 
   // c_fn_ptr stuff
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_fn_ptr.this(args...) {
     compilerError("Can't call a C function pointer within Chapel");
   }

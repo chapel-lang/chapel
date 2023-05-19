@@ -38,6 +38,7 @@
 #include <ofi_list.h>
 #include <ofi_atom.h>
 #include <ofi_bitmask.h>
+#include <ofi_util.h>
 
 #define OFI_WORLD_GROUP_ID 0
 #define OFI_MAX_GROUP_ID 256
@@ -59,27 +60,6 @@ static const char * const log_util_coll_op_type[] = {
 	[UTIL_COLL_BROADCAST_OP] = "COLL_BROADCAST",
 	[UTIL_COLL_ALLGATHER_OP] = "COLL_ALLGATHER",
 	[UTIL_COLL_SCATTER_OP] = "COLL_SCATTER"
-};
-
-struct util_coll_mc {
-	struct fid_mc		mc_fid;
-	struct fid_ep		*ep;
-	struct util_av_set	*av_set;
-	uint64_t		local_rank;
-	uint16_t		group_id;
-	uint16_t		seq;
-	ofi_atomic32_t		ref;
-};
-
-struct util_av_set {
-	struct fid_av_set	av_set_fid;
-	struct util_av		*av;
-	fi_addr_t		*fi_addr_array;
-	size_t			fi_addr_count;
-	uint64_t		flags;
-	struct util_coll_mc     coll_mc;
-	ofi_atomic32_t		ref;
-	fastlock_t		lock;
 };
 
 enum coll_work_type {
@@ -141,8 +121,8 @@ struct util_coll_reduce_item {
 
 struct join_data {
 	struct util_coll_mc *new_mc;
-	struct bitmask data;
-	struct bitmask tmp;
+	struct ofi_bitmask data;
+	struct ofi_bitmask tmp;
 };
 
 struct barrier_data {
@@ -168,8 +148,10 @@ struct util_coll_operation {
 	enum util_coll_op_type		type;
 	uint32_t			cid;
 	void				*context;
+	struct fid_ep			*ep;
 	struct util_coll_mc		*mc;
 	struct dlist_entry		work_queue;
+
 	union {
 		struct join_data	join;
 		struct barrier_data	barrier;
@@ -210,7 +192,7 @@ ssize_t ofi_ep_broadcast(struct fid_ep *ep, void *buf, size_t count, void *desc,
 			 fi_addr_t coll_addr, fi_addr_t root_addr,
 			 enum fi_datatype datatype, uint64_t flags, void *context);
 
-int ofi_coll_ep_progress(struct fid_ep *ep);
+ssize_t ofi_coll_ep_progress(struct fid_ep *ep);
 
 void ofi_coll_handle_xfer_comp(uint64_t tag, void *ctx);
 

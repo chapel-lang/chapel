@@ -1,5 +1,5 @@
 use GpuDiagnostics;
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 writeln("Start");
 

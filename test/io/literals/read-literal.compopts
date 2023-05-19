@@ -1,2 +1,2 @@
--suseStrings=true
--suseStrings=false
+-suseStrings=true -sfileOffsetWithoutLocking=true
+-suseStrings=false -sfileOffsetWithoutLocking=true

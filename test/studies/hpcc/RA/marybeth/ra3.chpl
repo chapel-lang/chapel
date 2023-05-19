@@ -2,6 +2,8 @@
  *
  *  This is the Chapel version of the MTA version + inner vector loop
  */  
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 

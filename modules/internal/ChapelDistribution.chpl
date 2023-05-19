@@ -111,18 +111,18 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
       compilerError("associative domains not supported by this distribution");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -193,34 +193,34 @@ module ChapelDistribution {
       compilerError("this domain type does not support '", op, "'");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiLow                   { dnsError("low"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiHigh                  { dnsError("high"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignedLow            { dnsError("alignedLow"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignedHigh           { dnsError("alignedHigh"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiFirst                 { dnsError("first"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiLast                  { dnsError("last"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiStride                { dnsError("stride"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignment             { dnsError("alignment"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
 
     // end of default overloads to provide clear compile-time error messages
@@ -494,6 +494,8 @@ module ChapelDistribution {
     // calculate new nnz and update it, (2) call this method, (3) add
     // indices
     inline proc _bulkGrow() {
+      use Math;
+
       const nnz  = getNNZ();
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
@@ -954,7 +956,7 @@ module ChapelDistribution {
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,stridable)) {
       halt("reallocating not supported for this array type");
     }
 
@@ -1180,13 +1182,13 @@ module ChapelDistribution {
         var eCast = eCastQ!;
 
         var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
+        var tmp:rank * range(idxType,boundKind.both,stridable);
 
         // set tmp = inds with some error checking
         for param i in 0..rank-1 {
           var from = inds(i);
           tmp(i) =
-            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
+            from.safeCast(range(idxType,boundKind.both,stridable));
         }
 
         eCast.dsiReallocate(tmp);

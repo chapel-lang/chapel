@@ -1,0 +1,15 @@
+depAtan2.chpl:10: warning: In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depAtan2.chpl:12: warning: In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depAtan2.chpl:14: warning: In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depAtan2.chpl:16: warning: In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depAtan2.chpl:18: warning: In an upcoming release 'atan2' will no longer be included by default, please 'use' or 'import' the Math module to call it
+a = -1e+08
+atan2(a) = -1.5708
+b = -1.0
+atan2(b) = -0.463648
+c = 0.0
+atan2(c) = 0.0
+d = 1.0
+atan2(d) = 0.463648
+e = 1e+08
+atan2(e) = 1.5708

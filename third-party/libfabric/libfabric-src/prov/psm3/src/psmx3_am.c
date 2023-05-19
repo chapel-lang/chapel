@@ -63,10 +63,10 @@ int psmx3_am_init(struct psmx3_trx_ctxt *trx_ctxt)
 	int err = 0;
 	uint32_t max_atomic_size;
 
-	FI_INFO(&psmx3_prov, FI_LOG_CORE, "epid %016lx\n", trx_ctxt->psm2_epid);
+	FI_INFO(&psmx3_prov, FI_LOG_CORE, "epid %s\n", psm3_epid_fmt(trx_ctxt->psm2_epid, 0));
 
 	if (!trx_ctxt->am_initialized) {
-		err = psm2_am_get_parameters(psm2_ep, &trx_ctxt->psm2_am_param,
+		err = psm3_am_get_parameters(psm2_ep, &trx_ctxt->psm2_am_param,
 					     sizeof(struct psm2_am_parameters),
 					     &size);
 		if (err)
@@ -85,7 +85,7 @@ int psmx3_am_init(struct psmx3_trx_ctxt *trx_ctxt)
 		psmx3_am_handlers[3] = psmx3_am_trx_ctxt_handler;
 		hctx[3] = trx_ctxt;
 
-		err = psm2_am_register_handlers_2(psm2_ep, psmx3_am_handlers,
+		err = psm3_am_register_handlers_2(psm2_ep, psmx3_am_handlers,
 						num_handlers, (void **)hctx, psmx3_am_handlers_idx);
 		if (err)
 			return psmx3_errno(err);

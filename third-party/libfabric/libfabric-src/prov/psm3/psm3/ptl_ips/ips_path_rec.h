@@ -58,7 +58,9 @@
 #define _IPS_PATH_REC_H_
 
 #include <search.h>
-
+#if defined(PSM_VERBS)
+#include <infiniband/verbs.h>
+#endif
 /* Default size of path record hash table */
 #define DF_PATH_REC_HASH_SIZE 2047
 
@@ -92,11 +94,37 @@ enum opa_mtu {
 	OPA_MTU_8192  = 6,
 	OPA_MTU_10240 = 7,
 	IBTA_MTU_MIN  = IBTA_MTU_256,
+	IBTA_MTU_MAX  = IBTA_MTU_4096,
 	OPA_MTU_MIN   = IBTA_MTU_256,
-	OPA_MTU_MAX   = IBTA_MTU_4096,
+	OPA_MTU_MAX   = OPA_MTU_10240,
 };
 
-typedef enum psm_ibv_rate opa_rate;
+// some older distros lack some of the newer speeds, so we need to
+// create our own enum comparable to ibv_rate
+enum psm3_ibv_rate {
+	PSM3_IBV_RATE_MAX	= 0,
+	PSM3_IBV_RATE_2_5_GBPS	= 2,
+	PSM3_IBV_RATE_5_GBPS	= 5,
+	PSM3_IBV_RATE_10_GBPS	= 3,
+	PSM3_IBV_RATE_20_GBPS	= 6,
+	PSM3_IBV_RATE_30_GBPS	= 4,
+	PSM3_IBV_RATE_40_GBPS	= 7,
+	PSM3_IBV_RATE_60_GBPS	= 8,
+	PSM3_IBV_RATE_80_GBPS	= 9,
+	PSM3_IBV_RATE_120_GBPS	= 10,
+	PSM3_IBV_RATE_14_GBPS	= 11,
+	PSM3_IBV_RATE_56_GBPS	= 12,
+	PSM3_IBV_RATE_112_GBPS	= 13,
+	PSM3_IBV_RATE_168_GBPS	= 14,
+	PSM3_IBV_RATE_25_GBPS	= 15,
+	PSM3_IBV_RATE_100_GBPS	= 16,
+	PSM3_IBV_RATE_200_GBPS	= 17,
+	PSM3_IBV_RATE_300_GBPS	= 18,
+	PSM3_IBV_RATE_28_GBPS	= 19,
+	PSM3_IBV_RATE_50_GBPS	= 20,
+	PSM3_IBV_RATE_400_GBPS	= 21,
+	PSM3_IBV_RATE_600_GBPS	= 22,
+};
 
 static inline int opa_mtu_enum_to_int(enum opa_mtu mtu)
 {
@@ -141,20 +169,43 @@ static inline enum opa_mtu opa_mtu_int_to_enum(int mtu)
 		return OPA_MTU_10240;
 }
 
+#ifdef PSM_VERBS
+static inline enum ibv_mtu ibv_mtu_int_to_enum(int mtu)
+{
+	// the PSM mtu may be slightly less than wire MTU to allow for
+	// PSM headers, so round up to nearest MTU enum
+	if (mtu <= 256)
+		return IBV_MTU_256;
+	else if (mtu <= 512)
+		return IBV_MTU_512;
+	else if (mtu <= 1024)
+		return IBV_MTU_1024;
+	else if (mtu <= 2048)
+		return IBV_MTU_2048;
+	else
+		return IBV_MTU_4096;
+}
+#endif
+
+/* Convert Timeout value from usec to Verbs/IB/RoCE
+ * timeout_mult where usec = 4.096usec * 2^timeout_mult
+ */
+uint8_t psm3_timeout_usec_to_mult(uint64_t timeout_us);
+
 /* This is same as ob_path_rec from ib_types.h. Listed here to be self
  * contained to minimize dependencies during build etc.
  */
 typedef struct _ibta_path_rec {
-	uint64_t service_id;	/* net order */
+	__be64 service_id;	/* net order */
 	uint8_t dgid[16];
 	uint8_t sgid[16];
-	uint16_t dlid;		/* net order */
-	uint16_t slid;		/* net order */
-	uint32_t hop_flow_raw;	/* net order */
+	__be16 dlid;		/* net order */
+	__be16 slid;		/* net order */
+	__be32 hop_flow_raw;	/* net order */
 	uint8_t tclass;
 	uint8_t num_path;
-	uint16_t pkey;		/* net order */
-	uint16_t qos_class_sl;	/* net order */
+	__be16 pkey;		/* net order */
+	__be16 qos_class_sl;	/* net order */
 	uint8_t mtu;		/* IBTA encoded */
 	uint8_t rate;		/* IBTA encoded */
 	uint8_t pkt_life;	/* IBTA encoded */
@@ -170,33 +221,49 @@ typedef struct _ibta_path_rec {
  */
 struct ips_proto;
 
+/* We manually align fields and pack since O(nodes) instances and
+ * union could force some undesired extra alignment bytes
+ */
 typedef struct ips_path_rec {
-	uint16_t pr_slid;
-	uint16_t pr_dlid;
-	uint16_t pr_mtu;	/* PSM payload in bytes, < Path's MTU */
+	__be16 pr_slid;
+	__be16 pr_dlid;
 	uint16_t pr_pkey;
 	uint8_t pr_sl;
-	uint8_t pr_static_rate;	// psm_ibv_rate enum
-	uint16_t pr_ip_hi;	// high 16 bits of IP address for ethernet
-						// and low 16 are in pr_dlid
-
-	// address handle for UD comms
-	struct ibv_ah *ah;
-#ifdef RNDV_MOD
-	psm2_rv_conn_t rv_conn;
-	uint8_t connecting;
+	uint8_t pr_static_rate;	// psm3_ibv_rate enum
+	__be64 pr_gid_hi;	// for ethernet, has IPv4 or IPv6
+	__be64 pr_gid_lo;	// addr in IPv6 style
+	uint32_t pr_mtu;	/* PSM payload in bytes, <= Path's MTU */
+				// TBD - could reduce to 2 bytes by storing
+				// as number of dwords instead of bytes
+	union {
+#ifdef PSM_VERBS
+		// each path_rec is shared for all remote processes on a
+		// a given node.  So this is a convenient place to have
+		// any shared addressing such as verbs AVs and RV connections
+		struct {
+			// 32b aligned at start of struct
+#ifdef PSM_HAVE_RNDV_MOD
+			uint8_t pr_connecting;
+			uint8_t pr_pad[3]; // for alignment
+			psm3_rv_conn_t pr_rv_conn;
+#else
+			uint8_t pr_pad[4]; // for alignment
 #endif
+			// address handle for UD comms
+			struct ibv_ah *pr_ah;
+		} PACK_SUFFIX verbs;
+#endif /* PSM_VERBS */
+#ifdef PSM_SOCKETS
+		struct {
+			// 32b aligned at start of struct
+			uint8_t pr_pad[4]; // for alignment
+		} sockets;
+#endif /* PSM_SOCKETS */
+	} PACK_SUFFIX;
+} PACK_SUFFIX ips_path_rec_t;
 
-} ips_path_rec_t;
+enum psm3_ibv_rate ips_link_speed_to_enum(uint64_t link_speed);
+enum psm3_ibv_rate min_rate(enum psm3_ibv_rate a, enum psm3_ibv_rate b);
+psm2_error_t psm3_ips_opp_init(struct ips_proto *proto);
 
-psm2_error_t ips_opp_init(struct ips_proto *proto);
-psm2_error_t ips_make_ah(psm2_ep_t ep, ips_path_rec_t *path_rec);
-psm2_error_t ips_path_rec_to_ah_attr(psm2_ep_t ep,
-                const ips_path_rec_t *path_rec, struct ibv_ah_attr *ah_attr);
-#ifdef RNDV_MOD
-void ips_path_rec_to_ib_user_path_rec(psm2_ep_t ep,
-		const ips_path_rec_t *path_rec, union ibv_gid *dgid,
-		struct ib_user_path_rec *path);
-#endif
-
-#endif
+#endif /* _IPS_PATH_REC_H_ */

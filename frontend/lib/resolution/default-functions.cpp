@@ -63,7 +63,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   if (!scopeForReceiverType) return false;
 
   // do not look outside the defining module
-  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
+  const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS | LOOKUP_METHODS;
 
   auto vec = lookupNameInScope(context, scopeForReceiverType,
                                /* receiver scopes */ {},
@@ -108,6 +108,30 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
                             UniqueString name, bool parenless) {
   if (isNameOfCompilerGeneratedMethod(name)) {
     if (!areOverloadsPresentInDefiningScope(context, type, name)) {
+      return true;
+    }
+  }
+
+  // Some basic getter methods for domain properties
+  //
+  // TODO: We can eventually replace these for calls on a domain *value* by
+  // looking at the property from the _instance implementation. But that won't
+  // work if we want to support these methods on a domain type-expression.
+  //
+  // TODO: calling these within a method doesn't work
+  if (type->isDomainType()) {
+    if (parenless) {
+      if (name == "idxType" || name == "rank" || name == "stridable" ||
+          name == "parSafe") {
+        return true;
+      }
+    } else {
+      if (name == "isRectangular" || name == "isAssociative") {
+        return true;
+      }
+    }
+  } else if (type->isArrayType()) {
+    if (name == "domain" || name == "eltType") {
       return true;
     }
   }
@@ -328,6 +352,79 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
   return ret;
 }
 
+static const TypedFnSignature*
+generateDomainMethod(Context* context,
+                     const DomainType* dt,
+                     UniqueString name) {
+  // Build a basic function signature for methods querying some aspect of
+  // a domain's type.
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, dt));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ dt->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, dt->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
+static const TypedFnSignature*
+generateArrayMethod(Context* context,
+                    const ArrayType* at,
+                    UniqueString name) {
+  // Build a basic function signature for methods on an array
+  // TODO: we should really have a way to just set the return type here
+  const TypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<QualifiedType> formalTypes;
+
+  formals.push_back(UntypedFnSignature::FormalDetail(USTR("this"), false, nullptr));
+  formalTypes.push_back(QualifiedType(QualifiedType::CONST_REF, at));
+
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ at->id(),
+                        /*name*/ name,
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*throws*/ false,
+                        /*idTag*/ parsing::idToTag(context, at->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(formals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  result = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                 TypedFnSignature::WHERE_NONE,
+                                 /* needsInstantiation */ false,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ nullptr,
+                                 /* formalsInstantiated */ Bitmap());
+
+  return result;
+}
+
 static const TypedFnSignature* const&
 fieldAccessorQuery(Context* context,
                    const types::CompositeType* compType,
@@ -407,6 +504,10 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateInitCopySignature(context, compType);
     } else if (name == USTR("deinit")) {
       result = generateDeinitSignature(context, compType);
+    } else if (auto domainType = type->toDomainType()) {
+      result = generateDomainMethod(context, domainType, name);
+    } else if (auto arrayType = type->toArrayType()) {
+      result = generateArrayMethod(context, arrayType, name);
     } else {
       CHPL_ASSERT(false && "Not implemented yet!");
     }

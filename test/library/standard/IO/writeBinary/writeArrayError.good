@@ -1,1 +1,0 @@
-caught: UnexpectedEofError: short read or write (Unable to write entire array of values in 'writeBinary')

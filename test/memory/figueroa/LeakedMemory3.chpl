@@ -1,7 +1,7 @@
 // find out how much memory is leaked when a slice
 // is passed in to another function
 
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 const N = 5;
 var A: [1..N] int;

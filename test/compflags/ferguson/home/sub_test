@@ -106,19 +106,21 @@ sub check {
     $ENV{"PATH"} = $ORIG_PATH;
   }
 
+  my ($gotallhome, $gothome, $gotallexe, $gotexe) = ("", "", "", "") ;
+
   #print "PATH is " . $ENV{"PATH"} . "\n";
   #print "RUNNING $exe --print-chpl-home\n";
   $got = `$exe --print-chpl-home 2>&1`;
   #print "GOT IS $got\n";
 
   my @lines = split('\n', $got);
-  my $prefix_line = "configured prefix";
-  my ($gothome, $gotexe) = ("", "") ;
-  #If we configured with a prefix, the --print-chpl-home output includes an extra line.
-  if (index($lines[-1] , $prefix_line) != -1) { #configured with prefix
-    ($gothome, $gotexe) = split('\t', $lines[-2]);
-  } else { #not configured with prefix
-    ($gothome, $gotexe) = split('\t', $lines[-1]);
+  $gothome = $lines[-1];  # use -1 rather than 0 to dodge warnings
+
+  if ($expectexe ne "") {
+      $gotallexe = `$exe --print-chpl-loc 2>&1`;
+      #print "[Success compiling --print-chpl-loc]\n";
+      my @lines = split('\n', $gotallexe);
+      $gotexe = $lines[-1];  # use -1 rather than 0 to dodge warnings
   }
   #print "[Success compiling --print-chpl-home]\n";
   if ($expecthome ne "") {

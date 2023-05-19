@@ -118,7 +118,7 @@ module DefaultRectangular {
     // So we don't have to copy it when a clone is requested.
     proc dsiClone() do return _to_unmanaged(this);
 
-    proc dsiAssign(other: unmanaged this.type) { }
+    proc dsiAssign(other: this.type) { }
 
     proc dsiEqualDMaps(d:unmanaged DefaultDist) param do return true;
     proc dsiEqualDMaps(d) param do return false;
@@ -154,7 +154,7 @@ module DefaultRectangular {
 
   class DefaultRectangularDom: BaseRectangularDom {
     var dist: unmanaged DefaultDist;
-    var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+    var ranges : rank*range(idxType,boundKind.both,stridable);
 
     override proc linksDistribution() param do return false;
     override proc dsiLinksDistribution() do     return false;
@@ -175,7 +175,7 @@ module DefaultRectangular {
       return dist;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _serialized_domain {
       param rank;
       type idxType;
@@ -1409,7 +1409,7 @@ module DefaultRectangular {
     // Reallocate the array to have space for elements specified by `bounds`
     pragma "ignore transfer errors"
     override proc dsiReallocate(bounds: rank*range(idxType,
-                                                   BoundedRangeType.bounded,
+                                                   boundKind.both,
                                                    stridable)) {
 
       // check to see whether this realloc is actually changing the

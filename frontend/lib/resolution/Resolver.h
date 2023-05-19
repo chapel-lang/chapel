@@ -226,6 +226,11 @@ struct Resolver {
                                        const types::Type* thisType);
 
 
+  /* Determine the method receiver,  which is a type under
+     full resolution, but only an ID under scope resolution.
+    */
+  bool getMethodReceiver(types::QualifiedType* outType = nullptr,
+                         ID* outId = nullptr);
   /* Compute the receiver scopes (when resolving a method)
      and return an empty vector if it is not applicable.
    */
@@ -235,6 +240,18 @@ struct Resolver {
      and return a type containing nullptr if it is not applicable.
    */
   types::QualifiedType methodReceiverType();
+
+  /* Given an identifier, check if this identifier could refer to a superclass,
+     as opposed to a variable of the name 'super'. If it can, sets
+     outType to the type of the parent class.
+   */
+  bool isPotentialSuper(const uast::Identifier* identifier,
+                        types::QualifiedType* outType = nullptr);
+  /* Given a type of a child / sub type, give type of the parent / super type.
+   */
+  types::QualifiedType getSuperType(Context* context,
+                                    const types::QualifiedType& sub,
+                                    const uast::Identifier* identForError);
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
@@ -286,6 +303,9 @@ struct Resolver {
                                                types::QualifiedType lhsType,
                                                types::QualifiedType rhsType);
 
+  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+                                            const types::CompositeType* ct);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
@@ -308,7 +328,9 @@ struct Resolver {
                                          const CallResolutionResult& c);
 
   // issue error for M.x where x is not found in a module M
-  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+  void issueErrorForFailedModuleDot(const uast::Dot* dot,
+                                    ID moduleId,
+                                    LookupConfig failedConfig);
 
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
@@ -464,6 +486,9 @@ struct Resolver {
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
+
+  bool enter(const uast::Domain* decl);
+  void exit(const uast::Domain* decl);
 
   // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);

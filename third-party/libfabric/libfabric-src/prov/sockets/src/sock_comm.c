@@ -83,7 +83,7 @@ ssize_t sock_comm_flush(struct sock_pe_entry *pe_entry)
 	if (ret1 > 0)
 		pe_entry->comm_buf.rcnt += ret1;
 
-	if (ret1 == xfer_len && xfer_len < len) {
+	if ((size_t) ret1 == xfer_len && xfer_len < len) {
 		ret2 = sock_comm_send_socket(pe_entry->conn, (char*)pe_entry->comm_buf.buf +
 					     (pe_entry->comm_buf.rcnt & pe_entry->comm_buf.size_mask),
 					     len - xfer_len);
@@ -152,7 +152,7 @@ static ssize_t sock_comm_recv_socket(struct sock_conn *conn,
 
 static void sock_comm_recv_buffer(struct sock_pe_entry *pe_entry)
 {
-	int ret;
+	ssize_t ret;
 	size_t max_read, avail;
 
 	avail = ofi_rbavail(&pe_entry->comm_buf);
@@ -209,7 +209,7 @@ ssize_t sock_comm_peek(struct sock_conn *conn, void *buf, size_t len)
 ssize_t sock_comm_discard(struct sock_pe_entry *pe_entry, size_t len)
 {
 	void *buf;
-	int ret;
+	ssize_t ret;
 
 	buf = malloc(len);
 	if (!buf)

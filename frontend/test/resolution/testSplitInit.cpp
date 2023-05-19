@@ -339,7 +339,7 @@ static void test11() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(cond: bool) {
+        proc test(cond: bool) throws {
           var x;
           if cond then
             throw nil;
@@ -1068,7 +1068,7 @@ static void test42() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test() {
+        proc test() throws {
           var x:int;
           try {
             x;
@@ -1260,7 +1260,7 @@ static void test50() {
 
         config var cond = false;
 
-        proc test(out x: int) {
+        proc test(out x: int) throws {
           if cond {
             throw nil;
           } else {
@@ -1280,7 +1280,7 @@ static void test51() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(out x: int) {
+        proc test(out x: int) throws {
           try {
             x = 5;
           } catch {
@@ -1301,7 +1301,7 @@ static void test52() {
           __primitive("=", lhs, rhs);
         }
 
-        proc test(out x: int) {
+        proc test(out x: int) throws {
           throw nil;
           x = 23;
         }
@@ -1321,7 +1321,7 @@ static void test53() {
 
         config var cond = false;
 
-        proc test() {
+        proc test() throws {
           var x: int;
           if cond {
             throw nil;

@@ -1,0 +1,3 @@
+lambdaCapturing.chpl:5: In function 'test':
+lambdaCapturing.chpl:6: error: cannot capture lambda because it refers to outer variables
+lambdaCapturing.chpl:6: note: such as 'k', here

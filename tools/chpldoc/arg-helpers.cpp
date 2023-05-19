@@ -18,10 +18,14 @@
  */
 
 #include "arg-helpers.h"
+
+#include "chpl/framework/Context.h"
 #include "chpl/util/filesystem.h"
 
 #include <iostream>
 #include <cstring>
+
+extern chpl::Context* gContext;
 
 bool developer = false;
 
@@ -31,6 +35,9 @@ bool startsWith(const char* str, const char* prefix) {
 }
 
 void clean_exit(int status) {
+  if (gContext) {
+    gContext->cleanupTmpDirIfNeeded();
+  }
   exit(status);
 }
 

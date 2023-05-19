@@ -1,7 +1,7 @@
 use DimensionalDist2D;
 use ReplicatedDim;
 use BlockCycDim;
-use Memory.Diagnostics, Time, Random;
+use MemDiagnostics, Time, Random;
 
 
 /////////// configuration ///////////

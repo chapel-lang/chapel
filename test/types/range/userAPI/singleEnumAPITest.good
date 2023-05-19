@@ -3,7 +3,7 @@ trivial enum range
 red..red
 idxType          = color
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
@@ -47,7 +47,7 @@ default trivial enum range
 red..<red
 idxType          = color
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
@@ -88,7 +88,7 @@ trivial strided enum range
 red..red
 idxType          = color
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
@@ -132,7 +132,7 @@ default trivial strided enum range
 red..<red
 idxType          = color
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
@@ -168,7 +168,7 @@ r[subr] == subr[r]= true
 r:string          = red..<red
 Copying...        = red..<red
 
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy

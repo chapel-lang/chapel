@@ -179,7 +179,10 @@ public:
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 
+  void                modRefsEnsure();
+  void                modRefsReplace(CallExpr* replacementRefs);
   void                modRefsAdd(ModuleSymbol* mod);
+  void                modRefsAdd(TemporaryConversionSymbol* mod);
   bool                modRefsRemove(ModuleSymbol* mod);
   void                modRefsClear();
 

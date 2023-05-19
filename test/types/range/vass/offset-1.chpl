@@ -7,13 +7,19 @@ proc writeme(r:range(?)) {
   }
 }
 
+proc myMod(x: int, y: int) {
+  var tmp = x%abs(y);
+  if tmp < 0 then tmp = tmp + abs(y);
+  return tmp;
+}
+
 proc test(r:range(?), offs:r.idxType) {
   writeme(r);
   const res = r.offset(offs);
   write("  offs ", offs, "  ");
   writeme(res);
-  const offs2 = if r.stridable then offs else 0;
-  if !res.aligned || res.alignment != r.first + offs2 then
+  const offs2 = if r.stridable then myMod((r.first + offs), r.stride) else 0;
+  if !res.aligned || res.alignment != offs2 then
     write(" ***ERROR***");
   writeln();
 }

@@ -22,11 +22,11 @@ module ByteBufferHelpers {
   private use ChapelStandard;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   type byteType = uint(8);
-  pragma "no doc"
+  @chpldoc.nodoc
   type bufferType = c_ptr(byteType);
-  pragma "no doc"
+  @chpldoc.nodoc
   type locIdType = chpl_nodeID.type;
 
   // Growth factor to use when extending the buffer for appends

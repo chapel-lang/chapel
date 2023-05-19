@@ -1,0 +1,2 @@
+reductionex_class_nofield.chpl:57: error: unresolved call 'owned Test.myhisto'
+reductionex_class_nofield.chpl:57: note: because no functions named myhisto found in scope

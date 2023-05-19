@@ -156,6 +156,7 @@ PRAGMA(CONST_DUE_TO_TASK_FORALL_INTENT, npr,
        ncm)
 PRAGMA(C_ARRAY, ypr, "c_array record", "marks c_array record")
 PRAGMA(C_PTR_CLASS, ypr, "c_ptr class", "marks c_ptr class")
+PRAGMA(C_PTRCONST_CLASS, ypr, "c_ptrConst class", "marks c_ptrConst class")
 PRAGMA(COPY_MUTATES, ypr,
        "copy mutates",
        "the initCopy function / copy initializer takes its argument by ref")
@@ -282,6 +283,7 @@ PRAGMA(IMPLICIT_ALIAS_FIELD, npr, "implicit alias field", ncm)
 PRAGMA(IMPLICIT_MODULE, npr, "implicit top-level module", ncm)
 PRAGMA(INCLUDED_MODULE, npr, "included sub-module", ncm)
 PRAGMA(INDEX_VAR, npr, "index var", ncm)
+PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)

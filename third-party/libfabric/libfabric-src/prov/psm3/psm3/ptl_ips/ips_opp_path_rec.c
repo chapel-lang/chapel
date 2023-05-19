@@ -58,10 +58,14 @@
 #include "ips_proto.h"
 #include <dlfcn.h>
 
-/* SLID and DLID are in network byte order */
+/* These functions interact with the OPP (Ofed Plus Plus) SA replica to
+ * scalably query IBTA Path Records for IB verbs and native OPA
+ * This is N/A to RoCE and UDP/TCP
+ */
+
 static psm2_error_t
 ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
-		     uint16_t slid, uint16_t dlid,
+		     __be16 slid, __be16 dlid,
 		     ips_path_rec_t **ppath_rec)
 {
 	psm2_error_t err = PSM2_OK;
@@ -71,7 +75,7 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 #endif
 	ips_path_rec_t *path_rec;
 	int opp_err;
-	ENTRY elid, *epath = NULL;
+	ENTRY elid = {}, *epath = NULL;
 	char eplid[128];
 	uint64_t timeout_ack_ms;
 
@@ -94,6 +98,11 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 	query.slid = slid;
 	query.dlid = dlid;
 
+	/* the eplid is simply an exact match search key, we don't worry
+	 * about slid, dlid and gid being big endian.  In fact on little
+	 * endian CPU, this will put low bits earlier in string and cause
+	 * quicker discovery of differences when doing strcmp to sort/search
+	 */
 	snprintf(eplid, sizeof(eplid), "%s_%x_%x",
 		 (type == IPS_PATH_LOW_PRIORITY) ? "LOW" : "HIGH",
 		 query.slid, query.dlid);
@@ -123,29 +132,23 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 #ifdef _HFI_DEBUGGING
 		opp_response_set = 1;
 #endif
-		// this should not happen since we are using a LID to LID query
-		// but at some point we need to figure out how to deal with
-		// virtualized IB environments where a GRH may be needed
-		// HOP Limit >1 indicates a global route with a GRH
-		if ((__be32_to_cpu(opp_response.hop_flow_raw) & 0xFF) > 1) {
-			_HFI_ERROR
-		    	("Global Routed Path Record not supported SLID 0x%d DLID 0x%x\n",
-				__be16_to_cpu(slid), __be16_to_cpu(dlid));
-			err = PSM2_EPID_PATH_RESOLUTION;
-			goto fail;
-		}
 		/* Create path record */
 		path_rec->pr_slid = opp_response.slid;
 		path_rec->pr_dlid = opp_response.dlid;
+			/* HAL may recompute pr_mtu */
 		path_rec->pr_mtu =
-		    min(opa_mtu_enum_to_int(opp_response.mtu & 0x3f)
-				- MAX_PSM_HEADER
-			, proto->epinfo.ep_mtu);
+		    min(opa_mtu_enum_to_int(opp_response.mtu & 0x3f),
+			proto->epinfo.ep_mtu);
 		path_rec->pr_pkey = ntohs(opp_response.pkey);
 		path_rec->pr_sl = ntohs(opp_response.qos_class_sl);
 		path_rec->pr_static_rate = opp_response.rate & 0x3f;
+		/* this function is N/A to RoCE.
+		 * We don't support routing for IB/OPA so set gid to 0
+		 * so verbs HAL can easily distinguish RoCE (gid!=0) vs IB/OPA.
+		 */
+		path_rec->pr_gid_hi = 0;
+		path_rec->pr_gid_lo = 0;
 
-		/* Setup CCA parameters for path */
 		if (path_rec->pr_sl > PSMI_SL_MAX) {
 			err = PSM2_INTERNAL_ERR;
 			goto fail;
@@ -160,7 +163,8 @@ ips_opp_get_path_rec(ips_path_type_t type, struct ips_proto *proto,
 				timeout_ack_ms);
 		if (proto->epinfo.ep_timeout_ack_max < timeout_ack_ms)
 			proto->epinfo.ep_timeout_ack_max = timeout_ack_ms;
-		err = ips_make_ah(proto->ep, path_rec);
+
+		err = psmi_hal_ips_path_rec_init(proto, path_rec, &opp_response);
 		if (err != PSM2_OK)
 			goto fail;
 
@@ -202,8 +206,8 @@ fail:
 
 static psm2_error_t
 ips_opp_path_rec(struct ips_proto *proto,
-		 uint16_t slid, uint16_t dlid,
-		 uint16_t ip_hi,	// unused here, but must match API signature
+		 __be16 slid, __be16 dlid,
+		 __be64 gid_hi, __be64 gid_lo,// unused here, but must match API signature
 		 unsigned long timeout, ips_path_grp_t **ppathgrp)
 {
 	psm2_error_t err = PSM2_OK;
@@ -212,7 +216,7 @@ ips_opp_path_rec(struct ips_proto *proto,
 	ips_path_rec_t *path;
 	ips_path_grp_t *pathgrp;
 	uint16_t path_slid, path_dlid;
-	ENTRY elid, *epath = NULL;
+	ENTRY elid = {}, *epath = NULL;
 	char eplid[128];
 
 	/*
@@ -281,6 +285,11 @@ ips_opp_path_rec(struct ips_proto *proto,
 	 */
 
 	/* Check if this path grp is already in hash table */
+	/* the eplid is simply an exact match search key, we don't worry
+	 * about slid, dlid and gid being big endian.  In fact on little
+	 * endian CPU, this will put low bits earlier in string and cause
+	 * quicker discovery of differences when doing strcmp to sort/search
+	 */
 	snprintf(eplid, sizeof(eplid), "%x_%x", slid, dlid);
 	elid.key = eplid;
 	hsearch_r(elid, FIND, &epath, &proto->ips_path_grp_hash);
@@ -349,7 +358,7 @@ ips_opp_path_rec(struct ips_proto *proto,
 	if (pathgrp->pg_num_paths[IPS_PATH_HIGH_PRIORITY] == 0) {
 		psmi_free(elid.key);
 		psmi_free(pathgrp);
-		err = psmi_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
+		err = psm3_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
 					"OFED Plus path lookup failed. Unable to resolve high priority network path for LID 0x%x <---> 0x%x. Is the SM running or service ID %"
 					PRIx64 " defined?", ntohs(slid),
 					ntohs(dlid),
@@ -399,7 +408,7 @@ retry_normal_path_res:
 	if (pathgrp->pg_num_paths[IPS_PATH_NORMAL_PRIORITY] == 0) {
 		psmi_free(elid.key);
 		psmi_free(pathgrp);
-		err = psmi_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
+		err = psm3_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
 					"OFED Plus path lookup failed. Unable to resolve normal priority network path for LID 0x%x <---> 0x%x. Is the SM running or service ID %"
 					PRIx64 " defined?", ntohs(slid),
 					ntohs(dlid),
@@ -442,7 +451,7 @@ retry_low_path_res:
 	if (pathgrp->pg_num_paths[IPS_PATH_LOW_PRIORITY] == 0) {
 		psmi_free(elid.key);
 		psmi_free(pathgrp);
-		err = psmi_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
+		err = psm3_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
 					"OFED Plus path lookup failed. Unable to resolve low priority network path for LID 0x%x <---> 0x%x. Is the SM running or service ID %"
 					PRIx64 " defined?", ntohs(slid),
 					ntohs(dlid),
@@ -452,10 +461,10 @@ retry_low_path_res:
 
 	if (proto->flags & IPS_PROTO_FLAG_PPOLICY_ADAPTIVE) {
 		pathgrp->pg_next_path[IPS_PATH_NORMAL_PRIORITY] =
-		    proto->epinfo.EP_HASH %
+		    proto->epinfo.ep_hash %
 		    pathgrp->pg_num_paths[IPS_PATH_NORMAL_PRIORITY];
 		pathgrp->pg_next_path[IPS_PATH_LOW_PRIORITY] =
-		    proto->epinfo.EP_HASH %
+		    proto->epinfo.ep_hash %
 		    pathgrp->pg_num_paths[IPS_PATH_LOW_PRIORITY];
 	}
 
@@ -484,10 +493,9 @@ static psm2_error_t ips_opp_fini(struct ips_proto *proto)
 	return err;
 }
 
-psm2_error_t ips_opp_init(struct ips_proto *proto)
+psm2_error_t psm3_ips_opp_init(struct ips_proto *proto)
 {
 	psm2_error_t err = PSM2_OK;
-	char hfiName[32];
 
 	proto->opp_lib = dlopen(DF_OPP_LIBRARY, RTLD_NOW);
 	if (!proto->opp_lib) {
@@ -516,7 +524,7 @@ psm2_error_t ips_opp_init(struct ips_proto *proto)
 	}
 
 	/* If PSM3_IDENTIFY is set display the OPP library location being used. */
-	if (psmi_parse_identify()) {
+	if (psm3_parse_identify()) {
 		Dl_info info_opp;
 		printf
 		    ("PSM3 path record queries using OFED Plus Plus (%s) from %s\n",
@@ -527,14 +535,11 @@ psm2_error_t ips_opp_init(struct ips_proto *proto)
 	}
 
 	/* Obtain handle to hfi (requires verbs on node) */
-	snprintf(hfiName, sizeof(hfiName), "%s_%d",
-		 psmi_hal_get_hfi_name(),
-		 proto->ep->unit_id);
-	proto->hndl = proto->opp_fn.op_path_find_hca(hfiName, &proto->device);
+	proto->hndl = proto->opp_fn.op_path_find_hca(proto->ep->dev_name, &proto->device);
 	if (!proto->hndl) {
 		_HFI_ERROR
 		    ("OPP: Unable to find NIC %s. Disabling OPP interface for path record queries.\n",
-		     hfiName);
+		     proto->ep->dev_name);
 		goto fail;
 	}
 
@@ -566,7 +571,7 @@ fail:
 	_HFI_ERROR("to start ibacm: service ibacm start\n");
 	_HFI_ERROR("or enable it at boot time: iefsconfig -E ibacm\n\n");
 
-	err = psmi_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
+	err = psm3_handle_error(NULL, PSM2_EPID_PATH_RESOLUTION,
 				"Unable to initialize OFED Plus library successfully.\n");
 
 	if (proto->opp_lib)

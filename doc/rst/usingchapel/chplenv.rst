@@ -294,7 +294,6 @@ CHPL_TARGET_CPU
         haswell         bdver3
         broadwell       bdver4
         skylake
-        knl
         =========== ================ ================
 
    These values are defined to be the same as in GCC 7:

@@ -190,8 +190,8 @@ static int psmx3_domain_close(fid_t fid)
 	if (domain->progress_thread_enabled)
 		psmx3_domain_stop_progress(domain);
 
-	fastlock_destroy(&domain->sep_lock);
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->sep_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 	rbtDelete(domain->mr_map);
 
 	psmx3_lock(&domain->fabric->domain_lock, 1);
@@ -259,10 +259,10 @@ static int psmx3_domain_init(struct psmx3_fid_domain *domain,
 {
 	int err;
 
-	err = fastlock_init(&domain->mr_lock);
+	err = ofi_spin_init(&domain->mr_lock);
 	if (err) {
 		FI_WARN(&psmx3_prov, FI_LOG_CORE,
-			"fastlock_init(mr_lock) returns %d\n", err);
+			"ofi_spin_init(mr_lock) returns %d\n", err);
 		goto err_out;
 	}
 
@@ -277,10 +277,10 @@ static int psmx3_domain_init(struct psmx3_fid_domain *domain,
 	domain->max_atomic_size = INT_MAX;
 
 	ofi_atomic_initialize32(&domain->sep_cnt, 0);
-	fastlock_init(&domain->sep_lock);
+	ofi_spin_init(&domain->sep_lock);
 	dlist_init(&domain->sep_list);
 	dlist_init(&domain->trx_ctxt_list);
-	fastlock_init(&domain->trx_ctxt_lock);
+	ofi_spin_init(&domain->trx_ctxt_lock);
 
 	if (domain->progress_thread_enabled)
 		psmx3_domain_start_progress(domain);
@@ -288,7 +288,7 @@ static int psmx3_domain_init(struct psmx3_fid_domain *domain,
 	return 0;
 
 err_out_destroy_mr_lock:
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 
 err_out:
 	return err;
@@ -309,21 +309,14 @@ int psmx3_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	fabric_priv = container_of(fabric, struct psmx3_fid_fabric,
 				   util_fabric.fabric_fid);
 
-#if 0
-	if (!info->domain_attr->name ||
-	    strncmp(info->domain_attr->name, PSMX3_DOMAIN_NAME, strlen(PSMX3_DOMAIN_NAME))) {
-		err = -FI_EINVAL;
-		goto err_out;
-	}
-#endif /* 0 */
-
 	domain_priv = (struct psmx3_fid_domain *) calloc(1, sizeof *domain_priv);
 	if (!domain_priv) {
 		err = -FI_ENOMEM;
 		goto err_out;
 	}
 
-	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context);
+	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (err)
 		goto err_out_free_domain;
 

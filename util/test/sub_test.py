@@ -598,7 +598,9 @@ def translateOutput(output_in):
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
-               'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
+              ('qstat: cannot connect to server sdb',
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
                'Jira 260 -- Failed to recv data from background qsub for'),
               (r'\d+ Killed /var/spool/PBS/mom_priv/jobs',
@@ -645,7 +647,7 @@ def filter_compiler_errors(compiler_output):
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            error_msg = '(private issue #398) '
+            error_msg = '(private issue #398)'
             break
 
     return error_msg
@@ -691,7 +693,7 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
-            extra_msg = '(private issue #398) '
+            extra_msg = '(private issue #398)'
             break
 
     err_strings = ['=* Memory Leaks =*']

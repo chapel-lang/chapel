@@ -54,21 +54,21 @@ module I {
 }
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated module J {
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated module InnerJ { }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="K is deprecated, use L instead") module K {
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="InnerK is deprecated, use L.InnerL2 instead") module InnerK { }
 }
 
 module L {
   // Checks deprecated nested module in undeprecated outer module
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated module InnerL { }
   module InnerL2 { }
 }

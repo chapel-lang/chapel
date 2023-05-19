@@ -295,8 +295,9 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributeGroup()) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext, "chpldoc.nodoc"));
+  if (auto attrs = parsing::astToAttributeGroup(gContext, e)) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
+                                                           "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
     }
@@ -528,7 +529,7 @@ static char* checkProjectVersion(char* projectVersion) {
   } else {
     std::cerr << "error: Invalid version format: "
               << projectVersion << " due to: " << error << std::endl;
-    exit(1);
+    clean_exit(1);
   }
   return NULL;
 }
@@ -2000,7 +2001,7 @@ module M {
 
   private proc privateProc { return 37; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc procNoDoc { return 42; }
 
   // got a comment for ya
@@ -2010,7 +2011,7 @@ module M {
   var x : [1..3] int = [1, 2, 3];
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module N { }
 /* comment 4 */;
 )RAW";
@@ -2141,7 +2142,7 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
       Context::defaultReportError(context, e.get());
     }
     if (fatal) {
-      exit(1);
+      clean_exit(1);
     }
     reportedErrors.clear();
   }
@@ -2179,7 +2180,10 @@ int main(int argc, char** argv) {
   processUsedModules_ = args.processUsedModules;
 
 
-  Context context(CHPL_HOME);
+  Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  config.toolName = "chpldoc";
+  Context context(config);
   gContext = &context;
   auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
   gContext->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
@@ -2206,12 +2210,10 @@ int main(int argc, char** argv) {
   // Root of the sphinx project and generated rst files. If
   // --docs-save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  std::string doctmpdirname;
   if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
-    makeTempDir("chpldoc-", doctmpdirname);
-    docsSphinxDir = doctmpdirname;
+    docsSphinxDir = gContext->tmpDir();
   }
 
   // Make the intermediate dir and output dir.

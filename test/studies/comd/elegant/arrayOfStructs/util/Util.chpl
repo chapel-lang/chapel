@@ -40,12 +40,12 @@ inline proc dot(A:vec3, B:vec3) {
 
 proc dateString() {
   use Time;
-  return datetime.now().strftime("%F, %T");
+  return dateTime.now().strftime("%F, %T");
 }
 
 proc timestampMessage(msg : string) {
   use Time;
-  const timeStr = datetime.now().ctime();
+  const timeStr = dateTime.now().ctime();
   writeln(timeStr, ": ", msg);
   writeln();
 }

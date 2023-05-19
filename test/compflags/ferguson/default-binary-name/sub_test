@@ -26,7 +26,7 @@ else:
     platform = myoutput
 
 
-# Skip this test on cygwin -- see JIRA 164
+# Skip this test on cygwin to avoid sporadic "Device or resource busy" errors
 if platform.startswith("cygwin"):
   sys.exit(0)
 

@@ -26,6 +26,6 @@ param i = 4.0i;
 const ii = i;
 const c:complex = 4.0+4.0i;
 param pe = E.two;
-const ee = e;
+const ee = pe;
 param b = true;
 const bb = b;

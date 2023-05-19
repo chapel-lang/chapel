@@ -72,7 +72,7 @@ struct gnix_global_vmdh_info {
 	uint32_t version;
 	uint32_t size;
 	uint32_t table_size;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	int ptag_index[MAX_VMDH_TAGS];
 	struct gnix_global_ptag_info info[MAX_VMDH_TAGS];
 };
@@ -97,7 +97,7 @@ static int __gnix_global_vmdh_info_init(const char *path,
 	info->table_size = _gnix_bitmap_get_buffer_size(MAX_VMDH_REGS);
 	for (i = 0; i < MAX_VMDH_TAGS; i++)
 		info->ptag_index[i] = -1;
-	fastlock_init(&info->lock);
+	ofi_spin_init(&info->lock);
 
 	return 0;
 }
@@ -179,7 +179,7 @@ static inline int __gnix_auth_key_enable_vmdh(struct gnix_auth_key *info)
 	int i, ret;
 	void *buffer;
 
-	fastlock_acquire(&__gnix_vmdh_info->lock);
+	ofi_spin_lock(&__gnix_vmdh_info->lock);
 	/* Find ptag in node-local info structure */
 	for (i = 0; i < MAX_VMDH_TAGS; i++)
 		if (__gnix_vmdh_info->ptag_index[i] == info->ptag)
@@ -193,7 +193,7 @@ static inline int __gnix_auth_key_enable_vmdh(struct gnix_auth_key *info)
 
 		/* if no space ... */
 		if (i == MAX_VMDH_TAGS) {
-			fastlock_release(&__gnix_vmdh_info->lock);
+			ofi_spin_unlock(&__gnix_vmdh_info->lock);
 			GNIX_WARN(FI_LOG_FABRIC,
 				"application is attempting to use too many keys "
 				"with scalable memory registration, "
@@ -209,7 +209,7 @@ static inline int __gnix_auth_key_enable_vmdh(struct gnix_auth_key *info)
 		ret = _gnix_alloc_bitmap(&__gnix_vmdh_info->info[i].prov,
 			info->attr.prov_key_limit, buffer);
 		if (ret) {
-			fastlock_release(&__gnix_vmdh_info->lock);
+			ofi_spin_unlock(&__gnix_vmdh_info->lock);
 			GNIX_WARN(FI_LOG_FABRIC,
 				"failed to allocate bitmap on mmap backed page, ret=%d\n",
 				ret);
@@ -223,7 +223,7 @@ static inline int __gnix_auth_key_enable_vmdh(struct gnix_auth_key *info)
 		ret = _gnix_alloc_bitmap(&__gnix_vmdh_info->info[i].user,
 			info->attr.user_key_limit, buffer);
 		if (ret) {
-			fastlock_release(&__gnix_vmdh_info->lock);
+			ofi_spin_unlock(&__gnix_vmdh_info->lock);
 			GNIX_WARN(FI_LOG_FABRIC,
 				"failed to allocate bitmap on mmap backed page, ret=%d\n",
 				ret);
@@ -244,7 +244,7 @@ static inline int __gnix_auth_key_enable_vmdh(struct gnix_auth_key *info)
 	}
 	info->prov = &__gnix_vmdh_info->info[i].prov;
 	info->user = &__gnix_vmdh_info->info[i].user;
-	fastlock_release(&__gnix_vmdh_info->lock);
+	ofi_spin_unlock(&__gnix_vmdh_info->lock);
 
 	return FI_SUCCESS;
 }
@@ -261,7 +261,7 @@ int _gnix_auth_key_enable(struct gnix_auth_key *info)
 		return -FI_EINVAL;
 	}
 
-	fastlock_acquire(&info->lock);
+	ofi_spin_lock(&info->lock);
 	if (!info->enabled) {
 		info->enabled = 1;
 
@@ -317,7 +317,7 @@ int _gnix_auth_key_enable(struct gnix_auth_key *info)
 				ret = _gnix_open_vmdh_info_file(path);
 				if (ret) {
 					info->enabled = 0;
-					fastlock_release(&info->lock);
+					ofi_spin_unlock(&info->lock);
 					return ret;
 				}
 			}
@@ -325,7 +325,7 @@ int _gnix_auth_key_enable(struct gnix_auth_key *info)
 			ret = __gnix_auth_key_enable_vmdh(info);
 			if (ret) {
 				info->enabled = 0;
-				fastlock_release(&info->lock);
+				ofi_spin_unlock(&info->lock);
 				return ret;
 			}
 
@@ -347,7 +347,7 @@ int _gnix_auth_key_enable(struct gnix_auth_key *info)
 			info->cookie, info->ptag, info->key_partition_size, info->key_offset);
 		ret = FI_SUCCESS;
 	}
-	fastlock_release(&info->lock);
+	ofi_spin_unlock(&info->lock);
 
 	if (ret == -FI_EBUSY) {
 		GNIX_DEBUG(FI_LOG_MR, "authorization key already enabled, "
@@ -363,7 +363,7 @@ struct gnix_auth_key *_gnix_auth_key_alloc()
 
 	auth_key = calloc(1, sizeof(*auth_key));
 	if (auth_key) {
-		fastlock_init(&auth_key->lock);
+		ofi_spin_init(&auth_key->lock);
 	} else {
 		GNIX_WARN(FI_LOG_MR, "failed to allocate memory for "
 			"authorization key\n");
@@ -420,7 +420,7 @@ int _gnix_auth_key_free(struct gnix_auth_key *key)
 		return -FI_EINVAL;
 	}
 
-	fastlock_destroy(&key->lock);
+	ofi_spin_destroy(&key->lock);
 
 	key->enabled = 0;
 

@@ -321,7 +321,7 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a > b : returns value > 0
      a == b: returns 0
 */
-pragma "no doc"
+@chpldoc.nodoc
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
@@ -340,8 +340,8 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 }
 
 
-pragma "no doc"
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
+@chpldoc.nodoc
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.
@@ -478,7 +478,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 || !Data.isRectangular() {
@@ -510,14 +510,14 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Error message for multi-dimension arrays */
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
   where Dom.rank != 1 {
     compilerError("isSorted() requires 1-D array");
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter sorted(x : domain, comparator:?rec=defaultComparator) {
   for i in x._value.dsiSorted(comparator) {
     yield i;
@@ -576,7 +576,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module BubbleSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
@@ -614,7 +614,7 @@ module BubbleSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module HeapSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
   /*
@@ -680,7 +680,7 @@ module HeapSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module InsertionSort {
   private use Sort;
   /*
@@ -754,7 +754,7 @@ module InsertionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module BinaryInsertionSort {
   private use Sort;
   /*
@@ -824,7 +824,7 @@ module BinaryInsertionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TimSort {
   private use Sort;
 
@@ -937,7 +937,7 @@ module TimSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module MergeSort {
   private use Sort;
   /*
@@ -1068,7 +1068,7 @@ module MergeSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module QuickSort {
   private use Sort;
   use Sort.ShallowCopy;
@@ -1317,7 +1317,7 @@ module QuickSort {
     }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module SelectionSort {
   private use Sort;
   /*
@@ -1352,7 +1352,7 @@ module SelectionSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module ShellSort {
   private use Sort;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
@@ -1397,10 +1397,11 @@ module ShellSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module SampleSortHelp {
   private use Sort;
   private use CTypes;
+  private use Math;
 
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
@@ -1646,7 +1647,7 @@ module SampleSortHelp {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module RadixSortHelp {
   private use Sort;
   import Reflection.canResolveMethod;
@@ -1854,7 +1855,7 @@ module RadixSortHelp {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module ShallowCopy {
   private use CTypes;
 
@@ -1994,7 +1995,7 @@ module ShallowCopy {
     shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
   }
 }
-pragma "no doc"
+@chpldoc.nodoc
 module SequentialInPlacePartitioning {
   private param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
 
@@ -2105,7 +2106,7 @@ module SequentialInPlacePartitioning {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArrayPartitioning {
   private use BlockDist;
   private use super.MSBRadixSort;
@@ -3151,7 +3152,7 @@ module TwoArrayPartitioning {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArrayRadixSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
@@ -3206,7 +3207,7 @@ module TwoArrayRadixSort {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module TwoArraySampleSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
@@ -3253,13 +3254,13 @@ module TwoArraySampleSort {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module InPlacePartitioning {
   // TODO -- based on ips4o
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module MSBRadixSort {
   import Sort.{defaultComparator, ShellSort};
   private use super.RadixSortHelp;
@@ -3698,12 +3699,12 @@ record ReverseComparator {
 
    :arg revcomp: :ref:`ReverseComparator <reverse-comparator>` to copy.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init=(revcomp: ReverseComparator(?)) {
     this.comparator = revcomp.comparator;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc typeIsBitReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
@@ -3716,7 +3717,7 @@ record ReverseComparator {
 
     return false;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc typeIsNegateReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
@@ -3733,11 +3734,11 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasKeyPart(a) param {
     return canResolveMethod(this.comparator, "keyPart", a, 0);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasKeyPartFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
@@ -3747,11 +3748,11 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasCompare(a,b) param {
     return canResolveMethod(this.comparator, "compare", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc hasCompareFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
@@ -3761,7 +3762,7 @@ record ReverseComparator {
     return false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline
   proc getKeyPart(cmp, a, i) {
     var (section, part) = cmp.keyPart(a, i);
@@ -3789,7 +3790,7 @@ record ReverseComparator {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline
   proc doCompare(cmp, a, b) {
     return cmp.compare(b, a);

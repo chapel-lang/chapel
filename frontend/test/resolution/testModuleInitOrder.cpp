@@ -62,7 +62,9 @@ checkModuleInitOrder(Context* ctx, bool isCheckForOrigin, ID idMod, ...) {
 }
 
 static void test0(void) {
-  Context context(chplHome());
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
@@ -131,7 +133,9 @@ static void test0(void) {
 
 // Make sure module initialization order can handle circular dependencies.
 static void test1(void) {
-  Context context(chplHome());
+  Context::Configuration config;
+  config.chplHome = chplHome();
+  Context context(config);
   Context* ctx = &context;
   ErrorGuard guard(ctx);
 
@@ -194,4 +198,3 @@ int main() {
   test1();
   return 0;
 }
-

@@ -283,7 +283,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   // ensure we got unstridable range with VType-typed indices
   compilerAssert(followThis.type ==
-                 1*range(VType, BoundedRangeType.bounded, false));
+                 1*range(VType, boundKind.both, false));
 
   const myIDs = unDensify(followThis(0), uxIDs);
 
@@ -451,6 +451,8 @@ proc myerror(args...) {
 }
 
 proc reportNumVerticesError(G, snapshot_prefix, vCount) {
+  use Math;
+
   const vcountLog2 =
     if vCount <= 0 then -1:int(64) else floor(log2(vCount)):int(64);
   const helpMessage =

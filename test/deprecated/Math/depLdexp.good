@@ -1,0 +1,4 @@
+depLdexp.chpl:5: warning: In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depLdexp.chpl:8: warning: In an upcoming release 'ldexp' will no longer be included by default, please 'use' or 'import' the Math module to call it
+true
+true

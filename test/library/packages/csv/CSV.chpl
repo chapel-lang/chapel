@@ -80,7 +80,7 @@ module CSV {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc isSpecialCaseType(type t) param {
       return t == string || isRecord(t) || isTuple(t);
     }

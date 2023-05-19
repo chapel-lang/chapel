@@ -99,7 +99,7 @@ type ipv6Addr = sys_in6_addr_t;
 const IPv6Localhost:ipv6Addr = in6addr_loopback;
 const IPv6Any:ipv6Addr = in6addr_any;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
   this.init();
   try! {
@@ -117,15 +117,15 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
   `==` and `!=` operators.
 */
 record ipAddr {
-  pragma "no doc"
+  @chpldoc.nodoc
   var _addressStorage:sys_sockaddr_t;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(in address: sys_sockaddr_t) {
     this._addressStorage = new sys_sockaddr_t(address);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init() {
     try! this._addressStorage = new sys_sockaddr_t(ipAddr.create()._addressStorage);
   }
@@ -223,17 +223,17 @@ proc type ipAddr.ipv6(host: ipv6Addr, port: uint(16) = 8000): ipAddr throws {
   return new ipAddr(addressStorage);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator !=(const ref lhs: ipAddr, const ref rhs: ipAddr) {
   return try! lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
   return !(lhs != rhs);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc ipAddr.writeThis(f) throws {
   f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
@@ -249,7 +249,7 @@ proc ipAddr.writeThis(f) throws {
 const indefiniteTimeout : struct_timeval;
 indefiniteTimeout = new struct_timeval(tv_sec=(-1):c_long:time_t, tv_usec=0:c_long:suseconds_t);
 
-pragma "no doc"
+@chpldoc.nodoc
 private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):errorCode;
 
 /* The type returned from :proc:`connect` */
@@ -311,31 +311,31 @@ proc tcpConn.setDelayAck(enable:bool) throws {
   delayAck(socketFd, enable);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator !=(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd != rhs.socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd == rhs.socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc tcpConn.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private extern proc sizeof(e): c_size_t;
 
-pragma "no doc"
+@chpldoc.nodoc
 extern "struct event_base" record event_base {};
-pragma "no doc"
+@chpldoc.nodoc
 extern "struct event" record event {};
-pragma "no doc"
+@chpldoc.nodoc
 extern type pthread_t;
-pragma "no doc"
+@chpldoc.nodoc
 extern type pthread_attr_t;
 
 private extern const EV_TIMEOUT:c_short;
@@ -429,12 +429,12 @@ extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
 
 // types for 'sys_sockaddr_t' implementation
-pragma "no doc"
+@chpldoc.nodoc
 extern type sys_sockaddr_storage_t;
-pragma "no doc"
+@chpldoc.nodoc
 extern type socklen_t = int(32);
 
-pragma "no doc"
+@chpldoc.nodoc
 extern record sys_sockaddr_t {
   var addr:sys_sockaddr_storage_t;
   var len:socklen_t;
@@ -461,7 +461,7 @@ extern record sys_sockaddr_t {
   :throws IllegalArgumentError: Upon failure to provide a compatible
                                 `host` and `family`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc set(host: c_string, port: c_uint, family: c_int) throws {
     var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
     if err_out != 1 {
@@ -481,7 +481,7 @@ extern record sys_sockaddr_t {
   :arg port: port number
   :type port: `c_uint`
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc set(host: sys_in_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in_t(this, host, port);
   }
@@ -498,7 +498,7 @@ extern record sys_sockaddr_t {
   :arg port: port number
   :type port: `c_uint`
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc set(host: sys_in6_addr_t, port: c_uint) {
     sys_set_sys_sockaddr_in6_t(this, host, port);
   }
@@ -512,7 +512,7 @@ extern record sys_sockaddr_t {
   :throws Error: If record was uninitialized and has no information
                   about `host` or `port`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc const ref numericHost() throws {
 
     var buffer = c_calloc(c_char, NI_MAXHOST);
@@ -523,7 +523,7 @@ extern record sys_sockaddr_t {
       throw createSystemError(err_out);
     }
 
-    return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+    return string.createAdoptingBuffer(buffer, length, NI_MAXHOST);
   }
 
   /*
@@ -535,7 +535,7 @@ extern record sys_sockaddr_t {
   :throws Error: If record was uninitialized and has no information
                   about `host` or `port`.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc const ref port() throws {
     var port:c_uint;
 
@@ -554,10 +554,10 @@ extern record sys_sockaddr_t {
   :returns: a socket family
   :rtype: `c_int`
 */
-pragma "no doc"
+@chpldoc.nodoc
 proc const ref sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
-pragma "no doc"
+@chpldoc.nodoc
 extern "struct addrinfo" record sys_addrinfo_t {
   var ai_flags: c_int;
   var ai_family: c_int;
@@ -567,16 +567,16 @@ extern "struct addrinfo" record sys_addrinfo_t {
   var ai_next: c_ptr(sys_addrinfo_t);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
-pragma "no doc" proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
-pragma "no doc" proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
-pragma "no doc" proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
-pragma "no doc" proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
+@chpldoc.nodoc proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
+@chpldoc.nodoc proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
+@chpldoc.nodoc proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
+@chpldoc.nodoc proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
 // Not supported yet
 // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
-pragma "no doc" proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
+@chpldoc.nodoc proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
 
 private extern proc sys_fcntl(fd:c_int, cmd:c_int, ref ret_out:c_int):c_int;
@@ -599,7 +599,7 @@ private extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 var event_loop_base:c_ptr(event_base);
 
 /*
@@ -612,13 +612,13 @@ record tcpListener {
   */
   var socketFd: int(32) = -1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init() {
     try! this.socketFd = socket();
     try! bind(this.socketFd, ipAddr.ipv4(port = 0), true);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(socketFd: c_int) {
     this.socketFd = socketFd;
     try! setBlocking(this.socketFd, false);
@@ -763,22 +763,22 @@ proc ref tcpListener.setDelayAck(enable:bool) throws {
   delayAck(socketFd, enable);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator !=(const ref lhs: tcpListener,const ref rhs: tcpListener) {
   return lhs.socketFd != rhs.socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
   return !(lhs.socketFd != rhs.socketFd);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc tcpListener.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 extern const SOMAXCONN: int;
 /*
   Default `backlog` value used in :proc:`listen`
@@ -1017,7 +1017,7 @@ proc udpSocket.close throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private extern proc sys_recvfrom(sockfd:c_int, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
 
 /*
@@ -1050,7 +1050,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
   var addressStorage = new sys_sockaddr_t();
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
   if err_out == 0 {
-    return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
+    return (bytes.createAdoptingBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     c_free(buffer);
@@ -1096,7 +1096,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
       }
     }
   }
-  return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
+  return (bytes.createAdoptingBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
 }
 
 proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, ipAddr) throws {
@@ -1134,7 +1134,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
   return this.recv(bufferLen, timeout:struct_timeval);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private extern proc sys_sendto(sockfd:c_int, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
 
 /*
@@ -1213,17 +1213,17 @@ proc udpSocket.send(data: bytes, in address: ipAddr, timeout: real) throws {
   return this.send(data, address, timeout:struct_timeval);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator !=(const ref lhs: udpSocket,const ref rhs: udpSocket) {
   return lhs.socketFd != rhs.socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
   return lhs.socketFd == rhs.socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc udpSocket.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
@@ -1243,7 +1243,7 @@ extern const SO_SNDBUF:c_int;
 extern const SO_SNDTIMEO:c_int;
 extern const SO_SECINFO:c_int;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc setSockOpt(socketFd: c_int, level: c_int, optname: c_int, ref value: c_int) throws {
   var optlen = sizeof(value):socklen_t;
   var ptroptval = c_ptrTo(value);
@@ -1279,7 +1279,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
   setSockOpt(socketFd, level, optname, value);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, ref value: bytes) throws {
   var optlen = value.size:socklen_t;
   var ptroptval = value.c_str();
@@ -1313,7 +1313,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: bytes)
   setSockOpt(socketFd, level, optname, value);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, value:nothing, optlen:socklen_t) throws {
   var err_out = sys_setsockopt(socketFd, level, optname, nil, optlen);
   if err_out != 0 {
@@ -1344,7 +1344,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: nothing, op
   setSockOpt(socketFd, level, optname, value, optlen);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
   var optval:c_int;
   var ptroptval = c_ptrTo(optval);
@@ -1378,7 +1378,7 @@ proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int): int(32)
   return getSockOpt(socketFd, level, optname) ;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) throws {
   if buflen < 0 || buflen > 1024 {
     throw new Error("getSockOpt buflen out of range");
@@ -1391,7 +1391,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
       c_free(buffer);
       throw createSystemError(err_out, "Failed to get socket option");
     }
-    return createBytesWithOwnedBuffer(buffer, len, buflen);
+    return bytes.createAdoptingBuffer(buffer, len, buflen);
   }
 }
 
@@ -1417,7 +1417,7 @@ proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int, buflen: uint(16)):
   return getSockOpt(socketFd, level, optname, buflen) ;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getPeerName(socketFD: c_int) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getpeername(socketFD, addressStorage);
@@ -1444,7 +1444,7 @@ proc getPeerName(ref socket: tcpConn): ipAddr throws {
   return getPeerName(socketFd);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getSockName(socketFD: c_int) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getsockname(socketFD, addressStorage);
@@ -1471,7 +1471,7 @@ proc getSockName(ref socket: ?t): ipAddr throws
   return getSockName(socketFd);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
   var socketFd: c_int;
   var err = sys_socket(family:c_int, sockType, protocol:c_int, socketFd);
@@ -1481,7 +1481,7 @@ proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, proto
   return socketFd;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc setBlocking(socketFd: c_int, blocking: bool) throws {
   var flags:c_int;
   var err = sys_fcntl(socketFd, F_GETFL, flags);
@@ -1500,7 +1500,7 @@ proc setBlocking(socketFd: c_int, blocking: bool) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc bind(socketFd:c_int, ref address: ipAddr, reuseAddr = true) throws {
   var enable = (if reuseAddr then 1 else 0):c_int;
   setSockOpt(socketFd, SOL_SOCKET, SO_REUSEADDR, enable);
@@ -1536,34 +1536,34 @@ proc bind(ref socket: ?t, ref address: ipAddr, reuseAddr = true)
   bind(socketFd, address, reuseAddr);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc nagle(socketFd:c_int, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY, c_enable);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc nagle(socketFd:c_int):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY) == 0 then true else false;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc delayAck(socketFd:c_int, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK, c_enable);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc delayAck(socketFd:c_int):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK) == 0 then true else false;
 }
 
 evthread_use_pthreads();
 event_loop_base = event_base_new();
-pragma "no doc"
+@chpldoc.nodoc
 var event_loop_thread:pthread_t;
 
-pragma "no doc"
+@chpldoc.nodoc
 proc dispatchLoop():c_void_ptr throws {
   if event_loop_base == nil {
     throw new Error("event loop wasn't initialized");
@@ -1580,13 +1580,13 @@ proc dispatchLoop():c_void_ptr throws {
 
 pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
   var syncVariablePtr = arg: c_ptr(sync int);
   syncVariablePtr.deref().writeEF(event);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc deinit() {
   event_base_loopbreak(event_loop_base);
   pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));

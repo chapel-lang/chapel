@@ -91,7 +91,6 @@ studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph
-memleaksfull.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
 # suite: HPC Challenge
@@ -284,6 +283,7 @@ library/standard/Random/performance/getNextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
+io/corrado/qio_buf_optimization_perf/large_binary_io.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph

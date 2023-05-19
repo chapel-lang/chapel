@@ -1,0 +1,19 @@
+depCos.chpl:5: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:6: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:7: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:8: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:9: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:10: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:11: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:12: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+depCos.chpl:13: warning: In an upcoming release 'cos' will no longer be included by default, please 'use' or 'import' the Math module to call it
+pi = 3.14159
+cos(-2*pi) = 1.0
+cos(-3*pi/2) = -1.3469e-10
+cos(-pi) = -1.0
+cos(-pi/2) = 4.48966e-11
+cos(0) = 1.0
+cos(pi/2) = 4.48966e-11
+cos(pi) = -1.0
+cos(3*pi/2) = -1.3469e-10
+cos(2*pi) = 1.0

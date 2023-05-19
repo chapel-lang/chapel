@@ -29,10 +29,10 @@ module ChapelRange {
   private use ChapelDebugPrint only chpl_debug_writeln;
 
   // Turns on range iterator debugging.
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugChapelRange = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
   /* Compile with ``-snewSliceRule`` to switch to using the new slicing rule
@@ -41,6 +41,10 @@ module ChapelRange {
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
   config param newSliceRule = false;
+
+  // This enum is documented directly in the spec to fit the presentation flow.
+  @chpldoc.nodoc
+  enum boundKind { both, low, high, neither };
 
   /*
     The ``BoundedRangeType`` enum is used to specify the types of bounds a
@@ -54,8 +58,19 @@ module ChapelRange {
     This is currently documented manually in the spec because it fit into
     the flow of the document better.
    */
-  pragma "no doc"
-  enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+  @chpldoc.nodoc
+  @deprecated("BoundedRangeType is deprecated; please use 'boundKind' instead")
+  proc BoundedRangeType type do return boundKind;
+//was: enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+//deprecated by Vass in 1.31 to implement #17126
+  @deprecated("'bounded' is deprecated; please use 'boundKind.both' instead")
+  proc type boundKind.bounded param do return boundKind.both;
+  @deprecated("'boundedLow' is deprecated; please use 'boundKind.low' instead")
+  proc type boundKind.boundedLow param do return boundKind.low;
+  @deprecated("'boundedHigh' is deprecated; please use 'boundKind.high' instead")
+  proc type boundKind.boundedHigh param do return boundKind.high;
+  @deprecated("'boundedNone' is deprecated; please use 'boundKind.neither' instead")
+  proc type boundKind.boundedNone param do return boundKind.neither;
 
   //
   // range type
@@ -82,14 +97,18 @@ module ChapelRange {
 
   // I think the record itself should not be documented, but the above comment
   // should be moved to the top-level module documentation.
-  pragma "no doc"
   pragma "plain old data"
   pragma "range"
+  @chpldoc.nodoc
   record range
   {
     type idxType = int;                            // element type
-    param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
+    param bounds: boundKind = boundKind.both;      // lower/upper bounds
     param stridable: bool = false;                 // range can be strided
+
+    // deprecated by Vass in 1.31 to implement #17126
+    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
+    proc boundedType param do return bounds;
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
@@ -111,7 +130,7 @@ module ChapelRange {
      This is no-doc'd because we currently are hoping it can
      be more of an implementation detail than a user-facing
      feature. */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.intIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
   }
@@ -181,20 +200,20 @@ module ChapelRange {
 
   // This is the initializer for a low..high bounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType, low: idxType, high: idxType) {
     this.idxType = idxType;
-    this.boundedType = BoundedRangeType.bounded;
+    this.bounds = boundKind.both;
     this._low = chpl__idxToInt(low);
     this._high = chpl__idxToInt(high);
   }
 
   // This is the initializer for a low.. unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(low: ?t) {
     this.idxType = t;
-    this.boundedType = BoundedRangeType.boundedLow;
+    this.bounds = boundKind.low;
     this._low = chpl__idxToInt(low);
     this.complete();
     if isFiniteIdxType(idxType) {
@@ -204,10 +223,10 @@ module ChapelRange {
 
   // This is the initializer for a ..high unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(high: ?t) {
     this.idxType = t;
-    this.boundedType = BoundedRangeType.boundedHigh;
+    this.bounds = boundKind.high;
     this._high = chpl__idxToInt(high);
     this.complete();
     if isFiniteIdxType(idxType) {
@@ -217,10 +236,10 @@ module ChapelRange {
 
   // This is the initializer for a .. unbounded range
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init() {
     this.idxType = int;
-    this.boundedType = BoundedRangeType.boundedNone;
+    this.bounds = boundKind.neither;
     this.complete();
     if isFiniteIdxType(idxType) {
       this._low = finiteIdxTypeLow(idxType);
@@ -230,13 +249,13 @@ module ChapelRange {
 
   // This is an initializer for defining a default range value
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType,
-                  param boundedType: BoundedRangeType,
+                  param bounds: boundKind,
                   param stridable: bool) {
-    this.init(idxType, boundedType, stridable,
-              _low = chpl__defaultLowBound(idxType, boundedType),
-              _high = chpl__defaultHighBound(idxType, boundedType),
+    this.init(idxType, bounds, stridable,
+              _low = chpl__defaultLowBound(idxType, bounds),
+              _high = chpl__defaultHighBound(idxType, bounds),
               _stride = 1:chpl__rangeStrideType(idxType),
               _alignment = 0:chpl__idxTypeToIntIdxType(idxType),
               _aligned = true);
@@ -245,38 +264,37 @@ module ChapelRange {
   // This is an initializer for defining a range value in terms of its
   // internal field values
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init(type idxType,
-                  param boundedType : BoundedRangeType,
+                  param bounds : boundKind,
                   param stridable : bool,
-                  _low,
-                  _high,
-                  _stride,
-                  _alignment,
-                  _aligned = true) {
+                  _low, _high, _stride, _alignment, _aligned,
+                  param normalizeAlignment=true) {
     this.idxType     = idxType;
-    this.boundedType = boundedType;
+    this.bounds      = bounds;
     this.stridable   = stridable;
     this._low        = _low;
     this._high       = _high;
     this.complete();
     if (stridable) {
       this._stride    = _stride;
-      this._alignment = _alignment;
+      this._alignment = if normalizeAlignment
+                          then chpl__mod(_alignment, _stride)
+                          else _alignment;
       this._aligned   = _aligned;
     }
   }
 
   // This is the range copy initializer
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.init=(other : range(?i,?b,?s)) {
     type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
-    param boundedType = if this.type.boundedType == ? then b else this.type.boundedType;
+    param bounds      = if this.type.bounds      == ? then b else this.type.bounds;
     param stridable   = if this.type.stridable   == ? then s else this.type.stridable;
 
-    if boundedType != b {
-      compilerError("range(boundedType=" + this.type.boundedType:string + ") cannot be initialized from range(boundedType=" + b:string + ")");
+    if bounds != b {
+      compilerError("range(bounds=" + this.type.bounds:string + ") cannot be initialized from range(bounds=" + b:string + ")");
     }
 
     if !stridable && s then
@@ -302,7 +320,7 @@ module ChapelRange {
       }
     }
 
-    this.init(idxType, boundedType, stridable,
+    this.init(idxType, bounds, stridable,
               low, high,
               str,
               alignment,
@@ -311,9 +329,9 @@ module ChapelRange {
 
   /////////////////////////////////
   // for debugging
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.displayRepresentation(msg: string = ""): void {
-    chpl_debug_writeln(msg, "(", idxType:string, ",", boundedType, ",", stridable,
+    chpl_debug_writeln(msg, "(", idxType:string, ",", bounds, ",", stridable,
                        " : ", low, ",", high, ",", stride, ",",
                        if aligned then alignment:string else "?", ")");
   }
@@ -557,35 +575,30 @@ module ChapelRange {
 
   /* Returns the range's stride. */
   inline proc range.stride where stridable do  return _stride;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.stride param where !stridable do return 1 : strType;
 
   /* Returns the range's alignment. */
-  inline proc range.alignment where stridable do return chpl_intToIdx(_alignment);
-  pragma "no doc"
-  proc range.alignment where !stridable && hasLowBound() do return low;
-  pragma "no doc"
-  proc range.alignment do return chpl_intToIdx(0);
+  inline proc range.alignment where !hasParamAlignment() do
+    return chpl_intToIdx(if stridable then _alignment else 0);
+  @chpldoc.nodoc proc range.alignment param where hasParamAlignment() do return
+    if isEnum(idxType) then chpl__orderToEnum(0, idxType) else 0: idxType;
+
+  @chpldoc.nodoc proc range.hasParamAlignment() param do return
+    !stridable && (isIntegral(idxType) || isEnum(idxType) || isBool(idxType));
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
   inline proc range.aligned where stridable do return _aligned;
+  @chpldoc.nodoc proc range.aligned param where !stridable do return true;
 
-  pragma "no doc"
-  proc range.aligned param where !stridable &&
-                                 (boundedType == BoundedRangeType.bounded ||
-                                  boundedType == BoundedRangeType.boundedLow) do
-    return true;
-  pragma "no doc"
-  proc range.aligned param do /* !stridable && (boundedHigh || boundedNone) */
-    return false;
 
   //################################################################################
   //# Predicates
   //#
 
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
   proc isBoundedRange(r)           param do
     return false;
@@ -593,23 +606,22 @@ module ChapelRange {
      ``false`` otherwise. */
   @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
   proc isBoundedRange(r: range(?)) param do
-    return isBoundedRange(r.boundedType);
+    return isBoundedRange(r.bounds);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated("'isBoundedRange()' is deprecated; check 'boundedType' directly")
-  proc isBoundedRange(param B: BoundedRangeType) param do
-    return B == BoundedRangeType.bounded;
+  proc isBoundedRange(param B: boundKind) param do
+    return B == boundKind.both;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
   @deprecated("'range.isBounded()' is deprecated; check 'boundedType' directly")
   proc range.isBounded() param do
-    return boundedType == BoundedRangeType.bounded;
+    return bounds == boundKind.both;
 
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
   proc range.hasLowBound() param do
-    return boundedType == BoundedRangeType.bounded ||
-           boundedType == BoundedRangeType.boundedLow;
+    return bounds == boundKind.both || bounds == boundKind.low;
 
   /* Returns the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
@@ -623,7 +635,7 @@ module ChapelRange {
 
   // More cases of hasPositiveStride() will become params
   // once we switch to an enum strideKind.
-  // Need design review to make this publically available.
+  // Need design review to make this publicly available.
   /* Returns whether this range's stride is positive,
      as a `param` when possible. */
  inline proc range.chpl_hasPositiveStride() where stridable do return _stride>0;
@@ -669,7 +681,7 @@ module ChapelRange {
     return this.low;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.alignedLowAsInt {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
@@ -681,7 +693,7 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_alignedLowAsIntForIter {
     if stridable && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
@@ -699,8 +711,7 @@ module ChapelRange {
   /* Returns ``true`` if this range's high bound is *not* :math:`\infty`,
      and ``false`` otherwise. */
   proc range.hasHighBound() param do
-    return boundedType == BoundedRangeType.bounded ||
-           boundedType == BoundedRangeType.boundedHigh;
+    return bounds == boundKind.both || bounds == boundKind.high;
 
   /* Return the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
@@ -767,7 +778,7 @@ module ChapelRange {
     return this.high;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.alignedHighAsInt {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
@@ -778,7 +789,7 @@ module ChapelRange {
       return helpAlignHigh(_high, _alignment, stride);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_alignedHighAsIntForIter {
     if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
@@ -795,58 +806,30 @@ module ChapelRange {
   /* Returns ``true`` if this range is naturally aligned, ``false``
      otherwise. */
   proc range.isNaturallyAligned()
-    where stridable && this.boundedType == BoundedRangeType.bounded
-  {
+    where stridable && bounds != boundKind.neither
+  do if  bounds == boundKind.both {
     // If the stride is positive, we must be aligned on the low bound.
     if stride > 0 then return this.alignedLowAsInt == _low;
     // If the stride is negative, we must be aligned on the high bound.
     if stride < 0 then return this.alignedHighAsInt == _high;
     // stride == 0: ???
     return false;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned() param
-    where !stridable && this.boundedType == BoundedRangeType.bounded
-  {
-    return true;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where !stridable && this.boundedType == BoundedRangeType.boundedLow
-  {
-    return this.alignedLowAsInt == _low;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where stridable && this.boundedType == BoundedRangeType.boundedLow
-  {
+  } else if bounds == boundKind.low {
     return stride > 0 && this.alignedLowAsInt == _low;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned() param
-    where this.boundedType == BoundedRangeType.boundedNone ||
-          !stridable && this.boundedType == BoundedRangeType.boundedHigh
-  {
-    return false;
-  }
-
-  pragma "no doc"
-  inline proc range.isNaturallyAligned()
-    where stridable && this.boundedType == BoundedRangeType.boundedHigh
-  {
+  } else if bounds == boundKind.high {
     return stride < 0 && this.alignedHighAsInt == _high;
   }
+
+  @chpldoc.nodoc proc range.isNaturallyAligned() param
+    where !stridable || bounds == boundKind.neither
+    do return !stridable;
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
   proc range.isAmbiguous() param where !stridable do
     return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.isAmbiguous()       where stridable do
     return !aligned && (stride > 1 || stride < -1);
 
@@ -870,7 +853,7 @@ module ChapelRange {
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
-      return this.boundedType == BoundedRangeType.bounded && this.alignedLowAsInt > this.alignedHighAsInt;
+      return this.bounds == boundKind.both && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
   /* Returns the number of values represented by this range as an integer.
@@ -896,7 +879,7 @@ module ChapelRange {
      generated.
    */
   proc range.sizeAs(type t: integral): t {
-    if this.boundedType != BoundedRangeType.bounded then
+    if this.bounds != boundKind.both then
       compilerError("'size' is not defined on unbounded ranges");
 
     if chpl__singleValIdxType(idxType) {
@@ -906,7 +889,7 @@ module ChapelRange {
     return sizeAsHelp(t);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.sizeAsHelp(type t: integral,
                         al = this.alignedLowAsInt,
                         ah = this.alignedHighAsInt): t {
@@ -926,13 +909,13 @@ module ChapelRange {
     return lenAsUint: t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.chpl_sizeAsForIter(type t: integral): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
     }
 
-    if this.boundedType != BoundedRangeType.bounded && isFiniteIdxType(idxType) {
+    if this.bounds != boundKind.both && isFiniteIdxType(idxType) {
       return sizeAsHelp(t,
                         this.chpl_alignedLowAsIntForIter,
                         this.chpl_alignedHighAsIntForIter);
@@ -949,11 +932,11 @@ module ChapelRange {
   proc range.hasFirst() param where !stridable && !hasHighBound() do
     return hasLowBound();
 
-  pragma "no doc"
-  proc range.hasFirst() param where stridable && this.boundedType == BoundedRangeType.boundedNone do
+  @chpldoc.nodoc
+  proc range.hasFirst() param where stridable && bounds == boundKind.neither do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.hasFirst() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasLowBound() else hasHighBound();
@@ -965,15 +948,15 @@ module ChapelRange {
     return chpl_intToIdx(this.firstAsInt);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.firstAsInt {
     if ! stridable then return _low;
     else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_firstAsIntForIter {
-    if this.boundedType == BoundedRangeType.bounded {
+    if this.bounds == boundKind.both {
       return this.firstAsInt;
     } else {
       if ! stridable {
@@ -1003,11 +986,11 @@ module ChapelRange {
   proc range.hasLast() param where !stridable && !hasLowBound() do
     return hasHighBound();
 
-  pragma "no doc"
-  proc range.hasLast() param where stridable && this.boundedType == BoundedRangeType.boundedNone do
+  @chpldoc.nodoc
+  proc range.hasLast() param where stridable && bounds == boundKind.neither do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.hasLast() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasHighBound() else hasLowBound();
@@ -1020,15 +1003,15 @@ module ChapelRange {
     return chpl_intToIdx(this.lastAsInt);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.lastAsInt {
     if ! stridable then return _high;
     else return if stride > 0 then this.alignedHighAsInt else this.alignedLowAsInt;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_lastAsIntForIter {
-    if this.boundedType == BoundedRangeType.bounded {
+    if bounds == boundKind.both {
       return this.lastAsInt;
     } else {
       if ! stridable {
@@ -1089,9 +1072,9 @@ module ChapelRange {
 
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.boundedType == BoundedRangeType.bounded &&
+    if this.bounds == boundKind.both &&
        this.sizeAs(uint) == 0 then
-      return other.boundedType == BoundedRangeType.bounded &&
+      return other.bounds == boundKind.both &&
              other.sizeAs(uint) == 0;
 
     var slice = this.chpl_slice(other, forceNewRule=true);
@@ -1108,14 +1091,14 @@ module ChapelRange {
     return other == slice;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)) param
-    where r1.boundedType != r2.boundedType do
+    where r1.bounds != r2.bounds do
   return false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ==(r1: range(?), r2: range(?)): bool
-    where r1.boundedType == r2.boundedType
+    where r1.bounds == r2.bounds
   {
     // An ambiguous ranges cannot equal an unambiguous one
     //  even if all their parameters match.
@@ -1125,7 +1108,7 @@ module ChapelRange {
     // if their representations are identical.
     if r1.isAmbiguous() then return chpl_ident(r1, r2);
 
-    if r1.boundedType == BoundedRangeType.bounded {
+    if r1.bounds == boundKind.both {
 
       // gotta have a special case for length 0 or 1
       const len = r1.sizeAs(uint), l2 = r2.sizeAs(uint);
@@ -1151,41 +1134,37 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator !=(r1: range(?), r2: range(?)) do  return !(r1 == r2);
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <(r1: range(?), r2: range(?))
-    where r1.boundedType != BoundedRangeType.bounded ||
-          r2.boundedType != BoundedRangeType.bounded {
+    where r1.bounds != boundKind.both ||r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >(r1: range(?), r2: range(?))
-    where r1.boundedType != BoundedRangeType.bounded ||
-          r2.boundedType != BoundedRangeType.bounded {
+    where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=(r1: range(?), r2: range(?))
-    where r1.boundedType != BoundedRangeType.bounded ||
-          r2.boundedType != BoundedRangeType.bounded {
+    where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >=(r1: range(?), r2: range(?))
-    where r1.boundedType != BoundedRangeType.bounded ||
-          r2.boundedType != BoundedRangeType.bounded {
+    where r1.bounds != boundKind.both || r2.bounds != boundKind.both {
     compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
   }
 
   proc chpl_ident(r1: range(?), r2: range(?))
-    where r1.idxType == r2.idxType &&
-    r1.boundedType == r2.boundedType &&
-    r1.stridable == r2.stridable
+    where r1.idxType   == r2.idxType  &&
+          r1.bounds    == r2.bounds   &&
+          r1.stridable == r2.stridable
   {
     if r1._low != r2._low then return false;
     if r1._high != r2._high then return false;
@@ -1206,7 +1185,7 @@ module ChapelRange {
   }
 
   // If the parameters don't match, then the two ranges cannot be identical.
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="ident() on ranges is deprecated; please let us know if this is problematic for you")
   proc ident(r1: range(?), r2: range(?)) param {
     return false;
@@ -1218,13 +1197,13 @@ module ChapelRange {
 /* Cast a range to another range type. If the old type is stridable and the
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
-pragma "no doc"
+@chpldoc.nodoc
 proc range.safeCast(type t: range(?)) {
   var tmp: t;
 
-  if tmp.boundedType != this.boundedType {
-    compilerError("cannot cast range from ",
-                  this.boundedType:string, " to ", tmp.boundedType:string);
+  if tmp.bounds != this.bounds {
+    compilerError("cannot cast range from boundKind.",
+                  this.bounds:string, " to boundKind.", tmp.bounds:string);
   }
 
   if tmp.stridable {
@@ -1244,13 +1223,13 @@ proc range.safeCast(type t: range(?)) {
 /* Cast a range to a new range type.  If the old type was stridable and the
    new type is not stridable, then force the new stride to be 1.
  */
-pragma "no doc"
+@chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
   var tmp: t;
 
-  if tmp.boundedType != r.boundedType {
-    compilerError("cannot cast range from ",
-                  r.boundedType:string, " to ", tmp.boundedType:string);
+  if tmp.bounds != r.bounds {
+    compilerError("cannot cast range from boundKind.",
+                  r.bounds:string, " to boundKind.", tmp.bounds:string);
   }
 
   if tmp.stridable {
@@ -1274,7 +1253,7 @@ operator :(r: range(?), type t: range(?)) {
      ambiguously aligned.
    */
   inline proc range.boundsCheck(other: range(?e,?b,?s))
-    where b == BoundedRangeType.boundedNone
+    where b == boundKind.neither
   {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return false;
@@ -1286,20 +1265,19 @@ operator :(r: range(?), type t: range(?)) {
     return true;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.boundsCheck(other: range(?e,?b,?s))
   {
     if this.isAmbiguous() || other.isAmbiguous()
       then return false;
 
     var boundedOther = new range(
-                          idxType, BoundedRangeType.bounded,
-                          s || this.stridable,
+                          idxType, boundKind.both,
+                          other.stridable,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other.stride,
-                          chpl__idxToInt(other.alignment),
-                          true);
+                          other._stride, other._alignment,
+                          true, false);
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
@@ -1314,7 +1292,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Moves the low bound of the range up to the next alignment point.
-  pragma "no doc"
+  @chpldoc.nodoc
   /* private */ proc ref range.alignLow()
   {
     if boundsChecking && this.isAmbiguous() then
@@ -1325,7 +1303,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // Moves the high bound of the range down to the next alignment point.
-  pragma "no doc"
+  @chpldoc.nodoc
   /* private */ proc ref range.alignHigh()
   {
     if boundsChecking && this.isAmbiguous() then
@@ -1394,7 +1372,7 @@ operator :(r: range(?), type t: range(?)) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if this.boundedType == BoundedRangeType.bounded && ord >= this.sizeAs(uint) then
+      if this.bounds == boundKind.both && ord >= this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
             ord:string + " that is larger than the range's number of indices " + this.sizeAs(uint):string);
     }
@@ -1432,14 +1410,14 @@ operator :(r: range(?), type t: range(?)) {
   inline proc range.translate(offset: integral) do
     return this + offset;
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline proc range.translate(i)
   {
     compilerError("offsets must be of integral type");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.translate(offset: integral) where chpl__singleValIdxType(idxType) {
     compilerError("can't apply '.translate()' to a range whose 'idxType' only has one value");
 
@@ -1448,9 +1426,8 @@ operator :(r: range(?), type t: range(?)) {
 
     // Returns an expanded range, or a contracted range if offset < 0.
   // The existing absolute alignment is preserved.
-  pragma "no doc"
-  proc range.expand(offset: integral)
-    where boundedType != BoundedRangeType.bounded
+  @chpldoc.nodoc
+  proc range.expand(offset: integral) where bounds != boundKind.both
   {
     compilerError("expand() is not supported on unbounded ranges");
   }
@@ -1475,13 +1452,13 @@ operator :(r: range(?), type t: range(?)) {
   proc range.expand(offset: integral)
   {
     const i = offset.safeCast(chpl__signedType(intIdxType));
-    return new range(idxType, boundedType, stridable,
+    return new range(idxType, bounds, stridable,
                      _low-i,
                      _high+i,
-                     stride, _alignment, aligned);
+                     _stride, _alignment, _aligned);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.expand(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
@@ -1492,17 +1469,16 @@ operator :(r: range(?), type t: range(?)) {
 
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range._effAlmt()       where stridable do return _alignment;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range._effAlmt() where !stridable do return 0;
 
   // Return an interior portion of this range.
-  pragma "no doc"
   pragma "last resort"
-  proc range.interior(offset: integral)
-    where boundedType != BoundedRangeType.bounded
+  @chpldoc.nodoc
+  proc range.interior(offset: integral) where bounds != boundKind.both
   {
     compilerError("interior is not supported on unbounded ranges");
   }
@@ -1544,22 +1520,22 @@ operator :(r: range(?), type t: range(?)) {
 
     const i = (abs(offset)).safeCast(intIdxType);
     if offset < 0 then
-      return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 + i, stride,
-                       _effAlmt(), aligned);
+      return new range(idxType, bounds, stridable,
+                       _low, _low - 1 + i,
+                       _stride, _alignment, _aligned, false);
     if offset > 0 then
-      return new range(idxType, boundedType, stridable,
-                       _high + 1 - i, _high, stride,
-                       _effAlmt(), aligned);
+      return new range(idxType, bounds, stridable,
+                       _high + 1 - i, _high,
+                       _stride, _alignment, _aligned, false);
     // if i == 0 then
-    return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+    return new range(idxType, bounds, stridable,
+                     _low, _high,
+                     _stride, _alignment, _aligned, false);
   }
 
-  pragma "no doc"
   pragma "last resort"
-  proc range.exterior(offset: integral)
-    where boundedType != BoundedRangeType.bounded
+  @chpldoc.nodoc
+  proc range.exterior(offset: integral) where bounds != boundKind.both
   {
     compilerError("exterior is not supported on unbounded ranges");
   }
@@ -1592,21 +1568,22 @@ operator :(r: range(?), type t: range(?)) {
   {
     const i = (abs(offset)).safeCast(intIdxType);
     if offset < 0 then
-      return new range(idxType, boundedType, stridable,
+      return new range(idxType, bounds, stridable,
                        _low - i,
                        _low - 1,
-                       stride, _effAlmt(), aligned);
+                       _stride, _alignment, _aligned, false);
     if offset > 0 then
-      return new range(idxType, boundedType, stridable,
+      return new range(idxType, bounds, stridable,
                        _high + 1,
                        _high + i,
-                       stride, _effAlmt(), aligned);
+                       _stride, _alignment, _aligned, false);
     // if i == 0 then
-    return new range(idxType, boundedType, stridable,
-                     _low, _high, stride, _effAlmt(), aligned);
+    return new range(idxType, bounds, stridable,
+                     _low, _high,
+                     _stride, _alignment, _aligned, false);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.exterior(offset: integral) where chpl__singleValIdxType(idxType)
   {
     compilerError("can't apply '.exterior()' to a range whose 'idxType' only has one value");
@@ -1618,11 +1595,11 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // Assignment
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(ref r1: range(stridable=?s1), r2: range(stridable=?s2))
   {
-    if r1.boundedType != r2.boundedType then
-      compilerError("type mismatch in assignment of ranges with different boundedType parameters");
+    if r1.bounds != r2.bounds then
+      compilerError("type mismatch in assignment of ranges with different bounds parameters");
 
     if !s1 && s2 then
       compilerError("type mismatch in assignment of ranges with different stridable parameters");
@@ -1647,7 +1624,7 @@ operator :(r: range(?), type t: range(?)) {
   // Absolute alignment is not preserved
   // (That is, the alignment shifts along with the range.)
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +(r: range(?e, ?b, ?s), offset: integral)
   {
     const i = offset:r.intIdxType;
@@ -1662,17 +1639,17 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // TODO can this be removed?
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r + offset;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator +(i:integral, r: range(?e,?b,?s)) do
     return r + i;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
     type strType = chpl__rangeStrideType(e);
@@ -1686,7 +1663,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // TODO can this be removed?
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
   {
     r = r - offset;
@@ -1757,7 +1734,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // This is the definition of the 'by' operator for ranges.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step);
@@ -1765,14 +1742,14 @@ operator :(r: range(?), type t: range(?)) {
 
   // We want to warn the user at compiler time if they had an invalid param
   // stride rather than waiting until runtime.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
     return chpl_by_help(r, step:r.strType);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline operator by(r, step) {
     compilerError("cannot apply 'by' to '", r.type:string, "'");
   }
@@ -1780,7 +1757,7 @@ operator :(r: range(?), type t: range(?)) {
   // This is the definition of the 'align' operator for ranges.
   // It produces a new range with the specified alignment.
   // By definition, alignment is relative to the low bound of the range.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator align(r : range(?i, ?b, ?s), algn: i)
   {
     // Note that aligning an unstrided range will set the field value,
@@ -1789,14 +1766,15 @@ operator :(r: range(?), type t: range(?)) {
                      r._low, r._high, r.stride, chpl__idxToInt(algn), true);
   }
 
-  pragma "no doc" pragma "last resort"
+  pragma "last resort"
+  @chpldoc.nodoc
   inline operator align(r : range(?i, ?b, ?s), algn) {
     compilerError("can't align a range with idxType ", i:string,
                   " using a value of type ", algn.type:string);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   inline operator align(r, algn) {
     compilerError("cannot apply 'align' to '", r.type:string, "'");
   }
@@ -1822,7 +1800,7 @@ operator :(r: range(?), type t: range(?)) {
     if boundsChecking && !hasFirst() then
       HaltWrappers.boundsCheckHalt("invoking 'offset' on a range without a first index");
 
-    return new range(idxType, boundedType, stridable, _low, _high, stride,
+    return new range(idxType, bounds, stridable, _low, _high, stride,
                      // here's the new alignment
                      this.firstAsInt + offs, true);
   }
@@ -1830,7 +1808,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // Slicing, implementing the slice semantics in #20462.
   // Return the intersection of this and other.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc const range.this(other: range(?))
   {
     return this.chpl_slice(other, forceNewRule=false);
@@ -1848,19 +1826,15 @@ operator :(r: range(?), type t: range(?)) {
 
     param newBoundKind = computeBoundedType(this, other);
 
-    // Determine the boundedType of result
+    // Determine the bounds of result
     proc computeBoundedType(r1, r2) param
     {
       param low = r1.hasLowBound() || r2.hasLowBound();
       param high = r1.hasHighBound() || r2.hasHighBound();
-      if low && high then
-        return BoundedRangeType.bounded;
-      else if low then
-        return BoundedRangeType.boundedLow;
-      else if high then
-        return BoundedRangeType.boundedHigh;
-      else
-        return BoundedRangeType.boundedNone;
+      if      low && high then return boundKind.both;
+      else if low         then return boundKind.low;
+      else if high        then return boundKind.high;
+      else                     return boundKind.neither;
     }
 
     // If this range is unbounded below, we use low from the other range,
@@ -2003,7 +1977,7 @@ operator :(r: range(?), type t: range(?)) {
     /////////// allocate the result ///////////
 
     var result = new range(idxType, newBoundKind, newStrideKind,
-                           newlo, newhi, newStride, 0:intIdxType, true);
+                           newlo, newhi, newStride, 0:intIdxType, true, false);
 
     /////////// Step 3: choose the alignment ///////////
 
@@ -2050,7 +2024,7 @@ operator :(r: range(?), type t: range(?)) {
       if (al2 - al1) % g != 0 then
       {
         // empty intersection, return degenerate result
-        if boundsChecking && result.boundedType != BoundedRangeType.bounded then
+        if boundsChecking && result.bounds != boundKind.both then
           HaltWrappers.boundsCheckHalt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
         result._low = chpl__defaultLowBound(idxType, newBoundKind);
         result._high = chpl__defaultHighBound(idxType, newBoundKind);
@@ -2069,10 +2043,13 @@ operator :(r: range(?), type t: range(?)) {
         // Now offset can be safely cast to intIdxType.
         result._alignment = al1:intIdxType + offset:intIdxType * st1:intIdxType / g:intIdxType;
 
-        if result._alignment:int < 0 then
+        if result._alignment:int < 0 {
           result._alignment += newAbsStride;
-        else if result._alignment >= newAbsStride then
+          assert(result._alignment >= 0);
+        } else if result._alignment >= newAbsStride {
           result._alignment -= newAbsStride;
+          assert(result._alignment < newAbsStride);
+        }
       }
     }
 
@@ -2093,8 +2070,7 @@ operator :(r: range(?), type t: range(?)) {
   // the last abs(n) elements in the existing range.
 
   pragma "last resort"
-  proc chpl_count_help(r:range(?), i)
-    where r.boundedType == BoundedRangeType.boundedNone
+  proc chpl_count_help(r:range(?), i) where r.bounds == boundKind.neither
   {
     compilerError("count operator is not defined for unbounded ranges");
   }
@@ -2117,33 +2093,33 @@ operator :(r: range(?), type t: range(?)) {
     if (count == 0) {
       if (r.hasLowBound()) {
         return new range(idxType = r.idxType,
-                         boundedType = BoundedRangeType.bounded,
+                         bounds = boundKind.both,
                          stridable = r.stridable,
                          _low = r._low,
                          _high = r._low - absSameType(r.stride),
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
-                         boundedType = BoundedRangeType.bounded,
+                         bounds = boundKind.both,
                          stridable = r.stridable,
                          _low = r._high + absSameType(r.stride),
                          _high = r._high,
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       } else {
         return new range(idxType = r.idxType,
-                         boundedType = BoundedRangeType.bounded,
+                         bounds = boundKind.both,
                          stridable = r.stridable,
                          _low  = chpl__defaultLowBound(r.idxType,
-                                                     BoundedRangeType.bounded),
+                                                       boundKind.both),
                          _high = chpl__defaultHighBound(r.idxType,
-                                                     BoundedRangeType.bounded),
+                                                        boundKind.both),
                          _stride = r.stride,
                          _alignment = r._alignment,
-                         _aligned = r.aligned);
+                         _aligned = r.aligned, false);
       }
     }
 
@@ -2152,7 +2128,7 @@ operator :(r: range(?), type t: range(?)) {
         boundsCheckHalt("With a positive count, the range must have a first index.");
       if count < 0 && !r.hasLast() then
         boundsCheckHalt("With a negative count, the range must have a last index.");
-      if r.boundedType == BoundedRangeType.bounded &&
+      if r.bounds == boundKind.both &&
         abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then
            boundsCheckHalt("range of size " + r.size:string +
                            " is too small for counting " + abs(count):string +
@@ -2209,13 +2185,11 @@ operator :(r: range(?), type t: range(?)) {
     }
 
     return new range(idxType = r.idxType,
-                     boundedType = BoundedRangeType.bounded,
+                     bounds = boundKind.both,
                      stridable = r.stridable,
                      _low = lo,
                      _high = hi,
-                     _stride = if r.stridable then r.stride: strType else none,
-                     _alignment = if r.stridable then r._alignment else none,
-                     _aligned = r.aligned);
+                     r._stride, r._alignment, r._aligned, false);
   }
 
   // TODO: Do we really want to support this?  Arkouda currently relies
@@ -2224,26 +2198,26 @@ operator :(r: range(?), type t: range(?)) {
   // accept a boolean as a count value.  On the other hand, we permit
   // bools to coerce to ints in most cases, so this gives a similar
   // end-user experience
-  pragma "no doc"
+  @chpldoc.nodoc
   operator #(r:range(?), count:bool) {
     return chpl_count_help(r, count:int);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator #(r:range(?), count:integral) {
     return chpl_count_help(r, count);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator #(r: range(?i), count) {
     compilerError("can't apply '#' to a range with idxType ",
                   i:string, " using a count of type ",
                   count.type:string);
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator #(r, count) {
     compilerError("cannot apply '#' to '", r.type:string, "'");
   }
@@ -2293,7 +2267,7 @@ operator :(r: range(?), type t: range(?)) {
     return willOverFlow;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
     if isFiniteIdxType(idxType) then
       return false;
@@ -2614,8 +2588,8 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   // An error overload for trying to iterate over '..'
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
@@ -2631,8 +2605,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // The serial iterator for 'lo.. [by s]' ranges
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
@@ -2666,14 +2640,14 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // The serial iterator for '..hi [by s]' ranges
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these() where !hasLowBoundForIter(this) && hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
 
     // Apart from the computation of 'end' and the comparison used to
-    // terminate the C for loop, this iterator follows the boundedLow
+    // terminate the C for loop, this iterator follows the bounded-low
     // case above.  See it for additional comments.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
@@ -2692,8 +2666,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // A bounded and strided range iterator
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these()
     where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == true {
     if chpl__singleValIdxType(idxType) {
@@ -2725,8 +2699,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // A bounded and non-strided (stride = 1) range iterator
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.these()
   where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == false {
     if chpl__singleValIdxType(idxType) {
@@ -2769,8 +2743,8 @@ operator :(r: range(?), type t: range(?)) {
   // value to yield. This would mean you couldn't express maximal ranges for
   // int(64) and uint(64) but it's hard to see a case where those could ever be
   // desired.
-  pragma "no doc"
   pragma "order independent yielding loops"
+  @chpldoc.nodoc
   iter range.generalIterator() {
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2792,7 +2766,7 @@ operator :(r: range(?), type t: range(?)) {
   //# Parallel Iterators
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
     !localeModelPartitionsIterationOnSublocales
   {
@@ -2836,7 +2810,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) then
@@ -2929,15 +2903,15 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    if boundedType == BoundedRangeType.boundedNone then
+    if bounds == boundKind.neither then
       compilerError("iteration over a range with no bounds");
-    if ! stridable && boundedType == BoundedRangeType.boundedHigh then
+    if ! stridable && bounds == boundKind.high then
       compilerError("iteration over a range with no first index");
 
     if followThis.size != 1 then
@@ -2965,7 +2939,7 @@ operator :(r: range(?), type t: range(?)) {
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
 
-    if (myFollowThis.boundedType == BoundedRangeType.bounded &&
+    if (myFollowThis.bounds == boundKind.both &&
         !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
@@ -2973,11 +2947,11 @@ operator :(r: range(?), type t: range(?)) {
       if boundsChecking {
         if this.hasLast() {
           // this check is for typechecking only
-          if this.boundedType != BoundedRangeType.bounded then
+          if this.bounds != boundKind.both then
             assert(false, "hasFirst && hasLast do not imply a range is bounded");
         }
         if flwlen != 0 then
-          if this.boundedType == BoundedRangeType.bounded && myFollowThis.last >= this.sizeAs(uint) then
+          if this.bounds == boundKind.both && myFollowThis.last >= this.sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       }
 
@@ -3052,13 +3026,15 @@ operator :(r: range(?), type t: range(?)) {
   //# Utilities
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: range(?), type t: string) {
     var ret: string;
 
     if x.hasLowBound() then
       ret += x.lowBound:string;
+
     ret += "..";
+
     if x.hasHighBound() {
       // handle the special case of an empty range with a singleton idxType
       if (chpl__singleValIdxType(x.idxType) && x._high != x._low) {
@@ -3067,44 +3043,23 @@ operator :(r: range(?), type t: range(?)) {
         ret += x.highBound:string;
       }
     }
+
     if x.stride != 1 {
       ret += " by " + x.stride:string;
 
-      var alignCheckRange = x;
-      alignCheckRange.normalizeAlignment();
-
+      if x.stride != -1 && x.aligned && ! x.isNaturallyAligned() then
       // Write out the alignment only if it differs from natural alignment.
       // We take alignment modulo the stride for consistency.
-      if !(alignCheckRange.isNaturallyAligned()) then
-        ret += " align " + chpl__mod(chpl__idxToInt(x.alignment), x.stride):string;
+       ret += " align " + x.alignment:string;
     }
     return ret;
   }
-
-  pragma "no doc"
-  proc ref range.normalizeAlignment()
-  {
-    if stridable && !aligned {
-      _alignment =
-        if this.boundedType == BoundedRangeType.bounded then
-          (if stride > 0 then _low else _high)
-        else if this.boundedType == BoundedRangeType.boundedLow then
-          _low
-        else if this.boundedType == BoundedRangeType.boundedHigh then
-          _high
-        else
-          0;
-      // could verify that we succeeded:
-      //assert(isNaturallyAligned());
-    }
-  }
-
 
   //################################################################################
   //# Internal helper functions.
   //#
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl__unTranslate(i) do
     return this - i;
 
@@ -3125,13 +3080,18 @@ operator :(r: range(?), type t: range(?)) {
   //
   proc chpl__mod(dividend:integral, modulus:integral)
   {
-    const m = abs(modulus).safeCast(dividend.type);
+    type t = modulus.type;
+    var m = modulus;
+    // The extra check for `m != min(t)` is requird to avoid an optimizer
+    // (specially LLVM) determin that `-min(t)` is undefined and inserting
+    // `poison`.
+    if isIntType(t) && m < 0 && m != min(t) then m = -m;
 
     var tmp = dividend % m;
     if isInt(dividend) then
       if tmp < 0 then tmp += m;
 
-    return tmp;
+    return tmp:dividend.type;
   }
 
 
@@ -3142,19 +3102,23 @@ operator :(r: range(?), type t: range(?)) {
   // We currently assume that the built-in modulo operator always returns an
   // integer in the range [0, mod-1].
   //
+  // In general, this can return an incorrect value if modulus is a bigger
+  // value than can fit into minuend.type. This function should only be used
+  // in controlled circumstances.
+  //
   proc chpl__diffMod(minuend : integral,
                      subtrahend : integral,
                      modulus : integral) : minuend.type
     where minuend.type == subtrahend.type
   {
-    const m = abs(modulus).safeCast(minuend.type);
+    const m = abs(modulus);
 
     var minMod = chpl__mod(minuend, m);
     var subMod = chpl__mod(subtrahend, m);
 
     return if minMod < subMod
-      then m  - (subMod - minMod)
-      else minMod - subMod;
+      then (m  - (subMod - minMod)): minuend.type
+      else (minMod - subMod): minuend.type;
   }
 
   proc chpl__diffMod(minuend : integral,
@@ -3256,7 +3220,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isIntegralType(idxType) {
       // integer idxTypes are their own integer idxType
@@ -3272,7 +3236,7 @@ operator :(r: range(?), type t: range(?)) {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }
@@ -3343,22 +3307,20 @@ operator :(r: range(?), type t: range(?)) {
   // These two routines return the default values for the _low and
   // _high fields when default-initing a range
   //
-  private proc chpl__defaultLowBound(type t, param boundedType: BoundedRangeType) param {
+  private proc chpl__defaultLowBound(type t, param bounds: boundKind) param {
     if chpl__singleValIdxType(t) {
       return 0:chpl__idxTypeToIntIdxType(t);
-    } else if (boundedType == BoundedRangeType.boundedHigh ||
-               boundedType == BoundedRangeType.boundedNone) {
+    } else if bounds == boundKind.high || bounds == boundKind.neither {
       return 0:chpl__idxTypeToIntIdxType(t);
     } else {
       return 1:chpl__idxTypeToIntIdxType(t);
     }
   }
 
-  private proc chpl__defaultHighBound(type t, param boundedType: BoundedRangeType) param {
+  private proc chpl__defaultHighBound(type t, param bounds: boundKind) param {
     if chpl__singleValIdxType(t) {
       return -1:chpl__idxTypeToIntIdxType(t);
-    } else if (boundedType == BoundedRangeType.boundedLow ||
-               boundedType == BoundedRangeType.boundedNone) {
+    } else if bounds == boundKind.low || bounds == boundKind.neither {
       if isFiniteIdxType(t) {
         return finiteIdxTypeHigh(t):chpl__idxTypeToIntIdxType(t);
       } else {

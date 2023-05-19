@@ -238,7 +238,7 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
   std::string libraries = getCompilelineOption("libraries");
   std::string libname = getLibname(name);
 
-  std::string requires = getRequireLibraries();
+  std::string requires_ = getRequireLibraries();
 
   fprintf(makefile.fptr, "CHPL_LDFLAGS = -L%s %s",
           libDir,
@@ -256,8 +256,8 @@ static void printMakefileLibraries(fileinfo makefile, std::string name) {
     fprintf(makefile.fptr, " %s", deps.c_str());
   }
 
-  if (requires != "") {
-    fprintf(makefile.fptr, "%s", requires.c_str());
+  if (requires_ != "") {
+    fprintf(makefile.fptr, "%s", requires_.c_str());
   }
 
   //
@@ -315,7 +315,7 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
   std::string libraries = getCompilelineOption("libraries");
   std::string libname = getLibname(name);
 
-  std::string requires = getRequireLibraries();
+  std::string requires_ = getRequireLibraries();
 
   varValue += "-L${CMAKE_CURRENT_LIST_DIR}";
   varValue += " ";
@@ -334,9 +334,9 @@ static void printCMakeListsLibraries(fileinfo cmakelists, std::string name) {
     varValue += deps;
   }
 
-  if (requires != "") {
+  if (requires_ != "") {
     varValue += " ";
-    varValue += requires;
+    varValue += requires_;
   }
 
   //

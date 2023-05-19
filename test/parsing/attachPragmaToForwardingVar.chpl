@@ -8,7 +8,7 @@ record A {
 }
 
 record B {
-  pragma "no doc"
+  @chpldoc.nodoc
   forwarding var instance: A;
 }
 

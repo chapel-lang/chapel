@@ -1,0 +1,4 @@
+cPtrToStringOrBytes.chpl:6: warning: The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.
+cPtrToStringOrBytes.chpl:7: warning: The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.
+cPtrToStringOrBytes.chpl:8: warning: The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.
+cPtrToStringOrBytes.chpl:9: warning: The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.

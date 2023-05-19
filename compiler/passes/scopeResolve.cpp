@@ -272,7 +272,8 @@ static void processGenericFields() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getScopeFor(theProgram->block);
+  if (!rootScope) rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
@@ -927,13 +928,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
-    if (sym->hasFlag(FLAG_DEPRECATED)) {
-      sym->generateDeprecationWarning(usymExpr);
-    }
-
-    if ((sym->hasFlag(FLAG_UNSTABLE)) && (fWarnUnstable)) {
-      sym->generateUnstableWarning(usymExpr);
-    }
+    sym->maybeGenerateDeprecationWarning(usymExpr);
+    sym->maybeGenerateUnstableWarning(usymExpr);
 
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
@@ -1506,16 +1502,12 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
-            if (!fDynoCompilerLibrary) {
-              if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
-                // Function symbols will generate a warning during function
-                // resolution, no need to warn here.
-                sym->generateDeprecationWarning(call);
-              }
-
-              if (sym->hasFlag(FLAG_UNSTABLE) &&
-                  (!isFnSymbol(sym)) && (fWarnUnstable)) {
-                sym->generateUnstableWarning(call);
+            if (!fDynoScopeResolve) {
+              // Function symbols will generate a warning during function
+              // resolution, no need to warn here.
+              if (!isFnSymbol(sym)) {
+                sym->maybeGenerateDeprecationWarning(call);
+                sym->maybeGenerateUnstableWarning(call);
               }
             }
 
@@ -1645,13 +1637,8 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
-                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
-                  constant->sym->generateDeprecationWarning(call);
-                }
-
-                if (constant->sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-                  constant->sym->generateUnstableWarning(call);
-                }
+                constant->sym->maybeGenerateDeprecationWarning(call);
+                constant->sym->maybeGenerateUnstableWarning(call);
 
                 call->replace(new SymExpr(constant->sym));
               }
@@ -3115,7 +3102,7 @@ void scopeResolve() {
 
   resolveGotoLabels();
 
-  if (!fDynoCompilerLibrary || fDynoScopeProduction) {
+  if (!fDynoScopeResolve || fDynoScopeProduction) {
     resolveUnresolvedSymExprs();
   }
 

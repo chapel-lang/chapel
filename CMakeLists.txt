@@ -27,18 +27,22 @@ if (CMAKE_VERSION VERSION_LESS 3.20)
                   release. You have ${CMAKE_VERSION}")
 endif()
 
+# generate the compile_commands.json compilation database
+# tools like the fieldsUsed linter require this
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 30)
+set(CHPL_MINOR_VERSION 31)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
-set(CHPL_OFFICIAL_RELEASE true)
+set(CHPL_OFFICIAL_RELEASE false)
 
 ### END config.h version value setting - configured_prefix set below ###
 
@@ -135,6 +139,8 @@ set(CHPL_RE2_IS_OVERRIDDEN CACHE INTERNAL "Description")
 set(CHPL_LLVM_VERSION CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_C CACHE INTERNAL "Description")
 set(CHPL_LLVM_CLANG_CXX CACHE INTERNAL "Description")
+set(CHPL_LLVM_STATIC_DYNAMIC CACHE INTERNAL "Description")
+set(CHPL_LLVM_TARGET_CPU CACHE INTERNAL "Description")
 set(CHPL_RUNTIME_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_LAUNCHER_SUBDIR CACHE INTERNAL "Description")
 set(CHPL_COMPILER_SUBDIR CACHE INTERNAL "Description")
@@ -237,6 +243,9 @@ endif()
 # set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
+message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
+
 # TODO: replace this with above, get proper values depending on compiler/version
 #  see make/compiler/Makefile.gnu, make/compiler/Makefile.clang
 add_compile_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_CXX_FLAGS}>)
@@ -284,13 +293,18 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
 
+if(CHPLENV_RETURNCODE AND NOT CHPLENV_RETURNCODE EQUAL 0)
+  message(FATAL_ERROR "CHPL_LLVM_GCC_PREFIX=${CHPL_LLVM_GCC_PREFIX} CHPL_DEVELOPER=${CHPL_DEVELOPER} CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} printchplenv failed")
+else()
+  message(VERBOSE "printchplenv ran successfully")
+endif()
+
 message(VERBOSE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
 
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
 STRING(REGEX REPLACE ";" "\\\\;" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
 STRING(REGEX REPLACE "\n" ";" CHPLENV_OUTPUT "${CHPLENV_OUTPUT}")
-# message(DEBUG "printchplenv returned ${CHPLENV_RETURNCODE}")
 # set all the chplenv values from printchplenv
 foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value
@@ -334,6 +348,13 @@ message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
+
+# We are not ready to include 'chpldef' in an official release just yet.
+if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+  if (EXISTS tools/chpldef)
+    add_subdirectory(tools/chpldef)
+  endif()
+endif()
 
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")

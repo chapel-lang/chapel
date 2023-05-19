@@ -216,8 +216,8 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
+    const src = c_ptrTo(seq[charAfter]):c_void_ptr:c_ptr(uint(16)),
+          dst = c_ptrTo(buff[dstFront]):c_void_ptr:c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }
@@ -251,13 +251,15 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     return ltLoc != max(int);
     
   } else if searchAlg == Foreach {
+    // this requires reduce intents. The solution here is potentially race-y.
+    // Making it use a `for` instead of `foreach` results in what looks like an
+    // infinite loop. This mode is commented out in the compopts
     foreach i in inds {
       if buff[i] == '>'.toByte() {
         ltLoc = i;
-        return true;
       }
     }
-    return false;
+    return ltLoc != max(int);
   } else if searchAlg == For {
     for i in inds {
       if buff[i] == '>'.toByte() {

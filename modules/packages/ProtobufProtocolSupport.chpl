@@ -36,7 +36,7 @@ module ProtobufProtocolSupport {
   public use RepeatedFields;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module WireEncoding {
     /*
       This module contains the implementation of encoding/decoding algorithms
@@ -312,7 +312,7 @@ module ProtobufProtocolSupport {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module Fields {
     /*
       This module contains functions for encoding/decoding simple non-repetitive protobuf
@@ -723,7 +723,7 @@ module ProtobufProtocolSupport {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module RepeatedFields {
     /*
       This module contains functions for encoding/decoding repetitive protobuf

@@ -1,17 +1,17 @@
-./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
+rangeAPItest.chpl:3: In function 'testRangeAPI':
+rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,false), idx: int(64), subr: range(int(64),both,false), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
 idxType          = int(64)
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = 10
@@ -56,7 +56,7 @@ strided range
 1..20 by 2
 idxType          = int(64)
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
@@ -106,12 +106,12 @@ neg. str. range
 1..20 by -2
 idxType          = int(64)
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = -2
-alignment        = 20
+alignment        = 0
 aligned          = true
 first            = 20
 last             = 2
@@ -156,12 +156,12 @@ unbounded range
 1..
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedLow
+bounds           = low
 isRangeType()    = true
 hasLowBound()    = true
 hasHighBound()   = false
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = undefined
@@ -201,13 +201,13 @@ upper unbnd range
 ..10
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedHigh
+bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = 10
 lowBound         = undefined
@@ -217,7 +217,7 @@ high             = 10
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = true
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
@@ -242,12 +242,12 @@ neg upper unbnd range
 ..10 by -1
 idxType          = int(64)
 stridable        = true
-boundedType      = boundedHigh
+bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = -1
-alignment        = 10
+alignment        = 0
 aligned          = true
 first            = 10
 last             = undefined
@@ -287,13 +287,13 @@ unbounded range
 ..
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedNone
+bounds           = neither
 isRangeType()    = true
 hasLowBound()    = false
 hasHighBound()   = false
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = undefined
 lowBound         = undefined
@@ -303,7 +303,7 @@ high             = undefined
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = false
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
@@ -322,9 +322,9 @@ r[subr] == subr[r]= true
 r:string          = ..
 Copying...        = ..
 
-./rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
-./rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
-./rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 16..8 by -2 with 1..20 by -2
-./rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
-./rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
-./rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 3..6 by -1 with ..10 by -1
+rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
+rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..20 by -2 with 16..8 by -2
+rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 16..8 by -2 with 1..20 by -2
+rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
+rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ..10 by -1 with 3..6 by -1
+rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 3..6 by -1 with ..10 by -1

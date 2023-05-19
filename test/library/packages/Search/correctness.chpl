@@ -18,7 +18,7 @@ proc main() {
      revAbsA = [ -4, 3, 2, -1],
         strA = ['Brad', 'anthony', 'ben', 'david'],
     strideA : [strideD] int = [-4, -1, 2, 3],
-    revStrideA : [revStrideD] int = [-4, -1, 2, 3];  // neg-stride revStrideA[10]=3 etc.
+    revStrideA : [revStrideD] int = [-4, -1, 2, 3];  // neg-stride revStrideA[0]=3 etc.
 
   // Comparators
   const absKey = new AbsKeyCmp(),

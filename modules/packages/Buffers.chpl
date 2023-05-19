@@ -50,11 +50,11 @@ module Buffers {
   use OS;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbytes_ptr_t;
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbuffer_ptr_t;
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbuffer_iter_t;
   private extern const QBYTES_PTR_NULL:qbytes_ptr_t;
   private extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
@@ -122,7 +122,7 @@ module Buffers {
   record byteBuffer {
     /* The home locale storing the data */
     var home: locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _bytes_internal:qbytes_ptr_t = QBYTES_PTR_NULL;
   }
 
@@ -145,7 +145,7 @@ module Buffers {
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
     this.complete();
@@ -155,7 +155,7 @@ module Buffers {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc byteBuffer.init=(x: byteBuffer) {
     this.home = here;
     if x.home == here {
@@ -167,7 +167,7 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc create_iobuf():byteBuffer throws {
     var ret: bytes;
     var err = qbytes_create_iobuf(ret._bytes_internal);
@@ -176,7 +176,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator byteBuffer.=(ref ret:byteBuffer, x:byteBuffer) {
     // retain -- release
     if( x.home == here ) {
@@ -202,7 +202,7 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc byteBuffer.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
@@ -242,12 +242,12 @@ module Buffers {
   record buffer_iterator {
     /* The home locale storing the data */
     var home: locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _bufit_internal:qbuffer_iter_t = qbuffer_iter_null();
   }
 
   /* Create a :record:`buffer_iterator` that points nowhere */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer_iterator.init() {
     this.home = here;
     this._bufit_internal = qbuffer_iter_null();
@@ -282,7 +282,7 @@ module Buffers {
   record buffer {
     /* The home locale storing the data */
     var home:locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _buf_internal:qbuffer_ptr_t = QBUFFER_PTR_NULL;
   }
 
@@ -299,7 +299,7 @@ module Buffers {
     this.complete();
     error = qbuffer_create(this._buf_internal);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.init() /*throws*/ {
     var error:errorCode = 0;
     this.home = here;
@@ -309,7 +309,7 @@ module Buffers {
     // initializers
     if error then try! ioerror(error, "in buffer initializer");
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.init=(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);
@@ -386,7 +386,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator buffer.=(ref ret:buffer, x:buffer) throws {
     ret.home = here;
     // retain -- release
@@ -437,7 +437,7 @@ module Buffers {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
@@ -573,7 +573,7 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer_iterator.debug_print()
   {
     on this.home {
@@ -612,7 +612,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.copyout(it:buffer_iterator, ref value: string):buffer_iterator throws {
     var ret:buffer_iterator;
     var err:errorCode = 0;
@@ -635,7 +635,7 @@ module Buffers {
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);
-        value = try! createStringWithOwnedBuffer(buf, length=len, size=len+1);
+        value = try! string.createAdoptingBuffer(buf, length=len, size=len+1);
         ret = end;
       }
     }
@@ -678,7 +678,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.copyin(it:buffer_iterator, value: string):buffer_iterator throws {
     var ret:buffer_iterator;
     var err:errorCode = 0;

@@ -402,6 +402,20 @@ static void parseChplSourceFile(const char* inputFileName) {
   parseFile(inputFileName, MOD_USER, true);
 }
 
+static UniqueString cleanLocalPath(UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
+  }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(gContext, str);
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -417,7 +431,7 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
-      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      auto path = cleanLocalPath(chpl::UniqueString::get(gContext, inputFileName));
       chpl::UniqueString emptySymbolPath;
       chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
     }
@@ -1013,7 +1027,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) return nullptr;
 
-  auto path = chpl::UniqueString::get(gContext, fileName);
+  auto path = cleanLocalPath(chpl::UniqueString::get(gContext, fileName));
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.

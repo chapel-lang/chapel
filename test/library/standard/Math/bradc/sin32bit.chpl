@@ -1,3 +1,5 @@
+use Math;
+
 var x = 0.333: real(32);
 
 var y = sin(x);

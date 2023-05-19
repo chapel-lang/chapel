@@ -1,4 +1,4 @@
-use BlockDist, Time, Memory, Types, Random;
+use BlockDist, Time, MemDiagnostics, Types, Random;
 private use CommDiagnostics;
 
 type elemType = real(64);

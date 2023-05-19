@@ -27,7 +27,7 @@
 // backward compatible with the architecture implicitly provided by
 // releases 1.6 and preceding.
 //
-@unstable("GPU support is a prototype in this version of Chapel. As such, the interface is unstable and expected to change in the forthcoming releases.")
+@unstable("The GPU locale interface is unstable and expected to change in the forthcoming releases")
 module LocaleModel {
 
   public use LocaleModelHelpGPU;
@@ -47,6 +47,8 @@ module LocaleModel {
 
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
+  extern var chpl_gpu_num_devices: c_int;
 
   // Note that there are 2 nearly identical chpl_here_alloc() functions. This
   // one takes an int(64) size and is marked with "locale model alloc" while
@@ -214,8 +216,8 @@ module LocaleModel {
 
     override proc chpl_id() do return try! (parent._value:LocaleModel)._node_id; // top-level node id
     override proc chpl_localeid() {
-      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
-                                sid);
+      return try! chpl_buildLocaleID((parent._value:LocaleModel)._node_id:chpl_nodeID_t,
+                                     sid);
     }
     override proc chpl_name() {
       return try! (parent._value:LocaleModel).local_name + "-GPU" + sid:string;
@@ -295,12 +297,8 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      extern proc chpl_gpu_get_device_count(ref n: int);
-      var nDevices: int;
-      chpl_gpu_get_device_count(nDevices);
-
       //number of GPU devices on a node
-      numSublocales = nDevices;
+      numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
       this.complete();
@@ -317,12 +315,8 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      extern proc chpl_gpu_get_device_count(ref n: int);
-      var nDevices: int;
-      chpl_gpu_get_device_count(nDevices);
-
       //1 cpu and number of GPU devices on a node
-      numSublocales = nDevices;
+      numSublocales = chpl_gpu_num_devices;
       childSpace = {0..#numSublocales};
 
       this.complete();
@@ -361,7 +355,7 @@ module LocaleModel {
       return new locale(childLocales[idx]);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc gpusImpl() const ref {
       return gpuSublocales;
     }

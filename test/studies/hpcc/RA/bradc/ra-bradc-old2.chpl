@@ -1,4 +1,5 @@
 // BLC: Implement a timer class and insert calls
+use Math;
 
 config const totMemSize = 1000;
 param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))

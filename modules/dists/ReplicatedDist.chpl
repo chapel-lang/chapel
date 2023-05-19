@@ -197,7 +197,7 @@ class ReplicatedDom : BaseRectangularDom {
   //
   // helper function to get the local domain safely
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_myLocDom() {
     if boundsChecking then
       if (!dist.targetLocDom.contains(here.id)) then
@@ -340,7 +340,7 @@ proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
 }
 
 proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
-                                                 BoundedRangeType.bounded,
+                                                 boundKind.both,
                                                  stridable) {
   if traceReplicatedDist then writeln("ReplicatedDom.dsiGetIndices");
   return whole.getIndices();
@@ -398,7 +398,7 @@ class ReplicatedArr : AbsBaseArr {
   //
   // helper function to get the local array safely
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_myLocArr() {
     if boundsChecking then
       if (!dom.dist.targetLocDom.contains(here.id)) then
@@ -421,7 +421,7 @@ class ReplicatedArr : AbsBaseArr {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 // TODO: Placeholder until we can do forwarding on _value fields
 proc _array.replicand(loc: locale) ref {
   return _value.replicand(loc);

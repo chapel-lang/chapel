@@ -60,64 +60,32 @@
 #ifndef _PSMI_EP_H
 #define _PSMI_EP_H
 
+#if !defined(PSM_VERBS) && !defined(PSM_SOCKETS) && !defined(PSM_NONE)
+#error "At least one of PSM_VERBS or PSM_SOCKETS must be defined"
+#endif
+#if defined(PSM_VERBS) && defined(PSM_SOCKETS) && defined(UMR_CACHE)
+#error "UMR_CACHE not yet allowed with both PSM_VERBS and PSM_SOCKETS enabled"
+#endif
 
-#include "psm_verbs_ep.h"
+#ifdef PSM_VERBS
+#include "hal_verbs/verbs_ep.h"
+#endif
+#if defined(PSM_SOCKETS)
+#include "hal_sockets/sockets_ep.h"
+#endif
 
-/*
- * EPIDs encode the basic information needed to establish
- * datagram traffic so that PSM connection establishment can
- * negotiate and exchange the rest.
- *
- * EPID includes: EPID format version, network address, queue ID within NIC
- */
+/* PSM3 wide limits for port numbers.  Individual HALs may be more restricted */
+#define PSM3_NIC_MIN_PORT 1
+#define PSM3_NIC_MAX_PORT 1 // TBD - should be >= 2
+/* any unit id to match. */
+#define PSM3_NIC_ANY ((long)-1)
+/* any port num to match. */
+#define PSM3_NIC_PORT_ANY ((long)0)
 
 
 #define PSMI_SL_DEFAULT 0
 #define PSMI_SL_MIN	0
 #define PSMI_SL_MAX	31
-// IB/OPA:
-// 0-2: ver = 3
-// 3-7: spare
-// 8-31: QPN
-// 32-47: lid [note, IB & OPA100 only support 16 bit LIDs]
-// 48-63: subnet prefix low 16 bits
-#define PSMI_EPID_PACK_V3(lid, qpn, subnet_id) \
-	(((((uint64_t)PSMI_EPID_V3)&0x7)<<0)	|								\
-	 ((((uint64_t)qpn)&0xffffff)<<8)	|			  					\
-	 ((((uint64_t)lid)&0xffff)<<32)			|								\
-	 ((((uint64_t)subnet_id)&0xffff)<<48))
-// Eth:
-// 0-2: ver = 4
-// 3-7: subnet (number of high bits in IP addr representing IP subnet)
-// 8-31: UD QPN or UDP socket
-// 32-63: IPv4 address
-#define PSMI_EPID_PACK_V4(ip, qpn, subnet_bits) \
-	(((((uint64_t)PSMI_EPID_V4)&0x7)<<0)	|							\
-	 ((((uint64_t)subnet_bits)&0x1f)<<3)	|			  			\
-	 ((((uint64_t)qpn)&0xffffff)<<8)	|			  					\
-	 ((((uint64_t)ip)&0xffffffff)<<32))
-
-// shm and self:
-// 0-2: ver = 0
-// 3: shm-only flag (1)
-// 4-31: spare
-// 32-63: pid
-#define PSMI_EPID_PACK_SHM(process_id, shmbool) \
-	(((((uint64_t)process_id)&0xffffffff)<<32)			|				\
-	 ((((uint64_t)shmbool)&0x1)<<3)		|			  					\
-	 ((((uint64_t)PSMI_EPID_VERSION_SHM)&0x7)<<0))
-
-#define PSMI_EPID_GET_EPID_VERSION(epid)	(((epid)>>0)&0x7)
-#define PSMI_EPID_GET_LID_V3(epid)          (((epid)>>32)&0xffff) // lid
-#define PSMI_EPID_GET_LID_V4(epid)          (((epid)>>32)&0xffffffff) // ip
-#define PSMI_EPID_GET_CONTEXT(epid)         (((epid)>>8)&0xffffff) // qpn/sock
-#define PSMI_EPID_GET_SUBNET_ID_V3(epid)	(((epid)>>48)&0xffff)
-#define PSMI_EPID_GET_SUBNET_ID_V4(epid)	(psmi_bit_count_to_mask(((epid)>>3)&0x1f) &  PSMI_EPID_GET_LID_V4(epid)) // subnetwork
-#define PSMI_EPID_GET_SUBNET_ID(epid) ((PSMI_EPID_GET_EPID_VERSION(epid) == PSMI_EPID_V3) ? \
-										(uint32_t)PSMI_EPID_GET_SUBNET_ID_V3(epid) \
-										: (uint32_t)PSMI_EPID_GET_SUBNET_ID_V4(epid))
-#define PSMI_EPID_CONTEXT_FMT				"%d"
-#define PSMI_EPID_GET_CONTEXT_VAL(epid)		(int)PSMI_EPID_GET_CONTEXT(epid)
 
 #define PSM_MCTXT_APPEND(head, node)	\
 	node->mctxt_prev = head->mctxt_prev; \
@@ -135,15 +103,25 @@ struct psm2_ep {
 	psm2_epid_t epid;	    /**> This endpoint's Endpoint ID */
 	psm2_epaddr_t epaddr;	    /**> This ep's ep address */
 	psm2_mq_t mq;		    /**> only 1 MQ */
-	struct psm2_verbs_ep verbs_ep;
+	union { /* HAL specific device info, when ptl_ips enabled */
+#ifdef PSM_VERBS
+		struct psm3_verbs_ep verbs_ep;
+#endif
+#ifdef PSM_SOCKETS
+		struct psm3_sockets_ep sockets_ep;
+#endif
+	};
 
+	/* unit_id and portnum are set to 0 when ptl_ips not enabled */
 	int unit_id;
-	uint16_t portnum;
+	uint8_t portnum;
+	uint8_t addr_index;
 	uint16_t out_sl;
 	// mtu is PSM payload allowed by local HW,
 	// mtu may be further reduced via PSM3_MTU by ips_proto_init
 	// for UD/UDP, mtu is reduced by PSM hdr size
-	uint16_t mtu;		/* out_sl-->vl-->mtu in sysfs */
+	// for TCP, mtu may be larger than wire MTU (up to 65535*4)
+	uint32_t mtu;		/* out_sl-->vl-->mtu in sysfs */
 	uint16_t network_pkey;	      /**> Pkey */
 	uint16_t network_pkey_index;  /**> Pkey index */
 	int did_syslog;
@@ -156,36 +134,58 @@ struct psm2_ep {
 	int devid_enabled[PTL_MAX_INIT];
 	int memmode;		    /**> min, normal, large memory mode */
 
-	uint32_t hfi_num_sendbufs;/**> Number of allocated send buffers */
-	uint32_t hfi_num_descriptors;/** Number of allocated scb descriptors*/
-	uint32_t hfi_num_send_wqes;/** Number of allocated SQ WQEs for send*/
-	uint32_t hfi_num_send_rdma;/** Number of concurrent RDMA*/
-	uint32_t hfi_send_reap_thresh;/** when to reap SQ compleitions*/
-	uint32_t hfi_num_recv_wqes;/** Number of allocated RQ WQEs*/
-	uint32_t hfi_num_recv_cqes;/** Number of allocated RQ CQEs*/
-	uint8_t hfi_qp_timeout;/** RC QP timeout, IB enum */
-	uint8_t hfi_qp_retry;/** RC QP retry limit */
-	uint8_t rdmamode; /** PSM3_RDMA */
-	uint8_t mr_cache_mode; /** PSM3_MR_CACHE_MODE */
-	uint8_t rv_num_conn; /** PSM3_RV_QP_PER_CONN */
+	/* Shared among PSM_VERBS and PSM_SOCKETS */
+#ifdef PSM_HAVE_RNDV_MOD
+	psm3_rv_t rv;   // rendezvous module open handle
 	uint32_t rv_mr_cache_size; /** PSM3_RV_MR_CACHE_SIZE */
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint32_t rv_gpu_cache_size; /** PSM3_RV_GPU_CACHE_SIZE */
 #endif
-	uint32_t rv_q_depth; /** PSM3_RV_Q_DEPTH */
-	uint32_t rv_reconnect_timeout; /* PSM3_RV_RECONNECT_TIMEOUT */
-	uint32_t rv_hb_interval; /* PSM3_RV_HEARTBEAT_INTERVAL */
+#endif /* PSM_HAVE_RNDV_MOD */
+	uint32_t hfi_num_sendbufs;/**> Number of allocated send buffers */
+	uint32_t hfi_num_descriptors;/** Number of allocated scb descriptors*/
+#ifdef PSM_HAVE_REG_MR
+	uint32_t hfi_num_send_rdma;/** Number of concurrent RDMA*/
+#endif
+#ifdef PSM_ONEAPI
+	int ze_ipc_socket;
+	char *listen_sockname;
+#endif
+	uint8_t wiremode; /* EPID protocol specific basic modes
+			   * For RoCE/IB reflects
+			   * rdmamode & IPS_PROTOEXP_FLAG_RDMA_MASK
+			   * Others currently only have 1 mode.
+			   * Note UDP vs TCP are separate EPID protocols
+			   */
+	uint8_t rdmamode; /* PSM3_RDMA */
+#ifdef PSM_HAVE_REG_MR
+	/* per EP information needed to create verbs MR cache */
+	uint8_t mr_cache_mode; /** PSM3_MR_CACHE_MODE */
+	uint8_t mr_access; /** PSM3_MR_ACCESS */
+#ifdef PSM_HAVE_RNDV_MOD
+	int cmd_fd;
+#endif
+	struct ibv_pd *pd;
+#endif
 	uint32_t hfi_imm_size;	  /** Immediate data size */
 	uint32_t connections;	    /**> Number of connections */
 
-	psmi_context_t context;
+	/* HAL indicates send segmentation support (OPA Send DMA or UDP GSO)
+	 * by setting max_segs>1 and max_size > 1 MTU.
+	 * chunk_size used will be min(chunk_max_segs*frag_size, chunk_max_size)
+	 * Can set 1 huge and other reasonable if want only 1 to control
+	 * segmentation size.
+	 * Note MTU (frag_size) may be negotiated down per conn (but not up).
+	 */
+	uint16_t chunk_max_segs;	/* max fragments in 1 HAL send call */
+	uint32_t chunk_max_size;	/* max payload in 1 HAL send call */
 	char *context_mylabel;
 	uint32_t yield_spin_cnt;
 
 	/* EP link-lists */
 	struct psm2_ep *user_ep_next;
 
-	/* EP link-lists for multi-context. */
+	/* EP link-lists for multi-context (multi-rail and multi-QP). */
 	struct psm2_ep *mctxt_prev;
 	struct psm2_ep *mctxt_next;
 	struct psm2_ep *mctxt_master;
@@ -193,16 +193,24 @@ struct psm2_ep {
 	/* Active Message handler table */
 	struct psm2_ep_am_handle_entry *am_htable;
 
-	uint64_t gid_hi;
-	uint64_t gid_lo;
+	uint8_t addr_fmt;	// one of PSMI_ADDR_FMT_*, always set
+
+	// these values are as reported by get_port_subnet
+		// subnet, addr and gid only defined when ptl_ips enabled
+		// subnet and addr must have same addr_fmt and prefix_len
+	psmi_subnet128_t subnet;
+	psmi_naddr128_t addr;
+	psmi_gid128_t gid;
 
 	ptl_ctl_t ptl_amsh;
 	ptl_ctl_t ptl_ips;
 	ptl_ctl_t ptl_self;
 
+	bool skip_affinity;
+
 	/* All ptl data is allocated inline below */
 	uint8_t ptl_base_data[0] __attribute__ ((aligned(64)));
-	bool skip_affinity;
+		// NO FIELDS CAN BE PLACED HERE
 };
 
 struct mqq {
@@ -243,7 +251,7 @@ struct psm2_epaddr {
 	int spin_cnt = 0;						\
 	PSMI_PROFILE_BLOCK();						\
 	while (!(cond)) {						\
-		err = psmi_poll_internal(ep, 1);			\
+		err = psm3_poll_internal(ep, 1, 0);			\
 		if (err == PSM2_OK_NO_PROGRESS) {			\
 			PSMI_PROFILE_REBLOCK(1);			\
 			if (++spin_cnt == (ep)->yield_spin_cnt) {	\
@@ -260,5 +268,14 @@ struct psm2_epaddr {
 	}								\
 	PSMI_PROFILE_UNBLOCK();						\
 } while (0)
+
+psm2_error_t psm3_parse_devices(int devices[PTL_MAX_INIT]);
+int psm3_device_is_enabled(const int devices[PTL_MAX_INIT], int devid);
+
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+extern int64_t psm3_gpu_evict_some(psm2_ep_t ep, uint64_t length, int access);
+#endif
+#endif
 
 #endif /* _PSMI_EP_H */

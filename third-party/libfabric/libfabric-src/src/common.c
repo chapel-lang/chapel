@@ -4,6 +4,7 @@
  * Copyright (c) 2013-2018 Intel Corp., Inc.  All rights reserved.
  * Copyright (c) 2015 Los Alamos Nat. Security, LLC. All rights reserved.
  * Copyright (c) 2020 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -67,6 +68,7 @@
 #include <ofi_util.h>
 #include <ofi_epoll.h>
 #include <ofi_list.h>
+#include <ofi_lock.h>
 #include <ofi_osd.h>
 #include <ofi_iov.h>
 #include <shared/ofi_str.h>
@@ -83,6 +85,68 @@ struct ofi_common_locks common_locks = {
 };
 
 size_t ofi_universe_size = 1024;
+int ofi_av_remove_cleanup;
+
+
+int ofi_genlock_init(struct ofi_genlock *lock,
+		     enum ofi_lock_type lock_type)
+{
+	int ret;
+
+	lock->lock_type = lock_type;
+	switch (lock->lock_type) {
+	case OFI_LOCK_SPINLOCK:
+		ret = ofi_spin_init(&lock->base.spinlock);
+		lock->lock = (ofi_genlock_lockop_t) ofi_spin_lock_op;
+		lock->unlock = (ofi_genlock_lockop_t) ofi_spin_unlock_op;
+		lock->held = (ofi_genlock_lockheld_t) ofi_spin_held_op;
+		break;
+	case OFI_LOCK_MUTEX:
+		ret = ofi_mutex_init(&lock->base.mutex);
+		lock->lock = (ofi_genlock_lockop_t) ofi_mutex_lock_op;
+		lock->unlock = (ofi_genlock_lockop_t) ofi_mutex_unlock_op;
+		lock->held = (ofi_genlock_lockheld_t) ofi_mutex_held_op;
+		break;
+	case OFI_LOCK_NOOP:
+		/* Use mutex for debug no-op support */
+		ret = ofi_mutex_init(&lock->base.mutex);
+		lock->lock = (ofi_genlock_lockop_t) ofi_mutex_lock_noop;
+		lock->unlock = (ofi_genlock_lockop_t) ofi_mutex_unlock_noop;
+		lock->held = (ofi_genlock_lockheld_t) ofi_mutex_held_op;
+		break;
+	case OFI_LOCK_NONE:
+		ret = 0;
+		lock->base.nolock = NULL;
+		lock->lock = (ofi_genlock_lockop_t) ofi_nolock_lock_op;
+		lock->unlock = (ofi_genlock_lockop_t) ofi_nolock_unlock_op;
+		lock->held = (ofi_genlock_lockheld_t) ofi_nolock_held_op;
+		break;
+	default:
+		ret = -FI_EINVAL;
+		break;
+	};
+
+	return ret;
+}
+
+void ofi_genlock_destroy(struct ofi_genlock *lock)
+{
+	switch (lock->lock_type) {
+	case OFI_LOCK_SPINLOCK:
+		ofi_spin_destroy(&lock->base.spinlock);
+		break;
+	case OFI_LOCK_MUTEX:
+	case OFI_LOCK_NOOP:
+		ofi_mutex_destroy(&lock->base.mutex);
+		break;
+	case OFI_LOCK_NONE:
+		break;
+	default:
+		assert(0);
+		break;
+	};
+}
+
 
 int fi_poll_fd(int fd, int timeout)
 {
@@ -314,9 +378,8 @@ sa_sin:
 			       sizeof(str)))
 			return NULL;
 
-		size = snprintf(buf, MIN(*len, sizeof(str)),
-				"fi_sockaddr_in://%s:%" PRIu16, str,
-				ntohs(sin->sin_port));
+		size = snprintf(buf, *len, "fi_sockaddr_in://%s:%" PRIu16,
+				str, ntohs(sin->sin_port));
 		break;
 	case FI_SOCKADDR_IN6:
 sa_sin6:
@@ -325,9 +388,8 @@ sa_sin6:
 			       sizeof(str)))
 			return NULL;
 
-		size = snprintf(buf, MIN(*len, sizeof(str)),
-				"fi_sockaddr_in6://[%s]:%" PRIu16, str,
-				ntohs(sin6->sin6_port));
+		size = snprintf(buf, *len, "fi_sockaddr_in6://[%s]:%" PRIu16,
+				str, ntohs(sin6->sin6_port));
 		break;
 	case FI_ADDR_EFA:
 		memset(str, 0, sizeof(str));
@@ -362,8 +424,9 @@ sa_sin6:
 		break;
 	case FI_ADDR_PSMX3:
 		size =
-		    snprintf(buf, *len, "fi_addr_psmx3://%" PRIx64 ":%" PRIx64,
-			     *(uint64_t *)addr, *((uint64_t *)addr + 1));
+		    snprintf(buf, *len, "fi_addr_psmx3://%" PRIx64 ":%" PRIx64 ":%" PRIx64 ":%" PRIx64,
+			     *(uint64_t *)addr, *((uint64_t *)addr + 1),
+			     *((uint64_t *)addr + 2), *((uint64_t *)addr + 3));
 		break;
 	case FI_ADDR_GNI:
 		size = snprintf(buf, *len, "fi_addr_gni://%" PRIx64,
@@ -371,6 +434,9 @@ sa_sin6:
 		break;
 	case FI_ADDR_BGQ:
 		size = snprintf(buf, *len, "fi_addr_bgq://%p", addr);
+		break;
+	case FI_ADDR_OPX:
+		size = snprintf(buf, *len, "fi_addr_opx://%016lx", *(uint64_t *)addr);
 		break;
 	case FI_ADDR_MLX:
 		size = snprintf(buf, *len, "fi_addr_mlx://%p", addr);
@@ -390,6 +456,10 @@ sa_sin6:
 		break;
 	case FI_ADDR_STR:
 		size = snprintf(buf, *len, "%s", (const char *) addr);
+		break;
+	case FI_ADDR_CXI:
+		size = snprintf(buf, *len, "fi_addr_cxi://0x%08" PRIx32,
+				*(uint32_t *)addr);
 		break;
 	default:
 		return NULL;
@@ -428,6 +498,8 @@ uint32_t ofi_addr_format(const char *str)
 		return FI_ADDR_GNI;
 	else if (!strcasecmp(fmt, "fi_addr_bgq"))
 		return FI_ADDR_BGQ;
+	else if (!strcasecmp(fmt, "fi_addr_opx"))
+		return FI_ADDR_OPX;
 	else if (!strcasecmp(fmt, "fi_addr_efa"))
 		return FI_ADDR_EFA;
 	else if (!strcasecmp(fmt, "fi_addr_mlx"))
@@ -477,14 +549,32 @@ static int ofi_str_to_psmx3(const char *str, void **addr, size_t *len)
 {
 	int ret;
 
-	*len = 2 * sizeof(uint64_t);
+	*len = 4 * sizeof(uint64_t);
 	*addr = calloc(1, *len);
 	if (!(*addr))
 		return -FI_ENOMEM;
 
-	ret = sscanf(str, "%*[^:]://%" SCNx64 ":%" SCNx64,
-		     (uint64_t *) *addr, (uint64_t *) *addr + 1);
-	if (ret == 2)
+	ret = sscanf(str, "%*[^:]://%" SCNx64 ":%" SCNx64 ":%" SCNx64 ":%" SCNx64,
+		     (uint64_t *) *addr, (uint64_t *) *addr + 1,
+		     (uint64_t *) *addr + 2, (uint64_t *) *addr + 3);
+	if (ret == 4)
+		return 0;
+
+	free(*addr);
+	return -FI_EINVAL;
+}
+
+static int ofi_str_to_opx(const char *str, void **addr, size_t *len)
+{
+	int ret;
+
+	*len = sizeof(uint64_t);
+	*addr = calloc(1, *len);
+	if (!(*addr))
+		return -FI_ENOMEM;
+
+	ret = sscanf(str, "%*[^:]://%" SCNx64, (uint64_t *) *addr);
+	if (ret == 1)
 		return 0;
 
 	free(*addr);
@@ -548,7 +638,7 @@ static int ofi_str_to_sib(const char *str, void **addr, size_t *len)
 		return -FI_EINVAL;
 	}
 
-	pkey = strtol(tok, &endptr, 0);
+	pkey = (uint16_t) strtol(tok, &endptr, 0);
 	if (*endptr) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
 			"Invalid pkey in address: %s\n", str);
@@ -562,7 +652,7 @@ static int ofi_str_to_sib(const char *str, void **addr, size_t *len)
 		return -FI_EINVAL;
 	}
 
-	ps = strtol(tok, &endptr, 0);
+	ps = (uint16_t) strtol(tok, &endptr, 0);
 	if (*endptr) {
 		FI_WARN(&core_prov, FI_LOG_CORE,
 			"Invalid port space in address: %s\n", str);
@@ -586,7 +676,7 @@ static int ofi_str_to_sib(const char *str, void **addr, size_t *len)
 	/* Port is optional */
 	tok = strtok_r(NULL, ":", &saveptr);
 	if (tok)
-		port = strtol(tok, &endptr, 0);
+		port = (uint16_t) strtol(tok, &endptr, 0);
 	else
 		port = 0;
 
@@ -615,7 +705,7 @@ static int ofi_str_to_sib(const char *str, void **addr, size_t *len)
 
 static int ofi_str_to_efa(const char *str, void **addr, size_t *len)
 {
-	char gid[INET6_ADDRSTRLEN];
+	char gid[INET6_ADDRSTRLEN + 1];
 	uint16_t *qpn;
 	uint32_t *qkey;
 	int ret;
@@ -628,7 +718,7 @@ static int ofi_str_to_efa(const char *str, void **addr, size_t *len)
 		return -FI_ENOMEM;
 	qpn = (uint16_t *)*addr + 8;
 	qkey = (uint32_t *)*addr + 5;
-	ret = sscanf(str, "%*[^:]://[%64[^]]]:%" SCNu16 ":%" SCNu32, gid, qpn, qkey);
+	ret = sscanf(str, "%*[^:]://[%46[^]]]:%" SCNu16 ":%" SCNu32, gid, qpn, qkey);
 	if (ret < 1)
 		goto err;
 
@@ -643,7 +733,7 @@ err:
 static int ofi_str_to_sin(const char *str, void **addr, size_t *len)
 {
 	struct sockaddr_in *sin;
-	char ip[64];
+	char ip[65];
 	int ret;
 
 	*len = sizeof(*sin);
@@ -688,7 +778,7 @@ match_port:
 static int ofi_str_to_sin6(const char *str, void **addr, size_t *len)
 {
 	struct sockaddr_in6 *sin6;
-	char ip[64];
+	char ip[65];
 	int ret;
 
 	*len = sizeof(*sin6);
@@ -825,6 +915,8 @@ int ofi_str_toaddr(const char *str, uint32_t *addr_format,
 		return ofi_str_to_psmx2(str, addr, len);
 	case FI_ADDR_PSMX3:
 		return ofi_str_to_psmx3(str, addr, len);
+	case FI_ADDR_OPX:
+		return ofi_str_to_opx(str, addr, len);
 	case FI_ADDR_IB_UD:
 		return ofi_str_to_ib_ud(str, addr, len);
 	case FI_ADDR_EFA:
@@ -995,7 +1087,7 @@ void ofi_straddr_log_internal(const char *func, int line,
 	}
 }
 
-int ofi_discard_socket(SOCKET sock, size_t len)
+ssize_t ofi_discard_socket(SOCKET sock, size_t len)
 {
 	char buf;
 	ssize_t ret = 0;
@@ -1020,7 +1112,7 @@ size_t ofi_byteq_readv(struct ofi_byteq *byteq, struct iovec *iov,
 	len = ofi_copy_iov_buf(iov, cnt, offset, &byteq->data[byteq->head],
 			       avail, OFI_COPY_BUF_TO_IOV);
 	if (len < avail) {
-		byteq->head += len;
+		byteq->head += (unsigned) len;
 	} else {
 		byteq->head = 0;
 		byteq->tail = 0;
@@ -1043,22 +1135,64 @@ void ofi_byteq_writev(struct ofi_byteq *byteq, const struct iovec *iov,
 	for (i = 0; i < cnt; i++) {
 		memcpy(&byteq->data[byteq->tail], iov[i].iov_base,
 		       iov[i].iov_len);
-		byteq->tail += iov[i].iov_len;
+		byteq->tail += (unsigned) iov[i].iov_len;
 	}
 }
 
 
 ssize_t ofi_bsock_flush(struct ofi_bsock *bsock)
 {
+	size_t avail;
 	ssize_t ret;
+	int err;
 
 	if (!ofi_bsock_tosend(bsock))
 		return 0;
 
-	ret = ofi_byteq_send(&bsock->sq, bsock->sock);
+	avail = ofi_byteq_readable(&bsock->sq);
+	assert(avail);
+	ret = bsock->sockapi->send(bsock->sockapi, bsock->sock,
+				   &bsock->sq.data[bsock->sq.head],
+				   avail, MSG_NOSIGNAL, bsock);
 	if (ret < 0) {
-		return ofi_sockerr() == EPIPE ?
-			-FI_ENOTCONN : -ofi_sockerr();
+		if (ret == -OFI_EINPROGRESS_URING)
+		    return ret;
+
+		err = ofi_sockerr();
+		if (err == EPIPE)
+			return -FI_ENOTCONN;
+		if (err == EWOULDBLOCK)
+			return -FI_EAGAIN;
+		return -err;
+	} else {
+		ofi_byteq_consume(&bsock->sq, (size_t) ret);
+	}
+
+	return ofi_bsock_tosend(bsock) ? -FI_EAGAIN : 0;
+}
+
+ssize_t ofi_bsock_flush_sync(struct ofi_bsock *bsock)
+{
+	size_t avail;
+	ssize_t ret;
+	int err;
+
+	if (!ofi_bsock_tosend(bsock))
+		return 0;
+
+	avail = ofi_byteq_readable(&bsock->sq);
+	assert(avail);
+	ret = ofi_send_socket(bsock->sock, &bsock->sq.data[bsock->sq.head],
+			      avail, MSG_NOSIGNAL);
+	if (ret < 0) {
+		err = ofi_sockerr();
+		if (err == EPIPE)
+			return -FI_ENOTCONN;
+		if (err == EWOULDBLOCK)
+			return -FI_EAGAIN;
+		return -err;
+	} else {
+		ofi_byteq_consume(&bsock->sq, (size_t) ret);
 	}
 
 	return ofi_bsock_tosend(bsock) ? -FI_EAGAIN : 0;
@@ -1084,17 +1218,21 @@ ssize_t ofi_bsock_send(struct ofi_bsock *bsock, const void *buf, size_t *len)
 
 	assert(!ofi_bsock_tosend(bsock));
 	if (*len > bsock->zerocopy_size) {
-		ret = ofi_send_socket(bsock->sock, buf, *len,
-				      MSG_NOSIGNAL | OFI_ZEROCOPY);
+		ret = bsock->sockapi->send(bsock->sockapi, bsock->sock, buf, *len,
+					   MSG_NOSIGNAL | OFI_ZEROCOPY, bsock);
 		if (ret >= 0) {
 			bsock->async_index++;
 			*len = ret;
-			return -FI_EINPROGRESS;
+			return -OFI_EINPROGRESS_ASYNC;
 		}
 	} else {
-		ret = ofi_send_socket(bsock->sock, buf, *len, MSG_NOSIGNAL);
+		ret = bsock->sockapi->send(bsock->sockapi, bsock->sock, buf, *len,
+					   MSG_NOSIGNAL, bsock);
 	}
 	if (ret < 0) {
+		if (ret == -OFI_EINPROGRESS_URING)
+			return ret;
+
 		if (OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr()) &&
 		    *len < ofi_byteq_writeable(&bsock->sq)) {
 			ofi_byteq_write(&bsock->sq, buf, *len);
@@ -1109,7 +1247,6 @@ ssize_t ofi_bsock_send(struct ofi_bsock *bsock, const void *buf, size_t *len)
 ssize_t ofi_bsock_sendv(struct ofi_bsock *bsock, const struct iovec *iov,
 			size_t cnt, size_t *len)
 {
-	struct msghdr msg;
 	size_t avail;
 	ssize_t ret;
 
@@ -1133,26 +1270,23 @@ ssize_t ofi_bsock_sendv(struct ofi_bsock *bsock, const struct iovec *iov,
 	}
 
 	assert(!ofi_bsock_tosend(bsock));
-	msg.msg_control = NULL;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
-	msg.msg_iov = (struct iovec *) iov;
-	msg.msg_iovlen = cnt;
 
 	if (*len > bsock->zerocopy_size) {
-		ret = ofi_sendmsg_tcp(bsock->sock, &msg,
-				      MSG_NOSIGNAL | OFI_ZEROCOPY);
+		ret = bsock->sockapi->sendv(bsock->sockapi, bsock->sock, iov, cnt,
+					    MSG_NOSIGNAL | OFI_ZEROCOPY, bsock);
 		if (ret >= 0) {
 			bsock->async_index++;
 			*len = ret;
-			return -FI_EINPROGRESS;
+			return -OFI_EINPROGRESS_ASYNC;
 		}
 	} else {
-		ret = ofi_sendmsg_tcp(bsock->sock, &msg, MSG_NOSIGNAL);
+		ret = bsock->sockapi->sendv(bsock->sockapi, bsock->sock, iov, cnt,
+					    MSG_NOSIGNAL, bsock);
 	}
 	if (ret < 0) {
+		if (ret == -OFI_EINPROGRESS_URING)
+			return ret;
+
 		if (OFI_SOCK_TRY_SND_RCV_AGAIN(ofi_sockerr()) &&
 		    *len < ofi_byteq_writeable(&bsock->sq)) {
 			ofi_byteq_writev(&bsock->sq, iov, cnt);
@@ -1166,33 +1300,41 @@ ssize_t ofi_bsock_sendv(struct ofi_bsock *bsock, const struct iovec *iov,
 
 ssize_t ofi_bsock_recv(struct ofi_bsock *bsock, void *buf, size_t len)
 {
-	size_t bytes;
+	size_t bytes, avail;
 	ssize_t ret;
 
 	bytes = ofi_byteq_read(&bsock->rq, buf, len);
 	if (bytes) {
 		if (bytes == len)
 			return len;
+
 		buf = (char *) buf + bytes;
 		len -= bytes;
 	}
 
 	assert(!ofi_bsock_readable(bsock));
 	if (len < (bsock->rq.size >> 1)) {
-		ret = ofi_byteq_recv(&bsock->rq, bsock->sock);
+		avail = ofi_byteq_writeable(&bsock->rq);
+		assert(avail);
+		ret = bsock->sockapi->recv(bsock->sockapi, bsock->sock,
+					   &bsock->rq.data[bsock->rq.tail],
+					   avail, MSG_NOSIGNAL, bsock);
 		if (ret <= 0)
 			goto out;
 
+		ofi_byteq_add(&bsock->rq, (size_t) ret);
 		assert(ofi_bsock_readable(bsock));
 		bytes += ofi_byteq_read(&bsock->rq, buf, len);
 		return bytes;
 	}
 
-	ret = ofi_recv_socket(bsock->sock, buf, len, MSG_NOSIGNAL);
+	ret = bsock->sockapi->recv(bsock->sockapi, bsock->sock, buf, len,
+				   MSG_NOSIGNAL, bsock);
 	if (ret > 0)
 		return bytes + ret;
 
 out:
+	assert(ret != -OFI_EINPROGRESS_URING);
 	if (bytes)
 		return bytes;
 	return ret ? -ofi_sockerr(): -FI_ENOTCONN;
@@ -1200,8 +1342,7 @@ out:
 
 ssize_t ofi_bsock_recvv(struct ofi_bsock *bsock, struct iovec *iov, size_t cnt)
 {
-	struct msghdr msg;
-	size_t len, bytes;
+	size_t len, bytes, avail;
 	ssize_t ret;
 
 	if (cnt == 1)
@@ -1220,10 +1361,15 @@ ssize_t ofi_bsock_recvv(struct ofi_bsock *bsock, struct iovec *iov, size_t cnt)
 
 	assert(!ofi_bsock_readable(bsock));
 	if (len < (bsock->rq.size >> 1)) {
-		ret = ofi_byteq_recv(&bsock->rq, bsock->sock);
+		avail = ofi_byteq_writeable(&bsock->rq);
+		assert(avail);
+		ret = bsock->sockapi->recv(bsock->sockapi, bsock->sock,
+					   &bsock->rq.data[bsock->rq.tail],
+					   avail, MSG_NOSIGNAL, bsock);
 		if (ret <= 0)
 			goto out;
 
+		ofi_byteq_add(&bsock->rq, (size_t) ret);
 		assert(ofi_bsock_readable(bsock));
 		bytes += ofi_byteq_readv(&bsock->rq, iov, cnt, bytes);
 		return bytes;
@@ -1235,18 +1381,12 @@ ssize_t ofi_bsock_recvv(struct ofi_bsock *bsock, struct iovec *iov, size_t cnt)
 	if (bytes)
 		return bytes;
 
-	msg.msg_control = NULL;
-	msg.msg_controllen = 0;
-	msg.msg_flags = 0;
-	msg.msg_name = NULL;
-	msg.msg_namelen = 0;
-	msg.msg_iov = iov;
-	msg.msg_iovlen = cnt;
-
-	ret = ofi_recvmsg_tcp(bsock->sock, &msg, MSG_NOSIGNAL);
+	ret = bsock->sockapi->recvv(bsock->sockapi, bsock->sock, iov, cnt,
+				    MSG_NOSIGNAL, bsock);
 	if (ret > 0)
 		return ret;
 out:
+	assert(ret != -OFI_EINPROGRESS_URING);
 	if (bytes)
 		return bytes;
 	return ret ? -ofi_sockerr(): -FI_ENOTCONN;
@@ -1293,8 +1433,10 @@ uint32_t ofi_bsock_async_done(const struct fi_provider *prov,
 		FI_WARN(prov, FI_LOG_EP_DATA,
 			"Zerocopy data was copied\n");
 disable:
-		FI_WARN(prov, FI_LOG_EP_DATA, "disabling zerocopy\n");
-		bsock->zerocopy_size = SIZE_MAX;
+		if (bsock->zerocopy_size != SIZE_MAX) {
+			FI_WARN(prov, FI_LOG_EP_DATA, "disabling zerocopy\n");
+			bsock->zerocopy_size = SIZE_MAX;
+		}
 	}
 	return bsock->done_index;
 }
@@ -1306,12 +1448,15 @@ uint32_t ofi_bsock_async_done(const struct fi_provider *prov,
 }
 #endif
 
+
+/* Poll file descriptor set abstraction - emulates epoll over poll */
 int ofi_pollfds_grow(struct ofi_pollfds *pfds, int max_size)
 {
 	struct pollfd *fds;
-	void *contexts;
+	struct ofi_pollfds_ctx *ctx;
 	size_t size;
 
+	assert(ofi_genlock_held(&pfds->lock));
 	if (max_size < pfds->size)
 		return FI_SUCCESS;
 
@@ -1319,52 +1464,48 @@ int ofi_pollfds_grow(struct ofi_pollfds *pfds, int max_size)
 	if (size < pfds->size + 64)
 		size = pfds->size + 64;
 
-	fds = calloc(size, sizeof(*pfds->fds) + sizeof(*pfds->context));
+	fds = calloc(size, sizeof(*pfds->fds) + sizeof(*pfds->ctx));
 	if (!fds)
 		return -FI_ENOMEM;
 
-	contexts = fds + size;
+	ctx = (struct ofi_pollfds_ctx *) (fds + size);
 	if (pfds->size) {
 		memcpy(fds, pfds->fds, pfds->size * sizeof(*pfds->fds));
-		memcpy(contexts, pfds->context, pfds->size * sizeof(*pfds->context));
+		memcpy(ctx, pfds->ctx, pfds->size * sizeof(*pfds->ctx));
 		free(pfds->fds);
 	}
 
-	while (pfds->size < size)
+	while (pfds->size < size) {
+		ctx[pfds->size].index = -1;
 		fds[pfds->size++].fd = INVALID_SOCKET;
+	}
 
 	pfds->fds = fds;
-	pfds->context = contexts;
+	pfds->ctx = ctx;
 	return FI_SUCCESS;
 }
 
-int ofi_pollfds_create(struct ofi_pollfds **pfds)
+static int ofi_pollfds_match_fd(struct slist_entry *entry, const void *arg)
 {
-	int ret;
+	struct ofi_pollfds_work_item *item;
+	int fd = (int) (uintptr_t) arg;
 
-	*pfds = calloc(1, sizeof(struct ofi_pollfds));
-	if (!*pfds)
-		return -FI_ENOMEM;
+	item = container_of(entry, struct ofi_pollfds_work_item, entry);
+	return item->fd == fd;
+}
 
-	ret = ofi_pollfds_grow(*pfds, 63);
-	if (ret)
-		goto err1;
+static struct ofi_pollfds_work_item *
+ofi_pollfds_find_item(struct ofi_pollfds *pfds, int fd)
+{
+	struct slist_entry *entry;
 
-	ret = fd_signal_init(&(*pfds)->signal);
-	if (ret)
-		goto err2;
-
-	(*pfds)->fds[(*pfds)->nfds].fd = (*pfds)->signal.fd[FI_READ_FD];
-	(*pfds)->fds[(*pfds)->nfds].events = POLLIN;
-	(*pfds)->context[(*pfds)->nfds++] = NULL;
-	slist_init(&(*pfds)->work_item_list);
-	fastlock_init(&(*pfds)->lock);
-	return FI_SUCCESS;
-err2:
-	free((*pfds)->fds);
-err1:
-	free(*pfds);
-	return ret;
+	assert(ofi_genlock_held(&pfds->lock));
+	entry = slist_find_first_match(&pfds->work_item_list,
+				       ofi_pollfds_match_fd,
+				       (void *) (uintptr_t) fd);
+	if (!entry)
+		return NULL;
+	return container_of(entry, struct ofi_pollfds_work_item, entry);
 }
 
 static int ofi_pollfds_ctl(struct ofi_pollfds *pfds, enum ofi_pollfds_ctl op,
@@ -1379,27 +1520,18 @@ static int ofi_pollfds_ctl(struct ofi_pollfds *pfds, enum ofi_pollfds_ctl op,
 	item->fd = fd;
 	item->events = events;
 	item->context = context;
-	item->type = op;
-	fastlock_acquire(&pfds->lock);
+	item->op = op;
+	ofi_genlock_lock(&pfds->lock);
 	slist_insert_tail(&item->entry, &pfds->work_item_list);
 	fd_signal_set(&pfds->signal);
-	fastlock_release(&pfds->lock);
+	ofi_genlock_unlock(&pfds->lock);
 	return 0;
 }
 
-int ofi_pollfds_add(struct ofi_pollfds *pfds, int fd, uint32_t events,
+int ofi_pollfds_add_ctl(struct ofi_pollfds *pfds, int fd, uint32_t events,
 		    void *context)
 {
 	return ofi_pollfds_ctl(pfds, POLLFDS_CTL_ADD, fd, events, context);
-}
-
-static int ofi_pollfds_find(struct slist_entry *entry, const void *arg)
-{
-	struct ofi_pollfds_work_item *item;
-	int fd = (int) (uintptr_t) arg;
-
-	item = container_of(entry, struct ofi_pollfds_work_item, entry);
-	return item->fd == fd;
 }
 
 /* We're not changing the fds, just fields.  This is always 'racy' if
@@ -1414,33 +1546,105 @@ static int ofi_pollfds_find(struct slist_entry *entry, const void *arg)
 int ofi_pollfds_mod(struct ofi_pollfds *pfds, int fd, uint32_t events,
 		    void *context)
 {
-	struct slist_entry *entry;
+	struct ofi_pollfds_ctx *ctx;
 	struct ofi_pollfds_work_item *item;
-	int ret;
 
-	fastlock_acquire(&pfds->lock);
-	ret = ofi_pollfds_do_mod(pfds, fd, events, context);
-	if (!ret)
+	ofi_genlock_lock(&pfds->lock);
+	ctx = ofi_pollfds_get_ctx(pfds, fd);
+	if (ctx) {
+		pfds->fds[ctx->index].events = (short) events;
+		ctx->context = context;
 		goto signal;
+	}
 
 	/* fd may be queued for insertion */
-	entry = slist_find_first_match(&pfds->work_item_list, ofi_pollfds_find,
-				       (void *) (uintptr_t) fd);
-	if (entry) {
-		item = container_of(entry, struct ofi_pollfds_work_item, entry);
+	item = ofi_pollfds_find_item(pfds, fd);
+	if (item) {
 		item->events = events;
 		item->context = context;
 	}
 
 signal:
 	fd_signal_set(&pfds->signal);
-	fastlock_release(&pfds->lock);
+	ofi_genlock_unlock(&pfds->lock);
 	return 0;
 }
 
-int ofi_pollfds_del(struct ofi_pollfds *pfds, int fd)
+int ofi_pollfds_del_ctl(struct ofi_pollfds *pfds, int fd)
 {
 	return ofi_pollfds_ctl(pfds, POLLFDS_CTL_DEL, fd, 0, NULL);
+}
+
+static int ofi_pollfds_do_del(struct ofi_pollfds *pfds, int fd)
+{
+	struct ofi_pollfds_ctx *ctx, *swap_ctx;
+	struct pollfd *swap_pfd;
+
+	assert(ofi_genlock_held(&pfds->lock));
+	ctx = ofi_pollfds_get_ctx(pfds, fd);
+	if (!ctx)
+		return 0;
+
+	if (ctx->index < pfds->nfds - 1) {
+		swap_pfd = &pfds->fds[pfds->nfds - 1];
+		swap_ctx = ofi_pollfds_get_ctx(pfds, swap_pfd->fd);
+		assert(swap_ctx);
+		swap_ctx->index = ctx->index;
+		pfds->fds[swap_ctx->index] = *swap_pfd;
+
+		swap_pfd->fd = INVALID_SOCKET;
+		swap_pfd->events = 0;
+		swap_pfd->revents = 0;
+	}
+	pfds->nfds--;
+	ctx->index = -1;
+	return 0;
+}
+
+static int
+ofi_pollfds_sync_del(struct ofi_pollfds *pfds, int fd)
+{
+	int ret;
+
+	ofi_genlock_lock(&pfds->lock);
+	ret = ofi_pollfds_do_del(pfds, fd);
+	ofi_genlock_unlock(&pfds->lock);
+	return ret;
+}
+
+static int
+ofi_pollfds_do_add(struct ofi_pollfds *pfds, int fd, uint32_t events,
+		   void *context)
+{
+	struct ofi_pollfds_ctx *ctx;
+
+	assert(ofi_genlock_held(&pfds->lock));
+	ctx = ofi_pollfds_get_ctx(pfds, fd);
+	if (!ctx) {
+		ctx = ofi_pollfds_alloc_ctx(pfds, fd);
+		if (!ctx) {
+			assert(0);
+			return - FI_ENOMEM;
+		}
+	}
+
+	ctx->context = context;
+	pfds->fds[ctx->index].fd = fd;
+	pfds->fds[ctx->index].events = (short) events;
+	pfds->fds[ctx->index].revents = 0;
+	return 0;
+}
+
+static int
+ofi_pollfds_sync_add(struct ofi_pollfds *pfds, int fd, uint32_t events,
+		     void *context)
+{
+	int ret;
+
+	ofi_genlock_lock(&pfds->lock);
+	ret = ofi_pollfds_do_add(pfds, fd, events, context);
+	ofi_genlock_unlock(&pfds->lock);
+	return ret;
 }
 
 static void ofi_pollfds_process_work(struct ofi_pollfds *pfds)
@@ -1448,16 +1652,18 @@ static void ofi_pollfds_process_work(struct ofi_pollfds *pfds)
 	struct slist_entry *entry;
 	struct ofi_pollfds_work_item *item;
 
+	assert(ofi_genlock_held(&pfds->lock));
 	while (!slist_empty(&pfds->work_item_list)) {
 		entry = slist_remove_head(&pfds->work_item_list);
 		item = container_of(entry, struct ofi_pollfds_work_item, entry);
 
-		switch (item->type) {
+		switch (item->op) {
 		case POLLFDS_CTL_ADD:
-			ofi_pollfds_do_add(pfds, item);
+			ofi_pollfds_do_add(pfds, item->fd, item->events,
+					   item->context);
 			break;
 		case POLLFDS_CTL_DEL:
-			ofi_pollfds_do_del(pfds, item);
+			ofi_pollfds_do_del(pfds, item->fd);
 			break;
 		default:
 			assert(0);
@@ -1471,48 +1677,50 @@ int ofi_pollfds_wait(struct ofi_pollfds *pfds,
 		     struct ofi_epollfds_event *events,
 		     int maxevents, int timeout)
 {
-	int i, ret;
-	int found = 0;
-	uint64_t start = (timeout > 0) ? ofi_gettime_ms() : 0;
+	struct ofi_pollfds_ctx *ctx;
+	uint64_t endtime;
+	int cnt, i, skip, ret = 0;
 
-	fastlock_acquire(&pfds->lock);
+	ofi_genlock_lock(&pfds->lock);
 	if (!slist_empty(&pfds->work_item_list))
 		ofi_pollfds_process_work(pfds);
-	fastlock_release(&pfds->lock);
 
+	skip = (timeout == 0);
+	endtime = ofi_timeout_time(timeout);
 	do {
-		ret = poll(pfds->fds, pfds->nfds, timeout);
-		if (ret == SOCKET_ERROR)
+		ofi_genlock_unlock(&pfds->lock);
+		cnt = poll(pfds->fds + skip, pfds->nfds - skip, timeout);
+		if (cnt == SOCKET_ERROR)
 			return -ofi_sockerr();
-		else if (ret == 0)
+		else if (cnt == 0)
 			return 0;
 
-		fastlock_acquire(&pfds->lock);
+		ofi_genlock_lock(&pfds->lock);
+		if (!skip && pfds->fds[0].revents) {
+			assert(cnt > 0);
+			fd_signal_reset(&pfds->signal);
+			cnt--;
+		}
+
 		if (!slist_empty(&pfds->work_item_list))
 			ofi_pollfds_process_work(pfds);
-		fastlock_release(&pfds->lock);
-
-		if (pfds->fds[0].revents) {
-			fd_signal_reset(&pfds->signal);
-			ret--;
-		}
-
-		ret = MIN(maxevents, ret);
 
 		/* Index 0 is the internal signaling fd, skip it */
-		for (i = 1; i < pfds->nfds && found < ret; i++) {
+		cnt = MIN(maxevents, cnt);
+		for (i = 1; cnt && i < pfds->nfds; i++) {
 			if (pfds->fds[i].revents) {
-				events[found].events = pfds->fds[i].revents;
-				events[found++].data.ptr = pfds->context[i];
+				ctx = ofi_pollfds_get_ctx(pfds, pfds->fds[i].fd);
+				if (ctx) {
+					events[ret].events = pfds->fds[i].revents;
+					events[ret++].data.ptr = ctx->context;
+				}
+				cnt--;
 			}
 		}
+	} while (!ret && !ofi_adjust_timeout(endtime, &timeout));
 
-		if (!found && timeout > 0)
-			timeout -= (int) (ofi_gettime_ms() - start);
-
-	} while (timeout > 0 && !found);
-
-	return found;
+	ofi_genlock_unlock(&pfds->lock);
+	return ret;
 }
 
 void ofi_pollfds_close(struct ofi_pollfds *pfds)
@@ -1520,21 +1728,194 @@ void ofi_pollfds_close(struct ofi_pollfds *pfds)
 	struct ofi_pollfds_work_item *item;
 	struct slist_entry *entry;
 
-	if (pfds) {
-		while (!slist_empty(&pfds->work_item_list)) {
-			entry = slist_remove_head(&pfds->work_item_list);
-			item = container_of(entry,
-					    struct ofi_pollfds_work_item,
-					    entry);
-			free(item);
-		}
-		fastlock_destroy(&pfds->lock);
-		fd_signal_free(&pfds->signal);
-		free(pfds->fds);
-		free(pfds);
+	if (!pfds)
+		return;
+
+	while (!slist_empty(&pfds->work_item_list)) {
+		entry = slist_remove_head(&pfds->work_item_list);
+		item = container_of(entry,
+					struct ofi_pollfds_work_item,
+					entry);
+		free(item);
+	}
+	ofi_genlock_destroy(&pfds->lock);
+	fd_signal_free(&pfds->signal);
+	free(pfds->fds);
+	free(pfds);
+}
+
+int ofi_pollfds_create_(struct ofi_pollfds **pfds, enum ofi_lock_type lock_type)
+{
+	int ret;
+
+	*pfds = calloc(1, sizeof(struct ofi_pollfds));
+	if (!*pfds)
+		return -FI_ENOMEM;
+
+	ret = ofi_genlock_init(&(*pfds)->lock, lock_type);
+	if (ret)
+		goto err0;
+
+	ofi_genlock_lock(&(*pfds)->lock);
+	ret = ofi_pollfds_grow(*pfds, 63);
+	ofi_genlock_unlock(&(*pfds)->lock);
+	if (ret)
+		goto err1;
+
+	ret = fd_signal_init(&(*pfds)->signal);
+	if (ret)
+		goto err2;
+
+	(*pfds)->fds[0].fd = (*pfds)->signal.fd[FI_READ_FD];
+	(*pfds)->fds[0].events = POLLIN;
+	(*pfds)->nfds++;
+	slist_init(&(*pfds)->work_item_list);
+	if (lock_type == OFI_LOCK_NONE || lock_type == OFI_LOCK_NOOP) {
+		(*pfds)->add = ofi_pollfds_sync_add;
+		(*pfds)->del = ofi_pollfds_sync_del;
+	} else {
+		(*pfds)->add = ofi_pollfds_add_ctl;
+		(*pfds)->del = ofi_pollfds_del_ctl;
+	}
+	return FI_SUCCESS;
+err2:
+	free((*pfds)->fds);
+err1:
+	ofi_genlock_destroy(&(*pfds)->lock);
+err0:
+	free(*pfds);
+	return ret;
+}
+
+int ofi_pollfds_create(struct ofi_pollfds **pfds)
+{
+	return ofi_pollfds_create_(pfds, OFI_LOCK_MUTEX);
+}
+
+
+/* Dynamic poll */
+static int
+ofi_dynpoll_add_epoll(struct ofi_dynpoll *dynpoll, int fd,
+		      uint32_t events, void *context)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_EPOLL);
+	return ofi_epoll_add(dynpoll->ep, fd, events, context);
+}
+
+static int
+ofi_dynpoll_mod_epoll(struct ofi_dynpoll *dynpoll, int fd,
+		      uint32_t events, void *context)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_EPOLL);
+	return ofi_epoll_mod(dynpoll->ep, fd, events, context);
+}
+
+static int ofi_dynpoll_del_epoll(struct ofi_dynpoll *dynpoll, int fd)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_EPOLL);
+	return ofi_epoll_del(dynpoll->ep, fd);
+}
+
+static int
+ofi_dynpoll_wait_epoll(struct ofi_dynpoll *dynpoll,
+		       struct ofi_epollfds_event *events,
+		       int maxevents, int timeout)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_EPOLL);
+	return ofi_epoll_wait(dynpoll->ep, events, maxevents, timeout);
+}
+
+static int
+ofi_dynpoll_get_fd_epoll(struct ofi_dynpoll *dynpoll)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_EPOLL);
+	return dynpoll->ep;
+}
+
+static int
+ofi_dynpoll_add_poll(struct ofi_dynpoll *dynpoll, int fd,
+		     uint32_t events, void *context)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_POLL);
+	return ofi_pollfds_add(dynpoll->pfds, fd, events, context);
+}
+
+static int
+ofi_dynpoll_mod_poll(struct ofi_dynpoll *dynpoll, int fd,
+		     uint32_t events, void *context)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_POLL);
+	return ofi_pollfds_mod(dynpoll->pfds, fd, events, context);
+}
+
+static int ofi_dynpoll_del_poll(struct ofi_dynpoll *dynpoll, int fd)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_POLL);
+	return ofi_pollfds_del(dynpoll->pfds, fd);
+}
+
+static int
+ofi_dynpoll_wait_poll(struct ofi_dynpoll *dynpoll,
+		      struct ofi_epollfds_event *events,
+		      int maxevents, int timeout)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_POLL);
+	return ofi_pollfds_wait(dynpoll->pfds, events, maxevents, timeout);
+}
+
+static int
+ofi_dynpoll_get_fd_poll(struct ofi_dynpoll *dynpoll)
+{
+	assert(dynpoll->type == OFI_DYNPOLL_POLL);
+	return INVALID_SOCKET;  /* Unsupported */
+}
+
+void ofi_dynpoll_close(struct ofi_dynpoll *dynpoll)
+{
+	switch (dynpoll->type) {
+	case OFI_DYNPOLL_EPOLL:
+		ofi_epoll_close(dynpoll->ep);
+		break;
+	case OFI_DYNPOLL_POLL:
+		ofi_pollfds_close(dynpoll->pfds);
+		break;
+	default:
+		assert(0);
+		break;
 	}
 }
 
+int ofi_dynpoll_create(struct ofi_dynpoll *dynpoll, enum ofi_dynpoll_type type,
+		       enum ofi_lock_type lock_type)
+{
+	int ret;
+
+	dynpoll->type = type;
+	switch (type) {
+	case OFI_DYNPOLL_EPOLL:
+		ret = ofi_epoll_create(&dynpoll->ep);
+		dynpoll->add = ofi_dynpoll_add_epoll;
+		dynpoll->mod = ofi_dynpoll_mod_epoll;
+		dynpoll->del = ofi_dynpoll_del_epoll;
+		dynpoll->wait = ofi_dynpoll_wait_epoll;
+		dynpoll->get_fd = ofi_dynpoll_get_fd_epoll;
+		break;
+	case OFI_DYNPOLL_POLL:
+		ret = ofi_pollfds_create_(&dynpoll->pfds, lock_type);
+		dynpoll->add = ofi_dynpoll_add_poll;
+		dynpoll->mod = ofi_dynpoll_mod_poll;
+		dynpoll->del = ofi_dynpoll_del_poll;
+		dynpoll->wait = ofi_dynpoll_wait_poll;
+		dynpoll->get_fd = ofi_dynpoll_get_fd_poll;
+		break;
+	default:
+		assert(0);
+		ret = -FI_EINVAL;
+		break;
+	}
+
+	return ret;
+};
 
 void ofi_free_list_of_addr(struct slist *addr_list)
 {
@@ -1613,16 +1994,30 @@ int ofi_getifaddrs(struct ifaddrs **ifaddr)
 	return FI_SUCCESS;
 }
 
+/* Sort based on:
+ * 1. link speed, 2. SA family, 3. address
+ */
 static int
-ofi_addr_list_entry_comp_speed(struct slist_entry *cur, const void *insert)
+ofi_compare_addr_entry(struct slist_entry *cur, const void *insert)
 {
-	const struct ofi_addr_list_entry *cur_addr =
-		container_of(cur, struct ofi_addr_list_entry, entry);
-	const struct ofi_addr_list_entry *insert_addr =
-		container_of((const struct slist_entry *) insert,
+	const struct ofi_addr_list_entry *cur_addr, *insert_addr;
+
+	cur_addr = container_of(cur, struct ofi_addr_list_entry, entry);
+	insert_addr = container_of((const struct slist_entry *) insert,
 			     struct ofi_addr_list_entry, entry);
 
-	return (cur_addr->speed < insert_addr->speed);
+	if (insert_addr->speed > cur_addr->speed)
+		return 1;
+	if (insert_addr->speed < cur_addr->speed)
+		return 0;
+
+	if (insert_addr->ipaddr.sa.sa_family < cur_addr->ipaddr.sa.sa_family)
+		return 1;
+	if (insert_addr->ipaddr.sa.sa_family > cur_addr->ipaddr.sa.sa_family)
+		return 0;
+
+	return ofi_addr_cmp(&core_prov, &insert_addr->ipaddr.sa,
+			    &cur_addr->ipaddr.sa);
 }
 
 void ofi_set_netmask_str(char *netstr, size_t len, struct ifaddrs *ifa)
@@ -1667,10 +2062,8 @@ void ofi_get_list_of_addr(const struct fi_provider *prov, const char *env_name,
 
 	if (iface) {
 		for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
-			if (strncmp(iface, ifa->ifa_name,
-					strlen(iface)) == 0) {
+			if (!strncmp(iface, ifa->ifa_name, strlen(iface) + 1))
 				break;
-			}
 		}
 		if (ifa == NULL) {
 			FI_INFO(prov, FI_LOG_CORE,
@@ -1682,11 +2075,12 @@ void ofi_get_list_of_addr(const struct fi_provider *prov, const char *env_name,
 	for (ifa = ifaddrs; ifa != NULL; ifa = ifa->ifa_next) {
 		if (ifa->ifa_addr == NULL ||
 			!(ifa->ifa_flags & IFF_UP) ||
+			!(ifa->ifa_flags & IFF_RUNNING) ||
 			(ifa->ifa_flags & IFF_LOOPBACK) ||
 			((ifa->ifa_addr->sa_family != AF_INET) &&
 			(ifa->ifa_addr->sa_family != AF_INET6)))
 			continue;
-		if (iface && strncmp(iface, ifa->ifa_name, strlen(iface)) != 0) {
+		if (iface && strncmp(iface, ifa->ifa_name, strlen(iface) + 1)) {
 			FI_DBG(prov, FI_LOG_CORE,
 				"Skip (%s) interface\n", ifa->ifa_name);
 			continue;
@@ -1719,7 +2113,7 @@ void ofi_get_list_of_addr(const struct fi_provider *prov, const char *env_name,
 			"iface name: %s, speed: %zu\n",
 			addr_entry->ipstr, ifa->ifa_name, addr_entry->speed);
 
-		slist_insert_before_first_match(addr_list, ofi_addr_list_entry_comp_speed,
+		slist_insert_before_first_match(addr_list, ofi_compare_addr_entry,
 						&addr_entry->entry);
 	}
 
@@ -1915,7 +2309,7 @@ static void ofi_tostr_bus_attr(char *buf, size_t len,
 	ofi_strncatf(buf, len, "%sfi_bus_attr:\n", prefix);
 
 	prefix = TAB TAB TAB;
-	ofi_strncatf(buf, len, "%sfi_bus_type: ", prefix);
+	ofi_strncatf(buf, len, "%sbus_type: ", prefix);
 	ofi_tostr_bus_type(buf, len, attr->bus_type);
 	ofi_strncatf(buf, len, "\n");
 
@@ -1961,7 +2355,7 @@ int ofi_nic_tostr(const struct fid *fid_nic, char *buf, size_t len)
 	const struct fid_nic *nic = (const struct fid_nic*) fid_nic;
 
 	assert(fid_nic->fclass == FI_CLASS_NIC);
-	ofi_strncatf(buf, len, "%sfid_nic:\n", TAB);
+	ofi_strncatf(buf, len, "%snic:\n", TAB);
 
 	ofi_tostr_device_attr(buf, len, nic->device_attr);
 	ofi_tostr_bus_attr(buf, len, nic->bus_attr);
@@ -2123,3 +2517,6 @@ size_t ofi_vrb_speed(uint8_t speed, uint8_t width)
 
 	return width_val * speed_val;
 }
+
+/* log_prefix is used by fi_log and by prov/util */
+const char *log_prefix = "";

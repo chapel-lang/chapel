@@ -28,7 +28,7 @@
 module LinkedLists {
 
 
-pragma "no doc"
+@chpldoc.nodoc
 class listNode {
   type eltType;
   var data: eltType;
@@ -36,7 +36,7 @@ class listNode {
 }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator LinkedList.=(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
@@ -58,25 +58,25 @@ record LinkedList {
     The type of the data stored in every node.
    */
   type eltType;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _first: unmanaged listNode(eltType)?;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
   var size: int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this._first = first;
     this._last = last;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
     this.complete();
@@ -268,12 +268,12 @@ record LinkedList {
   /*
     Destructor
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc deinit(){
     destroy();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -306,7 +306,7 @@ record LinkedList {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc readThis(f) throws {
     use OS;
 

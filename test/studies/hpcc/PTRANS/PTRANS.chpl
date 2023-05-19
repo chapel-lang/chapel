@@ -21,6 +21,7 @@ module HPCC_PTRANS {
 
   use LinearAlgebra, 
       Time,
+      Math,
       BlockDist;
 
   proc main () {

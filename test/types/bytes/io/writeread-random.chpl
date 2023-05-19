@@ -11,7 +11,7 @@ for i in 0..#nBytes {
 }
 buf[nBytes] = 0;
 
-const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+const randomBytes = bytes.createAdoptingBuffer(buf, length=nBytes,
                                                     size=nBytes+1);
 
 if randomBytes.size != nBytes {

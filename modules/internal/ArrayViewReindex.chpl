@@ -134,7 +134,7 @@ module ArrayViewReindex {
     // above, we get a memory leak.  File a future against this?
     //
     proc downdomtype(param rank: int, type idxType, param stridable: bool) type {
-      var ranges : rank*range(idxType, BoundedRangeType.bounded, stridable);
+      var ranges : rank*range(idxType, boundKind.both, stridable);
       var a = dist.downDist.dsiNewRectangularDom(rank=rank, idxType=idxType,
                                               stridable=stridable, ranges);
       return a.type;
@@ -180,7 +180,7 @@ module ArrayViewReindex {
       // In short, before we can use the desired pattern, we need to replace
       // the uses of '_delete_dom' with something like the contents of
       // _domain._do_destroy().
-      var ranges : rank*range(idxType, BoundedRangeType.bounded, dist.downdomInst.stridable);
+      var ranges : rank*range(idxType, boundKind.both, dist.downdomInst.stridable);
       var downdomclass = dist.downDist.dsiNewRectangularDom(rank=rank,
                                                            idxType=idxType,
                                                            stridable=dist.downdomInst.stridable,
