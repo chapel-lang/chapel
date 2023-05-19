@@ -466,7 +466,7 @@ module Sys {
     @chpldoc.nodoc
     proc const ref numericHost() throws {
 
-      var buffer = c_calloc(c_char, NI_MAXHOST);
+      var buffer = allocate(c_char, NI_MAXHOST, clear=true);
       var length:c_int;
 
       var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);

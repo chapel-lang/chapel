@@ -631,7 +631,7 @@ module Buffers {
       if !err {
         this.advance(start, numBytes(int));
         this.advance(end, len);
-        var buf = c_calloc(uint(8), (len+1):c_size_t);
+        var buf = allocate(uint(8), (len+1):c_size_t, clear=true);
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);

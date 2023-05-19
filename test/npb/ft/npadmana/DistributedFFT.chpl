@@ -454,8 +454,8 @@ prototype module DistributedFFT {
     if plan.isValid {
       return plan;
     } else {
-      arr = c_malloc(arrType, dom.size);
-      defer { c_free(arr); }
+      arr = allocate(arrType, dom.size);
+      defer { deallocate(arr); }
       return new FFTWplan(ftType, rank, nnp, howmany, arr,
                           nnp, stride, idist,
                           arr, nnp, stride, idist,

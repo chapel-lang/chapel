@@ -4,6 +4,6 @@
 use CTypes;
 
 proc main() {
-  var c = c_malloc(int, 1);
+  var c = allocate(int, 1);
   writeln(c[1]);            // invalid read
 }

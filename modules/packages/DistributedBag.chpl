@@ -478,7 +478,7 @@ module DistributedBag {
 
         // Allocate buffer, which holds the 'excess' elements for redistribution.
         // Then fill it.
-        var buffer = c_malloc(eltType, excess);
+        var buffer = allocate(eltType, excess);
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
@@ -522,7 +522,7 @@ module DistributedBag {
           segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
         }
 
-        c_free(buffer);
+        deallocate(buffer);
       }
 
       // Phase 3: Release all locks from first node and segment to last node and segment.
@@ -596,7 +596,7 @@ module DistributedBag {
             // Create a snapshot...
             var block = segment.headBlock;
             var bufferSz = segment.nElems.read() : int;
-            var buffer = c_malloc(eltType, bufferSz);
+            var buffer = allocate(eltType, bufferSz);
             var bufferOffset = 0;
 
             while block != nil {
@@ -611,7 +611,7 @@ module DistributedBag {
             // Yield this chunk to be process...
             segment.releaseStatus();
             yield (bufferSz, buffer);
-            c_free(buffer);
+            deallocate(buffer);
           }
         }
       }
@@ -688,7 +688,7 @@ module DistributedBag {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      this.elems = c_malloc(eltType, capacity);
+      this.elems = allocate(eltType, capacity);
       this.cap = capacity;
     }
 
@@ -700,7 +700,7 @@ module DistributedBag {
     }
 
     proc deinit() {
-      c_free(elems);
+      deallocate(elems);
     }
   }
 
@@ -1191,7 +1191,7 @@ module DistributedBag {
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;
 
                                 // Allocate storage...
-                                on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
+                                on stolenWork do stolenWork[loc.id] = (toSteal, allocate(eltType, toSteal));
                                 var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
@@ -1219,7 +1219,7 @@ module DistributedBag {
                       for (nStolen, stolenPtr) in stolenWork {
                         if nStolen == 0 then continue;
                         recvSegment.addElementsPtr(stolenPtr, nStolen);
-                        c_free(stolenPtr);
+                        deallocate(stolenPtr);
 
                         // Let parent know that the bag is not empty.
                         isEmpty.write(false);

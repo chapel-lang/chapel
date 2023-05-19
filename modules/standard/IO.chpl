@@ -5956,7 +5956,7 @@ proc stringify(const args ...?k):string {
       var offset = w.chpl_offset();
       w.unlock();
 
-      var buf = c_malloc(uint(8), offset+1);
+      var buf = allocate(uint(8), offset+1);
 
       var r = f.reader(locking=false);
       defer try! r.close();
@@ -5967,7 +5967,7 @@ proc stringify(const args ...?k):string {
 
       const ret = string.createCopyingBuffer(buf, offset, offset+1,
                                             decodePolicy.replace);
-      c_free(buf);
+      deallocate(buf);
       return ret;
     }
   }
@@ -8740,7 +8740,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     if num_hosts != 0 {
       for i in 0..num_hosts-1 do
         chpl_free_c_string(locs[i]);
-      c_free(locs);
+      deallocate(locs);
     }
 
     // We found no "good" locales. So any locale is just as good as the next
@@ -11163,7 +11163,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     try w.close();
   }
 
-  var buf = c_malloc(uint(8), offset+1);
+  var buf = allocate(uint(8), offset+1);
   var r = try f.reader(locking=false);
   defer {
     try {

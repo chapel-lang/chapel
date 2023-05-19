@@ -565,7 +565,7 @@ module Curl {
       }
 
       override proc close():errorCode {
-        c_free(url_c:c_void_ptr);
+        deallocate(url_c:c_void_ptr);
         url_c = nil;
         return 0;
       }
@@ -726,11 +726,11 @@ module Curl {
         var newsize = 2 * buf.alloced + realsize;
         var oldsize = buf.len;
         var newbuf:c_ptr(uint(8));
-        newbuf = c_calloc(uint(8), newsize);
+        newbuf = allocate(uint(8), newsize, clear=true);
         if newbuf == nil then
           return 0;
         c_memcpy(newbuf, buf.mem, oldsize);
-        c_free(buf.mem);
+        deallocate(buf.mem);
         buf.mem = newbuf;
       }
 
@@ -755,7 +755,7 @@ module Curl {
         // Headers tend to be ~800, although they can grow much larger than this. If
         // it is larger than this, we'll take care of it in curl_write_string.
 
-        buf.mem = c_calloc(uint(8), 800);
+        buf.mem = allocate(uint(8), 800, clear=true);
         buf.len = 0;
         buf.alloced = 800;
 
@@ -777,7 +777,7 @@ module Curl {
           ret = true;
         }
 
-        c_free(buf.mem);
+        deallocate(buf.mem);
 
         var lengthDouble: real(64);
         // Get the content length (for HTTP only)
@@ -1151,7 +1151,7 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = c_calloc(uint(8), url.size+1);
+      var url_c = allocate(uint(8), url.size+1, clear=true);
       c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;

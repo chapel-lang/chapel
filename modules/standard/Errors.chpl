@@ -231,7 +231,7 @@ module Errors {
       // (Note, this assumes that owned Error can be zero'd
       //  and that is valid initialization)
       nErrors = n;
-      errorsArray = c_calloc(owned Error?, n);
+      errorsArray = allocate(owned Error?, n, clear=true);
 
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
@@ -260,7 +260,7 @@ module Errors {
     /* Create a :class:`TaskErrors` containing only the passed error */
     proc init(err: unmanaged Error) {
       nErrors = 1;
-      errorsArray = c_calloc(owned Error?, 1);
+      errorsArray = allocate(owned Error?, 1, clear=true);
       this.complete();
       err._next = nil;
       errorsArray[0] = owned.adopt(err);
@@ -277,7 +277,7 @@ module Errors {
         for i in 0..#nErrors {
           errorsArray[i] = nil;
         }
-        c_free(errorsArray);
+        deallocate(errorsArray);
       }
     }
 
