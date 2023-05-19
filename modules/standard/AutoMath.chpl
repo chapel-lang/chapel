@@ -1970,7 +1970,17 @@ module AutoMath {
 
      The return value has the same type as `x`.
   */
-  proc mod(x: real(?w), y: real(w)): real(w) {
+  proc mod(x: real(32), y: real(32)): real(32) {
+    // This codes up the standard definition, according to Wikipedia.
+    // Is there a more efficient implementation for reals?
+    return x - y*floor(x/y);
+  }
+  /* Computes the mod operator on the two numbers, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
+
+     The return value has the same type as `x`.
+  */
+  proc mod(x: real(64), y: real(64)): real(64) {
     // This codes up the standard definition, according to Wikipedia.
     // Is there a more efficient implementation for reals?
     return x - y*floor(x/y);
