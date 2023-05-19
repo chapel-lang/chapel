@@ -70,18 +70,22 @@ void chpl_gen_comm_complex() {
 
 static inline
 void chpl_gen_comm_get_gpu(void *addr,
-                           c_nodeid_t from_node, c_sublocid_t from_subloc,
+                           c_nodeid_t src_node, c_sublocid_t src_subloc,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
-  if (chpl_nodeID == from_node) {
-    chpl_gpu_get(addr, from_subloc, raddr, size);
+  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == src_node) {
+    chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get(addr, from_node, raddr, size, commID, ln, fn);
+    chpl_cache_comm_get(addr, src_node, raddr, size, commID, ln, fn);
 #endif
   } else {
-    chpl_comm_get(addr, from_node, raddr, size, commID, ln, fn);
+    chpl_comm_get(addr, src_node, raddr, size, commID, ln, fn);
   }
 }
 
@@ -128,23 +132,23 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 static inline
 void chpl_gen_comm_put_gpu(void* addr,
-                           c_nodeid_t to_node, c_sublocid_t to_subloc,
+                           c_nodeid_t dst_node, c_sublocid_t dst_subloc,
                            void* raddr, size_t size, int32_t commID, int ln,
                            int32_t fn)
 {
-  if (chpl_nodeID == to_node) {
-    chpl_gpu_put(to_subloc, raddr, addr, size);
+
+  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
+
+  if (chpl_nodeID == dst_node) {
+    chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, ln, fn);
+  } else if (dst_subloc >= 0 || src_subloc >= 0) {
+    chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
+#ifdef HAS_CHPL_CACHE_FNS
+  } else if( chpl_cache_enabled() ) {
+      chpl_cache_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
+#endif
   } else {
-    assert(to_subloc < 0); // otherwise, put to remote GPU memory
-#ifdef HAS_CHPL_CACHE_FNS
-    if( chpl_cache_enabled() ) {
-      chpl_cache_comm_put(addr, to_node, raddr, size, commID, ln, fn);
-    } else {
-#endif
-      chpl_comm_put(addr, to_node, raddr, size, commID, ln, fn);
-#ifdef HAS_CHPL_CACHE_FNS
-    }
-#endif
+      chpl_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
   }
 }
 

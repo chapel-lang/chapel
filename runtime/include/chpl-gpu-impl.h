@@ -40,7 +40,6 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
 void chpl_gpu_impl_mem_free(void* memAlloc);
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n);
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size);
 

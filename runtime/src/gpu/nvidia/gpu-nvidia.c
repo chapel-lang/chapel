@@ -313,35 +313,6 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                               nargs, args);
 }
 
-void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
-  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
-  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
-
-  if (!dst_on_host && !src_on_host) {
-    chpl_gpu_impl_copy_device_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!dst_on_host) {
-    chpl_gpu_impl_copy_host_to_device(dst, src, n);
-    return dst;
-  }
-  else if (!src_on_host) {
-    chpl_gpu_impl_copy_device_to_host(dst, src, n);
-    return dst;
-  }
-  else {
-    assert(dst_on_host && src_on_host);
-    return memmove(dst, src, n);
-  }
-  #else
-
-  // for unified memory strategy we don't want to generate calls to copy
-  // data from the device to host (since it can just be accessed directly)
-  return memmove(dst, src, n);
-  #endif
-}
-
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
   assert(chpl_gpu_is_device_ptr(addr));
 

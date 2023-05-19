@@ -186,74 +186,44 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name);
 }
 
-static void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
-                            c_sublocid_t src_subloc, const void* src,
-                            size_t n) {
+void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
+                     c_sublocid_t src_subloc, const void* src, size_t n, int ln,
+                     int32_t fn) {
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
-  bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
-
-  if (!dst_on_host && !src_on_host) {
-    chpl_gpu_impl_copy_device_to_device(dst_subloc, dst, src_subloc, src, n);
-  }
-  else if (!dst_on_host) {
-    chpl_gpu_impl_copy_host_to_device(dst_subloc, dst, src, n);
-  }
-  else if (!src_on_host) {
-    chpl_gpu_impl_copy_device_to_host(dst, src_subloc, src, n);
+  if (dst_subloc < 0 && src_subloc < 0) {
+    chpl_memmove(dst, src, n);
   }
   else {
-    assert(dst_on_host && src_on_host);
-    memmove(dst, src, n);
+    bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
+    bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
+
+    if (!dst_on_host && !src_on_host) {
+      chpl_gpu_impl_copy_device_to_device(dst_subloc, dst, src_subloc, src, n);
+    }
+    else if (!dst_on_host) {
+      chpl_gpu_impl_copy_host_to_device(dst_subloc, dst, src, n);
+    }
+    else if (!src_on_host) {
+      chpl_gpu_impl_copy_device_to_host(dst, src_subloc, src, n);
+    }
+    else {
+      // Note: this is the case where both source and destination have been
+      // created on a GPU sublocale. Therefore, the wide pointers that refer to
+      // them have non-negative sublocale. However, not everything created on a
+      // GPU sublocale is allocated on the GPU memory. Think of this as a copy
+      // between two ints that happen to hav been created on a GPU sublocale.
+      assert(dst_on_host && src_on_host);
+      memmove(dst, src, n);
+    }
   }
   #else
 
   // for unified memory strategy we don't want to generate calls to copy
   // data from the device to host (since it can just be accessed directly)
-   memmove(dst, src, n);
+  // TODO however, the code path above could be more efficient.
+  memmove(dst, src, n);
   #endif
 
-}
-
-void chpl_gpu_get(void* dst, c_sublocid_t src_subloc, const void* src,
-                  size_t n) {
-  c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
-
-  if (dst_subloc < 0 && src_subloc < 0) {
-    memmove(dst, src, n);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_get between sublocs %d->%d of size %zu\n",
-                   src_subloc, dst_subloc, n);
-
-    chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
-  }
-}
-
-void chpl_gpu_put(c_sublocid_t dst_subloc, void* dst, const void* src,
-                  size_t n) {
-  c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
-
-  if (dst_subloc < 0 && src_subloc < 0) {
-    memmove(dst, src, n);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_put between sublocs %d->%d of size %zu\n",
-                   src_subloc, dst_subloc, n);
-
-    chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
-  }
-}
-
-void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
-
-  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
-
-  void* ret = chpl_gpu_impl_memmove(dst, src, n);
-
-  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
-  return ret;
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
