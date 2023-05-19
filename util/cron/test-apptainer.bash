@@ -11,14 +11,17 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 cd $CHPL_HOME/util/devel/test/apptainer
 
-./chapel-quickstart.sh
+./chapel-quickstart-delete.sh
 
 if [ $? -ne 0 ] 
    then
-     log_error "./chapel-quickstart.sh exited with error" 
+     log_error "./chapel-quickstart-delete.sh exited with error" 
+     log_info "cleaning before exiting"
+     ./chapel-delete.sh 
+     ./image-delete.sh
      exit 1
    else
-     log_info "./chapel-quickstart.sh succeeded"  
+     log_info "./chapel-quickstart-delete.sh succeeded"  
 fi 
 
 # Commented out to just test chapel-quickstart in Jenkins.
