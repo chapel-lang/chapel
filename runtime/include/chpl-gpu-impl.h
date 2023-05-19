@@ -39,6 +39,7 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                  int nargs, va_list args);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
+void* chpl_gpu_impl_mem_array_alloc(size_t size);
 void chpl_gpu_impl_mem_free(void* memAlloc);
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size);
@@ -65,7 +66,7 @@ size_t chpl_gpu_impl_get_alloc_size(void* ptr);
 bool chpl_gpu_impl_can_access_peer(int dev1, int dev2);
 void chpl_gpu_impl_set_peer_access(int dev1, int dev2, bool enable);
 
-void chpl_gpu_use_device(c_sublocid_t dev_id);
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id);
 
 #ifdef __cplusplus
 }

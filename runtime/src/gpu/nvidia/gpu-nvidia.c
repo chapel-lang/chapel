@@ -98,11 +98,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
                                     glob_size);
 }
 
-static void chpl_gpu_ensure_context(void) {
-  chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
-}
-
-void chpl_gpu_use_device(c_sublocid_t dev_id) {
+void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
   chpl_gpu_switch_context(dev_id);
 }
 
@@ -186,11 +182,6 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_z,
                                         int nargs,
                                         va_list args) {
-  CHPL_GPU_START_TIMER(context_time);
-
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
   c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
@@ -279,7 +270,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                "Prep: %Lf, "
                                "Kernel: %Lf, "
                                "Teardown: %Lf\n",
-         name, context_time, load_time, prep_time, kernel_time, teardown_time);
+         name, load_time, prep_time, kernel_time, teardown_time);
 }
 
 inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
@@ -360,28 +351,16 @@ void chpl_gpu_impl_comm_wait(void *stream) {
   cuStreamDestroy((CUstream)stream);
 }
 
-void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
-                               int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n", size,
-               chpl_lookupFilename(filename), lineno);
+void* chpl_gpu_impl_mem_array_alloc(size_t size) {
+  assert(size>0);
 
   CUdeviceptr ptr = 0;
-  if (size > 0) {
-    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     CUDA_CALL(cuMemAlloc(&ptr, size));
 #else
     CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 #endif
-    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
-
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
-  }
-  else {
-    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning NULL (size was 0)\n");
-  }
 
   return (void*)ptr;
 }
@@ -401,8 +380,6 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 }
 
 void chpl_gpu_impl_mem_free(void* memAlloc) {
-  chpl_gpu_ensure_context();
-
   if (memAlloc != NULL) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE

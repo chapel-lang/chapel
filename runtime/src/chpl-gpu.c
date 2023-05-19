@@ -133,6 +133,8 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
   va_list args;
   va_start(args, nargs);
 
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+
   chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
                                 blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
@@ -166,6 +168,8 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  name,
                  nargs,
                  num_threads);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   va_list args;
   va_start(args, nargs);
@@ -308,7 +312,7 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
 
   void *ptr = NULL;
   if (size > 0) {
-    chpl_gpu_use_device(chpl_task_getRequestedSubloc());
+    chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(size);
@@ -323,8 +327,32 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   return ptr;
 }
 
+void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
+                               int32_t lineno, int32_t filename) {
+  CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%zu file:%s line:%d\n",
+                 size, chpl_lookupFilename(filename), lineno);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+
+  void* ptr = 0;
+  if (size > 0) {
+    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+    ptr = chpl_gpu_impl_mem_array_alloc(size);
+    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
+
+    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc returning NULL (size was 0)\n");
+  }
+
+  return ptr;
+}
+
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
+
+  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
   chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
   chpl_gpu_impl_mem_free(memAlloc);
@@ -352,7 +380,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
                                      filename);
 
     c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
-    chpl_gpu_use_device(dev_id);
+    chpl_gpu_impl_use_device(dev_id);
 
     chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
     ptr = chpl_gpu_impl_mem_alloc(total_size);
@@ -380,7 +408,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
   c_sublocid_t dev_id = chpl_task_getRequestedSubloc();
-  chpl_gpu_use_device(dev_id);
+  chpl_gpu_impl_use_device(dev_id);
 
 #ifdef GPU_RUNTIME_CPU
     return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
