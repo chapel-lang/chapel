@@ -1078,6 +1078,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_calloc' is deprecated; use 'allocate' with 'clear' argument")
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1091,6 +1092,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_malloc' is deprecated; use 'allocate'")
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1110,6 +1112,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a ``c_ptr(eltType)`` to allocated memory
     */
+  @deprecated("'c_aligned_alloc' is deprecated; use 'allocate' with 'alignment' argument")
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
                               size: integral) : c_ptr(eltType) {
@@ -1144,6 +1147,7 @@ module CTypes {
     :arg data: the c_ptr to memory that was allocated. Note that both
                `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
+  @deprecated("'c_free' is deprecated; use 'deallocate'")
   inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
