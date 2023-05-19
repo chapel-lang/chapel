@@ -364,10 +364,32 @@ module ChapelRange {
     type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: int(?w), high: int(w)) do
-    return new range(int(w), low=low, high=high);
-  proc chpl_build_bounded_range(low: uint(?w), high: uint(w)) do
-    return new range(uint(w), low=low, high=high);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // proc chpl_build_bounded_range(low: int(?w), high: int(w)) do
+  //   return new range(int(w), low=low, high=high);
+  proc chpl_build_bounded_range(low: int(8), high: int(8)) do
+    return new range(int(8), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(16), high: int(16)) do
+    return new range(int(16), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(32), high: int(32)) do
+    return new range(int(32), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(64), high: int(64)) do
+    return new range(int(64), low = low, high = high);
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // proc chpl_build_bounded_range(low: uint(?w), high: uint(w)) do
+  //   return new range(uint(w), low=low, high=high);
+  proc chpl_build_bounded_range(low: uint(8), high: uint(8)) do
+    return new range(uint(8), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(16), high: uint(16)) do
+    return new range(uint(16), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(32), high: uint(32)) do
+    return new range(uint(32), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(64), high: uint(64)) do
+    return new range(uint(64), low = low, high = high);
+
   proc chpl_build_bounded_range(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
@@ -2440,17 +2462,29 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride isn't valid
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  int(w):string, " using a step of type ",
-                  stride.type:string);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
+  //   compilerError("can't apply 'by' to a range with idxType ",
+  //                 int(w):string, " using a step of type ",
+  //                 stride.type:string);
+  // }
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride) do compilerError("can't apply 'by' to a range with idxType ", int(8) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), stride) do compilerError("can't apply 'by' to a range with idxType ", int(16) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), stride) do compilerError("can't apply 'by' to a range with idxType ", int(32) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), stride) do compilerError("can't apply 'by' to a range with idxType ", int(64) : string, " using a step of type ", stride.type : string);
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  uint(w):string, " using a step of type ",
-                  stride.type:string);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
+  //   compilerError("can't apply 'by' to a range with idxType ",
+  //                 uint(w):string, " using a step of type ",
+  //                 stride.type:string);
+  // }
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(8) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(16) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(32) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(64) : string, " using a step of type ", stride.type : string);
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_strided_range_iter(low, high, stride)
