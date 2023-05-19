@@ -62,17 +62,11 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   }
 }
-
+#ifdef HAS_GPU_LOCALE
 static inline
-void chpl_gen_comm_complex() {
-  printf("complex comm\n");
-}
-
-static inline
-void chpl_gen_comm_get_gpu(void *addr,
-                           c_nodeid_t src_node, c_sublocid_t src_subloc,
-                           void* raddr, size_t size, int32_t commID, int ln,
-                           int32_t fn)
+void chpl_gen_comm_get_gpu(void *addr, c_nodeid_t src_node,
+                           c_sublocid_t src_subloc, void* raddr, size_t size,
+                           int32_t commID, int ln, int32_t fn)
 {
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
 
@@ -88,6 +82,7 @@ void chpl_gen_comm_get_gpu(void *addr,
     chpl_comm_get(addr, src_node, raddr, size, commID, ln, fn);
   }
 }
+#endif // HAS_GPU_LOCALE
 
 static inline
 void chpl_gen_comm_prefetch(c_nodeid_t node, void* raddr,
@@ -129,7 +124,7 @@ void chpl_gen_comm_put(void* addr, c_nodeid_t node, void* raddr,
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
   }
 }
-
+#ifdef HAS_GPU_LOCALE
 static inline
 void chpl_gen_comm_put_gpu(void* addr,
                            c_nodeid_t dst_node, c_sublocid_t dst_subloc,
@@ -151,6 +146,7 @@ void chpl_gen_comm_put_gpu(void* addr,
       chpl_comm_put(addr, dst_node, raddr, size, commID, ln, fn);
   }
 }
+#endif // HAS_GPU_LOCALE
 
 static inline
 void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *raddr,

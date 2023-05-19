@@ -3794,7 +3794,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
   } else {
 
     if (from.isLVPtr == GEN_WIDE_PTR && to_ptr.isLVPtr == GEN_WIDE_PTR){
-      // or is this where we're supposed to handle the GPU comm?
       // Assign two wide pointers through a temporary.
 
       // Create a temporary, assign tmp = from,
@@ -3805,12 +3804,12 @@ void codegenAssign(GenRet to_ptr, GenRet from)
       codegenAssign(tmp, from);
       // Now assign to_ptr = tmp
       codegenAssign(to_ptr, tmp);
-      codegenCall("chpl_gen_comm_complex");
       return;
     }
 
     // One of the types is a wide pointer type, so we have to
     // call get or put.
+    //
     if( from.isLVPtr == GEN_WIDE_PTR ) { // GET
       INT_ASSERT(type);
       // would also be nice to call createTempVarWith to
@@ -3832,27 +3831,20 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          if (usingGpuLocaleModel()) {
-            //std::cout << "Generating get\n";
-            //nprint_view(type);
-            codegenCall("chpl_gen_comm_get_gpu",
-                        codegenCastToVoidStar(to_ptr),
-                        codegenRnode(from),
-                        codegenRsubloc(from),
-                        codegenRaddr(from),
-                        codegenSizeof(type),
-                        genCommID(info),
-                        info->lineno, gFilenameLookupCache[info->filename]);
-          }
-          else {
-            codegenCall("chpl_gen_comm_get",
-                        codegenCastToVoidStar(to_ptr),
-                        codegenRnode(from),
-                        codegenRaddr(from),
-                        codegenSizeof(type),
-                        genCommID(info),
-                        info->lineno, gFilenameLookupCache[info->filename]);
-          }
+          std::vector<GenRet> args;
+          std::string fn = "chpl_gen_comm_get";
+          if (usingGpuLocaleModel()) fn += "_gpu";
+
+          args.push_back(codegenCastToVoidStar(to_ptr));
+          args.push_back(codegenRnode(from));
+          if (usingGpuLocaleModel()) args.push_back(codegenRsubloc(from));
+          args.push_back(codegenRaddr(from));
+          args.push_back(codegenSizeof(type));
+          args.push_back(genCommID(info));
+          args.push_back(info->lineno);
+          args.push_back(gFilenameLookupCache[info->filename]);
+
+          codegenCallExprWithArgs(fn.c_str(), args);
         }
       }
     } else { // PUT
@@ -3868,27 +3860,20 @@ void codegenAssign(GenRet to_ptr, GenRet from)
           // Make sure that from is a pointer
           codegenCopy(to_ptr, from, type);
         } else {
-          if (usingGpuLocaleModel()) {
-            //std::cout << "Generating put\n";
-            //nprint_view(type);
-            codegenCall("chpl_gen_comm_put_gpu",
-                        codegenCastToVoidStar(codegenValuePtr(from)),
-                        codegenRnode(to_ptr),
-                        codegenRsubloc(to_ptr),
-                        codegenRaddr(to_ptr),
-                        codegenSizeof(type),
-                        genCommID(info),
-                        info->lineno, gFilenameLookupCache[info->filename]);
-          }
-          else {
-            codegenCall("chpl_gen_comm_put",
-                        codegenCastToVoidStar(codegenValuePtr(from)),
-                        codegenRnode(to_ptr),
-                        codegenRaddr(to_ptr),
-                        codegenSizeof(type),
-                        genCommID(info),
-                        info->lineno, gFilenameLookupCache[info->filename]);
-          }
+          std::vector<GenRet> args;
+          std::string fn = "chpl_gen_comm_put";
+          if (usingGpuLocaleModel()) fn += "_gpu";
+
+          args.push_back(codegenCastToVoidStar(codegenValuePtr(from)));
+          args.push_back(codegenRnode(to_ptr));
+          if (usingGpuLocaleModel()) args.push_back(codegenRsubloc(to_ptr));
+          args.push_back(codegenRaddr(to_ptr));
+          args.push_back(codegenSizeof(type));
+          args.push_back(genCommID(info));
+          args.push_back(info->lineno);
+          args.push_back(gFilenameLookupCache[info->filename]);
+
+          codegenCallExprWithArgs(fn.c_str(), args);
         }
       }
     }
