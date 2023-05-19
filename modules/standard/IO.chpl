@@ -5956,7 +5956,7 @@ proc stringify(const args ...?k):string {
       var offset = w.chpl_offset();
       w.unlock();
 
-      var buf = allocate(uint(8), offset+1);
+      var buf = allocate(uint(8), offset:c_size_t+1);
 
       var r = f.reader(locking=false);
       defer try! r.close();

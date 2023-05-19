@@ -1151,7 +1151,7 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = allocate(uint(8), url.size+1, clear=true);
+      var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
       c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;

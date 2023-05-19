@@ -231,7 +231,7 @@ module Errors {
       // (Note, this assumes that owned Error can be zero'd
       //  and that is valid initialization)
       nErrors = n;
-      errorsArray = allocate(owned Error?, n, clear=true);
+      errorsArray = allocate(owned Error?, n:c_size_t, clear=true);
 
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
