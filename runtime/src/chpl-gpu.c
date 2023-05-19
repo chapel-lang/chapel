@@ -227,6 +227,8 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
+  chpl_gpu_impl_use_device(dst_dev);
+
   chpl_gpu_diags_verbose_device_to_device_copy(ln, fn, dst_dev, src_dev, n,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
@@ -243,6 +245,8 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
+  chpl_gpu_impl_use_device(src_dev);
+
   chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
   chpl_gpu_diags_incr(device_to_host);
 
@@ -257,6 +261,8 @@ void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
+
+  chpl_gpu_impl_use_device(dst_dev);
 
   chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
   chpl_gpu_diags_incr(host_to_device);

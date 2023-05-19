@@ -127,7 +127,6 @@ static void codegenCallWithArgs(const char* fnName,
 
 // some codegenCallExpr are declared in codegen.h
 static GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
-static void codegenCall(const char* fnName);
 static void codegenCall(const char* fnName, GenRet a1);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2);
 static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3);
@@ -3092,12 +3091,12 @@ GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2, GenRet a3)
   return codegenCallExprWithArgs(fnName, args);
 }
 
- static
+/* static
 void codegenCall(const char* fnName)
 {
   std::vector<GenRet> args;
   codegenCallWithArgs(fnName, args);
-}
+}*/
 static
 void codegenCall(const char* fnName, GenRet a1)
 {
@@ -3191,44 +3190,44 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }
 
+/*
+static
+void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 GenRet a9)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
+  args.push_back(a9);
+  codegenCallWithArgs(fnName, args);
+}
+*/
 
-//static
-//void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                 //GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
-                 //GenRet a9)
-//{
-  //std::vector<GenRet> args;
-  //args.push_back(a1);
-  //args.push_back(a2);
-  //args.push_back(a3);
-  //args.push_back(a4);
-  //args.push_back(a5);
-  //args.push_back(a6);
-  //args.push_back(a7);
-  //args.push_back(a8);
-  //args.push_back(a9);
-  //codegenCallWithArgs(fnName, args);
-//}
-
-
-//static
-//void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                 //GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
-                 //GenRet a9, GenRet a10)
-//{
-  //std::vector<GenRet> args;
-  //args.push_back(a1);
-  //args.push_back(a2);
-  //args.push_back(a3);
-  //args.push_back(a4);
-  //args.push_back(a5);
-  //args.push_back(a6);
-  //args.push_back(a7);
-  //args.push_back(a8);
-  //args.push_back(a9);
-  //args.push_back(a10);
-  //codegenCallWithArgs(fnName, args);
-//}
+/*static
+void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 GenRet a9, GenRet a10)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
+  args.push_back(a9);
+  args.push_back(a10);
+  codegenCallWithArgs(fnName, args);
+}*/
 
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
