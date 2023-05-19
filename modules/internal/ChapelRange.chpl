@@ -2326,13 +2326,49 @@ operator :(r: range(?), type t: range(?)) {
       yield i;
   }
 
-  iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
-    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
+  //   for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
+  //     yield i;
+  // }
+  iter chpl_direct_range_iter(low: int(8), high: int(8)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(8)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(16), high: int(16)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(16)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(32), high: int(32)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(32)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(64), high: int(64)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(64)) do
       yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
-    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
+  //   for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
+  //     yield i;
+  // }
+  iter chpl_direct_range_iter(low: uint(8), high: uint(8)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(8)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(16), high: uint(16)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(16)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(32), high: uint(32)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(32)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(64), high: uint(64)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(64)) do
       yield i;
   }
 
@@ -2376,13 +2412,57 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+  //                                     stride: integral) {
+  //   const r = low..high by stride;
+  //   for i in r do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64),
                                       stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+  //                                     stride: integral) {
+  //   const r = low..high by stride;
+  //   for i in r do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64),
                                       stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -2409,11 +2489,39 @@ operator :(r: range(?), type t: range(?)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
+  //   for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
+  //   for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), param stride: integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
@@ -2453,10 +2561,40 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
+  //   for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
+  //   for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  // }
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
