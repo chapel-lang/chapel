@@ -1038,9 +1038,9 @@ module CTypes {
           p += 1;
         assert(alignment <= (one << p));
         if alignment != (one << p) then
-          halt("c_aligned_alloc called with non-power-of-2 alignment ", alignment);
+          halt("allocate called with non-power-of-2 alignment ", alignment);
         if alignment < c_sizeof(c_void_ptr) then
-          halt("c_aligned_alloc called with alignment smaller than pointer size");
+          halt("allocate called with alignment smaller than pointer size");
       }
 
       if (clear) {
