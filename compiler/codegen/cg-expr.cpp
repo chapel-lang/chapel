@@ -39,7 +39,6 @@
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
 #include "wellknown.h"
-#include "view.h"
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
@@ -366,8 +365,6 @@ enum WideThingField {
 static const char* wide_fields[] = {"locale", "addr", "size", NULL};
 
 static GenRet genCommID(GenInfo* info) {
-  //std::cout << "Generating comm id " << info->filename << ":" <<
-               //commIDMap[info->filename] << std::endl;
   return baseASTCodegen(new_CommIDSymbol(commIDMap[info->filename]++));
 }
 
@@ -3253,28 +3250,28 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }
 
-
-//static
-//void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
-                 //GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
-                 //GenRet a9, GenRet a10, GenRet a11, GenRet a12)
-//{
-  //std::vector<GenRet> args;
-  //args.push_back(a1);
-  //args.push_back(a2);
-  //args.push_back(a3);
-  //args.push_back(a4);
-  //args.push_back(a5);
-  //args.push_back(a6);
-  //args.push_back(a7);
-  //args.push_back(a8);
-  //args.push_back(a9);
-  //args.push_back(a10);
-  //args.push_back(a11);
-  //args.push_back(a12);
-  //codegenCallWithArgs(fnName, args);
-//}
-
+/*
+static
+void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
+                 GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
+                 GenRet a9, GenRet a10, GenRet a11, GenRet a12)
+{
+  std::vector<GenRet> args;
+  args.push_back(a1);
+  args.push_back(a2);
+  args.push_back(a3);
+  args.push_back(a4);
+  args.push_back(a5);
+  args.push_back(a6);
+  args.push_back(a7);
+  args.push_back(a8);
+  args.push_back(a9);
+  args.push_back(a10);
+  args.push_back(a11);
+  args.push_back(a12);
+  codegenCallWithArgs(fnName, args);
+}
+*/
 
 static
 GenRet codegenZero()
@@ -3809,7 +3806,6 @@ void codegenAssign(GenRet to_ptr, GenRet from)
 
     // One of the types is a wide pointer type, so we have to
     // call get or put.
-    //
     if( from.isLVPtr == GEN_WIDE_PTR ) { // GET
       INT_ASSERT(type);
       // would also be nice to call createTempVarWith to
