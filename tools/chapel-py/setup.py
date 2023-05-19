@@ -5,13 +5,13 @@ import os
 import sys
 
 chpl_home = os.getenv('CHPL_HOME')
-
-sys.path.append(os.path.join(chpl_home, 'util', 'chplenv'))
-import printchplenv
-
-printchplenv.compute_all_values()
-printchplenv.compute_internal_values()
-chpl_variables = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
+chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
+chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize"]).decode(sys.stdout.encoding).strip().splitlines()
+chpl_variables = dict()
+for line in chpl_variables_lines:
+    elms = line.split(":", maxsplit=1)
+    if len(elms) == 2:
+        chpl_variables[elms[0].strip()] = elms[1].strip()
 
 llvm_config = chpl_variables.get("CHPL_LLVM_CONFIG")
 
