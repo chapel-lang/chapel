@@ -51,7 +51,7 @@ static CUmodule *chpl_gpu_cuda_modules;
 static int *deviceClockRates;
 
 
-static bool chpl_gpu_has_context() {
+static bool chpl_gpu_has_context(void) {
   CUcontext cuda_context = NULL;
 
   CUresult ret = cuCtxGetCurrent(&cuda_context);
@@ -97,7 +97,7 @@ static void chpl_gpu_impl_set_globals(CUmodule module) {
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size);
 }
 
-static void chpl_gpu_ensure_context() {
+static void chpl_gpu_ensure_context(void) {
   chpl_gpu_switch_context(chpl_task_getRequestedSubloc());
 }
 
