@@ -77,7 +77,7 @@ void chpl_gen_comm_get_gpu(void *addr,
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
 
   if (chpl_nodeID == src_node) {
-    chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, ln, fn);
+    chpl_gpu_memcpy(dst_subloc, addr, src_subloc, raddr, size, commID, ln, fn);
   } else if (dst_subloc >= 0 || src_subloc >= 0) {
     chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
 #ifdef HAS_CHPL_CACHE_FNS
@@ -140,7 +140,7 @@ void chpl_gen_comm_put_gpu(void* addr,
   c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
 
   if (chpl_nodeID == dst_node) {
-    chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, ln, fn);
+    chpl_gpu_memcpy(dst_subloc, raddr, src_subloc, addr, size, commID, ln, fn);
   } else if (dst_subloc >= 0 || src_subloc >= 0) {
     chpl_internal_error("Not ready to GET/PUT to/from GPU allocations, yet");
 #ifdef HAS_CHPL_CACHE_FNS

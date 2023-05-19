@@ -111,12 +111,18 @@ void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
                      c_sublocid_t src_subloc, const void* src,
-                     size_t n, int ln, int32_t fn);
+                     size_t n, int32_t commID, int ln, int32_t fn);
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
-                                  const void* src, size_t n);
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
 void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
-                                  const void* src, size_t n);
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
+void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                    c_sublocid_t src_dev, const void* src,
+                                    size_t n, int32_t commID, int ln,
+                                    int32_t fn);
 void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_comm_wait(void *stream);
 

@@ -4,6 +4,7 @@ use GpuDiagnostics;
 config const n = 1000;
 config const verboseTest = false;
 config const verboseGpu = false;
+config const gpuDiags = false;
 config const touchOnGpu = false;
 config const reportTime = true;
 
@@ -27,6 +28,8 @@ proc stopTest(name, bandwidth=false) {
 }
 
 if verboseGpu then startVerboseGpu();
+if gpuDiags then startGpuDiagnostics();
+
 startTest();
 var CpuArr: [1..n] int;
 stopTest("Cpu Array Init");
@@ -64,6 +67,10 @@ on here.gpus[0] {
 
 }
 if verboseGpu then stopVerboseGpu();
+if gpuDiags {
+  stopGpuDiagnostics();
+  writeln(getGpuDiagnostics());
+}
 if verboseTest then writeln(CpuArr);
 
 assert(CpuArr.first == if touchOnGpu then 1 else 0);

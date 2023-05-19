@@ -187,8 +187,8 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
-                     c_sublocid_t src_subloc, const void* src, size_t n, int ln,
-                     int32_t fn) {
+                     c_sublocid_t src_subloc, const void* src, size_t n,
+                     int32_t commID, int ln, int32_t fn) {
   #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (dst_subloc < 0 && src_subloc < 0) {
     chpl_memmove(dst, src, n);
@@ -198,13 +198,14 @@ void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
     bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
 
     if (!dst_on_host && !src_on_host) {
-      chpl_gpu_impl_copy_device_to_device(dst_subloc, dst, src_subloc, src, n);
+      chpl_gpu_copy_device_to_device(dst_subloc, dst, src_subloc, src, n,
+                                     commID, ln, fn);
     }
     else if (!dst_on_host) {
-      chpl_gpu_impl_copy_host_to_device(dst_subloc, dst, src, n);
+      chpl_gpu_copy_host_to_device(dst_subloc, dst, src, n, commID, ln, fn);
     }
     else if (!src_on_host) {
-      chpl_gpu_impl_copy_device_to_host(dst, src_subloc, src, n);
+      chpl_gpu_copy_device_to_host(dst, src_subloc, src, n, commID, ln, fn);
     }
     else {
       // Note: this is the case where both source and destination have been
@@ -236,11 +237,32 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   return ret;
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
-                                  const void* src, size_t n) {
+void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                    c_sublocid_t src_dev, const void* src,
+                                    size_t n, int32_t commID, int ln,
+                                    int32_t fn) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+
+  chpl_gpu_diags_verbose_device_to_device_copy(ln, fn, dst_dev, src_dev, n,
+                                               commID);
+  chpl_gpu_diags_incr(device_to_device);
+
+  chpl_gpu_impl_copy_device_to_device(dst_dev, dst, src_dev, src, n);
+
+  CHPL_GPU_DEBUG("Copy successful\n");
+}
+
+void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn) {
+  assert(chpl_gpu_is_device_ptr(src));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+
+  chpl_gpu_diags_verbose_device_to_host_copy(ln, fn, src_dev, n, commID);
+  chpl_gpu_diags_incr(device_to_host);
 
   chpl_gpu_impl_copy_device_to_host(dst, src_dev, src, n);
 
@@ -248,10 +270,14 @@ void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
 }
 
 void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
-                                  const void* src, size_t n) {
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
+
+  chpl_gpu_diags_verbose_host_to_device_copy(ln, fn, dst_dev, n, commID);
+  chpl_gpu_diags_incr(host_to_device);
 
   chpl_gpu_impl_copy_host_to_device(dst_dev, dst, src, n);
 
