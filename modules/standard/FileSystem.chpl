@@ -180,11 +180,11 @@ private inline proc unescape(str: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.chdir(name: string) throws {
-  extern proc chpl_fs_chdir(name: c_string):errorCode;
+  extern proc chpl_fs_chdir(name: c_ptrConst(c_uchar)):errorCode;
 
   var err: errorCode = 0;
   on this {
-    err = chpl_fs_chdir(unescape(name):c_ptrConst(c_char):c_string);
+    err = chpl_fs_chdir(c_ptrToConst_helper(unescape(name)));
   }
   if err then try ioerror(err, "in chdir", name);
 }
@@ -209,9 +209,9 @@ proc locale.chdir(name: string) throws {
 */
 @deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
 proc chmod(name: string, mode: int) throws {
-  extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+  extern proc chpl_fs_chmod(name: c_ptrConst(c_uchar), mode: int): errorCode;
 
-  var err = chpl_fs_chmod(unescape(name):c_ptrConst(c_char):c_string, mode);
+  var err = chpl_fs_chmod(c_ptrToConst_helper(unescape(name)), mode);
   if err then try ioerror(err, "in chmod", name);
 }
 
@@ -231,7 +231,7 @@ proc chmod(name: string, mode: int) throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc chown(name: string, uid: int, gid: int) throws {
-  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):errorCode;
+  extern proc chpl_fs_chown(name: c_ptrConst, uid: c_int, gid: c_int):errorCode;
 
   var err = chpl_fs_chown(unescape(name):c_ptrConst(c_char):c_string, uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);

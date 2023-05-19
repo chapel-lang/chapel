@@ -97,11 +97,31 @@ module Bytes {
 
     :returns: A new :type:`bytes`
   */
+  // @deprecated("using c_string argument is deprecated, please use the overload accepting c_ptrConst instead")
   inline proc type bytes.createBorrowingBuffer(x: c_string,
                                                length=x.size) : bytes {
     return bytes.createBorrowingBuffer(x:bufferType, length=length,
                                        size=length+1);
   }
+
+  /*
+    Creates a new :type:`bytes` which borrows the internal buffer of a
+    `c_string`. If the buffer is freed before the :type:`bytes` returned
+    from this function, accessing it is undefined behavior.
+
+    :arg s: `c_string` to borrow the buffer from
+
+    :arg length: Length of `s`'s buffer, excluding the terminating
+                 null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  // inline proc type bytes.createBorrowingBuffer(x: c_ptrConst(c_uchar),
+  //                                              length=x.size) : bytes {
+  //   return bytes.createBorrowingBuffer(x:bufferType, length=length,
+  //                                      size=length+1);
+  // }
 
   @chpldoc.nodoc
   proc chpl_createBytesWithLiteral(buffer: c_string,
@@ -538,7 +558,7 @@ module Bytes {
         :type:`bytes`. The returned `c_string` is only valid when used
         on the same locale as the bytes.
    */
-  @deprecated(since="1.31", notes="c_str is deprecated", suggestion="cast to c_ptrConst(c_char):c_string instead")
+  @deprecated(since="1.31", notes="c_str is deprecated", suggestion="use c_ptrToConst(string):c_string instead")
   inline proc bytes.c_str(): c_string {
     return getCStr(this);
   }

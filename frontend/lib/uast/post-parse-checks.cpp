@@ -133,6 +133,7 @@ struct Visitor {
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
+  void checkCStringLiteral(const CStringLiteral* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -175,6 +176,7 @@ struct Visitor {
   void visit(const Break* node);
   void visit(const Continue* node);
   void visit(const ExternBlock* node);
+  void visit(const CStringLiteral* node);
 };
 
 /**
@@ -1336,8 +1338,16 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
+void Visitor::checkCStringLiteral(const CStringLiteral* node) {
+   warn(node, "the type c_string is deprecated: the return type of c string literals has changed from c_string to c_ptrTo(c_char)");
+}
+
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
+}
+
+void Visitor::visit(const CStringLiteral* node) {
+  checkCStringLiteral(node);
 }
 
 // Duplicate the contents of 'idIsInBundledModule', while skipping the

@@ -92,8 +92,15 @@ static void chpl_gmp_mpz_print(mpz_t x) {
 }
 */
 
+@deprecated("the return type of chpl_gmp_mpz_get_str has changed from c_string to c_ptr(c_uchar)")
 static
 c_string chpl_gmp_mpz_get_str(int base, mpz_t x) {
+  return chpl_gmp_mpz_get_str(base, x):c_string;
+}
+
+
+static
+c_ptr(c_uchar) chpl_gmp_mpz_get_str(int base, mpz_t x) {
   // The number of *digits* in abs(x);
   size_t numDigits = mpz_sizeinbase(x, base);
   char*  str       = (char*) chpl_mem_calloc(1,

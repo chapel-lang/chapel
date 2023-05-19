@@ -1046,6 +1046,8 @@ void initPrimitiveTypes() {
 
   dtStringC                            = createPrimitiveType("c_string", "c_string" );
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
+  // dtStringC->symbol->addFlag(FLAG_DEPRECATED);
+  // dtStringC->symbol->deprecationMsg = "c_string is deprecated. Use c_ptr or c_ptrConst instead.";
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
   dtObject->symbol                     = new TypeSymbol("object", dtObject);

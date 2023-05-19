@@ -34,7 +34,7 @@ pragma "module included by default"
 module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
-  private use CTypes;
+  private use CTypes, ChapelSysCTypes;
 
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?
@@ -501,7 +501,7 @@ module Errors {
   pragma "always propagate line file info"
   @chpldoc.nodoc
   proc chpl_uncaught_error(err: unmanaged Error) {
-    extern proc chpl_error_preformatted(c_string);
+    extern proc chpl_error_preformatted(c_ptrConst);
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
@@ -522,7 +522,7 @@ module Errors {
     var s = "uncaught " + chpl_describe_error(err) +
             "\n  " + thrownFileS + ":" + thrownLine:string + ": thrown here" +
             "\n  " + myFileS + ":" + myLine:string + ": uncaught here";
-    chpl_error_preformatted(s:c_ptrConst(c_char):c_string);
+    chpl_error_preformatted(c_ptrToConst_helper(s));
   }
   // This is like the above, but it is only ever added by the
   // compiler. In case of iterator inlining (say), this call
@@ -624,7 +624,7 @@ module Errors {
   proc assert(test: bool, args...) {
     if !test {
       var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
-      __primitive("chpl_error", tmpstring:c_ptrConst(c_char):c_string);
+      __primitive("chpl_error", c_ptrToConst_helper(tmpstring));
     }
   }
 
@@ -744,7 +744,7 @@ module Errors {
   pragma "always propagate line file info"
   @chpldoc.nodoc  // documented in the varargs overload
   proc halt(msg:string) {
-    halt(msg.localize():c_ptrConst(c_char):c_string);
+    halt(c_ptrToConst_helper(msg.localize()):c_string);
   }
 
   /*
@@ -759,7 +759,7 @@ module Errors {
   pragma "always propagate line file info"
   proc halt(args...) {
     var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
-    __primitive("chpl_error", tmpstring:c_ptrConst(c_char):c_string);
+    __primitive("chpl_error", c_ptrToConst_helper(tmpstring));
   }
 
   /*
@@ -768,7 +768,7 @@ module Errors {
   */
   pragma "always propagate line file info"
   proc warning(msg:string) {
-    __primitive("chpl_warning", msg.localize():c_ptrConst(c_char):c_string);
+    __primitive("chpl_warning", c_ptrToConst_helper(msg.localize()));
   }
 
   /*

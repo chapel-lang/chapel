@@ -713,7 +713,7 @@ record regex {
   @chpldoc.nodoc
   proc _deserialize(data) {
     const pattern = exprType.chpl__deserialize(data.pattern);
-    qio_regex_create_compile(pattern:c_ptrConst(c_char):c_string,
+    qio_regex_create_compile(c_ptrToConst_helper(pattern):c_string,
                              pattern.numBytes,
                              data.options,
                              this._regex);
@@ -928,7 +928,7 @@ record regex {
     if maxsplit == 0 then maxsplits = max(int);
 
     while splits < maxsplits && pos <= endpos {
-      var got = qio_regex_match(localRegex, localText:c_ptrConst(c_char):c_string, localText.numBytes,
+      var got = qio_regex_match(localRegex, c_ptrTo_helper(localText):c_string, localText.numBytes,
                                 pos:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED,
                                 matches[0], nmatches);
 
@@ -987,7 +987,7 @@ record regex {
     var cur = 0;
 
     while nFound < maxMatches && cur <= endPos {
-      var got = qio_regex_match(localRegex, localText:c_ptrConst(c_char):c_string, textLength,
+      var got = qio_regex_match(localRegex, c_ptrTo_helper(localText):c_string, textLength,
                                 cur:int, endPos:int, QIO_REGEX_ANCHOR_UNANCHORED,
                                 matches[0], nMatches);
       if !got then break;
@@ -1085,7 +1085,7 @@ record regex {
         var opts: qio_regex_options_t;
 
         qio_regex_init_default_options(opts);
-        qio_regex_create_compile(localPattern:c_ptrConst(c_char):c_string,
+        qio_regex_create_compile(c_ptrTo_helper(localPattern):c_string,
                                   localPattern.numBytes,
                                   opts,
                                   this._regex);
@@ -1253,7 +1253,7 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
   for i in 0..<count {
     if i == matchesDom.size then matchesDom = {0..#matchesDom.size*2};
 
-    var got = qio_regex_match(localRegex, localX:c_ptrConst(c_char):c_string, x.numBytes,
+    var got = qio_regex_match(localRegex, c_ptrToConst_helper(localX):c_string, x.numBytes,
                               startpos=curIdx, endpos=x.numBytes,
                               QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
     if !got then break;

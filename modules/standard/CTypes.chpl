@@ -761,6 +761,52 @@ module CTypes {
     return c_pointer_return(s.buff[0]);
   }
 
+  /****************************************************************************
+    Temporary helper functions while deprecating c_ptr(string) etc
+  *****************************************************************************/
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref s: string): c_ptr(c_uchar)
+  {
+    if boundsChecking {
+      if (s.buffLen == 0) then
+        halt("Can't create a C pointer for an empty string.");
+    }
+    return c_pointer_return(s.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_uchar)
+  {
+    if boundsChecking {
+      if (s.buffLen == 0) then
+        halt("Can't create a C pointer for an empty string.");
+    }
+    return c_pointer_return_const(s.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_uchar)
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return_const(b.buff[0]);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo_helper(ref b: bytes): c_ptr(c_uchar)
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return(b.buff[0]);
+  }
+  /****************************************************************************
+    End of temporary helper functions while deprecating c_ptr(string) etc
+  *****************************************************************************/
+
   @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref s: string): c_ptr(string)
     where cPtrToStringBytesBufferAddress == false

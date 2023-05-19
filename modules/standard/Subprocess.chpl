@@ -446,7 +446,7 @@ module Subprocess {
 
      :throws IllegalArgumentError: Thrown when ``args`` is an empty array.
      */
-  proc spawn(args:[] string, env:[] string=Subprocess.empty_env, executable="",
+  proc spawn(const args:[] string, env:[] string=Subprocess.empty_env, executable="",
              stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
              stderr:?v = pipeStyle.forward,
              param kind=iokind.dynamic, param locking=true) throws
@@ -513,20 +513,20 @@ module Subprocess {
     var nargs = args.size + 1;
     var use_args = qio_spawn_allocate_ptrvec( nargs.safeCast(c_size_t) );
     for (a,i) in zip(args, 0..) {
-      use_args[i] = qio_spawn_strdup(a:c_ptrConst(c_char):c_string);
+      use_args[i] = qio_spawn_strdup(c_ptrTo_helper(a):c_string);
     }
     var use_env:c_ptr(c_string) = nil;
     if env.size != 0 {
       var nenv = env.size + 1;
       use_env = qio_spawn_allocate_ptrvec( nenv.safeCast(c_size_t) );
       for (a,i) in zip(env, 0..) {
-        use_env[i] = qio_spawn_strdup(a:c_ptrConst(c_char):c_string);
+        use_env[i] = qio_spawn_strdup(c_ptrTo_helper(a):c_string);
       }
     }
 
     pid = -1;
 
-    err = qio_openproc(use_args, use_env, executable:c_ptrConst(c_char):c_string,
+    err = qio_openproc(use_args, use_env, c_ptrToConst_helper(executable):c_string,
                        stdin_fd, stdout_fd, stderr_fd, pid);
 
     // free the c structures we created.
