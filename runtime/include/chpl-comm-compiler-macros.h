@@ -78,9 +78,11 @@ void chpl_gen_comm_get_gpu(void *addr,
   if (chpl_nodeID == from_node) {
     if (from_subloc < 0) {
       chpl_memmove(addr, raddr, size);
+      //printf("100\n");
     } else {
       //printf("put to subloc %d\n", to_subloc);
       chpl_gpu_get(addr, from_subloc, raddr, size);
+      //printf("200\n");
     }
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
@@ -143,9 +145,11 @@ void chpl_gen_comm_put_gpu(void* addr,
   if (chpl_nodeID == to_node) {
     if (to_subloc < 0) {
       chpl_memmove(raddr, addr, size);
+      //printf("-100\n");
     } else {
       //printf("put to subloc %d\n", to_subloc);
       chpl_gpu_put(to_subloc, raddr, addr, size);
+      //printf("-200\n");
     }
   } else {
     assert(to_subloc < 0); // otherwise, put to remote GPU memory
