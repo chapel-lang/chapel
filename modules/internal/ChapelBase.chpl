@@ -807,18 +807,72 @@ module ChapelBase {
   inline operator *(a: complex(64), b: imag(32)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(64);
   inline operator *(a: complex(128), b: imag(64)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
 
-  inline operator /(a: int(?w), b: int(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: int(?w), b: int(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if b == 0 then
+  //       halt("Attempt to divide by zero");
+  //   return __primitive("/", a, b);
+  // }
+  inline operator /(a: int(8), b: int(8)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(a: uint(?w), b: uint(w)) {
+  inline operator /(a: int(16), b: int(16)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
+  inline operator /(a: int(32), b: int(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: int(64), b: int(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: uint(?w), b: uint(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if b == 0 then
+  //       halt("Attempt to divide by zero");
+  //   return __primitive("/", a, b);
+  // }
+  inline operator /(a: uint(8), b: uint(8)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(16), b: uint(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(32), b: uint(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+
   // The following 2 procedures were instantiated from this generic version:
   //
   // inline operator /(a: real(?w), b: real(w)) do return __primitive("/", a, b);
@@ -845,9 +899,19 @@ module ChapelBase {
   // inline operator /(a: imag(?w), b: real(w)) do return _r2i(_i2r(a)/b);
   inline operator /(a: imag(32), b: real(32)) do return _r2i(_i2r(a)/b);
   inline operator /(a: imag(64), b: real(64)) do return _r2i(_i2r(a)/b);
-  inline operator /(a: real(?w), b: complex(w*2)) {
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: real(?w), b: complex(w*2)) {
+  //   const d = abs(b);
+  //   return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
+  // }
+  inline operator /(a: real(32), b: complex(64)) {
     const d = abs(b);
-    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(64);
+  }
+  inline operator /(a: real(64), b: complex(128)) {
+    const d = abs(b);
+    return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(128);
   }
   // The following 2 procedures were instantiated from this generic version:
   //
@@ -855,9 +919,19 @@ module ChapelBase {
   //   return (a.re/b, a.im/b):complex(w);
   inline operator /(a: complex(64), b: real(32)) do return (a.re/b, a.im/b) : complex(64);
   inline operator /(a: complex(128), b: real(64)) do return (a.re/b, a.im/b) : complex(128);
-  inline operator /(a: imag(?w), b: complex(w*2)) {
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: imag(?w), b: complex(w*2)) {
+  //   const d = abs(b);
+  //   return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
+  // }
+  inline operator /(a: imag(32), b: complex(64)) {
     const d = abs(b);
-    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(64);
+  }
+  inline operator /(a: imag(64), b: complex(128)) {
+    const d = abs(b);
+    return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(128);
   }
   // The following 2 procedures were instantiated from this generic version:
   //
@@ -984,25 +1058,124 @@ module ChapelBase {
   //
   // % on primitive types
   //
-  inline operator %(a: int(?w), b: int(w)) {
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %(a: int(?w), b: int(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if b == 0 then
+  //       halt("Attempt to compute a modulus by zero");
+  //   return __primitive("%", a, b);
+  // }
+  inline operator %(a: int(8), b: int(8)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-  inline operator %(a: uint(?w), b: uint(w)) {
+  inline operator %(a: int(16), b: int(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: int(32), b: int(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: int(64), b: int(64)) {
     if (chpl_checkDivByZero) then
       if b == 0 then
         halt("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
 
-  inline operator %(param a: int(?w), param b: int(w)) param {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %(a: uint(?w), b: uint(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if b == 0 then
+  //       halt("Attempt to compute a modulus by zero");
+  //   return __primitive("%", a, b);
+  // }
+  inline operator %(a: uint(8), b: uint(8)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(16), b: uint(16)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(32), b: uint(32)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(a: uint(64), b: uint(64)) {
+    if (chpl_checkDivByZero) then
+      if b == 0 then
+        halt("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %(param a: int(?w), param b: int(w)) param {
+  //   if b == 0 then
+  //     compilerError("Attempt to compute a modulus by zero");
+  //   return __primitive("%", a, b);
+  // }
+  inline operator %(param a: int(8), param b: int(8)) param {
     if b == 0 then
       compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
   }
-  inline operator %(param a: uint(?w), param b: uint(w)) param {
+  inline operator %(param a: int(16), param b: int(16)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: int(32), param b: int(32)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: int(64), param b: int(64)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %(param a: uint(?w), param b: uint(w)) param {
+  //   if b == 0 then
+  //     compilerError("Attempt to compute a modulus by zero");
+  //   return __primitive("%", a, b);
+  // }
+  inline operator %(param a: uint(8), param b: uint(8)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(16), param b: uint(16)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(32), param b: uint(32)) param {
+    if b == 0 then
+      compilerError("Attempt to compute a modulus by zero");
+    return __primitive("%", a, b);
+  }
+  inline operator %(param a: uint(64), param b: uint(64)) param {
     if b == 0 then
       compilerError("Attempt to compute a modulus by zero");
     return __primitive("%", a, b);
@@ -1051,19 +1224,53 @@ module ChapelBase {
   // inline operator **(a: real(?w), b: real(w)) do return __primitive("**", a, b);
   inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
   inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
-  inline operator **(a: complex(?w), b: complex(w)) {
-    if a.type == complex(128) {
-      pragma "fn synchronization free"
-      extern proc cpow(x: complex(128), y: complex(128)): complex(128);
-      return cpow(a, b);
-    } else {
-      pragma "fn synchronization free"
-      extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
-      return cpowf(a, b);
-    }
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator **(a: complex(?w), b: complex(w)) {
+  //   if a.type == complex(128) {
+  //     pragma "fn synchronization free"
+  //     extern proc cpow(x: complex(128), y: complex(128)): complex(128);
+  //     return cpow(a, b);
+  //   } else {
+  //     pragma "fn synchronization free"
+  //     extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
+  //     return cpowf(a, b);
+  //   }
+  // }
+  inline operator **(a: complex(64), b: complex(64)) {
+    pragma "fn synchronization free"
+    extern proc cpowf(x: complex(64), y: complex(64)): complex(64);
+    return cpowf(a, b);
+  }
+  inline operator **(a: complex(128), b: complex(128)) {
+    pragma "fn synchronization free"
+    extern proc cpow(x: complex(128), y: complex(128)): complex(128);
+    return cpow(a, b);
   }
 
-  operator **(param a: int(?w), param b: int(w)) param {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // operator **(param a: int(?w), param b: int(w)) param {
+  //   if a == 0 && b < 0 then
+  //     compilerError("0 cannot be raised to a negative power");
+  //   return __primitive("**", a, b);
+  // }
+  operator **(param a: int(8), param b: int(8)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: int(16), param b: int(16)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: int(32), param b: int(32)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: int(64), param b: int(64)) param {
     if a == 0 && b < 0 then
       compilerError("0 cannot be raised to a negative power");
     return __primitive("**", a, b);
@@ -2839,18 +3046,72 @@ module ChapelBase {
     lhs = lhs * rhs;
   }
 
-  inline operator /=(ref lhs:int(?w), rhs:int(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /=(ref lhs:int(?w), rhs:int(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if rhs == 0 then
+  //       halt("Attempt to divide by zero");
+  //   __primitive("/=", lhs, rhs);
+  // }
+  inline operator /=(ref lhs:int(8), rhs:int(8)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline operator /=(ref lhs:int(16), rhs:int(16)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
+  inline operator /=(ref lhs:int(32), rhs:int(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:int(64), rhs:int(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if rhs == 0 then
+  //       halt("Attempt to divide by zero");
+  //   __primitive("/=", lhs, rhs);
+  // }
+  inline operator /=(ref lhs:uint(8), rhs:uint(8)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(16), rhs:uint(16)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(32), rhs:uint(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+  inline operator /=(ref lhs:uint(64), rhs:uint(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to divide by zero");
+    __primitive("/=", lhs, rhs);
+  }
+
   // The following 2 procedures were instantiated from this generic version:
   //
   // inline operator /=(ref lhs:real(?w), rhs:real(w)) {
@@ -2863,18 +3124,72 @@ module ChapelBase {
     lhs = lhs / rhs;
   }
 
-  inline operator %=(ref lhs:int(?w), rhs:int(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %=(ref lhs:int(?w), rhs:int(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if rhs == 0 then
+  //       halt("Attempt to compute a modulus by zero");
+  //   __primitive("%=", lhs, rhs);
+  // }
+  inline operator %=(ref lhs:int(8), rhs:int(8)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  inline operator %=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline operator %=(ref lhs:int(16), rhs:int(16)) {
     if (chpl_checkDivByZero) then
       if rhs == 0 then
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
+  inline operator %=(ref lhs:int(32), rhs:int(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:int(64), rhs:int(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator %=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   if (chpl_checkDivByZero) then
+  //     if rhs == 0 then
+  //       halt("Attempt to compute a modulus by zero");
+  //   __primitive("%=", lhs, rhs);
+  // }
+  inline operator %=(ref lhs:uint(8), rhs:uint(8)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(16), rhs:uint(16)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(32), rhs:uint(32)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+  inline operator %=(ref lhs:uint(64), rhs:uint(64)) {
+    if (chpl_checkDivByZero) then
+      if rhs == 0 then
+        halt("Attempt to compute a modulus by zero");
+    __primitive("%=", lhs, rhs);
+  }
+
   inline operator %=(ref lhs, rhs)
   where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs % rhs;
@@ -3136,13 +3451,45 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator ==(a: uint(?w), b: int(w)) {
+
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: uint(?w), b: int(w)) {
+  //   //
+  //   // If b's negative, these obviously aren't equal; if it's not
+  //   // negative, it can be cast to an int
+  //   //
+  //   return !(b < 0) && (a == b:uint(w));
+  // }
+  inline operator ==(a: uint(8), b: int(8)) {
     //
     // If b's negative, these obviously aren't equal; if it's not
     // negative, it can be cast to an int
     //
-    return !(b < 0) && (a == b:uint(w));
+    return !(b < 0) && (a == b:uint(8));
   }
+  inline operator ==(a: uint(16), b: int(16)) {
+    //
+    // If b's negative, these obviously aren't equal; if it's not
+    // negative, it can be cast to an int
+    //
+    return !(b < 0) && (a == b:uint(16));
+  }
+  inline operator ==(a: uint(32), b: int(32)) {
+    //
+    // If b's negative, these obviously aren't equal; if it's not
+    // negative, it can be cast to an int
+    //
+    return !(b < 0) && (a == b:uint(32));
+  }
+  inline operator ==(a: uint(64), b: int(64)) {
+    //
+    // If b's negative, these obviously aren't equal; if it's not
+    // negative, it can be cast to an int
+    //
+    return !(b < 0) && (a == b:uint(64));
+  }
+
   //
   // the dual of the above
   //
@@ -3209,13 +3556,45 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
-  inline operator >(param a: uint(?w), b: uint(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(param a: uint(?w), b: uint(w)) {
+  //   if __primitive("==", a, 0) {
+  //     return false;
+  //   } else {
+  //     return __primitive(">", a, b);
+  //   }
+  // }
+  inline operator >(param a: uint(8), b: uint(8)) {
     if __primitive("==", a, 0) {
       return false;
     } else {
       return __primitive(">", a, b);
     }
   }
+  inline operator >(param a: uint(16), b: uint(16)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
+  }
+  inline operator >(param a: uint(32), b: uint(32)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+
+    }
+  }
+  inline operator >(param a: uint(64), b: uint(64)) {
+    if __primitive("==", a, 0) {
+      return false;
+    } else {
+      return __primitive(">", a, b);
+    }
+  }
+
   // The following 4 procedures were instantiated from this generic version:
   //
   // inline operator >(param a: int(?w), b: int(w)) {
@@ -3249,13 +3628,44 @@ module ChapelBase {
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
-  inline operator <(a: uint(?w), param b: uint(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: uint(?w), param b: uint(w)) {
+  //   if __primitive("==", b, 0) {
+  //     return false;
+  //   } else {
+  //     return __primitive("<", a, b);
+  //   }
+  // }
+  inline operator <(a: uint(8), param b: uint(8)) {
     if __primitive("==", b, 0) {
       return false;
     } else {
       return __primitive("<", a, b);
     }
   }
+  inline operator <(a: uint(16), param b: uint(16)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
+  }
+  inline operator <(a: uint(32), param b: uint(32)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
+  }
+  inline operator <(a: uint(64), param b: uint(64)) {
+    if __primitive("==", b, 0) {
+      return false;
+    } else {
+      return __primitive("<", a, b);
+    }
+  }
+
   // The following 4 procedures were instantiated from this generic version:
   //
   // inline operator <(a: int(?w), param b: int(w)) {
@@ -3289,13 +3699,45 @@ module ChapelBase {
   inline operator >=(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) >= b;
 
   // non-param/param and param/non-param
-  inline operator >=(a: uint(?w), param b: uint(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: uint(?w), param b: uint(w)) {
+  //   if __primitive("==", b, 0) {
+  //     return true;
+  //   } else {
+  //     return __primitive(">=", a, b);
+  //   }
+  // }
+  inline operator >=(a: uint(8), param b: uint(8)) {
     if __primitive("==", b, 0) {
       return true;
     } else {
       return __primitive(">=", a, b);
     }
   }
+  inline operator >=(a: uint(16), param b: uint(16)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
+  }
+  inline operator >=(a: uint(32), param b: uint(32)) {
+    if __primitive("==", b, 0) {
+      return true;
+    } else {
+      return __primitive(">=", a, b);
+    }
+  }
+  inline operator >=(a: uint(64), param b: uint(64)) {
+    if __primitive("==", b, 0) {
+      return true;
+
+    } else {
+      return __primitive(">=", a, b);
+    }
+  }
+
   // The following 4 procedures were instantiated from this generic version:
   //
   // inline operator >=(a: int(?w), param b: int(w)) {
@@ -3328,7 +3770,37 @@ module ChapelBase {
   inline operator <=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) <= b;
 
   // non-param/param and param/non-param
-  inline operator <=(param a: uint(?w), b: uint(w)) {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(param a: uint(?w), b: uint(w)) {
+  //   if __primitive("==", a, 0) {
+  //     return true;
+  //   } else {
+  //     return __primitive("<=", a, b);
+  //   }
+  // }
+  inline operator <=(param a: uint(8), b: uint(8)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
+  }
+  inline operator <=(param a: uint(16), b: uint(16)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
+  }
+  inline operator <=(param a: uint(32), b: uint(32)) {
+    if __primitive("==", a, 0) {
+      return true;
+    } else {
+      return __primitive("<=", a, b);
+    }
+  }
+  inline operator <=(param a: uint(64), b: uint(64)) {
     if __primitive("==", a, 0) {
       return true;
     } else {
