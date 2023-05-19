@@ -85,11 +85,35 @@ module ChapelBase {
   // assignment on primitive types
   //
   inline operator =(ref a: bool(?), b: bool) { __primitive("=", a, b); }
-  inline operator =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
-  inline operator =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator =(ref a: int(?w), b: int(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: int(8), b: int(8)) do __primitive("=", a, b);
+  inline operator =(ref a: int(16), b: int(16)) do __primitive("=", a, b);
+  inline operator =(ref a: int(32), b: int(32)) do __primitive("=", a, b);
+  inline operator =(ref a: int(64), b: int(64)) do __primitive("=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator =(ref a: uint(?w), b: uint(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: uint(8), b: uint(8)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(16), b: uint(16)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(32), b: uint(32)) do __primitive("=", a, b);
+  inline operator =(ref a: uint(64), b: uint(64)) do __primitive("=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator =(ref a: real(?w), b: real(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: real(32), b: real(32)) do __primitive("=", a, b);
+  inline operator =(ref a: real(64), b: real(64)) do __primitive("=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator =(ref a: imag(?w), b: imag(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: imag(32), b: imag(32)) do __primitive("=", a, b);
+  inline operator =(ref a: imag(64), b: imag(64)) do __primitive("=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator =(ref a: complex(?w), b: complex(w)) { __primitive("=", a, b); }
+  inline operator =(ref a: complex(64), b: complex(64)) do __primitive("=", a, b);
+  inline operator =(ref a: complex(128), b: complex(128)) do __primitive("=", a, b);
   inline operator =(ref a:opaque, b:opaque) {__primitive("=", a, b); }
   inline operator =(ref a:enum, b:enum) where (a.type == b.type) {__primitive("=", a, b); }
 
@@ -121,11 +145,35 @@ module ChapelBase {
   //
   inline operator ==(a: _nilType, b: _nilType) param do return true;
   inline operator ==(a: bool, b: bool) do return __primitive("==", a, b);
-  inline operator ==(a: int(?w), b: int(w)) do return __primitive("==", a, b);
-  inline operator ==(a: uint(?w), b: uint(w)) do return __primitive("==", a, b);
-  inline operator ==(a: real(?w), b: real(w)) do return __primitive("==", a, b);
-  inline operator ==(a: imag(?w), b: imag(w)) do return __primitive("==", a, b);
-  inline operator ==(a: complex(?w), b: complex(w)) do return a.re == b.re && a.im == b.im;
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: int(?w), b: int(w)) do return __primitive("==", a, b);
+  inline operator ==(a: int(8), b: int(8)) do return __primitive("==", a, b);
+  inline operator ==(a: int(16), b: int(16)) do return __primitive("==", a, b);
+  inline operator ==(a: int(32), b: int(32)) do return __primitive("==", a, b);
+  inline operator ==(a: int(64), b: int(64)) do return __primitive("==", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: uint(?w), b: uint(w)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(8), b: uint(8)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(16), b: uint(16)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(32), b: uint(32)) do return __primitive("==", a, b);
+  inline operator ==(a: uint(64), b: uint(64)) do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: real(?w), b: real(w)) do return __primitive("==", a, b);
+  inline operator ==(a: real(32), b: real(32)) do return __primitive("==", a, b);
+  inline operator ==(a: real(64), b: real(64)) do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: imag(?w), b: imag(w)) do return __primitive("==", a, b);
+  inline operator ==(a: imag(32), b: imag(32)) do return __primitive("==", a, b);
+  inline operator ==(a: imag(64), b: imag(64)) do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: complex(?w), b: complex(w)) do return a.re == b.re && a.im == b.im;
+  inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
+  inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_eq", a, b);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
@@ -138,11 +186,35 @@ module ChapelBase {
 
   inline operator !=(a: _nilType, b: _nilType) param do return false;
   inline operator !=(a: bool, b: bool) do return __primitive("!=", a, b);
-  inline operator !=(a: int(?w), b: int(w)) do return __primitive("!=", a, b);
-  inline operator !=(a: uint(?w), b: uint(w)) do return __primitive("!=", a, b);
-  inline operator !=(a: real(?w), b: real(w)) do return __primitive("!=", a, b);
-  inline operator !=(a: imag(?w), b: imag(w)) do return __primitive("!=", a, b);
-  inline operator !=(a: complex(?w), b: complex(w)) do return a.re != b.re || a.im != b.im;
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: int(?w), b: int(w)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(8), b: int(8)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(16), b: int(16)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(32), b: int(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: int(64), b: int(64)) do return __primitive("!=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: uint(?w), b: uint(w)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(8), b: uint(8)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(16), b: uint(16)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(32), b: uint(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: uint(64), b: uint(64)) do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: real(?w), b: real(w)) do return __primitive("!=", a, b);
+  inline operator !=(a: real(32), b: real(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: real(64), b: real(64)) do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: imag(?w), b: imag(w)) do return __primitive("!=", a, b);
+  inline operator !=(a: imag(32), b: imag(32)) do return __primitive("!=", a, b);
+  inline operator !=(a: imag(64), b: imag(64)) do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: complex(?w), b: complex(w)) do return a.re != b.re || a.im != b.im;
+  inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
+  inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_neq", a, b);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
@@ -154,8 +226,20 @@ module ChapelBase {
   }
 
   inline operator ==(param a: bool, param b: bool) param do return __primitive("==", a, b);
-  inline operator ==(param a: int(?w), param b: int(w)) param do return __primitive("==", a, b);
-  inline operator ==(param a: uint(?w), param b: uint(w)) param do return __primitive("==", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(param a: int(?w), param b: int(w)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(8), param b: int(8)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(16), param b: int(16)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(32), param b: int(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: int(64), param b: int(64)) param do return __primitive("==", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(param a: uint(?w), param b: uint(w)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(8), param b: uint(8)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(16), param b: uint(16)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(32), param b: uint(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: uint(64), param b: uint(64)) param do return __primitive("==", a, b);
   //
   inline operator ==(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("==", a, b);
   //
@@ -165,28 +249,80 @@ module ChapelBase {
   // param enum routines are defined as module code to avoid having to
   // teach the compiler how to implement all enum comparisons.
 
-  inline operator ==(param a: real(?w), param b: real(w)) param do return __primitive("==", a, b);
-  inline operator ==(param a: imag(?w), param b: imag(w)) param do return __primitive("==", a, b);
-  inline operator ==(param a: complex(?w), param b: complex(w)) param do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(param a: real(?w), param b: real(w)) param do return __primitive("==", a, b);
+  inline operator ==(param a: real(32), param b: real(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: real(64), param b: real(64)) param do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(param a: imag(?w), param b: imag(w)) param do return __primitive("==", a, b);
+  inline operator ==(param a: imag(32), param b: imag(32)) param do return __primitive("==", a, b);
+  inline operator ==(param a: imag(64), param b: imag(64)) param do return __primitive("==", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(param a: complex(?w), param b: complex(w)) param do return __primitive("==", a, b);
+  inline operator ==(param a: complex(64), param b: complex(64)) param do return __primitive("==", a, b);
+  inline operator ==(param a: complex(128), param b: complex(128)) param do return __primitive("==", a, b);
   inline operator ==(a: nothing, b: nothing) param do return true;
 
   inline operator !=(param a: bool, param b: bool) param do return __primitive("!=", a, b);
-  inline operator !=(param a: int(?w), param b: int(w)) param do return __primitive("!=", a, b);
-  inline operator !=(param a: uint(?w), param b: uint(w)) param do return __primitive("!=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(param a: int(?w), param b: int(w)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(8), param b: int(8)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(16), param b: int(16)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(32), param b: int(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: int(64), param b: int(64)) param do return __primitive("!=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(param a: uint(?w), param b: uint(w)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(8), param b: uint(8)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(16), param b: uint(16)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(32), param b: uint(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: uint(64), param b: uint(64)) param do return __primitive("!=", a, b);
 
   inline operator !=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("!=", chpl__enumToOrder(a), chpl__enumToOrder(b));
 
-  inline operator !=(param a: real(?w), param b: real(w)) param do return __primitive("!=", a, b);
-  inline operator !=(param a: imag(?w), param b: imag(w)) param do return __primitive("!=", a, b);
-  inline operator !=(param a: complex(?w), param b: complex(w)) param do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(param a: real(?w), param b: real(w)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: real(32), param b: real(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: real(64), param b: real(64)) param do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(param a: imag(?w), param b: imag(w)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: imag(32), param b: imag(32)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: imag(64), param b: imag(64)) param do return __primitive("!=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(param a: complex(?w), param b: complex(w)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: complex(64), param b: complex(64)) param do return __primitive("!=", a, b);
+  inline operator !=(param a: complex(128), param b: complex(128)) param do return __primitive("!=", a, b);
   inline operator !=(a: nothing, b: nothing) param do return false;
 
   //
   // ordered comparison on primitive types
   //
-  inline operator <=(a: int(?w), b: int(w)) do return __primitive("<=", a, b);
-  inline operator <=(a: uint(?w), b: uint(w)) do return __primitive("<=", a, b);
-  inline operator <=(a: real(?w), b: real(w)) do return __primitive("<=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(a: int(?w), b: int(w)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(8), b: int(8)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(16), b: int(16)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(32), b: int(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: int(64), b: int(64)) do return __primitive("<=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(a: uint(?w), b: uint(w)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(8), b: uint(8)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(16), b: uint(16)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(32), b: uint(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: uint(64), b: uint(64)) do return __primitive("<=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(a: real(?w), b: real(w)) do return __primitive("<=", a, b);
+  inline operator <=(a: real(32), b: real(32)) do return __primitive("<=", a, b);
+  inline operator <=(a: real(64), b: real(64)) do return __primitive("<=", a, b);
   operator <=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -196,9 +332,25 @@ module ChapelBase {
     return false;
   }
 
-  inline operator >=(a: int(?w), b: int(w)) do return __primitive(">=", a, b);
-  inline operator >=(a: uint(?w), b: uint(w)) do return __primitive(">=", a, b);
-  inline operator >=(a: real(?w), b: real(w)) do return __primitive(">=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: int(?w), b: int(w)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(8), b: int(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(16), b: int(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(32), b: int(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(64), b: int(64)) do return __primitive(">=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: uint(?w), b: uint(w)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(8), b: uint(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(16), b: uint(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(32), b: uint(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: uint(64), b: uint(64)) do return __primitive(">=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: real(?w), b: real(w)) do return __primitive(">=", a, b);
+  inline operator >=(a: real(32), b: real(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: real(64), b: real(64)) do return __primitive(">=", a, b);
   operator >=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -208,9 +360,25 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <(a: int(?w), b: int(w)) do return __primitive("<", a, b);
-  inline operator <(a: uint(?w), b: uint(w)) do return __primitive("<", a, b);
-  inline operator <(a: real(?w), b: real(w)) do return __primitive("<", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: int(?w), b: int(w)) do return __primitive("<", a, b);
+  inline operator <(a: int(8), b: int(8)) do return __primitive("<", a, b);
+  inline operator <(a: int(16), b: int(16)) do return __primitive("<", a, b);
+  inline operator <(a: int(32), b: int(32)) do return __primitive("<", a, b);
+  inline operator <(a: int(64), b: int(64)) do return __primitive("<", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: uint(?w), b: uint(w)) do return __primitive("<", a, b);
+  inline operator <(a: uint(8), b: uint(8)) do return __primitive("<", a, b);
+  inline operator <(a: uint(16), b: uint(16)) do return __primitive("<", a, b);
+  inline operator <(a: uint(32), b: uint(32)) do return __primitive("<", a, b);
+  inline operator <(a: uint(64), b: uint(64)) do return __primitive("<", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: real(?w), b: real(w)) do return __primitive("<", a, b);
+  inline operator <(a: real(32), b: real(32)) do return __primitive("<", a, b);
+  inline operator <(a: real(64), b: real(64)) do return __primitive("<", a, b);
   operator <(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -220,9 +388,25 @@ module ChapelBase {
     return false;
   }
 
-  inline operator >(a: int(?w), b: int(w)) do return __primitive(">", a, b);
-  inline operator >(a: uint(?w), b: uint(w)) do return __primitive(">", a, b);
-  inline operator >(a: real(?w), b: real(w)) do return __primitive(">", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(a: int(?w), b: int(w)) do return __primitive(">", a, b);
+  inline operator >(a: int(8), b: int(8)) do return __primitive(">", a, b);
+  inline operator >(a: int(16), b: int(16)) do return __primitive(">", a, b);
+  inline operator >(a: int(32), b: int(32)) do return __primitive(">", a, b);
+  inline operator >(a: int(64), b: int(64)) do return __primitive(">", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(a: uint(?w), b: uint(w)) do return __primitive(">", a, b);
+  inline operator >(a: uint(8), b: uint(8)) do return __primitive(">", a, b);
+  inline operator >(a: uint(16), b: uint(16)) do return __primitive(">", a, b);
+  inline operator >(a: uint(32), b: uint(32)) do return __primitive(">", a, b);
+  inline operator >(a: uint(64), b: uint(64)) do return __primitive(">", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator >(a: real(?w), b: real(w)) do return __primitive(">", a, b);
+  inline operator >(a: real(32), b: real(32)) do return __primitive(">", a, b);
+  inline operator >(a: real(64), b: real(64)) do return __primitive(">", a, b);
   operator >(a: enum, b: enum) where (a.type == b.type) {
     return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
   }
@@ -232,25 +416,89 @@ module ChapelBase {
     return false;
   }
 
-  inline operator <=(param a: int(?w), param b: int(w)) param do return __primitive("<=", a, b);
-  inline operator <=(param a: uint(?w), param b: uint(w)) param do return __primitive("<=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(param a: int(?w), param b: int(w)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(8), param b: int(8)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(16), param b: int(16)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(32), param b: int(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: int(64), param b: int(64)) param do return __primitive("<=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(param a: uint(?w), param b: uint(w)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(8), param b: uint(8)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(16), param b: uint(16)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(32), param b: uint(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: uint(64), param b: uint(64)) param do return __primitive("<=", a, b);
   inline operator <=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator <=(param a: real(?w), param b: real(w)) param do return __primitive("<=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(param a: real(?w), param b: real(w)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: real(32), param b: real(32)) param do return __primitive("<=", a, b);
+  inline operator <=(param a: real(64), param b: real(64)) param do return __primitive("<=", a, b);
 
-  inline operator >=(param a: int(?w), param b: int(w)) param do return __primitive(">=", a, b);
-  inline operator >=(param a: uint(?w), param b: uint(w)) param do return __primitive(">=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(param a: int(?w), param b: int(w)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(8), param b: int(8)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(16), param b: int(16)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(32), param b: int(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: int(64), param b: int(64)) param do return __primitive(">=", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(param a: uint(?w), param b: uint(w)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(8), param b: uint(8)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(16), param b: uint(16)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(32), param b: uint(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: uint(64), param b: uint(64)) param do return __primitive(">=", a, b);
   inline operator >=(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">=", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator >=(param a: real(?w), param b: real(w)) param do return __primitive(">=", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(param a: real(?w), param b: real(w)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: real(32), param b: real(32)) param do return __primitive(">=", a, b);
+  inline operator >=(param a: real(64), param b: real(64)) param do return __primitive(">=", a, b);
 
-  inline operator <(param a: int(?w), param b: int(w)) param do return __primitive("<", a, b);
-  inline operator <(param a: uint(?w), param b: uint(w)) param do return __primitive("<", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(param a: int(?w), param b: int(w)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(8), param b: int(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(16), param b: int(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(32), param b: int(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: int(64), param b: int(64)) param do return __primitive("<", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(param a: uint(?w), param b: uint(w)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(8), param b: uint(8)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(16), param b: uint(16)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(32), param b: uint(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: uint(64), param b: uint(64)) param do return __primitive("<", a, b);
   inline operator <(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive("<", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator <(param a: real(?w), param b: real(w)) param do return __primitive("<", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator <(param a: real(?w), param b: real(w)) param do return __primitive("<", a, b);
+  inline operator <(param a: real(32), param b: real(32)) param do return __primitive("<", a, b);
+  inline operator <(param a: real(64), param b: real(64)) param do return __primitive("<", a, b);
 
-  inline operator >(param a: int(?w), param b: int(w)) param do return __primitive(">", a, b);
-  inline operator >(param a: uint(?w), param b: uint(w)) param do return __primitive(">", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(param a: int(?w), param b: int(w)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(8), param b: int(8)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(16), param b: int(16)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(32), param b: int(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: int(64), param b: int(64)) param do return __primitive(">", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(param a: uint(?w), param b: uint(w)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(8), param b: uint(8)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(16), param b: uint(16)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(32), param b: uint(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: uint(64), param b: uint(64)) param do return __primitive(">", a, b);
   inline operator >(param a: enum, param b: enum) param where (a.type == b.type) do return __primitive(">", chpl__enumToOrder(a), chpl__enumToOrder(b));
-  inline operator >(param a: real(?w), param b: real(w)) param do return __primitive(">", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator >(param a: real(?w), param b: real(w)) param do return __primitive(">", a, b);
+  inline operator >(param a: real(32), param b: real(32)) param do return __primitive(">", a, b);
+  inline operator >(param a: real(64), param b: real(64)) param do return __primitive(">", a, b);
 
   //
   // unary + and - on primitive types
@@ -286,70 +534,278 @@ module ChapelBase {
   //
   // binary + and - on primitive types for runtime values
   //
-  inline operator +(a: int(?w), b: int(w)) do return __primitive("+", a, b);
-  inline operator +(a: uint(?w), b: uint(w)) do return __primitive("+", a, b);
-  inline operator +(a: real(?w), b: real(w)) do return __primitive("+", a, b);
-  inline operator +(a: imag(?w), b: imag(w)) do return __primitive("+", a, b);
-  inline operator +(a: complex(?w), b: complex(w)) do return __primitive("+", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: int(?w), b: int(w)) do return __primitive("+", a, b);
+  inline operator +(a: int(8), b: int(8)) do return __primitive("+", a, b);
+  inline operator +(a: int(16), b: int(16)) do return __primitive("+", a, b);
+  inline operator +(a: int(32), b: int(32)) do return __primitive("+", a, b);
+  inline operator +(a: int(64), b: int(64)) do return __primitive("+", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: uint(?w), b: uint(w)) do return __primitive("+", a, b);
+  inline operator +(a: uint(8), b: uint(8)) do return __primitive("+", a, b);
+  inline operator +(a: uint(16), b: uint(16)) do return __primitive("+", a, b);
+  inline operator +(a: uint(32), b: uint(32)) do return __primitive("+", a, b);
+  inline operator +(a: uint(64), b: uint(64)) do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: real(?w), b: real(w)) do return __primitive("+", a, b);
+  inline operator +(a: real(32), b: real(32)) do return __primitive("+", a, b);
+  inline operator +(a: real(64), b: real(64)) do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: imag(?w), b: imag(w)) do return __primitive("+", a, b);
+  inline operator +(a: imag(32), b: imag(32)) do return __primitive("+", a, b);
+  inline operator +(a: imag(64), b: imag(64)) do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: complex(?w), b: complex(w)) do return __primitive("+", a, b);
+  inline operator +(a: complex(64), b: complex(64)) do return __primitive("+", a, b);
+  inline operator +(a: complex(128), b: complex(128)) do return __primitive("+", a, b);
 
-  inline operator +(a: real(?w), b: imag(w)) do return (a, _i2r(b)):complex(w*2);
-  inline operator +(a: imag(?w), b: real(w)) do return (b, _i2r(a)):complex(w*2);
-  inline operator +(a: real(?w), b: complex(w*2)) do return (a+b.re, b.im):complex(w*2);
-  inline operator +(a: complex(?w), b: real(w/2)) do return (a.re+b, a.im):complex(w);
-  inline operator +(a: imag(?w), b: complex(w*2)) do return (b.re, _i2r(a)+b.im):complex(w*2);
-  inline operator +(a: complex(?w), b: imag(w/2)) do return (a.re, a.im+_i2r(b)):complex(w);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: real(?w), b: imag(w)) do return (a, _i2r(b)):complex(w*2);
+  inline operator +(a: real(32), b: imag(32)) do return (a, _i2r(b)) : complex(64);
+  inline operator +(a: real(64), b: imag(64)) do return (a, _i2r(b)) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: imag(?w), b: real(w)) do return (b, _i2r(a)):complex(w*2);
+  inline operator +(a: imag(32), b: real(32)) do return (b, _i2r(a)) : complex(64);
+  inline operator +(a: imag(64), b: real(64)) do return (b, _i2r(a)) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: real(?w), b: complex(w*2)) do return (a+b.re, b.im):complex(w*2);
+  inline operator +(a: real(32), b: complex(64)) do return (a+b.re, b.im) : complex(64);
+  inline operator +(a: real(64), b: complex(128)) do return (a+b.re, b.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: complex(?w), b: real(w/2)) do return (a.re+b, a.im):complex(w);
+  inline operator +(a: complex(64), b: real(32)) do return (a.re+b, a.im) : complex(64);
+  inline operator +(a: complex(128), b: real(64)) do return (a.re+b, a.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: imag(?w), b: complex(w*2)) do return (b.re, _i2r(a)+b.im):complex(w*2);
+  inline operator +(a: imag(32), b: complex(64)) do return (b.re, _i2r(a)+b.im) : complex(64);
+  inline operator +(a: imag(64), b: complex(128)) do return (b.re, _i2r(a)+b.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(a: complex(?w), b: imag(w/2)) do return (a.re, a.im+_i2r(b)):complex(w);
+  inline operator +(a: complex(64), b: imag(32)) do return (a.re, a.im+_i2r(b)) : complex(64);
+  inline operator +(a: complex(128), b: imag(64)) do return (a.re, a.im+_i2r(b)) : complex(128);
 
-  inline operator -(a: int(?w), b: int(w)) do return __primitive("-", a, b);
-  inline operator -(a: uint(?w), b: uint(w)) do return __primitive("-", a, b);
-  inline operator -(a: real(?w), b: real(w)) do return __primitive("-", a, b);
-  inline operator -(a: imag(?w), b: imag(w)) do return __primitive("-", a, b);
-  inline operator -(a: complex(?w), b: complex(w)) do return __primitive("-", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: int(?w), b: int(w)) do return __primitive("-", a, b);
+  inline operator -(a: int(8), b: int(8)) do return __primitive("-", a, b);
+  inline operator -(a: int(16), b: int(16)) do return __primitive("-", a, b);
+  inline operator -(a: int(32), b: int(32)) do return __primitive("-", a, b);
+  inline operator -(a: int(64), b: int(64)) do return __primitive("-", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: uint(?w), b: uint(w)) do return __primitive("-", a, b);
+  inline operator -(a: uint(8), b: uint(8)) do return __primitive("-", a, b);
+  inline operator -(a: uint(16), b: uint(16)) do return __primitive("-", a, b);
+  inline operator -(a: uint(32), b: uint(32)) do return __primitive("-", a, b);
+  inline operator -(a: uint(64), b: uint(64)) do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: real(?w), b: real(w)) do return __primitive("-", a, b);
+  inline operator -(a: real(32), b: real(32)) do return __primitive("-", a, b);
+  inline operator -(a: real(64), b: real(64)) do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: imag(?w), b: imag(w)) do return __primitive("-", a, b);
+  inline operator -(a: imag(32), b: imag(32)) do return __primitive("-", a, b);
+  inline operator -(a: imag(64), b: imag(64)) do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: complex(?w), b: complex(w)) do return __primitive("-", a, b);
+  inline operator -(a: complex(64), b: complex(64)) do return __primitive("-", a, b);
+  inline operator -(a: complex(128), b: complex(128)) do return __primitive("-", a, b);
 
-  inline operator -(a: real(?w), b: imag(w)) do return (a, -_i2r(b)):complex(w*2);
-  inline operator -(a: imag(?w), b: real(w)) do return (-b, _i2r(a)):complex(w*2);
-  inline operator -(a: real(?w), b: complex(w*2)) do return (a-b.re, -b.im):complex(w*2);
-  inline operator -(a: complex(?w), b: real(w/2)) do return (a.re-b, a.im):complex(w);
-  inline operator -(a: imag(?w), b: complex(w*2)) do return (-b.re, _i2r(a)-b.im):complex(w*2);
-  inline operator -(a: complex(?w), b: imag(w/2)) do return (a.re, a.im-_i2r(b)):complex(w);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: real(?w), b: imag(w)) do return (a, -_i2r(b)):complex(w*2);
+  inline operator -(a: real(32), b: imag(32)) do return (a, -_i2r(b)) : complex(64);
+  inline operator -(a: real(64), b: imag(64)) do return (a, -_i2r(b)) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: imag(?w), b: real(w)) do return (-b, _i2r(a)):complex(w*2);
+  inline operator -(a: imag(32), b: real(32)) do return (-b, _i2r(a)) : complex(64);
+  inline operator -(a: imag(64), b: real(64)) do return (-b, _i2r(a)) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: real(?w), b: complex(w*2)) do return (a-b.re, -b.im):complex(w*2);
+  inline operator -(a: real(32), b: complex(64)) do return (a-b.re, -b.im) : complex(64);
+  inline operator -(a: real(64), b: complex(128)) do return (a-b.re, -b.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: complex(?w), b: real(w/2)) do return (a.re-b, a.im):complex(w);
+  inline operator -(a: complex(64), b: real(32)) do return (a.re-b, a.im) : complex(64);
+  inline operator -(a: complex(128), b: real(64)) do return (a.re-b, a.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: imag(?w), b: complex(w*2)) do return (-b.re, _i2r(a)-b.im):complex(w*2);
+  inline operator -(a: imag(32), b: complex(64)) do return (-b.re, _i2r(a)-b.im) : complex(64);
+  inline operator -(a: imag(64), b: complex(128)) do return (-b.re, _i2r(a)-b.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(a: complex(?w), b: imag(w/2)) do return (a.re, a.im-_i2r(b)):complex(w);
+  inline operator -(a: complex(64), b: imag(32)) do return (a.re, a.im-_i2r(b)) : complex(64);
+  inline operator -(a: complex(128), b: imag(64)) do return (a.re, a.im-_i2r(b)) : complex(128);
 
   //
   // binary + and - on param values
   //
-  inline operator +(param a: int(?w), param b: int(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: uint(?w), param b: uint(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: real(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: imag(?w), param b: imag(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: complex(?w), param b: complex(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: real(?w), param b: imag(w)) param do return __primitive("+", a, b);
-  inline operator +(param a: imag(?w), param b: real(w)) param do return __primitive("+", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: int(?w), param b: int(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(8), param b: int(8)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(16), param b: int(16)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(32), param b: int(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: int(64), param b: int(64)) param do return __primitive("+", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: uint(?w), param b: uint(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(8), param b: uint(8)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(16), param b: uint(16)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(32), param b: uint(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: uint(64), param b: uint(64)) param do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: real(?w), param b: real(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(32), param b: real(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(64), param b: real(64)) param do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: imag(?w), param b: imag(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(32), param b: imag(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(64), param b: imag(64)) param do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: complex(?w), param b: complex(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: complex(64), param b: complex(64)) param do return __primitive("+", a, b);
+  inline operator +(param a: complex(128), param b: complex(128)) param do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: real(?w), param b: imag(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(32), param b: imag(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: real(64), param b: imag(64)) param do return __primitive("+", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +(param a: imag(?w), param b: real(w)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(32), param b: real(32)) param do return __primitive("+", a, b);
+  inline operator +(param a: imag(64), param b: real(64)) param do return __primitive("+", a, b);
   /*inline operator +(param a: real(?w), param b: complex(w*2)) param do return
   __primitive("+", a, b);*/
 
-  inline operator -(param a: int(?w), param b: int(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: uint(?w), param b: uint(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: real(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: imag(?w), param b: imag(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: complex(?w), param b: complex(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: real(?w), param b: imag(w)) param do return __primitive("-", a, b);
-  inline operator -(param a: imag(?w), param b: real(w)) param do return __primitive("-", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: int(?w), param b: int(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(8), param b: int(8)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(16), param b: int(16)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(32), param b: int(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: int(64), param b: int(64)) param do return __primitive("-", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: uint(?w), param b: uint(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(8), param b: uint(8)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(16), param b: uint(16)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(32), param b: uint(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: uint(64), param b: uint(64)) param do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: real(?w), param b: real(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(32), param b: real(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(64), param b: real(64)) param do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: imag(?w), param b: imag(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(32), param b: imag(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(64), param b: imag(64)) param do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: complex(?w), param b: complex(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: complex(64), param b: complex(64)) param do return __primitive("-", a, b);
+  inline operator -(param a: complex(128), param b: complex(128)) param do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: real(?w), param b: imag(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(32), param b: imag(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: real(64), param b: imag(64)) param do return __primitive("-", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -(param a: imag(?w), param b: real(w)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(32), param b: real(32)) param do return __primitive("-", a, b);
+  inline operator -(param a: imag(64), param b: real(64)) param do return __primitive("-", a, b);
   /*inline operator -(param a: real(?w), param b: complex(w*2)) param do return
   __primitive("-", a, b);*/
 
   //
   // * and / on primitive types
   //
-  inline operator *(a: int(?w), b: int(w)) do return __primitive("*", a, b);
-  inline operator *(a: uint(?w), b: uint(w)) do return __primitive("*", a, b);
-  inline operator *(a: real(?w), b: real(w)) do return __primitive("*", a, b);
-  inline operator *(a: imag(?w), b: imag(w)) do return _i2r(__primitive("*", -a, b));
-  inline operator *(a: complex(?w), b: complex(w)) do return __primitive("*", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: int(?w), b: int(w)) do return __primitive("*", a, b);
+  inline operator *(a: int(8), b: int(8)) do return __primitive("*", a, b);
+  inline operator *(a: int(16), b: int(16)) do return __primitive("*", a, b);
+  inline operator *(a: int(32), b: int(32)) do return __primitive("*", a, b);
+  inline operator *(a: int(64), b: int(64)) do return __primitive("*", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: uint(?w), b: uint(w)) do return __primitive("*", a, b);
+  inline operator *(a: uint(8), b: uint(8)) do return __primitive("*", a, b);
+  inline operator *(a: uint(16), b: uint(16)) do return __primitive("*", a, b);
+  inline operator *(a: uint(32), b: uint(32)) do return __primitive("*", a, b);
+  inline operator *(a: uint(64), b: uint(64)) do return __primitive("*", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: real(?w), b: real(w)) do return __primitive("*", a, b);
+  inline operator *(a: real(32), b: real(32)) do return __primitive("*", a, b);
+  inline operator *(a: real(64), b: real(64)) do return __primitive("*", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: imag(?w), b: imag(w)) do return _i2r(__primitive("*", -a, b));
+  inline operator *(a: imag(32), b: imag(32)) do return _i2r(__primitive("*", -a, b));
+  inline operator *(a: imag(64), b: imag(64)) do return _i2r(__primitive("*", -a, b));
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: complex(?w), b: complex(w)) do return __primitive("*", a, b);
+  inline operator *(a: complex(64), b: complex(64)) do return __primitive("*", a, b);
+  inline operator *(a: complex(128), b: complex(128)) do return __primitive("*", a, b);
 
-  inline operator *(a: real(?w), b: imag(w)) do return _r2i(a*_i2r(b));
-  inline operator *(a: imag(?w), b: real(w)) do return _r2i(_i2r(a)*b);
-  inline operator *(a: real(?w), b: complex(w*2)) do return (a*b.re, a*b.im):complex(w*2);
-  inline operator *(a: complex(?w), b: real(w/2)) do return (a.re*b, a.im*b):complex(w);
-  inline operator *(a: imag(?w), b: complex(w*2)) do return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
-  inline operator *(a: complex(?w), b: imag(w/2)) do return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: real(?w), b: imag(w)) do return _r2i(a*_i2r(b));
+  inline operator *(a: real(32), b: imag(32)) do return _r2i(a*_i2r(b));
+  inline operator *(a: real(64), b: imag(64)) do return _r2i(a*_i2r(b));
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: imag(?w), b: real(w)) do return _r2i(_i2r(a)*b);
+  inline operator *(a: imag(32), b: real(32)) do return _r2i(_i2r(a)*b);
+  inline operator *(a: imag(64), b: real(64)) do return _r2i(_i2r(a)*b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: real(?w), b: complex(w*2)) do return (a*b.re, a*b.im):complex(w*2);
+  inline operator *(a: real(32), b: complex(64)) do return (a*b.re, a*b.im) : complex(64);
+  inline operator *(a: real(64), b: complex(128)) do return (a*b.re, a*b.im) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: complex(?w), b: real(w/2)) do return (a.re*b, a.im*b):complex(w);
+  inline operator *(a: complex(64), b: real(32)) do return (a.re*b, a.im*b) : complex(64);
+  inline operator *(a: complex(128), b: real(64)) do return (a.re*b, a.im*b) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: imag(?w), b: complex(w*2)) do return (-_i2r(a)*b.im, _i2r(a)*b.re):complex(w*2);
+  inline operator *(a: imag(32), b: complex(64)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(64);
+  inline operator *(a: imag(64), b: complex(128)) do return (-_i2r(a)*b.im, _i2r(a)*b.re) : complex(128);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(a: complex(?w), b: imag(w/2)) do return (-a.im*_i2r(b), a.re*_i2r(b)):complex(w);
+  inline operator *(a: complex(64), b: imag(32)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(64);
+  inline operator *(a: complex(128), b: imag(64)) do return (-a.im*_i2r(b), a.re*_i2r(b)) : complex(128);
 
   inline operator /(a: int(?w), b: int(w)) {
     if (chpl_checkDivByZero) then
@@ -363,58 +819,166 @@ module ChapelBase {
         halt("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(a: real(?w), b: real(w)) do return __primitive("/", a, b);
-  inline operator /(a: imag(?w), b: imag(w)) do return _i2r(__primitive("/", a, b));
-  inline operator /(a: complex(?w), b: complex(w)) do return __primitive("/", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: real(?w), b: real(w)) do return __primitive("/", a, b);
+  inline operator /(a: real(32), b: real(32)) do return __primitive("/", a, b);
+  inline operator /(a: real(64), b: real(64)) do return __primitive("/", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: imag(?w), b: imag(w)) do return _i2r(__primitive("/", a, b));
+  inline operator /(a: imag(32), b: imag(32)) do return _i2r(__primitive("/", a, b));
+  inline operator /(a: imag(64), b: imag(64)) do return _i2r(__primitive("/", a, b));
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: complex(?w), b: complex(w)) do return __primitive("/", a, b);
+  inline operator /(a: complex(64), b: complex(64)) do return __primitive("/", a, b);
+  inline operator /(a: complex(128), b: complex(128)) do return __primitive("/", a, b);
 
-  inline operator /(a: real(?w), b: imag(w)) do return _r2i(-a/_i2r(b));
-  inline operator /(a: imag(?w), b: real(w)) do return _r2i(_i2r(a)/b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: real(?w), b: imag(w)) do return _r2i(-a/_i2r(b));
+  inline operator /(a: real(32), b: imag(32)) do return _r2i(-a/_i2r(b));
+  inline operator /(a: real(64), b: imag(64)) do return _r2i(-a/_i2r(b));
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: imag(?w), b: real(w)) do return _r2i(_i2r(a)/b);
+  inline operator /(a: imag(32), b: real(32)) do return _r2i(_i2r(a)/b);
+  inline operator /(a: imag(64), b: real(64)) do return _r2i(_i2r(a)/b);
   inline operator /(a: real(?w), b: complex(w*2)) {
     const d = abs(b);
     return ((a/d)*(b.re/d), (-a/d)*(b.im/d)):complex(w*2);
   }
-  inline operator /(a: complex(?w), b: real(w/2)) do
-    return (a.re/b, a.im/b):complex(w);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: complex(?w), b: real(w/2)) do
+  //   return (a.re/b, a.im/b):complex(w);
+  inline operator /(a: complex(64), b: real(32)) do return (a.re/b, a.im/b) : complex(64);
+  inline operator /(a: complex(128), b: real(64)) do return (a.re/b, a.im/b) : complex(128);
   inline operator /(a: imag(?w), b: complex(w*2)) {
     const d = abs(b);
     return ((_i2r(a)/d)*(b.im/d), (_i2r(a)/d)*(b.re/d)):complex(w*2);
   }
-  inline operator /(a: complex(?w), b: imag(w/2)) do
-    return (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(a: complex(?w), b: imag(w/2)) do
+  //   return (a.im/_i2r(b), -a.re/_i2r(b)):complex(w);
+  inline operator /(a: complex(64), b: imag(32)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(64);
+  inline operator /(a: complex(128), b: imag(64)) do return (a.im/_i2r(b), -a.re/_i2r(b)) : complex(128);
 
-  inline operator *(param a: int(?w), param b: int(w)) param do return __primitive("*", a, b);
-  inline operator *(param a: uint(?w), param b: uint(w)) param do return __primitive("*", a, b);
-  inline operator *(param a: real(?w), param b: real(w)) param do return __primitive("*", a, b);
-  inline operator *(param a: imag(?w), param b: imag(w)) param {
-    return __primitive("*", -a, b):real(w);
-  }
-  inline operator *(param a: real(?w), param b: imag(w)) param {
-    return __primitive("*", a, b:real(w)):imag(w);
-  }
-  inline operator *(param a: imag(?w), param b: real(w)) param {
-    return __primitive("*", a:real(w), b):imag(w);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: int(?w), param b: int(w)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(8), param b: int(8)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(16), param b: int(16)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(32), param b: int(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: int(64), param b: int(64)) param do return __primitive("*", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: uint(?w), param b: uint(w)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(8), param b: uint(8)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(16), param b: uint(16)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(32), param b: uint(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: uint(64), param b: uint(64)) param do return __primitive("*", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: real(?w), param b: real(w)) param do return __primitive("*", a, b);
+  inline operator *(param a: real(32), param b: real(32)) param do return __primitive("*", a, b);
+  inline operator *(param a: real(64), param b: real(64)) param do return __primitive("*", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: imag(?w), param b: imag(w)) param {
+  //   return __primitive("*", -a, b):real(w);
+  // }
+  inline operator *(param a: imag(32), param b: imag(32)) param do return __primitive("*", -a, b) : real(32);
+  inline operator *(param a: imag(64), param b: imag(64)) param do return __primitive("*", -a, b) : real(64);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: real(?w), param b: imag(w)) param {
+  //   return __primitive("*", a, b:real(w)):imag(w);
+  // }
+  inline operator *(param a: real(32), param b: imag(32)) param do return __primitive("*", a, b : real(32)) : imag(32);
+  inline operator *(param a: real(64), param b: imag(64)) param do return __primitive("*", a, b : real(64)) : imag(64);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *(param a: imag(?w), param b: real(w)) param {
+  //   return __primitive("*", a:real(w), b):imag(w);
+  // }
+  inline operator *(param a: imag(32), param b: real(32)) param do return __primitive("*", a : real(32), b) : imag(32);
+  inline operator *(param a: imag(64), param b: real(64)) param do return __primitive("*", a : real(64), b) : imag(64);
 
-  inline operator /(param a: int(?w), param b: int(w)) param {
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: int(?w), param b: int(w)) param {
+  //   if b == 0 then compilerError("Attempt to divide by zero");
+  //   return __primitive("/", a, b);
+  // }
+  inline operator /(param a: int(8), param b: int(8)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: uint(?w), param b: uint(w)) param {
+  inline operator /(param a: int(16), param b: int(16)) param {
     if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: real(?w), param b: real(w)) param {
+  inline operator /(param a: int(32), param b: int(32)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
     return __primitive("/", a, b);
   }
-  inline operator /(param a: imag(?w), param b: imag(w)) param {
-    return __primitive("/", a, b):real(w);
+  inline operator /(param a: int(64), param b: int(64)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
-  inline operator /(param a: real(?w), param b: imag(w)) param {
-    return __primitive("/", -a, b:real(w)):imag(w);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: uint(?w), param b: uint(w)) param {
+  //   if b == 0 then compilerError("Attempt to divide by zero");
+  //   return __primitive("/", a, b);
+  // }
+  inline operator /(param a: uint(8), param b: uint(8)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
-  inline operator /(param a: imag(?w), param b: real(w)) param {
-    return __primitive("/", a:real(w), b):imag(w);
+  inline operator /(param a: uint(16), param b: uint(16)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
   }
+  inline operator /(param a: uint(32), param b: uint(32)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  inline operator /(param a: uint(64), param b: uint(64)) param {
+    if b == 0 then compilerError("Attempt to divide by zero");
+    return __primitive("/", a, b);
+  }
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: real(?w), param b: real(w)) param {
+  //   return __primitive("/", a, b);
+  // }
+  inline operator /(param a: real(32), param b: real(32)) param do return __primitive("/", a, b);
+  inline operator /(param a: real(64), param b: real(64)) param do return __primitive("/", a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: imag(?w), param b: imag(w)) param {
+  //   return __primitive("/", a, b):real(w);
+  // }
+  inline operator /(param a: imag(32), param b: imag(32)) param do return __primitive("/", a, b) : real(32);
+  inline operator /(param a: imag(64), param b: imag(64)) param do return __primitive("/", a, b) : real(64);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: real(?w), param b: imag(w)) param {
+  //   return __primitive("/", -a, b:real(w)):imag(w);
+  // }
+  inline operator /(param a: real(32), param b: imag(32)) param do return __primitive("/", -a, b : real(32)) : imag(32);
+  inline operator /(param a: real(64), param b: imag(64)) param do return __primitive("/", -a, b : real(64)) : imag(64);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /(param a: imag(?w), param b: real(w)) param {
+  //   return __primitive("/", a:real(w), b):imag(w);
+  // }
+  inline operator /(param a: imag(32), param b: real(32)) param do return __primitive("/", a : real(32), b) : imag(32);
+  inline operator /(param a: imag(64), param b: real(64)) param do return __primitive("/", a : real(64), b) : imag(64);
 
 
   //
@@ -468,9 +1032,25 @@ module ChapelBase {
     return y;
   }
 
-  inline operator **(a: int(?w), b: int(w)) do return _intExpHelp(a, b);
-  inline operator **(a: uint(?w), b: uint(w)) do return _intExpHelp(a, b);
-  inline operator **(a: real(?w), b: real(w)) do return __primitive("**", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator **(a: int(?w), b: int(w)) do return _intExpHelp(a, b);
+  inline operator **(a: int(8), b: int(8)) do return _intExpHelp(a, b);
+  inline operator **(a: int(16), b: int(16)) do return _intExpHelp(a, b);
+  inline operator **(a: int(32), b: int(32)) do return _intExpHelp(a, b);
+  inline operator **(a: int(64), b: int(64)) do return _intExpHelp(a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator **(a: uint(?w), b: uint(w)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(8), b: uint(8)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(16), b: uint(16)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(32), b: uint(32)) do return _intExpHelp(a, b);
+  inline operator **(a: uint(64), b: uint(64)) do return _intExpHelp(a, b);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator **(a: real(?w), b: real(w)) do return __primitive("**", a, b);
+  inline operator **(a: real(32), b: real(32)) do return __primitive("**", a, b);
+  inline operator **(a: real(64), b: real(64)) do return __primitive("**", a, b);
   inline operator **(a: complex(?w), b: complex(w)) {
     if a.type == complex(128) {
       pragma "fn synchronization free"
@@ -488,9 +1068,15 @@ module ChapelBase {
       compilerError("0 cannot be raised to a negative power");
     return __primitive("**", a, b);
   }
-  operator **(param a: uint(?w), param b: uint(w)) param {
-    return __primitive("**", a, b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // operator **(param a: uint(?w), param b: uint(w)) param {
+  //   return __primitive("**", a, b);
+  // }
+  operator **(param a: uint(8), param b: uint(8)) param do return __primitive("**", a, b);
+  operator **(param a: uint(16), param b: uint(16)) param do return __primitive("**", a, b);
+  operator **(param a: uint(32), param b: uint(32)) param do return __primitive("**", a, b);
+  operator **(param a: uint(64), param b: uint(64)) param do return __primitive("**", a, b);
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
@@ -571,44 +1157,188 @@ module ChapelBase {
   inline operator ~(a: bool) { compilerError("~ is not supported on operands of boolean type"); }
 
   inline operator &(a: bool, b: bool) do return __primitive("&", a, b);
-  inline operator &(a: int(?w), b: int(w)) do return __primitive("&", a, b);
-  inline operator &(a: uint(?w), b: uint(w)) do return __primitive("&", a, b);
-  inline operator &(a: uint(?w), b: int(w)) do return __primitive("&", a, b:uint(w));
-  inline operator &(a: int(?w), b: uint(w)) do return __primitive("&", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(a: int(?w), b: int(w)) do return __primitive("&", a, b);
+  inline operator &(a: int(8), b: int(8)) do return __primitive("&", a, b);
+  inline operator &(a: int(16), b: int(16)) do return __primitive("&", a, b);
+  inline operator &(a: int(32), b: int(32)) do return __primitive("&", a, b);
+  inline operator &(a: int(64), b: int(64)) do return __primitive("&", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(a: uint(?w), b: uint(w)) do return __primitive("&", a, b);
+  inline operator &(a: uint(8), b: uint(8)) do return __primitive("&", a, b);
+  inline operator &(a: uint(16), b: uint(16)) do return __primitive("&", a, b);
+  inline operator &(a: uint(32), b: uint(32)) do return __primitive("&", a, b);
+  inline operator &(a: uint(64), b: uint(64)) do return __primitive("&", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(a: uint(?w), b: int(w)) do return __primitive("&", a, b:uint(w));
+  inline operator &(a: uint(8), b: int(8)) do return __primitive("&", a, b : uint(8));
+  inline operator &(a: uint(16), b: int(16)) do return __primitive("&", a, b : uint(16));
+  inline operator &(a: uint(32), b: int(32)) do return __primitive("&", a, b : uint(32));
+  inline operator &(a: uint(64), b: int(64)) do return __primitive("&", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(a: int(?w), b: uint(w)) do return __primitive("&", a:uint(w), b);
+  inline operator &(a: int(8), b: uint(8)) do return __primitive("&", a : uint(8), b);
+  inline operator &(a: int(16), b: uint(16)) do return __primitive("&", a : uint(16), b);
+  inline operator &(a: int(32), b: uint(32)) do return __primitive("&", a : uint(32), b);
+  inline operator &(a: int(64), b: uint(64)) do return __primitive("&", a : uint(64), b);
 
   inline operator |(a: bool, b: bool) do return __primitive("|", a, b);
-  inline operator |(a: int(?w), b: int(w)) do return __primitive("|", a, b);
-  inline operator |(a: uint(?w), b: uint(w)) do return __primitive("|", a, b);
-  inline operator |(a: uint(?w), b: int(w)) do return __primitive("|", a, b:uint(w));
-  inline operator |(a: int(?w), b: uint(w)) do return __primitive("|", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(a: int(?w), b: int(w)) do return __primitive("|", a, b);
+  inline operator |(a: int(8), b: int(8)) do return __primitive("|", a, b);
+  inline operator |(a: int(16), b: int(16)) do return __primitive("|", a, b);
+  inline operator |(a: int(32), b: int(32)) do return __primitive("|", a, b);
+  inline operator |(a: int(64), b: int(64)) do return __primitive("|", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(a: uint(?w), b: uint(w)) do return __primitive("|", a, b);
+  inline operator |(a: uint(8), b: uint(8)) do return __primitive("|", a, b);
+  inline operator |(a: uint(16), b: uint(16)) do return __primitive("|", a, b);
+  inline operator |(a: uint(32), b: uint(32)) do return __primitive("|", a, b);
+  inline operator |(a: uint(64), b: uint(64)) do return __primitive("|", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(a: uint(?w), b: int(w)) do return __primitive("|", a, b:uint(w));
+  inline operator |(a: uint(8), b: int(8)) do return __primitive("|", a, b : uint(8));
+  inline operator |(a: uint(16), b: int(16)) do return __primitive("|", a, b : uint(16));
+  inline operator |(a: uint(32), b: int(32)) do return __primitive("|", a, b : uint(32));
+  inline operator |(a: uint(64), b: int(64)) do return __primitive("|", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(a: int(?w), b: uint(w)) do return __primitive("|", a:uint(w), b);
+  inline operator |(a: int(8), b: uint(8)) do return __primitive("|", a : uint(8), b);
+  inline operator |(a: int(16), b: uint(16)) do return __primitive("|", a : uint(16), b);
+  inline operator |(a: int(32), b: uint(32)) do return __primitive("|", a : uint(32), b);
+  inline operator |(a: int(64), b: uint(64)) do return __primitive("|", a : uint(64), b);
 
   inline operator ^(a: bool, b: bool) do return __primitive("^", a, b);
-  inline operator ^(a: int(?w), b: int(w)) do return __primitive("^", a, b);
-  inline operator ^(a: uint(?w), b: uint(w)) do return __primitive("^", a, b);
-  inline operator ^(a: uint(?w), b: int(w)) do return __primitive("^", a, b:uint(w));
-  inline operator ^(a: int(?w), b: uint(w)) do return __primitive("^", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(a: int(?w), b: int(w)) do return __primitive("^", a, b);
+  inline operator ^(a: int(8), b: int(8)) do return __primitive("^", a, b);
+  inline operator ^(a: int(16), b: int(16)) do return __primitive("^", a, b);
+  inline operator ^(a: int(32), b: int(32)) do return __primitive("^", a, b);
+  inline operator ^(a: int(64), b: int(64)) do return __primitive("^", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(a: uint(?w), b: uint(w)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(8), b: uint(8)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(16), b: uint(16)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(32), b: uint(32)) do return __primitive("^", a, b);
+  inline operator ^(a: uint(64), b: uint(64)) do return __primitive("^", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(a: uint(?w), b: int(w)) do return __primitive("^", a, b:uint(w));
+  inline operator ^(a: uint(8), b: int(8)) do return __primitive("^", a, b : uint(8));
+  inline operator ^(a: uint(16), b: int(16)) do return __primitive("^", a, b : uint(16));
+  inline operator ^(a: uint(32), b: int(32)) do return __primitive("^", a, b : uint(32));
+  inline operator ^(a: uint(64), b: int(64)) do return __primitive("^", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(a: int(?w), b: uint(w)) do return __primitive("^", a:uint(w), b);
+  inline operator ^(a: int(8), b: uint(8)) do return __primitive("^", a : uint(8), b);
+  inline operator ^(a: int(16), b: uint(16)) do return __primitive("^", a : uint(16), b);
+  inline operator ^(a: int(32), b: uint(32)) do return __primitive("^", a : uint(32), b);
+  inline operator ^(a: int(64), b: uint(64)) do return __primitive("^", a : uint(64), b);
 
   inline operator ~(param a: bool) { compilerError("~ is not supported on operands of boolean type"); }
   inline operator ~(param a: int(?w)) param do return __primitive("u~", a);
   inline operator ~(param a: uint(?w)) param do return __primitive("u~", a);
 
   inline operator &(param a: bool, param b: bool) param do return __primitive("&", a, b);
-  inline operator &(param a: int(?w), param b: int(w)) param do return __primitive("&", a, b);
-  inline operator &(param a: uint(?w), param b: uint(w)) param do return __primitive("&", a, b);
-  inline operator &(param a: uint(?w), param b: int(w)) param do return __primitive("&", a, b:uint(w));
-  inline operator &(param a: int(?w), param b: uint(w)) param do return __primitive("&", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(param a: int(?w), param b: int(w)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(8), param b: int(8)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(16), param b: int(16)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(32), param b: int(32)) param do return __primitive("&", a, b);
+  inline operator &(param a: int(64), param b: int(64)) param do return __primitive("&", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(param a: uint(?w), param b: uint(w)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(8), param b: uint(8)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(16), param b: uint(16)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(32), param b: uint(32)) param do return __primitive("&", a, b);
+  inline operator &(param a: uint(64), param b: uint(64)) param do return __primitive("&", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(param a: uint(?w), param b: int(w)) param do return __primitive("&", a, b:uint(w));
+  inline operator &(param a: uint(8), param b: int(8)) param do return __primitive("&", a, b : uint(8));
+  inline operator &(param a: uint(16), param b: int(16)) param do return __primitive("&", a, b : uint(16));
+  inline operator &(param a: uint(32), param b: int(32)) param do return __primitive("&", a, b : uint(32));
+  inline operator &(param a: uint(64), param b: int(64)) param do return __primitive("&", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &(param a: int(?w), param b: uint(w)) param do return __primitive("&", a:uint(w), b);
+  inline operator &(param a: int(8), param b: uint(8)) param do return __primitive("&", a : uint(8), b);
+  inline operator &(param a: int(16), param b: uint(16)) param do return __primitive("&", a : uint(16), b);
+  inline operator &(param a: int(32), param b: uint(32)) param do return __primitive("&", a : uint(32), b);
+  inline operator &(param a: int(64), param b: uint(64)) param do return __primitive("&", a : uint(64), b);
 
   inline operator |(param a: bool, param b: bool) param do return __primitive("|", a, b);
-  inline operator |(param a: int(?w), param b: int(w)) param do return __primitive("|", a, b);
-  inline operator |(param a: uint(?w), param b: uint(w)) param do return __primitive("|", a, b);
-  inline operator |(param a: uint(?w), param b: int(w)) param do return __primitive("|", a, b:uint(w));
-  inline operator |(param a: int(?w), param b: uint(w)) param do return __primitive("|", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(param a: int(?w), param b: int(w)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(8), param b: int(8)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(16), param b: int(16)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(32), param b: int(32)) param do return __primitive("|", a, b);
+  inline operator |(param a: int(64), param b: int(64)) param do return __primitive("|", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(param a: uint(?w), param b: uint(w)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(8), param b: uint(8)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(16), param b: uint(16)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(32), param b: uint(32)) param do return __primitive("|", a, b);
+  inline operator |(param a: uint(64), param b: uint(64)) param do return __primitive("|", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(param a: uint(?w), param b: int(w)) param do return __primitive("|", a, b:uint(w));
+  inline operator |(param a: uint(8), param b: int(8)) param do return __primitive("|", a, b : uint(8));
+  inline operator |(param a: uint(16), param b: int(16)) param do return __primitive("|", a, b : uint(16));
+  inline operator |(param a: uint(32), param b: int(32)) param do return __primitive("|", a, b : uint(32));
+  inline operator |(param a: uint(64), param b: int(64)) param do return __primitive("|", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |(param a: int(?w), param b: uint(w)) param do return __primitive("|", a:uint(w), b);
+  inline operator |(param a: int(8), param b: uint(8)) param do return __primitive("|", a : uint(8), b);
+  inline operator |(param a: int(16), param b: uint(16)) param do return __primitive("|", a : uint(16), b);
+  inline operator |(param a: int(32), param b: uint(32)) param do return __primitive("|", a : uint(32), b);
+  inline operator |(param a: int(64), param b: uint(64)) param do return __primitive("|", a : uint(64), b);
 
   inline operator ^(param a: bool, param b: bool) param do return __primitive("^", a, b);
-  inline operator ^(param a: int(?w), param b: int(w)) param do return __primitive("^", a, b);
-  inline operator ^(param a: uint(?w), param b: uint(w)) param do return __primitive("^", a, b);
-  inline operator ^(param a: uint(?w), param b: int(w)) param do return __primitive("^", a, b:uint(w));
-  inline operator ^(param a: int(?w), param b: uint(w)) param do return __primitive("^", a:uint(w), b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(param a: int(?w), param b: int(w)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(8), param b: int(8)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(16), param b: int(16)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(32), param b: int(32)) param do return __primitive("^", a, b);
+  inline operator ^(param a: int(64), param b: int(64)) param do return __primitive("^", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(param a: uint(?w), param b: uint(w)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(8), param b: uint(8)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(16), param b: uint(16)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(32), param b: uint(32)) param do return __primitive("^", a, b);
+  inline operator ^(param a: uint(64), param b: uint(64)) param do return __primitive("^", a, b);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(param a: uint(?w), param b: int(w)) param do return __primitive("^", a, b:uint(w));
+  inline operator ^(param a: uint(8), param b: int(8)) param do return __primitive("^", a, b : uint(8));
+  inline operator ^(param a: uint(16), param b: int(16)) param do return __primitive("^", a, b : uint(16));
+  inline operator ^(param a: uint(32), param b: int(32)) param do return __primitive("^", a, b : uint(32));
+  inline operator ^(param a: uint(64), param b: int(64)) param do return __primitive("^", a, b : uint(64));
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^(param a: int(?w), param b: uint(w)) param do return __primitive("^", a:uint(w), b);
+  inline operator ^(param a: int(8), param b: uint(8)) param do return __primitive("^", a : uint(8), b);
+  inline operator ^(param a: int(16), param b: uint(16)) param do return __primitive("^", a : uint(16), b);
+  inline operator ^(param a: int(32), param b: uint(32)) param do return __primitive("^", a : uint(32), b);
+  inline operator ^(param a: int(64), param b: uint(64)) param do return __primitive("^", a : uint(64), b);
 
   //
   // left and right shift on primitive types
@@ -1980,22 +2710,46 @@ module ChapelBase {
 
   /* op= operators
    */
-  inline operator +=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("+=", lhs, rhs);
-  }
-  inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("+=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("+=", lhs, rhs);
+  // }
+  inline operator +=(ref lhs: int(8), rhs: int(8)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(16), rhs: int(16)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(32), rhs: int(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: int(64), rhs: int(64)) do __primitive("+=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator +=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("+=", lhs, rhs);
+  // }
+  inline operator +=(ref lhs: uint(8), rhs: uint(8)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(16), rhs: uint(16)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(32), rhs: uint(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: uint(64), rhs: uint(64)) do __primitive("+=", lhs, rhs);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +=(ref lhs:real(?w), rhs:real(w)) {
+  //   __primitive("+=", lhs, rhs);
+  // }
+  inline operator +=(ref lhs: real(32), rhs: real(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: real(64), rhs: real(64)) do __primitive("+=", lhs, rhs);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
+  //   __primitive("+=", lhs, rhs);
+  // }
+  inline operator +=(ref lhs: imag(32), rhs: imag(32)) do __primitive("+=", lhs, rhs);
+  inline operator +=(ref lhs: imag(64), rhs: imag(64)) do __primitive("+=", lhs, rhs);
   // this one is just here so we can use !isNumericType(t) below
-  inline operator +=(ref lhs:complex(?w), rhs:complex(w)) {
-    lhs = lhs + rhs;
-  }
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator +=(ref lhs:complex(?w), rhs:complex(w)) {
+  //   lhs = lhs + rhs;
+  // }
+  inline operator +=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs+rhs);
+  inline operator +=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs+rhs);
   // This function shouldn't be 'last resort'
   // because if it is, that would interfere with things like
   //  A += A or A += [i in A.domain] A[i]
@@ -2007,36 +2761,76 @@ module ChapelBase {
     lhs = lhs + rhs;
   }
 
-  inline operator -=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("-=", lhs, rhs);
-  }
-  inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
-    __primitive("-=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("-=", lhs, rhs);
+  // }
+  inline operator -=(ref lhs: int(8), rhs: int(8)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(16), rhs: int(16)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(32), rhs: int(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: int(64), rhs: int(64)) do __primitive("-=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator -=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("-=", lhs, rhs);
+  // }
+  inline operator -=(ref lhs: uint(8), rhs: uint(8)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(16), rhs: uint(16)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(32), rhs: uint(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: uint(64), rhs: uint(64)) do __primitive("-=", lhs, rhs);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -=(ref lhs:real(?w), rhs:real(w)) {
+  //   __primitive("-=", lhs, rhs);
+  // }
+  inline operator -=(ref lhs: real(32), rhs: real(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: real(64), rhs: real(64)) do __primitive("-=", lhs, rhs);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
+  //   __primitive("-=", lhs, rhs);
+  // }
+  inline operator -=(ref lhs: imag(32), rhs: imag(32)) do __primitive("-=", lhs, rhs);
+  inline operator -=(ref lhs: imag(64), rhs: imag(64)) do __primitive("-=", lhs, rhs);
   // this one is just here so we can use !isNumericType(t) below
-  inline operator -=(ref lhs:complex(?w), rhs:complex(w)) {
-    lhs = lhs - rhs;
-  }
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator -=(ref lhs:complex(?w), rhs:complex(w)) {
+  //   lhs = lhs - rhs;
+  // }
+  inline operator -=(ref lhs: complex(64), rhs: complex(64)) do lhs = (lhs-rhs);
+  inline operator -=(ref lhs: complex(128), rhs: complex(128)) do lhs = (lhs-rhs);
   inline operator -=(ref lhs, rhs)
   where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs - rhs;
   }
 
-  inline operator *=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("*=", lhs, rhs);
-  }
-  inline operator *=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("*=", lhs, rhs);
-  }
-  inline operator *=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("*=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("*=", lhs, rhs);
+  // }
+  inline operator *=(ref lhs: int(8), rhs: int(8)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(16), rhs: int(16)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(32), rhs: int(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: int(64), rhs: int(64)) do __primitive("*=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator *=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("*=", lhs, rhs);
+  // }
+  inline operator *=(ref lhs: uint(8), rhs: uint(8)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(16), rhs: uint(16)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(32), rhs: uint(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: uint(64), rhs: uint(64)) do __primitive("*=", lhs, rhs);
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator *=(ref lhs:real(?w), rhs:real(w)) {
+  //   __primitive("*=", lhs, rhs);
+  // }
+  inline operator *=(ref lhs: real(32), rhs: real(32)) do __primitive("*=", lhs, rhs);
+  inline operator *=(ref lhs: real(64), rhs: real(64)) do __primitive("*=", lhs, rhs);
   private proc isIntegralOrRealType(type t) param {
     return isIntegralType(t) || isRealType(t);
   }
@@ -2057,9 +2851,13 @@ module ChapelBase {
         halt("Attempt to divide by zero");
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("/=", lhs, rhs);
-  }
+  // The following 2 procedures were instantiated from this generic version:
+  //
+  // inline operator /=(ref lhs:real(?w), rhs:real(w)) {
+  //   __primitive("/=", lhs, rhs);
+  // }
+  inline operator /=(ref lhs: real(32), rhs: real(32)) do __primitive("/=", lhs, rhs);
+  inline operator /=(ref lhs: real(64), rhs: real(64)) do __primitive("/=", lhs, rhs);
   inline operator /=(ref lhs, rhs)
   where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs / rhs;
@@ -2089,35 +2887,71 @@ module ChapelBase {
     lhs = lhs ** rhs;
   }
 
-  inline operator &=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("&=", lhs, rhs);
-  }
-  inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("&=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("&=", lhs, rhs);
+  // }
+  inline operator &=(ref lhs: int(8), rhs: int(8)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(16), rhs: int(16)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(32), rhs: int(32)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: int(64), rhs: int(64)) do __primitive("&=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("&=", lhs, rhs);
+  // }
+  inline operator &=(ref lhs: uint(8), rhs: uint(8)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(16), rhs: uint(16)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(32), rhs: uint(32)) do __primitive("&=", lhs, rhs);
+  inline operator &=(ref lhs: uint(64), rhs: uint(64)) do __primitive("&=", lhs, rhs);
   inline operator &=(ref lhs, rhs)
   where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs & rhs;
   }
 
 
-  inline operator |=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("|=", lhs, rhs);
-  }
-  inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("|=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("|=", lhs, rhs);
+  // }
+  inline operator |=(ref lhs: int(8), rhs: int(8)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(16), rhs: int(16)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(32), rhs: int(32)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: int(64), rhs: int(64)) do __primitive("|=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("|=", lhs, rhs);
+  // }
+  inline operator |=(ref lhs: uint(8), rhs: uint(8)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(16), rhs: uint(16)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(32), rhs: uint(32)) do __primitive("|=", lhs, rhs);
+  inline operator |=(ref lhs: uint(64), rhs: uint(64)) do __primitive("|=", lhs, rhs);
   inline operator |=(ref lhs, rhs)
   where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs | rhs;
   }
 
-  inline operator ^=(ref lhs:int(?w), rhs:int(w)) {
-    __primitive("^=", lhs, rhs);
-  }
-  inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
-    __primitive("^=", lhs, rhs);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^=(ref lhs:int(?w), rhs:int(w)) {
+  //   __primitive("^=", lhs, rhs);
+  // }
+  inline operator ^=(ref lhs: int(8), rhs: int(8)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(16), rhs: int(16)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(32), rhs: int(32)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: int(64), rhs: int(64)) do __primitive("^=", lhs, rhs);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
+  //   __primitive("^=", lhs, rhs);
+  // }
+  inline operator ^=(ref lhs: uint(8), rhs: uint(8)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(16), rhs: uint(16)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(32), rhs: uint(32)) do __primitive("^=", lhs, rhs);
+  inline operator ^=(ref lhs: uint(64), rhs: uint(64)) do __primitive("^=", lhs, rhs);
   inline operator ^=(ref lhs, rhs)
   where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs ^ rhs;
@@ -2312,9 +3146,15 @@ module ChapelBase {
   //
   // the dual of the above
   //
-  inline operator ==(a: int(?w), b: uint(w)) {
-    return !(a < 0) && (a:uint(w) == b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator ==(a: int(?w), b: uint(w)) {
+  //   return !(a < 0) && (a:uint(w) == b);
+  // }
+  inline operator ==(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) == b;
+  inline operator ==(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) == b;
+  inline operator ==(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) == b;
+  inline operator ==(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) == b;
 
   // non-param/param and param/non-param
   // not necessary since the == versions above
@@ -2323,12 +3163,24 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator !=(a: uint(?w), b: int(w)) {
-    return (b < 0) || (a != b:uint(w));
-  }
-  inline operator !=(a: int(?w), b: uint(w)) {
-    return (a < 0) || (a:uint(w) != b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: uint(?w), b: int(w)) {
+  //   return (b < 0) || (a != b:uint(w));
+  // }
+  inline operator !=(a: uint(8), b: int(8)) do return b < 0 || a != b : uint(8);
+  inline operator !=(a: uint(16), b: int(16)) do return b < 0 || a != b : uint(16);
+  inline operator !=(a: uint(32), b: int(32)) do return b < 0 || a != b : uint(32);
+  inline operator !=(a: uint(64), b: int(64)) do return b < 0 || a != b : uint(64);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator !=(a: int(?w), b: uint(w)) {
+  //   return (a < 0) || (a:uint(w) != b);
+  // }
+  inline operator !=(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) != b;
+  inline operator !=(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) != b;
+  inline operator !=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) != b;
+  inline operator !=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) != b;
 
   // non-param/param and param/non-param
   // not necessary since the == versions above
@@ -2336,12 +3188,24 @@ module ChapelBase {
 
 
   // non-param/non-param
-  inline operator >(a: uint(?w), b: int(w)) {
-    return (b < 0) || (a > b: uint(w));
-  }
-  inline operator >(a: int(?w), b: uint(w)) {
-    return !(a < 0) && (a: uint(w) > b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(a: uint(?w), b: int(w)) {
+  //   return (b < 0) || (a > b: uint(w));
+  // }
+  inline operator >(a: uint(8), b: int(8)) do return b < 0 || a > b : uint(8);
+  inline operator >(a: uint(16), b: int(16)) do return b < 0 || a > b : uint(16);
+  inline operator >(a: uint(32), b: int(32)) do return b < 0 || a > b : uint(32);
+  inline operator >(a: uint(64), b: int(64)) do return b < 0 || a > b : uint(64);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(a: int(?w), b: uint(w)) {
+  //   return !(a < 0) && (a: uint(w) > b);
+  // }
+  inline operator >(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) > b;
+  inline operator >(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) > b;
+  inline operator >(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) > b;
+  inline operator >(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) > b;
 
   // non-param/param and param/non-param
   // non-param/param version not necessary since > above works fine for that
@@ -2352,18 +3216,36 @@ module ChapelBase {
       return __primitive(">", a, b);
     }
   }
-  inline operator >(param a: int(?w), b: int(w)) {
-    return __primitive(">", a, b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >(param a: int(?w), b: int(w)) {
+  //   return __primitive(">", a, b);
+  // }
+  inline operator >(param a: int(8), b: int(8)) do return __primitive(">", a, b);
+  inline operator >(param a: int(16), b: int(16)) do return __primitive(">", a, b);
+  inline operator >(param a: int(32), b: int(32)) do return __primitive(">", a, b);
+  inline operator >(param a: int(64), b: int(64)) do return __primitive(">", a, b);
 
 
   // non-param/non-param
-  inline operator <(a: uint(?w), b: int(w)) {
-    return !(b < 0) && (a < b:uint(w));
-  }
-  inline operator <(a: int(?w), b: uint(w)) {
-    return (a < 0) || (a:uint(w) < b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: uint(?w), b: int(w)) {
+  //   return !(b < 0) && (a < b:uint(w));
+  // }
+  inline operator <(a: uint(8), b: int(8)) do return !(b < 0) && a < b : uint(8);
+  inline operator <(a: uint(16), b: int(16)) do return !(b < 0) && a < b : uint(16);
+  inline operator <(a: uint(32), b: int(32)) do return !(b < 0) && a < b : uint(32);
+  inline operator <(a: uint(64), b: int(64)) do return !(b < 0) && a < b : uint(64);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: int(?w), b: uint(w)) {
+  //   return (a < 0) || (a:uint(w) < b);
+  // }
+  inline operator <(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) < b;
+  inline operator <(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) < b;
+  inline operator <(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) < b;
+  inline operator <(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) < b;
 
   // non-param/param and param/non-param
   // param/non-param version not necessary since < above works fine for that
@@ -2374,19 +3256,37 @@ module ChapelBase {
       return __primitive("<", a, b);
     }
   }
-  inline operator <(a: int(?w), param b: int(w)) {
-    return __primitive("<", a, b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <(a: int(?w), param b: int(w)) {
+  //   return __primitive("<", a, b);
+  // }
+  inline operator <(a: int(8), param b: int(8)) do return __primitive("<", a, b);
+  inline operator <(a: int(16), param b: int(16)) do return __primitive("<", a, b);
+  inline operator <(a: int(32), param b: int(32)) do return __primitive("<", a, b);
+  inline operator <(a: int(64), param b: int(64)) do return __primitive("<", a, b);
 
 
 
   // non-param/non-param
-  inline operator >=(a: uint(?w), b: int(w)) {
-    return (b < 0) || (a >= b: uint(w));
-  }
-  inline operator >=(a: int(?w), b: uint(w)) {
-    return !(a < 0) && (a: uint(w) >= b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: uint(?w), b: int(w)) {
+  //   return (b < 0) || (a >= b: uint(w));
+  // }
+  inline operator >=(a: uint(8), b: int(8)) do return b < 0 || a >= b : uint(8);
+  inline operator >=(a: uint(16), b: int(16)) do return b < 0 || a >= b : uint(16);
+  inline operator >=(a: uint(32), b: int(32)) do return b < 0 || a >= b : uint(32);
+  inline operator >=(a: uint(64), b: int(64)) do return b < 0 || a >= b : uint(64);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: int(?w), b: uint(w)) {
+  //   return !(a < 0) && (a: uint(w) >= b);
+  // }
+  inline operator >=(a: int(8), b: uint(8)) do return !(a < 0) && a : uint(8) >= b;
+  inline operator >=(a: int(16), b: uint(16)) do return !(a < 0) && a : uint(16) >= b;
+  inline operator >=(a: int(32), b: uint(32)) do return !(a < 0) && a : uint(32) >= b;
+  inline operator >=(a: int(64), b: uint(64)) do return !(a < 0) && a : uint(64) >= b;
 
   // non-param/param and param/non-param
   inline operator >=(a: uint(?w), param b: uint(w)) {
@@ -2396,18 +3296,36 @@ module ChapelBase {
       return __primitive(">=", a, b);
     }
   }
-  inline operator >=(a: int(?w), param b: int(w)) {
-    return __primitive(">=", a, b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator >=(a: int(?w), param b: int(w)) {
+  //   return __primitive(">=", a, b);
+  // }
+  inline operator >=(a: int(8), param b: int(8)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(16), param b: int(16)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(32), param b: int(32)) do return __primitive(">=", a, b);
+  inline operator >=(a: int(64), param b: int(64)) do return __primitive(">=", a, b);
 
 
   // non-param/non-param
-  inline operator <=(a: uint(?w), b: int(w)) {
-    return !(b < 0) && (a <= b: uint(w));
-  }
-  inline operator <=(a: int(?w), b: uint(w)) {
-    return (a < 0) || (a:uint(w) <= b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(a: uint(?w), b: int(w)) {
+  //   return !(b < 0) && (a <= b: uint(w));
+  // }
+  inline operator <=(a: uint(8), b: int(8)) do return !(b < 0) && a <= b : uint(8);
+  inline operator <=(a: uint(16), b: int(16)) do return !(b < 0) && a <= b : uint(16);
+  inline operator <=(a: uint(32), b: int(32)) do return !(b < 0) && a <= b : uint(32);
+  inline operator <=(a: uint(64), b: int(64)) do return !(b < 0) && a <= b : uint(64);
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(a: int(?w), b: uint(w)) {
+  //   return (a < 0) || (a:uint(w) <= b);
+  // }
+  inline operator <=(a: int(8), b: uint(8)) do return a < 0 || a : uint(8) <= b;
+  inline operator <=(a: int(16), b: uint(16)) do return a < 0 || a : uint(16) <= b;
+  inline operator <=(a: int(32), b: uint(32)) do return a < 0 || a : uint(32) <= b;
+  inline operator <=(a: int(64), b: uint(64)) do return a < 0 || a : uint(64) <= b;
 
   // non-param/param and param/non-param
   inline operator <=(param a: uint(?w), b: uint(w)) {
@@ -2417,9 +3335,15 @@ module ChapelBase {
       return __primitive("<=", a, b);
     }
   }
-  inline operator <=(param a: int(?w), b: int(w)) {
-    return __primitive("<=", a, b);
-  }
+  // The following 4 procedures were instantiated from this generic version:
+  //
+  // inline operator <=(param a: int(?w), b: int(w)) {
+  //   return __primitive("<=", a, b);
+  // }
+  inline operator <=(param a: int(8), b: int(8)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(16), b: int(16)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(32), b: int(32)) do return __primitive("<=", a, b);
+  inline operator <=(param a: int(64), b: int(64)) do return __primitive("<=", a, b);
 
 
   proc isGenericType(type t) param do return __primitive("is generic type", t);
