@@ -1179,7 +1179,7 @@ module Random {
       {
         var dom: domain(1,stridable=true);
 
-        if x.boundedType != BoundedRangeType.bounded {
+        if x.bounds != boundKind.both {
           compilerError('input range must be bounded');
         } else {
           dom = {x};

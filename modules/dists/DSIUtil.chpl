@@ -355,7 +355,7 @@ proc densify(sArg: range(?,bounds=?B,stridable=?S), w: range(?IT,?,stridable=fal
 }
 
 proc _densiEnsureBounded(arg: range(?)) {
-  if arg.boundedType != BoundedRangeType.bounded then
+  if arg.bounds != boundKind.both then
     compilerError("densify() currently requires that sub-ranges be bounded", 2);
 }
 
@@ -442,7 +442,7 @@ proc unDensify(dense: range(?,bounds=?B,stridable=?S), whole: range(?IT,?,strida
 }
 
 proc _undensEnsureBounded(arg: range(?)) {
-  if arg.boundedType != BoundedRangeType.bounded then
+  if arg.bounds != boundKind.both then
     compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
 }
 

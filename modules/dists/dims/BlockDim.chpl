@@ -101,7 +101,7 @@ record Block1locdom {
 proc BlockDim.init(numLocales: int, boundingBox: range(?),
                    type idxType = boundingBox.idxType)
 {
-  if boundingBox.boundedType != BoundedRangeType.bounded then
+  if boundingBox.bounds != boundKind.both then
     compilerError("The 1-d block descriptor initializer was passed an unbounded range as the boundingBox");
   this.idxType = idxType;
 
