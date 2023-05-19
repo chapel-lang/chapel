@@ -32,43 +32,38 @@ var CpuArr: [1..n] int;
 stopTest("Cpu Array Init");
 
 
-/*on here.gpus[0] {*/
-  /*if verboseTest then*/
-    /*writeln(CpuArr);*/
-/*}*/
-
 on here.gpus[0] {
 
   startTest();
   var GpuArr: [1..n] int;
   stopTest("Gpu Array Init");
 
-  /*[>if touchOnGpu {<]*/
-    /*[>startGpuDiagnostics();<]*/
-    /*[>GpuArr = 1;<]*/
-    /*[>stopGpuDiagnostics();<]*/
-    /*[>assert(getGpuDiagnostics()[0].kernel_launch == 1);<]*/
-    /*[>resetGpuDiagnostics();<]*/
-  /*[>}<]*/
+  if touchOnGpu {
+    startGpuDiagnostics();
+    GpuArr = 1;
+    stopGpuDiagnostics();
+    assert(getGpuDiagnostics()[0].kernel_launch == 1);
+    resetGpuDiagnostics();
+  }
 
-  /*[>startTest();<]*/
-  /*[>GpuArr = CpuArr;<]*/
-  /*[>stopTest("host to device copy", bandwidth=true);<]*/
+  startTest();
+  GpuArr = CpuArr;
+  stopTest("host to device copy", bandwidth=true);
 
-  /*[>if touchOnGpu {<]*/
-    /*[>startGpuDiagnostics();<]*/
-    /*[>GpuArr = 1;<]*/
-    /*[>stopGpuDiagnostics();<]*/
-    /*[>assert(getGpuDiagnostics()[0].kernel_launch == 1);<]*/
-  /*[>}<]*/
+  if touchOnGpu {
+    startGpuDiagnostics();
+    GpuArr = 1;
+    stopGpuDiagnostics();
+    assert(getGpuDiagnostics()[0].kernel_launch == 1);
+  }
 
-  /*startTest();*/
-  /*CpuArr = GpuArr;*/
-  /*stopTest("device to host copy", bandwidth=true);*/
+  startTest();
+  CpuArr = GpuArr;
+  stopTest("device to host copy", bandwidth=true);
 
 
 }
 if verboseGpu then stopVerboseGpu();
-/*if verboseTest then writeln(CpuArr);*/
+if verboseTest then writeln(CpuArr);
 
 assert(CpuArr.first == if touchOnGpu then 1 else 0);

@@ -219,20 +219,30 @@ void chpl_gpu_get(void* dst, c_sublocid_t src_subloc, const void* src,
                   size_t n) {
   c_sublocid_t dst_subloc = chpl_task_getRequestedSubloc();
 
-  CHPL_GPU_DEBUG("chpl_gpu_get between sublocs %d->%d of size %zu\n",
-                 src_subloc, dst_subloc, n);
+  if (dst_subloc < 0 && src_subloc < 0) {
+    memmove(dst, src, n);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_get between sublocs %d->%d of size %zu\n",
+                   src_subloc, dst_subloc, n);
 
-  chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+    chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+  }
 }
 
 void chpl_gpu_put(c_sublocid_t dst_subloc, void* dst, const void* src,
                   size_t n) {
   c_sublocid_t src_subloc = chpl_task_getRequestedSubloc();
 
-  CHPL_GPU_DEBUG("chpl_gpu_put between sublocs %d->%d of size %zu\n",
-                 src_subloc, dst_subloc, n);
+  if (dst_subloc < 0 && src_subloc < 0) {
+    memmove(dst, src, n);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_put between sublocs %d->%d of size %zu\n",
+                   src_subloc, dst_subloc, n);
 
-  chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+    chpl_gpu_memcpy(dst_subloc, dst, src_subloc, src, n);
+  }
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
