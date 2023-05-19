@@ -94,8 +94,8 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
   assert(glob_size == sizeof(c_nodeid_t));
-  chpl_gpu_impl_copy_host_to_device_new(dev_id, (void*)ptr, &chpl_nodeID,
-                                        glob_size);
+  chpl_gpu_impl_copy_host_to_device(dev_id, (void*)ptr, &chpl_nodeID,
+                                    glob_size);
 }
 
 static void chpl_gpu_ensure_context(void) {
@@ -230,8 +230,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                              CHPL_RT_MD_GPU_KERNEL_ARG,
                                              ln, fn);
 
-      chpl_gpu_impl_copy_host_to_device_new(dev_id, *kernel_params[i], cur_arg,
-                                            cur_arg_size);
+      chpl_gpu_impl_copy_host_to_device(dev_id, *kernel_params[i], cur_arg,
+                                        cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
@@ -350,43 +350,25 @@ void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n) {
   return addr;
 }
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
-  assert(chpl_gpu_is_device_ptr(src));
-
-  CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
-}
-
-void chpl_gpu_impl_copy_device_to_host_new(void* dst, c_sublocid_t src_dev,
-                                           const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                       const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
   chpl_gpu_switch_context(src_dev);
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
 
-void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
-  assert(chpl_gpu_is_device_ptr(dst));
-
-  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
-}
-
-void chpl_gpu_impl_copy_host_to_device_new(c_sublocid_t dst_dev, void* dst,
-                                           const void* src, size_t n) {
+void chpl_gpu_impl_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
+                                       const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   chpl_gpu_switch_context(dst_dev);
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
-  assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
-
-  CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
-}
-
-void chpl_gpu_impl_copy_device_to_device_new(c_sublocid_t dst_dev, void* dst,
-                                             c_sublocid_t src_dev,
-                                             const void* src, size_t n) {
+void chpl_gpu_impl_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                         c_sublocid_t src_dev,
+                                         const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
   chpl_gpu_switch_context(dst_dev);

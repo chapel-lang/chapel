@@ -194,13 +194,13 @@ static void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
   bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
 
   if (!dst_on_host && !src_on_host) {
-    chpl_gpu_impl_copy_device_to_device_new(dst_subloc, dst, src_subloc, src, n);
+    chpl_gpu_impl_copy_device_to_device(dst_subloc, dst, src_subloc, src, n);
   }
   else if (!dst_on_host) {
-    chpl_gpu_impl_copy_host_to_device_new(dst_subloc, dst, src, n);
+    chpl_gpu_impl_copy_host_to_device(dst_subloc, dst, src, n);
   }
   else if (!src_on_host) {
-    chpl_gpu_impl_copy_device_to_host_new(dst, src_subloc, src, n);
+    chpl_gpu_impl_copy_device_to_host(dst, src_subloc, src, n);
   }
   else {
     assert(dst_on_host && src_on_host);
@@ -266,22 +266,24 @@ void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
   return ret;
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
+void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                  const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
 
-  chpl_gpu_impl_copy_device_to_host(dst, src, n);
+  chpl_gpu_impl_copy_device_to_host(dst, src_dev, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
 
-void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n) {
+void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
+                                  const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
 
-  chpl_gpu_impl_copy_host_to_device(dst, src, n);
+  chpl_gpu_impl_copy_host_to_device(dst_dev, dst, src, n);
 
   CHPL_GPU_DEBUG("Copy successful\n");
 }
@@ -360,7 +362,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
     ptr = chpl_gpu_impl_mem_alloc(total_size);
     chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
 
-    chpl_gpu_impl_copy_host_to_device_new(dev_id, ptr, host_mem, total_size);
+    chpl_gpu_impl_copy_host_to_device(dev_id, ptr, host_mem, total_size);
 
     chpl_mem_free(host_mem, lineno, filename);
 
@@ -399,7 +401,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
   const size_t copy_size = size < cur_size ? size : cur_size;
-  chpl_gpu_impl_copy_device_to_device_new(dev_id, new_alloc, dev_id, memAlloc,
+  chpl_gpu_impl_copy_device_to_device(dev_id, new_alloc, dev_id, memAlloc,
                                       copy_size);
   chpl_gpu_mem_free(memAlloc, lineno, filename);
 
