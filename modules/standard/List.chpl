@@ -715,7 +715,7 @@ module List {
       return result;
     }
 
-    @deprecated(notes="'list.append' is deprecated; please use 'list.pushBack' instead")
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
     proc ref append(in x: this.eltType) : int {
       return this.pushBack(x);
     }
@@ -765,7 +765,7 @@ module List {
       return ret;
     }
 
-    @deprecated(notes="'list.append' is deprecated; please use 'list.pushBack' instead")
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
     proc ref append(other: list(eltType, ?p)) lifetime this < other {
       return this.pushBack(other);
     }
@@ -791,7 +791,7 @@ module List {
       return ret;
     }
 
-    @deprecated(notes="'list.append' is deprecated; please use 'list.pushBack' instead")
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
     proc ref append(other: [?d] eltType) lifetime this < other {
       return this.pushBack(other);
     }
@@ -826,7 +826,7 @@ module List {
       return ret;
     }
 
-    @deprecated(notes="'list.append' is deprecated; please use 'list.pushBack' instead")
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
       return this.pushBack(other);
     }
@@ -1232,7 +1232,7 @@ module List {
       return result;
     }
 
-    @deprecated(notes="'list.pop' is deprecated; please use 'list.popBack' instead.")
+    @deprecated(notes=":proc:`list.pop` is deprecated; please use :proc:`list.popBack` instead.")
     proc ref pop(): eltType {
       return this.popBack();
     }
@@ -1519,7 +1519,7 @@ module List {
       return slot.borrow();
     }
 
-    @deprecated(notes="'list.set' has been deprecated; please use 'list.replace' instead.")
+    @deprecated(notes=":proc:`list.set` is deprecated; please use :proc:`list.replace` instead.")
     proc ref set(i: int, in x: eltType): bool {
       return this.replace(i, x);
     }
