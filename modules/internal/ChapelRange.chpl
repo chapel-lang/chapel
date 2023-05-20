@@ -1072,10 +1072,8 @@ module ChapelRange {
 
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.bounds == boundKind.both &&
-       this.sizeAs(uint) == 0 then
-      return other.bounds == boundKind.both &&
-             other.sizeAs(uint) == 0;
+    if this.bounds == boundKind.both && this.sizeAs(uint) == 0 then
+      return other.bounds == boundKind.both && other.sizeAs(uint) == 0;
 
     var slice = this.chpl_slice(other, forceNewRule=true);
 
@@ -2939,8 +2937,7 @@ operator :(r: range(?), type t: range(?)) {
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
 
-    if (myFollowThis.bounds == boundKind.both &&
-        !myFollowThis.stridable) ||
+    if (myFollowThis.bounds == boundKind.both && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
@@ -3054,6 +3051,7 @@ operator :(r: range(?), type t: range(?)) {
     }
     return ret;
   }
+
 
   //################################################################################
   //# Internal helper functions.
