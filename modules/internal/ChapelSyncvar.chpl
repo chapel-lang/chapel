@@ -859,6 +859,13 @@ module ChapelSyncvar {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      compilerError("single variables cannot currently be read - use writeEF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
