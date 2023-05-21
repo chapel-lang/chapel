@@ -18,6 +18,7 @@ config const output = true;
 config const perftest = false;
 config const sz = 4;
 config const passes = 5;
+config const verify = true;
 param SORT_BLOCK_SIZE = 128;
 param SCAN_BLOCK_SIZE = 256;
 param SORT_BITS = 32;
@@ -37,7 +38,26 @@ var sortDb = new ResultDatabase("Sort Rate", "GB/s", atts="", attsSuffix=" items
 var pciDb = new ResultDatabase("Sort Rate PCIe", "GB/s", atts="", attsSuffix=" items");
 var parityDb = new ResultDatabase("Sort Parity", "N", atts="", attsSuffix=" items");
 
-on here.gpus[0] {
+proc main() {
+  if gpuDiags then startGpuDiagnostics();
+  runSort();
+  if gpuDiags {
+    stopGpuDiagnostics();
+    writeln(getGpuDiagnostics());
+  }
+
+  if(output) {
+    sortDb.printDatabaseStats();
+    pciDb.printDatabaseStats();
+    parityDb.printDatabaseStats();
+  }
+  if(perftest){
+    sortDb.printPerfStats();
+    pciDb.printPerfStats();
+    parityDb.printPerfStats();
+  }
+}
+
 
 proc runSort(){
     // Number of key value pairs to sort scaled down by 2^20
@@ -53,6 +73,10 @@ proc runSort(){
     // Create Input data on CPU (host)
     var hKeys : [0..<size] uint(32);
     var hVals : [0..<size] uint(32);
+
+    const host = here;
+
+    on here.gpus[0] {
 
     // Space for Block Sums in scan kernel
     var numLevelsAllocated = 0;
@@ -95,12 +119,16 @@ proc runSort(){
     const iterations = passes;
     // They do timing using cudaEvent, ig we will just use our timer.
     for it in 0..#iterations:uint(32){
+        writeln(100);
         // Initialize the host memory to some pattern
-        for i in 0..<size:uint(32) {
-            hVals[i] = (i%1024):uint(32);
-            hKeys[i] = hVals[i];
+        on host {
+          for i in 0..<size:uint(32) {
+              hVals[i] = (i%1024):uint(32);
+              hKeys[i] = hVals[i];
+          }
         }
 
+        writeln(200);
         // Copy inputs to GPU
         var transferTime = 0.0;
         // CudaEvent Record use replaced with timer
@@ -108,6 +136,7 @@ proc runSort(){
         dKeys = hKeys;
         dVals = hVals;
         timer.stop();
+        writeln(300);
         transferTime += timer.elapsed();
         timer.clear();
 
@@ -129,6 +158,7 @@ proc runSort(){
             dCounters, dCounterSums, dBlockOffsets, scanBlockSums, size);
         }
         timer.stop();
+        writeln(400);
         var kernelTime = timer.elapsed();
         timer.clear();
 
@@ -144,8 +174,8 @@ proc runSort(){
         transferTime += timer.elapsed();
         timer.clear();
 
-        if(!verifySort(hKeys, hVals, size)){
-            return;
+        if(verify && !verifySort(hKeys, hVals, size)){
+            writeln("Verification failed");
         }
 
         // Print out results
@@ -164,26 +194,8 @@ proc runSort(){
         pciDb.addToDatabase("%{#####}".format(size), pciRate);
         parityDb.addToDatabase("%{#####}".format(size), parity);
     }
+    }
 }
-
-if gpuDiags then startGpuDiagnostics();
-runSort();
-if gpuDiags {
-  stopGpuDiagnostics();
-  writeln(getGpuDiagnostics());
-}
-
-if(output) {
-  sortDb.printDatabaseStats();
-  pciDb.printDatabaseStats();
-  parityDb.printDatabaseStats();
-}
-if(perftest){
-  sortDb.printPerfStats();
-  pciDb.printPerfStats();
-  parityDb.printPerfStats();
-}
-
 
 proc radixSortStep(nbits: uint(32), startbit: uint(32),
                     ref keys : [] uint(32), ref values : [] uint(32),
@@ -678,4 +690,3 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
         }
     }
 }
-} // end on here.gpus[0]
