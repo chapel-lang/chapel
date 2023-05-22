@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ -s $2 ]; then
+echo 'Compiler correctly threw an error' >$2
+fi
