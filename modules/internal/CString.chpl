@@ -240,6 +240,9 @@ module CString {
   proc c_string.writeThis(x) throws {
     compilerError("Cannot write a c_string, cast to a string first.");
   }
+  proc c_string.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
 
   proc c_string.readThis(x) throws {
     compilerError("Cannot read a c_string, use string.");

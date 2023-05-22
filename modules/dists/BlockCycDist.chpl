@@ -1274,14 +1274,6 @@ proc LocBlockCyclicArr.this(i) ref {
   return myElems(flatInd);
 }
 
-//
-// output local array piece
-//
-proc LocBlockCyclicArr.writeThis(x) throws {
-  // note on this fails; see writeThisUsingOn.chpl
-  x.write(myElems);
-}
-
 // sungeun: This doesn't appear to be used yet, so I left it, but it
 //  might be useful to others.  Consider putting it in DSIUtil.chpl.
 

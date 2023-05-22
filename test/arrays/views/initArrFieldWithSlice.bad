@@ -2,3 +2,5 @@ initArrFieldWithSlice.chpl:31: error: unresolved call 'C.init([ArrayViewRankChan
 initArrFieldWithSlice.chpl:1: note: this candidate did not match: C.init(X: [domain(1,int(64),false)] real(64))
 initArrFieldWithSlice.chpl:31: note: because actual argument #1 with type '[ArrayViewRankChangeDom(1,int(64),false,2*bool,2*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,2*bool,2*int(64)))] real(64)'
 initArrFieldWithSlice.chpl:2: note: is passed to formal 'in X: [domain(1,int(64),false)] real(64)'
+initArrFieldWithSlice.chpl:31: note: other candidates are:
+initArrFieldWithSlice.chpl:1: note:   C.init(reader, deserializer)

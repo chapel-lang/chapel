@@ -406,7 +406,7 @@ PRAGMA(NO_PARENS, npr, "no parens", "function without parentheses")
 
 PRAGMA(NO_REMOTE_MEMORY_FENCE, ypr, "no remote memory fence", ncm)
 PRAGMA(NO_RENAME, npr, "no rename", ncm)
-PRAGMA(NO_RVF, npr, "do not RVF", ncm)
+PRAGMA(NO_RVF, ypr, "do not RVF", ncm)
 PRAGMA(NO_WIDE_CLASS, ypr, "no wide class", ncm)
 
 PRAGMA(NO_GPU_CODEGEN, ypr, "no gpu codegen", ncm)

@@ -185,7 +185,8 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
-    proc type decodeFrom(r) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
       return ret;
@@ -858,6 +859,13 @@ module ChapelSyncvar {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      compilerError("single variables cannot currently be read - use writeEF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
@@ -1235,8 +1243,9 @@ private module AlignedTSupport {
     this = f.read(uint(64)) : aligned_t;
   }
 
-  proc aligned_t.encodeTo(f) throws {
-    writeThis(f);
+  @chpldoc.nodoc
+  proc aligned_t.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
   proc type aligned_t.readThis(f) throws {
     var ret : aligned_t;

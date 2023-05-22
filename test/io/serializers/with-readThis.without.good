@@ -1,0 +1,3 @@
+uncaught BadFormatError: bad format: missing expected literal (while reading string literal "(" with path "unknown" offset 0)
+  with-readThis.chpl:18: thrown here
+  with-readThis.chpl:18: uncaught here

@@ -1,0 +1,4 @@
+-sformat=FormatKind.default # percent-t.default.good
+-sformat=FormatKind.json # percent-t.json.good
+-sformat=FormatKind.little # percent-t.little.good
+-sformat=FormatKind.syntax # percent-t.syntax.good

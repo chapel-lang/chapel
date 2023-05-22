@@ -1757,6 +1757,18 @@ module List {
       _leave();
     }
 
+    @chpldoc.nodoc
+    proc serialize(writer: fileWriter(?), ref serializer) throws {
+      _enter();
+
+      serializer.startList(writer, this._size);
+      for i in 0..<this._size do
+        serializer.writeListElement(writer, _getRef(i));
+      serializer.endList(writer);
+
+      _leave();
+    }
+
     /*
      Read the contents of this list from a channel.
 
@@ -1855,13 +1867,43 @@ module List {
       _leave();
     }
 
-    //
-    // TODO: rewrite to use formatter interface
-    //
     @chpldoc.nodoc
-    proc init(type eltType, param parSafe : bool, r: fileReader) {
+    proc init(type eltType, param parSafe : bool, reader: fileReader, ref deserializer) throws {
       this.init(eltType, parSafe);
-      try! readThis(r);
+      // TODO: a couple of silly initializer things I noticed:
+      // - why can't we have a try with a catch? probably old rule...
+      // - still some error that says we can't have throws stmts...
+      _readHelper(reader, deserializer);
+    }
+
+    @chpldoc.nodoc
+    proc _readHelper(r: fileReader, ref des) throws {
+      _enter();
+
+      _clearLocked();
+
+      des.startList(r);
+
+      var done = false;
+      while !done {
+        try {
+          pragma "no auto destroy"
+          var elt = des.readListElement(r, eltType);
+          // read an element
+          _appendByRef(elt);
+        } catch {
+          done = true;
+        }
+      }
+
+      des.endList(r);
+
+      _leave();
+    }
+
+    @chpldoc.nodoc
+    proc deserialize(reader: fileReader, ref deserializer) throws {
+      _readHelper(reader, deserializer);
     }
 
     /*

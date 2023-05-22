@@ -109,6 +109,8 @@ _chpl ()
 --instantiate-max \
 --interleave-memory \
 --interprocedural-alias-analysis \
+--io-deserialize-readThis \
+--io-serialize-writeThis \
 --launcher \
 --ldflags \
 --lib-linkage \
@@ -205,6 +207,8 @@ _chpl ()
 --no-inline-iterators \
 --no-interleave-memory \
 --no-interprocedural-alias-analysis \
+--no-io-deserialize-readThis \
+--no-io-serialize-writeThis \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -259,7 +263,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
---no-use-io-formatters \
+--no-use-io-serializers \
 --no-vectorize \
 --no-verify \
 --no-warn-array-of-range \
@@ -352,7 +356,7 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
---use-io-formatters \
+--use-io-serializers \
 --using-attribute-toolname \
 --vectorize \
 --verify \
