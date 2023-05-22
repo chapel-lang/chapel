@@ -343,8 +343,17 @@ proc generateArgumentConst() {
   for x in ["borrowed?"] do
     allowed.add(("borrowed?", x));
 
-  // upcast only allows borrows and unmanaged
   var allowedUpcast: set(2*string);
+
+  // coerce owned to ...
+  for x in ["borrowed", "borrowed?"] do
+    allowedUpcast.add(("owned", x));
+  allowedUpcast.add(("owned?", "borrowed?"));
+  // coerce shared to ...
+  for x in ["borrowed", "borrowed?"] do
+    allowedUpcast.add(("shared", x));
+  allowedUpcast.add(("shared?", "borrowed?"));
+
   // coerce unmanaged to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowedUpcast.add(("unmanaged", x));
