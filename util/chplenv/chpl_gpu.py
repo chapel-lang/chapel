@@ -40,7 +40,7 @@ GPU_TYPES = {
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
                     bin_depth=3,
-                    default_arch="gfx908",
+                    default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
                     version_validator=_validate_rocm_version),
@@ -107,7 +107,14 @@ def get_arch():
         return arch
 
     # Return vendor-specific default architecture
-    return GPU_TYPES[gpu_type].default_arch
+    arch = GPU_TYPES[gpu_type].default_arch
+    if arch != "":
+        return arch
+    else:
+        error("CHPL_GPU={} requires also setting CHPL_GPU_ARCH. "
+              "Please check the GPU programming technote "
+              "<https://chapel-lang.org/docs/technotes/gpu.html> "
+              "for more information.".format(gpu_type))
 
 @memoize
 def get_sdk_path(for_gpu):

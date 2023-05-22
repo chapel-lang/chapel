@@ -77,6 +77,7 @@ struct ConvertedSymbolsMap {
   std::unordered_map<const resolution::TypedFnSignature*, FnSymbol*> fns;
 
   std::vector<std::pair<SymExpr*, ID>> identFixups;
+  std::vector<std::pair<ModuleSymbol*, ID>> moduleFixups;
   std::vector<std::pair<SymExpr*,
                         const resolution::TypedFnSignature*>> callFixups;
 
@@ -94,6 +95,8 @@ struct ConvertedSymbolsMap {
                             bool trace);
   void noteIdentFixupNeeded(SymExpr* se, ID id, ConvertedSymbolsMap* cur,
                             bool trace);
+  void noteModuleFixupNeeded(ModuleSymbol* m, ID id, ConvertedSymbolsMap* cur,
+                             bool trace);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig,
                            ConvertedSymbolsMap* cur,
@@ -119,6 +122,10 @@ static ConvertedSymbolsMap gConvertedSyms;
 struct Converter {
   struct ModStackEntry {
     const uast::Module* mod;
+    // If we detect a module use and the module is already converted, store it here.
+    std::vector<ModuleSymbol*> usedModules;
+    // If we detect a module use and the module is not converted, store the ID here.
+    std::vector<ID> usedModuleIds;
     ModStackEntry(const uast::Module* mod)
       : mod(mod) {
     }
@@ -157,6 +164,15 @@ struct Converter {
      ForwardingDecls will add a method that does not exist in the uAST. */
   std::vector<Symbol*> methodThisStack;
 
+  /* Some actions in the production scope resolver (particularly using a module)
+     cause a search up the chain of scopes until they encounter a Block node.
+     Rather than implementing this search, just keep track of a stack of
+     scope-producing nodes. To properly keep track of them, code in the
+     converter that would normally call `new BlockExpr()`, creating a new
+     scope-producing block but not tracking it, would need to instead call
+     pushScopefulBlock, making the new block appear on this stack. */
+  std::vector<BlockStmt*> blockStack;
+
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
@@ -191,7 +207,9 @@ struct Converter {
   void noteConvertedFn(const resolution::TypedFnSignature* sig, FnSymbol* fn);
   Symbol* findConvertedSym(ID id);
   FnSymbol* findConvertedFn(const resolution::TypedFnSignature* sig);
+  ConvertedSymbolsMap* findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur);
   void noteIdentFixupNeeded(SymExpr* se, ID id);
+  void noteModuleFixupNeeded(ModuleSymbol* m, ID id);
   void noteCallFixupNeeded(SymExpr* se,
                            const resolution::TypedFnSignature* sig);
   void noteAllContainedFixups(BaseAST* ast, int depth);
@@ -202,6 +220,30 @@ struct Converter {
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
   const resolution::ResolutionResultByPostorderID* currentResolutionResult();
+
+  // blockStack helpers
+  BlockStmt* pushScopefulBlock() {
+    auto newBlockStmt = new BlockStmt();
+    blockStack.push_back(newBlockStmt);
+    return newBlockStmt;
+  }
+  void popScopefulBlock() {
+    CHPL_ASSERT(blockStack.size() > 0);
+    blockStack.pop_back();
+  }
+  void storeReferencedMod(Symbol* referencedMod) {
+    CHPL_ASSERT(blockStack.size() > 0);
+    CHPL_ASSERT(modStack.size() > 0);
+    if (auto modSym = toModuleSymbol(referencedMod)) {
+      blockStack.back()->modRefsAdd(modSym);
+      modStack.back().usedModules.push_back(modSym);
+    } else if (auto tcs = toTemporaryConversionSymbol(referencedMod)) {
+      blockStack.back()->modRefsAdd(tcs);
+      modStack.back().usedModuleIds.push_back(tcs->symId);
+    } else {
+      CHPL_ASSERT(false && "Only module symbols and temporary conversion symbols should be stored in a BlockStmt's modRefs!");
+    }
+  }
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
@@ -586,7 +628,7 @@ struct Converter {
   BlockStmt*
   convertExplicitBlock(uast::AstListIteratorPair<uast::AstNode> stmts,
                        bool flattenTopLevelScopelessBlocks) {
-    BlockStmt* ret = new BlockStmt();
+    BlockStmt* ret = pushScopefulBlock();
 
     for (auto stmt: stmts) {
       astlocMarker markAstLoc(stmt->id());
@@ -607,6 +649,7 @@ struct Converter {
       }
     }
 
+    popScopefulBlock();
     return ret;
   }
 
@@ -686,7 +729,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Manage* node) {
-    auto managers = new BlockStmt();
+    auto managers = pushScopefulBlock();
 
     for (auto manager : node->managers()) {
 
@@ -741,6 +784,7 @@ struct Converter {
 
       managers->insertAtTail(conv);
     }
+    popScopefulBlock(); // No longer in the "managers" block
 
     auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
 
@@ -796,6 +840,56 @@ struct Converter {
     return ret;
   }
 
+  bool isDotOnModule(const uast::Dot* node,
+                     ID& outModuleId,
+                     ID& outTargetId,
+                     types::QualifiedType& outTargetType) {
+    outModuleId = ID();
+    outTargetId = ID();
+    outTargetType = types::QualifiedType();
+
+    auto r = currentResolutionResult();
+    if (!r) return false;
+
+    if (auto rr = r->byAstOrNull(node->receiver())) {
+      if (rr->type().kind() == types::QualifiedType::MODULE) {
+        outModuleId = rr->toId();
+      }
+    }
+    if (outModuleId.isEmpty()) return false;
+
+    if (auto rr = r->byAstOrNull(node)) {
+      outTargetId = rr->toId();
+      outTargetType = rr->type();
+    }
+
+    return true;
+  }
+
+  Expr* convertModuleDot(const uast::Dot* node) {
+    ID moduleId, targetId;
+    types::QualifiedType targetType;
+    if (!isDotOnModule(node, moduleId, targetId, targetType) ||
+        targetId.isEmpty()) return nullptr;
+    if (targetId.isFabricatedId()) {
+      CHPL_ASSERT(targetId.fabricatedIdKind() == ID::ExternBlockElement);
+      return nullptr;
+    }
+    storeReferencedMod(findConvertedSym(moduleId));
+
+    // If it's just a variable, turn it into a direct reference to said
+    // variable, bypassing a ('.' M x) expression.
+    auto convertedSymbol = findConvertedSym(targetId);
+    Expr* ret = new SymExpr(convertedSymbol);
+
+    // If it's a parenless function call it.
+    if (targetType.kind() == types::QualifiedType::PARENLESS_FUNCTION) {
+      ret = new CallExpr(ret);
+    }
+
+    return ret;
+  }
+
   Expr* visit(const uast::Dot* node) {
 
     // These are the arguments that 'buildDotExpr' requires.
@@ -811,6 +905,9 @@ struct Converter {
     } else if (member == USTR("by")) {
       return buildDotExpr(base, "chpl_by");
     } else {
+      if (auto ret = convertModuleDot(node)) {
+        return ret;
+      }
       return buildDotExpr(base, member.c_str());
     }
   }
@@ -1377,11 +1474,12 @@ struct Converter {
 
   BlockStmt* visit(const uast::Select* node) {
     Expr* selectCond = toExpr(convertAST(node->expr()));
-    BlockStmt* whenStmts = new BlockStmt();
+    BlockStmt* whenStmts = pushScopefulBlock();
 
     for (auto when : node->whenStmts()) {
       whenStmts->insertAtTail(toExpr(convertAST(when)));
     }
+    popScopefulBlock();
 
     return buildSelectStmt(selectCond, whenStmts);
   }
@@ -1414,7 +1512,7 @@ struct Converter {
       bool tryBang = node->isTryBang();
       auto style = uast::BlockStyle::EXPLICIT;
       auto body = createBlockWithStmts(node->stmts(), style);
-      BlockStmt* catches = new BlockStmt();
+      BlockStmt* catches = pushScopefulBlock();
       bool isSyncTry = false; // TODO: When can this be true?
 
       for (auto handler : node->handlers()) {
@@ -1422,6 +1520,7 @@ struct Converter {
         auto conv = toExpr(convertAST(handler));
         catches->insertAtTail(conv);
       }
+      popScopefulBlock();
 
       return TryStmt::build(tryBang, body, catches, isSyncTry);
     }
@@ -1985,6 +2084,31 @@ struct Converter {
     return ret;
   }
 
+  CallExpr* convertModuleDotCall(const uast::FnCall* node) {
+    ID moduleId, targetId;
+    types::QualifiedType targetType;
+    auto dot = node->calledExpression()->toDot();
+    if (!dot || !isDotOnModule(dot, moduleId, targetId, targetType)) return nullptr;
+
+    // Don't know how to convert fabricated IDs yet.
+    if (targetId.isFabricatedId()) {
+      CHPL_ASSERT(targetId.fabricatedIdKind() == ID::ExternBlockElement);
+      return nullptr;
+    }
+
+    if (!targetId.isEmpty() && targetType.kind() != types::QualifiedType::FUNCTION) {
+      // an empty ID indicates that it's an overloaded function or otherwise unknown,
+      // and a function type indicates... a function. Otherwise, it's something
+      // else (like a class name) and shouldn't be turned into a call in this
+      // manner.
+      return nullptr;
+    }
+
+    auto moduleForCall = findConvertedSym(moduleId);
+    storeReferencedMod(moduleForCall);
+    return new CallExpr(new UnresolvedSymExpr(astr(dot->field())), gModuleToken, moduleForCall);
+  }
+
   Expr* visit(const uast::FnCall* node) {
     const uast::AstNode* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
@@ -2030,6 +2154,9 @@ struct Converter {
     } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
+    } else if (CallExpr* callExpr = convertModuleDotCall(node)) {
+      ret = callExpr;
+      addArgsTo = callExpr;
     } else {
       ret = new CallExpr(convertAST(calledExpression));
       ret->square = node->callUsedSquareBrackets();
@@ -3142,8 +3269,15 @@ struct Converter {
     // Note the module is converted so we can wire up SymExprs later
     noteConvertedSym(node, mod);
 
-    // Pop the module after converting children.
+    // Pop the module after converting children, and note the modules used
+    // within.
     INT_ASSERT(modStack.size() > 0 && modStack.back().mod == node);
+    for (auto usedMod : modStack.back().usedModules) {
+      mod->moduleUseAdd(usedMod);
+    }
+    for (auto modId : modStack.back().usedModuleIds) {
+      noteModuleFixupNeeded(mod, modId);
+    }
     this->modStack.pop_back();
     popFromSymStack(node, mod);
 
@@ -4102,11 +4236,9 @@ FnSymbol* Converter::findConvertedFn(const resolution::TypedFnSignature* sig) {
   }
 }
 
-void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
-  if (!canScopeResolve) return;
-
+ConvertedSymbolsMap* Converter::findSymbolMapForId(ID id, ConvertedSymbolsMap*& cur) {
   ConvertedSymbolsMap* m = nullptr;
-  ConvertedSymbolsMap* cur = &gConvertedSyms;
+  cur = &gConvertedSyms;
   if (symStack.size() > 0) {
     // figure out where to put the fixup
     cur = symStack.back().convertedSyms.get();
@@ -4116,24 +4248,33 @@ void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
   if (m == nullptr) {
     m = &gConvertedSyms;
   }
+  return m;
+}
+
+void Converter::noteIdentFixupNeeded(SymExpr* se, ID id) {
+  if (!canScopeResolve) return;
+
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
 
   m->noteIdentFixupNeeded(se, id, cur, trace);
+}
+
+void Converter::noteModuleFixupNeeded(ModuleSymbol* mod, ID id) {
+  if (!canScopeResolve) return;
+
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(id, cur);
+
+  m->noteModuleFixupNeeded(mod, id, cur, trace);
 }
 
 void Converter::noteCallFixupNeeded(SymExpr* se,
                                     const resolution::TypedFnSignature* sig) {
   if (!canScopeResolve) return;
 
-  ConvertedSymbolsMap* m = nullptr;
-  ConvertedSymbolsMap* cur = &gConvertedSyms;
-  if (symStack.size() > 0) {
-    cur = symStack.back().convertedSyms.get();
-    m = cur->findMapContaining(sig->untyped()->id());
-  }
-
-  if (m == nullptr) {
-    m = &gConvertedSyms;
-  }
+  ConvertedSymbolsMap* cur;
+  ConvertedSymbolsMap* m = findSymbolMapForId(sig->untyped()->id(), cur);
 
   m->noteCallFixupNeeded(se, sig, cur, trace);
 }
@@ -4302,6 +4443,20 @@ void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
   identFixups.emplace_back(se, id);
 }
 
+void ConvertedSymbolsMap::noteModuleFixupNeeded(ModuleSymbol* m, ID id,
+                                                ConvertedSymbolsMap* cur,
+                                                bool trace) {
+  if (trace) {
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           m->id,
+           id.str().c_str(),
+           computeMapName(cur->inSymbolId).c_str(),
+           computeMapName(this->inSymbolId).c_str());
+  }
+
+  moduleFixups.emplace_back(m, id);
+}
+
 void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
                                 const resolution::TypedFnSignature* sig,
                                 ConvertedSymbolsMap* cur,
@@ -4447,6 +4602,21 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
   }
   // clear gIdentFixups since these have now been processed
   identFixups.clear();
+
+  for (const auto& p : moduleFixups) {
+    ModuleSymbol* m = p.first;
+    const ID& target = p.second;
+
+    Symbol* sym = findConvertedSym(target, /* trace */ false);
+    auto usedM = toModuleSymbol(sym);
+    if (!usedM) {
+      INT_FATAL("could not find target symbol for module fixup for %s within %s",
+                target.str().c_str(), inSymbolId.str().c_str());
+    }
+
+    m->moduleUseAdd(usedM);
+  }
+  moduleFixups.clear();
 
   // Fix up any CallExprs that need to have their calledExpr re-targeted
   for (const auto& p : callFixups) {

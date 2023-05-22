@@ -147,13 +147,14 @@ detected (or you would like to use a different installation) you may set
 ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH``.
 
 ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
-architecture to compile for.  The default value is ``sm_60`` for
-``CHPL_GPU=nvidia`` and ``gfx906`` for ``CHPL_GPU=amd``. You may also use the
-``--gpu-arch`` compiler flag to set GPU architecture. For a list of possible
-values please refer to `CUDA Programming Guide
+architecture to compile for. For ``CHPL_GPU=nvidia``, this defaults to
+``sm_60``. For ``CHPL_GPU=amd`` it needs to be set explicitly. The environment
+setting can be overridden by the ``--gpu-arch`` compiler flag.  For a list of
+possible values please refer to "processor" values in `this table in the LLVM
+documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or
+the `CUDA Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
-for NVIDIA or "processor" values in `this table in the LLVM documentation
-<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD.
+for NVIDIA.
 
 ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be used to control the number of GPU
 sublocales created. For example, in a system where 8 physical GPUs per node,

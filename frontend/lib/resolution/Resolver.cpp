@@ -1309,7 +1309,30 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
-void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
+void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
+                                            ID moduleId,
+                                            LookupConfig config) {
+  LookupConfig configWithPrivate = config & ~LOOKUP_SKIP_PRIVATE_VIS;
+  bool thereButPrivate = false;
+  // No need to do the search if we already did search for private symbols
+  if (configWithPrivate != config) {
+    auto modScope = scopeForModule(context, moduleId);
+    auto vec = lookupNameInScope(context, modScope,
+                                 /* receiverScopes */ {},
+                                 dot->field(), configWithPrivate);
+    for (auto& bids : vec) {
+      for (auto& id : bids) {
+        // Only report "bla is private" if it's originally declared in the
+        // given module (i.e., don't do so if the found ID is imported from
+        // elsewhere)
+        auto modId = parsing::idToParentModule(context, id);
+        if (modId != moduleId) continue;
+
+        thereButPrivate = true;
+      }
+    }
+  }
+
   // figure out what name was used for the module in the Dot expression
   auto modName = moduleId.symbolName(context);
   auto dotModName = modName;
@@ -1340,7 +1363,7 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
     }
   }
 
-  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
+  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId, thereButPrivate);
 
 }
 
@@ -1770,10 +1793,46 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   return false;
 }
 
+bool Resolver::resolveSpecialKeywordCall(const Call* call) {
+  if (!call->isFnCall()) return false;
+
+  auto fnCall = call->toFnCall();
+  if (!fnCall->calledExpression()->isIdentifier()) return false;
+
+  auto fnName = fnCall->calledExpression()->toIdentifier()->name();
+  if (fnName == "index") {
+    auto runResult = context->runAndTrackErrors([&](Context* ctx) {
+      auto ci = CallInfo::create(context, call, byPostorder,
+                                 /* raiseErrors */ true,
+                                 /* actualAsts */ nullptr,
+                                 /* rename */ UniqueString::get(context, "chpl__buildIndexType"));
+      auto scope = scopeStack.back();
+      auto result = resolveGeneratedCall(context, call, ci, scope, poiScope);
+
+      auto& r = byPostorder.byAst(call);
+      handleResolvedCall(r, call, ci, result);
+      return result;
+    });
+
+    if (!runResult.ranWithoutErrors()) {
+      auto firstActual = QualifiedType();
+      if (call->numActuals() > 0) {
+        firstActual = byPostorder.byAst(call->actual(0)).type();
+      }
+      CHPL_REPORT(context, InvalidIndexCall, fnCall, firstActual);
+    }
+    return true;
+  }
+
+  return false;
+}
+
 bool Resolver::resolveSpecialCall(const Call* call) {
   if (resolveSpecialOpCall(call)) {
     return true;
   } else if (resolveSpecialNewCall(call)) {
+    return true;
+  } else if (resolveSpecialKeywordCall(call)) {
     return true;
   }
 
@@ -2342,7 +2401,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       return;
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
-      result.setIsPrimitive(true);
+      result.setIsBuiltin(true);
       result.setToId(id);
       result.setType(type);
       return;
@@ -3015,7 +3074,7 @@ void Resolver::exit(const Dot* dot) {
 
   bool resolvingCalledDot = (inLeafCall &&
                              dot == inLeafCall->calledExpression());
-  if (resolvingCalledDot) {
+  if (resolvingCalledDot && !scopeResolveOnly) {
     // we will handle it when resolving the FnCall
     return;
   }
@@ -3042,6 +3101,10 @@ void Resolver::exit(const Dot* dot) {
                           LOOKUP_IMPORT_AND_USE |
                           LOOKUP_EXTERN_BLOCKS;
 
+    if (!moduleId.contains(dot->id())) {
+      config |= LOOKUP_SKIP_PRIVATE_VIS;
+    }
+
     auto modScope = scopeForModule(context, moduleId);
     auto vec = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
@@ -3049,7 +3112,7 @@ void Resolver::exit(const Dot* dot) {
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
       // emit a "can't find that thing" error
-      issueErrorForFailedModuleDot(dot, moduleId);
+      issueErrorForFailedModuleDot(dot, moduleId, config);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function

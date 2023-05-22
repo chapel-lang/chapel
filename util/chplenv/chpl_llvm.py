@@ -15,7 +15,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('15', '14','13','12','11',)
+    return ('15','14','13','12','11',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -776,7 +776,7 @@ def filter_llvm_link_flags(flags):
         # LLVM 15 detects libzstd on some systems but doesn't include
         # the -L path from pkg-config (this can happen in a Spack configuration)
         # So, if we have '-lzstd', use pkg-config to get the link flags.
-        if flag == '-lzstd':
+        if flag == '-lzstd' and sys.platform != "darwin":
           import third_party_utils
           link_bundled_args, link_system_args = (
               third_party_utils.pkgconfig_get_system_link_args('libzstd'))

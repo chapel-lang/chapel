@@ -1806,6 +1806,11 @@ setupFunctionDecl(FnSymbol*   fn,
       for_alist(expr, optFnBody->body) {
         fn->body->insertAtTail(expr->remove());
       }
+
+      // Preserve the module references (which are not part of the body)
+      if (optFnBody->modRefs) {
+        fn->body->modRefsReplace(optFnBody->modRefs->copy());
+      }
     } else {
       fn->insertAtTail(optFnBody);
     }

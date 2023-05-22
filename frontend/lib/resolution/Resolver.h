@@ -328,7 +328,9 @@ struct Resolver {
                                          const CallResolutionResult& c);
 
   // issue error for M.x where x is not found in a module M
-  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+  void issueErrorForFailedModuleDot(const uast::Dot* dot,
+                                    ID moduleId,
+                                    LookupConfig failedConfig);
 
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
@@ -394,6 +396,9 @@ struct Resolver {
 
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
+
+  // resolve a keyword call like index(D)
+  bool resolveSpecialKeywordCall(const uast::Call* call);
 
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);

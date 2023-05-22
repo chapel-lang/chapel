@@ -664,7 +664,11 @@ static bool helpComputeReturnType(Context* context,
       if (untyped->name() == "idxType") {
         result = dt->idxType();
       } else if (untyped->name() == "rank") {
-        result = dt->rank();
+        // Can't use `RankType::rank` because `D.rank` is defined for associative
+        // domains, even though they don't have a matching substitution.
+        result = QualifiedType(QualifiedType::PARAM,
+                               IntType::get(context, 64),
+                               IntParam::get(context, dt->rankInt()));
       } else if (untyped->name() == "stridable") {
         result = dt->stridable();
       } else if (untyped->name() == "parSafe") {

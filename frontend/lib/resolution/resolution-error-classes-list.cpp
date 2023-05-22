@@ -486,6 +486,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+
+  wr.heading(kind_, type_, fnCall,
+             "invalid use of the 'index' keyword.");
+  wr.codeForLocation(fnCall);
+  wr.message("The 'index' keyword should be used with a domain: 'index(D)'.");
+
+  if (fnCall->numActuals() == 0) {
+    wr.message("However, 'index' here did not have any actuals.");
+  } else if (fnCall->numActuals() > 1) {
+    wr.message("However, 'index' here had more than one actual.");
+    wr.code(fnCall, { fnCall->actual(1) });
+  } else if (type.type() && !type.type()->isDomainType()) {
+    wr.message("However, 'index' here is not called with a domain argument, but with ", decayToValue(type), ".");
+    wr.code(fnCall, { fnCall->actual(0) });
+  }
+}
+
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   auto newExpr = std::get<const uast::New*>(info);
   auto type = std::get<types::QualifiedType>(info);
@@ -663,9 +683,15 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //ID moduleId = std::get<1>(info);
   UniqueString moduleName = std::get<2>(info);
   ID renameClauseId = std::get<3>(info);
+  bool thereButPrivate = std::get<bool>(info);
 
-  wr.heading(kind_, type_, dot,
-             "cannot find '", dot->field(), "' in module '", moduleName, "'");
+  if (thereButPrivate) {
+    wr.heading(kind_, type_, dot,
+               "cannot access '", dot->field(), "' as it is private to '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, dot,
+               "cannot find '", dot->field(), "' in module '", moduleName, "'.");
+  }
 
   wr.code(dot, { dot });
 
@@ -683,7 +709,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
     } else {
       wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' here");
+              " '", dotModName, "' here:");
       wr.code<ID>(renameClauseId, { renameClauseId });
     }
   }

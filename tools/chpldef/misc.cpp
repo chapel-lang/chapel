@@ -45,4 +45,14 @@ std::string jsonToString(const JsonValue& json, bool pretty) {
   return ret;
 }
 
+bool cast(std::string str, int& out) noexcept {
+  char* end = nullptr;
+  const char* cstr = str.c_str();
+  errno = 0;
+  int x = std::strtol(cstr, &end, 10);
+  if (errno == ERANGE || end == cstr) return false;
+  out = x;
+  return true;
+}
+
 } // end namespace 'chpldef'

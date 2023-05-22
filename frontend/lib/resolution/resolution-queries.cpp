@@ -282,7 +282,8 @@ const QualifiedType& typeForBuiltin(Context* context,
 
     result = QualifiedType(QualifiedType::TYPE, t);
   } else {
-    CHPL_ASSERT(false && "Should not be reachable");
+    // Could be a non-type builtin like 'index'
+    result = QualifiedType();
   }
 
   return QUERY_END(result);

@@ -2617,8 +2617,8 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     splitStringWhitespace(generateClangGpuLangArgs(), clangOtherArgs);
 
-    std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
-    clangOtherArgs.push_back(gpuArch);
+    std::string archFlag = std::string("--offload-arch=") + gpuArch;
+    clangOtherArgs.push_back(archFlag);
   }
 
   // Always include sys_basic because it might change the
@@ -3908,14 +3908,14 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 static std::string determineOclcVersionLib(std::string libPath) {
   std::string result;
 
-  // Extract version number from CHPL_GPU_ARCH string (e.g. extract
+  // Extract version number from gpuArch string (e.g. extract
   // the 908 from "gfx908")
   std::regex pattern("[[:alpha:]]+([[:digit:]]+[[:alpha:]]?)");
   std::cmatch match;
-  if (std::regex_search(CHPL_GPU_ARCH, match, pattern)) {
+  if (std::regex_search(gpuArch, match, pattern)) {
     result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
   } else {
-    USR_FATAL("Unable to determine oclc version from CHPL_GPU_ARCH");
+    USR_FATAL("Unable to determine oclc version from gpuArch");
   }
 
   // Ensure file exists (and can be opened)
@@ -4203,7 +4203,7 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
   // avoid warning about not statically knowing the stack size when recursive
   // functions are called from the kernel
   ptxasFlags += " --suppress-stack-size-warning ";
-  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
+  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + gpuArch +
                        " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
                        ptxObjectFilename.c_str() +
@@ -4211,16 +4211,16 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
 
   mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-  if (strncmp(CHPL_GPU_ARCH, "sm_", 3) != 0 || strlen(CHPL_GPU_ARCH) != 5) {
+  if (strncmp(gpuArch, "sm_", 3) != 0 || strlen(gpuArch) != 5) {
     USR_FATAL("Unrecognized CUDA arch");
   }
 
-  std::string computeCap = std::string("compute_") + CHPL_GPU_ARCH[3] +
-                                                     CHPL_GPU_ARCH[4];
+  std::string computeCap = std::string("compute_") + gpuArch[3] +
+                                                     gpuArch[4];
   std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                              std::string("--create ") +
                              fatbinFilename.c_str() +
-                             std::string(" --image=profile=") + CHPL_GPU_ARCH +
+                             std::string(" --image=profile=") + gpuArch +
                              ",file=" + ptxObjectFilename.c_str() +
                              std::string(" --image=profile=") + computeCap +
                              ",file=" + artifactFilename.c_str();
@@ -4234,7 +4234,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                       "/llvm/bin/lld -flavor gnu" +
                        " --no-undefined -shared" +
                        " -plugin-opt=-amdgpu-internalize-symbols" +
-                       " -plugin-opt=mcpu=" + CHPL_GPU_ARCH +
+                       " -plugin-opt=mcpu=" + gpuArch +
                        " -plugin-opt=O3" +
                        " -plugin-opt=-amdgpu-early-inline-all=true" +
                        " -plugin-opt=-amdgpu-function-calls=false -o " +
@@ -4243,7 +4243,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
                           "/llvm/bin/clang-offload-bundler" +
                            " -type=o -bundle-align=4096" +
                            " -targets=host-x86_64-unknown-linux," +
-                           "hipv4-amdgcn-amd-amdhsa--" + CHPL_GPU_ARCH +
+                           "hipv4-amdgcn-amd-amdhsa--" + gpuArch +
                            " -inputs=/dev/null," + outFilename +
                            " -outputs=" + fatbinFilename;
 
