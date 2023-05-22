@@ -22,29 +22,29 @@ var lst1: list(int) = 1..8;
 writeln("List 1 after init: ", lst1);
 
 /*
-  The most common operation performed on a list is ``list.append()``. The
-  following code appends some integers to the end of our list.
+  The most common operation performed on a list is ``list.pushBack()``. The
+  following code pushes some integers onto the end of our list.
 
   .. note::
 
     The ``list`` type guarantees that appending a value to the end of a list
     will not invalidate references to existing values.
 
-    This is particularly useful in a parallel context. One task may append
+    This is particularly useful in a parallel context. One task may push
     values to the end of a list while others index over existing values
     and use them in useful work.
 */
 
 for i in 1..8 do
-  lst1.append(i);
+  lst1.pushBack(i);
 
 writeln("List 1 after appends: ", lst1);
 
 /*
   If a list is intended to be used in parallel, then the ``parSafe`` field
-  must be set to ``true`` at initialization. 
+  must be set to ``true`` at initialization.
 
-  Let's create a new list and ``list.append()`` values to it in parallel.
+  Let's create a new list and ``list.pushBack()`` values to it in parallel.
 */
 
 var lst2: list(int, parSafe=true);
@@ -52,7 +52,7 @@ var lst2: list(int, parSafe=true);
 coforall tid in 0..3 with (ref lst2) {
   for i in 1..8 {
     const elem = tid * 8 + i;
-    lst2.append(elem);
+    lst2.pushBack(elem);
   }
 }
 
@@ -79,12 +79,12 @@ var lst3 = lst2;
 
 /*
   Before zippering ``lst2`` and ``lst3`` together, it would be good to vary
-  their contents a little bit. Let's ``list.pop()`` the values from the first
-  half of ``lst2`` and ``list.append()`` them to ``lst3``.
+  their contents a little bit. Let's ``list.popBack()`` the values from the
+  first half of ``lst2`` and ``list.pushBack()`` them to ``lst3``.
 
   .. note::
-  
-    The ``list.pop()`` operation is O(n) worst case. If you pop a value
+
+    The ``list.pop(idx)`` operation is O(n) worst case. If you pop a value
     from the front of a list, all the other values after it have to be
     shifted one to the left.
 */
@@ -93,7 +93,7 @@ var count = 0;
 
 while count < 16 {
   const elem = lst2.pop(0);
-  lst3.append(elem);
+  lst3.pushBack(elem);
   count += 1;
 }
 
@@ -172,12 +172,12 @@ lst1.clear();
 writeln("List 1 after clear: ", lst1);
 
 /*
-  We can use the ``list.append()`` method to merge the contents of our lists
+  We can use the ``list.pushBack()`` method to merge the contents of our lists
   together. Since ``lst1`` is now empty, we can reuse it to save space.
 */
 
-lst1.append(lst2);
-lst1.append(lst3);
+lst1.pushBack(lst2);
+lst1.pushBack(lst3);
 
 writeln("List 1 after appends: ", lst1);
 
@@ -231,7 +231,7 @@ for x in lst3 {
 
   .. note::
 
-    Similar to ``list.pop()``, the ``list.insert()`` operation is O(n) in
+    Similar to ``list.pop(idx)``, the ``list.insert()`` operation is O(n) in
     the worst case.
 
   .. warning::

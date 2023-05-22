@@ -190,7 +190,7 @@ module Shlex {
       while true {
         if this.tokindex == -1 then break;
         if (this.punctuation_chars != '' && !this._pushback_chars.isEmpty()) {
-          nextchar = this._pushback_chars.pop();
+          nextchar = this._pushback_chars.popBack();
         }
         else if(this.tokindex < this.instream.size) {
           nextchar = this.instream[this.tokindex];
@@ -318,7 +318,7 @@ module Shlex {
             }
             else {
               if(this.whitespace.find(nextchar) == -1) {
-                this._pushback_chars.append(nextchar);
+                this._pushback_chars.pushBack(nextchar);
               }
               this.state = ' ';
               break;
@@ -338,7 +338,7 @@ module Shlex {
           }
           else {
             if(this.punctuation_chars != '') {
-              this._pushback_chars.append(nextchar);
+              this._pushback_chars.pushBack(nextchar);
             }
             else {
               this.pushback.insert(0, nextchar);
@@ -406,7 +406,7 @@ module Shlex {
     while(lex.tokindex != -1 || !lex.pushback.isEmpty()) {
       pres = lex.get_token();
       if(posix || pres != '') {
-        lst.append(pres);
+        lst.pushBack(pres);
       }
     }
     return lst;

@@ -211,7 +211,7 @@ proc commonPath(paths: string ...?n): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(pathSep, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
 
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
@@ -220,7 +220,7 @@ proc commonPath(paths: string ...?n): string {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
 
     var minimum = min(prefixList.size, tempList.size);
 
@@ -291,7 +291,7 @@ proc commonPath(paths: []): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(delimiter, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
   // array of resultant prefix string
 
   var pos = prefixList.size;   // rightmost index of common prefix
@@ -301,7 +301,7 @@ proc commonPath(paths: []): string {
 
     var tempList = new list(string);
     for x in paths[i].split(delimiter, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
     // temporary array storing the current path under consideration
 
     var minimum = min(prefixList.size, tempList.size);
@@ -561,9 +561,9 @@ proc normPath(path: string): string {
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
         (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
-      outComps.append(comp);
+      outComps.pushBack(comp);
     else if !outComps.isEmpty() then
-      try! outComps.pop();
+      try! outComps.popBack();
   }
 
   var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
@@ -683,12 +683,12 @@ proc relPath(path: string, start:string=curDir): string throws {
   // Append up-levels until we reach the point where the paths diverge.
   var outComps = new list(string);
   for i in 1..(startComps.size - prefixLen) do
-    outComps.append(parentDir);
+    outComps.pushBack(parentDir);
 
   // Append the portion of path following the common prefix.
   if !pathComps.isEmpty() then
     for x in pathComps[prefixLen..<pathComps.size] do
-      outComps.append(x);
+      outComps.pushBack(x);
 
   if outComps.isEmpty() then
     return curDir;

@@ -541,5 +541,3 @@ proc create_and_analyze_graph(ref Pairs)
 
   delete G;
 }
-
-

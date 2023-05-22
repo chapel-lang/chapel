@@ -6,20 +6,20 @@ proc testData(param testNum) {
   var w = f.writer();
   var data: list(string);
   if testNum == 1 {
-    data.append("hello from line 1\n");
-    data.append("hello from line 2\n");
-    data.append("hello from line 3 which is the last line\n");
+    data.pushBack("hello from line 1\n");
+    data.pushBack("hello from line 2\n");
+    data.pushBack("hello from line 3 which is the last line\n");
   }
   else if testNum == 2 {
     // empty file
   }
   else if testNum == 3 {
     // one line with a newline
-    data.append("hello world\n");
+    data.pushBack("hello world\n");
   }
   else if testNum == 4 {
     // file ending without a newline
-    data.append("hello world");
+    data.pushBack("hello world");
   }
   for l in data do w.write(l);
   w.close();

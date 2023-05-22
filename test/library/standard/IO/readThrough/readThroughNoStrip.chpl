@@ -20,7 +20,7 @@ proc geneList(r, stopCodon: ?t) {
     const gene = s.strip();
     if !gene.isEmpty() {
       assert(gene.endsWith(stopCodon));
-      l.append(gene);
+      l.pushBack(gene);
     }
   }
   return l;
@@ -31,6 +31,6 @@ proc geneListViaSplit(r, stopCodon: ?t) {
   var l = new list(t);
   for gene in r.readAll(t).split(stopCodon) do
     if !gene.strip().isEmpty() then
-      l.append(gene + stopCodon);
+      l.pushBack(gene + stopCodon);
   return l;
 }

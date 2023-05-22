@@ -403,7 +403,7 @@ module List {
     proc _commonInitFromIterable(iterable) lifetime this < iterable {
       this._firstTimeInitializeArrays();
       for x in iterable do
-        append(x);
+        pushBack(x);
     }
 
     @chpldoc.nodoc
@@ -701,7 +701,7 @@ module List {
       :return: List index where element was inserted.
       :rtype: `int`
     */
-    proc ref append(pragma "no auto destroy" in x: this.eltType) : int
+    proc ref pushBack(pragma "no auto destroy" in x: this.eltType) : int
     lifetime this < x {
       _enter();
 
@@ -713,6 +713,11 @@ module List {
       var result = _size - 1;
       _leave();
       return result;
+    }
+
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
+    proc ref append(in x: this.eltType) : int {
+      return this.pushBack(x);
     }
 
     @chpldoc.nodoc
@@ -739,7 +744,7 @@ module List {
     }
 
     /*
-      Append a copy of each element contained in another list to the end of this
+      Push a copy of each element contained in another list to the end of this
       list.
 
       :arg other: A list containing elements of the same type as those
@@ -749,7 +754,7 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+    proc ref pushBack(other: list(eltType, ?p)) lifetime this < other {
       var ret: range;
       on this {
         _enter();
@@ -760,8 +765,13 @@ module List {
       return ret;
     }
 
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
+    proc ref append(other: list(eltType, ?p)) lifetime this < other {
+      return this.pushBack(other);
+    }
+
     /*
-      Append a copy of each element contained in an array to the end of this
+      Push a copy of each element contained in an array to the end of this
       list.
 
       :arg other: An array containing elements of the same type as those
@@ -771,7 +781,7 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: [?d] eltType) lifetime this < other {
+    proc ref pushBack(other: [?d] eltType) lifetime this < other {
       var ret: range;
       on this {
         _enter();
@@ -781,8 +791,13 @@ module List {
       return ret;
     }
 
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
+    proc ref append(other: [?d] eltType) lifetime this < other {
+      return this.pushBack(other);
+    }
+
     /*
-      Append a copy of each element yielded by a range to the end of this list.
+      Push a copy of each element yielded by a range to the end of this list.
 
       .. note::
 
@@ -795,7 +810,7 @@ module List {
       :return: List indices where elements were inserted.
       :rtype: `range`
     */
-    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
+    proc ref pushBack(other: range(eltType, ?b, ?d)) lifetime this < other {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
@@ -809,6 +824,11 @@ module List {
         _leave();
       }
       return ret;
+    }
+
+    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
+    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
+      return this.pushBack(other);
     }
 
     /*
@@ -903,24 +923,24 @@ module List {
 
     @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      append(other);
+      pushBack(other);
     }
 
     @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: [?d] eltType) lifetime this < other {
-      append(other);
+      pushBack(other);
     }
 
     @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      append(other);
+      pushBack(other);
     }
 
     /*
       Insert an element at a given position in this list, shifting all elements
       currently at and following that index one to the right. The call
       ``a.insert(0, x)`` inserts an element at the front of the list `a`, and
-      ``a.insert((a.size), x)`` is equivalent to ``a.append(x)``.
+      ``a.insert((a.size), x)`` is equivalent to ``a.pushBack(x)``.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -1205,11 +1225,16 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc ref pop(): eltType {
+    proc ref popBack(): eltType {
       _enter();
       var result = _popAtIndex(_size-1);
       _leave();
       return result;
+    }
+
+    @deprecated(notes=":proc:`list.pop` is deprecated; please use :proc:`list.popBack` instead.")
+    proc ref pop(): eltType {
+      return this.popBack();
     }
 
     /*
@@ -1494,11 +1519,16 @@ module List {
       return slot.borrow();
     }
 
+    @deprecated(notes=":proc:`list.set` is deprecated; please use :proc:`list.replace` instead.")
+    proc ref set(i: int, in x: eltType): bool {
+      return this.replace(i, x);
+    }
+
     /*
-      Sets the element at a given index in this list. This method returns
+      Replaces the value at a given index with a new value. This method returns
       `false` if the index is out of bounds.
 
-      :arg i: The index of the element to set
+      :arg i: The index of the element to replace
       :type i: int
 
       :arg x: The value to set at index `i`
@@ -1507,7 +1537,7 @@ module List {
                and `false` otherwise.
       :rtype: bool
     */
-    proc ref set(i: int, pragma "no auto destroy" in x: eltType): bool {
+    proc ref replace(i: int, pragma "no auto destroy" in x: eltType): bool {
       _enter(); defer _leave();
 
       if !_withinBounds(i) {
@@ -1957,7 +1987,7 @@ module List {
   */
   operator list.=(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
-    lhs.append(rhs);
+    lhs.pushBack(rhs);
   }
 
   /*

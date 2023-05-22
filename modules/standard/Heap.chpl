@@ -121,7 +121,7 @@ module Heap {
     lifetime this < iterable {
       _data = new list(eltType);
       for x in iterable do
-        _data.append(x);
+        _data.pushBack(x);
       for i in 0 .. _data.size-1 by -1 {
         _heapify_down(i);
       }
@@ -274,7 +274,7 @@ module Heap {
     @chpldoc.nodoc
     proc _push(in element: eltType)
     lifetime this < element {
-      _data.append(element);
+      _data.pushBack(element);
       _heapify_up(_data.size-1);
     }
     /*
@@ -331,7 +331,7 @@ module Heap {
       if _data.size != 1 then
         _data(0) <=> _data(_data.size-1);
 
-      var ret = _data.pop();
+      var ret = _data.popBack();
       _heapify_down(0);
       _leave();
       return ret;

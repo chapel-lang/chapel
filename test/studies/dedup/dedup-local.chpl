@@ -14,10 +14,10 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
       for path in findFiles(arg, recursive=true) do
-        paths.append(path);
+        paths.pushBack(path);
   }
 
   // Create an array of hashes and file ids
@@ -87,6 +87,3 @@ proc stringToHash(s:string): Hash {
   r.close();
   return hash;
 }
-
-
-

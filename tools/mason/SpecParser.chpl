@@ -107,7 +107,7 @@ private proc readSpec(spec: string): list(string) {
         writeln("Token: " + token);
         writeln();
       }
-      tokenList.append(token);
+      tokenList.pushBack(token);
     }
   }
   return tokenList;
@@ -151,7 +151,7 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
       }
     }
     else {
-      variants.append(toke);
+      variants.pushBack(toke);
     }
   }
   return (package, packageVersion, compiler, " ".join(variants.these()).strip());

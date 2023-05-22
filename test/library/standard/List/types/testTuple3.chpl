@@ -10,7 +10,7 @@ proc test() {
 
   for i in 1..8 {
     var item = (new shared C(i), new shared C(-i));
-    lst1.append(item);
+    lst1.pushBack(item);
   }
 
   writeln(lst1.size:string);
@@ -18,7 +18,7 @@ proc test() {
   writeln('---');
 
   while !lst1.isEmpty() {
-    lst2.append(lst1.pop());
+    lst2.pushBack(lst1.popBack());
   }
 
   writeln(lst1.size:string);
@@ -26,9 +26,9 @@ proc test() {
   for item in lst2 do writeln(item);
 
   while !lst2.isEmpty() {
-    var (a, b) = lst2.pop();
-    lst3.append(a);
-    lst3.append(b);
+    var (a, b) = lst2.popBack();
+    lst3.pushBack(a);
+    lst3.pushBack(b);
   }
 
   writeln('---');
@@ -37,9 +37,8 @@ proc test() {
 
   // Purely for side effect of seeing deinitializers fire.
   writeln('---');
-  while !lst3.isEmpty() do lst3.pop();
+  while !lst3.isEmpty() do lst3.popBack();
 
   return;
 }
 test();
-

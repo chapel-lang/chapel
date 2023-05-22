@@ -13,7 +13,7 @@ proc populateList() {
   if verbose then
     writeln("Adding ", here);
 
-  lst.append(new C(here)); 
+  lst.pushBack(new C(here)); 
 
   for i in 0..#here._getChildCount() {
     var subloc = here._getChild(i);
