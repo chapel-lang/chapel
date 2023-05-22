@@ -20,7 +20,7 @@ writeln("string factory functions");
   writeln(s_);
 }
 {
-  var ptr = c_malloc(uint(8), helloBytes.size);
+  var ptr = allocate(uint(8), helloBytes.size);
   for (idx, char) in zip(0..<helloBytes.size, helloBytes) do
     ptr[idx] = char;
   var s = ptr: c_string;
@@ -28,7 +28,7 @@ writeln("string factory functions");
   writeln(s_);
 }
 {
-  var ptr = c_malloc(uint(8), helloBytes.size);
+  var ptr = allocate(uint(8), helloBytes.size);
   for (idx, char) in zip(0..<helloBytes.size, helloBytes) do
     ptr[idx] = char;
   var s_ = createStringWithOwnedBuffer(ptr, length=helloBytes.size-1, size=helloBytes.size);
@@ -67,7 +67,7 @@ writeln("bytes factory functions");
   writeln(s_);
 }
 {
-  var ptr = c_malloc(uint(8), helloBytes.size);
+  var ptr = allocate(uint(8), helloBytes.size);
   for (idx, char) in zip(0..<helloBytes.size, helloBytes) do
     ptr[idx] = char;
   var s = ptr: c_string;
@@ -75,7 +75,7 @@ writeln("bytes factory functions");
   writeln(s_);
 }
 {
-  var ptr = c_malloc(uint(8), helloBytes.size);
+  var ptr = allocate(uint(8), helloBytes.size);
   for (idx, char) in zip(0..<helloBytes.size, helloBytes) do
     ptr[idx] = char;
   var s_ = createBytesWithOwnedBuffer(ptr, length=helloBytes.size-1, size=helloBytes.size);
