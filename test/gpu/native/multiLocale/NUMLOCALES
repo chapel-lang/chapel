@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-codegen=`$CHPL_HOME/util/printchplenv --all --simple | grep CHPL_GPU | cut -d = -f 2-`
+codegen=`$CHPL_HOME/util/printchplenv --all --simple | grep ^CHPL_GPU= | cut -d = -f 2-`
 if [ "$codegen" = "amd" ]; then
   echo "2"
 else
