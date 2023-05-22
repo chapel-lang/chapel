@@ -95,7 +95,7 @@ proc generate(modName: string,
               allowedUpcast: set(2*string),
               allowedDowncast: set(2*string),
               writeEachTestCase) {
-  
+
   if FS.exists(modName) then FS.rmTree(modName);
   const (noerrorPath, errorPath) = generateDirectoryStructure(modName);
 
@@ -109,9 +109,9 @@ proc generate(modName: string,
     const allocFromType = getAllocationType(from, fromClass);
     const toType = getType(to, toClass);
     const allocToType = getAllocationType(to, toClass);
-    
+
     var chplLines = writeEachTestCase(isLegal, fromType, allocFromType, toType, allocToType);
-    
+
     var filename = generateFilename(fromType, toType);
     if isLegal
       then filename = "%s/%s".format(noerrorPath, filename);
@@ -147,7 +147,7 @@ proc generateExplicitCasts() {
   // cast unmanaged to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("unmanaged", x));
-  
+
   // cast borrowed to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("borrowed", x));
@@ -163,11 +163,11 @@ proc generateExplicitCasts() {
   // cast unmanaged? to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("unmanaged?", x));
-  
+
   // cast borrowed? to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("borrowed?", x));
-  
+
   // upcast is close to the same
   var allowedUpcast: set(2*string);
   for x in allowed do allowedUpcast.add(x);
@@ -203,7 +203,7 @@ proc generateExplicitCasts() {
     return chplLines;
   }
   generate(modName, allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
-  
+
 }
 
 
@@ -225,7 +225,7 @@ proc generateCoerceInitAndAssign() {
   // coerce unmanaged to ...
   for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
     allowed.add(("unmanaged", x));
-  
+
   // coerce borrowed to ...
   for x in ["borrowed", "borrowed?"] do
     allowed.add(("borrowed", x));
@@ -241,11 +241,11 @@ proc generateCoerceInitAndAssign() {
   // coerce unmanaged? to ...
   for x in ["unmanaged?", "borrowed?"] do
     allowed.add(("unmanaged?", x));
-  
+
   // coerce borrowed? to ...
   for x in ["borrowed?"] do
     allowed.add(("borrowed?", x));
-  
+
   // upcast is the same
   var allowedUpcast: set(2*string);
   for x in allowed do allowedUpcast.add(x);
@@ -308,9 +308,363 @@ proc generateCoerceInitAndAssign() {
 
 }
 
+proc generateArgumentConst() {
+
+  var allowed: set(2*string);
+  // coerce owned to ...
+  for x in ["owned", "borrowed", "borrowed?"] do
+    allowed.add(("owned", x));
+
+  // coerce shared to ...
+  for x in ["shared", "borrowed", "borrowed?"] do
+    allowed.add(("shared", x));
+
+  // coerce unmanaged to ...
+  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
+    allowed.add(("unmanaged", x));
+
+  // coerce borrowed to ...
+  for x in ["borrowed", "borrowed?"] do
+    allowed.add(("borrowed", x));
+
+  // coerce owned? to ...
+  for x in ["owned?", "borrowed?"] do
+    allowed.add(("owned?", x));
+
+  // coerce shared? to ...
+  for x in ["shared?", "borrowed?"] do
+    allowed.add(("shared?", x));
+
+  // coerce unmanaged? to ...
+  for x in ["unmanaged?", "borrowed?"] do
+    allowed.add(("unmanaged?", x));
+
+  // coerce borrowed? to ...
+  for x in ["borrowed?"] do
+    allowed.add(("borrowed?", x));
+
+  // upcast only allows borrows and unmanaged
+  var allowedUpcast: set(2*string);
+  // coerce unmanaged to ...
+  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
+    allowedUpcast.add(("unmanaged", x));
+  // coerce borrowed to ...
+  for x in ["borrowed", "borrowed?"] do
+    allowedUpcast.add(("borrowed", x));
+  // coerce unmanaged? to ...
+  for x in ["unmanaged?", "borrowed?"] do
+    allowedUpcast.add(("unmanaged?", x));
+  // coerce borrowed? to ...
+  for x in ["borrowed?"] do
+    allowedUpcast.add(("borrowed?", x));
+
+  // downcast is not supported
+  var allowedDowncast: set(2*string);
+
+
+  proc writeEachTestCase(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string) {
+    var chplLines: list(string);
+    chplLines.append("// coercing from %s to %s".format(fromType, toType));
+    chplLines.append("proc bar(const x: %s) {}".format(toType));
+    chplLines.append("proc foo() {");
+    if allocFromType != fromType {
+      chplLines.append("  var alloc = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = alloc;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
+    chplLines.append("  bar(a);");
+    chplLines.append("}");
+    return chplLines;
+  }
+
+  generate("argumentCoerce_Const", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+
+}
+
+
+proc generateArgumentIn() {
+
+  var allowed: set(2*string);
+  // coerce owned to ...
+  for x in ["owned", "borrowed", "owned?", "borrowed?"] do
+    allowed.add(("owned", x));
+
+  // coerce shared to ...
+  for x in ["shared", "borrowed", "shared?", "borrowed?"] do
+    allowed.add(("shared", x));
+
+  // coerce unmanaged to ...
+  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
+    allowed.add(("unmanaged", x));
+
+  // coerce borrowed to ...
+  for x in ["borrowed", "borrowed?"] do
+    allowed.add(("borrowed", x));
+
+  // coerce owned? to ...
+  for x in ["owned?", "borrowed?"] do
+    allowed.add(("owned?", x));
+
+  // coerce shared? to ...
+  for x in ["shared?", "borrowed?"] do
+    allowed.add(("shared?", x));
+
+  // coerce unmanaged? to ...
+  for x in ["unmanaged?", "borrowed?"] do
+    allowed.add(("unmanaged?", x));
+
+  // coerce borrowed? to ...
+  for x in ["borrowed?"] do
+    allowed.add(("borrowed?", x));
+
+  // upcast is the same
+  var allowedUpcast: set(2*string);
+  for x in allowed do allowedUpcast.add(x);
+
+  // downcast is not supported
+  var allowedDowncast: set(2*string);
+
+  proc writeEachTestCaseHelper(
+                     intent: string,
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string) {
+      var chplLines: list(string);
+      chplLines.append("// coercing from %s to %s".format(fromType, toType));
+      chplLines.append("proc bar(%s x: %s) {}".format(intent, toType));
+      chplLines.append("proc foo() {");
+      if allocFromType != fromType {
+        chplLines.append("  var alloc = new %s();".format(allocFromType));
+        chplLines.append("  var a:%s = alloc;".format(fromType));
+      }
+      else {
+        chplLines.append("  var a = new %s();".format(fromType));
+      }
+      chplLines.append("  bar(a);");
+      chplLines.append("}");
+      return chplLines;
+  }
+
+
+  proc writeEachTestCaseIn(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string)
+    do return writeEachTestCaseHelper("in", isLegal, fromType, allocFromType, toType, allocToType);
+  proc writeEachTestCaseConstIn(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string)
+    do return writeEachTestCaseHelper("const in", isLegal, fromType, allocFromType, toType, allocToType);
+
+  generate("argumentCoerce_In", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseIn);
+  generate("argumentCoerce_ConstIn", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseConstIn);
+
+}
+
+proc generateArgumentRef() {
+
+  var allowed: set(2*string);
+  // no change of managment allowed
+  for x in managmentTypesAll do allowed.add((x, x));
+
+  // upcast and downcast are not supported
+  var allowedUpcast: set(2*string);
+  var allowedDowncast: set(2*string);
+
+  proc writeEachTestCaseHelper(
+                     intent: string,
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string) {
+      var chplLines: list(string);
+      chplLines.append("// coercing from %s to %s".format(fromType, toType));
+      chplLines.append("proc bar(%s x: %s) {}".format(intent, toType));
+      chplLines.append("proc foo() {");
+      if allocFromType != fromType {
+        chplLines.append("  var alloc = new %s();".format(allocFromType));
+        chplLines.append("  var a:%s = alloc;".format(fromType));
+      }
+      else {
+        chplLines.append("  var a = new %s();".format(fromType));
+      }
+      chplLines.append("  bar(a);");
+      chplLines.append("}");
+      return chplLines;
+  }
+
+
+  proc writeEachTestCaseRef(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string)
+    do return writeEachTestCaseHelper("ref", isLegal, fromType, allocFromType, toType, allocToType);
+  proc writeEachTestCaseConstRef(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string)
+    do return writeEachTestCaseHelper("const ref", isLegal, fromType, allocFromType, toType, allocToType);
+
+  generate("argumentCoerce_Ref", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseRef);
+  generate("argumentCoerce_ConstRef", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseConstRef);
+
+}
+
+
+proc generateArgumentOut() {
+
+  var allowed: set(2*string);
+  allowed.add(("owned", "owned"));
+  allowed.add(("owned?", "owned"));
+  allowed.add(("owned?", "owned?"));
+  allowed.add(("shared", "shared"));
+  allowed.add(("shared?", "shared"));
+  allowed.add(("shared?", "shared?"));
+  allowed.add(("unmanaged", "unmanaged"));
+  allowed.add(("unmanaged?", "unmanaged"));
+  allowed.add(("unmanaged?", "unmanaged?"));
+  allowed.add(("borrowed", "borrowed"));
+  allowed.add(("borrowed?", "borrowed"));
+  allowed.add(("borrowed?", "borrowed?"));
+
+  allowed.add(("borrowed", "owned"));
+  allowed.add(("borrowed", "shared"));
+  allowed.add(("borrowed", "unmanaged"));
+
+  allowed.add(("borrowed?", "owned"));
+  allowed.add(("borrowed?", "owned?"));
+  allowed.add(("borrowed?", "shared"));
+  allowed.add(("borrowed?", "shared?"));
+  allowed.add(("borrowed?", "unmanaged"));
+  allowed.add(("borrowed?", "unmanaged?"));
+
+  // no "upcast", although for out it is backward
+  var allowedUpcast: set(2*string);
+
+  // same as allowed
+  ref allowedDowncast = allowed;
+
+
+  proc writeEachTestCase(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string) {
+    var chplLines: list(string);
+    chplLines.append("// coercing from %s to %s".format(fromType, toType));
+
+    // doing a global alloc to avoid lifetime issues
+    if allocToType != toType {
+      chplLines.append("var globalAlloc = new %s();".format(allocToType));
+    }
+    chplLines.append("proc bar(out x: %s) {".format(toType));
+    if allocToType != toType {
+      chplLines.append("  x = globalAlloc;");
+    }
+    else {
+      chplLines.append("  x = new %s();".format(toType));
+    }
+    chplLines.append("}");
+
+    chplLines.append("proc foo() {");
+    // alloc bere is just a dummy for the non nilable case
+    if allocFromType != fromType {
+      chplLines.append("  var alloc = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = alloc;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
+    chplLines.append("  bar(a);");
+    chplLines.append("}");
+    return chplLines;
+  }
+
+  generate("argumentCoerce_Out", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+
+}
+
+proc generateArgumentInout() {
+
+  var allowed: set(2*string);
+  allowed.add(("owned?", "owned?"));
+  allowed.add(("shared", "shared"));
+  allowed.add(("shared?", "shared?"));
+  allowed.add(("unmanaged?", "unmanaged?"));
+  allowed.add(("unmanaged", "unmanaged"));
+  allowed.add(("borrowed", "borrowed"));
+  allowed.add(("borrowed?", "borrowed?"));
+  // upcast and downcast are not supported
+  var allowedUpcast: set(2*string);
+  var allowedDowncast: set(2*string);
+
+
+  proc writeEachTestCase(
+                     isLegal: bool,
+                     fromType: string,
+                     allocFromType: string,
+                     toType: string,
+                     allocToType: string): list(string) {
+    var chplLines: list(string);
+    chplLines.append("// coercing from %s to %s".format(fromType, toType));
+
+    // doing a global alloc to avoid lifetime issues
+    if allocToType != toType {
+      chplLines.append("var globalAlloc = new %s();".format(allocToType));
+    }
+    chplLines.append("proc bar(inout x: %s) {".format(toType));
+    if allocToType != toType {
+      chplLines.append("  x = globalAlloc;");
+    }
+    else {
+      chplLines.append("  x = new %s();".format(toType));
+    }
+    chplLines.append("}");
+
+    chplLines.append("proc foo() {");
+    if allocFromType != fromType {
+      chplLines.append("  var alloc = new %s();".format(allocFromType));
+      chplLines.append("  var a:%s = alloc;".format(fromType));
+    }
+    else {
+      chplLines.append("  var a = new %s();".format(fromType));
+    }
+    chplLines.append("  bar(a);");
+    chplLines.append("}");
+    return chplLines;
+  }
+
+  generate("argumentCoerce_Inout", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+
+}
 
 
 proc main() {
   generateExplicitCasts();
   generateCoerceInitAndAssign();
+  generateArgumentConst();
+  generateArgumentIn();
+  generateArgumentRef();
+  generateArgumentOut();
+  generateArgumentInout();
 }
