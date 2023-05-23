@@ -10,7 +10,7 @@ proc getSparse(d, stride) {
   var sdom: sparse subdomain(d);
   var indices: list(2*d.idxType);
   for (i,j) in d by stride {
-    indices.append((i,j));
+    indices.pushBack((i,j));
   }
   sdom += indices.toArray();
   return sdom;
@@ -55,4 +55,3 @@ print_sparsearr(A.times(B));
 writeln();
 print_sparsearr(A.elementDiv(B));
 writeln();
-

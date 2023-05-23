@@ -178,7 +178,7 @@ record _SPA {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
-      this.ls.append(pos);
+      this.ls.pushBack(pos);
     } else {
       this.w[pos] += value;
     }
