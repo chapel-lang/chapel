@@ -844,15 +844,15 @@ module CTypes {
     the instance.  The returned pointer will be invalid if the instance is
     freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassBufferAddress == true
+  inline proc c_ptrTo(ref c: ?t): c_ptr(t)
+    where cPtrToStringBytesClassBufferAddress == true && isClassType(t)
   {
     return c : c_void_ptr : c_ptr(c.type);
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassBufferAddress == false
+  inline proc c_ptrTo(ref c: ?t): c_ptr(t)
+    where cPtrToStringBytesClassBufferAddress == false && isClassType(t)
   {
     return c_addrOf(c);
   }
@@ -861,15 +861,15 @@ module CTypes {
    Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
-  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassBufferAddress == true
+  inline proc c_ptrToConst(const ref c: ?t): c_ptrConst(c.type)
+    where cPtrToStringBytesClassBufferAddress == true && isClassType(t)
   {
     return c : c_void_ptr : c_ptrConst(c.type);
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
-  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassBufferAddress == false
+  inline proc c_ptrToConst(const ref c: ?t): c_ptrConst(c.type)
+    where cPtrToStringBytesClassBufferAddress == false && isClassType(t)
   {
     return c_addrOfConst(c);
   }
