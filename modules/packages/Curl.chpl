@@ -229,7 +229,7 @@ module Curl {
   // param. Here's a compile-time check that t is at least a type that
   // we accept for some option.
   private proc check_setopt_argtype(type t) {
-    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
+    if !isIntegralType(t) && !isBoolType(t) && !chpl_isAnyCPtr(t) && t != slist &&
        t != string && t != bytes then
       compilerError("setopt() doesn't accept arguments of type ", t:string);
   }
@@ -258,7 +258,7 @@ module Curl {
       // arg to libcurl should be a pointer to an object, or to a
       // slist, or a char*, or a void* (CBPOINT).
       // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
-      if isAnyCPtr(arg.type) {
+      if chpl_isAnyCPtr(arg.type) {
         var tmp:c_void_ptr = arg:c_void_ptr;
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == slist {

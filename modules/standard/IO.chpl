@@ -2626,7 +2626,7 @@ record DefaultWriter {
       writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
-    } else if isClassType(t) || isAnyCPtr(t) {
+    } else if isClassType(t) || chpl_isAnyCPtr(t) {
       _encodeClassOrPtr(writer, x);
     } else if isUnionType(t) {
       _encodeUnion(writer, x);
@@ -5398,7 +5398,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   var err: errorCode = 0;
 
-  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+  if isClassType(t) || chpl_isDdata(t) || chpl_isAnyCPtr(t) {
     if x == nil {
       // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
