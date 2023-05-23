@@ -3,3 +3,4 @@
 -sformat=FormatKind.little # basic-types.little.good
 -sformat=FormatKind.big # basic-types.big.good
 -sformat=FormatKind.syntax # basic-types.syntax.good
+-sformat=FormatKind.yaml # basic-types.yaml.good

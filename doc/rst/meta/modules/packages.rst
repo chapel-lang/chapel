@@ -55,6 +55,7 @@ File Formats and I/O
    NetCDF <packages/NetCDF>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
+   Yaml <packages/Yaml>
 
 Math / Numerical Computing
 --------------------------

@@ -5,13 +5,15 @@ module FormatHelper {
   use BinaryIO;
   use IO;
   use ChplFormat;
+  use Yaml;
 
   enum FormatKind {
     default,
     json,
     little,
     big,
-    syntax
+    syntax,
+    yaml
   }
 
   config param format : FormatKind = FormatKind.default;
@@ -37,6 +39,10 @@ module FormatHelper {
       when FormatKind.syntax {
         if writing then return new ChplSerializer();
         else return new ChplDeserializer();
+      }
+      when FormatKind.yaml {
+        if writing then return new YamlSerializer();
+        else return new YamlDeserializer();
       }
       otherwise return nothing;
     }

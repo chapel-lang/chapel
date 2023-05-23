@@ -148,6 +148,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/SortedMap.chpl \
 	packages/SortedSet.chpl \
 	packages/TOML.chpl \
+	packages/Yaml.chpl \
 	packages/URL.chpl \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
