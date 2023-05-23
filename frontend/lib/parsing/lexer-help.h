@@ -164,7 +164,7 @@ static int processStringLiteral(yyscan_t scanner,
                               std::move(value),
                               quotes).release();
   } else if (type == CSTRINGLITERAL) {
-    lit = CStringLiteral::build(context->builder,
+    lit = StringLiteral::build(context->builder,
                                 context->convertLocation(*loc),
                                 std::move(value),
                                 quotes).release();

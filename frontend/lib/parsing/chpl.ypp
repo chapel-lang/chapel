@@ -3597,7 +3597,23 @@ literal_expr:
 | INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
 | REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
-| CSTRINGLITERAL      { $$ = $1; }
+| CSTRINGLITERAL
+  {
+    //  $$ = $1;
+    AstList actuals;
+    std::vector<UniqueString> actualNames;
+    MaybeNamedActualList* lst = new MaybeNamedActualList();
+    auto actual = makeMaybeNamedActual($1);
+    lst->push_back(std::move(actual));
+    context->consumeNamedActuals(lst, actuals, actualNames);
+    auto fnName = PODUniqueString::get(context->context(),"c_ptrToConst_helper");
+    auto fnCall = FnCall::build(BUILDER, LOC(@$),
+                                toOwned(context->buildIdent(@1, fnName)),
+                                std::move(actuals),
+                                std::move(actualNames),
+                                /* square */ false);
+    $$ = fnCall.release();
+  }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
 | TLCBR expr_ls TRCBR
   {
