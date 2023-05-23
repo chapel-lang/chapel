@@ -850,7 +850,7 @@ module CTypes {
     return c : c_void_ptr : c_ptr(c.type);
   }
 
-  @deprecated(notes="The c_ptrTo(class) overload that returns a c_ptr(class) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
     where cPtrToStringBytesClassBufferAddress == false
   {
@@ -867,7 +867,7 @@ module CTypes {
     return c : c_void_ptr : c_ptrConst(c.type);
   }
 
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a c_ptr(class) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
     where cPtrToStringBytesClassBufferAddress == false
   {
