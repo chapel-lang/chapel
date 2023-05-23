@@ -838,6 +838,43 @@ module CTypes {
   }
 
   /*
+    Returns a :type:`c_ptr` to the heap instance of a class type.
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the instance.  The returned pointer will be invalid if the instance is
+    freed or even reallocated.
+  */
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassBufferAddress == true
+  {
+    return c : c_void_ptr : c_ptr(c.type);
+  }
+
+  @deprecated(notes="The c_ptrTo(class) overload that returns a c_ptr(class) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassBufferAddress == false
+  {
+    return c_addrOf(c);
+  }
+
+  /*
+   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
+   which disallows direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassBufferAddress == true
+  {
+    return c : c_void_ptr : c_ptrConst(c.type);
+  }
+
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a c_ptr(class) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassBufferAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassBufferAddress == false
+  {
+    return c_addrOfConst(c);
+  }
+
+  /*
     Returns a :type:`c_ptr` to any Chapel object.
     Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
