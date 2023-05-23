@@ -348,11 +348,11 @@ module CTypes {
   inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
       : bool {
     // special checking when either to or from is a pointer
-    if (isAnyCPtr(from) || isAnyCPtr(to)) {
+    if (chpl_isAnyCPtr(from) || chpl_isAnyCPtr(to)) {
       // allow casting to and from void pointer pointee type
       if (from == c_void_ptr || to == c_void_ptr) {
         return true;
-      } else if (isAnyCPtr(from) && isAnyCPtr(to)) {
+      } else if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
@@ -1150,16 +1150,27 @@ module CTypes {
     chpl_here_free(data);
   }
 
+
+  // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
+  // the deprecated warning is not propogated across our internal modules by
+  // using the internal name.
+  // After the deprecated function is removed, we can remove the extra
+  // definition and just have `isAnyCPtr` as a private nodoc function
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptrConst) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_void_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t) param do return false;
+
   /*
      Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
    */
-  proc isAnyCPtr(type t) param do return false;
+  @deprecated("isAnyCPtr is deprecated")
+  proc isAnyCPtr(type t) param do return chpl_isAnyCPtr(t);
+
 
   /*
     Copies n potentially overlapping bytes from memory area src to memory
