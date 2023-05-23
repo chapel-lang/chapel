@@ -1265,6 +1265,7 @@ def check_for_duplicates():
 
 
 def check_for_pretest():
+     logger.write("[Running pretests {0}]".format(test_dir))
      for root, dirnames, filenames in os.walk(test_dir):
         if not os.access(root, os.X_OK):
             logger.write("[Warning: Cannot cd into {0} skipping directory]"
@@ -1272,8 +1273,11 @@ def check_for_pretest():
             continue
         else:
             dir = os.path.abspath(root)
+        logger.write()
+        logger.write("[Working on directory {0}]".format(root))
         with cd(dir):
             if os.path.isfile("PRETEST"):
+                logger.write("[Running PRETEST for {0}]".format(root))
                 try:
                     run_command(["./PRETEST", compiler]).strip()
                 except:
