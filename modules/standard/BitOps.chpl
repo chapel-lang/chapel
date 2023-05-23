@@ -171,41 +171,57 @@ module BitOps {
  */
 private module BitOps_internal {
   private use CTypes;
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_popcount_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_popcount_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_ctz_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_ctz_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_parity_32(x: c_uint) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_parity_64(x: c_ulonglong) : uint(64);
 
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_8(x: uint(8), n: uint(8)) : uint(8);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_16(x: uint(16), n: uint(16)) : uint(16);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_32(x: uint(32), n: uint(32)) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotl_64(x: uint(64), n: uint(64)) : uint(64);
 
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_8(x: uint(8), n: uint(8)) : uint(8);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_16(x: uint(16), n: uint(16)) : uint(16);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
+  pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_bitops_rotr_64(x: uint(64), n: uint(64)) : uint(64);
 
