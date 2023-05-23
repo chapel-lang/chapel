@@ -80,17 +80,17 @@ module Channel {
 
     proc init(ref value, ref process$ : single bool) {
       valueType = value.type;
-      val = c_ptrTo(value);
-      processPtr = c_ptrTo(process$);
+      val = c_addrOf(value);
+      processPtr = c_addrOf(process$);
       isSelect = false;
     }
 
     proc init(ref value : c_ptr, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
       valueType = value.eltType;
       val = value;
-      processPtr = c_ptrTo(process$);
+      processPtr = c_addrOf(process$);
       isSelect = true;
-      isSelectDone = c_ptrTo(selectDone);
+      isSelectDone = c_addrOf(selectDone);
       selectId = caseId;
     }
 
@@ -474,7 +474,7 @@ module Channel {
 
     proc init(ref value, ref selectChannel : channel(?), op : selectOperation, caseId : int) {
       this.eltType = value.type;
-      this.val = c_ptrTo(value);
+      this.val = c_addrOf(value);
       this.selectChannel = selectChannel;
       this.operation = op;
       this.id = caseId;
