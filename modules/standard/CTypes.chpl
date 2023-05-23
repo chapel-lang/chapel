@@ -1043,15 +1043,13 @@ module CTypes {
           halt("allocate called with alignment smaller than pointer size");
       }
 
+      // normal aligned alloc, whether we clear after or not
+      ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+          offset_ARRAY_ELEMENTS);
+
       if (clear) {
         // there is no aligned calloc; have to aligned_alloc + memset to 0
-        ptr = chpl_here_aligned_alloc(alignment, alloc_size,
-                                       offset_ARRAY_ELEMENTS);
         c_memset(ptr, 0, alloc_size);
-      } else {
-        // normal aligned_alloc
-        ptr = chpl_here_aligned_alloc(alignment, alloc_size,
-                                       offset_ARRAY_ELEMENTS);
       }
     }
 
