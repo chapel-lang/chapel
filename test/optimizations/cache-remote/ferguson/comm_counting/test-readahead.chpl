@@ -7,7 +7,7 @@ config const verbose = false;
 param testSize = 4096*1024;
 param lineSize = 64; // should match cache line size in bytes
 
-var buf = c_aligned_alloc(uint(8), testSize, testSize);
+var buf = allocate(uint(8), testSize, alignment=testSize);
 // store buf as a _ddata so we can GET from it (otherwise always narrow)
 const A = buf:_ddata(uint(8));
 
@@ -94,4 +94,4 @@ for size in acrossPageSizes {
 
 writeln("done");
 
-c_free(buf);
+deallocate(buf);

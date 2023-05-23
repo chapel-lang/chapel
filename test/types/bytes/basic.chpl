@@ -13,7 +13,7 @@ writeln("Initializer tests");
 var b_from_s = s:bytes;
 var b_from_cs = bytes.createCopyingBuffer(cs);
 
-var c_char_arr = c_malloc(uint(8), 4);
+var c_char_arr = allocate(uint(8), 4);
 c_char_arr[0] = 65; //A
 c_char_arr[1] = 66; //B
 c_char_arr[2] = 67; //C
@@ -225,4 +225,4 @@ writeln(b"word\rword"); // should print "word"
 writeln("End of writeln tests");
 writeln();
 
-c_free(c_char_arr);
+deallocate(c_char_arr);
