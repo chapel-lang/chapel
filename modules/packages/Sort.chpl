@@ -255,6 +255,7 @@ module Sort {
   private use List;
   private use Reflection;
   private use CTypes;
+  private use OS.POSIX;
 
 /* Module-defined comparators */
 
@@ -1882,11 +1883,11 @@ module ShallowCopy {
       dst = src;
     } else {
       var size = c_sizeof(st);
-      c_memcpy(ptrTo(dst), ptrTo(src), size);
+      memcpy(ptrTo(dst), ptrTo(src), size);
       if boundsChecking {
         // The version moved from should never be used again,
         // but we clear it out just in case.
-        c_memset(ptrTo(src), 0, size);
+        memset(ptrTo(src), 0, size);
       }
     }
   }
@@ -1916,11 +1917,11 @@ module ShallowCopy {
     } else {
       var size = c_sizeof(st);
       // tmp = lhs
-      c_memcpy(ptrTo(tmp), ptrTo(lhs), size);
+      memcpy(ptrTo(tmp), ptrTo(lhs), size);
       // lhs = rhs
-      c_memcpy(ptrTo(lhs), ptrTo(rhs), size);
+      memcpy(ptrTo(lhs), ptrTo(rhs), size);
       // rhs = tmp
-      c_memcpy(ptrTo(rhs), ptrTo(tmp), size);
+      memcpy(ptrTo(rhs), ptrTo(tmp), size);
     }
   }
 
@@ -1939,7 +1940,7 @@ module ShallowCopy {
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      c_memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
+      memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
                                        /*src*/ A, {src..#nElts});
@@ -1966,7 +1967,7 @@ module ShallowCopy {
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      c_memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
+      memcpy(ptrTo(DstA[dst]), ptrTo(SrcA[src]), size);
     } else {
       var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
                                        /*src*/ SrcA, {src..#nElts});
@@ -3570,7 +3571,7 @@ record DefaultComparator {
     // Convert the real bits to a uint
     var src = x;
     var dst: uint(nbits);
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+    memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
 
     if (dst >> (nbits-1)) == 1 {
       // negative bit is set, flip all bits

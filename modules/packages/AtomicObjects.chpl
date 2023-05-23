@@ -117,6 +117,7 @@
 prototype module AtomicObjects {
   use ChplConfig;
   private use IO;
+  private use OS.POSIX;
 
   if CHPL_TARGET_ARCH != "x86_64" {
     compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
@@ -337,7 +338,7 @@ prototype module AtomicObjects {
     var newObj : objType?;
     // Ensure that newObj is a wide pointer
     on Locales[here.id] do newObj = nil;
-    c_memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
+    memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
     return newObj;
   }
 
@@ -467,7 +468,7 @@ prototype module AtomicObjects {
         var retval = posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
         if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
-        c_memset(ptr, 0, c_sizeof(ABA(objType?)));
+        memset(ptr, 0, c_sizeof(ABA(objType?)));
       }
     }
 

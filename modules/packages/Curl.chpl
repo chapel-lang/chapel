@@ -665,7 +665,7 @@ module Curl {
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
-        c_memcpy(dst, ptr_data, amt);
+        memcpy(dst, ptr_data, amt);
         ret.total_read += amt;
         realsize -= amt;
         ptr_data = ptr_data + amt;
@@ -685,7 +685,7 @@ module Curl {
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = realsize;
-        c_memcpy(dst, ptr_data, amt);
+        memcpy(dst, ptr_data, amt);
         ret.total_read += realsize;
         ret.amt_read += realsize;
         // We have fully populated this iovbuf
@@ -729,12 +729,12 @@ module Curl {
         newbuf = c_calloc(uint(8), newsize);
         if newbuf == nil then
           return 0;
-        c_memcpy(newbuf, buf.mem, oldsize);
+        memcpy(newbuf, buf.mem, oldsize);
         c_free(buf.mem);
         buf.mem = newbuf;
       }
 
-      c_memcpy(c_ptrTo(buf.mem[buf.len]), contents, realsize);
+      memcpy(c_ptrTo(buf.mem[buf.len]), contents, realsize);
       buf.len += realsize;
       buf.mem[buf.len] = 0;
 
@@ -1152,7 +1152,7 @@ module Curl {
 
       // Save the url requested
       var url_c = c_calloc(uint(8), url.size+1);
-      c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
+      memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;
 
