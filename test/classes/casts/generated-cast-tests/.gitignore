@@ -1,0 +1,10 @@
+argumentCoerce_Const
+argumentCoerce_ConstIn
+argumentCoerce_ConstRef
+argumentCoerce_In
+argumentCoerce_Inout
+argumentCoerce_Out
+argumentCoerce_Ref
+coerceAssign
+coerceInitAssign
+explicitCasts
