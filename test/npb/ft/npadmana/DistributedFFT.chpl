@@ -126,11 +126,11 @@ prototype module DistributedFFT {
       }
     }
 
-    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (T != c_ptr(?)) {
       execute(c_ptrTo(arr1), c_ptrTo(arr2));
     }
 
-    inline proc execute(ref arr1 : ?T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T) where (T != c_ptr(?)) {
       execute(arr1, arr1);
     }
 
