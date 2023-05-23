@@ -3,4 +3,4 @@
 CHPL=$1
 
 $CHPL generate-tests.chpl -o generate-tests && ./generate-tests
-rm -f generate-tests
+rm -rf generate-tests
