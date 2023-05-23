@@ -1045,7 +1045,7 @@ module CTypes {
     pragma "no init"
     var x: t;
 
-    return c_ptrTo(getFieldRef(x, fieldname)):c_size_t - c_ptrTo(x):c_size_t;
+    return c_addrOf(getFieldRef(x, fieldname)):c_size_t - c_addrOf(x):c_size_t;
   }
 
   @chpldoc.nodoc
