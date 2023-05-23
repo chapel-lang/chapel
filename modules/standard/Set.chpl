@@ -166,14 +166,31 @@ module Set {
       Initializes an empty set containing elements of the given type.
 
       :arg eltType: The type of the elements of this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type eltType, param parSafe=false,
+    proc init(type eltType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16) {
+      _checkElementType(eltType);
+      this.eltType = eltType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
+                                      initialCapacity);
+    }
+
+    @unstable("'Map.parSafe' is unstable")
+    proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
       _checkElementType(eltType);
@@ -204,7 +221,30 @@ module Set {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type eltType, iterable, param parSafe=false,
+    proc init(type eltType, iterable,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
+    where canResolveMethod(iterable, "these") lifetime this < iterable {
+      _checkElementType(eltType);
+
+      this.eltType = eltType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
+                                      initialCapacity);
+      this.complete();
+
+      for elem in iterable do _addElem(elem);
+    }
+
+    @unstable("'Map.parSafe' is unstable")
+    proc init(type eltType, iterable, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
