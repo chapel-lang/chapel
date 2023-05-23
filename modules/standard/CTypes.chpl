@@ -1088,7 +1088,7 @@ module CTypes {
 
   // this can be removed after the following deprecations are complete
   //  it's only here so that links in the deprecation messages work
-  private use OS.POSIX;
+  private use OS;
 
   /*
     Copies n potentially overlapping bytes from memory area src to memory
@@ -1101,7 +1101,7 @@ module CTypes {
     :arg n: the number of bytes from src to copy to dest
    */
   pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memmove` is deprecated; please use :proc:`POSIX.memmove` instead")
+  @deprecated(notes=":proc:`c_memmove` is deprecated; please use :proc:`OS.POSIX.memmove` instead")
   inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
@@ -1119,7 +1119,7 @@ module CTypes {
     :arg n: the number of bytes from src to copy to dest
    */
   pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memcpy` is deprecated; please use :proc:`POSIX.memcpy` instead")
+  @deprecated(notes=":proc:`c_memcpy` is deprecated; please use :proc:`OS.POSIX.memcpy` instead")
   inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
@@ -1136,7 +1136,7 @@ module CTypes {
               to match, or be greater than the first n bytes of s2.
    */
   pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memcmp` is deprecated; please use :proc:`POSIX.memcmp` instead")
+  @deprecated(notes=":proc:`c_memcmp` is deprecated; please use :proc:`OS.POSIX.memcmp` instead")
   inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t) : c_int;
@@ -1155,7 +1155,7 @@ module CTypes {
     :returns: s
    */
   pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memset` is deprecated; please use :proc:`POSIX.memset` instead")
+  @deprecated(notes=":proc:`c_memset` is deprecated; please use :proc:`OS.POSIX.memset` instead")
   inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
     pragma "fn synchronization free"
     extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t) : c_void_ptr;

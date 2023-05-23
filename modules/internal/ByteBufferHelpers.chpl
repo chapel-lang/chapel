@@ -122,7 +122,7 @@ module ByteBufferHelpers {
       chpl_string_comm_get(dst+dst_off, src_loc, src+src_off, len);
     }
     else {
-      memcpy(dst+dst_off, src+src_off, len);
+      memcpy(dst+dst_off, src+src_off, len.safeCast(c_size_t));
     }
   }
 
@@ -133,7 +133,7 @@ module ByteBufferHelpers {
 
   inline proc bufferMemmoveLocal(dst: bufferType, src, len: int,
                                  dst_off: int=0, src_off: int=0) {
-    memmove(dst+dst_off, src+src_off, len);
+    memmove(dst+dst_off, src+src_off, len.safeCast(c_size_t));
   }
 
   inline proc bufferGetByte(buf: bufferType, off: int, loc: locIdType) {
@@ -165,7 +165,7 @@ module ByteBufferHelpers {
                                     buf2: bufferType, len2: int) : int {
     // Assumes a and b are on same locale and not empty.
     const size = min(len1, len2);
-    const result =  memcmp(buf1, buf2, size);
+    const result =  memcmp(buf1, buf2, size.safeCast(c_size_t));
 
     if (result == 0) {
       // Handle cases where one string is the beginning of the other
