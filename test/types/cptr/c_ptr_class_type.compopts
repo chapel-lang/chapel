@@ -1,0 +1,2 @@
+-s cPtrToStringBytesClassBufferAddress=false # c_ptr_class_type.old.good
+-s cPtrToStringBytesClassBufferAddress=true  # c_ptr_class_type.new.good
