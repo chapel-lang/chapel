@@ -1077,10 +1077,10 @@ module CTypes {
 
 
   // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
-  // the deprecated warning is not propogated across our internal modulous by
-  // using the internal name after the deprecated function is removed, we can
-  // remove the extra definition and just have `isAnyCPtr` as a private nodoc
-  // function
+  // the deprecated warning is not propogated across our internal modules by
+  // using the internal name.
+  // After the deprecated function is removed, we can remove the extra
+  // definition and just have `isAnyCPtr` as a private nodoc function
   @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
   @chpldoc.nodoc
