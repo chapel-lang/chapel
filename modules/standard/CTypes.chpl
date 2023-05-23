@@ -861,6 +861,7 @@ module CTypes {
   {
     return c_addrOf(c);
   }
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
     where cPtrToStringBytesClassLogicalAddress == false
   {
@@ -888,6 +889,7 @@ module CTypes {
   {
     return c_addrOfConst(c);
   }
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
     where cPtrToStringBytesClassLogicalAddress == false
   {
