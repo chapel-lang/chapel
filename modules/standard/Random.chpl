@@ -1858,6 +1858,8 @@ module Random {
     proc pcg_rotr_32(value:uint(32), rot:uint(32)):uint(32)
     {
       // having trouble using BitOps...
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
       extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
 
       var ret = chpl_bitops_rotr_32(value, rot);
