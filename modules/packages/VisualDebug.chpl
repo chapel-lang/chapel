@@ -31,6 +31,7 @@
 module VisualDebug
 {
 
+  private use CTypes;
   use String;
 
   /*
@@ -103,7 +104,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 
      /* Do the op at the root  */
      select what {
-         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
+         when vis_op.v_start    do chpl_vdebug_start (c_ptrToConst_helper(name.localize()):c_string, time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
          when vis_op.v_tag      do chpl_vdebug_tag (tagno);
          when vis_op.v_pause    do chpl_vdebug_pause (tagno);
@@ -146,7 +147,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   proc tagVdebug ( tagname : string ) {
     if (VisualDebugOn) {
        var ttag = tagno.fetchAdd(1);
-       chpl_vdebug_tagname (tagname.c_str(), ttag);
+       chpl_vdebug_tagname (c_ptrToConst_helper(tagname):c_string, ttag);
        VDebugTree (vis_op.v_tag, "", 0, ttag);
     }
   }

@@ -266,7 +266,7 @@ module Curl {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == string || arg.type == bytes {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption,
-                                   arg.localize().c_str():c_void_ptr);
+                                   c_ptrToConst_helper(arg.localize()):c_string:c_void_ptr);
       }
     } else {
       // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
@@ -332,7 +332,7 @@ module Curl {
   proc slist.append(str:string) throws {
     var err: errorCode = 0;
     on this.home {
-      this.list = curl_slist_append(this.list, str.localize().c_str());
+      this.list = curl_slist_append(this.list, c_ptrToConst_helper(str.localize()):c_string);
       if this.list == nil then
         err = EINVAL;
     }
@@ -1152,7 +1152,7 @@ module Curl {
 
       // Save the url requested
       var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
-      memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size.safeCast(c_size_t));
+      memcpy(url_c:c_void_ptr, c_ptrToConst_helper(url.localize()):c_string:c_void_ptr, url.size.safeCast(c_size_t));
 
       fl.url_c = url_c:c_string;
 

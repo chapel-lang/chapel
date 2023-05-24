@@ -296,7 +296,7 @@ module MPI {
               halt("Unable to parse PMI_GNI_COOKIE");
             }
             const newVal = ":".join(cookieJar);
-            C_Env.setenv("PMI_GNI_COOKIE",newVal.c_str(),1);
+            C_Env.setenv("PMI_GNI_COOKIE",c_ptrToConst_helper(newVal):c_string,1);
           }
         }
     }

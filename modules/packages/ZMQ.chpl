@@ -646,7 +646,7 @@ module ZMQ {
     proc bind(endpoint: string) {
       on classRef.home {
         var tmp = endpoint;
-        var ret = zmq_bind(classRef.socket, tmp.c_str());
+        var ret = zmq_bind(classRef.socket, c_ptrToConst_helper(tmp):c_string);
         if ret == -1 {
           var errmsg: string;
           try! {
@@ -663,7 +663,7 @@ module ZMQ {
     proc connect(endpoint: string) {
       on classRef.home {
         var tmp = endpoint;
-        var ret = zmq_connect(classRef.socket, tmp.c_str());
+        var ret = zmq_connect(classRef.socket, c_ptrToConst_helper(tmp):c_string);
         if ret == -1 {
           var errmsg: string;
           try! {
@@ -795,7 +795,7 @@ module ZMQ {
     proc setSubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
-                                 value.c_str(): c_void_ptr,
+                                 c_ptrToConst_helper(value):c_string: c_void_ptr,
                                  value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
@@ -835,7 +835,7 @@ module ZMQ {
     proc setUnsubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
-                                 value.c_str(): c_void_ptr,
+                                 c_ptrToConst_helper(value):c_string: c_void_ptr,
                                  value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
@@ -894,7 +894,7 @@ module ZMQ {
 
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;
-        if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
+        if (0 != zmq_msg_init_data(msg, c_ptrToConst_helper(copy):c_string:c_void_ptr,
                                    copy.numBytes:c_size_t, c_ptrTo(free_helper),
                                    nil)) {
           try throw_socket_error(errno, "send");
