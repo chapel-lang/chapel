@@ -81,7 +81,6 @@ module Collectives {
     /* Construct a new barrier object.
 
        :arg numTasks: The number of tasks that will use this barrier
-       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
     proc init(numTasks: int) {
@@ -184,10 +183,10 @@ module Collectives {
       bar.wait();
     }
 
-    /* Return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if fewer than `n` tasks have called :proc:`notify`
      */
     inline proc pending(): bool {
-      return bar.check();
+      return !bar.check();
     }
 
     @deprecated(notes="'barrier.check()' is deprecated, please use 'barrier.pending()' instead")
