@@ -4,6 +4,11 @@ use List;
 import FileSystem as FS;
 import OS.POSIX as OS;
 
+// controls whether this generates error test cases or no error test cases
+config var generateErrorCases: bool = true;
+// controls which suite gets generated
+config var generateSuite: string = "explicitCasts";
+
 proc getType(managment, cls) {
   var isNilable = managment.endsWith("?");
   var m = managment.strip("?");
@@ -54,30 +59,19 @@ proc generateFilename(in fromType: string, in toType:string) {
   return "from-%s-to-%s".format(fromType, toType);
 }
 
-// returns (noerrorPath, errorPath)
-proc generateDirectoryStructure(modName: string): 2*string {
-  const noerrorPath = "%s/noerror".format(modName);
-  const errorPath = "%s/error".format(modName);
-  FS.mkdir(noerrorPath, parents=true);
-  FS.mkdir(errorPath, parents=true);
-  { var w = openWriter("%s/NOEXEC".format(noerrorPath)); }
-  { var w = openWriter("%s/NOEXEC".format(errorPath)); }
-
-  { var w = openWriter("%s/noerror.good".format(noerrorPath)); }
+proc generateDirectoryFiles(errorFiles: bool = true) {
+  { openWriter("NOEXEC"); }
   {
-    var w = openWriter("%s/COMPOPTS".format(noerrorPath));
-    w.writeln("--stop-after-pass callDestructors # noerror.good");
+    var w = openWriter("all.good");
+    if errorFiles
+      then w.writeln("Compiler correctly threw an error");
   }
   {
-    var w = openWriter("%s/error.good".format(errorPath));
-    w.writeln("Compiler correctly threw an error");
+    var w = openWriter("COMPOPTS");
+    w.writeln("--stop-after-pass callDestructors # all.good");
   }
-  {
-    var w = openWriter("%s/COMPOPTS".format(errorPath));
-    w.writeln("--stop-after-pass callDestructors # error.good");
-  }
-  {
-    var prediff = "%s/PREDIFF".format(errorPath);
+  if errorFiles {
+    const prediff = "PREDIFF";
     var w = openWriter(prediff);
     w.writeln("#!/bin/sh");
     w.writeln("if [ -s $2 ]; then");
@@ -86,18 +80,16 @@ proc generateDirectoryStructure(modName: string): 2*string {
     w.close();
     OS.chmod(prediff.c_str(), 0o755:OS.mode_t);
   }
-
-  return (noerrorPath, errorPath);
 }
 
-proc generate(modName: string,
-              allowed: set(2*string),
+
+
+proc generate(allowed: set(2*string),
               allowedUpcast: set(2*string),
               allowedDowncast: set(2*string),
               writeEachTestCase) {
 
-  if FS.exists(modName) then FS.rmTree(modName);
-  const (noerrorPath, errorPath) = generateDirectoryStructure(modName);
+  generateDirectoryFiles(errorFiles = generateErrorCases);
 
   proc writeTestCase(const ref allowList: set(2*string),
                      from: string,
@@ -113,10 +105,9 @@ proc generate(modName: string,
     var chplLines = writeEachTestCase(isLegal, fromType, allocFromType, toType, allocToType);
 
     var filename = generateFilename(fromType, toType);
-    if isLegal
-      then filename = "%s/%s".format(noerrorPath, filename);
-      else filename = "%s/%s".format(errorPath, filename);
-    generateFile(filename, chplLines);
+    // only generate files when requested to
+    if (isLegal && ! generateErrorCases) || (! isLegal && generateErrorCases)
+      then generateFile(filename, chplLines);
   }
 
   for from in managmentTypesAll {
@@ -133,8 +124,6 @@ proc generate(modName: string,
 
 
 proc generateExplicitCasts() {
-  const modName = "explicitCasts";
-
   var allowed: set(2*string);
   // cast owned to ...
   for x in ["owned", "shared", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
@@ -202,7 +191,7 @@ proc generateExplicitCasts() {
     chplLines.append("}");
     return chplLines;
   }
-  generate(modName, allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+  generate(allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
 
 }
 
@@ -211,7 +200,7 @@ proc generateExplicitCasts() {
 
 
 
-proc generateCoerceInitAndAssign() {
+proc generateCoerceInitAndAssign(doInit: bool = true) {
 
   var allowed: set(2*string);
   // coerce owned to ...
@@ -303,8 +292,8 @@ proc generateCoerceInitAndAssign() {
     return chplLines;
   }
 
-  generate("coerceInitAssign", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseInit);
-  generate("coerceAssign", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseAssign);
+  var writeFunc = if doInit then writeEachTestCaseInit else writeEachTestCaseAssign;
+  generate(allowed, allowedUpcast, allowedDowncast, writeFunc);
 
 }
 
@@ -393,12 +382,12 @@ proc generateArgumentConst() {
     return chplLines;
   }
 
-  generate("argumentCoerce_Const", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+  generate(allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
 
 }
 
 
-proc generateArgumentIn() {
+proc generateArgumentIn(doConst: bool = false) {
 
   var allowed: set(2*string);
   // coerce owned to ...
@@ -479,12 +468,12 @@ proc generateArgumentIn() {
                      allocToType: string): list(string)
     do return writeEachTestCaseHelper("const in", isLegal, fromType, allocFromType, toType, allocToType);
 
-  generate("argumentCoerce_In", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseIn);
-  generate("argumentCoerce_ConstIn", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseConstIn);
+  var writeFunc = if doConst then writeEachTestCaseConstIn else writeEachTestCaseIn;
+  generate(allowed, allowedUpcast, allowedDowncast, writeFunc);
 
 }
 
-proc generateArgumentRef() {
+proc generateArgumentRef(doConst: bool = false) {
 
   var allowed: set(2*string);
   // no change of managment allowed
@@ -533,8 +522,8 @@ proc generateArgumentRef() {
                      allocToType: string): list(string)
     do return writeEachTestCaseHelper("const ref", isLegal, fromType, allocFromType, toType, allocToType);
 
-  generate("argumentCoerce_Ref", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseRef);
-  generate("argumentCoerce_ConstRef", allowed, allowedUpcast, allowedDowncast, writeEachTestCaseConstRef);
+  var writeFunc = if doConst then writeEachTestCaseConstRef else writeEachTestCaseRef;
+  generate(allowed, allowedUpcast, allowedDowncast, writeFunc);
 
 }
 
@@ -609,7 +598,7 @@ proc generateArgumentOut() {
     return chplLines;
   }
 
-  generate("argumentCoerce_Out", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+  generate(allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
 
 }
 
@@ -663,17 +652,24 @@ proc generateArgumentInout() {
     return chplLines;
   }
 
-  generate("argumentCoerce_Inout", allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
+  generate(allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
 
 }
 
 
 proc main() {
-  generateExplicitCasts();
-  generateCoerceInitAndAssign();
-  generateArgumentConst();
-  generateArgumentIn();
-  generateArgumentRef();
-  generateArgumentOut();
-  generateArgumentInout();
+
+  select(generateSuite) {
+    when "explicitCasts" do generateExplicitCasts();
+    when "coerceInit" do generateCoerceInitAndAssign(doInit=true);
+    when "coerceAssign" do generateCoerceInitAndAssign(doInit=false);
+    when "argumentConst" do generateArgumentConst();
+    when "argumentConstIn" do generateArgumentIn(doConst=true);
+    when "argumentIn" do generateArgumentIn(doConst=false);
+    when "argumentConstRef" do generateArgumentRef(doConst=true);
+    when "argumentRef" do generateArgumentRef(doConst=false);
+    when "argumentOut" do generateArgumentOut();
+    when "argumentInout" do generateArgumentInout();
+    otherwise do writeln("Unknown suite: ", generateSuite);
+  }
 }
