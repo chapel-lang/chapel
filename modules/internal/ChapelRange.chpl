@@ -1232,7 +1232,7 @@ operator :(r: range(?), type t: range(?)) {
 
   if tmp.stridable {
     tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = chpl__idxToInt(r.alignment)..safeCast(tmp.intIdxType);;
+    tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
     tmp._aligned = r.aligned;
   }
   tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound) else r._low): tmp.intIdxType;
