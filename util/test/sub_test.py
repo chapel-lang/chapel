@@ -1172,6 +1172,19 @@ if os.access('./PREEXEC',os.R_OK|os.X_OK):
     globalPreexec='./PREEXEC'
 else:
     globalPreexec=None
+
+#
+# Global PRETEST
+#
+if os.access('./PRETEST', os.R_OK|os.X_OK):
+    sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
+    sys.stdout.flush()
+    p = py3_compat.Popen(['./PRETEST', compiler],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    sys.stdout.write(p.communicate()[0])
+    sys.stdout.flush()
+
 #
 # Start running tests
 #

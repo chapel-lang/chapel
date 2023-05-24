@@ -122,9 +122,6 @@ def run_tests(tests):
     # print out Chapel environment
     print_chapel_environment()
 
-    # look for and execute PRETEST's
-    check_for_pretest()
-
     # when the user specifies specific files, run them, even if they are
     # futures or notests
     os.environ["CHPL_TEST_FUTURES"] = "1"
@@ -1262,26 +1259,6 @@ def check_for_duplicates():
                         .format(g, graph_set[filename]))
             else:
                 graph_set[filename] = g
-
-
-def check_for_pretest():
-     logger.write("[Running pretests {0}]".format(test_dir))
-     for root, dirnames, filenames in os.walk(test_dir):
-        if not os.access(root, os.X_OK):
-            logger.write("[Warning: Cannot cd into {0} skipping directory]"
-                    .format(root))
-            continue
-        else:
-            dir = os.path.abspath(root)
-        logger.write()
-        logger.write("[Working on directory {0}]".format(root))
-        with cd(dir):
-            if os.path.isfile("PRETEST"):
-                logger.write("[Running PRETEST for {0}]".format(root))
-                try:
-                    run_command(["./PRETEST", compiler]).strip()
-                except:
-                    logger.write("[Warning: PRETEST error.]")
 
 # END STUFF
 
