@@ -1294,6 +1294,7 @@ module String {
         :type:`string`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
+  @deprecated(notes="string.c_str() is deprecated, use c_ptrTo(string) or c_ptrToConst(string) and cast to c_string")
   inline proc string.c_str() : c_string {
     return getCStr(this);
   }

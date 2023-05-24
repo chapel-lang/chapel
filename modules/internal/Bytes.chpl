@@ -538,6 +538,7 @@ module Bytes {
         :type:`bytes`. The returned `c_string` is only valid when used
         on the same locale as the bytes.
    */
+  @deprecated(notes="bytes.c_str() is deprecated, use c_ptrTo(bytes) or c_ptrToConst(bytes) and cast to c_string")
   inline proc bytes.c_str(): c_string {
     return getCStr(this);
   }
