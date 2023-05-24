@@ -17,7 +17,7 @@ on targetLocale {
 
 writeln();
 
-var cPtrTmp = c_malloc(uint(8), 4);
+var cPtrTmp = allocate(uint(8), 4);
 cPtrTmp[0] = 65:uint(8);
 cPtrTmp[1] = 66:uint(8);
 cPtrTmp[2] = 67:uint(8);
@@ -40,7 +40,7 @@ var cStr = cPtrTmp:c_string;
 
 writeln();
 
-var cPtr = c_malloc(uint(8), 4);
+var cPtr = allocate(uint(8), 4);
 cPtr[0] = 65:uint(8);
 cPtr[1] = 66:uint(8);
 cPtr[2] = 67:uint(8);
@@ -68,7 +68,7 @@ cPtr[3] = 0:uint(8);
 
 writeln();
 
-var cCharPtr = c_malloc(c_char, 4);
+var cCharPtr = allocate(c_char, 4);
 cCharPtr[0] = 65:uint(8);
 cCharPtr[1] = 66:uint(8);
 cCharPtr[2] = 67:uint(8);

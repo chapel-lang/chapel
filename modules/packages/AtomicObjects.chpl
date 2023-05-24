@@ -338,7 +338,7 @@ prototype module AtomicObjects {
     var newObj : objType?;
     // Ensure that newObj is a wide pointer
     on Locales[here.id] do newObj = nil;
-    memcpy(c_ptrTo(newObj), c_ptrTo(wideptr), 16);
+    memcpy(c_addrOf(newObj), c_addrOf(wideptr), 16);
     return newObj;
   }
 
@@ -465,7 +465,7 @@ prototype module AtomicObjects {
       this.complete();
       if hasABASupport {
         var ptr : c_void_ptr;
-        var retval = posix_memalign(c_ptrTo(ptr), 16, c_sizeof(ABA(objType?)));
+        var retval = posix_memalign(c_addrOf(ptr), 16, c_sizeof(ABA(objType?)));
         if retval then halt();
         this.atomicVar = ptr:_ddata(_ABAInternal(objType?));
         memset(ptr, 0, c_sizeof(ABA(objType?)));
@@ -543,7 +543,7 @@ prototype module AtomicObjects {
       var ret : ABA(objType?);
       on this {
         var dest : ABA(objType?);
-        read128bit(atomicVar:c_void_ptr, c_ptrTo(dest));
+        read128bit(atomicVar:c_void_ptr, c_addrOf(dest));
         ret = dest;
       }
       return ret;
@@ -565,7 +565,7 @@ prototype module AtomicObjects {
         // Note that no 'cas128bit_special' is needed here as the 'cas128bit' will detect
         // a change from the expectedObj passed, which of course includes the _ABA_cnt.
         var val = new ABA(objType?, toPointer(newObj), atomicVar[0]._ABA_cnt.read() + 1);
-        ret = cas128bit(atomicVar:c_void_ptr, c_ptrTo(cmp), c_ptrTo(val)) : bool;
+        ret = cas128bit(atomicVar:c_void_ptr, c_addrOf(cmp), c_addrOf(val)) : bool;
       }
       return ret;
     }
@@ -584,7 +584,7 @@ prototype module AtomicObjects {
 
     proc writeABA(newObj: ABA(objType?)) {
       doABACheck();
-      write128bit(atomicVar:c_void_ptr, c_ptrTo(newObj));
+      write128bit(atomicVar:c_void_ptr, c_addrOf(newObj));
     }
 
     proc writeABA(newObj: objType?) {
@@ -610,7 +610,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = new ABA(objType?, toPointer(newObj), 0);
-        exchange128bit_special(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        exchange128bit_special(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 
@@ -624,7 +624,7 @@ prototype module AtomicObjects {
         var retval : ABA(objType?);
         var _newObj = newObj;
         var val = newObj;
-        exchange128bit(atomicVar:c_void_ptr, c_ptrTo(_newObj), c_ptrTo(retval));
+        exchange128bit(atomicVar:c_void_ptr, c_addrOf(_newObj), c_addrOf(retval));
         ret = retval;
       }
 

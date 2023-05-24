@@ -354,8 +354,9 @@ proc densify(sArg: range(?,bounds=?B,stridable=?S), w: range(?IT,?,stridable=fal
   return (s - w.lowBound): range(IT,B,S);
 }
 
-proc _densiEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("densify() currently requires that sub-ranges be bounded", 2);
+proc _densiEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("densify() currently requires that sub-ranges be bounded", 2);
 }
 
 // not sure what kind of relationship we want to enforce
@@ -440,8 +441,9 @@ proc unDensify(dense: range(?,bounds=?B,stridable=?S), whole: range(?IT,?,strida
   return (dense + whole.lowBound): range(IT,B,S);
 }
 
-proc _undensEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
+proc _undensEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {

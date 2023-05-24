@@ -657,7 +657,6 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
      */
      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
@@ -1172,14 +1171,13 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         var dom: domain(1,stridable=true);
 
-        if !isBoundedRange(x) {
+        if x.bounds != boundKind.both {
           compilerError('input range must be bounded');
         } else {
           dom = {x};
@@ -1858,6 +1856,8 @@ module Random {
     proc pcg_rotr_32(value:uint(32), rot:uint(32)):uint(32)
     {
       // having trouble using BitOps...
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
       extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
 
       var ret = chpl_bitops_rotr_32(value, rot);

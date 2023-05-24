@@ -599,18 +599,22 @@ module ChapelRange {
 
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   @chpldoc.nodoc
+  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' instead")
   proc isBoundedRange(r)           param do
     return false;
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
      ``false`` otherwise. */
+  @deprecated("'isBoundedRange()' is deprecated; use 'isRangeValue()' and check the range's '.bounds' field directly instead")
   proc isBoundedRange(r: range(?)) param do
     return isBoundedRange(r.bounds);
 
   @chpldoc.nodoc
+  @deprecated("'isBoundedRange()' is deprecated; compare against 'boundKind.both' directly instead")
   proc isBoundedRange(param B: boundKind) param do
     return B == boundKind.both;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
+  @deprecated("'range.isBounded()' is deprecated; check the range's '.bounds' field directly, comparing to 'boundKind.both'")
   proc range.isBounded() param do
     return bounds == boundKind.both;
 
@@ -849,7 +853,7 @@ module ChapelRange {
     if boundsChecking && isAmbiguous() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
-      return isBoundedRange(this) && this.alignedLowAsInt > this.alignedHighAsInt;
+      return this.bounds == boundKind.both && this.alignedLowAsInt > this.alignedHighAsInt;
   }
 
   /* Returns the number of values represented by this range as an integer.
@@ -875,7 +879,7 @@ module ChapelRange {
      generated.
    */
   proc range.sizeAs(type t: integral): t {
-    if ! isBoundedRange(this) then
+    if this.bounds != boundKind.both then
       compilerError("'size' is not defined on unbounded ranges");
 
     if chpl__singleValIdxType(idxType) {
@@ -911,7 +915,7 @@ module ChapelRange {
       if _low > _high then return 0;
     }
 
-    if !isBoundedRange(this) && isFiniteIdxType(idxType) {
+    if this.bounds != boundKind.both && isFiniteIdxType(idxType) {
       return sizeAsHelp(t,
                         this.chpl_alignedLowAsIntForIter,
                         this.chpl_alignedHighAsIntForIter);
@@ -1068,8 +1072,8 @@ module ChapelRange {
 
     if this.isAmbiguous() || other.isAmbiguous() then return false;
 
-    if this.isBounded() && this.sizeAs(uint) == 0 then
-      return other.isBounded() && other.sizeAs(uint) == 0;
+    if this.bounds == boundKind.both && this.sizeAs(uint) == 0 then
+      return other.bounds == boundKind.both && other.sizeAs(uint) == 0;
 
     var slice = this.chpl_slice(other, forceNewRule=true);
 
@@ -1102,7 +1106,7 @@ module ChapelRange {
     // if their representations are identical.
     if r1.isAmbiguous() then return chpl_ident(r1, r2);
 
-    if isBoundedRange(r1) {
+    if r1.bounds == boundKind.both {
 
       // gotta have a special case for length 0 or 1
       const len = r1.sizeAs(uint), l2 = r2.sizeAs(uint);
@@ -1115,7 +1119,7 @@ module ChapelRange {
 
     } else {
 
-      // ! isBoundedRange(r1)
+      // r1 is not a bounded range
       if r1.stride != r2.stride then return false;
 
       if r1.hasLowBound() then
@@ -1366,7 +1370,7 @@ operator :(r: range(?), type t: range(?)) {
       if ord < 0 then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a negative integer: " + ord:string);
 
-      if isBoundedRange(this) && ord >= this.sizeAs(uint) then
+      if this.bounds == boundKind.both && ord >= this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on an integer " +
             ord:string + " that is larger than the range's number of indices " + this.sizeAs(uint):string);
     }
@@ -2018,7 +2022,7 @@ operator :(r: range(?), type t: range(?)) {
       if (al2 - al1) % g != 0 then
       {
         // empty intersection, return degenerate result
-        if boundsChecking && !isBoundedRange(result) then
+        if boundsChecking && result.bounds != boundKind.both then
           HaltWrappers.boundsCheckHalt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
         result._low = chpl__defaultLowBound(idxType, newBoundKind);
         result._high = chpl__defaultHighBound(idxType, newBoundKind);
@@ -2933,18 +2937,18 @@ operator :(r: range(?), type t: range(?)) {
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
 
-    if (isBoundedRange(myFollowThis) && !myFollowThis.stridable) ||
+    if (myFollowThis.bounds == boundKind.both && !myFollowThis.stridable) ||
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
       if boundsChecking {
         if this.hasLast() {
           // this check is for typechecking only
-          if !isBoundedRange(this) then
-            assert(false, "hasFirst && hasLast do not imply isBoundedRange");
+          if this.bounds != boundKind.both then
+            assert(false, "hasFirst && hasLast do not imply a range is bounded");
         }
         if flwlen != 0 then
-          if isBoundedRange(this) && myFollowThis.last >= this.sizeAs(uint) then
+          if this.bounds == boundKind.both && myFollowThis.last >= this.sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       }
 

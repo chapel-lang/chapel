@@ -69,7 +69,7 @@ var hostname_ptr: c_ptr(c_char);
 var hostname_len = 100;
 var result:c_int;
 
-hostname_ptr = c_calloc(c_char, hostname_len);
+hostname_ptr = allocate(c_char, hostname_len, clear=true);
 
 result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:c_size_t);
 if !quiet {
@@ -83,8 +83,8 @@ if !quiet {
   }
 }
 
-// Demonstrate c_calloc and c_free
-c_free(hostname_ptr);
+// Demonstrate allocate and deallocate
+deallocate(hostname_ptr);
 
 
 

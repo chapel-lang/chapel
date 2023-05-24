@@ -348,11 +348,11 @@ module CTypes {
   inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
       : bool {
     // special checking when either to or from is a pointer
-    if (isAnyCPtr(from) || isAnyCPtr(to)) {
+    if (chpl_isAnyCPtr(from) || chpl_isAnyCPtr(to)) {
       // allow casting to and from void pointer pointee type
       if (from == c_void_ptr || to == c_void_ptr) {
         return true;
-      } else if (isAnyCPtr(from) && isAnyCPtr(to)) {
+      } else if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
@@ -727,20 +727,21 @@ module CTypes {
 
   /*
     Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
-    :proc:`c_ptrToConst` is used for :type:`~String.string` and
-    :type:`~Bytes.bytes` arguments.
+    :proc:`c_ptrToConst` is used for :type:`~String.string`,
+    :type:`~Bytes.bytes`, and class type arguments.
 
     The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
-    underlying buffer of the ``string`` or ``bytes``. The deprecated behavior
-    is to return a :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or
-    ``bytes`` itself — this matches the behavior of
+    underlying buffer of the ``string`` or ``bytes``, or to the heap instance of
+    a class type. The deprecated behavior is to return a
+    :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or ``bytes`` itself, or
+    the stack representation of the class — this matches the behavior of
     :proc:`c_addrOf`/:proc:`c_addrOfConst`.
 
     The deprecated behavior is on by default. To opt in to the new behavior,
     compile your program with the following argument:
-    ``-s cPtrToStringBytesBufferAddress=true``.
+    ``-s cPtrToStringBytesClassLogicalAddress=true``.
   */
-  config param cPtrToStringBytesBufferAddress = false;
+  config param cPtrToStringBytesClassLogicalAddress = false;
 
   /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
@@ -752,7 +753,7 @@ module CTypes {
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
-    where cPtrToStringBytesBufferAddress == true
+    where cPtrToStringBytesClassLogicalAddress == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -761,9 +762,9 @@ module CTypes {
     return c_pointer_return(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref s: string): c_ptr(string)
-    where cPtrToStringBytesBufferAddress == false
+    where cPtrToStringBytesClassLogicalAddress == false
   {
     return c_addrOf(s);
   }
@@ -773,7 +774,7 @@ module CTypes {
    which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
-    where cPtrToStringBytesBufferAddress == true
+    where cPtrToStringBytesClassLogicalAddress == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -782,9 +783,9 @@ module CTypes {
     return c_pointer_return_const(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
-    where cPtrToStringBytesBufferAddress == false
+    where cPtrToStringBytesClassLogicalAddress == false
   {
     return c_addrOfConst(s);
   }
@@ -799,7 +800,7 @@ module CTypes {
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
-    where cPtrToStringBytesBufferAddress == true
+    where cPtrToStringBytesClassLogicalAddress == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -808,9 +809,9 @@ module CTypes {
     return c_pointer_return(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
-    where cPtrToStringBytesBufferAddress == false
+    where cPtrToStringBytesClassLogicalAddress == false
   {
     return c_addrOf(b);
   }
@@ -820,7 +821,7 @@ module CTypes {
    which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
-    where cPtrToStringBytesBufferAddress == true
+    where cPtrToStringBytesClassLogicalAddress == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -829,11 +830,70 @@ module CTypes {
     return c_pointer_return_const(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesBufferAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
-    where cPtrToStringBytesBufferAddress == false
+    where cPtrToStringBytesClassLogicalAddress == false
   {
     return c_addrOfConst(b);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the heap instance of a class type.
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the instance.  The returned pointer will be invalid if the instance is
+    freed or even reallocated.
+  */
+  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptr(c.type);
+  }
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptr(c.type);
+  }
+
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(c);
+  }
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(c);
+  }
+
+  /*
+   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
+   which disallows direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptrConst(c.type);
+  }
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptrConst(c.type);
+  }
+
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(c);
+  }
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(c);
   }
 
   /*
@@ -987,12 +1047,83 @@ module CTypes {
     pragma "no init"
     var x: t;
 
-    return c_ptrTo(getFieldRef(x, fieldname)):c_size_t - c_ptrTo(x):c_size_t;
+    return c_addrOf(getFieldRef(x, fieldname)):c_size_t - c_addrOf(x):c_size_t;
   }
 
   @chpldoc.nodoc
   proc c_offsetof(type t, param fieldname: string) where !isRecordType(t) {
     compilerError("Cannot call c_offsetof on type that is not a record");
+  }
+
+  /* Allocate memory.
+
+     This uses the Chapel allocator. Memory allocated with this function should
+     eventually be freed with :proc:`deallocate`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :arg clear: whether to initialize all bits of allocated memory to 0
+    :arg alignment: Memory alignment of the allocation, which must be a power of
+                    two and a multiple of `c_sizeof(c_void_ptr)`. Alignment of 0
+                    is invalid and taken to mean default alignment.
+    :returns: a c_ptr(eltType) to allocated memory
+   */
+  @unstable("'allocate' is unstable, and may be renamed or moved")
+  inline proc allocate(type eltType, size: c_size_t, clear: bool = false,
+      alignment: c_size_t = 0) : c_ptr(eltType) {
+    const alloc_size = size * c_sizeof(eltType);
+    const aligned : bool = (alignment != 0);
+    var ptr : c_void_ptr = nil;
+
+    // pick runtime allocation function based on requested zeroing + alignment
+    if (!aligned) {
+      if (clear) {
+        // normal calloc
+        ptr = chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS);
+      } else {
+        // normal malloc
+        ptr = chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS);
+      }
+    } else {
+      // check alignment, size restriction
+      // Alignment of 0 is our sentinel value for no specified alignment,
+      // so no need to check for it.
+      if boundsChecking {
+        use Math;
+        var one:c_size_t = 1;
+        // Round the alignment up to the nearest power of 2
+        var p = log2(alignment); // power of 2 rounded down
+        // compute alignment rounded up
+        if (one << p) < alignment then
+          p += 1;
+        assert(alignment <= (one << p));
+        if alignment != (one << p) then
+          halt("allocate called with non-power-of-2 alignment ", alignment);
+        if alignment < c_sizeof(c_void_ptr) then
+          halt("allocate called with alignment smaller than pointer size");
+      }
+
+      // normal aligned alloc, whether we clear after or not
+      ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+          offset_ARRAY_ELEMENTS);
+
+      if (clear) {
+        // there is no aligned calloc; have to aligned_alloc + memset to 0
+        c_memset(ptr, 0, alloc_size);
+      }
+    }
+
+    return ptr : c_ptr(eltType);
+  }
+
+  /* Free memory that was allocated with :proc:`allocate`.
+
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+    */
+  @unstable("'deallocate' is unstable, and may be renamed or moved")
+  inline proc deallocate(data: c_void_ptr) {
+    chpl_here_free(data);
   }
 
   /*
@@ -1005,6 +1136,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_calloc' is deprecated; use ':proc:`allocate`' with 'clear' argument")
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1018,6 +1150,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_malloc' is deprecated; use ':proc:`allocate`'")
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1037,6 +1170,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a ``c_ptr(eltType)`` to allocated memory
     */
+  @deprecated("'c_aligned_alloc' is deprecated; use ':proc:`allocate`' with 'alignment' argument")
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
                               size: integral) : c_ptr(eltType) {
@@ -1071,20 +1205,32 @@ module CTypes {
     :arg data: the c_ptr to memory that was allocated. Note that both
                `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
+  @deprecated("'c_free' is deprecated; use ':proc:`deallocate`'")
   inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 
+
+  // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
+  // the deprecated warning is not propogated across our internal modules by
+  // using the internal name.
+  // After the deprecated function is removed, we can remove the extra
+  // definition and just have `isAnyCPtr` as a private nodoc function
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptrConst) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_void_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t) param do return false;
+
   /*
      Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
    */
-  proc isAnyCPtr(type t) param do return false;
+  @deprecated("isAnyCPtr is deprecated")
+  proc isAnyCPtr(type t) param do return chpl_isAnyCPtr(t);
+
 
   // this can be removed after the following deprecations are complete
   //  it's only here so that links in the deprecation messages work

@@ -515,7 +515,7 @@ extern record sys_sockaddr_t {
   @chpldoc.nodoc
   proc const ref numericHost() throws {
 
-    var buffer = c_calloc(c_char, NI_MAXHOST);
+    var buffer = allocate(c_char, NI_MAXHOST, clear=true);
     var length:c_int;
 
     var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
@@ -1045,7 +1045,7 @@ private extern proc sys_recvfrom(sockfd:c_int, buff:c_void_ptr, len:c_size_t, fl
 proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
                         flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:c_int = 0;
-  var buffer = c_calloc(c_uchar, bufferLen);
+  var buffer = allocate(c_uchar, bufferLen, clear=true);
   var length:c_ssize_t;
   var addressStorage = new sys_sockaddr_t();
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
@@ -1053,7 +1053,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
     return (bytes.createAdoptingBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
   }
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
-    c_free(buffer);
+    deallocate(buffer);
     throw createSystemError(err_out,"recv failed");
   }
   var localSync$: sync c_short;
@@ -1067,20 +1067,20 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
-      c_free(buffer);
+      deallocate(buffer);
       throw new Error("recv failed");
     }
     var retval = localSync$.readFE();
     t.stop();
     if retval & EV_TIMEOUT != 0 {
-      c_free(buffer);
+      deallocate(buffer);
       throw createSystemError(ETIMEDOUT, "recv timed out");
     }
     var elapsedTime = (t.elapsed()*1_000_000):c_long;
     err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:c_size_t, 0, addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
-        c_free(buffer);
+        deallocate(buffer);
         throw createSystemError(err_out,"recv failed");
       }
       if timeout.tv_sec:c_long == -1 {
@@ -1091,7 +1091,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
           timeout.tv_sec = remainingSeconds:time_t;
           timeout.tv_usec = remainingMicroSeconds:suseconds_t;
         }
-        c_free(buffer);
+        deallocate(buffer);
         throw createSystemError(ETIMEDOUT, "recv timed out");
       }
     }
@@ -1385,10 +1385,10 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) 
   }
   else {
     var len:socklen_t = buflen;
-    var buffer = c_calloc(c_uchar, buflen);
+    var buffer = allocate(c_uchar, buflen, clear=true);
     var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
     if err_out != 0 {
-      c_free(buffer);
+      deallocate(buffer);
       throw createSystemError(err_out, "Failed to get socket option");
     }
     return bytes.createAdoptingBuffer(buffer, len, buflen);

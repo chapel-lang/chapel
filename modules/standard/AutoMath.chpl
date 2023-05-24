@@ -1661,8 +1661,10 @@ module AutoMath {
 
   private inline proc _logBasePow2Help(in val, baseLog2) {
     // These are used here to avoid including BitOps by default.
+    pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
 

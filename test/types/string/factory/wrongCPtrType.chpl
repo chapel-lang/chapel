@@ -1,6 +1,6 @@
 use CTypes;
 
-var cPtr = c_malloc(int, 4);
+var cPtr = allocate(int, 4);
 
 config param case = 1;
 

@@ -514,7 +514,7 @@ module UnrolledLinkedList {
       :rtype: `range`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
