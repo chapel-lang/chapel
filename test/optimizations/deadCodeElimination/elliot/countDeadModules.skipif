@@ -1,3 +1,5 @@
 # At time of writing, AutoMath is dead only when --fast is thrown, offsetting
-# number of dead modules from .good expectations by 1.
+# number of dead modules from .good expectations by 1. To solve this, this test
+# skips when we have --fast, and the countDeadModules-fast version _only_ runs
+# when we have --fast.
 COMPOPTS <= --fast
