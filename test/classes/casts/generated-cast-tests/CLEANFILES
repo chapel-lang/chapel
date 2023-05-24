@@ -1,0 +1,11 @@
+generate-tests
+argumentCoerce_Const/*/[!PRETEST]*
+argumentCoerce_ConstIn/*/[!PRETEST]*
+argumentCoerce_ConstRef/*/[!PRETEST]*
+argumentCoerce_In/*/[!PRETEST]*
+argumentCoerce_Inout/*/[!PRETEST]*
+argumentCoerce_Out/*/[!PRETEST]*
+argumentCoerce_Ref/*/[!PRETEST]*
+coerceAssign/*/[!PRETEST]*
+coerceInitAssign/*/[!PRETEST]*
+explicitCasts/*/[!PRETEST]*
