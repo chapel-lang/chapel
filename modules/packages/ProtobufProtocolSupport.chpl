@@ -35,7 +35,6 @@ module ProtobufProtocolSupport {
   public use Fields;
   public use RepeatedFields;
   private use CTypes;
-  private use OS.POSIX;
 
   @chpldoc.nodoc
   module WireEncoding {
@@ -47,6 +46,7 @@ module ProtobufProtocolSupport {
 
     use IO;
     use CTypes;
+    use OS.POSIX;
 
     type writingChannel = fileWriter(iokind.little,false);
     type readingChannel = fileReader(iokind.little,false);

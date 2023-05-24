@@ -255,7 +255,6 @@ module Sort {
   private use List;
   private use Reflection;
   private use CTypes;
-  private use OS.POSIX;
 
 /* Module-defined comparators */
 
@@ -1859,7 +1858,7 @@ module RadixSortHelp {
 @chpldoc.nodoc
 module ShallowCopy {
   private use CTypes;
-
+  private use OS.POSIX;
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -3265,6 +3264,7 @@ module InPlacePartitioning {
 module MSBRadixSort {
   import Sort.{defaultComparator, ShellSort};
   private use super.RadixSortHelp;
+  private use OS.POSIX;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
