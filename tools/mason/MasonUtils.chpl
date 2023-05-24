@@ -21,6 +21,7 @@
 
 
 /* A helper file of utilities for Mason */
+private use CTypes;
 public use FileSystem;
 private use List;
 private use Map;
@@ -34,7 +35,7 @@ use Regex;
 /* Gets environment variables for spawn commands */
 extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
-  var cname: c_string = name.c_str();
+  var cname: c_string = c_ptrToConst_helper(name):c_string;
   var value = getenv(cname);
   return string.createCopyingBuffer(value);
 }
@@ -429,7 +430,7 @@ proc getLastModified(filename: string) : int {
   extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
-  var file_path = filename.c_str();
+  var file_path = c_ptrToConst_helper(filename):c_string;
 
   if (sys_stat(file_path, file_buf) == 0) {
     return file_buf.st_mtim.tv_sec;
