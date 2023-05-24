@@ -1560,7 +1560,7 @@ module OS {
     // 34 is ASCII double quote
     var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,
-                                      s.localize().c_str(), len, ret, nil);
+                                      c_ptrToConst_helper(s.localize()):c_string, len, ret, nil);
     // This doesn't handle the case where ret==NULL as did the previous
     // version in QIO, but I'm not sure how that was used.
 

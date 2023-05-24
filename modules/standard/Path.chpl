@@ -388,7 +388,7 @@ proc dirname(path: string): string {
            var value: string;
            var value_c: c_string;
            // buffer received from sys_getenv, shouldn't be freed
-           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
+           var h: int = sys_getenv(c_ptrToConst_helper(unescape(env_var)):c_string, value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
@@ -409,7 +409,7 @@ proc dirname(path: string): string {
          var value: string;
          var value_c: c_string;
          // buffer received from sys_getenv, shouldn't be freed
-         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
+         var h: int = sys_getenv(c_ptrToConst_helper(unescape(env_var)):c_string, value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
@@ -591,7 +591,7 @@ proc realPath(path: string): string throws {
   extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): errorCode;
 
   var res: c_string;
-  var err = chpl_fs_realpath(unescape(path).c_str(), res);
+  var err = chpl_fs_realpath(c_ptrToConst_helper(unescape(path)):c_string, res);
   if err then try ioerror(err, "realPath", path);
   const ret = string.createCopyingBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here

@@ -503,7 +503,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
-    strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper(fmt):c_string, timeStruct);
     var str: string;
     try! {
       str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
@@ -811,15 +811,15 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if timezone.borrow() != nil {
       timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, c_ptrToConst_helper(tzname()):c_string);
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
       timeStruct.tm_gmtoff = 0;
-      timeStruct.tm_zone = __primitive("cast", tm_zoneType, "".c_str());
+      timeStruct.tm_zone = __primitive("cast", tm_zoneType, c_ptrToConst_helper(""):c_string);
       timeStruct.tm_isdst = -1;
     }
 
-    strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper(fmt):c_string, timeStruct);
     var str: string;
     try! {
       str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
@@ -1403,7 +1403,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   proc type dateTime.strptime(date_string: string, format: string) {
     extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
     var timeStruct: tm;
-    strptime(date_string.c_str(), format.c_str(), timeStruct);
+    strptime(c_ptrToConst_helper(date_string):c_string, c_ptrToConst_helper(format):c_string, timeStruct);
     return new dateTime(timeStruct.tm_year + 1900,
                         timeStruct.tm_mon + 1,
                         timeStruct.tm_mday,
@@ -1473,7 +1473,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       }
     }
 
-    strftime(c_ptrTo(buf), bufLen, "".join(strftok(fmt)).c_str(), timeStruct);
+    strftime(c_ptrTo(buf), bufLen, c_ptrToConst_helper("".join(strftok(fmt))):c_string, timeStruct);
 
     var str: string;
     try! {

@@ -91,7 +91,7 @@ module GPU
      Pass arguments to :proc:`gpuWrite` and follow with a newline.
   */
   proc gpuWriteln(const args ...?k) {
-    gpuWrite((...args), "\n".c_str());
+    gpuWrite((...args), c_ptrToConst_helper("\n"):c_string);
   }
 
   /*
