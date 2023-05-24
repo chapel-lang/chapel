@@ -50,7 +50,7 @@ module ChapelDebugPrint {
   proc chpl_debug_writeln(args...) {
     extern proc printf(fmt:c_string, f:c_string);
     var str = chpl_debug_stringify((...args));
-    printf("%s\n", str.c_str());
+    printf("%s\n", c_ptrToConst_helper(str):c_string);
   }
 
   //
@@ -87,7 +87,7 @@ module ChapelDebugPrint {
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
       extern proc printf(fmt:c_string, f:c_string, ln:c_int, s:c_string);
-      printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
+      printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, c_ptrToConst_helper(str):c_string);
     }
   }
   proc chpl__testParWriteln(args...) {

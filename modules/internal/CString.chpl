@@ -88,7 +88,7 @@ module CString {
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
   inline operator c_string.=(ref a: c_string, b: string) {
-    __primitive("=", a, b.c_str());
+    __primitive("=", a, c_ptrToConst_helper(b):c_string);
   }
 
   //

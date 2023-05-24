@@ -127,19 +127,19 @@ module BytesCasts {
 
     if isIntType(t) {
       select numBits(t) {
-        when 8  do retVal = c_string_to_int8_t(localX.c_str(), isErr);
-        when 16 do retVal = c_string_to_int16_t(localX.c_str(), isErr);
-        when 32 do retVal = c_string_to_int32_t(localX.c_str(), isErr);
-        when 64 do retVal = c_string_to_int64_t(localX.c_str(), isErr);
+        when 8  do retVal = c_string_to_int8_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 16 do retVal = c_string_to_int16_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 32 do retVal = c_string_to_int32_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 64 do retVal = c_string_to_int64_t(c_ptrToConst_helper(localX):c_string, isErr);
         otherwise compilerError("Unsupported bit width ", numBits(t),
                                 " in cast from bytes to " + t:string);
       }
     } else {
       select numBits(t) {
-        when 8  do retVal = c_string_to_uint8_t(localX.c_str(), isErr);
-        when 16 do retVal = c_string_to_uint16_t(localX.c_str(), isErr);
-        when 32 do retVal = c_string_to_uint32_t(localX.c_str(), isErr);
-        when 64 do retVal = c_string_to_uint64_t(localX.c_str(), isErr);
+        when 8  do retVal = c_string_to_uint8_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 16 do retVal = c_string_to_uint16_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 32 do retVal = c_string_to_uint32_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 64 do retVal = c_string_to_uint64_t(c_ptrToConst_helper(localX):c_string, isErr);
         otherwise compilerError("Unsupported bit width ", numBits(t),
                                 " in cast from bytes to " + t:string);
       }
@@ -200,8 +200,8 @@ module BytesCasts {
     _cleanupForNumericCast(localX);
 
     select numBits(t) {
-      when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
-      when 64 do retVal = c_string_to_real64(localX.c_str(), isErr);
+      when 32 do retVal = c_string_to_real32(c_ptrToConst_helper(localX):c_string, isErr);
+      when 64 do retVal = c_string_to_real64(c_ptrToConst_helper(localX):c_string, isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }
@@ -229,8 +229,8 @@ module BytesCasts {
     _cleanupForNumericCast(localX);
 
     select numBits(t) {
-      when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
-      when 64 do retVal = c_string_to_imag64(localX.c_str(), isErr);
+      when 32 do retVal = c_string_to_imag32(c_ptrToConst_helper(localX):c_string, isErr);
+      when 64 do retVal = c_string_to_imag64(c_ptrToConst_helper(localX):c_string, isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }
@@ -268,6 +268,18 @@ module BytesCasts {
     return ret;
   }
 
+  //
+  // casts from bytes to c_ptrConst(c_char/int(8)/uint(8))
+  //
+  inline operator :(x: bytes, type t:c_ptrConst(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    private use ByteBufferHelpers;
+    var buff: bufferType = x.buff;
+    var asCString = __primitive("cast", t, buff);
+    return asCString;
+  }
+
 
   operator :(x: bytes, type t:chpl_anycomplex) throws {
     pragma "fn synchronization free"
@@ -287,8 +299,8 @@ module BytesCasts {
                              numBits(t):string + ")");
 
     select numBits(t) {
-      when 64 do retVal = c_string_to_complex64(localX.c_str(), isErr);
-      when 128 do retVal = c_string_to_complex128(localX.c_str(), isErr);
+      when 64 do retVal = c_string_to_complex64(c_ptrToConst_helper(localX):c_string, isErr);
+      when 128 do retVal = c_string_to_complex128(c_ptrToConst_helper(localX):c_string, isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }
