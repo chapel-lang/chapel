@@ -1,1 +1,5 @@
-[!PRETEST|!CLEANFILES]*
+*.chpl
+*.good
+COMPOPTS
+NOEXEC
+PREDIFF
