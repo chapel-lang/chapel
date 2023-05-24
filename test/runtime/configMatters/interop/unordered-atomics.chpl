@@ -19,14 +19,14 @@ proc addIt(p: c_void_ptr): c_void_ptr {
 }
 
 proc threadsAddIt(nthreads) {
-  var pthread_arr = c_malloc(pthread_t, nthreads);
+  var pthread_arr = allocate(pthread_t, nthreads);
   for i in 0..#nthreads do
     pthread_create(c_ptrTo(pthread_arr[i]), c_nil:c_ptr(pthread_attr_t), c_ptrTo(addIt), c_nil);
 
   var res: c_void_ptr;
   for i in 0..#nthreads do
     pthread_join(pthread_arr[i], c_ptrTo(res));
-  c_free(pthread_arr);
+  deallocate(pthread_arr);
 }
 
 coforall loc in Locales do on loc do

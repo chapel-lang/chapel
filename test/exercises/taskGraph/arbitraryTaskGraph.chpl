@@ -6,7 +6,7 @@ use IO;
 // FIXME: starting out with a dense 2D array
 config const N = 4,
              verbose = false;
-var A : [0..<N,0..<N] bool;
+var A: [0..<N,0..<N] bool;
 
 // 0 and 1 can execute right away
 // 2 and 3 have to wait for
@@ -15,7 +15,7 @@ A[2,1] = true;
 A[3,1] = true;
 
 // can I declare an array of atomics? yes
-var numToWaitFor : [0..<N] atomic int;
+var numToWaitFor: [0..<N] atomic int;
 writeln(numToWaitFor);
 
 // encoding how many each task needs to wait for
@@ -27,15 +27,13 @@ writeln(numToWaitFor);
 
 // start all of the tasks and have them wait as needed and
 // have them decrement the appropriate numToWaitFor
-for i in 0..<N {
-  begin {
-    numToWaitFor[i].waitFor(0);
+coforall i in 0..<N {
+  numToWaitFor[i].waitFor(0);
 
-    // do task i work
-    if verbose then writeln("Task: ", i, " is working away");
+  // do task i work
+  if verbose then writeln("Task: ", i, " is working away");
 
-    for j in i+1..<N { // should only be later tasks
-      if A[j,i] { numToWaitFor[j].fetchAdd(-1); }
-    }
+  for j in i+1..<N { // should only be later tasks
+    if A[j,i] { numToWaitFor[j].fetchAdd(-1); }
   }
 }

@@ -348,11 +348,11 @@ module CTypes {
   inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
       : bool {
     // special checking when either to or from is a pointer
-    if (isAnyCPtr(from) || isAnyCPtr(to)) {
+    if (chpl_isAnyCPtr(from) || chpl_isAnyCPtr(to)) {
       // allow casting to and from void pointer pointee type
       if (from == c_void_ptr || to == c_void_ptr) {
         return true;
-      } else if (isAnyCPtr(from) && isAnyCPtr(to)) {
+      } else if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
@@ -995,6 +995,77 @@ module CTypes {
     compilerError("Cannot call c_offsetof on type that is not a record");
   }
 
+  /* Allocate memory.
+
+     This uses the Chapel allocator. Memory allocated with this function should
+     eventually be freed with :proc:`deallocate`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :arg clear: whether to initialize all bits of allocated memory to 0
+    :arg alignment: Memory alignment of the allocation, which must be a power of
+                    two and a multiple of `c_sizeof(c_void_ptr)`. Alignment of 0
+                    is invalid and taken to mean default alignment.
+    :returns: a c_ptr(eltType) to allocated memory
+   */
+  @unstable("'allocate' is unstable, and may be renamed or moved")
+  inline proc allocate(type eltType, size: c_size_t, clear: bool = false,
+      alignment: c_size_t = 0) : c_ptr(eltType) {
+    const alloc_size = size * c_sizeof(eltType);
+    const aligned : bool = (alignment != 0);
+    var ptr : c_void_ptr = nil;
+
+    // pick runtime allocation function based on requested zeroing + alignment
+    if (!aligned) {
+      if (clear) {
+        // normal calloc
+        ptr = chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS);
+      } else {
+        // normal malloc
+        ptr = chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS);
+      }
+    } else {
+      // check alignment, size restriction
+      // Alignment of 0 is our sentinel value for no specified alignment,
+      // so no need to check for it.
+      if boundsChecking {
+        use Math;
+        var one:c_size_t = 1;
+        // Round the alignment up to the nearest power of 2
+        var p = log2(alignment); // power of 2 rounded down
+        // compute alignment rounded up
+        if (one << p) < alignment then
+          p += 1;
+        assert(alignment <= (one << p));
+        if alignment != (one << p) then
+          halt("allocate called with non-power-of-2 alignment ", alignment);
+        if alignment < c_sizeof(c_void_ptr) then
+          halt("allocate called with alignment smaller than pointer size");
+      }
+
+      // normal aligned alloc, whether we clear after or not
+      ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+          offset_ARRAY_ELEMENTS);
+
+      if (clear) {
+        // there is no aligned calloc; have to aligned_alloc + memset to 0
+        c_memset(ptr, 0, alloc_size);
+      }
+    }
+
+    return ptr : c_ptr(eltType);
+  }
+
+  /* Free memory that was allocated with :proc:`allocate`.
+
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+    */
+  @unstable("'deallocate' is unstable, and may be renamed or moved")
+  inline proc deallocate(data: c_void_ptr) {
+    chpl_here_free(data);
+  }
+
   /*
     Allocate memory and initialize all bits to 0. Note that this simply zeros
     memory, it does not call Chapel initializers (it is meant for primitive
@@ -1005,6 +1076,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_calloc' is deprecated; use ':proc:`allocate`' with 'clear' argument")
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1018,6 +1090,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_malloc' is deprecated; use ':proc:`allocate`'")
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -1037,6 +1110,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a ``c_ptr(eltType)`` to allocated memory
     */
+  @deprecated("'c_aligned_alloc' is deprecated; use ':proc:`allocate`' with 'alignment' argument")
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
                               size: integral) : c_ptr(eltType) {
@@ -1071,20 +1145,32 @@ module CTypes {
     :arg data: the c_ptr to memory that was allocated. Note that both
                `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
+  @deprecated("'c_free' is deprecated; use ':proc:`deallocate`'")
   inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 
+
+  // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
+  // the deprecated warning is not propogated across our internal modules by
+  // using the internal name.
+  // After the deprecated function is removed, we can remove the extra
+  // definition and just have `isAnyCPtr` as a private nodoc function
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_ptrConst) param do return true;
+  proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
   @chpldoc.nodoc
-  proc isAnyCPtr(type t:c_void_ptr) param do return true;
+  proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t) param do return false;
+
   /*
      Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
    */
-  proc isAnyCPtr(type t) param do return false;
+  @deprecated("isAnyCPtr is deprecated")
+  proc isAnyCPtr(type t) param do return chpl_isAnyCPtr(t);
+
 
   /*
     Copies n potentially overlapping bytes from memory area src to memory

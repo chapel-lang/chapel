@@ -669,9 +669,9 @@ module ChapelLocale {
   private proc warmupRuntime() {
     extern proc chpl_task_getFixedNumThreads(): uint(32);
     coforall i in 0..#chpl_task_getFixedNumThreads() {
-      var p = c_malloc(int, 1);
+      var p = allocate(int, 1);
       p[0] = i;
-      c_free(p);
+      deallocate(p);
     }
   }
 

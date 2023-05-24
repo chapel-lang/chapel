@@ -20,7 +20,7 @@ extern {
 
   extern char* chpl_gpuBinary;
 
-  static double launchKernel(){
+  static double launchKernel(void){
     CUdevice    device;
     CUmodule    cudaModule;
     CUfunction  function;

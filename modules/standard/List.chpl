@@ -253,7 +253,7 @@ module List {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
@@ -354,7 +354,7 @@ module List {
       :arg other: The range to initialize from.
     */
     proc init=(other: range(?)) {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
@@ -811,7 +811,7 @@ module List {
       :rtype: `range`
     */
     proc ref pushBack(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;

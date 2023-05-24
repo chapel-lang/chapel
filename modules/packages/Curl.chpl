@@ -229,7 +229,7 @@ module Curl {
   // param. Here's a compile-time check that t is at least a type that
   // we accept for some option.
   private proc check_setopt_argtype(type t) {
-    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
+    if !isIntegralType(t) && !isBoolType(t) && !chpl_isAnyCPtr(t) && t != slist &&
        t != string && t != bytes then
       compilerError("setopt() doesn't accept arguments of type ", t:string);
   }
@@ -258,7 +258,7 @@ module Curl {
       // arg to libcurl should be a pointer to an object, or to a
       // slist, or a char*, or a void* (CBPOINT).
       // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
-      if isAnyCPtr(arg.type) {
+      if chpl_isAnyCPtr(arg.type) {
         var tmp:c_void_ptr = arg:c_void_ptr;
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == slist {
@@ -565,7 +565,7 @@ module Curl {
       }
 
       override proc close():errorCode {
-        c_free(url_c:c_void_ptr);
+        deallocate(url_c:c_void_ptr);
         url_c = nil;
         return 0;
       }
@@ -726,11 +726,11 @@ module Curl {
         var newsize = 2 * buf.alloced + realsize;
         var oldsize = buf.len;
         var newbuf:c_ptr(uint(8));
-        newbuf = c_calloc(uint(8), newsize);
+        newbuf = allocate(uint(8), newsize, clear=true);
         if newbuf == nil then
           return 0;
         c_memcpy(newbuf, buf.mem, oldsize);
-        c_free(buf.mem);
+        deallocate(buf.mem);
         buf.mem = newbuf;
       }
 
@@ -755,7 +755,7 @@ module Curl {
         // Headers tend to be ~800, although they can grow much larger than this. If
         // it is larger than this, we'll take care of it in curl_write_string.
 
-        buf.mem = c_calloc(uint(8), 800);
+        buf.mem = allocate(uint(8), 800, clear=true);
         buf.len = 0;
         buf.alloced = 800;
 
@@ -777,7 +777,7 @@ module Curl {
           ret = true;
         }
 
-        c_free(buf.mem);
+        deallocate(buf.mem);
 
         var lengthDouble: real(64);
         // Get the content length (for HTTP only)
@@ -1151,7 +1151,7 @@ module Curl {
       // curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "name=daniel&project=curl");
 
       // Save the url requested
-      var url_c = c_calloc(uint(8), url.size+1);
+      var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
       c_memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
 
       fl.url_c = url_c:c_string;

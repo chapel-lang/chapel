@@ -33,12 +33,12 @@ config const k = 4;
 // read in the input sequence from the file infile and strip out newlines
 var sequence, line : string;
 var infile =  openReader(infilename);
-while infile.readLine(line) {
-  sequence += line.strip();
+while infile.readLine(line, stripNewline=true) {
+  sequence += line;
 }
 
 // declare a dictionary/map to store the count per kmer
-var nkmerCounts : map(string, int);
+var nkmerCounts: map(string, int);
 
 // count up the number of times each kmer occurs
 for ind in 0..<(sequence.size-k) {
