@@ -1109,7 +1109,7 @@ module CTypes {
 
       if (clear) {
         // there is no aligned calloc; have to aligned_alloc + memset to 0
-        c_memset(ptr, 0, alloc_size);
+        POSIX.memset(ptr, 0, alloc_size);
       }
     }
 
@@ -1234,6 +1234,7 @@ module CTypes {
 
   // this can be removed after the following deprecations are complete
   //  it's only here so that links in the deprecation messages work
+  //  and to avoid deprecation warnings when using these procs internally in this module
   private use OS;
 
   /*
