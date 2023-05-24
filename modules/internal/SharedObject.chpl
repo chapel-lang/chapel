@@ -665,7 +665,7 @@ module SharedObject {
   }
 
   // cast from owned to shared
-  @chpldoc.nodoc
+  @deprecated("casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead")
   inline operator :(pragma "nil from arg" pragma "leaves arg nil" in x:owned, type t:_shared) {
     if t.chpl_t != ? && t.chpl_t != x.chpl_t then
       compilerError("Cannot change class type in conversion from '",
