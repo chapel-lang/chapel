@@ -92,7 +92,7 @@ proc generateDirectoryFiles(errorFiles: bool = true) {
   }
   {
     var w = openWriter("COMPOPTS");
-    w.writeln("--stop-after-pass callDestructors # all.good");
+    w.writeln("--permit-unhandled-module-errors --stop-after-pass callDestructors # all.good");
   }
   if errorFiles {
     const prediff = "PREDIFF";
