@@ -1,3 +1,5 @@
+use CTypes;
+
 config const n = 10;
 
 extern proc printf(fmt:c_string, x...);
@@ -11,4 +13,4 @@ iter g() : int {
 }
 
 for i in g() do
-  printf("%s\n", (here.id:string + ":i=" + i:string).c_str());
+  printf("%s\n", c_ptrToConst_helper(here.id:string + ":i=" + i:string):c_string);

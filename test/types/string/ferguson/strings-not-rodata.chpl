@@ -3,10 +3,10 @@ use CTypes;
 writeln("Printing before modification");
 
 writeln("Hello World!");
-writeln("Hello World!".c_str():string);
+writeln(c_ptrToConst_helper("Hello World!"):c_string:string);
 
 writeln(b"Hello World!");
-writeln(b"Hello World!".c_str():string);
+writeln(c_ptrToConst_helper(b"Hello World!"):c_string:string);
 
 // Now modify a string literal
 // this is not an OK thing for code to do in general
@@ -20,18 +20,18 @@ writeln("Modifying");
 
 {
   var s = "Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = c_ptrToConst_helper(s):c_string:c_void_ptr:c_ptr(uint(8));
   cptr[0] = 66; // 'B'
   writeln("Hello World!");
   writeln(s);
-  writeln(s.c_str():string);
+  writeln(c_ptrToConst_helper(s):c_string:string);
 }
 
 {
   var s = b"Hello World!";
-  var cptr = s.c_str():c_void_ptr:c_ptr(uint(8));
+  var cptr = c_ptrToConst_helper(s):c_string:c_void_ptr:c_ptr(uint(8));
   cptr[0] = 66; // 'B'
   writeln(b"Hello World!");
   writeln(s);
-  writeln(s.c_str():string);
+  writeln(c_ptrToConst_helper(s):c_string:string);
 }

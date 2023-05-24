@@ -19,7 +19,7 @@ proc main {
   }
 
   /* open file from ex_lite1.chpl */
-  file_id = H5Fopen((pathPrefix + filename).c_str(), H5F_ACC_RDONLY, H5P_DEFAULT);
+  file_id = H5Fopen(c_ptrToConst_helper(pathPrefix + filename):c_string, H5F_ACC_RDONLY, H5P_DEFAULT);
 
   /* read the dataset */
   H5LTread_dataset_int(file_id, c"/dset", data[0]);

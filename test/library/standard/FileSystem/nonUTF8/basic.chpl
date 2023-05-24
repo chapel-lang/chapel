@@ -7,7 +7,7 @@ use OS.POSIX;
 proc getMode(filename: string) throws {
 
   var structStat: struct_stat;
-  var err = stat(filename.encode(policy=encodePolicy.unescape).c_str(), c_ptrTo(structStat));
+  var err = stat(c_ptrToConst_helper(filename.encode(policy=encodePolicy.unescape)):c_string, c_ptrTo(structStat));
   if err != 0 then halt("Error in stat call");
   return structStat.st_mode:c_int & 0x1ff;
 }
@@ -61,7 +61,7 @@ writeln("exists works: ", exists(filename1) == true);
 
 const gid = getGid(filename1);
 const uid = getUid(filename1);
-const mode = getMode(filename1); 
+const mode = getMode(filename1);
 const size = getFileSize(filename1);
 writeln();
 
@@ -89,11 +89,11 @@ writeln();
 writeln("chmod'ing the file");
 // change the "others" permissions
 var newMode = mode ^ 0o7;
-var err = chmod(filename2.encode(policy=encodePolicy.unescape).c_str(),
+var err = chmod(c_ptrToConst_helper(filename2.encode(policy=encodePolicy.unescape)):c_string,
                 newMode:mode_t);
 if err != 0 then halt("Error in chmod call: ", strerror(errno));
 writeln("chmod works: ", getMode(filename2) == newMode);
-err = chmod(filename2.encode(policy=encodePolicy.unescape).c_str(),
+err = chmod(c_ptrToConst_helper(filename2.encode(policy=encodePolicy.unescape)):c_string,
             mode:mode_t); // change it back
 if err != 0 then halt("Error in chmod call: ", strerror(errno));
 writeln();

@@ -5,7 +5,7 @@ use Sort;
 // This module defines several iterators that are designed to help
 // support reasoning about directory and file contents.  At present,
 // all are serial and single-locale, though the ultimate intention
-// is to also support parallel and multi-locale options.  
+// is to also support parallel and multi-locale options.
 //
 // These interfaces should be considered experimental and subject to
 // change for the 1.10 release.  For that reason, send in feedback if
@@ -14,7 +14,7 @@ use Sort;
 // wrong.
 //
 
-/* iter listdir(path: string, hidden=false, dirs=true, files=true, 
+/* iter listdir(path: string, hidden=false, dirs=true, files=true,
    listlinks=true): string
 
    listdir() lists the contents of a directory, similar to 'ls'
@@ -29,7 +29,7 @@ use Sort;
  start with '.'
  */
 
-iter listdir(path: string, hidden=false, dirs=true, files=true, 
+iter listdir(path: string, hidden=false, dirs=true, files=true,
     listlinks=true): string {
   use CTypes;
 
@@ -47,7 +47,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
 
   var dir: DIRptr;
   var ent: direntptr;
-  dir = opendir(path.c_str());
+  dir = opendir(c_ptrToConst_helper(path):c_string);
   if (dir != nil) {
     ent = readdir(dir);
     while (ent != nil) {
@@ -92,7 +92,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
 }
 
 
-/* iter walkdirs(path: string=".", topdown=true, depth=max(int), 
+/* iter walkdirs(path: string=".", topdown=true, depth=max(int),
    hidden=false, followlinks=false, sort=false): string
 
    walkdirs() recursively walks a directory structure, yielding
@@ -114,7 +114,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
  sort the directories by default.
  */
 
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
     followlinks=false, sort=false): string {
 
   if (topdown) then
@@ -126,7 +126,7 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
       QuickSort.quickSort(subdirs);
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, 
+      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
           followlinks, sort) do
         yield subdir;
     }
@@ -140,8 +140,8 @@ iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
 //
 // Here's a parallel version
 //
-iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false, 
-    followlinks=false, sort=false, param tag: iterKind): string 
+iter walkdirs(path: string=".", topdown=true, depth=max(int), hidden=false,
+    followlinks=false, sort=false, param tag: iterKind): string
                                                          where tag == iterKind.standalone {
   if (sort) then
     warning("sorting has no effect for parallel invocations of walkdirs()");

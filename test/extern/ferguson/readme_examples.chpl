@@ -30,5 +30,5 @@ byPtr(c_ptrTo(x)); // c_ptr argument must be constructed explicitly
 // both of these correspond to void fn(const char* x)
 extern proc byCString(x:c_string);
 
-byCString("Hello".c_str());
+byCString(c_ptrToConst_helper("Hello"):c_string);
 

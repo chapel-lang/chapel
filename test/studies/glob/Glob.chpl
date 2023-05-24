@@ -37,7 +37,7 @@ iter my_wordexp(pattern:string, recursive:bool = false, flags:int = 0, directory
   var tx  : c_string;
   var glb : wordexp_t;
 
-  err = chpl_wordexp((directory + pattern).c_str(), flags:c_int, glb);
+  err = chpl_wordexp(c_ptrToConst_helper(directory + pattern):c_string, flags:c_int, glb);
 
   const wordexpNum = wordexp_num(glb);
 
@@ -79,7 +79,7 @@ iter my_wordexp(param tag:iterKind, pattern:string, recursive:bool = false,
     coforall dir in dirBuffCopy with (ref dirBuff) {
       for flConst in my_wordexp(pattern, false, flags, dir) {
         var fl = flConst;
-        if recursive && chpl_isdir(fl.c_str()) == 1 {
+        if recursive && chpl_isdir(c_ptrToConst_helper(fl):c_string) == 1 {
           fl += "/";
           dirBuff += fl;
         }
@@ -99,7 +99,7 @@ iter my_glob(pattern:string, recursive:bool = false, flags:int = 0, directory:st
   var tx  : c_string;
   var glb : glob_t;
 
-  err = chpl_study_glob((directory + pattern).c_str(), flags:c_int, glb);
+  err = chpl_study_glob(c_ptrToConst_helper(directory + pattern):c_string, flags:c_int, glb);
 
   const globNum = glob_num(glb);
 
@@ -142,7 +142,7 @@ iter my_glob(param tag:iterKind, pattern:string, recursive:bool = false,
     coforall dir in dirBuffCopy with (ref dirBuff) {
       for flConst in my_glob(pattern, false, flags, dir) {
         var fl = flConst;
-        if recursive && chpl_isdir(fl.c_str()) == 1 {
+        if recursive && chpl_isdir(c_ptrToConst_helper(fl):c_string) == 1 {
           fl += "/";
           dirBuff += fl;
         }

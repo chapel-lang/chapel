@@ -11,13 +11,13 @@ use CTypes;
 proc setEnv(name : string, val : string) {
   extern proc setenv(name : c_string, val : c_string, overwrite : c_int) : c_int;
 
-  const ret = setenv(name.c_str(), val.c_str(), 1);
+  const ret = setenv(c_ptrToConst_helper(name):c_string, c_ptrToConst_helper(val):c_string, 1);
   assert(ret == 0);
 }
 
 proc unsetEnv(name : string) {
   extern proc unsetenv(name : c_string) : c_int;
-  const ret = unsetenv(name.c_str());
+  const ret = unsetenv(c_ptrToConst_helper(name):c_string);
   assert(ret == 0);
 }
 

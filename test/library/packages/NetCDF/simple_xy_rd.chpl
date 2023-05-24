@@ -22,9 +22,9 @@ proc main {
 
   /* Open the file. NC_NOWRITE tells netCDF we want read-only access
    * to the file.*/
-  cdfError(nc_open(filename.c_str(), NC_NOWRITE, ncid));
+  cdfError(nc_open(c_ptrToConst_helper(filename):c_string, NC_NOWRITE, ncid));
 
-  /* Get the varid of the data variable, based on its name. */  
+  /* Get the varid of the data variable, based on its name. */
   cdfError(nc_inq_varid(ncid, c"data", varid));
 
   /* Read the data. */

@@ -64,11 +64,11 @@ proc distributedRead(distribArr, filenames, sizes) {
    dataset is 1-D.
  */
 proc numElementsInDset(filename, dsetName) {
-  var file_id = C_HDF5.H5Fopen(filename.c_str(),
+  var file_id = C_HDF5.H5Fopen(c_ptrToConst_helper(filename):c_string,
                                C_HDF5.H5F_ACC_RDONLY,
                                C_HDF5.H5P_DEFAULT);
   var dims: C_HDF5.hsize_t;
-  C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dsetName.c_str(),
+  C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, c_ptrToConst_helper(dsetName):c_string,
                                            c_ptrTo(dims), nil, nil);
   C_HDF5.H5Fclose(file_id);
   return dims: int;
@@ -87,10 +87,10 @@ proc createFile(name: string, size: int, dataRange: range) {
     data[j] = i: c_int;
   }
 
-  var file_id: hid_t = H5Fcreate(name.c_str(), H5F_ACC_TRUNC,
+  var file_id: hid_t = H5Fcreate(c_ptrToConst_helper(name):c_string, H5F_ACC_TRUNC,
                                  H5P_DEFAULT, H5P_DEFAULT);
 
-  H5LTmake_dataset_WAR(file_id, dsetName.c_str(), 1,
+  H5LTmake_dataset_WAR(file_id, c_ptrToConst_helper(dsetName):c_string, 1,
                        c_ptrTo(dims), H5T_NATIVE_INT, c_ptrTo(data));
 
   H5Fclose(file_id);

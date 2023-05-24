@@ -7,11 +7,11 @@ proc bar(nm: string) {
 
   var dataFile = "/tmp/test.txt";
 
-  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(nm.localize().c_str(), 0);
-  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
-  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // incr 0?
+  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(c_ptrToConst_helper(nm.localize()):c_string, 0);
+  const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, c_ptrToConst_helper(dataFile.localize()):c_string);
+  const blockHosts = HDFS.hdfsGetHosts(hdfsFS, c_ptrToConst_helper(dataFile.localize()):c_string, 0, fileInfo.mSize); // incr 0?
   const blockCount = HDFS.chadoopGetBlockCount(blockHosts);
-  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), O_RDONLY, 0, 0, 0);
+  const dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, c_ptrToConst_helper(dataFile.localize()):c_string, O_RDONLY, 0, 0, 0);
   assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
   var length = fileInfo.mBlockSize: int(32); // LOOK
 

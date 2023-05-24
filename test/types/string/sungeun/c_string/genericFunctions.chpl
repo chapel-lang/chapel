@@ -64,10 +64,10 @@ var vs: string;
     checkType(c_string, s.type);
   }
 
-  g(vs.c_str());
-  g(cs.c_str());
-  g(s=vs.c_str());
-  g(s=cs.c_str());
+  g(c_ptrToConst_helper(vs):c_string);
+  g(c_ptrToConst_helper(cs):c_string);
+  g(s=c_ptrToConst_helper(vs):c_string);
+  g(s=c_ptrToConst_helper(cs):c_string);
 }
 
 {
@@ -76,10 +76,10 @@ var vs: string;
     checkType(c_string, s.type);
   }
 
-  f(int, 3, vs.c_str());
-  f(int, 3, cs.c_str());
-  f(s=vs.c_str(), int, 5);
-  f(s=cs.c_str(), int, 5);
+  f(int, 3, c_ptrToConst_helper(vs):c_string);
+  f(int, 3, c_ptrToConst_helper(cs):c_string);
+  f(s=c_ptrToConst_helper(vs):c_string, int, 5);
+  f(s=c_ptrToConst_helper(cs):c_string, int, 5);
 }
 
 {
@@ -88,10 +88,10 @@ var vs: string;
     checkType(c_string, s.type);
   }
 
-  f(vs.c_str(), real);
-  f(cs.c_str(), real);
-  f(real, s=vs.c_str());
-  f(real, s=cs.c_str());
+  f(c_ptrToConst_helper(vs):c_string, real);
+  f(c_ptrToConst_helper(cs):c_string, real);
+  f(real, s=c_ptrToConst_helper(vs):c_string);
+  f(real, s=c_ptrToConst_helper(cs):c_string);
 }
 
 {

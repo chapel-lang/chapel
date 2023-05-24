@@ -1,9 +1,10 @@
+
 param b1 = b"bytes1";
 param bAnother1 = b"bytes1";
 param b2 = b"bytes2";
 
 writeln(b1, " as ", b1.type:string);
-param b1CStr = b1.c_str();
+param b1CStr = b1:c_string;
 writeln(string.createCopyingBuffer(b1CStr), " as ", b1CStr.type:string);
 
 param numBytes = b1.numBytes;

@@ -27,7 +27,7 @@ proc main {
 
   /* Create the file. The NC_CLOBBER parameter tells netCDF to
    * overwrite this file, if it already exists. */
-  cdfError(nc_create(filename.c_str(), NC_CLOBBER, ncid));
+  cdfError(nc_create(c_ptrToConst_helper(filename):c_string, NC_CLOBBER, ncid));
 
   /* Define the dimensions. NetCDF will hand back an ID for each. */
   cdfError(nc_def_dim(ncid, c"x", NX, x_dimid));

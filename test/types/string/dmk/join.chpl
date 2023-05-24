@@ -1,6 +1,7 @@
 // Credit goes to Bryant for this test of a former bug in string.join().
 
 use Random.PCGRandom only PCGRandomStream;
+use CTypes;
 
 config const count = 100;
 
@@ -23,8 +24,8 @@ proc main() {
     var s2 = get_str_with_join(x, y);
     assert(s1 == s2);
 
-    var s1c = s1.c_str();
-    var s2c = s2.c_str();  // edit: Oops, was s1.c_str();
+    var s1c = c_ptrToConst_helper(s1):c_string;
+    var s2c = c_ptrToConst_helper(s2):c_string;  // edit: Oops, was c_ptrToConst_helper(s1):c_string;
     if s1c != s2c {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);

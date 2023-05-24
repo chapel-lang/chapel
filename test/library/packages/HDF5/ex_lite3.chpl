@@ -14,7 +14,7 @@ proc main {
   const pathPrefix = readPrefixEnv();
 
   /* Create a file */
-  file_id = H5Fcreate((pathPrefix+filename).c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  file_id = H5Fcreate(c_ptrToConst_helper(pathPrefix+filename):c_string, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
   /* Create a data space */
   space_id = H5Screate_simple(1, c_ptrTo(dims), nil);
