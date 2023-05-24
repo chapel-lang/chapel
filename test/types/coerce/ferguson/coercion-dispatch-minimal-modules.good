@@ -1,3 +1,46 @@
+coercion-dispatch-minimal-modules.chpl:21: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:22: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:24: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:25: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:27: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:28: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:30: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:31: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:33: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:34: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:36: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:37: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:39: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:40: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:42: In function 'typeToCStringHelp':
+coercion-dispatch-minimal-modules.chpl:43: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:51: In function 'check':
+coercion-dispatch-minimal-modules.chpl:53: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:136: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:137: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:138: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:139: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:140: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:141: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:142: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:143: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:144: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:147: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:150: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:153: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:156: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:159: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:162: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:165: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:168: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:171: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:174: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:177: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:180: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:183: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:186: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:189: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+coercion-dispatch-minimal-modules.chpl:194: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 p8 expect int(8), found int(8)
 p16 expect int(16), found int(16)
 p32 expect int(32), found int(32)

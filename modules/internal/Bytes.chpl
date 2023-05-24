@@ -42,7 +42,7 @@ module Bytes {
     another :type:`bytes`. If the buffer is freed before the :type:`bytes`
     returned from this function, accessing it is undefined behavior.
 
-    :arg s: The :type:`bytes` to borrow the buffer from
+    :arg x: The :type:`bytes` to borrow the buffer from
 
     :returns: A new :type:`bytes`
   */
@@ -56,7 +56,7 @@ module Bytes {
     another :type:`bytes`. If the buffer is freed before the :type:`bytes`
     returned from this function, accessing it is undefined behavior.
 
-    :arg s: The :type:`bytes` to borrow the buffer from
+    :arg x: The :type:`bytes` to borrow the buffer from
 
     :returns: A new :type:`bytes`
   */
@@ -71,9 +71,9 @@ module Bytes {
     `c_string`. If the buffer is freed before the :type:`bytes` returned
     from this function, accessing it is undefined behavior.
 
-    :arg s: `c_string` to borrow the buffer from
+    :arg x: `c_string` to borrow the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating
+    :arg length: Length of `x`'s buffer, excluding the terminating
                  null byte.
     :type length: `int`
 
@@ -90,16 +90,54 @@ module Bytes {
     `c_string`. If the buffer is freed before the :type:`bytes` returned
     from this function, accessing it is undefined behavior.
 
-    :arg s: `c_string` to borrow the buffer from
+    :arg x: `c_string` to borrow the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating
-                 null byte.
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
+  @deprecated("the type 'c_string' is deprecated; use the variant of 'createBorrowingBuffer' that takes a 'c_ptrConst' instead")
   inline proc type bytes.createBorrowingBuffer(x: c_string,
                                                length=x.size) : bytes {
+    return bytes.createBorrowingBuffer(x:bufferType, length=length,
+                                       size=length+1);
+  }
+
+  /*
+    Creates a new :type:`bytes` which borrows the memory allocated for a
+    `c_ptr`. If the buffer is freed before the :type:`bytes` returned
+    from this function, accessing it is undefined behavior.
+
+    :arg x: `c_ptr` to borrow as a buffer
+    :type x: `c_ptr(c_uchar)` or `c_ptr(c_char)`
+
+    :arg length: Length of `x`, excluding the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createBorrowingBuffer(x: c_ptr(?t),
+                                               length=__primitive("string_length_bytes", x)) : bytes {
+    return bytes.createBorrowingBuffer(x:bufferType, length=length,
+                                       size=length+1);
+  }
+
+  /*
+    Creates a new :type:`bytes` which borrows the memory allocated for a
+    `c_ptrConst`. If the buffer is freed before the :type:`bytes` returned
+    from this function, accessing it is undefined behavior.
+
+    :arg x: `c_ptrConst` to borrow as a buffer
+    :type x: `c_ptrConst(c_uchar)` or `c_ptrConst(c_char)`
+
+    :arg length: Length of `x`, excluding the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createBorrowingBuffer(x: c_ptrConst(?t),
+                                               length=__primitive("string_length_bytes", x)) : bytes {
     return bytes.createBorrowingBuffer(x:bufferType, length=length,
                                        size=length+1);
   }
@@ -119,7 +157,7 @@ module Bytes {
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return bytes.createBorrowingBuffer(buf: c_string, length);
+    return bytes.createBorrowingBuffer(buf, length);
   }
 
   /*
@@ -127,12 +165,12 @@ module Bytes {
      `c_ptr`. If the buffer is freed before the :type:`bytes` returned
      from this function, accessing it is undefined behavior.
 
-     :arg s: Buffer to borrow
+     :arg x: Buffer to borrow
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
@@ -147,12 +185,12 @@ module Bytes {
      `c_ptr`. If the buffer is freed before the :type:`bytes` returned
      from this function, accessing it is undefined behavior.
 
-     :arg s: Buffer to borrow
+     :arg x: Buffer to borrow
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
@@ -177,9 +215,9 @@ module Bytes {
     buffer of a `c_string`.The buffer will be freed when the :type:`bytes`
     is deinitialized.
 
-    :arg s: The `c_string` to take ownership of the buffer from
+    :arg x: The `c_string` to take ownership of the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -194,14 +232,53 @@ module Bytes {
     buffer of a `c_string`.The buffer will be freed when the :type:`bytes`
     is deinitialized.
 
-    :arg s: The `c_string` to take ownership of the buffer from
+    :arg x: The `c_string` to take ownership of the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
+  @deprecated("the type 'c_string' is deprecated; use the variant of 'createAdoptingBuffer' that takes a 'c_ptrConst' instead")
   inline proc type bytes.createAdoptingBuffer(x: c_string, length=x.size) : bytes {
+    return bytes.createAdoptingBuffer(x: bufferType, length=length,
+                                      size=length+1);
+  }
+
+  /*
+    Creates a new :type:`bytes` which takes ownership of the memory
+    allocated for a `c_ptr`. The buffer will be freed when the
+    :type:`bytes` is deinitialized.
+
+    :arg x: The `c_ptr` to take ownership of
+    :type x: `c_ptr(c_uchar)` or `c_ptr(c_char)`
+
+    :arg length: Length of buffer `x`, excluding the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createAdoptingBuffer(x: c_ptr(?t),
+                                              length=__primitive("string_length_bytes", x)) : bytes {
+    return bytes.createAdoptingBuffer(x: bufferType, length=length,
+                                      size=length+1);
+  }
+
+    /*
+    Creates a new :type:`bytes` which takes ownership of the memory
+    allocated for a `c_ptrConst`. The buffer will be freed when the
+    :type:`bytes` is deinitialized.
+
+    :arg x: The `c_ptrConst` to take ownership of
+    :type x: `c_ptrConst(c_uchar)` or `c_ptrConst(c_char)`
+
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createAdoptingBuffer(x: c_ptrConst(?t),
+                                              length=__primitive("string_length_bytes", x)) : bytes {
     return bytes.createAdoptingBuffer(x: bufferType, length=length,
                                       size=length+1);
   }
@@ -211,12 +288,12 @@ module Bytes {
      allocated for a `c_ptr`. The buffer will be freed when the
      :type:`bytes` is deinitialized.
 
-     :arg s: The buffer to take ownership of
+     :arg x: The buffer to take ownership of
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
@@ -231,12 +308,12 @@ module Bytes {
      allocated for a `c_ptr`. The buffer will be freed when the
      :type:`bytes` is deinitialized.
 
-     :arg s: The buffer to take ownership of
+     :arg x: The buffer to take ownership of
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of the buffer `s`, excluding the terminating null byte.
+     :arg length: Length of the buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
@@ -255,7 +332,7 @@ module Bytes {
     Creates a new :type:`bytes` by creating a copy of the buffer of
     another :type:`bytes`.
 
-    :arg s: The :type:`bytes` to copy the buffer from
+    :arg x: The :type:`bytes` to copy the buffer from
 
     :returns: A new :type:`bytes`
   */
@@ -270,9 +347,9 @@ module Bytes {
     Creates a new :type:`bytes` by creating a copy of the buffer of a
     `c_string`.
 
-    :arg s: The `c_string` to copy the buffer from
+    :arg x: The `c_string` to copy the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
@@ -286,14 +363,31 @@ module Bytes {
     Creates a new :type:`bytes` by creating a copy of the buffer of a
     `c_string`.
 
-    :arg s: The `c_string` to copy the buffer from
+    :arg x: The `c_string` to copy the buffer from
 
-    :arg length: Length of `s`'s buffer, excluding the terminating null byte.
+    :arg length: Length of `x`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
     :returns: A new :type:`bytes`
   */
+  @deprecated("the type 'c_string' is deprecated; use the variant of 'createCopyingBuffer' that takes a 'c_ptrConst' instead")
   inline proc type bytes.createCopyingBuffer(x: c_string, length=x.size) : bytes {
+    return bytes.createCopyingBuffer(x: bufferType, length=length,
+                                     size=length+1);
+  }
+
+  /*
+    Creates a new :type:`bytes` by creating a copy of a buffer
+
+    :arg x: The `c_ptrConst` to copy
+    :type x: `c_ptrConst(c_uchar)` or `c_ptrConst(c_char)`
+
+    :arg length: Length of buffer `x`, excluding the terminating null byte.
+    :type length: `int`
+
+    :returns: A new :type:`bytes`
+  */
+  inline proc type bytes.createCopyingBuffer(x: c_ptrConst(?t), length=__primitive("string_length_bytes", x)) : bytes {
     return bytes.createCopyingBuffer(x: bufferType, length=length,
                                      size=length+1);
   }
@@ -301,12 +395,12 @@ module Bytes {
   /*
      Creates a new :type:`bytes` by creating a copy of a buffer.
 
-     :arg s: The buffer to copy
+     :arg x: The buffer to copy
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of buffer `s`, excluding the terminating null byte.
+     :arg length: Length of buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
@@ -320,17 +414,17 @@ module Bytes {
   /*
      Creates a new :type:`bytes` by creating a copy of a buffer.
 
-     :arg s: The buffer to copy
+     :arg x: The buffer to copy
      :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
-     :arg length: Length of buffer `s`, excluding the terminating null byte.
+     :arg length: Length of buffer `x`, excluding the terminating null byte.
 
-     :arg size: Size of memory allocated for `s` in bytes
+     :arg size: Size of memory allocated for `x` in bytes
 
      :returns: A new :type:`bytes`
   */
   inline proc type bytes.createCopyingBuffer(x: c_ptr(?t),
-                                             length: int,
+                                             length=__primitive("string_length_bytes", x),
                                              size=length+1) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
@@ -412,6 +506,7 @@ module Bytes {
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
+    @deprecated("the type 'c_string' is deprecated; please use one of the bytes.create*Buffer methods instead")
     proc init=(b: c_string) {
       this.complete();
       var length = b.size;
@@ -426,6 +521,7 @@ module Bytes {
     inline proc param numBytes param do
       return __primitive("string_length_bytes", this);
 
+    @deprecated("the type 'c_string' is deprecated and with it, 'bytes.c_str()'; use 'c_ptrToConst(bytes)' or 'c_ptrTo(bytes)' from the 'CTypes' module instead")
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
     }
@@ -539,7 +635,7 @@ module Bytes {
         :type:`bytes`. The returned `c_string` is only valid when used
         on the same locale as the bytes.
    */
-  @deprecated(notes="bytes.c_str() is deprecated, use c_ptrTo(bytes) or c_ptrToConst(bytes) and cast to c_string")
+  @deprecated(notes="the type 'c_string' is deprecated and with it, 'bytes.c_str()'; use 'c_ptrToConst(bytes)' or 'c_ptrTo(bytes)' from the 'CTypes' module instead")
   inline proc bytes.c_str(): c_string {
     return getCStr(this);
   }
@@ -1185,6 +1281,7 @@ module Bytes {
     return bytes.createCopyingBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
   @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated")
   inline operator :(x: c_string, type t: bytes) {
     var length = x.size;
     return bytes.createCopyingBuffer(x: bufferType, length=length, size=length+1);
@@ -1210,8 +1307,9 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
+  @deprecated("the type 'c_string' is deprecated")
   operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = bytes.createCopyingBuffer(rhs_c);
+    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_uchar));
   }
 
   //

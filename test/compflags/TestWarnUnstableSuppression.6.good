@@ -1,2 +1,52 @@
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
 $CHPL_HOME/modules/standard/Reflection.chpl:nnnn: warning: chpl_unstableStandardSymbolForTesting is unstable
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/List.chpl:nnnn: warning: 'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: append mode is unstable
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In function 'fileRelPathHelper':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In function 'initHelper':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as initHelper(f: file, fp: chpl_cFilePtr, hints: ioHintSet, style: iostyleInternal, own: bool) from initializer
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as file.init(fp: chpl_cFilePtr, hints: ioHintSet, own: bool)
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: In method 'deinit':
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_ch_ioerror':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(dynamic,false,nothing))._ch_ioerror(error: errorCode, msg: string) from method 'close'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileWriter(dynamic,false,nothing)).close() from function 'stringify'
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: called as stringify(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as halt(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In function 'stringify':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: called as stringify(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as halt(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_ch_ioerror':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(dynamic,false,nothing))._ch_ioerror(error: errorCode, msg: string) from method 'close'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(dynamic,false,nothing)).close() from function 'stringify'
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: called as stringify(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as halt(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In function 'stringify':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:nnnn: called as stringify(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as halt(args(0): string, args(1): ArrayInit, args(2): string)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved

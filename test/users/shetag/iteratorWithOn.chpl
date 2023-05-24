@@ -1,6 +1,8 @@
+use CTypes;
+
 config const n = 10;
 
-extern proc printf(fmt:c_string, x...);
+extern proc printf(fmt:c_ptrConst(c_uchar), x...);
 
 iter g() : int {
   var loc = 0;
@@ -11,4 +13,4 @@ iter g() : int {
 }
 
 for i in g() do
-  printf("%s\n", (here.id:string + ":i=" + i:string).c_str());
+  printf(c_ptrToConst_helper("%s\n"), c_ptrToConst_helper(here.id:string + ":i=" + i:string));

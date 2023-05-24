@@ -798,17 +798,17 @@ module FFTW {
 
     extern proc fftw_make_planner_thread_safe() : void;
 
-    extern proc fftw_export_wisdom_to_filename(filename : c_string) : c_int;
+    extern proc fftw_export_wisdom_to_filename(filename : c_ptrConst(c_uchar)) : c_int;
 
-    extern proc fftw_export_wisdom_to_string() : c_string;
+    extern proc fftw_export_wisdom_to_string() : c_ptrConst(c_uchar);
 
     extern proc fftw_export_wisdom(write_char : fftw_write_char_func, data : c_ptr(void)) : void;
 
     extern proc fftw_import_system_wisdom() : c_int;
 
-    extern proc fftw_import_wisdom_from_filename(filename : c_string) : c_int;
+    extern proc fftw_import_wisdom_from_filename(filename : c_ptrConst(c_uchar)) : c_int;
 
-    extern proc fftw_import_wisdom_from_string(input_string : c_string) : c_int;
+    extern proc fftw_import_wisdom_from_string(input_string : c_ptrConst(c_uchar)) : c_int;
 
     extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_ptr(void)) : c_int;
 
@@ -824,7 +824,7 @@ module FFTW {
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 
-    extern proc fftw_sprint_plan(p : fftw_plan) : c_string;
+    extern proc fftw_sprint_plan(p : fftw_plan) : c_ptrConst(c_uchar);
 
     extern proc fftw_malloc(n : c_size_t) : c_ptr(void);
 

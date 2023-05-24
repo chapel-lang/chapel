@@ -20,7 +20,7 @@ for f in DistFiles {
   on f {
     var from = f;
     var base = basename(f);
-    const uname = getenv(c"USER"):c_string;
+    const uname = getenv(c_ptrToConst_helper("USER"));
     var to = "/tmp/" + string.createCopyingBuffer(uname)+ base;
     if verbose then writeln("on ", here.id, " copying from ", from, " to ", to);
     copy(from, to);

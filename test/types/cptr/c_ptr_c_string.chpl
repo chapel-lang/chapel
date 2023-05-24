@@ -10,7 +10,7 @@ proc printit(arg:c_string) {
 proc main() {
   var x:string = "hello";
 
-  var cstr = x.c_str();
+  var cstr = c_ptrToConst_helper(x):c_string;
   var cstr_p : c_ptr(c_string) = c_ptrTo(cstr);
   var p1 = cstr:c_ptr(void);
   var p2 = cstr:c_ptr(c_char);

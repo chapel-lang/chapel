@@ -24,6 +24,23 @@ proc main() {
   var my_cstr2 = my_cstr_v:c_string;
   assert(my_cstr == my_cstr2);
 
+
+  // cast c_string to c_ptr(c_uchar)
+  var my_cstr_ptr = my_cstr:c_ptr(c_uchar);
+  assert(my_cstr_ptr != mynil);
+  // cast c_ptr(c_uchar) back to c_string
+  var my_cstr3 = my_cstr_ptr:c_string;
+  assert(my_cstr == my_cstr3);
+
+
+  // cast c_string to c_ptrConst(c_uchar)
+  var my_cstr_ptrConst = my_cstr:c_ptrConst(c_uchar);
+  assert(my_cstr_ptrConst != mynil);
+  // cast c_ptrConst(c_uchar) back to c_string
+  var my_cstr4 = my_cstr_ptrConst:c_string;
+  assert(my_cstr == my_cstr4);
+
+
   delete c;
 }
 

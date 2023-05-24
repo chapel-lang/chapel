@@ -3,4 +3,12 @@ proc f():c_string {
 }
 
 var x = f();
-writeln(string.createCopyingBuffer(x), " ", x.type:string);
+writeln(string.createCopyingBuffer(x:c_ptrConst(c_uchar)), " ", x.type:string);
+
+use CTypes;
+proc f_ptr():c_ptrConst(c_uchar) {
+  return c_ptrToConst_helper("Hello");
+}
+
+var x_ptr = f_ptr();
+writeln(string.createCopyingBuffer(x_ptr), " ", x_ptr.type:string);

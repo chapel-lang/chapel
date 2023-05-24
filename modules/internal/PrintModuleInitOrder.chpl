@@ -29,6 +29,7 @@
 pragma "export init"
 module PrintModuleInitOrder {
   private use ChapelBase;
+  private use CTypes;
 
   config const printModuleInitOrder = false;
   pragma "print module init indent level" var moduleInitLevel = 2:int(32);
@@ -36,16 +37,29 @@ module PrintModuleInitOrder {
   //
   // Called by all modules during initialization
   //
+  // TODO: How to get rid of this without causing compiler crashes with --verify?
   pragma "print module init fn"
+  @deprecated("the type 'c_string' is deprecated; use the variant of 'printModuleInit' that accepts 'c_ptrConst(c_uchar)' instead")
   proc printModuleInit(s1: c_string, s2: c_string, len: int) {
     extern proc printf(s1: c_string, len: int(32), s2: c_string);
     if printModuleInitOrder then
       printf(s1, moduleInitLevel+len:int(32)+2:int(32), s2);
   }
 
+  //
+  // Called by all modules during initialization
+  //
+  proc printModuleInit(s1: c_ptrConst(c_uchar), s2: c_ptrConst(c_uchar), len: int) {
+    extern proc printf(s1: c_ptrConst(c_uchar), len: int(32), s2: c_ptrConst(c_uchar));
+    if printModuleInitOrder then
+      printf(s1, moduleInitLevel+len:int(32)+2:int(32), s2);
+  }
+
+
   proc initPrint() {
-    extern proc printf(s: c_string);
-    printf ("Initializing Modules:\n");
+    // added a 'fmt' argument to avoid a format-security warning from gcc
+    extern proc printf(fmt: c_ptrConst(c_uchar), s: c_ptrConst(c_uchar));
+    printf(c_ptrToConst_helper("%s\n"), c_ptrToConst_helper("Initializing Modules:"));
   }
 
   if printModuleInitOrder then initPrint();

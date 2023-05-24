@@ -1,13 +1,14 @@
-extern proc get_string(ref string_out:c_string);
-extern proc modify_string(ref string_out:c_string, string_in:c_string);
+use CTypes;
+extern proc get_string(ref string_out:c_ptr(c_uchar));
+extern proc modify_string(ref string_out:c_ptr(c_uchar), string_in:c_ptrConst(c_uchar));
 
 var a:string;
 var b:string;
 
-var ca: c_string;
+var ca: c_ptr(c_uchar);
 get_string(ca);
 
-var cb: c_string;
+var cb: c_ptr(c_uchar);
 modify_string(cb, ca);
 
 a = string.createCopyingBuffer(ca);

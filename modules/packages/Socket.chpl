@@ -106,7 +106,7 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
     var host = other.numericHost();
     var port = other.port();
     var family = other.family;
-    this.set(host.c_str(), port, family:c_int);
+    this.set(c_ptrToConst_helper(host), port, family:c_int);
   }
 }
 
@@ -181,7 +181,7 @@ proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000,
           family: IPFamily = IPFamily.IPv4): ipAddr throws {
   // We will use type methods for now but expect to add initializers (and possibly deprecate these ones) once [#8692](https://github.com/chapel-lang/chapel/issues/8692) is resolved
   var addressStorage = new sys_sockaddr_t();
-  addressStorage.set(host.c_str(), port, family:c_int);
+  addressStorage.set(c_ptrToConst_helper(host), port, family:c_int);
   return new ipAddr(addressStorage);
 }
 
@@ -417,13 +417,13 @@ extern const in6addr_loopback:sys_in6_addr_t;
 // external functions for 'sys_sockaddr_t' implementation
 private extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
 private extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
-private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptrConst(c_uchar), port: c_uint, family: c_int):c_int;
 private extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
 private extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
 private extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
 private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-private extern proc sys_strerror(error:c_int, ref string_out:c_string):c_int;
-private extern proc sys_readlink(path:c_string, ref string_out:c_string):c_int;
+private extern proc sys_strerror(error:c_int, ref string_out:c_ptr(c_uchar)):c_int;
+private extern proc sys_readlink(path:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):c_int;
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
@@ -462,7 +462,7 @@ extern record sys_sockaddr_t {
                                 `host` and `family`.
   */
   @chpldoc.nodoc
-  proc set(host: c_string, port: c_uint, family: c_int) throws {
+  proc set(host: c_ptrConst(c_uchar), port: c_uint, family: c_int) throws {
     var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
     if err_out != 1 {
       throw new IllegalArgumentError("Incompatible Address and Family");
@@ -584,7 +584,7 @@ private extern proc sys_fcntl_long(fd:c_int, cmd:c_int, arg:c_long, ref ret_out:
 private extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):c_int;
 private extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
-private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
+private extern proc getaddrinfo(node:c_ptrConst(c_uchar), service:c_ptrConst(c_uchar), ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 private extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
@@ -917,7 +917,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   var hints = new sys_addrinfo_t();
   hints.ai_family = family:c_int;
   hints.ai_socktype = SOCK_STREAM;
-  var err = getaddrinfo(host.c_str(), service.c_str(), hints, result);
+  var err = getaddrinfo(c_ptrToConst_helper(host), c_ptrToConst_helper(service), hints, result);
   if err != 0 {
     throw new Error("Can't resolve address");
   }
@@ -1164,7 +1164,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
                     in timeout = indefiniteTimeout):c_ssize_t throws {
   var err_out:c_int = 0;
   var length:c_ssize_t;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
+  err_out = sys_sendto(this.socketFd, c_ptrToConst_helper(data):c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
   if err_out == 0 {
     return length;
   }
@@ -1189,7 +1189,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
       throw createSystemError(ETIMEDOUT, "send timed out");
     }
     var elapsedTime = (t.elapsed()*1_000_000):c_long;
-    err_out = sys_sendto(this.socketFd, data.c_str():c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
+    err_out = sys_sendto(this.socketFd, c_ptrToConst_helper(data):c_ptr(void), data.size:c_long, 0, address._addressStorage, length);
     if err_out != 0 {
       if err_out != EAGAIN && err_out != EWOULDBLOCK {
         throw createSystemError(err_out, "send failed");
@@ -1282,7 +1282,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
 @chpldoc.nodoc
 proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, ref value: bytes) throws {
   var optlen = value.size:socklen_t;
-  var ptroptval = value.c_str();
+  var ptroptval = c_ptrToConst_helper(value);
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to set socket option");

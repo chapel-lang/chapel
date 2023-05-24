@@ -150,7 +150,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anybool) throws {
     var chplString: string;
     try! {
-      chplString = string.createCopyingBuffer(x);
+      chplString = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
     }
     return try (chplString.strip()): t;
   }
@@ -161,7 +161,7 @@ module CString {
   inline operator :(x:c_string, type t:integral) throws {
     var chplString: string;
     try! {
-      chplString = string.createCopyingBuffer(x);
+      chplString = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
     }
     return try (chplString.strip()): t;
   }
@@ -172,7 +172,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyreal)  throws {
     var chplString: string;
     try! {
-      chplString = string.createCopyingBuffer(x);
+      chplString = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
     }
     return try (chplString.strip()): t;
   }
@@ -180,7 +180,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyimag) throws {
     var chplString: string;
     try! {
-      chplString = string.createCopyingBuffer(x);
+      chplString = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
     }
     return try (chplString.strip()): t;
   }
@@ -191,7 +191,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anycomplex)  throws {
     var chplString: string;
     try! {
-      chplString = string.createCopyingBuffer(x);
+      chplString = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
     }
     return try (chplString.strip()): t;
   }
@@ -215,9 +215,12 @@ module CString {
   inline proc param c_string.size param {
     return __primitive("string_length_bytes", this);
   }
-  pragma "last resort" // avoids param string to c_string coercion
-  inline proc _string_contains(param a: c_string, param b: c_string) param do
-    return __primitive("string_contains", a, b);
+
+  // TODO: Remove this if we don't really need it as c_string is being deprecated
+  // and we don't have a param replacement for it
+  // pragma "last resort" // avoids param string to c_string coercion
+  // inline proc _string_contains(param a: c_string, param b: c_string) param do
+  //   return __primitive("string_contains", a, b);
 
   /* Returns the index of the first occurrence of a substring within a string,
      or 0 if the substring is not in the string.

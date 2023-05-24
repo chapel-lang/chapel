@@ -609,10 +609,10 @@ static void externExportTypeError(FnSymbol* fn, Type* t) {
     if (t == dtString) {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedures should not take arguments of "
-                           "type string, use c_string instead");
+                           "type string, use c_ptrConst(c_uchar) instead");
       else
         USR_FATAL_CONT(fn, "export procedures should not take arguments of "
-                           "type string, use c_string instead");
+                           "type string, use c_ptrConst(c_uchar) instead");
     } else {
       if (isExtern)
         USR_FATAL_CONT(fn, "extern procedure argument types should be "

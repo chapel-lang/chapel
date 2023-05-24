@@ -256,9 +256,9 @@ module ZMQ {
   extern type zmq_msg_t;
 
   // C API
-  private extern proc zmq_bind(sock: c_ptr(void), endpoint: c_string): c_int;
+  private extern proc zmq_bind(sock: c_ptr(void), endpoint: c_ptrConst(c_uchar)): c_int;
   private extern proc zmq_close(ctx: c_ptr(void)): c_int;
-  private extern proc zmq_connect(sock: c_ptr(void), endpoint: c_string): c_int;
+  private extern proc zmq_connect(sock: c_ptr(void), endpoint: c_ptrConst(c_uchar)): c_int;
   private extern proc zmq_ctx_new(): c_ptr(void);
   private extern proc zmq_ctx_term(ctx: c_ptr(void)): c_int;
   private extern proc zmq_errno(): c_int;
@@ -285,7 +285,7 @@ module ZMQ {
                                       const option_value: c_ptr(void),
                                       option_len: c_size_t): c_int;
   private extern proc zmq_socket(ctx: c_ptr(void), socktype: c_int): c_ptr(void);
-  private extern proc zmq_strerror(errnum: c_int): c_string;
+  private extern proc zmq_strerror(errnum: c_int): c_ptr(c_uchar);
   private extern proc zmq_version(major: c_ptr(c_int),
                                   minor: c_ptr(c_int),
                                   patch: c_ptr(c_int));
@@ -567,7 +567,7 @@ module ZMQ {
   private extern proc zmq_getsockopt_int_helper(s: c_ptr(void), option: c_int,
                                                 ref res: c_int): c_int;
   private extern proc zmq_getsockopt_string_helper(s: c_ptr(void), option: c_int,
-                                                   ref res: c_string): c_int;
+                                                   ref res: c_ptr(c_uchar)): c_int;
 
   /*
     A ZeroMQ socket. See :ref:`more on using Sockets <using-sockets>`.
@@ -646,7 +646,7 @@ module ZMQ {
     proc bind(endpoint: string) {
       on classRef.home {
         var tmp = endpoint;
-        var ret = zmq_bind(classRef.socket, tmp.c_str());
+        var ret = zmq_bind(classRef.socket, c_ptrToConst_helper(tmp));
         if ret == -1 {
           var errmsg: string;
           try! {
@@ -663,7 +663,7 @@ module ZMQ {
     proc connect(endpoint: string) {
       on classRef.home {
         var tmp = endpoint;
-        var ret = zmq_connect(classRef.socket, tmp.c_str());
+        var ret = zmq_connect(classRef.socket, c_ptrToConst_helper(tmp));
         if ret == -1 {
           var errmsg: string;
           try! {
@@ -688,7 +688,7 @@ module ZMQ {
     proc getLastEndpoint(): string throws {
       var ret: string;
       on classRef.home {
-        var str: c_string;
+        var str: c_ptr(c_uchar);
         var err = zmq_getsockopt_string_helper(classRef.socket,
                                                ZMQ_LAST_ENDPOINT, str);
         if err == -1 {
@@ -795,7 +795,7 @@ module ZMQ {
     proc setSubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_SUBSCRIBE,
-                                 value.c_str(): c_ptr(void),
+                                 c_ptrToConst_helper(value): c_ptr(void),
                                  value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
@@ -835,7 +835,7 @@ module ZMQ {
     proc setUnsubscribe(value: string) throws {
       on classRef.home {
         var ret = zmq_setsockopt(classRef.socket, ZMQ_UNSUBSCRIBE,
-                                 value.c_str(): c_ptr(void),
+                                 c_ptrToConst_helper(value): c_ptr(void),
                                  value.numBytes:c_size_t): int;
         if ret == -1 {
           var errmsg = zmq_strerror(errno):string;
@@ -894,7 +894,7 @@ module ZMQ {
 
         // Create the ZeroMQ message from the data buffer
         var msg: zmq_msg_t;
-        if (0 != zmq_msg_init_data(msg, copy.c_str():c_ptr(void),
+        if (0 != zmq_msg_init_data(msg, c_ptrToConst_helper(copy):c_ptr(void),
                                    copy.numBytes:c_size_t, c_ptrTo(free_helper),
                                    nil)) {
           try throw_socket_error(errno, "send");

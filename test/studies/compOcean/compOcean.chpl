@@ -24,9 +24,9 @@ proc readData(param dims: int, dataname: string) {
 
   var name: c_string;
 
-  cdfError(nc_open((fullPath).c_str(), NC_NOWRITE, ncid));
+  cdfError(nc_open(c_ptrToConst_helper(fullPath):c_string, NC_NOWRITE, ncid));
 
-  cdfError(nc_inq_varid(ncid, dataname.c_str(), varid));
+  cdfError(nc_inq_varid(ncid, c_ptrToConst_helper(dataname):c_string, varid));
   cdfError(nc_inq_varndims(ncid, varid, ndims));
 
   assert(ndims == dims);

@@ -12,9 +12,9 @@ extern proc wordexp_index(x:wordexp_t, idx:c_size_t): c_string;
 iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = ""):string {
     var err: c_int;
     var tx:c_string;
-    if expand { // use wordexp 
+    if expand { // use wordexp
         var glb:wordexp_t;
-        err = chpl_wordexp((extension + pattern).c_str(), flags:c_int, glb);
+        err = chpl_wordexp(c_ptrToConst_helper(extension + pattern):c_string, flags:c_int, glb);
         for i in 0..wordexp_num(glb) -1 {
             tx = wordexp_index(glb, i);
             if recursive {
@@ -28,7 +28,7 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
         }
     } else { // else, use glob
         var glb:glob_t;
-        err = chpl_study_glob((extension + pattern).c_str(), flags:c_int, glb);
+        err = chpl_study_glob(c_ptrToConst_helper(extension + pattern):c_string, flags:c_int, glb);
         for i in 0..glob_num(glb) - 1 {
             tx = glob_index(glb, i);
             if recursive {
@@ -43,21 +43,21 @@ iter glob(pattern:string, flags:int, expand:bool = false, recursive:bool = false
     }
 }
 
-// XXX: make this actually be truly "parallel" 
+// XXX: make this actually be truly "parallel"
 iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = "") : string
 where tag == iterKind.leader {
     var err: c_int;
-    if expand { // use wordexp 
+    if expand { // use wordexp
         var glb:wordexp_t;
-        err = chpl_wordexp(pattern.c_str(), flags:c_int, glb);
+        err = chpl_wordexp(c_ptrToConst_helper(pattern):c_string, flags:c_int, glb);
         // Make this spawn a task if we encounter a dir, else yield in parallel
-        for i in 0..wordexp_num(glb) - 1 do 
+        for i in 0..wordexp_num(glb) - 1 do
             yield wordexp_index(glb, i):string;
     } else { // else, use glob
         var glb:glob_t;
         // Make this spawn a task if we encounter a dir, else yield in parallel
-        err = chpl_study_glob(pattern.c_str(), flags:c_int, glb);
-        for i in 0..glob_num(glb) - 1 do 
+        err = chpl_study_glob(c_ptrToConst_helper(pattern):c_string, flags:c_int, glb);
+        for i in 0..glob_num(glb) - 1 do
             yield glob_index(glb, i):string;
     }
 }
@@ -65,7 +65,7 @@ where tag == iterKind.leader {
 iter glob(param tag:iterKind, pattern:string, flags:int, expand:bool = false, recursive:bool = false, extension:string = "", followThis) : string
 where tag == iterKind.follower {
   if recursive {
-    if chpl_isdir(followThis.c_str()) == 1 {
+    if chpl_isdir(c_ptrToConst_helper(followThis):c_string) == 1 {
       const pth = followThis + "/";
       // I would REALLY like to do this here...
      /*forall fl in glob(pattern, flags, expand, recursive, pth) do*/

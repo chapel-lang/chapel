@@ -59,7 +59,7 @@ module HTable {
                                chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int,
                                data : c_ptr(void));
     var meta = new H5MetaTable(R);
-    var cname = name.c_str();
+    var cname = c_ptrToConst_helper(name):c_string;
     var nfields = meta.nFields : hsize_t;
     var nrecords = arr.size: hsize_t;
     var type_size = meta.Rsize : hsize_t;
@@ -105,7 +105,7 @@ module HTable {
                                    field_sizes : c_array(c_size_t),
                                    data : c_ptr(void));
     var meta = new H5MetaTable(R);
-    var cname = name.c_str();
+    var cname = c_ptrToConst_helper(name):c_string;
     var type_size = meta.Rsize : hsize_t;
     var nrecords = arr.size: hsize_t;
     var data = if (nrecords==0) then nil else c_ptrTo(arr);
@@ -141,9 +141,9 @@ module HTable {
     extern proc H5TBget_table_info(loc_id : hid_t, table_name : c_string,
                                    nfields : c_ptr(hsize_t), nrecords : c_ptr(hsize_t));
     var meta = new H5MetaTable(R);
-    var cname = name.c_str();
+    var cname = c_ptrToConst_helper(name):c_string;
     var type_size = meta.Rsize : hsize_t;
-    var field_names = meta.nameList.c_str();
+    var field_names = c_ptrToConst_helper(meta.nameList):c_string;
     var nrecords, nfields : hsize_t;
     H5TBget_table_info(loc, cname, c_ptrTo(nfields), c_ptrTo(nrecords));
 
@@ -212,7 +212,7 @@ module HTable {
         } else {
           nameList += ","+fname;
         }
-        names[ii] = fname.c_str();
+        names[ii] = c_ptrToConst_helper(fname):c_string;
         offsets[ii] = c_offsetof(R, fname) : hsize_t;
         ref ifield = getField(r, ii);
         type fieldtype = ifield.type;

@@ -64,9 +64,9 @@ module MemTracking
   // memory tracking.
   //
   // This function is a little tricky as it is called from every
-  // locale from the runtime.  Recall that c_string is considered a
+  // locale from the runtime.  Recall that c_ptrConst is a
   // local-only data type, so we must use some tricks to copy the
-  // c_string from locale 0 to the remote locales.  We use the globals
+  // c_ptrConst from locale 0 to the remote locales.  We use the globals
   // s_memLog and s_memLeaksLog to create global Chapel strings to
   // make them available to all locales.
   //
@@ -74,12 +74,12 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_string,
+                                         ref ret_memLeaksByDesc: c_ptrConst(c_uchar),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: c_size_t,
                                          ref ret_memThreshold: c_size_t,
-                                         ref ret_memLog: c_string,
-                                         ref ret_memLeaksLog: c_string) {
+                                         ref ret_memLog: c_ptrConst(c_uchar),
+                                         ref ret_memLeaksLog: c_ptrConst(c_uchar)) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;
@@ -92,7 +92,7 @@ module MemTracking
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksByDesc.isOwned = false;
-        ret_memLeaksByDesc = c_ptrToConst_helper(local_memLeaksByDesc):c_string;
+        ret_memLeaksByDesc = c_ptrToConst_helper(local_memLeaksByDesc);
       } else {
         ret_memLeaksByDesc = nil;
       }
@@ -101,7 +101,7 @@ module MemTracking
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLog.isOwned = false;
-        ret_memLog = c_ptrToConst_helper(local_memLog):c_string;
+        ret_memLog = c_ptrToConst_helper(local_memLog);
       } else {
         ret_memLog = nil;
       }
@@ -110,15 +110,15 @@ module MemTracking
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksLog.isOwned = false;
-        ret_memLeaksLog = c_ptrToConst_helper(local_memLeaksLog):c_string;
+        ret_memLeaksLog = c_ptrToConst_helper(local_memLeaksLog);
       } else {
         ret_memLeaksLog = nil;
       }
 
      } else {
-       ret_memLeaksByDesc = c_ptrToConst_helper(memLeaksByDesc):c_string;
-       ret_memLog = c_ptrToConst_helper(memLog):c_string;
-       ret_memLeaksLog = c_ptrToConst_helper(memLeaksLog):c_string;
+       ret_memLeaksByDesc = c_ptrToConst_helper(memLeaksByDesc);
+       ret_memLog = c_ptrToConst_helper(memLog);
+       ret_memLeaksLog = c_ptrToConst_helper(memLeaksLog);
 
     }
   }

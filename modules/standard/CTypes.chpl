@@ -555,15 +555,37 @@ module CTypes {
     return c_ptrTo(x[0]):c_ptr(void);
   }
   @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:c_ptr) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator c_void_ptr.:(x:c_ptr(void), type t:string) {
+    try! {
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
+    }
+  }
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
     }
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
     try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
     }
   }
   pragma "last resort"
@@ -878,13 +900,12 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_ptrTo_helper(ref s: string): c_ptr(c_uchar)
   {
+    if _local == false && s.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrTo() on a remote string");
     if boundsChecking {
       if (s.buffLen == 0) {
-        var buff = s.buff;
-        var asCString = __primitive("cast", c_ptr(c_uchar), buff);
-        return asCString;
+        return nil;
       }
-        //halt("Can't create a C pointer for an empty string.");
     }
     return c_pointer_return(s.buff[0]);
   }
@@ -892,13 +913,12 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_uchar)
   {
+    if _local == false && s.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrToConst() on a remote string");
     if boundsChecking {
       if (s.buffLen == 0) {
-        var buff = s.buff;
-        var asCString = __primitive("cast", c_ptrConst(c_uchar), buff);
-        return asCString;
+        return nil;
       }
-        // halt("Can't create a C pointer for an empty string.");
     }
     return c_pointer_return_const(s.buff[0]);
   }
@@ -906,13 +926,12 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_uchar)
   {
+    if _local == false && b.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrToConst() on a remote bytes");
     if boundsChecking {
       if (b.buffLen == 0) {
-        var buff = b.buff;
-        var asCString = __primitive("cast", c_ptrConst(c_uchar), buff);
-        return asCString;
+        return nil;
       }
-        // halt("Can't create a C pointer for an empty bytes.");
     }
     return c_pointer_return_const(b.buff[0]);
   }
@@ -920,13 +939,12 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_ptrTo_helper(ref b: bytes): c_ptr(c_uchar)
   {
+    if _local == false && b.locale_id != chpl_nodeID then
+      halt("Cannot call c_ptrTo() on a remote bytes");
     if boundsChecking {
       if (b.buffLen == 0) {
-        var buff = b.buff;
-        var asCString = __primitive("cast", c_ptr(c_uchar), buff);
-        return asCString;
+        return nil;
       }
-        // halt("Can't create a C pointer for an empty bytes.");
     }
     return c_pointer_return(b.buff[0]);
   }

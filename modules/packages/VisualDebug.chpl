@@ -31,6 +31,7 @@
 module VisualDebug
 {
 
+  private use CTypes;
   use String;
 
   /*
@@ -53,7 +54,7 @@ module VisualDebug
   // Data Generation for the Visual Debug tool  (offline)
   //
 
-  private extern proc chpl_vdebug_start (rootname: c_string, time:real);
+  private extern proc chpl_vdebug_start (rootname: c_ptrConst(c_uchar), time:real);
 
   private extern proc chpl_vdebug_stop ();
 
@@ -63,7 +64,7 @@ module VisualDebug
 
   private extern proc chpl_vdebug_mark ();
 
-  private extern proc chpl_vdebug_tagname (tagname: c_string, tagno: int);
+  private extern proc chpl_vdebug_tagname (tagname: c_ptrConst(c_uchar), tagno: int);
 
   private var tagno: atomic int;
 
@@ -103,7 +104,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
 
      /* Do the op at the root  */
      select what {
-         when vis_op.v_start    do chpl_vdebug_start (name.localize().c_str(), time);
+         when vis_op.v_start    do chpl_vdebug_start (c_ptrToConst_helper(name.localize()), time);
          when vis_op.v_stop     do chpl_vdebug_stop ();
          when vis_op.v_tag      do chpl_vdebug_tag (tagno);
          when vis_op.v_pause    do chpl_vdebug_pause (tagno);
@@ -146,7 +147,7 @@ private proc VDebugTree (what: vis_op, name: string, time: real, tagno: int,
   proc tagVdebug ( tagname : string ) {
     if (VisualDebugOn) {
        var ttag = tagno.fetchAdd(1);
-       chpl_vdebug_tagname (tagname.c_str(), ttag);
+       chpl_vdebug_tagname (c_ptrToConst_helper(tagname), ttag);
        VDebugTree (vis_op.v_tag, "", 0, ttag);
     }
   }

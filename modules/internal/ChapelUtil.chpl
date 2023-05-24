@@ -24,6 +24,7 @@
 //
 module ChapelUtil {
   private use ChapelStandard;
+  use CTypes;
 
   //
   // safeAdd: If a and b are of type t, return true iff no
@@ -126,6 +127,7 @@ module ChapelUtil {
 
   }
 
+  // TODO: How to get rid of this param c_string?
   // param s is used for error reporting
   pragma "command line setting"
   proc _command_line_cast(param s: c_string, type t, x:c_string) {
@@ -137,7 +139,7 @@ module ChapelUtil {
       compilerError("config variables of atomic type are not supported");
 
     try! {
-      var str = string.createCopyingBuffer(x);
+      var str = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
       if t == string {
         return str;
       } else {
@@ -160,7 +162,7 @@ module ChapelUtil {
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
     pragma "fn synchronization free"
-    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_uchar);
     // This is odd.  Why are the strings inside the array getting destroyed?
     pragma "no auto destroy"
     var array: [0..#local_arg.argc] string;
@@ -169,7 +171,7 @@ module ChapelUtil {
       // FIX ME: leak c_string
       try! {
         array[i] = string.createCopyingBuffer(chpl_get_argument_i(local_arg,
-                                                               i:int(32)));
+                                                                  i:int(32)));
       }
     }
 
@@ -179,15 +181,15 @@ module ChapelUtil {
   proc chpl_get_mli_connection(arg: chpl_main_argument) {
     var local_arg = arg;
     pragma "fn synchronization free"
-    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_string;
-    var flag: c_string = chpl_get_argument_i(local_arg,
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_uchar);
+    var flag: c_ptrConst(c_uchar) = chpl_get_argument_i(local_arg,
                                              (local_arg.argc-2): int(32));
     if (flag != "--chpl-mli-socket-loc") {
       try! halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
            string.createCopyingBuffer(flag));
     }
-    var result: c_string = chpl_get_argument_i(local_arg,
+    var result: c_ptrConst(c_uchar) = chpl_get_argument_i(local_arg,
                                                (local_arg.argc-1): int(32));
     return result;
   }
@@ -199,29 +201,32 @@ module ChapelUtil {
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
 
-  extern proc allocate_string_literals_buf(s: int): c_string;
+  extern proc allocate_string_literals_buf(s: int): c_ptrConst(c_uchar);
   extern proc deallocate_string_literals_buf(): void;
 
   // Support for module deinit functions.
   config param printModuleDeinitOrder = false;
 
+  // TODO: Removing c_string here requires changing some compiler generated
+  // code in resolution. Specifically we generate calls to this function
+  // in compiler/resolution/functionResolution.cpp:resolveSupportForModuleDeinits()
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
     chpl_moduleDeinitFuns =
-      new unmanaged chpl_ModuleDeinit(moduleName, deinitFun, chpl_moduleDeinitFuns);
+      new unmanaged chpl_ModuleDeinit(moduleName:c_ptrConst(c_uchar), deinitFun, chpl_moduleDeinitFuns);
   }
 
   export proc chpl_deinitModules() {
-    extern proc printf(fmt:c_string);
-    extern proc printf(fmt:c_string, arg:c_string);
+    extern proc printf(fmt:c_ptrConst(c_uchar));
+    extern proc printf(fmt:c_ptrConst(c_uchar), arg:c_ptrConst(c_uchar));
     extern proc chpl_execute_module_deinit(deinitFun:c_fn_ptr);
 
     if printModuleDeinitOrder then
-      printf(c"Deinitializing Modules:\n");
+      printf(c_ptrToConst_helper("Deinitializing Modules:\n"));
     var prev = chpl_moduleDeinitFuns;
     while prev {
       const curr = prev!;
       if printModuleDeinitOrder then
-        printf(c"  %s\n", curr.moduleName);
+        printf(c_ptrToConst_helper("  %s\n"), curr.moduleName);
       chpl_execute_module_deinit(curr.deinitFun);
       prev = curr.prevModule;
       delete curr;

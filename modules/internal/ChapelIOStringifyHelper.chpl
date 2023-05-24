@@ -24,6 +24,7 @@
 module ChapelIOStringifyHelper {
   private use ChapelStandard;
   private use BytesStringCommon only decodePolicy;
+  private use CTypes;
 
   @chpldoc.nodoc
   proc _can_stringify_direct(t) param : bool {
@@ -50,7 +51,7 @@ module ChapelIOStringifyHelper {
     for param i in 0..tup.size-1 {
       if (tup[i].type == c_string) {
         try! {
-          str += string.createCopyingBuffer(tup[i]);
+          str += string.createCopyingBuffer(tup[i]:c_ptrConst(c_uchar));
         }
       }
       else {
@@ -80,7 +81,7 @@ module ChapelIOStringifyHelper {
       } else if (args[i].type == c_string) {
         //decodePolicy.replace never throws
         try! {
-          str += string.createCopyingBuffer(args[i],
+          str += string.createCopyingBuffer(args[i]:c_ptrConst(c_uchar),
                                            policy=decodePolicy.replace);
         }
       } else if (args[i].type == bytes) {

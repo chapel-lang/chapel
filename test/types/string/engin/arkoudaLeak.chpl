@@ -8,3 +8,8 @@ var s = cstring:string;
 var empty = "";
 s = empty;
 writeln(s.size);
+use CTypes;
+var cPtrString = c_ptrToConst_helper("");
+var sFromPtr = string.createBorrowingBuffer(cPtrString);
+sFromPtr = empty;
+writeln(sFromPtr.size);

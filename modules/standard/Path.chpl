@@ -363,7 +363,7 @@ proc dirname(path: string): string {
    :rtype: `string`
 */
  proc expandVars(path: string): string {
-  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+  extern proc sys_getenv(name:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):c_int;
 
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
@@ -386,9 +386,9 @@ proc dirname(path: string): string {
          } else {
            var env_var: string = path_p(..(ind-1));
            var value: string;
-           var value_c: c_string;
+           var value_c: c_ptr(c_uchar);
            // buffer received from sys_getenv, shouldn't be freed
-           var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
+           var h: int = sys_getenv(c_ptrToConst_helper(unescape(env_var)), value_c);
            if (h != 1) {
              value = "${" + env_var + "}";
            } else {
@@ -407,9 +407,9 @@ proc dirname(path: string): string {
            ind += 1;
          }
          var value: string;
-         var value_c: c_string;
+         var value_c: c_ptr(c_uchar);
          // buffer received from sys_getenv, shouldn't be freed
-         var h: int = sys_getenv(unescape(env_var).c_str(), value_c);
+         var h: int = sys_getenv(c_ptrToConst_helper(unescape(env_var)), value_c);
          if (h != 1) {
            value = "$" + env_var;
          } else {
@@ -588,14 +588,14 @@ proc normPath(path: string): string {
 */
 proc realPath(path: string): string throws {
   import OS.errorCode;
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): errorCode;
+  extern proc chpl_fs_realpath(path: c_ptrConst(c_uchar), ref shortened: c_ptr(c_uchar)): errorCode;
 
-  var res: c_string;
-  var err = chpl_fs_realpath(unescape(path).c_str(), res);
+  var res: c_ptr(c_uchar);
+  var err = chpl_fs_realpath(c_ptrToConst_helper(unescape(path)), res);
   if err then try ioerror(err, "realPath", path);
   const ret = string.createCopyingBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
-  chpl_free_c_string(res);
+  deallocate(res);
   return ret;
 }
 
@@ -614,12 +614,12 @@ proc realPath(path: string): string throws {
 */
 proc realPath(f: file): string throws {
   import OS.errorCode;
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): errorCode;
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_ptr(c_uchar)): errorCode;
 
   if (f._file_internal == nil) then
     try ioerror(EBADF:errorCode, "in realPath with a file argument");
 
-  var res: c_string;
+  var res: c_ptr(c_uchar);
   var err = chpl_fs_realpath_file(f._file_internal, res);
   if err then try ioerror(err, "in realPath with a file argument");
   return string.createAdoptingBuffer(res);

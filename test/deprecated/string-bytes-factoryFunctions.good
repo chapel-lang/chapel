@@ -1,3 +1,5 @@
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+string-bytes-factoryFunctions.chpl:n: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead
 string-bytes-factoryFunctions.chpl:n: warning: createStringWithBorrowedBuffer is deprecated - please use string.createBorrowingBuffer instead

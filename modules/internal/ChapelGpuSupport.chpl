@@ -62,8 +62,8 @@ module ChapelGpuSupport {
 
   private proc isEnvSet(name: string): bool {
     private use CTypes;
-    extern proc getenv(name : c_string) : c_string;
-    var env = bytes.createBorrowingBuffer(getenv(c_ptrToConst_helper(name.localize()):c_string));
+    extern proc getenv(name : c_ptrConst(c_uchar)) : c_ptrConst(c_uchar);
+    var env = bytes.createBorrowingBuffer(getenv(c_ptrToConst_helper(name.localize())));
     return !env.isEmpty();
   }
 

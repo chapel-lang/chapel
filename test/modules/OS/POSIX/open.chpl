@@ -7,11 +7,11 @@ use OS.POSIX;
 // making sure the values we use don't cause an unexpected failure.
 
 // creat(), file with mode -rwxrwxrwx, containing a line with "hello"
-const fname_1 = c'open.file-1';
-writeln(fname_1:string, ':');
+const fname_1 = c_ptrToConst_helper('open.file-1');
+writeln(string.createBorrowingBuffer(fname_1), ':');
 var fildes = creat(fname_1, S_IRWXU | S_IRWXG | S_IRWXO);
 writeln(fildes >= 0);
-writeln(POSIX.write(fildes, c'hello\n':c_ptr(void), 6));
+writeln(POSIX.write(fildes, c_ptrToConst_helper('hello\n'):c_ptr(void), 6));
 writeln(close(fildes));
 
 param bufSize = 10;
@@ -23,11 +23,11 @@ writeln((buf:c_string):string);
 writeln(close(fildes));
 
 // open(), file with mode -rw-------, containing a line with "goodbye"
-const fname_2 = c'open.file-2';
-writeln(fname_2:string, ':');
+const fname_2 = c_ptrToConst_helper('open.file-2');
+writeln(string.createBorrowingBuffer(fname_2), ':');
 fildes = open(fname_2, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 writeln(fildes >= 0);
-writeln(POSIX.write(fildes, c'goodbye\n':c_ptr(void), 8));
+writeln(POSIX.write(fildes, c_ptrToConst_helper('goodbye\n'):c_ptr(void), 8));
 writeln(close(fildes));
 
 fildes = open(fname_2, O_RDONLY);

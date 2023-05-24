@@ -270,7 +270,10 @@ def isPointerTo(ty, text):
 
 def toChapelType(ty):
     if isPointerTo(ty, "char"):
-        return "c_string"
+        if "const" in ty.type.quals:
+            return "c_ptrConst(" + "c_uchar" + ")"
+        else:
+            return "c_ptr(" + "c_uchar" + ")"
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:

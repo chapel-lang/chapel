@@ -3646,7 +3646,7 @@ record DefaultComparator {
     if boundsChecking then
       assert(x.locale_id == here.id);
 
-    var ptr = x.c_str():c_ptr(uint(8));
+    var ptr = c_ptrToConst_helper(x);
     var len = x.numBytes;
     var section = if i < len then 0:int(8) else -1:int(8);
     var part =    if i < len then ptr[i] else  0:uint(8);
@@ -3663,9 +3663,25 @@ record DefaultComparator {
    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
    */
 
+  @deprecated(notes="the type 'c_string' is deprecated; use the variant of 'keyPart' that accepts 'c_ptrConst(c_uchar)' instead")
   inline
   proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
-    var ptr = x:c_ptr(uint(8));
+    return keyPart(c_ptrToConst_helper(x), i);
+  }
+
+  /*
+   Default ``keyPart`` method for sorting `c_string`.
+   See also `The .keyPart method`_.
+
+   :arg x: the `c_ptrConst(c_uchar)` to sort
+   :arg i: the part number requested
+
+   :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
+   */
+
+  inline
+  proc keyPart(x:c_ptrConst(c_uchar), i:int):(int(8), uint(8)) {
+    var ptr = x;
     var byte = ptr[i];
     var section = if byte != 0 then 0:int(8) else -1:int(8);
     var part = byte;

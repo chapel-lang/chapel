@@ -59,9 +59,9 @@ module BytesCasts {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool,
-                                     ref err: bool) : c_string;
+                                     ref err: bool) : c_ptrConst(c_uchar);
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : c_size_t;
+    extern proc strlen(const str: c_ptrConst(c_uchar)) : c_size_t;
 
     var isErr: bool;
     var csc = integral_to_c_string(x:int(64), numBytes(x.type),
@@ -76,7 +76,7 @@ module BytesCasts {
     }
 
     var ret: bytes;
-    ret.buff = csc:c_ptr(uint(8));
+    ret.buff = csc:c_ptr(c_uchar); // cast away const
     ret.buffLen = strlen(csc).safeCast(int);
     ret.buffSize = ret.buffLen+1;
 
@@ -87,28 +87,28 @@ module BytesCasts {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_int8_t  (x:c_string, ref err: bool) : int(8);
+    extern proc c_string_to_int8_t  (x:c_ptrConst(c_uchar), ref err: bool) : int(8);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_int16_t (x:c_string, ref err: bool) : int(16);
+    extern proc c_string_to_int16_t (x:c_ptrConst(c_uchar), ref err: bool) : int(16);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_int32_t (x:c_string, ref err: bool) : int(32);
+    extern proc c_string_to_int32_t (x:c_ptrConst(c_uchar), ref err: bool) : int(32);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_int64_t (x:c_string, ref err: bool) : int(64);
+    extern proc c_string_to_int64_t (x:c_ptrConst(c_uchar), ref err: bool) : int(64);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_uint8_t (x:c_string, ref err: bool) : uint(8);
+    extern proc c_string_to_uint8_t (x:c_ptrConst(c_uchar), ref err: bool) : uint(8);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_uint16_t(x:c_string, ref err: bool) : uint(16);
+    extern proc c_string_to_uint16_t(x:c_ptrConst(c_uchar), ref err: bool) : uint(16);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_uint32_t(x:c_string, ref err: bool) : uint(32);
+    extern proc c_string_to_uint32_t(x:c_ptrConst(c_uchar), ref err: bool) : uint(32);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_uint64_t(x:c_string, ref err: bool) : uint(64);
+    extern proc c_string_to_uint64_t(x:c_ptrConst(c_uchar), ref err: bool) : uint(64);
 
     var retVal: t;
     var isErr: bool;
@@ -127,19 +127,19 @@ module BytesCasts {
 
     if isIntType(t) {
       select numBits(t) {
-        when 8  do retVal = c_string_to_int8_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 16 do retVal = c_string_to_int16_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 32 do retVal = c_string_to_int32_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 64 do retVal = c_string_to_int64_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 8  do retVal = c_string_to_int8_t(c_ptrToConst_helper(localX), isErr);
+        when 16 do retVal = c_string_to_int16_t(c_ptrToConst_helper(localX), isErr);
+        when 32 do retVal = c_string_to_int32_t(c_ptrToConst_helper(localX), isErr);
+        when 64 do retVal = c_string_to_int64_t(c_ptrToConst_helper(localX), isErr);
         otherwise compilerError("Unsupported bit width ", numBits(t),
                                 " in cast from bytes to " + t:string);
       }
     } else {
       select numBits(t) {
-        when 8  do retVal = c_string_to_uint8_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 16 do retVal = c_string_to_uint16_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 32 do retVal = c_string_to_uint32_t(c_ptrToConst_helper(localX):c_string, isErr);
-        when 64 do retVal = c_string_to_uint64_t(c_ptrToConst_helper(localX):c_string, isErr);
+        when 8  do retVal = c_string_to_uint8_t(c_ptrToConst_helper(localX), isErr);
+        when 16 do retVal = c_string_to_uint16_t(c_ptrToConst_helper(localX), isErr);
+        when 32 do retVal = c_string_to_uint32_t(c_ptrToConst_helper(localX), isErr);
+        when 64 do retVal = c_string_to_uint64_t(c_ptrToConst_helper(localX), isErr);
         otherwise compilerError("Unsupported bit width ", numBits(t),
                                 " in cast from bytes to " + t:string);
       }
@@ -158,9 +158,9 @@ module BytesCasts {
   //
   proc _real_cast_helper(x: real(64), param isImag: bool) : bytes {
     pragma "fn synchronization free"
-    extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
+    extern proc real_to_c_string(x:real(64), isImag: bool) : c_ptrConst(c_uchar);
     pragma "fn synchronization free"
-    extern proc strlen(const str: c_string) : c_size_t;
+    extern proc strlen(const str: c_ptrConst(c_uchar)) : c_size_t;
 
     var csc = real_to_c_string(x:real(64), isImag);
 
@@ -188,10 +188,10 @@ module BytesCasts {
   operator :(x: bytes, type t:chpl_anyreal) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
+    extern proc c_string_to_real32(x: c_ptrConst(c_uchar), ref err: bool) : real(32);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_real64(x: c_string, ref err: bool) : real(64);
+    extern proc c_string_to_real64(x: c_ptrConst(c_uchar), ref err: bool) : real(64);
 
     var retVal: t;
     var isErr: bool;
@@ -200,8 +200,8 @@ module BytesCasts {
     _cleanupForNumericCast(localX);
 
     select numBits(t) {
-      when 32 do retVal = c_string_to_real32(c_ptrToConst_helper(localX):c_string, isErr);
-      when 64 do retVal = c_string_to_real64(c_ptrToConst_helper(localX):c_string, isErr);
+      when 32 do retVal = c_string_to_real32(c_ptrToConst_helper(localX), isErr);
+      when 64 do retVal = c_string_to_real64(c_ptrToConst_helper(localX), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }
@@ -217,10 +217,10 @@ module BytesCasts {
   operator :(x: bytes, type t:chpl_anyimag) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
+    extern proc c_string_to_imag32(x: c_ptrConst(c_uchar), ref err: bool) : imag(32);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_imag64(x: c_string, ref err: bool) : imag(64);
+    extern proc c_string_to_imag64(x: c_ptrConst(c_uchar), ref err: bool) : imag(64);
 
     var retVal: t;
     var isErr: bool;
@@ -229,8 +229,8 @@ module BytesCasts {
     _cleanupForNumericCast(localX);
 
     select numBits(t) {
-      when 32 do retVal = c_string_to_imag32(c_ptrToConst_helper(localX):c_string, isErr);
-      when 64 do retVal = c_string_to_imag64(c_ptrToConst_helper(localX):c_string, isErr);
+      when 32 do retVal = c_string_to_imag32(c_ptrToConst_helper(localX), isErr);
+      when 64 do retVal = c_string_to_imag64(c_ptrToConst_helper(localX), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }
@@ -272,22 +272,23 @@ module BytesCasts {
   // casts from bytes to c_ptrConst(c_char/int(8)/uint(8))
   //
   inline operator :(x: bytes, type t:c_ptrConst(?eltType))
-    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+    where eltType == c_char || eltType == c_uchar ||
+          eltType == int(8) || eltType == uint(8)
   {
     private use ByteBufferHelpers;
     var buff: bufferType = x.buff;
     var asCString = __primitive("cast", t, buff);
-    return asCString;
+    return asCString:t;
   }
 
 
   operator :(x: bytes, type t:chpl_anycomplex) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
+    extern proc c_string_to_complex64(x:c_ptrConst(c_uchar), ref err: bool) : complex(64);
     pragma "fn synchronization free"
     pragma "insert line file info"
-    extern proc c_string_to_complex128(x:c_string, ref err: bool) : complex(128);
+    extern proc c_string_to_complex128(x:c_ptrConst(c_uchar), ref err: bool) : complex(128);
 
     var retVal: t;
     var isErr: bool;
@@ -299,8 +300,8 @@ module BytesCasts {
                              numBits(t):string + ")");
 
     select numBits(t) {
-      when 64 do retVal = c_string_to_complex64(c_ptrToConst_helper(localX):c_string, isErr);
-      when 128 do retVal = c_string_to_complex128(c_ptrToConst_helper(localX):c_string, isErr);
+      when 64 do retVal = c_string_to_complex64(c_ptrToConst_helper(localX), isErr);
+      when 128 do retVal = c_string_to_complex128(c_ptrToConst_helper(localX), isErr);
       otherwise compilerError("Unsupported bit width ", numBits(t),
                               " in cast to bytes");
     }

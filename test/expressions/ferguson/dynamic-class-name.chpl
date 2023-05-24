@@ -1,8 +1,9 @@
+use CTypes;
 proc getNameFromClass(obj:borrowed RootClass) : string
 {
   var cid =  __primitive("getcid", obj);
   var cs: c_string = __primitive("class name by id", cid);
-  var str = string.createCopyingBuffer(cs);
+  var str = string.createCopyingBuffer(cs:c_ptrConst(c_uchar));
   return str;
 }
 

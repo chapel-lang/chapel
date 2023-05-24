@@ -1356,8 +1356,8 @@ module YAML {
       var minor: c_int;
     }
     extern record yaml_tag_directive_t {
-      var handle: c_string;
-      var prefix: c_string;
+      var handle: c_ptrConst(c_uchar);
+      var prefix: c_ptrConst(c_uchar);
     }
 
     // ----------------------------------------------------

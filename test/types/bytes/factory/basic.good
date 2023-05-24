@@ -1,3 +1,6 @@
+basic.chpl:27: warning: the type 'c_string' is deprecated; use the variant of 'createCopyingBuffer' that takes a 'c_ptrConst' instead
+basic.chpl:28: warning: the type 'c_string' is deprecated; use the variant of 'createBorrowingBuffer' that takes a 'c_ptrConst' instead
+basic.chpl:29: warning: the type 'c_string' is deprecated; use the variant of 'createAdoptingBuffer' that takes a 'c_ptrConst' instead
 Initialize from bytes
 A Chapel bytes
 A local Chapel bytes
@@ -16,6 +19,14 @@ A C
 A C
 
 Initialize from c_ptr(c_char)
+ABC
+ABC
+ABC
+ABC
+A C
+A C
+
+Initialize from c_ptrConst(c_uchar)
 ABC
 ABC
 ABC

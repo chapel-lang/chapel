@@ -1,4 +1,4 @@
-c_str.chpl:4: warning: string.c_str() is deprecated, use c_ptrTo(string) or c_ptrToConst(string) and cast to c_string
-c_str.chpl:5: warning: bytes.c_str() is deprecated, use c_ptrTo(bytes) or c_ptrToConst(bytes) and cast to c_string
+c_str.chpl:4: warning: the type 'c_string' is deprecated and with it, 'string.c_str()'; use 'c_ptrToConst(string)' or 'c_ptrTo(string)' from the 'CTypes' module instead
+c_str.chpl:5: warning: the type 'c_string' is deprecated and with it, 'bytes.c_str()'; use 'c_ptrToConst(bytes)' or 'c_ptrTo(bytes)' from the 'CTypes' module instead
 my string
 my bytes

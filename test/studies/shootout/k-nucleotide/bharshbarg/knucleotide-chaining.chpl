@@ -134,7 +134,7 @@ proc write_count(data : [] uint(8), str : string) {
 
 proc string.toBytes() {
    var b : [1..this.numBytes] uint(8);
-   memcpy(b, this.c_str(), this.numBytes);
+   memcpy(b, c_ptrToConst_helper(this):c_string, this.numBytes);
    return b;
 }
 
@@ -155,7 +155,7 @@ proc main(args: [] string) {
   numRead = myin.readLine(tempdata);
   while numRead>0 && !startsWithThree(tempdata) {
     total += numRead;
-    numRead = myin.readLine(tempdata);  
+    numRead = myin.readLine(tempdata);
   }
 
   // Read in the rest of the file
@@ -163,11 +163,11 @@ proc main(args: [] string) {
   var data : [dataDom] uint(8);
   var idx = 1;
   numRead = myin.readLine(data[idx..]);
-  while numRead > 0 { 
-    idx += numRead - 1; 
+  while numRead > 0 {
+    idx += numRead - 1;
     numRead = myin.readLine(data[idx..]);
   }
-  
+
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 

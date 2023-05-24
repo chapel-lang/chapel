@@ -1,4 +1,4 @@
-use Time;
+use Time, CTypes;
 
 extern proc printf(fmt: c_string, x...);
 
@@ -7,10 +7,10 @@ proc foo() {
   on Locales(1) {
     begin {
       sleep(2);
-      printf("%s\n", (here.id:string + " x=" + x:string).c_str());
+      printf("%s\n", c_ptrToConst_helper(here.id:string + " x=" + x:string):c_string);
     }
   }
-  printf("%s\n", (here.id:string + " x=" + x:string).c_str());
+  printf("%s\n", c_ptrToConst_helper(here.id:string + " x=" + x:string):c_string);
 }
 
 foo();

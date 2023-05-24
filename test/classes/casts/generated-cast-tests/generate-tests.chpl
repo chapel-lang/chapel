@@ -19,6 +19,7 @@ use IO;
 use List;
 import FileSystem as FS;
 import OS.POSIX as OS;
+use CTypes;
 
 // controls whether this generates error test cases or no error test cases
 config var generateErrorCases: bool = true;
@@ -122,7 +123,7 @@ proc generateDirectoryFiles(errorFiles: bool = true) {
     w.writeln("echo 'Compiler correctly threw an error' >$2");
     w.writeln("fi");
     w.close();
-    OS.chmod(prediff.c_str(), 0o755:OS.mode_t);
+    OS.chmod(c_ptrToConst_helper(prediff), 0o755:OS.mode_t);
   }
 }
 

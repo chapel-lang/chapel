@@ -23,7 +23,7 @@ proc readBufferFromFile(filename: string) {
   const length = getFileSize(filename);
   var data = c_malloc(length: c_size_t);
 
-  var infile = c_fopen(filename.c_str(), c"r");
+  var infile = c_fopen(c_ptrToConst_helper(filename):c_string, c"r");
   const readLen = c_fread(data, length:c_size_t, 1, infile);
   assert(readLen == 1);
   c_fclose(infile);

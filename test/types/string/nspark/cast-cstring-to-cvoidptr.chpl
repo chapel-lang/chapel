@@ -6,4 +6,4 @@ extern proc strlen(const s: c_string): c_size_t;
 extern proc strlen_voidptr(const s: c_ptr(void)): c_size_t;
 
 config const buf = "Hello, World";
-assert(strlen(buf.c_str()) == strlen_voidptr(buf.c_str():c_ptr(void)));
+assert(strlen(c_ptrToConst_helper(buf):c_string) == strlen_voidptr(c_ptrToConst_helper(buf):c_string:c_ptr(void)));

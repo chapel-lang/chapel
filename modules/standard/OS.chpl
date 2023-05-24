@@ -754,10 +754,10 @@ module OS {
     // Note: O_RSYNC
     // is documented in POSIX but doesn't seem to exist on Mac OS
 
-    extern proc creat(path:c_string, mode:mode_t = 0):c_int;
-    inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
+    extern proc creat(path:c_ptrConst(c_uchar), mode:mode_t = 0):c_int;
+    inline proc open(path:c_ptrConst(c_uchar), oflag:c_int, mode:mode_t = 0:mode_t)
                   :c_int {
-      extern proc chpl_os_posix_open(path:c_string, oflag:c_int, mode:mode_t)
+      extern proc chpl_os_posix_open(path:c_ptrConst(c_uchar), oflag:c_int, mode:mode_t)
                     :c_int;
       return chpl_os_posix_open(path, oflag, mode);
     }
@@ -765,12 +765,17 @@ module OS {
     //
     // stdlib.h
     //
+    extern proc getenv(name:c_ptrConst(c_uchar)):c_ptrConst(c_uchar);
+    @deprecated("the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_uchar)' instead")
     extern proc getenv(name:c_string):c_ptr(c_char);
 
     //
     // string.h
     //
-    extern proc strerror(errnum:c_int):c_string;
+    extern proc strerror(errnum:c_int):c_ptrConst(c_uchar);
+    // extern proc strerror(errnum:c_int):c_string;
+    extern proc strlen(s:c_ptrConst(c_uchar)):c_size_t;
+    @deprecated("the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_uchar)' instead")
     extern proc strlen(s:c_string):c_size_t;
 
     //
@@ -890,8 +895,8 @@ module OS {
       var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
     }
 
-    extern proc chmod(path:c_string, mode:mode_t):c_int;
-    extern 'chpl_os_posix_stat' proc stat(path:c_string,
+    extern proc chmod(path:c_ptrConst(c_uchar), mode:mode_t):c_int;
+    extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_uchar),
                                           buf:c_ptr(struct_stat)):c_int;
 
     //
@@ -1544,7 +1549,7 @@ module OS {
   sys_strerror_syserr_str(error
                           : errorCode, out err_in_strerror
                           : c_int)
-      : c_string;
+      : c_ptrConst(c_uchar);
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1552,20 +1557,20 @@ module OS {
   private proc quote_string(s:string, len:c_ssize_t) {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
-                                 ptr: c_string, len:c_ssize_t,
-                                 ref ret:c_string, ti: c_ptr(void)): errorCode;
-    extern proc qio_strdup(s: c_string): c_string;
+                                 ptr:c_ptrConst(c_uchar), len:c_ssize_t,
+                                 ref ret:c_ptr(c_uchar), ti: c_ptr(void)): errorCode;
+    extern proc qio_strdup(s: c_ptrConst(c_uchar)): c_ptrConst(c_uchar);
 
-    var ret: c_string;
+    var ret: c_ptr(c_uchar);
     // 34 is ASCII double quote
     var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,
-                                      s.localize().c_str(), len, ret, nil);
+                                      c_ptrToConst_helper(s.localize()), len, ret, nil);
     // This doesn't handle the case where ret==NULL as did the previous
     // version in QIO, but I'm not sure how that was used.
 
     try! {
-      if err then return string.createAdoptingBuffer(qio_strdup("<error>"));
+      if err then return string.createAdoptingBuffer(qio_strdup(c_ptrToConst_helper("<error>")));
       return string.createAdoptingBuffer(ret);
     }
 }

@@ -1,3 +1,6 @@
+testUnions.chpl:12: In function 'main':
+testUnions.chpl:20: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+testUnions.chpl:21: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 intUnion contents:
 a = 3
 b = 3

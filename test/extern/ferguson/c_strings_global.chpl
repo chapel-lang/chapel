@@ -10,7 +10,7 @@ var str = "Hello";
 
 proc go() {
   writeln("Should be Hello:");
-  print_c_string(str.c_str());
+  print_c_string(c_ptrToConst_helper(str):c_string);
 
   writeln("Should be returned_c_string x3");
   var gotc = returns_c_string();

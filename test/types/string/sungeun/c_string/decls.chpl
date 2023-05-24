@@ -1,3 +1,4 @@
+use CTypes;
 enum E { zero=-1, one=-2, two=-4, three=-8 };
 
 param cstr:c_string = "8";

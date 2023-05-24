@@ -1,4 +1,4 @@
-use CommDiagnostics;
+use CommDiagnostics, CTypes;
 
 proc f(param p: int) {
   var x: p*int;
@@ -15,7 +15,7 @@ extern proc printf(fmt: c_string, x...);
 
 on Locales(1) {
   for param i in 0..255 do
-    printf("%s\n", (x(i):string).c_str());
+    printf("%s\n", c_ptrToConst_helper(x(i):string):c_string);
 }
 
 stopVerboseComm();

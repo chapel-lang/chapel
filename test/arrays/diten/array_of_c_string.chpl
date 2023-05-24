@@ -8,7 +8,7 @@ proc main(args: [] string) {
   var c_args: [0..#args.size] c_string;
 
   for i in 0..#args.size do
-    c_args[i] = args[i].c_str();
+    c_args[i] = c_ptrToConst_helper(args[i]):c_string;
 
   foo(c_args.size, c_ptrTo(c_args));
 }

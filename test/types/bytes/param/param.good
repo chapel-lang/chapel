@@ -1,3 +1,4 @@
+param.chpl:90: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 bytes1 as bytes
 bytes1 as c_string
 6

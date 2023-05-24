@@ -56,7 +56,7 @@ locking=false with printf_unlocked.
 that does not lock the FILE* so it's only safe to use in a serial context.]
 */
 
-use Time, IO;
+use Time, IO, CTypes;
 
 config const n = 3;
 config const tries = 2;
@@ -76,7 +76,7 @@ extern proc cs_trial(n: int);
 proc lstr_trial() {
   extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf("%s", "\n".c_str());
+    printf(c_ptrToConst_helper("%s"):c_string, "\n");
 }
 
 proc lcs_trial() {
@@ -90,7 +90,7 @@ const str_newline_global = "\n";
 proc gstr_trial() {
   extern proc printf(format: c_string, arg...);
   for 1..n do
-    printf("%s", str_newline_global.c_str());
+    printf("%s", c_ptrToConst_helper(str_newline_global):c_string);
 }
 
 const c_newline_global: c_string = "\n";

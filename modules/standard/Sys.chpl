@@ -413,7 +413,7 @@ module Sys {
                                   `host` and `family`.
     */
     @chpldoc.nodoc
-    proc set(host: c_string, port: c_uint, family: c_int) throws {
+    proc set(host: c_ptrConst(c_uchar), port: c_uint, family: c_int) throws {
       var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
       if err_out != 1 {
         throw new IllegalArgumentError("Incompatible Address and Family");
@@ -531,13 +531,13 @@ module Sys {
   // --- deprecated and moved to Socket as private ---
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
-  extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+  extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptrConst(c_uchar), port: c_uint, family: c_int):c_int;
   extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
   extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
   extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
-  extern proc sys_strerror(error:qio_err_t, ref string_out:c_string):qio_err_t;
-  extern proc sys_readlink(path:c_string, ref string_out:c_string):qio_err_t;
+  extern proc sys_strerror(error:qio_err_t, ref string_out:c_ptr(c_uchar)):qio_err_t;
+  extern proc sys_readlink(path:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):qio_err_t;
 
   // --- deprecated and moved to Socket ---
   /*Check whether or not the environment variable ``name`` is defined.
@@ -546,16 +546,16 @@ module Sys {
     otherwise the function returns 0.
 
     :arg name: name of the environment variable
-    :type name: `c_string`
+    :type name: `c_ptrConst(c_uchar)`
 
     :arg string_out: store the value of ``name`` environment variable if defined
-    :type string_out: `c_string`
+    :type string_out: `c_ptrConst(c_uchar)`
 
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
   @deprecated(notes="'Sys.sys_getenv' is deprecated")
-  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+  extern proc sys_getenv(name:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):c_int;
 
   /* The type corresponding to C's mode_t */
   // --- has replacement in OS.POSIX ---
@@ -563,7 +563,7 @@ module Sys {
 
   // not used outside of Sys
   // --- deprecated with no replacement ---
-  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:c_int):qio_err_t;
+  extern proc sys_open(pathname:c_ptrConst(c_uchar), flags:c_int, mode:mode_t, ref fd_out:c_int):qio_err_t;
 
   // --- deprecated and moved to Socket as private ---
   extern proc sys_close(fd:c_int):qio_err_t;
@@ -580,7 +580,7 @@ module Sys {
   extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:c_int):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:c_int, ref write_fd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
-  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
+  extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_ptr(c_uchar), ref serv_outc_:c_ptr(c_uchar), flags:c_int):qio_err_t;
   extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:c_int, ref sockfd_out_b:c_int):qio_err_t;
   extern proc sys_shutdown(sockfd:c_int, how:c_int):qio_err_t;
 
@@ -590,7 +590,7 @@ module Sys {
   extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):qio_err_t;
   extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):qio_err_t;
   extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
+  extern proc getaddrinfo(node:c_ptrConst(c_uchar), service:c_ptrConst(c_uchar), ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
   extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):qio_err_t;
   extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):qio_err_t;

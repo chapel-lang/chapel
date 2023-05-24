@@ -1,1 +1,3 @@
+arkoudaLeak.chpl:6: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
+0
 0

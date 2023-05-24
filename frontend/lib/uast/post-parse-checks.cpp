@@ -137,7 +137,7 @@ struct Visitor {
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
-
+  void checkCStringLiteral(const CStringLiteral* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -169,6 +169,7 @@ struct Visitor {
   void visit(const BracketLoop* node);
   void visit(const Break* node);
   void visit(const Continue* node);
+  void visit(const CStringLiteral* node);
   void visit(const ExternBlock* node);
   void visit(const FnCall* node);
   void visit(const Function* node);
@@ -1423,8 +1424,30 @@ void Visitor::checkExternBlockAtModuleScope(const ExternBlock* node) {
   }
 }
 
+void Visitor::checkCStringLiteral(const CStringLiteral* node) {
+   warn(node, "the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst(\"string\")' or 'c_ptrTo(\"string\")' from the 'CTypes' module instead");
+}
+
 void Visitor::visit(const ExternBlock* node) {
   checkExternBlockAtModuleScope(node);
+}
+
+void Visitor::visit(const CStringLiteral* node) {
+  checkCStringLiteral(node);
+}
+
+// Duplicate the contents of 'idIsInBundledModule', while skipping the
+// call to 'filePathForId', because at this point the `setFilePathForId`
+// setter query may not have been run yet.
+bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
+  UniqueString modules = chpl::parsing::bundledModulePath(context);
+  if (modules.isEmpty()) return true;
+  // check for internal module paths
+  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
+  // check for standard module paths
+  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
+  bool ret = !filepath.startsWith(modules);
+  return ret;
 }
 
 } // end anonymous namespace

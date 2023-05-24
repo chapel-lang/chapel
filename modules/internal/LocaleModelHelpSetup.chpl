@@ -136,9 +136,12 @@ module LocaleModelHelpSetup {
     use ChplConfig;
     if CHPL_COMM == "gasnet" {
       if CHPL_COMM_SUBSTRATE == "udp" {
-        const spawnfn = getenv(c"GASNET_SPAWNFN");
-        if spawnfn != nil && spawnfn:c_string == c"L" {
-          return true;
+        try! {
+          const spawnfn = getenv(c_ptrToConst_helper("GASNET_SPAWNFN"));
+          const spawnfnS = string.createBorrowingBuffer(spawnfn);
+          if spawnfn != nil && spawnfnS == "L" {
+            return true;
+          }
         }
       } else if (CHPL_COMM_SUBSTRATE == "smp") {
         return true;
@@ -153,7 +156,7 @@ module LocaleModelHelpSetup {
     // current node.  For this reason (as well), the constructor (or
     // at least this setup method) must be run on the node it is
     // intended to describe.
-    extern proc chpl_nodeName(): c_string;
+    extern proc chpl_nodeName(): c_ptrConst(c_uchar);
     var _node_name: string;
     try! {
       _node_name = string.createCopyingBuffer(chpl_nodeName());

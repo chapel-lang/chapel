@@ -1,2 +1,3 @@
-extern proc getenv(const name: c_string): c_string;
-writeln(string.createCopyingBuffer(getenv('DASH_E_ENV_VAR')));
+use CTypes;
+extern proc getenv(const name: c_ptrConst(c_uchar)): c_ptrConst(c_uchar);
+writeln(string.createCopyingBuffer(getenv(c_ptrToConst_helper('DASH_E_ENV_VAR'))));

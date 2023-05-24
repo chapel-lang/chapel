@@ -266,7 +266,7 @@ module Curl {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == string || arg.type == bytes {
         err = curl_easy_setopt_ptr(curl, opt:CURLoption,
-                                   arg.localize().c_str():c_ptr(void));
+                                   c_ptrToConst_helper(arg.localize()):c_ptr(void));
       }
     } else {
       // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
@@ -332,7 +332,7 @@ module Curl {
   proc slist.append(str:string) throws {
     var err: errorCode = 0;
     on this.home {
-      this.list = curl_slist_append(this.list, str.localize().c_str());
+      this.list = curl_slist_append(this.list, c_ptrToConst_helper(str.localize()));
       if this.list == nil then
         err = EINVAL;
     }
@@ -355,7 +355,7 @@ module Curl {
 
   // extern QIO functions
   private extern proc sys_iov_total_bytes(iov:c_ptr(qiovec_t), iovcnt:c_int):int(64);
-  private extern proc qio_strdup(s: c_string): c_string;
+  private extern proc qio_strdup(s: c_ptrConst(c_uchar)): c_ptrConst(c_uchar);
   private extern proc qio_mkerror_errno():errorCode;
   private extern proc qio_int_to_err(a:int(32)):errorCode;
   private extern proc qio_channel_nbytes_available_unlocked(ch:qio_channel_ptr_t):int(64);
@@ -503,7 +503,7 @@ module Curl {
   extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
 
   /* See https://curl.haxx.se/libcurl/c/curl_slist_append.html */
-  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string)
+  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_ptrConst(c_uchar))
     : c_ptr(curl_slist);
   /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
   extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
@@ -523,7 +523,7 @@ module Curl {
 
     class CurlFile : QioPluginFile {
 
-      var url_c: c_string;     // Path/URL
+      var url_c: c_ptrConst(c_uchar);     // Path/URL
       var length: c_ssize_t;    // length of what we are reading, -1 if we can't get
 
       var seekable: bool;
@@ -547,9 +547,9 @@ module Curl {
         length = this.length;
         return 0;
       }
-      override proc getpath(out path:c_string, out len:int(64)):errorCode {
+      override proc getpath(out path:c_ptrConst(uint(8)), out len:int(64)):errorCode {
         path = qio_strdup(this.url_c);
-        len = url_c.size;
+        len = __primitive("string_length_bytes", url_c);
         return 0;
       }
 
@@ -560,7 +560,7 @@ module Curl {
         return ENOSYS;
       }
       override proc getLocalesForRegion(start:int(64), end:int(64), out
-          localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
+          localeNames:c_ptr(c_ptrConst(c_uchar)), ref nLocales:int(64)):errorCode {
         return ENOSYS;
       }
 
@@ -709,10 +709,10 @@ module Curl {
     }
 
 
-    private proc startsWith(haystack:c_string, needle:c_string) {
-      extern proc strncmp(s1:c_string, s2:c_string, n:c_size_t):c_int;
-
-      return strncmp(haystack, needle, needle.size:c_size_t) == 0;
+    private proc startsWith(haystack:c_ptrConst(c_uchar), needle:c_ptrConst(c_uchar)) {
+      extern proc strncmp(s1: c_ptrConst(c_uchar), s2: c_ptrConst(c_uchar), n:c_size_t):c_int;
+      var len = __primitive("string_length_bytes", needle);
+      return strncmp(haystack, needle, len:c_size_t) == 0;
     }
 
     private proc curl_write_string(contents: c_ptr(void), size:c_size_t, nmemb:c_size_t, userp: c_ptr(void)) {
@@ -745,7 +745,7 @@ module Curl {
       var buf:curl_str_buf;
       var ret = false;
 
-      if startsWith(fl.url_c, "http://") || startsWith(fl.url_c, "https://") {
+      if startsWith(fl.url_c, c_ptrToConst_helper("http://")) || startsWith(fl.url_c, c_ptrToConst_helper("https://")) {
         // We're on HTTP/HTTPS so we should look for byte ranges to see if we
         // can request them
 
@@ -769,9 +769,9 @@ module Curl {
 
         curl_easy_perform(curl);
 
-        extern proc strstr(haystack:c_string, needle:c_string):c_string;
+        extern proc strstr(haystack:c_ptrConst(c_uchar), needle:c_ptrConst(c_uchar)):c_ptrConst(c_uchar);
         // Does this URL accept range requests?
-        if strstr(buf.mem:c_string, c"Accept-Ranges: bytes"):c_ptr(void) == nil:c_ptr(void) {
+        if strstr(buf.mem, c_ptrToConst_helper("Accept-Ranges: bytes")):c_ptr(void) == nil:c_ptr(void) {
           ret = false;
         } else {
           ret = true;
@@ -789,7 +789,7 @@ module Curl {
       }
 
       // FTP always supports CURLOPT_RESUME_FROM_LARGE
-      if startsWith(fl.url_c, "ftp://") || startsWith(fl.url_c, "sftp://") then
+      if startsWith(fl.url_c, c_ptrToConst_helper("ftp://")) || startsWith(fl.url_c, c_ptrToConst_helper("sftp://")) then
         ret = true;
 
       return ret;
@@ -1152,9 +1152,9 @@ module Curl {
 
       // Save the url requested
       var url_c = allocate(uint(8), url.size:c_size_t+1, clear=true);
-      memcpy(url_c:c_ptr(void), url.localize().c_str():c_ptr(void), url.size.safeCast(c_size_t));
+      memcpy(url_c:c_ptr(void), c_ptrToConst_helper(url.localize()):c_ptr(void), url.size.safeCast(c_size_t));
 
-      fl.url_c = url_c:c_string;
+      fl.url_c = url_c:c_ptrConst(c_uchar);
 
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try

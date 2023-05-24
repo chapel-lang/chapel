@@ -1,0 +1,2 @@
+void_ptr_object.chpl:7: In function 'main':
+void_ptr_object.chpl:19: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead

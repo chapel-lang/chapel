@@ -61,6 +61,7 @@
 module Collectives {
   import HaltWrappers;
   import ChplConfig;
+  use CTypes;
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
@@ -293,8 +294,8 @@ module Collectives {
         const myc = count.fetchSub(1);
         if myc<=1 {
           if hackIntoCommBarrier {
-            extern proc chpl_comm_barrier(msg: c_string);
-            chpl_comm_barrier(c"local barrier call");
+            extern proc chpl_comm_barrier(msg: c_ptrConst(c_uchar));
+            chpl_comm_barrier(c_ptrToConst_helper("local barrier call"));
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {

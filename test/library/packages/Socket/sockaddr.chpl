@@ -8,7 +8,7 @@ proc test_addr_string_ipv4(test: borrowed Test) throws {
   var address = "127.0.0.1";
   var port:uint(16) = 8000;
   var family = AF_INET;
-  socket_addr.set(address.c_str(), port, family);
+  socket_addr.set(c_ptrToConst_helper(address):c_string, port, family);
 
   var getAddr = socket_addr.numericHost();
   var getPort = socket_addr.port();
@@ -23,7 +23,7 @@ proc test_addr_string_ipv6(test: borrowed Test) throws {
   var address = "::1";
   var port:uint(16) = 8000;
   var family = AF_INET6;
-  socket_addr.set(address.c_str(), port, family);
+  socket_addr.set(c_ptrToConst_helper(address):c_string, port, family);
 
   var getAddr = socket_addr.numericHost();
   var getPort = socket_addr.port();

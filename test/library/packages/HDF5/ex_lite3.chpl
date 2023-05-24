@@ -14,22 +14,22 @@ proc main {
   const pathPrefix = readPrefixEnv();
 
   /* Create a file */
-  file_id = H5Fcreate((pathPrefix+filename).c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  file_id = H5Fcreate(c_ptrToConst_helper(pathPrefix+filename), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
   /* Create a data space */
   space_id = H5Screate_simple(1, c_ptrTo(dims), nil);
 
   /* create a dataset named "dset" */
-  dset_id = H5Dcreate2(file_id, "dset", H5T_NATIVE_INT,  space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  dset_id = H5Dcreate2(file_id, c_ptrToConst_helper("dset"), H5T_NATIVE_INT,  space_id, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
 
   H5Dclose(dset_id);
   H5Sclose(space_id);
 
   /* create and write the attribute "attr1" on the dataset "dset" */
-  H5LTset_attribute_int(file_id, "dset", "attr1", data[0], ATTR_SIZE);
+  H5LTset_attribute_int(file_id, c_ptrToConst_helper("dset"), c_ptrToConst_helper("attr1"), data[0], ATTR_SIZE);
 
   /* get the attribute "attr1" from the dataset "dset" */
-  H5LTget_attribute_int(file_id, "dset", "attr1", data[0]);
+  H5LTget_attribute_int(file_id, c_ptrToConst_helper("dset"), c_ptrToConst_helper("attr1"), data[0]);
 
   for i in 0..#ATTR_SIZE {
     write("  ", data[i]);

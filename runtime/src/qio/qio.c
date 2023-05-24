@@ -1309,7 +1309,10 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)
-    return chpl_qio_getpath(f->file_info, string_out, &len);
+    /* TODO: remove the casting away of the const-ness on string_out when
+        const is returned to c-backend generated codes
+    */
+    return chpl_qio_getpath(f->file_info, (uint8_t**)string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }

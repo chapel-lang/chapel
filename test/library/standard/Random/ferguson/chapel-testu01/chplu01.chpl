@@ -103,7 +103,7 @@ export proc test_rand_uint32():c_uint {
     // Do that a 2nd time, combining the 16-bit values.
     // The result is a 32-bit value that should show bias
     // if the bounded rand strategy is naive.
-    
+
     // E.g. 2^32 + 2^30 being max ->
     // if you just did a mod by that, the 32-bit numbers divide into 4 parts:
     //   0..2^30
@@ -182,9 +182,9 @@ if testReal {
   // start over, don't count above as run-up
   rs = getRNG();
   if crush then
-    run_crush_testu01_double(name.localize().c_str());
+    run_crush_testu01_double(c_ptrToConst_helper(name.localize()):c_string);
   else
-    run_smallcrush_testu01_double(name.localize().c_str());
+    run_smallcrush_testu01_double(c_ptrToConst_helper(name.localize()):c_string);
 } else {
   writeln("testing uint ", testUintBits, " RNG");
   for i in 1..10 {
@@ -193,9 +193,9 @@ if testReal {
   // start over, don't count above as run-up
   rs = getRNG();
   if crush then
-    run_crush_testu01_uint(name.localize().c_str());
+    run_crush_testu01_uint(c_ptrToConst_helper(name.localize()):c_string);
   else
-    run_smallcrush_testu01_uint(name.localize().c_str());
+    run_smallcrush_testu01_uint(c_ptrToConst_helper(name.localize()):c_string);
 }
 
 

@@ -48,7 +48,7 @@ module ExportWrappers {
   pragma "export wrapper"
   extern record chpl_byte_buffer {
     var isOwned: int(8);
-    var data: c_ptr(c_char);
+    var data: c_ptr(c_uchar);
     var size: uint(64);
   }
 
@@ -64,7 +64,7 @@ module ExportWrappers {
   proc chpl__exportRetStringOrBytes(ref val): chpl_byte_buffer {
     var result: chpl_byte_buffer;
     result.isOwned = val.isOwned:int(8);
-    result.data = val.buff:c_ptr(c_char);
+    result.data = val.buff:c_ptr(c_uchar);
     // Get the length of the string/bytes record in bytes!
     result.size = val.numBytes:uint(64);
     // Assume ownership of the string/bytes record's internal buffer.
@@ -81,7 +81,7 @@ module ExportWrappers {
   }
 
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: string): rt {
-    var data = val.data:c_string;
+    var data = val.data;
     var size = val.size.safeCast(int);
     try! {
       if cp then return string.createCopyingBuffer(data, size);
@@ -90,7 +90,7 @@ module ExportWrappers {
   }
 
   proc chpl__exportArg(cp: bool, val: chpl_byte_buffer, type rt: bytes): rt {
-    var data = val.data:c_string;
+    var data = val.data;
     var size = val.size.safeCast(int);
     try! {
       if cp then return bytes.createCopyingBuffer(data, size);
