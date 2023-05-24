@@ -54,7 +54,7 @@ config const breakOnAllocateId = -1;
 
 proc trackAllocation(c: object, id:int, x:int) {
   opsLock$.readFE();
-  ops.append( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+  ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
     extern proc gdbShouldBreakHere();
     gdbShouldBreakHere();
@@ -64,7 +64,7 @@ proc trackAllocation(c: object, id:int, x:int) {
 
 proc trackFree(c: object, id:int, x:int) {
   opsLock$.readFE();
-  ops.append( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
+  ops.pushBack( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   opsLock$.writeEF(true);
 }
 

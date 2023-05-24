@@ -26,7 +26,7 @@ proc readIntoList(param reuseBuffer, r, separator: ?t) where reuseBuffer == true
   while r.readThrough(separator, s, stripSeparator=true) {
     // take care of potential newlines (see '/regex/readCommaOrNewline.chpl')
     if !s.strip().isEmpty()
-      then l.append(s:int);
+      then l.pushBack(s:int);
   }
   return l;
 }
@@ -38,7 +38,7 @@ proc readIntoList(param reuseBuffer, r, separator) where reuseBuffer == false {
     try {
       // take care of potential newlines (see '/regex/readCommaOrNewline.chpl')
       const s = r.readThrough(separator, stripSeparator=true);
-      if !s.strip().isEmpty() then l.append(s:int);
+      if !s.strip().isEmpty() then l.pushBack(s:int);
     } catch {
       break;
     }

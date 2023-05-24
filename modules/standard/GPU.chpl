@@ -190,7 +190,14 @@ module GPU
     :arg size: the number of elements in each GPU thread block's copy of the array.
    */
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
-    if CHPL_GPU != "cpu" {
+    if !__primitive("call and fn resolves", "numBits", eltType) {
+      compilerError("attempting to allocate a shared array of '",
+                    eltType : string,
+                    "', which does not have a known size. Is 'numBits(",
+                    eltType : string,
+                    ")' supported?");
+    }
+    else if CHPL_GPU != "cpu" {
       const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
       return voidPtr : c_ptr(eltType);
     }

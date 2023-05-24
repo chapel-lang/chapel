@@ -19,7 +19,7 @@ record myWorker2 {
 // Basic test using a record worker.
 proc test1() {
   var lst = new list(r);
-  lst.append(new r());
+  lst.pushBack(new r());
 
   writeln(lst);
   var worker = new myWorker1();
@@ -32,7 +32,7 @@ test1();
 proc test2() {
   var lst = new list(r, parSafe=true);
 
-  for i in 0..7 do lst.append(new r(0));
+  for i in 0..7 do lst.pushBack(new r(0));
   writeln(lst);
   var worker = new myWorker2();
   coforall i in 0..7 do lst.update(i, worker);
@@ -43,7 +43,7 @@ test2();
 // Now a non-parsafe test using a FCF instead.
 proc test3() {
   var lst = new list(int);
-  for i in 0..7 do lst.append(0);
+  for i in 0..7 do lst.pushBack(0);
 
   writeln(lst);
 
@@ -69,7 +69,7 @@ record myWorker3 {
 
 proc test4() {
   var lst = new list(int);
-  for i in 0..7 do lst.append(0);
+  for i in 0..7 do lst.pushBack(0);
 
   writeln(lst);
 
@@ -85,4 +85,3 @@ proc test4() {
   return;
 }
 test4();
-

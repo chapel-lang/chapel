@@ -40,12 +40,12 @@ proc testList(orig: list(?)) {
 proc main() {
   {
     var li : list(int);
-    for i in 1..4 do li.append(i);
+    for i in 1..4 do li.pushBack(i);
     testList(li);
   }
   {
     var li : list(string);
-    for i in 1..4 do li.append("val" + i:string);
+    for i in 1..4 do li.pushBack("val" + i:string);
     testList(li);
   }
   {
@@ -53,23 +53,23 @@ proc main() {
   }
   {
     var li : list(R);
-    li.append(new R(5, 42.0));
-    li.append(new R(9, 9.9));
-    li.append(new R(3, 3.3));
+    li.pushBack(new R(5, 42.0));
+    li.pushBack(new R(9, 9.9));
+    li.pushBack(new R(3, 3.3));
     testList(li);
   }
   {
     var li : list(Z);
-    li.append(new Z("red", new R(1, 0.31)));
-    li.append(new Z("yellow", new R(0, 0.68)));
+    li.pushBack(new Z("red", new R(1, 0.31)));
+    li.pushBack(new Z("yellow", new R(0, 0.68)));
     testList(li);
   }
   {
     var li : list(list(int));
     var x : list(int) = [1, 2, 3];
     var y : list(int) = [4, 5, 6];
-    li.append(x);
-    li.append(y);
+    li.pushBack(x);
+    li.pushBack(y);
     testList(li);
   }
   {
@@ -83,8 +83,8 @@ proc main() {
     y.add("X", 3);
     y.add("Y", 4);
 
-    li.append(x);
-    li.append(y);
+    li.pushBack(x);
+    li.pushBack(y);
     testList(li);
   }
 }

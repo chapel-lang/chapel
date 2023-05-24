@@ -223,6 +223,17 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
 endif
 
 #
+# This is similar to the use of -Wno-stringop-overflow just above, but
+# addressing a complaint that started showing up in gcc 13.1 about our
+# use of memmove() to implement local communications.  Given that we
+# haven't seen problems in practice and run testing with asan, I'm
+# squashing as in the previous case.
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 13; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overread
+endif
+
+#
 # Disable ipa-clone for gcc 7.  This optimization seemed to cause
 # a multi-locale lulesh regression that was fixed in gcc 8
 #

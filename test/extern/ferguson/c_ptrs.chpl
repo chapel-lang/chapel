@@ -6,7 +6,7 @@ extern proc printit(x:c_ptr(c_int));
 extern proc getit():c_ptr(c_int);
 
 proc go() {
-  var my_ptr = c_calloc(c_int, 1);
+  var my_ptr = allocate(c_int, 1, clear=true);
   var it_ptr = getit();
   var my_ptr_copy = returnit(my_ptr);
   var it_ptr_copy = returnit(it_ptr);
@@ -45,7 +45,7 @@ proc go() {
   }
 
 
-  c_free(my_ptr);
+  deallocate(my_ptr);
 
   my_ptr = nil;
 

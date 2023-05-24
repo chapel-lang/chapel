@@ -16,18 +16,18 @@ proc main(args:[] string)
 
   // Gather the paths we want to hash to find duplicates.
   // Start out with a 0-length array
-  // We'll append to it with push_back
+  // We'll append to it with pushBack
   // This is only possible for arrays that do not share a domain.
   var paths: list(string);
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
       // use FileSystem.findFiles to easily enumerate files.
       // A parallel version is available.
       for path in findFiles(arg, recursive=true) do
-        paths.append(path);
+        paths.pushBack(path);
   }
 
   // Create a distributed array of paths so that we can distribute the
@@ -105,4 +105,3 @@ proc main(args:[] string)
     writeln();
   }
 }
-

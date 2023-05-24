@@ -418,7 +418,8 @@ class CallInfo {
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
-                         std::vector<const uast::AstNode*>* actualAsts=nullptr);
+                         std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */
@@ -1234,7 +1235,7 @@ class ResolvedExpression {
   }
 
   /** set the isPrimitive flag */
-  void setIsPrimitive(bool isPrimitive) { isBuiltin_ = isPrimitive; }
+  void setIsBuiltin(bool isBuiltin) { isBuiltin_ = isBuiltin; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }

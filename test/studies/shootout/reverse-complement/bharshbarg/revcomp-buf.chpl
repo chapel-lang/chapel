@@ -80,12 +80,12 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
-          // Character found, bulk-append characters up to and including 'idx'
+          // Character found, bulk-pushBack characters up to and including 'idx'
           // to the 'data' array.
-          data.append(avail[..idx]);
+          data.pushBack(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.append(avail);
+          data.pushBack(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;

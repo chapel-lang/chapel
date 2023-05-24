@@ -20,7 +20,7 @@ record DummyRecord {
   proc init=(const ref other: DummyRecord) {
     this.cid = createdRecords;
     this.complete();
-    this.cpy.append(other.cid);
+    this.cpy.pushBack(other.cid);
     createdRecords += 1;
   }
 
@@ -30,7 +30,7 @@ record DummyRecord {
 }
 
 proc =(ref lhs: DummyRecord, const ref rhs: DummyRecord) {
-  lhs.cpy.append(rhs.cid);
+  lhs.cpy.pushBack(rhs.cid);
 }
 
 class DummyClass {
@@ -53,7 +53,7 @@ proc testLoop(type t) {
 
   for i in 1..testIters {
     var x = new t();
-    lst1.append(x);
+    lst1.pushBack(x);
   }
 
   pragma "no auto destroy"
@@ -73,6 +73,3 @@ testLoop(DummyRecord);
 
 writeln("Testing class type destructors...");
 testLoop(shared DummyClass);
-
-
-

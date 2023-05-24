@@ -759,7 +759,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = uint64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -789,7 +789,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = uint32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -819,7 +819,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = int64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -849,7 +849,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = int32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -873,7 +873,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = boolConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -903,7 +903,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sint64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -933,7 +933,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sint32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -949,7 +949,7 @@ module ProtobufProtocolSupport {
     proc bytesRepeatedConsume(ch: readingChannel) throws {
       var returnList: list(bytes);
       var val = bytesConsumeBase(ch);
-      returnList.append(val);
+      returnList.pushBack(val);
       return returnList;
     }
 
@@ -964,7 +964,7 @@ module ProtobufProtocolSupport {
     proc stringRepeatedConsume(ch: readingChannel) throws {
       var returnList: list(string);
       var val = stringConsumeBase(ch);
-      returnList.append(val);
+      returnList.pushBack(val);
       return returnList;
     }
 
@@ -987,7 +987,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = fixed32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1011,7 +1011,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = fixed64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1035,7 +1035,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = floatConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1059,7 +1059,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = doubleConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1083,7 +1083,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sfixed64ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1107,7 +1107,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = sfixed32ConsumeBase(ch);
-        returnList.append(val);
+        returnList.pushBack(val);
       }
       return returnList;
     }
@@ -1137,7 +1137,7 @@ module ProtobufProtocolSupport {
       while true {
         if (ch.offset() - initialOffset) >= payloadLength then break;
         var val = enumConsumeBase(ch);
-        returnList.append(val:enumType);
+        returnList.pushBack(val:enumType);
       }
       return returnList;
     }
@@ -1158,7 +1158,7 @@ module ProtobufProtocolSupport {
 
       var tmpObj: messageType;
       messageConsumeBase(ch, tmpObj, memWriter, memReader);
-      returnList.append(tmpObj);
+      returnList.pushBack(tmpObj);
       tmpMem.close();
       return returnList;
     }

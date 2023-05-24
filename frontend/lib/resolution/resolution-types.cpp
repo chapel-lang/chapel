@@ -286,7 +286,8 @@ CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
-                          std::vector<const uast::AstNode*>* actualAsts) {
+                          std::vector<const uast::AstNode*>* actualAsts,
+                          UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -367,6 +368,13 @@ CallInfo CallInfo::create(Context* context,
 
   if (actualAsts != nullptr) {
     CHPL_ASSERT(actualAsts->size() == actuals.size());
+  }
+
+  if (!rename.isEmpty()) {
+    // Whatever we were calling was a value, and is now and actual. Can't
+    // rename an argument to a function...
+    CHPL_ASSERT(name != "this");
+    name = rename;
   }
 
   auto ret = CallInfo(name, calledType, isMethodCall,

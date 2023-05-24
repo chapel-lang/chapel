@@ -345,7 +345,7 @@ module ArgumentParser {
       var next = pos + 1;
 
       if args[pos] == this._name {
-        myArg._values.append(args[pos+1..endPos]);
+        myArg._values.pushBack(args[pos+1..endPos]);
         return endPos + 1;
       } else {
         // failed to match the delimiter at this index, which shouldn't happen
@@ -374,7 +374,7 @@ module ArgumentParser {
       var pos = startPos;
       var next = pos + 1;
       if args[pos] == this._name {
-        myArg._values.append(args[pos..endPos]);
+        myArg._values.pushBack(args[pos..endPos]);
         return endPos + 1;
       } else {
         // failed to match the cmd, this should not happen
@@ -399,9 +399,9 @@ module ArgumentParser {
       this._defaultValue = new list(string);
       // add default value(s) if supplied
       if isStringType(t) {
-        this._defaultValue.append(defaultValue);
+        this._defaultValue.pushBack(defaultValue);
       } else if t == list(string) || isArray(t) {
-        this._defaultValue.append(defaultValue);
+        this._defaultValue.pushBack(defaultValue);
       }
       // this._numArgs = numArgs;
       // this._help=help;
@@ -431,7 +431,7 @@ module ArgumentParser {
       // make sure we didn't already satisfy this positional
       if myArg._present && myArg._values.size == high then return startPos;
       do {
-        myArg._values.append(args[pos]);
+        myArg._values.pushBack(args[pos]);
         myArg._present = true;
         pos=next;
         next+=1;
@@ -475,7 +475,7 @@ module ArgumentParser {
       // this._name=name;
       this._required = required;
       this._defaultValue = new list(string);
-      if isBoolType(t) then this._defaultValue.append(defaultValue:string);
+      if isBoolType(t) then this._defaultValue.pushBack(defaultValue:string);
       this._yesFlags = new list(yesFlags);
       this._noFlags = new list(noFlags);
       // this._numArgs = numArgs;
@@ -503,16 +503,16 @@ module ArgumentParser {
       var next = pos+1;
       if _yesFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
-        myArg._values.append("true");
+        myArg._values.pushBack("true");
       } else if _noFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
-        myArg._values.append("false");
+        myArg._values.pushBack("false");
       }
       if high > 0 && next <= endPos {
         var flagVal:bool;
         if _convertStringToBool(args[next], flagVal) {
           myArg._values.clear();
-          myArg._values.append(flagVal:string);
+          myArg._values.pushBack(flagVal:string);
           pos = next;
           next += 1;
         } else if _numArgs.low > 0 {
@@ -552,7 +552,7 @@ module ArgumentParser {
             if flagStr.size > 1 {
               noStr = "-" + noStr;
             }
-            flagsUsage.append(noStr);
+            flagsUsage.pushBack(noStr);
           }
           message += ", ".join(flagsUsage.toArray());
         }
@@ -620,7 +620,7 @@ module ArgumentParser {
         pos=next;
         next+=1;
         matched+=1;
-        myArg._values.append(args[pos]);
+        myArg._values.pushBack(args[pos]);
       }
       return next;
     }
@@ -736,13 +736,13 @@ module ArgumentParser {
       }
 
       proc append(item) {
-        rows.append(item);
+        rows.pushBack(item);
       }
 
       proc render(inset=1, separator="\t") : string {
         var elemList:list(string);
         for elt in rows.these() {
-          elemList.append(separator * inset + elt.render(separator));
+          elemList.pushBack(separator * inset + elt.render(separator));
         }
         return "\n".join(elemList.toArray());
       }
@@ -775,7 +775,7 @@ module ArgumentParser {
                         argKind.option, argKind.subcommand];
 
       var usage = new usageMessage();
-      usage.components.append(binaryName);
+      usage.components.pushBack(binaryName);
       var hasSubcommands = false;
       for kindOfArg in usageOrder {
         for name in sorted(_argStack.keys()) {
@@ -785,23 +785,23 @@ module ArgumentParser {
           if handler._kind == kindOfArg {
             select handler._kind {
               when argKind.positional {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
               when argKind.option {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
               when argKind.subcommand {
                 hasSubcommands = true;
               }
               when argKind.flag {
-                usage.components.append(elem);
+                usage.components.pushBack(elem);
               }
             }
           }
         }
       }
       if hasSubcommands then
-        usage.components.append("[SUBCOMMAND]");
+        usage.components.pushBack("[SUBCOMMAND]");
       return usage;
     }
 
@@ -1005,7 +1005,7 @@ module ArgumentParser {
     @chpldoc.nodoc
     proc addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
-      _helpFlags.append(opts);
+      _helpFlags.pushBack(opts);
       return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
     }
 
@@ -1134,7 +1134,7 @@ module ArgumentParser {
         }
       }
 
-      _positionals.append(handler.borrow());
+      _positionals.pushBack(handler.borrow());
       //create, add, and return the shared argument
       return _addHandler(handler);
     }
@@ -1289,10 +1289,10 @@ module ArgumentParser {
       var myDefault = new list(string);
 
       if isStringType(t) {
-        myDefault.append(defaultValue);
+        myDefault.pushBack(defaultValue);
       } else if t==list(string) ||
                 (isArray(t) && isString(defaultValue[0])) {
-        myDefault.append(defaultValue);
+        myDefault.pushBack(defaultValue);
       } else if !isNothingType(t) {
         throw new ArgumentError("Only string and list of strings are supported "
                                 + "as default values at this time");
@@ -1493,7 +1493,7 @@ module ArgumentParser {
           if flagStr.size > 1 {
             noStr = "-" + noStr;
           }
-          noFlagOpts.append(noStr);
+          noFlagOpts.pushBack(noStr);
           _options.add(noStr, argName);
         }
       }
@@ -1548,7 +1548,7 @@ module ArgumentParser {
                        visible=true) : shared Argument throws {
       var argHelp = new argumentHelp(help, visible, cmd);
       var handler = new owned SubCommand(cmd, argHelp);
-      _subcommands.append(cmd);
+      _subcommands.pushBack(cmd);
       _options.add(cmd, cmd);
       return _addHandler(handler);
     }
@@ -1585,7 +1585,7 @@ module ArgumentParser {
                                      help="pass all following arguments without parsing",
                                      valueName=delimiter);
       var handler = new owned PassThrough(delimiter, argHelp);
-      _subcommands.append(delimiter);
+      _subcommands.pushBack(delimiter);
       _options.add(delimiter, delimiter);
       return _addHandler(handler);
     }
@@ -1804,7 +1804,7 @@ module ArgumentParser {
         const handler = try! this._handlers[name].borrow();
         const arg = try! this._result[name];
         if !arg._present && handler._hasDefault() {
-          arg._values.append(handler._getDefaultValue());
+          arg._values.pushBack(handler._getDefaultValue());
           arg._present = true;
         }
       }
@@ -2037,9 +2037,9 @@ module ArgumentParser {
   proc _processNameToOpts(name:string) : []string {
     var opts:list(string);
     if name.startsWith("-") {
-      opts.append(name);
+      opts.pushBack(name);
     } else {
-      opts.append("--" + name);
+      opts.pushBack("--" + name);
     }
     return opts.toArray();
   }

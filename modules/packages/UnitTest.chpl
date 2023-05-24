@@ -217,7 +217,7 @@ You can specify the order in which tests should run using :proc:`~Test.dependsOn
    proc testFillFact(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      for i in 1..10 do
-       factorials.append(factorial(i));
+       factorials.pushBack(factorial(i));
    }
 
    proc testSumFact(test: borrowed Test) throws {
@@ -1047,7 +1047,7 @@ module UnitTest {
     proc dependsOn(tests: argType ...?n) throws {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
-          this.testDependsOn.append(eachSuperTest);
+          this.testDependsOn.pushBack(eachSuperTest);
         }
         throw new owned DependencyFound();
       }
@@ -1113,7 +1113,7 @@ module UnitTest {
     // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTest(test) {
-      this._tests.append(test);
+      this._tests.pushBack(test);
       this.testCount += 1;
     }
 
@@ -1223,7 +1223,7 @@ module UnitTest {
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
-    checkCircle.append(testName);
+    checkCircle.pushBack(testName);
     try {
       testResult.startTest(testName);
       test(testObject);

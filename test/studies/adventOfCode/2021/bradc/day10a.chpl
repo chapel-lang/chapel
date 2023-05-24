@@ -20,12 +20,12 @@ forall (command, lineno) in zip(navSubSys, 1..) with (ref scores) {
   var stack: list(string);
   for ch in command {
     if Pairs.domain.contains(ch) then
-      stack.append(ch);
+      stack.pushBack(ch);
     else {
       const tail = stack.last();
       const expected = Pairs[tail];
       if ch == expected then
-        stack.pop();
+        stack.popBack();
       else {
         stack.clear();
         break;
@@ -38,7 +38,7 @@ forall (command, lineno) in zip(navSubSys, 1..) with (ref scores) {
       score *= 5;
       score += Scores[Pairs[stack.getValue(i)]];
     }
-    scores.append(score);
+    scores.pushBack(score);
   }
 }
 if debug then writeln(scores);

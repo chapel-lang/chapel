@@ -18,7 +18,7 @@ use List;
     while(lex.tokindex != -1 || !lex.pushback.isEmpty()){
       pres = lex.get_token();
       if(lex.posix || pres != ""){
-        ans.append(pres);
+        ans.pushBack(pres);
       }
     }
     writeln(ans);

@@ -6,9 +6,9 @@ proc test(x: c_void_ptr) {
 var y: c_ptr(uint(8));
 test(y);
 
-var x = c_malloc(int, 1);
+var x = allocate(int, 1);
 
 test(x);
 
-c_free(x);
+deallocate(x);
 

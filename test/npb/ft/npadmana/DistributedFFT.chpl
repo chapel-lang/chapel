@@ -126,11 +126,11 @@ prototype module DistributedFFT {
       }
     }
 
-    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T, ref arr2 : T) where (T != c_ptr(?)) {
       execute(c_ptrTo(arr1), c_ptrTo(arr2));
     }
 
-    inline proc execute(ref arr1 : ?T) where (!isAnyCPtr(T)) {
+    inline proc execute(ref arr1 : ?T) where (T != c_ptr(?)) {
       execute(arr1, arr1);
     }
 
@@ -454,8 +454,8 @@ prototype module DistributedFFT {
     if plan.isValid {
       return plan;
     } else {
-      arr = c_malloc(arrType, dom.size);
-      defer { c_free(arr); }
+      arr = allocate(arrType, dom.size);
+      defer { deallocate(arr); }
       return new FFTWplan(ftType, rank, nnp, howmany, arr,
                           nnp, stride, idist,
                           arr, nnp, stride, idist,

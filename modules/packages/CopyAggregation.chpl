@@ -147,10 +147,10 @@ module CopyAggregation {
     var bufferIdxs: c_ptr(int);
 
     proc postinit() {
-      lBuffers = c_malloc(c_ptr(aggType), numLocales);
+      lBuffers = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
-        lBuffers[loc] = c_malloc(aggType, bufferSize);
+        lBuffers[loc] = allocate(aggType, bufferSize);
         bufferIdxs[loc] = 0;
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
@@ -159,10 +159,10 @@ module CopyAggregation {
     proc deinit() {
       flush();
       for loc in myLocaleSpace {
-        c_free(lBuffers[loc]);
+        deallocate(lBuffers[loc]);
       }
-      c_free(lBuffers);
-      c_free(bufferIdxs);
+      deallocate(lBuffers);
+      deallocate(bufferIdxs);
     }
 
     proc flush() {
@@ -245,12 +245,12 @@ module CopyAggregation {
     var bufferIdxs: c_ptr(int);
 
     proc postinit() {
-      dstAddrs = c_malloc(c_ptr(aggType), numLocales);
-      lSrcAddrs = c_malloc(c_ptr(aggType), numLocales);
+      dstAddrs = allocate(c_ptr(aggType), numLocales);
+      lSrcAddrs = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
-        dstAddrs[loc] = c_malloc(aggType, bufferSize);
-        lSrcAddrs[loc] = c_malloc(aggType, bufferSize);
+        dstAddrs[loc] = allocate(aggType, bufferSize);
+        lSrcAddrs[loc] = allocate(aggType, bufferSize);
         bufferIdxs[loc] = 0;
         rSrcAddrs[loc] = new remoteBuffer(aggType, bufferSize, loc);
         rSrcVals[loc] = new remoteBuffer(elemType, bufferSize, loc);
@@ -260,12 +260,12 @@ module CopyAggregation {
     proc deinit() {
       flush();
       for loc in myLocaleSpace {
-        c_free(dstAddrs[loc]);
-        c_free(lSrcAddrs[loc]);
+        deallocate(dstAddrs[loc]);
+        deallocate(lSrcAddrs[loc]);
       }
-      c_free(dstAddrs);
-      c_free(lSrcAddrs);
-      c_free(bufferIdxs);
+      deallocate(dstAddrs);
+      deallocate(lSrcAddrs);
+      deallocate(bufferIdxs);
     }
 
     proc flush() {
@@ -364,7 +364,7 @@ module AggregationPrimitives {
   // Cacheline aligned and padded allocation to avoid false-sharing
   inline proc bufferIdxAlloc() {
     const cachePaddedLocales = (numLocales + 7) & ~7;
-    return c_aligned_alloc(int, 64, cachePaddedLocales);
+    return allocate(int, cachePaddedLocales, alignment=64);
   }
 
   proc getEnvInt(name: string, default: int): int {
@@ -387,7 +387,7 @@ module AggregationPrimitives {
       if data == c_nil {
         const rvf_size = size;
         on Locales[loc] do {
-          data = c_malloc(elemType, rvf_size);
+          data = allocate(elemType, rvf_size);
         }
       }
       return data;
@@ -416,7 +416,7 @@ module AggregationPrimitives {
         assert(this.data == data);
         assert(data != c_nil);
       }
-      c_free(data);
+      deallocate(data);
     }
 
     // After free'ing the data, need to nil out the records copy of the pointer

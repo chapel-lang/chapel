@@ -71,7 +71,7 @@ writeln(max * max2);
 proc Monkey.processItems(canFinishTurn) {
   while (canFinishTurn.readXX() != id || currentItems().size > 0) {
     while currentItems().size > 0 {
-      var item = currentItems().pop();
+      var item = currentItems().popBack();
 
       numInspected += 1;
       item = op.apply(item);
@@ -80,9 +80,9 @@ proc Monkey.processItems(canFinishTurn) {
       const target = targetMonkey(item % divisor == 0);
 
       if (target < id) {
-        Monkeys[target].nextItems().append(item);
+        Monkeys[target].nextItems().pushBack(item);
       } else {
-        Monkeys[target].currentItems().append(item);
+        Monkeys[target].currentItems().pushBack(item);
       }
     }
   }
@@ -154,7 +154,7 @@ proc Monkey.init() {
   var tempItems: list(int);
   do {
     const val = read(int);
-    tempItems.append(val);
+    tempItems.pushBack(val);
   } while stdin.matchLiteral(",");
 
   // read the monkey's operator and convert it to a MathOp
@@ -176,6 +176,5 @@ proc Monkey.init() {
   // (this was hard to do inline above as a whole-field assignent)
   this.complete();
   for item in tempItems do
-    items[current].append(item);
+    items[current].pushBack(item);
 }
-

@@ -489,7 +489,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         var name = depSpec[0];
 
         // put dep into current packages dep list
-        depList.append(new shared Toml(name));
+        depList.pushBack(new shared Toml(name));
 
         // get dependencies of dep
         var depsOfDep = getSpkgDependencies(dep);
@@ -540,7 +540,7 @@ proc getSpkgDependencies(spec: string): list(string) throws {
     }
     else if found {
       const dep = item.strip("^");
-      dependencies.append(dep);
+      dependencies.pushBack(dep);
     }
   }
   if !found {

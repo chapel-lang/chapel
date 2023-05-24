@@ -10,5 +10,5 @@ children.add('key', n);
 writeln(children);
 
 var childrenList: list(shared Node?);
-childrenList.append(n);
+childrenList.pushBack(n);
 writeln(childrenList);

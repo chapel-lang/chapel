@@ -2626,7 +2626,7 @@ record DefaultWriter {
       writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
-    } else if isClassType(t) || isAnyCPtr(t) {
+    } else if isClassType(t) || chpl_isAnyCPtr(t) {
       _encodeClassOrPtr(writer, x);
     } else if isUnionType(t) {
       _encodeUnion(writer, x);
@@ -5398,7 +5398,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   var err: errorCode = 0;
 
-  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
+  if isClassType(t) || chpl_isDdata(t) || chpl_isAnyCPtr(t) {
     if x == nil {
       // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
@@ -5956,7 +5956,7 @@ proc stringify(const args ...?k):string {
       var offset = w.chpl_offset();
       w.unlock();
 
-      var buf = c_malloc(uint(8), offset+1);
+      var buf = allocate(uint(8), offset:c_size_t+1);
 
       var r = f.reader(locking=false);
       defer try! r.close();
@@ -5967,7 +5967,7 @@ proc stringify(const args ...?k):string {
 
       const ret = string.createCopyingBuffer(buf, offset, offset+1,
                                             decodePolicy.replace);
-      c_free(buf);
+      deallocate(buf);
       return ret;
     }
   }
@@ -8740,7 +8740,7 @@ proc file.localesForRegion(start:int(64), end:int(64)) {
     if num_hosts != 0 {
       for i in 0..num_hosts-1 do
         chpl_free_c_string(locs[i]);
-      c_free(locs);
+      deallocate(locs);
     }
 
     // We found no "good" locales. So any locale is just as good as the next
@@ -11163,7 +11163,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     try w.close();
   }
 
-  var buf = c_malloc(uint(8), offset+1);
+  var buf = allocate(uint(8), offset+1);
   var r = try f.reader(locking=false);
   defer {
     try {

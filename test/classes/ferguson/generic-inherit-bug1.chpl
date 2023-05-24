@@ -92,4 +92,3 @@ module Impl {
     delete a, aa;
   }
 }
-

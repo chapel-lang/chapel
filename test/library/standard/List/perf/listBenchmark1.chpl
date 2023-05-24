@@ -18,7 +18,7 @@ const seed = 314159;
 
 proc createList(size: int) {
   var result: testList;
-  for i in 1..size do result.append(0:byte);
+  for i in 1..size do result.pushBack(0:byte);
   return result;
 }
 
@@ -68,7 +68,7 @@ class AppendFromEmpty: Test {
   override proc setup() { _lst.clear(); }
 
   override proc test() {
-    for i in 1..n0 do _lst.append((i % 127):byte);
+    for i in 1..n0 do _lst.pushBack((i % 127):byte);
   }
 }
 
@@ -89,7 +89,7 @@ class PopFromBack: Test {
   override proc name() do return "PopBack";
   override proc setup() { _lst = createList(n0); }
   override proc test() {
-    while !_lst.isEmpty() do _lst.pop();
+    while !_lst.isEmpty() do _lst.popBack();
   }
 }
 
@@ -153,18 +153,17 @@ class Clear: Test {
 proc main() {
   var tests: list(owned Test);
 
-  tests.append(new AppendFromEmpty());
-  tests.append(new InsertFront());
-  tests.append(new PopFromBack());
-  tests.append(new PopFromFront());
-  tests.append(new IterSerial());
-  tests.append(new IterParallel());
-  tests.append(new RandomAccess1());
-  tests.append(new Clear());
+  tests.pushBack(new AppendFromEmpty());
+  tests.pushBack(new InsertFront());
+  tests.pushBack(new PopFromBack());
+  tests.pushBack(new PopFromFront());
+  tests.pushBack(new IterSerial());
+  tests.pushBack(new IterParallel());
+  tests.pushBack(new RandomAccess1());
+  tests.pushBack(new Clear());
 
   warmup();
 
   for tst in tests do
     tst.output();
 }
-

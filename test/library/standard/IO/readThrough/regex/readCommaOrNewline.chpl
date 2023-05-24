@@ -20,7 +20,7 @@ proc readIntoList(param reuseBuffer, r, separator: regex(?t)) where reuseBuffer 
   var s : t,
       l = new list(int);
   while r.readThrough(separator, s, stripSeparator=true) {
-    l.append(s:int);
+    l.pushBack(s:int);
   }
   return l;
 }
@@ -31,7 +31,7 @@ proc readIntoList(param reuseBuffer, r, separator) where reuseBuffer == false {
   while true {
     try {
       const s = r.readThrough(separator, stripSeparator=true);
-      l.append(s:int);
+      l.pushBack(s:int);
     } catch {
       break;
     }

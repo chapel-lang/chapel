@@ -37,12 +37,12 @@ proc test(val, type T = val.type) {
                     else val == readVal;
       if !compare {
         writeln("FAILURE");
-        failures.append(T:string);
+        failures.pushBack(T:string);
       } else writeln("SUCCESS");
     }
   } catch e : Error {
     writeln("FAILURE: ", e.message());
-    failures.append(T:string);
+    failures.pushBack(T:string);
   }
 
   writeln(header.size * "=");

@@ -3536,7 +3536,7 @@ module HDF5 {
     for f in findFiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
-        filenames.append(f);
+        filenames.pushBack(f);
       }
     }
     var fArray: [1..filenames.size] string;

@@ -124,7 +124,7 @@ writeln("listing the dir contents");
 // the order seems to change from system to system
 var l: list(string);
 for f in listDir(dirname1) {
-  l.append(f);
+  l.pushBack(f);
 }
 for f in sorted(l.toArray()) {
   writef("%ht\n", f.encode(policy=encodePolicy.unescape));

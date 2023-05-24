@@ -305,6 +305,10 @@ isElseBlockOfConditionalWithIfVar(Context* context,
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
+static void populateScopeWithBuiltinKeywords(Context* context, Scope* scope) {
+  scope->addBuiltin(UniqueString::get(context, "index"));
+}
+
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   std::unordered_map<UniqueString,const Type*> map;
   Type::gatherBuiltins(context, map);
@@ -312,6 +316,8 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   for (const auto& pair : map) {
     scope->addBuiltin(pair.first);
   }
+
+  populateScopeWithBuiltinKeywords(context, scope);
 }
 
 // This query always constructs a scope

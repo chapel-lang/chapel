@@ -9,9 +9,11 @@ proc test(type t, v1:t, v2:t) {
   assert( numBytes(x.type) == c_sizeof(x.type) );
   assert( numBytes(t) == c_sizeof(t) );
 
-  // test isAnyCPtr on the type
-  assert( isAnyCPtr(c_ptrTo(x).type) );
-  assert( isAnyCPtr(c_void_ptr) );
+  // although `isAnyCPtr` is no longer a public facing feature, I want to
+  // maintain this test to ensure the feature continues to work
+  // test chpl_isAnyCPtr on the type
+  assert( chpl_isAnyCPtr(c_ptrTo(x).type) );
+  assert( chpl_isAnyCPtr(c_void_ptr) );
 
   // test memset on the pointer to the type
   c_memset( c_ptrTo(x), 0, c_sizeof(x.type) );
