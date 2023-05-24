@@ -95,7 +95,7 @@ module Collectives {
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    @deprecated(notes="non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call") 
+    @deprecated(notes="non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call")
     proc init(numTasks: int, reusable: bool) {
       if reusable {
         bar = new unmanaged aBarrier(numTasks, reusable=true);
