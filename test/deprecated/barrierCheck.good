@@ -1,0 +1,1 @@
+barrierCheck.chpl:5: warning: 'barrier.check()' is deprecated, please use 'barrier.pending()' instead

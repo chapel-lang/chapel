@@ -1,0 +1,1 @@
+barrierReusable.chpl:3: warning: non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call
