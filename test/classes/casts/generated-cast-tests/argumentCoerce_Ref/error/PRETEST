@@ -1,2 +1,5 @@
 #!/bin/bash
-../../generate-tests --generateSuite="argumentRef" --generateErrorCases=true
+CHPL=$1
+$CHPL ../../generate-tests.chpl -o generate-tests && \
+  ./generate-tests --generateSuite="argumentRef" --generateErrorCases=true
+rm -rf generate-tests
