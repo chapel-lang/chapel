@@ -657,7 +657,6 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``x`` does not have both bounds
      */
      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
@@ -1172,7 +1171,6 @@ module Random {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``x`` does not have both bounds
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
