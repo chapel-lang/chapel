@@ -30,16 +30,40 @@ managmentTypesAll[D.low..D.high] = managmentTypes;
 managmentTypesAll[D.high+1..D.high*2] = ([x in managmentTypes] x + "?");
 
 // generate generic stuff all tests need
-proc generateFile(filename: string,
-                  ref chplLines: list(string)) {
-  chplLines.insert(0, "// AUTO-GENERATED: Do not edit");
-  chplLines.insert(1, "class A {}");
-  chplLines.insert(2, "class Parent {}");
-  chplLines.insert(3, "class Child : Parent {}");
+proc generateFile(filename: string, const ref lines: list(string)) {
+  var chplLines = new list(string);
+  chplLines.append("// AUTO-GENERATED: Do not edit");
+  chplLines.append("class A {}");
+  chplLines.append("class Parent {}");
+  chplLines.append("class Child : Parent {}");
 
+  chplLines.append(lines);
 
   chplLines.append("proc main() {");
   chplLines.append("  foo();");
+  chplLines.append("}");
+
+  {
+    var w = openWriter(filename+".chpl");
+    for l in chplLines do w.writeln(l);
+  }
+}
+proc generateOneFile(filename: string,
+                     const ref lines: list(string),
+                     numModules: integral) {
+  var chplLines = new list(string);
+  chplLines.append("// AUTO-GENERATED: Do not edit");
+  chplLines.append("module %s {".format(filename));
+  chplLines.append("class A {}");
+  chplLines.append("class Parent {}");
+  chplLines.append("class Child : Parent {}");
+
+  chplLines.append(lines);
+
+  chplLines.append("proc main() {");
+  for i in 1..numModules do
+    chplLines.append("  M%n.foo();".format(i));
+  chplLines.append("}");
   chplLines.append("}");
 
   {
@@ -91,6 +115,11 @@ proc generate(allowed: set(2*string),
 
   generateDirectoryFiles(errorFiles = generateErrorCases);
 
+  const legalFileName = "noerror";
+  var numLegalModules = 0;
+  var legalFileLines = new list(string);
+
+
   proc writeTestCase(const ref allowList: set(2*string),
                      from: string,
                      fromClass: string,
@@ -106,8 +135,15 @@ proc generate(allowed: set(2*string),
 
     var filename = generateFilename(fromType, toType);
     // only generate files when requested to
-    if (isLegal && ! generateErrorCases) || (! isLegal && generateErrorCases)
+    if ! isLegal && generateErrorCases
       then generateFile(filename, chplLines);
+    if isLegal && ! generateErrorCases {
+      numLegalModules += 1;
+      legalFileLines.append("module M%n {".format(numLegalModules));
+      legalFileLines.append("use noerror;");
+      legalFileLines.append(chplLines);
+      legalFileLines.append("}");
+    }
   }
 
   for from in managmentTypesAll {
@@ -116,6 +152,10 @@ proc generate(allowed: set(2*string),
       writeTestCase(allowedUpcast, from, "Child", to, "Parent");
       writeTestCase(allowedDowncast, from, "Parent", to, "Child");
     }
+  }
+
+  if ! generateErrorCases {
+    generateOneFile(legalFileName, legalFileLines, numLegalModules);
   }
 
 }
