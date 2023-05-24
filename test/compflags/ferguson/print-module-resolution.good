@@ -8,10 +8,10 @@ AutoMath
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math.AutoMath
 Math
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math
-POSIX
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.OS.POSIX
 OS
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.OS
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX.OS
+POSIX
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 Communication
