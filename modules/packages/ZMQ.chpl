@@ -1090,6 +1090,7 @@ module ZMQ {
     if size < parallelAssignThreshold then return bytes.createCopyingBuffer(x, length, size);
     use ByteBufferHelpers;
     use DSIUtil;
+    use OS.POSIX;
     var ret: bytes;
     if length == 0 then return ret;
 
@@ -1105,7 +1106,7 @@ module ZMQ {
       const myOffset = tid*lenPerTask;
       const myLen = if tid == numTasks-1 then length:int-myOffset else lenPerTask;
 
-      c_memmove(dst+myOffset,x+myOffset,myLen);
+      memmove(dst+myOffset,x+myOffset,myLen);
     }
 
     dst[length] = 0;

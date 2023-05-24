@@ -475,7 +475,9 @@ module String {
     // copy the string to the combined buffer
     var buf = buffer:c_void_ptr:c_ptr(uint(8));
     buf = buf + offset;
-    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    import OS.POSIX.memcpy;
+    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 

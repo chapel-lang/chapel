@@ -1,4 +1,4 @@
-use CTypes;
+use CTypes, OS.POSIX;
 proc test(type t, v1:t, v2:t) {
   var x:t = v1;
   var y:t = v2;
@@ -16,9 +16,9 @@ proc test(type t, v1:t, v2:t) {
   assert( chpl_isAnyCPtr(c_void_ptr) );
 
   // test memset on the pointer to the type
-  c_memset( c_ptrTo(x), 0, c_sizeof(x.type) );
+  memset( c_ptrTo(x), 0, c_sizeof(x.type) );
   // and on void pointer
-  c_memset( c_ptrTo(y):c_void_ptr, 0, c_sizeof(x.type) );
+  memset( c_ptrTo(y):c_void_ptr, 0, c_sizeof(x.type) );
 
   assert( x != v1 );
   assert( x == y );
@@ -27,28 +27,28 @@ proc test(type t, v1:t, v2:t) {
   y = v2;
 
   // test memmove on the pointer to the type
-  c_memmove( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type) );
+  memmove( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
   y = v2;
 
   // test memmove on c_void_ptr
-  c_memmove( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
+  memmove( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
   y = v2;
 
   // test memcpy on the pointer to the type
-  c_memcpy( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type) );
+  memcpy( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
   y = v2;
 
   // test memcpy on c_void_ptr
-  c_memcpy( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
+  memcpy( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type) );
   assert( x == y );
 
   x = v1;
@@ -57,22 +57,22 @@ proc test(type t, v1:t, v2:t) {
   // don't assume v1 memcmps less than v2, but do check less than
   // and greater than are different.
 
-  var lt = c_memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type));
+  var lt = memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type));
   // test memcmp on pointer to the type
   assert( lt != 0 );
 
   // test memcmp on c_void_ptr
-  assert( c_memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == lt );
+  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == lt );
 
   x = v2;
   y = v1;
 
   // test memcmp on pointer to the type
-  var gt = c_memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type));
+  var gt = memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type));
   assert( gt != 0 );
 
   // test memcmp on c_void_ptr
-  assert( c_memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == gt );
+  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == gt );
 
   assert( lt != gt );
 
@@ -80,10 +80,10 @@ proc test(type t, v1:t, v2:t) {
   y = v1;
 
   // test memcmp on pointer to the type
-  assert( c_memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type)) == 0 );
+  assert( memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type)) == 0 );
 
   // test memcmp on c_void_ptr
-  assert( c_memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == 0 );
+  assert( memcmp( c_ptrTo(x):c_void_ptr, c_ptrTo(y):c_void_ptr, c_sizeof(x.type)) == 0 );
 }
 
 test(int, 1, 2);
@@ -106,9 +106,9 @@ test(real, 1.0:real, 2.0:real);
   var x = 1:uint(8);
   var y = 2:uint(8);
   var z = 1:uint(8);
-  assert( c_memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type)) < 0 );
-  assert( c_memcmp( c_ptrTo(y), c_ptrTo(x), c_sizeof(x.type)) > 0 );
-  assert( c_memcmp( c_ptrTo(x), c_ptrTo(z), c_sizeof(x.type)) == 0 );
+  assert( memcmp( c_ptrTo(x), c_ptrTo(y), c_sizeof(x.type)) < 0 );
+  assert( memcmp( c_ptrTo(y), c_ptrTo(x), c_sizeof(x.type)) > 0 );
+  assert( memcmp( c_ptrTo(x), c_ptrTo(z), c_sizeof(x.type)) == 0 );
 }
 
 writeln("OK");

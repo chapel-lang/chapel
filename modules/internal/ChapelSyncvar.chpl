@@ -29,6 +29,7 @@ module ChapelSyncvar {
   use SyncVarRuntimeSupport;
 
   use CTypes;
+  use OS.POSIX;
 
   /************************************ | *************************************
   *                                                                           *
@@ -101,7 +102,7 @@ module ChapelSyncvar {
     var ret: t;
     // It will be an error to read the empty value
     // but we zero it just in case
-    c_memset(c_addrOf(ret), 0, c_sizeof(t));
+    memset(c_addrOf(ret), 0, c_sizeof(t));
     return ret;
   }
 
