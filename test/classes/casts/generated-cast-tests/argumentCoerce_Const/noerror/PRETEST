@@ -1,0 +1,2 @@
+#!/bin/bash
+../../generate-tests --generateSuite="argumentConst" --generateErrorCases=false
