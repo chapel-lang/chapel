@@ -15,6 +15,6 @@ if [ "$clang_version" != "14.0.0" ]; then
   exit 2
 fi
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm15"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-llvm14"
 
 $CWD/nightly -cron -examples ${nightly_args}
