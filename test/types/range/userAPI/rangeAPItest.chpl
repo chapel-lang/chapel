@@ -7,9 +7,9 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("idxType          = ", r.idxType:string);
   writeln("stridable        = ", r.stridable);
   writeln("bounds           = ", r.bounds);
+
+
   writeln("isRangeType()    = ", isRangeType(r.type));
-  writeln("isBoundedRange() = ", isBoundedRange(r));
-  writeln("isBounded()      = ", r.isBounded());
   writeln("hasLowBound()    = ", r.hasLowBound());
   writeln("hasHighBound()   = ", r.hasHighBound());
   writeln("stride           = ", r.stride);
@@ -22,7 +22,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("low              = ", if r.hasLowBound() then r.low else "undefined");
   writeln("high             = ", if r.hasHighBound() then r.high else "undefined");
   writeln("isEmpty()        = ", r.isEmpty());
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     writeln("size             = ", r.size);
     writeln("sizeAs(uint)     = ", r.sizeAs(uint));
   }
@@ -39,7 +39,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("indexOrder(", idx, ") = ", r.indexOrder(idx));
   if (r.hasFirst()) then
     writeln("orderToIndex(", offset, ")  = ", r.orderToIndex(offset));
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     if !chpl__singleValIdxType(r.idxType) {
       writeln("expand(2)        = ", r.expand(2));
 
@@ -50,7 +50,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
     writeln("translate(2)     = ", r.translate(2));
     writeln("translate(-2)    = ", r.translate(-2));
   }
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     if !chpl__singleValIdxType(r.idxType) {
       writeln("exterior(2)      = ", r.exterior(2));
       writeln("exterior(-2)     = ", r.exterior(-2));
@@ -60,7 +60,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   }
           
   writeln("serial iteration = ");
-  if (isBoundedRange(r)) {
+  if (r.bounds == boundKind.both) {
     for i in r do
       write(i, " ");
   } else {

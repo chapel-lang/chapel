@@ -218,7 +218,7 @@ module Vector {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
@@ -286,7 +286,7 @@ module Vector {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
 
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
@@ -1045,7 +1045,7 @@ module Vector {
       :type other: `range(eltType)`
     */
     proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      if !isBoundedRange(other) {
+      if other.bounds != boundKind.both {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot extend " + e + " with unbounded " + f;
