@@ -8,12 +8,12 @@ coforall i in 1..here.maxTaskPar {
   var taskid = i % max(int(8));
   for 1..trials {
     var m = c_malloc(int(8), size);
-    memset(m, taskid, size.safeCast(s_size_t));
+    memset(m, taskid, size.safeCast(c_size_t));
     assert(m[0] == taskid && m[size-1] == taskid);
     c_free(m);
 
     var a = c_aligned_alloc(int(8), 8, size);
-    memset(a, taskid, size.safeCast(s_size_t));
+    memset(a, taskid, size.safeCast(c_size_t));
     assert(a[0] == taskid && a[size-1] == taskid);
     c_free(a);
 

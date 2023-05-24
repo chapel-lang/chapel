@@ -3565,6 +3565,7 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
+    import OS.POSIX.memcpy;
     var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
 
     param nbits = numBits(x.type);

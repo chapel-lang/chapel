@@ -1152,7 +1152,7 @@ module Curl {
 
       // Save the url requested
       var url_c = c_calloc(uint(8), url.size+1);
-      memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size);
+      memcpy(url_c:c_void_ptr, url.localize().c_str():c_void_ptr, url.size.safeCast(c_size_t));
 
       fl.url_c = url_c:c_string;
 
