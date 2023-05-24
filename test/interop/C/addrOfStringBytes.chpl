@@ -40,3 +40,4 @@ proc cmp (x, y): bool do return (x: c_void_ptr) == (y: c_void_ptr);
 
 testAddrVsPtr(string);
 testAddrVsPtr(bytes);
+// c_ptrTo behavior for class types is already tested in test/types/cptr/c_ptr_class_type
