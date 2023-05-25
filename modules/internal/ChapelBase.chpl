@@ -1105,7 +1105,7 @@ module ChapelBase {
       if safeMul(numElems, elemWidthInBytes) {
         const numBytes = numElems * elemWidthInBytes;
         const shiftedPtr = _ddata_shift(eltType, ddata, lo);
-        memset(shiftedPtr:c_void_ptr, fill, numBytes);
+        memset(shiftedPtr:c_void_ptr, fill, numBytes.safeCast(c_size_t));
       } else {
         halt('internal error: Unsigned integer overflow during ' +
              'memset of dynamic block');
@@ -1531,7 +1531,7 @@ module ChapelBase {
     } else {
       var src = this,
           dst: uint(w);
-      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
       return dst;
     }
   }
@@ -1569,7 +1569,7 @@ module ChapelBase {
     } else {
       var src = this,
           dst: real(w);
-      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
       return dst;
     }
   }
