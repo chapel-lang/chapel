@@ -5,6 +5,9 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 
+# Load LLVM Spack install to get clang in PATH
+$CHPL_DEPS_SPACK_ROOT/bin/spack load llvm
+
 export CHPL_HOST_COMPILER=clang
 export CHPL_TARGET_COMPILER=clang
 
