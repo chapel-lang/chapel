@@ -18,7 +18,7 @@ proc test(val, type T = val.type) {
   writeln(header);
 
   try {
-    var f = openMemFile();
+    var f = openTempFile();
     {
       printDebugFmt(val);
 
