@@ -665,7 +665,7 @@ module Curl {
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
-        memcpy(dst, ptr_data, amt);
+        memcpy(dst, ptr_data, amt.safeCast(c_size_t));
         ret.total_read += amt;
         realsize -= amt;
         ptr_data = ptr_data + amt;
@@ -729,7 +729,7 @@ module Curl {
         newbuf = allocate(uint(8), newsize, clear=true);
         if newbuf == nil then
           return 0;
-        memcpy(newbuf, buf.mem, oldsize);
+        memcpy(newbuf, buf.mem, oldsize.safeCast(c_size_t));
         deallocate(buf.mem);
         buf.mem = newbuf;
       }

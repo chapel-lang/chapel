@@ -78,13 +78,13 @@ module ChapelHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement.safeCast(c_size_t));
         }
       }
       when ArrayInit.gpuInit {
