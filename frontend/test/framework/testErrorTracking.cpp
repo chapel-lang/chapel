@@ -82,6 +82,18 @@ static const std::string& queryThatRunsQueryThatErrors(Context* context) {
   return QUERY_END(output);
 }
 
+static const std::string& queryThatSilencesOwnErrors(Context* context) {
+  QUERY_BEGIN(queryThatSilencesOwnErrors, context);
+
+  context->error(ID(), "Non-hidden error, always emitted!");
+  auto result = context->runAndTrackErrors([](Context* ctx) {
+    ctx->error(ID(), "Hidden error, should not be emitted!");
+    return ".";
+  });
+  std::string output = result.result();
+  return QUERY_END(output);
+}
+
 // What happens if a query first hides the errors, then another query doesn't?
 static void test1() {
   Context ctx;
@@ -306,6 +318,28 @@ static void test6() {
   context->advanceToNextRevision(false);
 }
 
+static void test7() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // ================
+  //   Generation 1
+  // ================
+  // Run a query that emits some of its errors, but silences some of its others.
+  assert(queryThatSilencesOwnErrors(context) == ".");
+  assert(guard.realizeErrors() == 1);
+  context->advanceToNextRevision(false);
+
+  // ================
+  //   Generation 2
+  // ================
+  // Run it again. The cached value should be used, and the previously-reported
+  // error re-emitted, but not the previously-hidden one.
+  assert(queryThatSilencesOwnErrors(context) == ".");
+  assert(guard.realizeErrors() == 1);
+}
+
 int main() {
   test1();
   test2();
@@ -313,4 +347,5 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 }
