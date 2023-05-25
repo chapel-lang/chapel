@@ -274,7 +274,8 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
-  if (arg->hasFlag(FLAG_NO_RVF)) {
+  if (arg->hasFlag(FLAG_NO_RVF) ||
+      arg->hasFlag(FLAG_TYPE_VARIABLE)) {
     retval = false;
   } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
     retval = true;
