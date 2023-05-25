@@ -1,7 +1,7 @@
 use CTypes;
 use Random, IO;
 
-config const nBytes = 1024;
+config const nBytes : c_size_t = 1024;
 
 // create bytes with random bytes
 var randomStream = createRandomStream(eltType=uint(8));

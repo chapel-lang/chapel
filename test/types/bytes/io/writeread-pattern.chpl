@@ -7,7 +7,7 @@ proc test(byteRange) {
   const byteRange = 0..255;
   const reverseRange = byteRange by -byteRange.stride;
   const nBytes = (byteRange.size + reverseRange.size)*nRepeat;
-  var buf = allocate(uint(8), nBytes+1);
+  var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 
   var i = 0;
   for r in 0..#nRepeat {

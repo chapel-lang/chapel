@@ -1,7 +1,7 @@
 use CTypes;
 use Random;
 
-config const nBytes = 100000;
+config const nBytes : c_size_t = 100000;
 config const nIterations = 25;
 config const useFactory = false;
 

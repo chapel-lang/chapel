@@ -1,7 +1,7 @@
 use CTypes;
 
 // check a couple of sizes can be allocated and freed
-var sizes = (0, 1, 16, 17, 1000);
+var sizes : 5*c_size_t = (0, 1, 16, 17, 1000);
 for size in sizes {
   var m = allocate(int, size);
   var c = allocate(int, size, clear=true);

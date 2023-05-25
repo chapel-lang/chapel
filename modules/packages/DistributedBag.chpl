@@ -688,7 +688,7 @@ module DistributedBag {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      this.elems = allocate(eltType, capacity);
+      this.elems = allocate(eltType, capacity.safeCast(c_size_t));
       this.cap = capacity;
     }
 

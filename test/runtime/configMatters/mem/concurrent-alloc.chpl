@@ -1,6 +1,6 @@
 use CTypes, OS.POSIX;
 
-config const size = 256 * 1024 * 1024;
+config const size : c_size_t = 256 * 1024 * 1024;
 config const numTasks = max(here.maxTaskPar, max(int(8)));
 
 config const trials = 3;
