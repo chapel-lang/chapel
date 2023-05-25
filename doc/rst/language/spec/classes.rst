@@ -718,6 +718,11 @@ a ``type-expression`` that results in a class type. Then:
 
             (new owned C()).borrow()
 
+  .. warning::
+
+    ``new borrowed C()`` has been deprecated - use ``(new owned C()).borrow()``
+    instead
+
 -  ``new unmanaged C()`` allocates and initializes an instance that must
    have ``delete`` called on it explicitly to avoid a memory leak. It
    results in something of type ``unmanaged C``.
