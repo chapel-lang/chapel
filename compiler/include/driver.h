@@ -263,6 +263,7 @@ extern int fGPUBlockSize;
 const int gpuArchNameLen = 16;
 extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
+extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
 extern char gpuArch[gpuArchNameLen+1];
 
