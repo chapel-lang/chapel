@@ -37,7 +37,7 @@ select mode {
   }
   when testMode.serCopy {
     for i in 0..#nIter {
-      c_memcpy(c_ptrTo(B[1]), c_ptrTo(A[1]), n*numBytes(int));
+      memcpy(c_ptrTo(B[1]), c_ptrTo(A[1]), (n*numBytes(int)).safeCast(c_size_t));
     }
   }
   when testMode.parCopy {
@@ -45,7 +45,7 @@ select mode {
       const numTasks = here.maxTaskPar;
       coforall tid in 0..#numTasks {
         var c = chunk(1..n, numTasks, tid);
-        c_memcpy(c_ptrTo(B[c.first]), c_ptrTo(A[c.first]), c.size*numBytes(int));
+        memcpy(c_ptrTo(B[c.first]), c_ptrTo(A[c.first]), (c.size*numBytes(int)).safeCast(c_size_t));
       }
     }
   }
