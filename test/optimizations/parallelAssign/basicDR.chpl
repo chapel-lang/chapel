@@ -1,4 +1,4 @@
-use CTypes;
+use CTypes, OS.POSIX;
 use Time;
 use RangeChunk;
 
