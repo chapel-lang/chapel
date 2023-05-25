@@ -384,6 +384,16 @@ module Math {
   */
   proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
 
+  /*
+    A variant of :proc:`divceil` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divceilpos(m: integral, n: integral) {
+    return chpl_divceilpos(m, n);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);

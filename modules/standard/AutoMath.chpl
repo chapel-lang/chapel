@@ -1077,12 +1077,22 @@ module AutoMath {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divceilpos
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /*
     A variant of :proc:`divceil` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divceilpos(m: integral, n: integral) {
+    return chpl_divceilpos(m, n);
+  }
+
+  @chpldoc.nodoc
+  proc chpl_divceilpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divceilpos() accepts only arguments of signed integer types");
     return (m - 1) / n + 1;
