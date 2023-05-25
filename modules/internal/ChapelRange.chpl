@@ -364,10 +364,7 @@ module ChapelRange {
     type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // proc chpl_build_bounded_range(low: int(?w), high: int(w)) do
-  //   return new range(int(w), low=low, high=high);
+
   proc chpl_build_bounded_range(low: int(8), high: int(8)) do
     return new range(int(8), low = low, high = high);
   proc chpl_build_bounded_range(low: int(16), high: int(16)) do
@@ -377,10 +374,6 @@ module ChapelRange {
   proc chpl_build_bounded_range(low: int(64), high: int(64)) do
     return new range(int(64), low = low, high = high);
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // proc chpl_build_bounded_range(low: uint(?w), high: uint(w)) do
-  //   return new range(uint(w), low=low, high=high);
   proc chpl_build_bounded_range(low: uint(8), high: uint(8)) do
     return new range(uint(8), low = low, high = high);
   proc chpl_build_bounded_range(low: uint(16), high: uint(16)) do
@@ -2326,12 +2319,6 @@ operator :(r: range(?), type t: range(?)) {
       yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
-  //   for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
-  //     yield i;
-  // }
   iter chpl_direct_range_iter(low: int(8), high: int(8)) {
     for i in chpl_direct_param_stride_range_iter(low, high, 1:int(8)) do
       yield i;
@@ -2349,12 +2336,6 @@ operator :(r: range(?), type t: range(?)) {
       yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
-  //   for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
-  //     yield i;
-  // }
   iter chpl_direct_range_iter(low: uint(8), high: uint(8)) {
     for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(8)) do
       yield i;
@@ -2412,13 +2393,6 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
-  //                                     stride: integral) {
-  //   const r = low..high by stride;
-  //   for i in r do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: int(8), high: int(8),
                                       stride: integral) {
     const r = low..high by stride;
@@ -2440,13 +2414,6 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
-  //                                     stride: integral) {
-  //   const r = low..high by stride;
-  //   for i in r do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8),
                                       stride: integral) {
     const r = low..high by stride;
@@ -2489,11 +2456,6 @@ operator :(r: range(?), type t: range(?)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
-  //   for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: int(8), high: int(8), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
@@ -2507,11 +2469,6 @@ operator :(r: range(?), type t: range(?)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
-  //   for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), param stride: integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
@@ -2562,11 +2519,6 @@ operator :(r: range(?), type t: range(?)) {
 
   // cases for when stride is a uint (we know the stride is must be positive)
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
-  //   for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
@@ -2580,11 +2532,6 @@ operator :(r: range(?), type t: range(?)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
-  //   for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
-  // }
   iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
@@ -2600,25 +2547,11 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride isn't valid
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
-  //   compilerError("can't apply 'by' to a range with idxType ",
-  //                 int(w):string, " using a step of type ",
-  //                 stride.type:string);
-  // }
   iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride) do compilerError("can't apply 'by' to a range with idxType ", int(8) : string, " using a step of type ", stride.type : string);
   iter chpl_direct_strided_range_iter(low: int(16), high: int(16), stride) do compilerError("can't apply 'by' to a range with idxType ", int(16) : string, " using a step of type ", stride.type : string);
   iter chpl_direct_strided_range_iter(low: int(32), high: int(32), stride) do compilerError("can't apply 'by' to a range with idxType ", int(32) : string, " using a step of type ", stride.type : string);
   iter chpl_direct_strided_range_iter(low: int(64), high: int(64), stride) do compilerError("can't apply 'by' to a range with idxType ", int(64) : string, " using a step of type ", stride.type : string);
 
-  // The following 4 procedures were instantiated from this generic version:
-  //
-  // iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
-  //   compilerError("can't apply 'by' to a range with idxType ",
-  //                 uint(w):string, " using a step of type ",
-  //                 stride.type:string);
-  // }
   iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(8) : string, " using a step of type ", stride.type : string);
   iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(16) : string, " using a step of type ", stride.type : string);
   iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(32) : string, " using a step of type ", stride.type : string);
