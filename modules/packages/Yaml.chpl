@@ -51,8 +51,8 @@ module Yaml {
       scalarStyle: YamlScalarStyle = YamlScalarStyle.Any,
       documentStyle: YamlDocumentStyle = YamlDocumentStyle.Explicit
     ) {
-      emitter = new LibYamlEmitter(seqStyle, mapStyle, scalarStyle, documentStyle);
-      context = new ContextCounter();
+      emitter = new shared LibYamlEmitter(seqStyle, mapStyle, scalarStyle, documentStyle);
+      context = new shared ContextCounter();
     }
 
     @chpldoc.nodoc
@@ -71,10 +71,10 @@ module Yaml {
 
     var strictTypeChecking: bool;
 
-    proc init(strictTypeChecking = false) {
-      parser = new LibYamlParser();
-      context = new ContextCounter();
-      strictTypeChecking = strictTypeChecking;
+    proc init() {
+      parser = new shared LibYamlParser();
+      context = new shared ContextCounter();
+      this.strictTypeChecking = false;
     }
 
     @chpldoc.nodoc
@@ -92,19 +92,20 @@ module Yaml {
   // ------- fileWriter API -------
 
   proc YamlSerializer.serializeValue(writer: _writeType, const val: ?t) throws {
-    if context.isBase && _hasSimpleYamlType(val) {
+    if context.isBase && (_isPrimitiveYamlType(t) || (isClassType(t) && val == nil)){
       // simply translate the value to it's YAML representation
       // e.g., true => Yes, nil => ~, 5.5 => 5.5, etc.
-      writer.writeBytes(this.emitter.yamlStringifySimple(val, true));
+      writer.writeBytes(this.emitter.yamlStringifyPrimitive(val, true));
     } else {
       // translate the value within the current emitter context
-      if _hasSimpleYamlType(val) {
-        var x = this.emitter.yamlStringifySimple(val, false);
-        this.emitter.emitScalar(x);
+      if _isPrimitiveYamlType(t) {
+        this.emitter.emitScalar(this.emitter.yamlStringifyPrimitive(val, false));
       } else if isClassType(t) {
-        t!.serialize(writer, new YamlSerializer(this.emitter, this.context));
+        if val == nil
+          then this.emitter.emitScalar(b"~");
+          else val!.serialize(writer, new YamlSerializer(this.emitter, this.context));
       } else {
-        t.serialize(writer, new YamlSerializer(this.emitter, this.context));
+        val.serialize(writer, new YamlSerializer(this.emitter, this.context));
       }
     }
   }
@@ -121,8 +122,8 @@ module Yaml {
     this.context.leaveClass();
   }
 
-  proc YamlSerializer.startRecord(writer: _writeType) throws {
-    this._startMapping(writer);
+  proc YamlSerializer.startRecord(writer: _writeType, name: string, size: int) throws {
+    this._startMapping(writer, name);
   }
 
   proc YamlSerializer.endRecord(writer: _writeType) throws {
@@ -130,10 +131,8 @@ module Yaml {
   }
 
   proc YamlSerializer.serializeField(writer: _writeType, key: string, const val: ?t) throws {
-    if key.size > 0 then {
-      var kb = key: bytes;
-      this.emitter.emitScalar(kb);
-    }
+    if key.size > 0 then
+      this.emitter.emitScalar(key: bytes);
     this.serializeValue(writer, val);
   }
 
@@ -214,8 +213,8 @@ module Yaml {
   }
 
   @chpldoc.nodoc
-  proc _hasSimpleYamlType(val: ?t): bool {
-    return val == nil || isBoolType(t) || isNumericType(t) ||
+  proc _isPrimitiveYamlType(type t) param: bool {
+    return isBoolType(t) || isNumericType(t) || isEnumType(t) ||
       isNothingType(t) || isRangeType(t) || isDomainType(t) ||
       t == string || t == bytes;
   }
@@ -227,10 +226,27 @@ module Yaml {
   // ------- fileReader API -------
 
   proc YamlDeserializer.deserializeValue(reader: _readType, ref val: ?t) throws {
-
+    // TODO: full implementation
+    var x = this.deserializeType(reader, t);
+    val = x;
   }
 
   proc YamlDeserializer.deserializeType(reader: _readType, type t): t throws {
+    if context.isBase && _isPrimitiveYamlType(t) {
+      const scalarValue = this._getScalar();
+      return this.YamlParsePrimitive(scalarValue);
+    } else if canResolveTypeMethod(t, "deserializeFrom", reader, this) || isArrayType(t) {
+      // attempt to call the 'deserializeFrom' type method
+      var r = reader.withDeserializer(new yamlDeserializer(this));
+      return t.deserializeFrom(reader=r, deserializer=r.deserializer);
+    } else {
+      // attempt to call the deserializing constructor
+      var r = reader.withDeserializer(new yamlDeserializer(this));
+      return new t(reader=r, deserializer=r.deserializer);
+    }
+  }
+
+  proc YamlParsePrimitive(val: ?t): t throws {
 
   }
 
@@ -256,8 +272,9 @@ module Yaml {
 
   proc YamlDeserializer.deserializeField(reader: _readType, name: string, type t): t throws {
     if name.size > 0 {
+      var foundName: string;
       try {
-        const foundName = this._getScalar();
+        foundName = this._getScalar();
       } catch e: YamlUnexpectedEventError {
         throw new BadFormatError("unexpected event: " + e.message());
       }
@@ -343,17 +360,17 @@ module Yaml {
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._startSequence(reader: readType) throws {
+  proc YamlDeserializer._startSequence(reader: _readType) throws {
     this.parser.expectEvent(reader, EventType.SequenceStart);
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer._endSequence(reader: readType) throws {
+  proc YamlDeserializer._endSequence(reader: _readType) throws {
     this.parser.expectEvent(reader, EventType.SequenceEnd);
   }
 
   @chpldoc.nodoc
-  proc YamlDeserializer.speculativeRead(reader: readType, type t) throws {
+  proc YamlDeserializer.speculativeRead(reader: _readType, type t) throws {
     try {
       return this.deserializeType(reader, t);
     } catch e: YamlUnexpectedEventError {
@@ -432,10 +449,6 @@ module Yaml {
     override proc message(): string {
       return super.message();
     }
-  }
-
-  proc doSomething(yss: YamlSequenceStyle) {
-    return seqStyleToFlag(yss);
   }
 
   module LibYamlUtils {
@@ -522,7 +535,6 @@ module Yaml {
     extern record yaml_emitter_t { }
     extern record yaml_event_t {
       extern "type" var t: c_int;   // event type
-      var data: opaque;
       var start_mark: yaml_mark_t;  // start location in file
       var end_mark: yaml_mark_t;    // end location in file
     }
@@ -685,7 +697,7 @@ module Yaml {
       sequences = YamlSequenceStyle.Any,
       mappings = YamlMappingStyle.Any,
       scalars = YamlScalarStyle.Any,
-      documents = YamlDocumentStyle.Any
+      documents = YamlDocumentStyle.Explicit
     ) {
       this.seqStyle = sequences;
       this.mapStyle = mappings;
@@ -707,6 +719,10 @@ module Yaml {
       c_free(c_ptrTo(this.emitter));
     }
 
+    proc LibYamlEmitter.serialize(fw, serializer) throws {
+      fw.write("LibYamlEmitter");
+    }
+
     // -------- context management --------
 
     proc LibYamlEmitter.openContext() throws {
@@ -721,11 +737,11 @@ module Yaml {
       yaml_emitter_set_unicode(c_ptrTo(this.emitter), 1);
 
       this._startOutputStream();
-      this.beginDocument(false);
+      this.startDocument();
     }
 
     proc LibYamlEmitter.closeContext(): bytes throws {
-      this.endDocument(false);
+      this.endDocument();
       this._endOutputStream();
       yaml_emitter_delete(c_ptrTo(this.emitter));
 
@@ -737,7 +753,7 @@ module Yaml {
       fread(buf, 1, size, this.file);
       buf[size] = 0;
 
-      const b = createBytesWithNewBuffer(buf, size, size+1);
+      const b = bytes.createCopyingBuffer(buf, size, size+1);
       c_free(buf);
 
       fclose(this.file);
@@ -790,15 +806,17 @@ module Yaml {
     }
 
     proc LibYamlEmitter.emitScalar(
-      ref value: bytes,
+      value: bytes,
       ref tag: bytes = b"",
       styleHint = YamlScalarStyle.Default
     ) throws {
+      var localvalue = value;
+
       if !yaml_scalar_event_initialize(
         c_ptrTo(this.event),
         nil, // TODO: anchor support
         if tag.numBytes > 0 then c_ptrTo(tag) else nil,
-        c_ptrTo(value),
+        c_ptrTo(localvalue),
         value.numBytes: c_int,
         (if tag.numBytes > 0 then 0 else 1): c_int,
         (if tag.numBytes > 0 then 0 else 1): c_int,
@@ -815,23 +833,38 @@ module Yaml {
       this.emitEvent("alias");
     }
 
-    proc LibYamlEmitter.startDocument(borderHint = YamlDocumentStyle.Default) throws {
+    proc LibYamlEmitter.startDocument(styleHint = YamlDocumentStyle.Default) throws {
       if !yaml_document_start_event_initialize(
         c_ptrTo(this.event),
         nil, nil, nil,
-        this.chooseDocumentStyle(borderHint)
+        this.chooseDocumentStyle(styleHint)
       ) then throw new YamlEmitterError("Failed to initialize 'document start' event");
 
-      this.emitEvent(errorMsg = "Failed to emit document start event");
+      this.emitEvent("start document");
     }
 
-    proc LibYamlEmitter.endDocument(borderHint = YamlDocumentStyle.Default) throws {
+    proc LibYamlEmitter.endDocument(styleHint = YamlDocumentStyle.Default) throws {
       if !yaml_document_end_event_initialize(
         c_ptrTo(this.event),
-        this.chooseDocumentStyle(borderHint)
+        this.chooseDocumentStyle(styleHint)
       ) then throw new YamlEmitterError("Failed to initialize document end event");
 
-      this.emitEvent(errorMsg = "Failed to emit document end event");
+      this.emitEvent("end document");
+    }
+
+    proc LibYamlEmitter._startOutputStream() throws {
+      // TODO: make the encoding configurable
+      if !yaml_stream_start_event_initialize(c_ptrTo(this.event), YAML_UTF8_ENCODING)
+        then throw new YamlEmitterError("Failed to initialize 'stream start' event");
+
+      this.emitEvent("stream start");
+    }
+
+    proc LibYamlEmitter._endOutputStream() throws {
+      if !yaml_stream_end_event_initialize(c_ptrTo(this.event))
+        then throw new YamlEmitterError("Failed to initialize 'stream end' event");
+
+      this.emitEvent("stream end");
     }
 
     // -------- helpers --------
@@ -870,16 +903,16 @@ module Yaml {
     }
 
     // used to serialize simple types outside the context of a sequence or mapping
-    proc LibYamlEmitter.yamlStringifySimple(val: ?t, processStrings:bool): bytes {
+    proc LibYamlEmitter.yamlStringifyPrimitive(val: ?t, processStrings:bool): bytes {
       if isBoolType(t) {
-        return if t then b"Yes" else b"No";
+        return if val then b"Yes" else b"No";
       } else if t == string || t == bytes {
         if processStrings {
           select this.scalarStyle {
-            when YamlScalarStyle.Plain do return t: bytes;
+            when YamlScalarStyle.Plain do return val: bytes;
             when YamlScalarStyle.SingleQuoted do return b"'" + val: bytes + b"'";
             when YamlScalarStyle.DoubleQuoted do return b"\"" + val: bytes + b"\"";
-            when YamlScalarStyle.Literal do return b"|" & val: bytes;
+            when YamlScalarStyle.Literal do return b"| " + val: bytes;
             when YamlScalarStyle.Folded {
               var left = val.size,
                   lineStart = 0,
@@ -891,16 +924,25 @@ module Yaml {
               }
               return folded;
             }
-            otherwise return t: bytes;
+            otherwise return val: bytes;
           }
         } else {
-          return t: bytes;
+          return val: bytes;
         }
-      } else if val == nil || isNothingType(t) {
+      } else if (isClassType(t) && val == nil) || isNothingType(t) {
         return b"~";
       } else {
-        return "%t".format(val):bytes;
+        return "%t".format(val): bytes;
       }
+    }
+
+    // -------- dumb --------
+    proc LibYamlEmitter.serialize(fw, serializer) throws {
+      fw.write("---LimYamlEmitter---");
+    }
+
+    proc LibYamlEmitter.writeThis(fw) throws {
+      fw.write("---LimYamlEmitter---");
     }
 
     // ----------------------------------------------------
@@ -990,6 +1032,15 @@ module Yaml {
         this.event.start_mark.idx,
         this.event.end_mark.idx
       );
+    }
+
+    // -------- dumb --------
+    proc LibYamlParser.serialize(fw, serializer) throws {
+      fw.write("---LimYamlParser---");
+    }
+
+    proc LibYamlParser.writeThis(fw) throws {
+      fw.write("---LimYamlParser---");
     }
 
     // ----------------------------------------------------
