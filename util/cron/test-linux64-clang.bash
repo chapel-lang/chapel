@@ -7,6 +7,8 @@ source $CWD/common.bash
 
 # Load LLVM Spack install to get clang in PATH
 eval `$CHPL_DEPS_SPACK_ROOT/bin/spack load --sh   llvm`
+unset CC
+unset CXX
 
 export CHPL_HOST_COMPILER=clang
 export CHPL_TARGET_COMPILER=clang
