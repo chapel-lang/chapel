@@ -356,10 +356,10 @@ std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
 int fGPUBlockSize = 0;
-char fGpuArch[16];
+char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
 const char* gGpuSdkPath = NULL;
-char gpuArch[16];
+char gpuArch[gpuArchNameLen+1] = "";
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1682,7 +1682,7 @@ static void setGPUFlags() {
     //
     // set up gpuArch
     if (strlen(fGpuArch) > 0) {
-      strncpy(gpuArch, fGpuArch, 16);
+      strncpy(gpuArch, fGpuArch, gpuArchNameLen);
     }
     else {
       if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
@@ -1691,7 +1691,7 @@ static void setGPUFlags() {
                   "for more information");
       }
       else {
-        strncpy(gpuArch, CHPL_GPU_ARCH, 16);
+        strncpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
       }
     }
   }
