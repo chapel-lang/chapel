@@ -1,15 +1,10 @@
 use IO, IO.FormattedIO;
 import Subprocess.spawn;
 
-iter getEcgSamples(path: string): int {
+iter getEcgSamples(path: string): int throws {
   const fr = openReader(path);
   var a, b: int;
-  try {
-    while fr.readf("%i %i\n", a, b) do yield b;
-  } catch {
-    writeln("Failed to parse ECG data");
-    halt(1);
-  }
+  while fr.readf("%i %i\n", a, b) do yield b;
 }
 
 iter getGoodCoeffs(path: string): int throws {
