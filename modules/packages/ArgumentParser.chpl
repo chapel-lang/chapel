@@ -977,8 +977,11 @@ module ArgumentParser {
       _exitAfterHelp = exitAfterHelp;
 
       var _helpHandler = new shared HelpHandler();
+      // TODO: this fails if helpHandler is `borrowed`
       if !isNothingType(h) then
-        _helpHandler = helpHandler: shared h.chpl_t;
+        if isOwnedClass(helpHandler) || isUnmanagedClass(helpHandler)
+          then _helpHandler = shared.adopt(helpHandler);
+          else _helpHandler = helpHandler : shared;
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then
