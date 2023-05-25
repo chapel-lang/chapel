@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* NetCDF bindings for Chapel
+/* NetCDF bindings for Chapel.
 
 This module implements the C-API for netCDF version 4.6.1.
 
@@ -41,10 +41,10 @@ On Cray systems with the ``cray-netcdf`` module loaded, no compiler flags
 are necessary to use the HDF5 module.
 */
 module NetCDF {
-  /* The NetCDF module defines the interface to the netCDF library.
+  /* This module defines the C interface to the netCDF library.
      Documentation for its functions, types, and constants can be found
      at the official netCDF web site:
-     https://www.unidata.ucar.edu/software/netcdf/docs
+     https://docs.unidata.ucar.edu/netcdf-c/current/
    */
   module C_NetCDF {
     public use CTypes;

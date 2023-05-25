@@ -51,7 +51,7 @@ proc print_1D(A: []) {
 /* The process which runs the benchmark */
 proc kernel_jacobi1d(dist_1D, m_dim: int) {
   var still_correct = true;
-  var t:Timer;
+  var t:stopwatch;
   
   if messages {
       resetCommDiagnostics();
@@ -59,7 +59,7 @@ proc kernel_jacobi1d(dist_1D, m_dim: int) {
   }
   
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
     var A = initialize_1D(dist_1D, 2, m_dim);

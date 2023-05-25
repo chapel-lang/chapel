@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -48,10 +48,13 @@
 //              invocations by ;
 //
 #define foreach_ast_sep(macro, sep)                \
+  macro(TemporaryConversionThunk)  sep             \
+                                                   \
   macro(PrimitiveType) sep                         \
   macro(ConstrainedType) sep                       \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+  macro(FunctionType) sep                          \
   macro(DecoratedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
@@ -63,6 +66,7 @@
   macro(InterfaceSymbol) sep                       \
   macro(EnumSymbol)   sep                          \
   macro(LabelSymbol)  sep                          \
+  macro(TemporaryConversionSymbol)  sep            \
                                                    \
   macro(SymExpr) sep                               \
   macro(UnresolvedSymExpr) sep                     \
@@ -167,7 +171,9 @@ enum AstTag {
   E_ForallStmt,
   E_ImplementsStmt,
   E_ExternBlockStmt,
+  E_TemporaryConversionThunk,
 
+  E_TemporaryConversionSymbol,
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
@@ -182,14 +188,15 @@ enum AstTag {
   E_ConstrainedType,
   E_EnumType,
   E_AggregateType,
+  E_FunctionType,
   E_DecoratedClassType
 };
 
 static inline bool isExpr(AstTag tag)
-{ return tag >= E_SymExpr        && tag <= E_ExternBlockStmt; }
+{ return tag >= E_SymExpr && tag <= E_TemporaryConversionThunk; }
 
 static inline bool isSymbol(AstTag tag)
-{ return tag >= E_ModuleSymbol   && tag <= E_LabelSymbol; }
+{ return tag >= E_TemporaryConversionSymbol && tag <= E_LabelSymbol; }
 
 static inline bool isType(AstTag tag)
 { return tag >= E_PrimitiveType  && tag <= E_DecoratedClassType; }
@@ -266,13 +273,6 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
-  void              printTabs(std::ostream *file, unsigned int tabs);
-  void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
-  void              printDocsDeprecation(const char *doc, std::ostream *file,
-                                         unsigned int tabs,
-                                         const char* deprecationMsg,
-                                         bool extraLine);
-
   static  const     std::string tabText;
 
 protected:
@@ -325,6 +325,7 @@ static inline bool isCallExpr(const BaseAST* a)
     return a && a->astTag == E_##Type;            \
   }
 
+def_is_ast(TemporaryConversionThunk)
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
@@ -353,7 +354,9 @@ def_is_ast(FnSymbol)
 def_is_ast(InterfaceSymbol)
 def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
+def_is_ast(TemporaryConversionSymbol)
 def_is_ast(PrimitiveType)
+def_is_ast(FunctionType)
 def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
@@ -378,6 +381,7 @@ bool isCForLoop(const BaseAST* a);
   static inline const Type * toConst##Type(const BaseAST* a) \
     { return is##Type(a) ? (const Type*)a : NULL; }
 
+def_to_ast(TemporaryConversionThunk)
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
@@ -408,8 +412,10 @@ def_to_ast(FnSymbol)
 def_to_ast(InterfaceSymbol)
 def_to_ast(EnumSymbol)
 def_to_ast(LabelSymbol)
+def_to_ast(TemporaryConversionSymbol)
 def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
+def_to_ast(FunctionType)
 def_to_ast(ConstrainedType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
@@ -438,6 +444,7 @@ def_to_ast(ParamForLoop);
     }; \
   }
 
+def_less_ast(TemporaryConversionThunk)
 def_less_ast(SymExpr)
 def_less_ast(UnresolvedSymExpr)
 def_less_ast(DefExpr)
@@ -468,6 +475,7 @@ def_less_ast(FnSymbol)
 def_less_ast(InterfaceSymbol)
 def_less_ast(EnumSymbol)
 def_less_ast(LabelSymbol)
+def_less_ast(TemporaryConversionSymbol)
 def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
 def_less_ast(ConstrainedType)
@@ -541,6 +549,9 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 
 #define AST_CHILDREN_CALL(_a, call, ...)                                \
   switch (_a->astTag) {                                                 \
+  case E_TemporaryConversionThunk:                                      \
+    AST_CALL_LIST(_a, TemporaryConversionThunk, children, call, __VA_ARGS__); \
+    break;                                                              \
   case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \
     AST_CALL_LIST(_a, CallExpr, argList, call, __VA_ARGS__);            \
@@ -549,7 +560,6 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, ContextCallExpr, options, call, __VA_ARGS__);     \
     break;                                                              \
   case E_LoopExpr:                                                      \
-    AST_CALL_LIST(_a,  LoopExpr, defIndices,   call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, indices,      call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, iteratorExpr, call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, LoopExpr, cond,         call, __VA_ARGS__);      \

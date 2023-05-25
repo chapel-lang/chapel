@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+
+parser = argparse.ArgumentParser(description='Write the LICENSE file suitable for importing')
+parser.add_argument('source', help='The source directory where LICENSE is found')
+parser.add_argument('destination', help='The location to write the updated LICENSE file')
+
+args = parser.parse_args()
+
+if not os.path.exists(args.source):
+  raise Exception('Source directory does not exist')
+
+if not os.path.exists(args.destination):
+  os.makedirs(args.destination)
+license_contents = []
+
+with open(os.path.join(args.source, 'LICENSE'), 'r') as l:
+  license_contents = l.readlines()
+
+with open(os.path.join(args.destination, 'LICENSE'), 'w') as f:
+    for line in license_contents:
+      line = line.replace('"','')
+      line = line.strip("\n")
+      line = '"{}\\n"\n'.format(line)
+      f.write(line)

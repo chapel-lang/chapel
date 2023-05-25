@@ -1,9 +1,2 @@
-Base
-static Base
-dyanmic Base
-Derived foo
-static Derived
-dynamic Derived
-Base
-static Base
-dynamic Derived
+fields.chpl:22: error: Derived.sbName override keyword required for method matching signature of superclass method
+fields.chpl:16: error: Derived.field override keyword required for method matching signature of superclass method

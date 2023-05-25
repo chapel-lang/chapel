@@ -38,8 +38,8 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   writeln("writing RMAT graph with ", graphNumVertices(G), " vertices, ",
         graphTotalEdges(G), " edges to '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param wri = true;
 
@@ -97,10 +97,10 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   sta.close();
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for writing RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE writing RMAT graph");
@@ -132,8 +132,8 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
               then " in parallel, 1 task per locale" else " in parallel",
           " from '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param rea = false;
 
@@ -243,10 +243,10 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
   } // if IOserial
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for reading RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE reading RMAT graph");
@@ -283,7 +283,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   // ensure we got unstridable range with VType-typed indices
   compilerAssert(followThis.type ==
-                 1*range(VType, BoundedRangeType.bounded, false));
+                 1*range(VType, boundKind.both, false));
 
   const myIDs = unDensify(followThis(0), uxIDs);
 
@@ -310,10 +310,10 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   ref GRowLocal = GRow.localSlice(myIDs);
 
   // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
-  proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
+  proc staOffsetForVID(v: int) do return (v-1) * numBytes(IONumType);
   // Returns the offset of startVertex/endVertex/weight[e] in
   //  svf, evf, wwf, resp; 1 <= e <= numEdges.
-  proc svOffsetForEID(e: int) return (e-1) * numBytes(IONumType);
+  proc svOffsetForEID(e: int) do return (e-1) * numBytes(IONumType);
 
   // We need to read edgeStart(v1) and edgeStart(v2) (in the terminology
   // of the commit message for r19646) - to determine the span of
@@ -327,14 +327,13 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   //
   const sta_v1 = repfiles[repfileST2].reader(kind = IOendianness,
                                              locking = false,
-                                             start = staOffsetForVID(v1),
-                                             end = staOffsetForVID(v1+1));
+                                             region = staOffsetForVID(v1)..#staOffsetForVID(v1+1));
   const sta1 = readNum(sta_v1) + 1;
   sta_v1.close();
 
   // We read edgeStart(v2) from its own channel.
   const sta_v2 = repfiles[repfileSTA].reader(IOendianness, false,
-                            staOffsetForVID(v2+1), staOffsetForVID(v2+1+1));
+                            staOffsetForVID(v2+1)..#staOffsetForVID(v2+1+1));
   const sta2 = readNum(sta_v2);
   sta_v2.close();
 
@@ -346,16 +345,16 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 
   // We access only our parts these files.
   const sv = repfiles[repfileSV].reader(IOendianness, false,
-                        svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
   const ev = repfiles[repfileEV].reader(IOendianness, false,
-                        svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
   const ww = repfiles[repfileWW].reader(IOendianness, false,
-                        svOffsetForEID(sta1), svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
 
   // 'sta' covers edgeStart(v1+1..v2).
   // Do not include v1, as another process will be reading it from its 'STA'.
   const sta = repfiles[repfileSTA].reader(IOendianness, false,
-                         staOffsetForVID(v1+1), staOffsetForVID(v2+1+1));
+                         staOffsetForVID(v1+1)..#staOffsetForVID(v2+1+1));
 
   var startIxCnt = sta1 - 1;
 
@@ -452,6 +451,8 @@ proc myerror(args...) {
 }
 
 proc reportNumVerticesError(G, snapshot_prefix, vCount) {
+  use Math;
+
   const vcountLog2 =
     if vCount <= 0 then -1:int(64) else floor(log2(vCount)):int(64);
   const helpMessage =
@@ -483,8 +484,8 @@ proc reportProgress() {
 
 ///////// graph helpers /////////
 
-proc graphTotalEdges(G)  return + reduce [v in G.Row] v.numNeighbors();
-proc graphNumVertices(G) return G.vertices.size;
+proc graphTotalEdges(G) do  return + reduce [v in G.Row] v.numNeighbors();
+proc graphNumVertices(G) do return G.vertices.size;
 
 ///////// I/O helpers /////////
 
@@ -498,21 +499,25 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 
 proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
   return open(prefix+suffix,
-              if forWriting then iomode.cw else iomode.r,
-              IOHINT_SEQUENTIAL);
+              if forWriting then ioMode.cw else ioMode.r,
+              ioHintSet.sequential);
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
   var temp:IONumType;
+  var dataRemains:bool = false;
   try! {
-    chan.read(temp);
+    dataRemains = chan.read(temp);
   } catch e: SystemError {
     // temp==0 is a workaround for unending large files
-    if e.err != EEOF && temp != 0 then
+    if temp != 0 then
+      dataRemains = true;
+  }
+  if (dataRemains) {
       myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
               "'  the next value is ", temp);
   }
 }
 
 proc writeNum(ch, num): void { ch.write(num:IONumType); }
-proc readNum(ch): IONumType  return ch.read(IONumType);
+proc readNum(ch): IONumType do  return ch.read(IONumType);

@@ -14,7 +14,9 @@
 
 #include "ReduceFunctions.h"
 #include "Delta.h"
+#include "Utils.h"
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include <iterator>
 #include <vector>
@@ -23,13 +25,10 @@ using namespace llvm;
 
 /// Removes all the Defined Functions
 /// that aren't inside any of the desired Chunks.
-static void extractFunctionsFromModule(const std::vector<Chunk> &ChunksToKeep,
-                                       Module *Program) {
-  Oracle O(ChunksToKeep);
-
+static void extractFunctionsFromModule(Oracle &O, Module &Program) {
   // Record all out-of-chunk functions.
   std::vector<std::reference_wrapper<Function>> FuncsToRemove;
-  copy_if(Program->functions(), std::back_inserter(FuncsToRemove),
+  copy_if(Program.functions(), std::back_inserter(FuncsToRemove),
           [&O](Function &F) {
             // Intrinsics don't have function bodies that are useful to
             // reduce. Additionally, intrinsics may have additional operand
@@ -44,34 +43,15 @@ static void extractFunctionsFromModule(const std::vector<Chunk> &ChunksToKeep,
 
   // And finally, we can actually delete them.
   for (Function &F : FuncsToRemove) {
-    // Replace all *still* remaining uses with undef.
-    F.replaceAllUsesWith(UndefValue::get(F.getType()));
+    // Replace all *still* remaining uses with the default value.
+    F.replaceAllUsesWith(getDefaultValue(F.getType()));
     // And finally, fully drop it.
     F.eraseFromParent();
   }
 }
 
-/// Counts the amount of functions and prints their
-/// respective name & index
-static int countFunctions(Module *Program) {
-  // TODO: Silence index with --quiet flag
-  errs() << "----------------------------\n";
-  errs() << "Function Index Reference:\n";
-  int FunctionCount = 0;
-  for (auto &F : *Program) {
-    if (F.isIntrinsic() && !F.use_empty())
-      continue;
-
-    errs() << '\t' << ++FunctionCount << ": " << F.getName() << '\n';
-  }
-
-  errs() << "----------------------------\n";
-  return FunctionCount;
-}
-
 void llvm::reduceFunctionsDeltaPass(TestRunner &Test) {
   errs() << "*** Reducing Functions...\n";
-  int Functions = countFunctions(Test.getProgram());
-  runDeltaPass(Test, Functions, extractFunctionsFromModule);
+  runDeltaPass(Test, extractFunctionsFromModule);
   errs() << "----------------------------\n";
 }

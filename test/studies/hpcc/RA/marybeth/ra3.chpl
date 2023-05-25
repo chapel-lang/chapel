@@ -2,6 +2,8 @@
  *
  *  This is the Chapel version of the MTA version + inner vector loop
  */  
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 
@@ -36,7 +38,7 @@ var GUPs:real;
 proc main() {
 
   use Time;
-  var t:Timer;
+  var t:stopwatch;
 
   if doIO then writeRAdata();
 

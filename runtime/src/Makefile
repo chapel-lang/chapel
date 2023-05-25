@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -51,6 +51,7 @@ SUBDIRS = \
 	timers \
 	topo \
 	qio \
+	gpu \
 
 else
 TARGETS = \
@@ -61,6 +62,7 @@ TARGETS = \
 SUBDIRS = \
 	comm \
 	launch \
+	gpu \
 
 endif
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,11 +18,12 @@
  * limitations under the License.
  */
 
-/*
+/* Support for the 'chplvis' visualization tool.
 
-   Support for the visualization tool :ref:`chplvis`.
+   This module provides support for the execution visualization tool
+   :ref:`chplvis`.
 
-   This module provides access to and enables hooks to dump out
+   It provides access to and enables hooks to dump out
    task and communication information for post-run visualization
    of the tasks and communication.
 
@@ -74,7 +75,7 @@ module VisualDebug
    This code is O(log n), n the number of Locales.
 */
 
-pragma "no doc"
+@chpldoc.nodoc
   enum vis_op {v_start, v_stop, v_tag, v_pause};
 
 private iter hc_id2com ( id: int, off: int ) {

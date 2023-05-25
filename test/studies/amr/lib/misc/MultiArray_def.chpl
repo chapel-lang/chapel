@@ -2,7 +2,7 @@ public use MultiDomain_def;
 
 
 
-proc main {
+private proc main {
   
   var mD = new unmanaged MultiDomain(2,false);
   mD.add( {1..12, 1..12} );

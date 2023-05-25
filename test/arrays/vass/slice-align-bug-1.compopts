@@ -1,0 +1,2 @@
+--codegen         # slice-align-bug-1.old.good
+-snewSliceRule    # slice-align-bug-1.good

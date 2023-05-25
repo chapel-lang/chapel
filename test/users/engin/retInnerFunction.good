@@ -1,1 +1,3 @@
-retInnerFunction.chpl:3: error: Inner functions that uses outer-local variables cannot be returned.
+retInnerFunction.chpl:1: In function 'foo':
+retInnerFunction.chpl:3: error: cannot capture lambda because it refers to outer variables
+retInnerFunction.chpl:3: note: such as 'dummy', here

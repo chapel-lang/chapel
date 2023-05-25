@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,10 +18,11 @@
  * limitations under the License.
  */
 
-/*
-  The :mod:`Memory` module provides submodules that contain operations
-  related to memory usage and memory initialization.
+/* Support for operations related to memory usage and initialization.
+
+.. warning:: The "Memory" module and all submodules are deprecated
 */
+@deprecated("The Memory module is deprecated")
 module Memory {
 
 include module Diagnostics;

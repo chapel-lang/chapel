@@ -4,7 +4,7 @@ module m {
   class C {
 
    var nl: int;
-   var C_chnl: channel;
+   var C_chnl: fileReader;
 
    proc init() {
      nl = 0;

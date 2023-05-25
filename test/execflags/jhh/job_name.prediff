@@ -1,0 +1,16 @@
+#! /usr/bin/env python3
+
+import sys, os
+from helper import checkLauncherArg, getBatchFile
+
+prog = sys.argv[1]
+outputFile = sys.argv[2]
+output = None
+delete = False
+
+if os.getenv('CHPL_LAUNCHER') == 'pbs-aprun':
+    # pbs-aprun indirects through an expect script
+    (outputFile, output) = getBatchFile(outputFile)
+    delete = True
+
+checkLauncherArg(prog, outputFile, output, delete)

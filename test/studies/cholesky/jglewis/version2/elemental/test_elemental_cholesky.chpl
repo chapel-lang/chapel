@@ -78,7 +78,7 @@ module cholesky_test_elemental_symmetric_ranges {
     writeln ("elemental cholesky factorization symmetric index range code\n "
 	     +	"on symmetric index range");
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     clock.clear ();
     clock.start ();

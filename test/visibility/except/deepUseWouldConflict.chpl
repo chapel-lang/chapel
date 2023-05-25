@@ -7,6 +7,6 @@ module M4 {
     writeln(b);
     writeln(c);
     writeln(a);
-    // a should evaluate to M2's version.
+    // a used to evaluate to M2's version but now conflicts
   }
 }

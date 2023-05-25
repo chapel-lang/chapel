@@ -1,3 +1,4 @@
+use FileSystem;
 use IO;
 
 config const filename = "inteof-test.nums";
@@ -11,7 +12,7 @@ for i in 0..sizes.size-1
   {
     if verbose then writeln("n=", n, " reopen=", reopen, " read text");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer();
 
       writer.writeln(n);
@@ -23,7 +24,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader();
@@ -37,17 +38,21 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();
     }
     if verbose then writeln("n=", n, " reopen=", reopen, " readln text");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer();
 
       writer.writeln(n);
@@ -59,7 +64,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader();
@@ -73,17 +78,21 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();
     }
     if verbose then writeln("n=", n, " reopen=", reopen, " read binary");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer(kind=iokind.native);
 
       writer.write(n);
@@ -95,7 +104,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader(kind=iokind.native);
@@ -109,10 +118,14 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();
@@ -120,5 +133,5 @@ for i in 0..sizes.size-1
   }
 }
 
-unlink(filename);
+FileSystem.remove(filename);
 

@@ -6,7 +6,11 @@ import os
 import shutil
 import sys
 
+quiet = False
+
 def main():
+    global quiet
+
     parser = optparse.OptionParser(
         usage = 'usage: %prog dst src',
         description = 'Updates dst with src. If they differ, copies dst to src. '
@@ -19,10 +23,14 @@ def main():
                       help=("given src dst - copy src to dst. "
                             "Only updates files that differ."
                             "Multiple src args are OK if dst is a directory."))
-
+    parser.add_option("--quiet", action="store_true", dest="quiet",
+                      help=("Do not print out when copying a file."))
 
     (options, args) = parser.parse_args()
 
+
+    if options.quiet:
+        quiet = True
 
     if options.update:
         if len(args) != 2:
@@ -47,7 +55,8 @@ def main():
 
 def update(dst, src):
     if not os.path.exists(dst) or not filecmp.cmp(src, dst):
-        sys.stdout.write("Updating {0} from {1}\n".format(dst, src))
+        if not quiet:
+            sys.stdout.write("Updating {0} from {1}\n".format(dst, src))
         shutil.copyfile(src, dst)
 
     os.remove(src)
@@ -75,12 +84,14 @@ def copy(src, dst):
             dst = os.path.join(dst, sub)
         # do the copy
         if not os.path.exists(dst) or not filecmp.cmp(src, dst):
-            sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
+            if not quiet:
+                sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
             shutil.copyfile(src, dst)
     else:
         # handle directories
         if not os.path.exists(dst):
-            sys.stdout.write("Copying dir {0} to {1}\n".format(src, dst))
+            if not quiet:
+                sys.stdout.write("Copying dir {0} to {1}\n".format(src, dst))
             shutil.copytree(src, dst)
         else:
             srclist = sorted(os.listdir(src))
@@ -91,10 +102,12 @@ def copy(src, dst):
                 if not sub in srcset:
                     rm = os.path.join(dst, sub)
                     if os.path.isdir(rm):
-                        sys.stdout.write("Removing dir {0} not present in {1}\n".format(rm, src))
+                        if not quiet:
+                            sys.stdout.write("Removing dir {0} not present in {1}\n".format(rm, src))
                         shutil.rmtree(rm)
                     else:
-                        sys.stdout.write("Removing {0} not present in {1}\n".format(rm, src))
+                        if not quiet:
+                            sys.stdout.write("Removing {0} not present in {1}\n".format(rm, src))
                         os.remove(rm)
             # recursively copy anything from src
             for sub in srclist:

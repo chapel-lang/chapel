@@ -1,4 +1,7 @@
-on here.getChild(1) {
+use GpuDiagnostics;
+
+startGpuDiagnostics();
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -11,7 +14,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -26,7 +29,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -41,7 +44,7 @@ on here.getChild(1) {
   writeArr(A);
 }
 
-on here.getChild(1) {
+on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
 
@@ -57,6 +60,24 @@ on here.getChild(1) {
   writeArr(A);
 
 }
+
+on here.gpus[0] {
+  var A = [1,2,3,4,5];
+  var outerVar = true;
+
+  forall a in A {
+    if outerVar then
+      a += 1;
+    else
+      a -= 1;
+  }
+
+  writeArr(A);
+}
+
+stopGpuDiagnostics();
+
+writeln(getGpuDiagnostics());
 
 proc writeArr(A) {
   write("Array: ");

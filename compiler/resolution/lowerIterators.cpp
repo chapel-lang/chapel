@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1829,6 +1829,27 @@ void handleChplPropagateErrorCall(CallExpr* call, bool inForall) {
   }
 }
 
+static GotoStmt* findGotoToReplace(SymExpr* se) {
+  for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next)
+    if (GotoStmt* result = toGotoStmt(cur))
+      return result;
+
+  // If there is no goto, the throw was probably the last stmt in the iterator.
+  // Create such a goto instead.
+  DefExpr* labelDef = NULL;
+  for(Expr* cur = se->getStmtExpr()->next; cur != NULL; cur = cur->next)
+    if (DefExpr* def = toDefExpr(cur))
+      if (def->sym->hasFlag(FLAG_EPILOGUE_LABEL))
+        labelDef = def;
+
+  INT_ASSERT(labelDef);
+  SET_LINENO(labelDef);
+  GotoStmt* result = new GotoStmt(GOTO_RETURN, labelDef->sym);
+  labelDef->insertBefore(result);
+
+  return result;
+}
+
 /* When inlining an iterator, the iterator might throw
    an error. If it does, instead of updating the iterator's
    out error argument, the error should propagate to
@@ -1856,13 +1877,7 @@ replaceErrorFormalWithEnclosingError(SymExpr* se) {
     FnSymbol* inFn = toFnSymbol(se->parentSymbol);
 
     // find the Goto we need to replace
-    GotoStmt* fixGoto = NULL;
-    for(Expr* cur = se->getStmtExpr(); cur != NULL; cur = cur->next) {
-      fixGoto = toGotoStmt(cur);
-      if (fixGoto != NULL)
-        break;
-    }
-    INT_ASSERT(fixGoto);
+    GotoStmt* fixGoto = findGotoToReplace(se);
 
     CallExpr *dummy = NULL;
     if (findFollowingCheckErrorBlock(se, newLabel, newError, dummy)) {
@@ -2303,8 +2318,8 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
-      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
-      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "bounds"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "both"))
         return true;
       else
         return false;
@@ -2505,30 +2520,38 @@ expandForLoop(ForLoop* forLoop) {
       FnSymbol* iterFn = getTheIteratorFn(iterators.v[i]);
       if (iterFn->hasFlag(FLAG_YIELD_WITHIN_ON)) {
         USR_FATAL_CONT(forLoop, "'yield' statements within 'on' clauses are not currently supported for iterators that are not inlined (e.g., within zippered loops)");
-        break;
       }
 
-      if (isBoundedIterator(iterFn)) {
-        if (testBlock == NULL) {
-          if (isNotDynIter) {
-            // note that we have found the first test
-            testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
+      // If we haven't yet generated a test to terminate the loop and
+      // are in a zippered context, we'll set it up based on this
+      // iterator which is presumably the first.
+      if (testBlock == NULL) {
+        if (!isBoundedIterator(iterFn) && iterators.n > 1) {
+          USR_WARN(forLoop, "The behavior of zippered serial loops driven by "
+                   "unbounded ranges has been fixed in this release to act "
+                   "as though they were conceptually infinite; to maintain "
+                   "the previous behavior, swap a bounded iterand into the "
+                   "first expression of the 'zip(...)'.");
+        }
+        if (isNotDynIter) {
+          // note that we have found the first test
+          testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
 
-          } else {
-            // note that we have found the first test block and add checks for
-            // more before and at the end of the loop. As mentioned above,
-            // dynamic iterators generate things that can't be in the header of
-            // the c for loop, so we generate a simple bool variable to put at
-            // the test of the c for loop, and update that condition var before
-            // the loop is run, and at the end of each iteration.
-            forLoop->insertBefore(new DefExpr(cond));
-            forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
-            forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+        } else {
+          // note that we have found the first test block and add checks for
+          // more before and at the end of the loop. As mentioned above,
+          // dynamic iterators generate things that can't be in the header of
+          // the c for loop, so we generate a simple bool variable to put at
+          // the test of the c for loop, and update that condition var before
+          // the loop is run, and at the end of each iteration.
+          forLoop->insertBefore(new DefExpr(cond));
+          forLoop->insertBefore(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
+          forLoop->insertAtTail(buildIteratorCall(cond, HASMORE, iterators.v[i], children));
 
-            testBlock = new BlockStmt(new SymExpr(cond));
-          }
-
-        } else if (!fNoBoundsChecks) {
+          testBlock = new BlockStmt(new SymExpr(cond));
+        }
+      } else if (isBoundedIterator(iterFn)) {
+        if (!fNoBoundsChecks) {
           // for all but the first iterator add checks at the beginning of each loop run
           // and a final one after to make sure the other iterators don't finish before
           // the "leader" and they don't have more afterwards.
@@ -2588,16 +2611,6 @@ expandForLoop(ForLoop* forLoop) {
     // the loop index.
     if (index != gNone)
       forLoop->insertAtHead(index->defPoint->remove());
-
-    // Ensure that the test clause for completely unbounded loops contains
-    // something.
-    // testBlock is only non-NULL if isBoundedIterator() evaluates to true for
-    // at least one of the iterators being zippered together.
-    if (testBlock == NULL) {
-      testBlock = new BlockStmt();
-
-      testBlock->insertAtTail(new SymExpr(gTrue));
-    }
 
     // NOAKES 2014/11/19: An error occurs if the replacement is moved to
     // earlier in the pass.  I have yet to identify the issue but suspect

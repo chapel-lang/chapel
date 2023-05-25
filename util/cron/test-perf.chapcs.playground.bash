@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test not localizing non-primitives
-GITHUB_USER=bradcray
-GITHUB_BRANCH=no-localize-non-primitives
-SHORT_NAME=no-localize-non-primitives
-START_DATE=03/12/22
+# Test perf of IO serializers branch
+GITHUB_USER=benharsh
+GITHUB_BRANCH=dev-io-serializers
+SHORT_NAME=io-serializers
+START_DATE=05/23/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
@@ -37,4 +37,4 @@ git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
 perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
-$CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks
+$CWD/nightly -cron ${perf_args} ${nightly_args}

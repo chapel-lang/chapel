@@ -26,5 +26,5 @@ class MethodTooEarly {
 }
 
 proc main() {
-  var c : borrowed MethodTooEarly(3) = new borrowed MethodTooEarly(3);
+  var c : borrowed MethodTooEarly(3) = (new owned MethodTooEarly(3)).borrow();
 }

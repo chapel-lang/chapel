@@ -1,0 +1,11 @@
+#! /usr/bin/env bash
+
+# For the execopts that include "--help", remove the part of the
+# output that isn't about the config vars, to help insulate this
+# test against command line changes.
+
+sentinel='^CONFIG VAR FLAGS:$'
+if grep --quiet "$sentinel" < $2 ; then
+  sed "/$sentinel/"',$ !d' < $2 > $2.tmp && mv $2.tmp $2
+fi
+

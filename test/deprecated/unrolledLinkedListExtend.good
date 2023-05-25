@@ -1,0 +1,4 @@
+unrolledLinkedListExtend.chpl:12: warning: unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append
+unrolledLinkedListExtend.chpl:13: warning: unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append
+unrolledLinkedListExtend.chpl:14: warning: unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append
+[1, 2, 3, 0, 0, 0, 1, 2, 3]

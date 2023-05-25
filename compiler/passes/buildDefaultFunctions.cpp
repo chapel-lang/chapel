@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,6 +148,7 @@ void buildDefaultFunctions() {
 
       if (ct->wantsDefaultInitializer()) {
         ct->buildDefaultInitializer();
+        ct->buildReaderInitializer();
       }
 
       if (!ct->hasUserDefinedInitEquals()) {
@@ -458,6 +459,11 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
     fn->deprecationMsg = field->deprecationMsg;
   }
 
+  if (field->hasFlag(FLAG_UNSTABLE)) {
+    fn->addFlag(FLAG_UNSTABLE);
+    fn->unstableMsg = field->unstableMsg;
+  }
+
   if (!typeMethod) {
     if (fieldIsConst)
       fn->addFlag(FLAG_REF_TO_CONST);
@@ -470,8 +476,10 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
   fn->setMethod(true);
 
   Type* thisType = ct;
+
   if (chapelClass && (typeMethod || typeOrParam))
     thisType = ct->getDecoratedClass(ClassTypeDecorator::GENERIC);
+
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {
@@ -1759,8 +1767,8 @@ static bool inheritsFromError(Type* t) {
 
 
 // common code to create a writeThis() function without filling in the body
-FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
-  FnSymbol* fn = new FnSymbol("writeThis");
+FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const char* name) {
+  FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -1801,10 +1809,12 @@ FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
 }
 
 static void buildDefaultReadWriteFunctions(AggregateType* ct) {
-  bool hasReadWriteThis         = false;
   bool hasReadThis              = false;
   bool hasWriteThis             = false;
   bool makeReadThisAndWriteThis = true;
+
+  bool hasEncodeTo              = false;
+  bool makeEncodeTo             = fUseIOFormatters;
 
   //
   // We have no QIO when compiling with --minimal-modules, so no need
@@ -1824,17 +1834,16 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   if (isArrayImplType(ct))
     return;
 
-  // If we have a readWriteThis, we'll call it from readThis/writeThis.
-  if (functionExists("readWriteThis", dtMethodToken, ct, dtAny)) {
-    hasReadWriteThis = true;
-  }
-
   if (functionExists("writeThis", dtMethodToken, ct, dtAny)) {
     hasWriteThis = true;
   }
 
   if (functionExists("readThis", dtMethodToken, ct, dtAny)) {
     hasReadThis = true;
+  }
+
+  if (functionExists("encodeTo", dtMethodToken, ct, dtAny)) {
+    hasEncodeTo = true;
   }
 
   // We'll make a writeThis and a readThis if neither exist.
@@ -1844,23 +1853,46 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     makeReadThisAndWriteThis = false;
   }
 
+  if (hasEncodeTo) {
+    makeEncodeTo = false;
+  }
+
   // Make writeThis when appropriate
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
     ArgSymbol* fileArg = NULL;
-    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "writeThis");
 
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
 
-    if (hasReadWriteThis == true) {
-      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
+    fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
+                                  fileArg,
+                                  fn->_this));
 
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
+    normalize(fn);
+  }
 
-    } else {
-      fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
-                                    fileArg,
-                                    fn->_this));
+  //
+  // Keep generating the 'encodeTo' method so that the override versions don't
+  // cause errors.
+  //
+  if (makeEncodeTo && !hasEncodeTo) {
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "encodeTo");
+
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
+
+    if (fUseIOFormatters) {
+      if (hasWriteThis) {
+        // TODO: we probably want to have a warning here to help users migrate
+        // their code to use formatters.
+        fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));
+      } else {
+        fn->insertAtTail(new CallExpr("encodeToDefaultImpl",
+                                      fileArg,
+                                      fn->_this));
+      }
     }
 
     normalize(fn);
@@ -1897,16 +1929,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     fn->retType = dtVoid;
 
-    if (hasReadWriteThis == true) {
-      Expr* dotReadWriteThis = buildDotExpr(fn->_this, "readWriteThis");
-
-      fn->insertAtTail(new CallExpr(dotReadWriteThis, fileArg));
-
-    } else {
-      fn->insertAtTail(new CallExpr("readThisDefaultImpl",
-                                    fileArg,
-                                    fn->_this));
-    }
+    fn->insertAtTail(new CallExpr("readThisDefaultImpl",
+                                  fileArg,
+                                  fn->_this));
 
     DefExpr* def = new DefExpr(fn);
 

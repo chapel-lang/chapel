@@ -8,7 +8,7 @@ var globalBorrow: borrowed C? = nil;
 }
 
 {
-  var x = new borrowed C(1);
+  var x = (new owned C(1)).borrow();
   globalBorrow = x;
 }
 
@@ -22,6 +22,6 @@ var globalBorrow2: borrowed C?;
 
 var globalBorrow3: borrowed C?;
 {
-  var x = new borrowed C(1);
+  var x = (new owned C(1)).borrow();
   globalBorrow3 = x;
 }

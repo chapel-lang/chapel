@@ -1,0 +1,6 @@
+─── syntax in bisonSyntaxErrorNoToken.chpl:1 [BisonSyntaxError] ───
+  (no token given):
+      |
+    1 | {;
+      |
+

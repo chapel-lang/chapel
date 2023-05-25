@@ -34,10 +34,10 @@ type ArrType2 = [init2dom] int;
 const init2arr: ArrType2 = 33033;
 // declare all the variables
 var b0: bool;
-var b8: bool(8);
-var b16: bool(16);
-var b32: bool(32);
-var b64: bool(64);
+
+
+
+
 var u8: uint(8);
 var u16: uint(16);
 var u32: uint(32);
@@ -69,10 +69,10 @@ var arr2: ArrType2;
 // declare the function
 proc funBlank(
  b0: bool,
- b8: bool(8),
- b16: bool(16),
- b32: bool(32),
- b64: bool(64),
+
+
+
+
  u8: uint(8),
  u16: uint(16),
  u32: uint(32),
@@ -105,10 +105,10 @@ proc funBlank(
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -137,10 +137,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -169,10 +169,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -202,10 +202,10 @@ arr2 = init2arr;
 // call the function
 funBlank(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -239,10 +239,10 @@ arr2,
 // declare the function
 proc funConst(
 const b0: bool,
-const b8: bool(8),
-const b16: bool(16),
-const b32: bool(32),
-const b64: bool(64),
+
+
+
+
 const u8: uint(8),
 const u16: uint(16),
 const u32: uint(32),
@@ -275,10 +275,10 @@ const arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -307,10 +307,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -339,10 +339,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -372,10 +372,10 @@ arr2 = init2arr;
 // call the function
 funConst(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -409,10 +409,10 @@ arr2,
 // declare the function
 proc funConstIn(
 const in b0: bool,
-const in b8: bool(8),
-const in b16: bool(16),
-const in b32: bool(32),
-const in b64: bool(64),
+
+
+
+
 const in u8: uint(8),
 const in u16: uint(16),
 const in u32: uint(32),
@@ -445,10 +445,10 @@ const in arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -477,10 +477,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -509,10 +509,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -542,10 +542,10 @@ arr2 = init2arr;
 // call the function
 funConstIn(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -579,10 +579,10 @@ arr2,
 // declare the function
 proc funIn(
 in b0: bool,
-in b8: bool(8),
-in b16: bool(16),
-in b32: bool(32),
-in b64: bool(64),
+
+
+
+
 in u8: uint(8),
 in u16: uint(16),
 in u32: uint(32),
@@ -615,10 +615,10 @@ in arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -647,10 +647,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -679,10 +679,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -712,10 +712,10 @@ arr2 = init2arr;
 // call the function
 funIn(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -749,10 +749,10 @@ arr2,
 // declare the function
 proc funInOut(
 inout b0: bool,
-inout b8: bool(8),
-inout b16: bool(16),
-inout b32: bool(32),
-inout b64: bool(64),
+
+
+
+
 inout u8: uint(8),
 inout u16: uint(16),
 inout u32: uint(32),
@@ -785,10 +785,10 @@ inout arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -817,10 +817,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -849,10 +849,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -882,10 +882,10 @@ arr2 = init2arr;
 // call the function
 funInOut(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -919,10 +919,10 @@ arr2,
 // declare the function
 proc funOut(
 out b0: bool,
-out b8: bool(8),
-out b16: bool(16),
-out b32: bool(32),
-out b64: bool(64),
+
+
+
+
 out u8: uint(8),
 out u16: uint(16),
 out u32: uint(32),
@@ -955,10 +955,10 @@ out arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -987,10 +987,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1019,10 +1019,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1052,10 +1052,10 @@ arr2 = init2arr;
 // call the function
 funOut(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -1089,10 +1089,10 @@ arr2,
 // declare the function
 proc funRef(
 ref b0: bool,
-ref b8: bool(8),
-ref b16: bool(16),
-ref b32: bool(32),
-ref b64: bool(64),
+
+
+
+
 ref u8: uint(8),
 ref u16: uint(16),
 ref u32: uint(32),
@@ -1125,10 +1125,10 @@ ref arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1157,10 +1157,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1189,10 +1189,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1222,10 +1222,10 @@ arr2 = init2arr;
 // call the function
 funRef(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,
@@ -1259,10 +1259,10 @@ arr2,
 // declare the function
 proc funConstRef(
 const ref b0: bool,
-const ref b8: bool(8),
-const ref b16: bool(16),
-const ref b32: bool(32),
-const ref b64: bool(64),
+
+
+
+
 const ref u8: uint(8),
 const ref u16: uint(16),
 const ref u32: uint(32),
@@ -1295,10 +1295,10 @@ const ref arr2: ArrType2,
 begin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1327,10 +1327,10 @@ arr2 = init2arr;
 cobegin {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1359,10 +1359,10 @@ arr2 = init2arr;
 coforall jjjjj in 1..3 {
 // assign to all the variables
 b0 = true;
-b8 = true;
-b16 = true;
-b32 = true;
-b64 = true;
+
+
+
+
 u8 = 78;
 u16 = 716;
 u32 = 70032;
@@ -1392,10 +1392,10 @@ arr2 = init2arr;
 // call the function
 funConstRef(
 b0,
-b8,
-b16,
-b32,
-b64,
+
+
+
+
 u8,
 u16,
 u32,

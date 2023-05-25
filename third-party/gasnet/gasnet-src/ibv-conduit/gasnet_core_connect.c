@@ -2265,7 +2265,7 @@ gasnetc_connect_static(gasnetc_EP_t ep)
       fp = fopen(filename, "r");
     #endif
       if (!fp) {
-        fprintf(stderr, "ERROR: unable to open connection table input file '%s'\n", filename);
+        gasneti_console_message("ERROR","unable to open connection table input file '%s'", filename);
       }
       if (filename != envstr) gasneti_free((/* not const */ char *)filename);
 
@@ -2463,10 +2463,8 @@ gasnetc_connect_init(gasnetc_EP_t ep0)
     tmp_max = gasneti_getenv_int_withdefault("GASNET_CONNECT_RETRANS_MAX", tmp_max, 0);
 
     if (tmp_min >= tmp_max) {
-      if (!gasneti_mynode) {
-        fprintf(stderr, "WARNING: GASNET_CONNECT_RETRANS_MIN >= GASNET_CONNECT_RETRANS_MAX.  "
-                        "Using default values instead.\n");
-      }
+      gasneti_console0_message("WARNING","GASNET_CONNECT_RETRANS_MIN >= GASNET_CONNECT_RETRANS_MAX.  "
+                        "Using default values instead.");
     } else {
       gasnetc_conn_retransmit_min_ns = tmp_min * 1000;
       gasnetc_conn_retransmit_max_ns = tmp_max * 1000;
@@ -2490,8 +2488,8 @@ gasnetc_connect_init(gasnetc_EP_t ep0)
     /* warn on reduced inline limit */
     if ((orig_inline_limit != (size_t)-1) && (gasnetc_inline_limit < orig_inline_limit)) {
       if (gasnet_getenv("GASNET_INLINESEND_LIMIT") != NULL)
-        fprintf(stderr,
-                "WARNING: Requested GASNET_INLINESEND_LIMIT %d reduced to HCA limit %d\n",
+        gasneti_console_message("WARNING",
+             "Requested GASNET_INLINESEND_LIMIT %d reduced to HCA limit %d",
                 (int)orig_inline_limit, (int)gasnetc_inline_limit);
     }
 
@@ -2644,7 +2642,7 @@ gasnetc_connect_fini(gasnetc_EP_t ep0)
     #endif
       fd = open(filename, flags, S_IRUSR | S_IWUSR);
       if (fd < 0) {
-        fprintf(stderr, "ERROR: unable to open connection table output file '%s'\n", filename);
+        gasneti_console_message("ERROR","unable to open connection table output file '%s'", filename);
       }
       if (filename != envstr) gasneti_free((/* not const */ char *)filename);
       if (!gasneti_mynode || strchr(envstr, '%')) {

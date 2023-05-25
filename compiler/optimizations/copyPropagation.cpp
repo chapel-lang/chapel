@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "view.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 #include "global-ast-vecs.h"
 
@@ -192,13 +193,12 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
   CallExpr* call = toCallExpr(se->parentExpr);
 
+  // Skip the "base" symbol.
+  if (call && se == call->baseExpr) return false;
+
   if (FnSymbol* fn = call->resolvedFunction())
   {
-    // Skip the "base" symbol.
-    if (se->symbol() == fn)
-    {
-      return false;
-    }
+    INT_ASSERT(se->symbol() != fn);
 
     ArgSymbol* arg = actual_to_formal(se);
 
@@ -364,9 +364,8 @@ static bool isUse(SymExpr* se)
     if (arg->intent == INTENT_OUT ||
         (arg->intent & INTENT_FLAG_REF))
       return false;
-
   }
-  else
+  else if (call->primitive)
   {
     INT_ASSERT(call->primitive);
     const bool isFirstActual = call->get(1) == se;
@@ -464,6 +463,26 @@ static bool isUse(SymExpr* se)
 
       return true;
     }
+  }
+  else if (auto ft = toFunctionType(call->baseExpr->qualType().type()))
+  {
+
+    // Not a use according to note #2.
+    if (se == call->baseExpr) return false;
+
+    // Mimick the implementation of 'formal_to_actual'.
+    int idx = 0;
+    for_actuals(actual, call) {
+      if (actual == se) break;
+      idx++;
+    }
+
+    INT_ASSERT(0 <= idx && idx < ft->numFormals());
+    auto intent = ft->formal(idx)->intent;
+
+    if (intent == INTENT_OUT || (intent & INTENT_FLAG_REF)) return false;
+  } else {
+    INT_FATAL(se, "unhandled");
   }
 
   return true;
@@ -656,14 +675,14 @@ localCopyPropagationCore(BasicBlock*          bb,
                          ReverseAvailableMap& ravailable,
                          std::set<Symbol*>& liveRefs)
 {
-  for_vector(Expr, expr, bb->exprs)
-  {
+  std::vector<SymExpr*> symExprs;
+  symExprs.reserve(16);
+  for_vector(Expr, expr, bb->exprs) {
 #if DEBUG_CP
     if (debug > 0)
       nprint_view(expr);
 #endif
-
-    std::vector<SymExpr*> symExprs;
+    symExprs.clear();
 
     // TODO: do not collect references or symbols that are not LcnSymbols
     collectSymExprs(expr, symExprs);
@@ -760,16 +779,19 @@ static void computeKillSets(FnSymbol* fn,
                             std::vector<BitVec*>& KILL,
                             std::set<Symbol*>& liveRefs)
 {
+  std::vector<SymExpr*> symExprs;
+  llvm::SmallPtrSet<Symbol*, 32> killSet;
+
   size_t nbbs = fn->basicBlocks->size();
   for (size_t i = 0; i < nbbs; ++i)
   {
     BasicBlock* bb2 = (*fn->basicBlocks)[i];
 
     // Collect up the set of symbols killed in this block in killSet.
-    std::set<Symbol*> killSet;
+    killSet.clear();
     for_vector(Expr, expr, bb2->exprs)
     {
-      std::vector<SymExpr*> symExprs;
+      symExprs.clear();
       collectSymExprs(expr, symExprs);
 
       for_vector(SymExpr, se, symExprs)
@@ -946,7 +968,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
         // Two available pairs at the start of a basic block should not have
         // the same LHS, because one should kill the other.
         // Also, this makes arbitrary the choice of which one survives.
-        INT_ASSERT(available.find(ap.first) == available.end());
+        INT_ASSERT(fn, available.find(ap.first) == available.end());
         available.insert(ap);
         ravailable[ap.second].push_back(ap.first);
       }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@ class DecoratedClassType;
 class EnumType;
 class ConstrainedType;
 class PrimitiveType;
+class FunctionType;
 
 class ArgSymbol;
 class EnumSymbol;
@@ -33,6 +34,7 @@ class FnSymbol;
 class InterfaceSymbol;
 class LabelSymbol;
 class ModuleSymbol;
+class TemporaryConversionSymbol;
 class TypeSymbol;
 class VarSymbol;
 
@@ -58,6 +60,7 @@ class CondStmt;
 class GotoStmt;
 class DeferStmt;
 class ForallStmt;
+class TemporaryConversionThunk;
 class TryStmt;
 class ForwardingStmt;
 class CatchStmt;
@@ -90,6 +93,9 @@ public:
   // Switched to a more robust naming convention that avoids this issue.
   //
 
+  virtual bool   enterThunk          (TemporaryConversionThunk* node) = 0;
+  virtual void   exitThunk           (TemporaryConversionThunk* node) = 0;
+
   //
   // The sub-classes of Type
   //
@@ -103,6 +109,7 @@ public:
   virtual void   exitEnumType        (EnumType*          node) = 0;
   virtual void   visitConstrainedType(ConstrainedType*   node) = 0;
   virtual void   visitPrimType       (PrimitiveType*     node) = 0;
+  virtual void   visitFunctionType   (FunctionType*      node) = 0;
 
   //
   // The sub-classes of Symbol
@@ -119,6 +126,7 @@ public:
   virtual void   exitInterfaceSym    (InterfaceSymbol*   node) = 0;
 
   virtual void   visitLabelSym       (LabelSymbol*       node) = 0;
+  virtual void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node) = 0;
 
   virtual bool   enterModSym         (ModuleSymbol*      node) = 0;
   virtual void   exitModSym          (ModuleSymbol*      node) = 0;

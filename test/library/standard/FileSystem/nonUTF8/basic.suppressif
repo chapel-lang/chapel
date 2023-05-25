@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# Fails when run in the nightly test directory for cygwin64, see issue #4097
+
+if test "$OS" = Windows_NT; then
+  echo 1
+else
+  echo 0
+fi

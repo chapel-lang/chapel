@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
 import os
 import sys
 
@@ -16,6 +15,11 @@ do_llvm = os.getenv('CHPL_TARGET_COMPILER', 'none') == 'llvm'
 do_cache = os.getenv('CHPL_SANITIZE_EXE') == 'none'
 
 basecompopts='--fast '
+
+commutil = os.path.join(os.path.dirname(__file__), 'CommUtil.chpl')
+if not os.path.exists(commutil):
+  basecompopts += '-M ../ '
+
 
 def f(options, configname):
   s = basecompopts + options

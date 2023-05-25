@@ -1,0 +1,12 @@
+─── syntax in commentEOF.chpl:3 [CommentEOF] ───
+  End-of-file in comment.
+  Unterminated comment here:
+      |
+    1 | /* this is an unterminated multiline comment
+    2 |  /* which contains a nested comment */
+      |
+  Nested comment here:
+      |
+    2 |  /* which contains a nested comment */
+      |
+

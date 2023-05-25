@@ -25,7 +25,9 @@ def TSV110Model : SchedMachineModel {
   let CompleteModel         =   1;
 
   list<Predicate> UnsupportedFeatures = !listconcat(SVEUnsupported.F,
-                                                    PAUnsupported.F);
+                                                    PAUnsupported.F,
+                                                    SMEUnsupported.F,
+                                                    [HasMTE]);
 }
 
 // Define each kind of processor resource and number available on the TSV110,
@@ -90,7 +92,8 @@ def : WriteRes<WriteFMul,  [TSV110UnitF]> { let Latency = 5; }
 // FP Div, Sqrt
 def : WriteRes<WriteFDiv,  [TSV110UnitFSU1]> { let Latency = 18; } 
 
-def : WriteRes<WriteV,     [TSV110UnitF]>     { let Latency = 4; }
+def : WriteRes<WriteVd,    [TSV110UnitF]>     { let Latency = 4; }
+def : WriteRes<WriteVq,    [TSV110UnitF]>     { let Latency = 4; }
 def : WriteRes<WriteVLD,   [TSV110UnitFLdSt]> { let Latency = 5; }
 def : WriteRes<WriteVST,   [TSV110UnitF]>     { let Latency = 1; }
 
@@ -113,6 +116,7 @@ def : ReadAdvance<ReadID,      0>;
 def : ReadAdvance<ReadExtrHi,  0>;
 def : ReadAdvance<ReadAdrBase, 0>;
 def : ReadAdvance<ReadVLD,     0>;
+def : ReadAdvance<ReadST,      0>;
 
 def : InstRW<[WriteI], (instrs COPY)>;
 

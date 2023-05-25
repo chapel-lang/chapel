@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,14 +26,14 @@ config param debugUserMapAssoc = false;
 // Returns an integer index into targetLocales
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
-pragma "no doc"
+@chpldoc.nodoc
 record AbstractMapper {
   proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 record DefaultMapper {
   proc this(ind, targetLocales: [?D] locale) : D.idxType {
     const hash = chpl__defaultHashWrapper(ind);
@@ -183,13 +183,13 @@ class Hashed : BaseDist {
   }
 
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return this.mapper;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return this.mapper;
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
   }
-  proc dsiGetReprivatizeData() return 0;
+  proc dsiGetReprivatizeData() do return 0;
 
   proc dsiReprivatize(other, reprivatizeData) {
     this.mapper = other.mapper;
@@ -236,14 +236,14 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x <~> "Hashed\n";
-    x <~> "-------\n";
-    x <~> "distributed using: " <~> mapper <~> "\n";
-    x <~> "across locales: " <~> targetLocales <~> "\n";
-    x <~> "indexed via: " <~> targetLocDom <~> "\n";
-    x <~> "resulting in: " <~> "\n";
+    x.writeln("Hashed");
+    x.writeln("-------");
+    x.writeln("distributed using: ", mapper);
+    x.writeln("across locales: ", targetLocales);
+    x.writeln("indexed via: ", targetLocDom);
+    x.writeln("resulting in: ");
     //for locid in targetLocDom do
-    //  x <~> "  [" <~> locid <~> "] " <~> locDist(locid) <~> "\n";
+    //  x.writeln("  [", locid, "] ", locDist(locid));
   }
 
   //
@@ -327,8 +327,8 @@ class UserMapAssocDom: BaseAssociativeDom {
     return dist;
   }
 
-  proc dsiAdd(in i: idxType) {
-    return locDoms(dist.indexToLocaleIndex(i))!.add(i);
+  override proc dsiAdd(in idx) {
+    return locDoms(dist.indexToLocaleIndex(idx))!.add(idx);
   }
 
   proc dsiRemove(i: idxType) {
@@ -473,7 +473,7 @@ class UserMapAssocDom: BaseAssociativeDom {
       //
       //        ("locale" + here.id + " owns: ").writeThis(x);
 
-        x <~> locDom;
+        x.write(locDom);
       //      }
   }
 
@@ -528,7 +528,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
@@ -540,9 +540,9 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   override proc dsiSupportsAutoLocalAccess() param { return true; }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return dist.pid;
-  proc dsiGetReprivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return dist.pid;
+  proc dsiGetReprivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
@@ -558,6 +558,8 @@ class UserMapAssocDom: BaseAssociativeDom {
       on dist.targetLocales(localeIdx) do
         delete locDoms(localeIdx);
   }
+
+  proc rank param { return 1; }
 }
 
 
@@ -691,7 +693,7 @@ class UserMapAssocArr: AbsBaseArr {
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
-  override proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() do return dom;
 
   override proc dsiIteratorYieldsLocalElements() param {
     return true;
@@ -743,8 +745,8 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
@@ -832,7 +834,7 @@ class UserMapAssocArr: AbsBaseArr {
     return dom.dist.targetLocales;
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach locdom in dom.dsiLocalSubdomains(loc) do
@@ -896,13 +898,13 @@ class UserMapAssocArr: AbsBaseArr {
 
     var printBraces = (isjson || ischpl);
 
-    if printBraces then f <~> new ioLiteral("[");
+    if printBraces then f._writeLiteral("[");
 
     var first = true;
     for locArr in locArrs {
       locArr!.myElems._value.dsiSerialReadWrite(f, printBraces=false, first);
     }
-    if printBraces then f <~> new ioLiteral("]");
+    if printBraces then f._writeLiteral("]");
 
   }
 
@@ -918,6 +920,8 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiNumElements {
     return dom.dsiNumIndices;
   }
+
+  proc rank param { return 1; }
 }
 
 
@@ -1042,5 +1046,3 @@ class LocUserMapAssocArr {
     return locDom.myInds.dim(1).boundsCheck(x.dim(1));
   }
 }
-
-

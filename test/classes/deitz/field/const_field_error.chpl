@@ -3,7 +3,7 @@ class C {
   const y: int = 2;
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 c.x = 3;
 c.y = 4;
 writeln(c);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,14 +31,13 @@
 #include <string.h>
 #include <sys/time.h> // for struct timeval
 
-#ifndef __cplusplus
 #include <complex.h>
-typedef float complex        _complex64;
-typedef double complex       _complex128;
-#else
-#include <complex>
-typedef std::complex<float>  _complex64;
-typedef std::complex<double> _complex128;
+typedef float _Complex        _complex64;
+typedef double _Complex       _complex128;
+
+// clang doesn't have _Complex_I but it supports initializer lists for complex
+#ifndef _Complex_I
+static const _complex64 _Complex_I = {0.0f, 1.0f};
 #endif
 
 #ifdef __cplusplus
@@ -75,8 +74,17 @@ typedef bool chpl_bool;
 #endif
 
 static inline void* c_pointer_return(void* x) { return x; }
+// TODO: Return a const void* and remove the const-discarding cast, here as well
+// as in the GPU runtime versions.
+// This is currently not possible as our C backend does not consistently respect
+// constness and would generate code that discards the const qualifier.
+// Constness is casted away here because we still need to accept a const
+// argument to get pointers to const Chapel variables; preventing mutation of
+// pointed-to const variables is enforced before this point.
+// Anna, April 2023.
+static inline void* c_pointer_return_const(const void* x) { return (void*)x; }
 static inline ptrdiff_t c_pointer_diff(void* a, void* b, ptrdiff_t eltSize) {
-  return (((unsigned char*)a) - ((unsigned char*)b))/eltSize;
+  return (((unsigned char*)a) - ((unsigned char*)b)) / eltSize;
 }
 
 // This allocation of bits is arbitrary.
@@ -244,18 +252,10 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
-#ifndef __cplusplus
   return re + im*_Complex_I;
-#else
-  return std::complex<double>(re, im);
-#endif
 }
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
-#ifndef __cplusplus
   return re + im*_Complex_I;
-#else
-  return std::complex<float>(re, im);
-#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {

@@ -13,7 +13,7 @@ module Structure {
     type idxType;
     param stridable: bool;
 
-    proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
       writeln("in Parent(", rank, ") foo ", arg);
     }
     proc bar() {
@@ -66,7 +66,7 @@ module Impl {
   class Child : SubParent {
     var x:eltType;
     
-    override proc foo( arg: rank*range(idxType, BoundedRangeType.bounded,stridable) ) {
+    override proc foo( arg: rank*range(idxType, boundKind.both,stridable) ) {
       writeln("in Child(", rank, ") foo ", arg, " " , x);
     }
     override proc bar() {
@@ -84,7 +84,7 @@ module Impl {
     writeln(aa);
 
     var a = new unmanaged Child(rank=1, idxType=int, stridable=false, eltType=int);
-    var d = new borrowed ListerParent(rank=1, idxType=int, stridable=false);
+    var d = (new owned ListerParent(rank=1, idxType=int, stridable=false)).borrow();
     d.lst.append(a);
 
     test(d);
@@ -92,4 +92,3 @@ module Impl {
     delete a, aa;
   }
 }
-

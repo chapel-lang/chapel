@@ -12,7 +12,7 @@ class C {
 
 }
 
-var myC = new borrowed C(x = 2);
+var myC = (new owned C(x = 2)).borrow();
 writeln("myC is: ", myC);
 
 myC.x = 3;

@@ -1,0 +1,8 @@
+value-for-arg-type.chpl:3: In function 'p1':
+value-for-arg-type.chpl:3: error: The declared type of the formal arg is non-type 'myVar'
+value-for-arg-type.chpl:6: In function 'p2':
+value-for-arg-type.chpl:6: error: The declared type of the formal arg is non-type '3'
+value-for-arg-type.chpl:9: In function 'p3':
+value-for-arg-type.chpl:9: error: The declared type of the formal arg is given by non-type function 'size'
+value-for-arg-type.chpl:12: In function 'p4':
+value-for-arg-type.chpl:12: error: The declared type of the formal arg is given by non-type function 'numPUs'

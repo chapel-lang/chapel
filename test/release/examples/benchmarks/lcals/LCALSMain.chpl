@@ -270,7 +270,7 @@ proc generateTimingReport(loop_variants: [] bool,
   }
   if output_dirname.size != 0 {
     const timing_fname = output_dirname + "/" + "timing.txt";
-    var outfile = open(timing_fname, iomode.cw);
+    var outfile = open(timing_fname, ioMode.cw);
     var writer = outfile.writer();
 
     writeTimingSummaryReport(loop_variants, writer);
@@ -294,7 +294,7 @@ proc generateTimingReport(loop_variants: [] bool,
 proc writeMeanTimeReport(variant: LoopVariantID, output_dirname: string) {
   const variant_name = getVariantName(variant);
   var rept_fname = output_dirname + "/" + variant_name + "-meantime.txt";
-  var outfile = open(rept_fname, iomode.cw);
+  var outfile = open(rept_fname, ioMode.cw);
   var writer = outfile.writer();
 
   writeln("\n writeMeanTimeReport...   ", rept_fname);
@@ -333,7 +333,7 @@ proc writeMeanTimeReport(variant: LoopVariantID, output_dirname: string) {
 proc writeRelativeTimeReport(variant: LoopVariantID, output_dirname: string) {
   const variant_name = getVariantName(variant);
   var rept_fname = output_dirname + "/" + variant_name + "-reltime.txt";
-  var outfile = open(rept_fname, iomode.cw);
+  var outfile = open(rept_fname, ioMode.cw);
   var writer = outfile.writer();
   writer.writeln("\n writeRelativeTimeReport...   ");
 
@@ -503,7 +503,7 @@ proc generateChecksumReport(loop_variants: [] bool,
   if + reduce loop_variants == 0 then return;
   if output_dirname.size != 0 {
     var checksum_fname = output_dirname + "/" + "checksum.txt";
-    var outfile = open(checksum_fname, iomode.cw);
+    var outfile = open(checksum_fname, ioMode.cw);
     var writer = outfile.writer();
     writer.write("\n writeChecksumReport...    ", checksum_fname);
     writeChecksumReport(loop_variants, writer);

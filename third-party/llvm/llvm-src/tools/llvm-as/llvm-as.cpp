@@ -23,7 +23,6 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/SystemUtils.h"
 #include "llvm/Support/ToolOutputFile.h"
@@ -106,7 +105,7 @@ static void WriteOutputFile(const Module *M, const ModuleSummaryIndex *Index) {
     else
       // Otherwise, with an empty Module but non-empty Index, we write a
       // combined index.
-      WriteIndexToFile(*IndexToWrite, Out->os());
+      writeIndexToFile(*IndexToWrite, Out->os());
   }
 
   // Declare success.

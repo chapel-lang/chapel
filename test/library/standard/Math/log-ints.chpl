@@ -1,3 +1,5 @@
+use Math;
+
 proc checkLog(x, baseLog2, expect) {
 
   var ok = true;

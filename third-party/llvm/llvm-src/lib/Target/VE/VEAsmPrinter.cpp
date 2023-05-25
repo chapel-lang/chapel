@@ -30,7 +30,7 @@
 #include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
-#include "llvm/Support/TargetRegistry.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
@@ -325,6 +325,8 @@ void VEAsmPrinter::lowerGETTLSAddrAndEmitMCInsts(const MachineInstr *MI,
 }
 
 void VEAsmPrinter::emitInstruction(const MachineInstr *MI) {
+  VE_MC::verifyInstructionPredicates(MI->getOpcode(),
+                                     getSubtargetInfo().getFeatureBits());
 
   switch (MI->getOpcode()) {
   default:

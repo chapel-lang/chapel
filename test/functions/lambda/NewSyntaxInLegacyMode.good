@@ -1,0 +1,4 @@
+proc(int, int): int
+proc(_: int, _: int): int
+4
+4

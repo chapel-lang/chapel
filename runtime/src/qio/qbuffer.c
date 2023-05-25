@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,7 +64,7 @@ void qbytes_free_null(qbytes_t* b) {
 }
 
 void qbytes_free_munmap(qbytes_t* b) {
-  err_t err;
+  qio_err_t err;
 
   /* I don't believe this is required, but
    * I've heard here and there it might be for NFS...
@@ -625,6 +625,7 @@ void qbuffer_reposition(qbuffer_t* buf, int64_t new_offset_start)
   while( ! deque_it_equals(iter, end) ) {
     qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter);
     qbp->end_offset += diff;
+    deque_it_forward_one(sizeof(qbuffer_part_t), &iter);
   }
 }
 
@@ -642,6 +643,17 @@ qbuffer_iter_t qbuffer_end(qbuffer_t* buf)
   ret.offset = buf->offset_end;
   ret.iter = deque_end( & buf->deque );
   return ret;
+}
+
+int qbuffer_iter_at_part_end(qbuffer_t* buf, qbuffer_iter_t* iter)
+{
+  deque_iterator_t d_end = deque_end( & buf->deque );
+
+  if (deque_it_equals(iter->iter, d_end) ) {
+    return true;
+  }
+  qbuffer_part_t* qbp = (qbuffer_part_t*) deque_it_get_cur_ptr(sizeof(qbuffer_part_t), iter->iter);
+  return iter->offset == qbp->end_offset;
 }
 
 void qbuffer_iter_next_part(qbuffer_t* buf, qbuffer_iter_t* iter)

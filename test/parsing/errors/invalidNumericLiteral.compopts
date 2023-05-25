@@ -1,0 +1,2 @@
+--detailed-errors # invalidNumericLiteral-detailed.good
+--no-detailed-errors # invalidNumericLiteral-brief.good

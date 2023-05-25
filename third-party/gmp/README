@@ -9,3 +9,11 @@ obtained from:
 
 Any Chapel issues that seem to be related to GMP should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
+
+Chapel modifications to GMP
+===========================
+The modifications that we have made to the official GMP release are
+as follows:
+
+* Pulled in an upstream fix to avoid x18 register on ARM
+   - https://gmplib.org/repo/gmp/raw-rev/5f32dbc41afc

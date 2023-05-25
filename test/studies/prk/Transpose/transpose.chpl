@@ -52,7 +52,7 @@ const Dist =  if useBlockDist then blockDist
 const Dom = localDom dmapped Dist;
 const tiledDom = tiledLocalDom dmapped Dist;
 
-var timer: Timer,
+var timer: stopwatch,
     nBytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 

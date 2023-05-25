@@ -1,0 +1,40 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+====== filename = InputFiles/some-input.txt
+====== filename = InputFiles/some-input2.txt
+====== filename = InputFiles/some-input3.txt
+====== filename = InputFiles/some-input4.txt
+====== filename = InputFiles/some-input5.txt
+====== filename = InputFiles/some-input6.txt
+====== filename = InputFiles/some-input7.txt
+====== filename = InputFiles/some-input8.txt
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}
+wordCount = {show: 4, Hello: 4, twice.: 4, should: 4, some: 4, up: 12, example,: 4, count: 4, can: 8, an: 4, What: 4, Also: 4, than: 4, text.: 4, is: 4, file: 8, all: 4, there,: 4, count.: 4, words.: 4, Well: 4, else: 4, the: 4, writing: 4, For: 4, have: 4, showing: 4, of: 4, more: 4, repeat: 4, input: 4, we: 12, so: 4, just: 4, once?: 4}

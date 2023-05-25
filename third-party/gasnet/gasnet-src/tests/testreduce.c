@@ -189,7 +189,8 @@ void do_test_add(gex_TM_t tm)
     gex_Event_t *ev = test_malloc(iters * sizeof(gex_Event_t));
 
     assert_always(size <= INT32_MAX - Nelem);
-    for (int i = 0; i < Nelem; ++i) {
+    // Note use of a wide i to prevent overflow in intermediate value(s)
+    for (uint64_t i = 0; i < Nelem; ++i) {
       correct[i] = ((size + i) * (size + i - 1) - i * (i - 1)) / 2;
     }
 
@@ -255,12 +256,21 @@ void do_test_user(gex_TM_t tm)
     int failures = 0;
     for (int i = 0; i < iters; ++i) {
       gex_Rank_t root = RAND_ROOT(size);
-      gex_Event_Wait(
-        gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
-                               GEX_DT_USER, dt_sz, Nelem,
-                               GEX_OP_USER, &op_concat,
-                               (void*)(uintptr_t)dt_sz, 0));
-      if (rank==root) {
+      if (TEST_RAND_ONEIN(5)) {
+        gex_Event_Wait(
+          gex_Coll_ReduceToAllNB(tm, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+
+      } else {
+        gex_Event_Wait(
+          gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      }
+      if (rank==root) { // Even in ToAll case, one (random) proc verifies
         for (size_t j = 0; j < Nelem; ++j) {
           const char *str = OutStrings + j * dt_sz;
           // Count the number of occurances of each char
@@ -293,12 +303,20 @@ void do_test_user(gex_TM_t tm)
     failures = 0;
     for (int i = 0; i < iters; ++i) {
       gex_Rank_t root = RAND_ROOT(size);
-      gex_Event_Wait(
-        gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
-                               GEX_DT_USER, dt_sz, Nelem,
-                               GEX_OP_USER_NC, &op_concat,
-                               (void*)(uintptr_t)dt_sz, 0));
-      if (rank==root) {
+      if (TEST_RAND_ONEIN(5)) {
+        gex_Event_Wait(
+          gex_Coll_ReduceToAllNB(tm, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER_NC, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      } else {
+        gex_Event_Wait(
+          gex_Coll_ReduceToOneNB(tm, root, OutStrings, InStrings,
+                                 GEX_DT_USER, dt_sz, Nelem,
+                                 GEX_OP_USER_NC, &op_concat,
+                                 (void*)(uintptr_t)dt_sz, 0));
+      }
+      if (rank==root) { // Even in ToAll case, one (random) proc verifies
         for (size_t j = 0; j < Nelem; ++j) {
           // validate result against properly ordered (lexically reversed) result
           const char *str = OutStrings + j * dt_sz;
@@ -463,6 +481,8 @@ int main(int argc, char **argv)
 #else
   thread_main(NULL);
 #endif
+
+  GASNET_Safe(gex_TM_Destroy(subtm, NULL, 0));
 
   BARRIER();
   MSG0("done.");

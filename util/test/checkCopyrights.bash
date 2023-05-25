@@ -20,7 +20,7 @@
 
 todate=`date "+%m%d"`
 #This hardcoding is intentional. Date accepts a full date like this, but %m%d cuts off the year so it only compares 0107 to the current date
-cond=`date -d 2022-01-07 "+%m%d"`
+cond=`date -d 2023-01-07 "+%m%d"`
 
 if [ $todate -le $cond ];
 then
@@ -64,7 +64,7 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v compiler/dyno/lib/parsing/bison-chpl-lib.cpp | \
     grep -v compiler/dyno/lib/parsing/flex-chpl-lib.h | \
     grep -v compiler/dyno/lib/parsing/flex-chpl-lib.cpp | \
-    grep -v 'modules/standard/gen/.*/SysCTypes.chpl' | \
+    grep -v 'modules/standard/gen/.*/ChapelSysCTypes.chpl' | \
     xargs grep -i -L "${copyright_pattern}")
 
 

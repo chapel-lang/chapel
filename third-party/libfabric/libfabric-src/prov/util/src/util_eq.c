@@ -72,6 +72,10 @@ void ofi_eq_handle_err_entry(uint32_t api_version, uint64_t flags,
  * fi_eq_read and fi_eq_readerr share this common code path.
  * If flags contains UTIL_FLAG_ERROR, then we are processing
  * fi_eq_readerr.
+ *
+ * when processing fi_eq_readerr, we need to store the error
+ * data until the app has a chance to read it, so it is freed
+ * by the util_eq.  error writers should not free this data
  */
 ssize_t ofi_eq_read(struct fid_eq *eq_fid, uint32_t *event,
 		    void *buf, size_t len, uint64_t flags)
@@ -83,7 +87,7 @@ ssize_t ofi_eq_read(struct fid_eq *eq_fid, uint32_t *event,
 
 	eq = container_of(eq_fid, struct util_eq, eq_fid);
 
-	fastlock_acquire(&eq->lock);
+	ofi_mutex_lock(&eq->lock);
 	if (slist_empty(&eq->list)) {
 		ret = -FI_EAGAIN;
 		goto out;
@@ -127,7 +131,7 @@ ssize_t ofi_eq_read(struct fid_eq *eq_fid, uint32_t *event,
 		free(entry);
 	}
 out:
-	fastlock_release(&eq->lock);
+	ofi_mutex_unlock(&eq->lock);
 	return ret;
 }
 
@@ -154,9 +158,9 @@ ssize_t ofi_eq_write(struct fid_eq *eq_fid, uint32_t event,
 	entry->err = !!(flags & UTIL_FLAG_ERROR);
 	memcpy(entry->data, buf, len);
 
-	fastlock_acquire(&eq->lock);
+	ofi_mutex_lock(&eq->lock);
 	slist_insert_tail(&entry->entry, &eq->list);
-	fastlock_release(&eq->lock);
+	ofi_mutex_unlock(&eq->lock);
 
 	if (eq->wait)
 		eq->wait->signal(eq->wait);
@@ -243,7 +247,7 @@ int ofi_eq_cleanup(struct fid *fid)
 	}
 
 	free(eq->saved_err_data);
-	fastlock_destroy(&eq->lock);
+	ofi_mutex_destroy(&eq->lock);
 	ofi_atomic_dec32(&eq->fabric->ref);
 	return 0;
 }
@@ -289,7 +293,7 @@ static int util_eq_init(struct fid_fabric *fabric, struct util_eq *eq,
 
 	ofi_atomic_initialize32(&eq->ref, 0);
 	slist_init(&eq->list);
-	fastlock_init(&eq->lock);
+	ofi_mutex_init(&eq->lock);
 
 	switch (attr->wait_obj) {
 	case FI_WAIT_NONE:
@@ -344,7 +348,7 @@ void ofi_eq_remove_fid_events(struct util_eq *eq, fid_t fid)
 	struct util_event *event;
 	struct fi_eq_cm_entry *cm_entry;
 
-	fastlock_acquire(&eq->lock);
+	ofi_mutex_lock(&eq->lock);
 	while((entry =
 	      slist_remove_first_match(&eq->list, ofi_eq_match_fid_event,
 				       fid))) {
@@ -361,7 +365,7 @@ void ofi_eq_remove_fid_events(struct util_eq *eq, fid_t fid)
 		}
 		free(event);
 	}
-	fastlock_release(&eq->lock);
+	ofi_mutex_unlock(&eq->lock);
 }
 
 static int util_verify_eq_attr(const struct fi_provider *prov,

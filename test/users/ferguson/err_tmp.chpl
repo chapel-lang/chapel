@@ -1,21 +1,22 @@
-use Sys, SysBasic;
+use CTypes;
+import OS.{errorCode};
 
-proc doDebugWrite(x, y):err_t {
-  extern proc qio_int_to_err(a:int(32)):syserr;
+proc doDebugWrite(x, y):c_int {
+  extern proc qio_int_to_err(a:int(32)):errorCode;
 
   writeln("Debug Write: ", x, y);
   return qio_int_to_err(1);
 }
 
-proc test(arg:string, out error:err_t):bool {
-  error = ENOERR;
+proc test(arg:string, out error:c_int):bool {
+  error = 0;
   on Locales[0] {
     if ! error {
       error = doDebugWrite("test ", arg);
     }
   }
-  return error==ENOERR;
+  return error==0;
 }
 
-var e:err_t = ENOERR;
+var e:c_int = 0;
 test("hello", e);

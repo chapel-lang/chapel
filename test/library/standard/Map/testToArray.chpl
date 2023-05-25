@@ -1,3 +1,4 @@
+use Sort;
 use Map;
 
 config param parSafe = false;
@@ -10,6 +11,6 @@ var pairA = m.toArray(),
     keysA = m.keysToArray(),
     valsA = m.valuesToArray();
 
-writeln(pairA.sorted());
-writeln(keysA.sorted());
-writeln(valsA.sorted());
+writeln(sorted(pairA));
+writeln(sorted(keysA));
+writeln(sorted(valsA));

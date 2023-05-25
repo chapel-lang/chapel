@@ -62,6 +62,10 @@ struct gasneti_mk_impl_s {
   // If zero, then only space for the COMMON fields is allocated
   size_t               mk_sizeof;
 
+  // Class-specific implementation of gasneti_formatmk()
+  // If NULL, the default uses mk_name
+  const char * (*mk_format)(gasneti_MK_t);
+
   // Hook for gex_MK_Destroy()
   // If NULL, the default is to call gasneti_free_mk()
   void (*mk_destroy)(gasneti_MK_t, gex_Flags_t);
@@ -75,4 +79,36 @@ struct gasneti_mk_impl_s {
   void (*mk_segment_destroy)(gasneti_Segment_t);
 };
 
+#endif
+
+/* ------------------------------------------------------------------------------------ */
+// Hooks to invoke conduit-specific functionality from common conduit-independent code.
+// Conduits requiring use of one or more of these should define the
+// corresponding preprocessor identifier in their gasnet_core_fwd.h.
+
+#if GASNETC_MK_CREATE_HOOK
+// Called after conduit-independent MK creation steps in gex_MK_Create().
+//
+// Typical uses include verification that the kind can be supported, and
+// initialization of per-device resources (such as a memory registration cache).
+// The `_mk_conduit` field in `gasneti_MK_t` is a `void *` reserved for
+// use by the conduit.
+//
+// On success, returns GASNET_OK and the infrastructure will call the
+// matching destroy hook (if any), when the MK is destroyed.
+// On failure, returns any other value and the infrastructure will NOT call
+// any matching destroy hook, leaving this hook responsible for cleanup of
+// any conduit-specific state prior to such an error return.
+extern int gasnetc_mk_create_hook(
+                    gasneti_MK_t                     kind,
+                    gasneti_Client_t                 client,
+                    const gex_MK_Create_args_t       *args,
+                    gex_Flags_t                      flags);
+#endif
+
+#if GASNETC_MK_DESTROY_HOOK
+// Called prior to conduit-independent MK destruction steps in gex_MK_Create().
+//
+// Typical uses include cleanup of resources allocated in a Create hook.
+extern void gasnetc_mk_destroy_hook(gasneti_MK_t kind);
 #endif

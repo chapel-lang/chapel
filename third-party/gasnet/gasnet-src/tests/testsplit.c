@@ -285,7 +285,7 @@ int main(int argc, char **argv)
   peer = (myrow+1)%nrows; // myrow and nrows are position in, and length of, the col
   rank_ptr = (gex_Rank_t *)TEST_SEG_TM(coltm, peer);
   gex_RMA_PutNBI(coltm, peer, rank_ptr+2, &myrank, sizeof(myrank), GEX_EVENT_NOW, 0);
-  gex_NBI_Wait(GEX_EC_GET, 0);
+  gex_NBI_Wait(GEX_EC_PUT, 0);
   gex_Event_Wait(gex_Coll_BarrierNB(coltm, 0));
   assert_always(rank_arr[2] == gex_TM_TranslateRankToJobrank(coltm, (myrow+nrows-1)%nrows));
 

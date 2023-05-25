@@ -82,7 +82,7 @@ proc makeInput(array, inputStrings) {
       return inputStrings;
     }
   } else {
-    if isFloatType(eltType) {
+    if isRealType(eltType) {
       var result = forall a in array do (a/1000.0 + a - 500.0):eltType;
       return result;
     } else {
@@ -160,7 +160,7 @@ proc testsize(size:int) {
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
-    var t: Timer;
+    var t: stopwatch;
     for i in 1..ntrials {
       input = makeInput(array, inputStrings);
       t.start();

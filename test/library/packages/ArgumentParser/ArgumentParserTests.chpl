@@ -3345,7 +3345,7 @@ proc testMockMasonRun(test: borrowed Test) throws {
 
   // setup arguments for subcommand 'run'
   var runBuild = runParser.addFlag(name="build",
-                                 opts=["--build"],
+                                   opts=["--build"],
                                  defaultValue=false);
   var runShow = runParser.addFlag(name="show",
                                   opts=["--show"],

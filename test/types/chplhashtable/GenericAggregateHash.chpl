@@ -4,8 +4,8 @@ class C1 {
 }
 
 class C2: C1 {
-  type T;
-  var y: T;
+  type TT;
+  var y: TT;
 }
 
 record r1 {
@@ -66,7 +66,7 @@ proc test3() {
 test3();
 
 proc test4() {
-  var d: domain(shared C2(int));
+  var d: domain(shared C2(int, int));
   d += new shared C2(int, 0, int, 0);
   writeln(d);
 }

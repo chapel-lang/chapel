@@ -81,8 +81,9 @@ When you compile a Chapel program for multiple locales, you should
 typically see two binaries (e.g., hello and hello_real).  The first
 binary contains code to launch the Chapel program onto the compute nodes
 as specified by the :ref:`CHPL_LAUNCHER <readme-launcher>` variable. The
-second contains the program code itself. The ``-v`` command line option
-is a good way to learn about what the launcher is doing.
+second contains the program code itself. The ``-v`` and ``--dry-run``
+command line options are a good way to learn about what the launcher is
+doing.
 
 .. _what-is-gasnet:
 
@@ -177,8 +178,8 @@ other                everything
 Troubleshooting
 +++++++++++++++
 
-If you are trying to debug job launch, try adding ``-v`` to your
-program's command line and set:
+If you are trying to debug job launch, try adding ``-v`` or
+``--dry-run`` to your program's command line and set:
 
   .. code-block:: bash
 

@@ -4,10 +4,10 @@
 // For easier test verification, it doesn't print out the real
 // epsilon.
 
-proc type (real(64)).epsilon param return 0x1.0p-02:real(64);
-proc (real(64)).epsilon param return 0x1.0p-02:real(64);
-proc type (real(32)).epsilon param return 0x1.0p-01:real(32);
-proc (real(32)).epsilon param return 0x1.0p-01:real(32);
+proc type (real(64)).epsilon param do return 0x1.0p-02:real(64);
+proc (real(64)).epsilon param do return 0x1.0p-02:real(64);
+proc type (real(32)).epsilon param do return 0x1.0p-01:real(32);
+proc (real(32)).epsilon param do return 0x1.0p-01:real(32);
 
 var v64: real(64);
 var v32: real(32);

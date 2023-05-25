@@ -202,7 +202,13 @@ int main(int argc, char **argv)
         client_gpu2 = (uint8_t *) dptr;
       }
 
-      // Create the Kind
+      // Create and Destroy a kind
+      kind = GEX_MK_INVALID;
+      GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
+      assert_always(kind != GEX_MK_INVALID);
+      gex_MK_Destroy(kind, 0);
+
+      // Create the Kind "for keeps"
       // TODO: if multiple devices, this should optionally create kinds using two devices
       kind = GEX_MK_INVALID;
       GASNET_Safe( gex_MK_Create(&kind, myclient, &args, 0) );
@@ -235,7 +241,7 @@ int main(int argc, char **argv)
 
       // Create first GPU endpoint and bind its segment
       GASNET_Safe( gex_EP_Create(&gpu1_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu1_ep, d_segment1, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu1_ep, d_segment1, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu1_ep, 1, 0) );
 
       // Repeat to create a second local GPU segment
@@ -250,7 +256,7 @@ int main(int argc, char **argv)
         assert_always(tmp_ctx == ctx);
       }
       GASNET_Safe( gex_EP_Create(&gpu2_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu2_ep, d_segment2, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu2_ep, d_segment2, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu2_ep, 1, 0) );
 
       // TM pairs for several possible pairings

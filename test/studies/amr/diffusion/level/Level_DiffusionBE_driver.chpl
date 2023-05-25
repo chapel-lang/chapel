@@ -10,7 +10,7 @@ use LevelBC_DiffusionBE;
 
 use IO;
 
-proc main {
+private proc main {
 
 
   //==== Output times ====
@@ -48,7 +48,7 @@ proc main {
 
   //===> Diffusivity ===>
   var diffusivity: real;
-  var phys_file = open("set_problem/physics.txt", iomode.r).reader();
+  var phys_file = open("set_problem/physics.txt", ioMode.r).reader();
   var dim_in: int;
   phys_file.readln(diffusivity);
   phys_file.close();

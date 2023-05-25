@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,6 +96,7 @@ public:
   bool   enterInterfaceSym   (InterfaceSymbol*   node) override;
 
   void   visitLabelSym       (LabelSymbol*       node) override;
+  void visitTemporaryConversionSymbol(TemporaryConversionSymbol* node)override;
 
   bool   enterModSym         (ModuleSymbol*      node) override;
   void   exitModSym          (ModuleSymbol*      node) override;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -455,6 +455,14 @@ qioerr chpl_fs_symlink(const char* orig, const char* linkName) {
 
 mode_t chpl_fs_umask(mode_t mask) {
   return umask(mask);
+}
+
+mode_t chpl_int_to_mode(int mode) {
+  return (mode_t)mode;
+}
+
+int chpl_mode_to_int(mode_t mode) {
+  return (int)mode;
 }
 
 /* Returns the current permissions on a file specified by name */

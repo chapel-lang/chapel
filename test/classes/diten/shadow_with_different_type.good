@@ -1,3 +1,2 @@
-1
-Base
-Base
+shadow_with_different_type.chpl:6: error: field 's' has same name as parent class field
+shadow_with_different_type.chpl:2: note: parent class field declared here

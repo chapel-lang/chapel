@@ -5,9 +5,8 @@ module M {
 
   enum bar {d, e, f};
 
-  use foo, bar;
-
   proc main() {
+    use foo, bar;
     writeln(a, " ", b, " ", c);
     writeln(d, " ", e, " ", f);
   }

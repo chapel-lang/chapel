@@ -34,9 +34,9 @@ note: to formal of type complex(128)
   tupleModifyBlankArgElem.chpl:138: called as run(elem: complex(128))
 tupleModifyBlankArgElem.chpl:23: In function 'modifyBlankArgElement':
 tupleModifyBlankArgElem.chpl:24: error: const actual is passed to 'ref' formal 'r1' of =
-note: to formal of type range(int(64),bounded,false)
-  tupleModifyBlankArgElem.chpl:87: called as modifyBlankArgElement(tup: 1*range(int(64),bounded,false)) from function 'run'
-  tupleModifyBlankArgElem.chpl:141: called as run(elem: range(int(64),bounded,false))
+note: to formal of type range(int(64),both,false)
+  tupleModifyBlankArgElem.chpl:87: called as modifyBlankArgElement(tup: 1*range(int(64),both,false)) from function 'run'
+  tupleModifyBlankArgElem.chpl:141: called as run(elem: range(int(64),both,false))
 tupleModifyBlankArgElem.chpl:27: In function 'modifyBlankArgElement':
 tupleModifyBlankArgElem.chpl:27: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
 note: tuple element #0 of type owned C?
@@ -47,9 +47,9 @@ note: tuple element #0 of type shared C?
 tupleModifyBlankArgElem.chpl:32: note: possibly set here
 tupleModifyBlankArgElem.chpl:84: In function 'run':
 tupleModifyBlankArgElem.chpl:92: error: const actual element is passed to 'ref' intent tuple formal 'tup' of 'modifyBlankArgElement'
-note: tuple element #0 of type 'AtomicT(int(64))'
+note: tuple element #0 of type 'atomic int(64)'
 tupleModifyBlankArgElem.chpl:90: note: const tuple declared here
-  tupleModifyBlankArgElem.chpl:157: called as run(elem: AtomicT(int(64)))
+  tupleModifyBlankArgElem.chpl:157: called as run(elem: atomic int(64))
 tupleModifyBlankArgElem.chpl:55: In function 'modifyBlankArgElement':
 tupleModifyBlankArgElem.chpl:55: error: tuple formal 'tup' of 'modifyBlankArgElement' is const and cannot be modified
 note: tuple element #0 of type string

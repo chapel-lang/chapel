@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -142,15 +142,15 @@ module ArrayViewSlice {
 
     // these could be fields, but indirecting works just as well and
     // makes the class less generic.
-    proc idxType type return dom.idxType;
-    proc rank param return arr.rank;
+    proc idxType type do return dom.idxType;
+    proc rank param do return arr.rank;
 
     // The following seems like it ought to work, but it causes an
     // error in the compiler for non-devel mode...  presumably due to
     // a direct query of eltType in the compiler(?).  As a TODO we
     // might want to hunt this down in the future...
     //
-    //  proc eltType type return arr.eltType;
+    //  proc eltType type do return arr.eltType;
 
 
     //
@@ -279,7 +279,7 @@ module ArrayViewSlice {
     // locality-oriented queries
     //
 
-    proc dsiHasSingleLocalSubdomain() param
+    proc dsiHasSingleLocalSubdomain() param do
       return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain(loc: locale) {

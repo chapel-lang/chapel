@@ -41,7 +41,7 @@ proc main() {
     r = mod(r, tableSize);
   }
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   select mode {

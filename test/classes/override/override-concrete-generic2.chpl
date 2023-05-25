@@ -16,7 +16,5 @@ proc test() {
   var y = x.borrow();
   var z = y:borrowed Parent;
   y.f(1);
-  // Currently an ambiguity error but the important
-  // thing is that it's *some* sort of compilation failure.
 }
 test();

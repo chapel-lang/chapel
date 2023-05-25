@@ -20,6 +20,6 @@ class Child : Parent {
   }
 }
 writeln("Dynamic Child(int)");
-var pc:borrowed Parent(int) = new borrowed Child(int, 1, 2);
+var pc:borrowed Parent(int) = (new owned Child(int, 1, 2)).borrow();
 pc.parent_method();
 pc.overridden_method();

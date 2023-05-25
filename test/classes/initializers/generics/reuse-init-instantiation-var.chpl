@@ -9,8 +9,8 @@ class Foo {
   }
 }
 
-var foo1 = new borrowed Foo(1);
-var foo2 = new borrowed Foo(1);
+var foo1 = (new owned Foo(1)).borrow();
+var foo2 = (new owned Foo(1)).borrow();
 
 writeln(foo1.type == foo2.type);
 writeln(foo1);

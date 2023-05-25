@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,19 +28,23 @@
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "astutil.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "ForallStmt.h"
 #include "passes.h"
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "type.h"
 #include "wellknown.h"
+#include "chpl/uast/OpCall.h"
+#include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
 
 #include <algorithm>
 #include <regex>
+#include <cstring>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -49,6 +53,7 @@ Symbol *gNil = NULL;
 Symbol *gUnknown = NULL;
 Symbol *gMethodToken = NULL;
 Symbol *gDummyRef = NULL;
+Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
 Symbol *gModuleToken = NULL;
@@ -82,6 +87,7 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gUseIOFormatters = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -102,6 +108,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   fieldQualifiers(NULL),
   defPoint(NULL),
   deprecationMsg(""),
+  unstableMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {
@@ -131,10 +138,10 @@ void Symbol::verify() {
   }
   verifyInTree(type, "Symbol::type");
 
-  if (name != astr(name))
+  if (name && name != astr(name))
     INT_FATAL("name is not an astr");
 
-  if (cname != astr(cname))
+  if (cname && cname != astr(cname))
     INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
@@ -246,14 +253,6 @@ bool Symbol::isKnownToBeGeneric() {
   else
     return hasFlag(FLAG_GENERIC);
 }
-
-// Don't generate documentation for this symbol, either because it is private,
-// or because the symbol should not be documented independent of privacy
-bool Symbol::noDocGen() const {
-  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE) ||
-    hasFlag(FLAG_COMPILER_GENERATED);
-}
-
 
 void Symbol::addSymExpr(SymExpr* se) {
 
@@ -449,8 +448,19 @@ const char* Symbol::getDeprecationMsg() const {
   if (deprecationMsg[0] == '\0') {
     const char* msg = astr(name, " is deprecated");
     return msg;
-  } else {
+  }
+  else {
     return deprecationMsg.c_str();
+  }
+}
+
+const char* Symbol::getUnstableMsg() const {
+  if (unstableMsg[0] == '\0') {
+    const char* msg = astr(name, " is unstable");
+    return msg;
+  }
+  else {
+    return unstableMsg.c_str();
   }
 }
 
@@ -459,18 +469,13 @@ const char* Symbol::getDeprecationMsg() const {
 // for when generating the docs). See:
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
-const char* Symbol::getSanitizedDeprecationMsg() const {
-  std::string msg = getDeprecationMsg();
-  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
-  //       show up in sanitized message).
-  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
-  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
-  msg = std::regex_replace(msg, std::regex(reStr), "$2");
-  return astr(msg.c_str());
+const char* Symbol::getSanitizedMsg(std::string msg) const {
+  return astr(chpl::removeSphinxMarkup(msg));
 }
 
-void Symbol::generateDeprecationWarning(Expr* context) {
+void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
+  if (!this->hasFlag(FLAG_DEPRECATED)) return;
+
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
@@ -488,7 +493,61 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+  }
+}
+
+static bool isInvisibleModule(Symbol* sym) {
+  return sym == rootModule || sym == theProgram;
+}
+
+static bool isUnstableContext(Symbol* sym) {
+  if (sym->hasFlag(FLAG_UNSTABLE)) return true;
+  if (auto mod = toModuleSymbol(sym)) {
+    if (isInvisibleModule(mod)) return false;
+    if (mod->modTag == MOD_INTERNAL) return !fWarnUnstableInternal;
+    if (mod->modTag == MOD_STANDARD) return !fWarnUnstableStandard;
+  }
+  return false;
+}
+
+static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
+  if (!sym->hasFlag(FLAG_UNSTABLE)) return false;
+  auto mod = initialContext->getModule();
+  INT_ASSERT(mod);
+  if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+  if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  INT_ASSERT(mod->modTag == MOD_USER);
+  return fWarnUnstable;
+}
+
+//based on maybeGenerateDeprecationWarning
+void Symbol::maybeGenerateUnstableWarning(Expr* context) {
+  if (!isUnstableShouldWarn(this, context)) return;
+
+  Symbol* contextParent = context->parentSymbol;
+  bool parentUnstable = isUnstableContext(contextParent);
+  bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+
+  // Traverse until we find an unstable parent symbol, a deprecated parent
+  // symbol, a compiler generated parent symbol, or until we reach the highest
+  // outer scope.
+  while (contextParent != NULL && contextParent->defPoint != NULL &&
+         contextParent->defPoint->parentSymbol != NULL &&
+         !isInvisibleModule(contextParent) &&
+         parentUnstable != true && compilerGenerated != true &&
+         parentDeprecated != true) {
+    contextParent = contextParent->defPoint->parentSymbol;
+    parentUnstable = isUnstableContext(contextParent);
+    parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+
+  // Only generate the warning if the location with the reference is not
+  // created by the compiler, is not unstable, and is not deprecated.
+  if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
+    USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
   }
 }
 
@@ -544,7 +603,6 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -564,7 +622,6 @@ VarSymbol::VarSymbol(const char *init_name,
 VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
   LcnSymbol(E_VarSymbol, init_name, qType.type()),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -577,7 +634,6 @@ VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
 VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
   LcnSymbol(astTag, initName, initType),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -640,71 +696,6 @@ bool VarSymbol::isType() const {
   return hasFlag(FLAG_TYPE_VARIABLE);
 }
 
-
-std::string VarSymbol::docsDirective() {
-  std::string result;
-  if (fDocsTextOnly) {
-    result = "";
-  } else {
-    // Global type aliases become type directives. Types that are also fields
-    // could be generics, so let them be treated as regular fields (i.e. use
-    // the attribute directive).
-    if (this->isType() && !this->isField) {
-      result = ".. type:: ";
-    } else if (this->isField) {
-      result = ".. attribute:: ";
-    } else {
-      result = ".. data:: ";
-    }
-  }
-  return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
-}
-
-
-void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->noDocGen() || this->hasFlag(FLAG_SUPER_CLASS)) {
-      return;
-  }
-
-  this->printTabs(file, tabs);
-  *file << this->docsDirective();
-
-  if (this->isType()) {
-    *file << "type ";
-  } else if (this->isConstant()) {
-    *file << "const ";
-  } else if (this->isParameter()) {
-    *file << "param ";
-  } else {
-    *file << "var ";
-  }
-
-  AstToText info;
-  info.appendVarDef(this);
-  *file << info.text();
-
-  *file << std::endl;
-
-  // For .rst mode, put a line break after the .. data:: directive and
-  // its description text.
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
-  if (this->doc != NULL) {
-    this->printDocsDescription(this->doc, file, tabs + 1);
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->doc, file, tabs + 1,
-                               this->getDeprecationMsg(), !fDocsTextOnly);
-  }
-}
-
-
 /*
  * For docs, when VarSymbol is used for class fields, identify them as such by
  * calling this function.
@@ -732,6 +723,7 @@ ArgSymbol::ArgSymbol(IntentTag iIntent, const char* iName,
   LcnSymbol(E_ArgSymbol, iName, iType),
   intent(iIntent),
   originalIntent(iIntent),
+  typeExprFromDefaultExpr(false),
   typeExpr(NULL),
   defaultExpr(NULL),
   variableExpr(NULL),
@@ -806,6 +798,7 @@ ArgSymbol::copyInner(SymbolMap* map) {
   ArgSymbol *ps = new ArgSymbol(intent, name, type, COPY_INT(typeExpr),
                                 COPY_INT(defaultExpr), COPY_INT(variableExpr));
   ps->copyFlags(this);
+  ps->typeExprFromDefaultExpr = typeExprFromDefaultExpr;
   ps->cname = cname;
   ps->instantiatedFrom = instantiatedFrom;
   ps->originalIntent = this->originalIntent;
@@ -1003,7 +996,7 @@ ShadowVarSymbol::ShadowVarSymbol(ForallIntentTag iIntent,
   specBlock(NULL),
   svInitBlock(new BlockStmt()),
   svDeinitBlock(new BlockStmt()),
-  pruneit(false)
+  svExplicit(false)
 {
   if (intentsResolved)
     if (intent == TFI_DEFAULT || intent == TFI_CONST)
@@ -1063,6 +1056,7 @@ ShadowVarSymbol* ShadowVarSymbol::copyInner(SymbolMap* map) {
 
   ss->copyFlags(this);
   ss->cname = cname;
+  ss->svExplicit = svExplicit;
   return ss;
 }
 
@@ -1230,15 +1224,32 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 ********************************* | ********************************/
 
+#ifdef HAVE_LLVM
+static std::map<FunctionType*, llvm::FunctionType*>
+chapelFunctionTypeToLlvmFunctionType;
+
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return false;
+  chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
+  return true;
+}
+
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
+  return nullptr;
+}
+#endif
+
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmType(NULL),
+    llvmImplType(NULL),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
     llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
-    doc(NULL),
     instantiationPoint(NULL),
     userInstantiationPointLoc(0, NULL)
 {
@@ -1408,68 +1419,50 @@ void LabelSymbol::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
-std::string unescapeString(const char* const str, BaseAST *astForError) {
-  std::string newString = "";
-  char nextChar;
-  int pos = 0;
-
-  while((nextChar = str[pos++]) != '\0') {
-    if(nextChar != '\\') {
-      newString += nextChar;
-      continue;
-    }
-
-    // handle \ escapes
-    nextChar = str[pos++];
-    switch(nextChar) {
-      case '\'':
-      case '\"':
-      case '?':
-      case '\\':
-        newString += nextChar;
-        break;
-      case 'a':
-        newString += '\a';
-        break;
-      case 'b':
-        newString += '\b';
-        break;
-      case 'f':
-        newString += '\f';
-        break;
-      case 'n':
-        newString += '\n';
-        break;
-      case 'r':
-        newString += '\r';
-        break;
-      case 't':
-        newString += '\t';
-        break;
-      case 'v':
-        newString += '\v';
-        break;
-      case 'x':
-        {
-          char buf[3];
-          long num;
-          buf[0] = buf[1] = buf[2] = '\0';
-          if (str[pos] && isxdigit(str[pos])) {
-              buf[0] = str[pos++];
-              if( str[pos] && isxdigit(str[pos]))
-                buf[1] = str[pos++];
-          }
-          num = strtol(buf, NULL, 16);
-          newString += (char) num;
-        }
-        break;
-      default:
-        USR_FATAL(astForError, "Unexpected string escape: '\\%c'",  nextChar);
-        break;
-    }
-  }
-  return newString;
+TemporaryConversionSymbol::TemporaryConversionSymbol(chpl::ID symId)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(symId), sig(nullptr)
+{
+  gTemporaryConversionSymbols.add(this);
 }
+
+TemporaryConversionSymbol::TemporaryConversionSymbol(
+    const chpl::resolution::TypedFnSignature* sig)
+  : Symbol(E_TemporaryConversionSymbol, "<conv>", nullptr),
+    symId(), sig(sig)
+{
+  gTemporaryConversionSymbols.add(this);
+}
+
+void TemporaryConversionSymbol::verify() {
+}
+
+TemporaryConversionSymbol*
+TemporaryConversionSymbol::copyInner(SymbolMap* map) {
+  TemporaryConversionSymbol* copy = nullptr;
+  if (sig) {
+    copy = new TemporaryConversionSymbol(sig);
+  } else {
+    copy = new TemporaryConversionSymbol(symId);
+  }
+  copy->copyFlags(this);
+  return copy;
+}
+
+void TemporaryConversionSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in TemporaryConversionSymbol::replaceChild");
+}
+
+void TemporaryConversionSymbol::accept(AstVisitor* visitor) {
+  visitor->visitTemporaryConversionSymbol(this);
+}
+
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 static int literal_id = 1;
 HashMap<Immediate *, ImmHashFns, VarSymbol *> uniqueConstantsHash;
@@ -1538,12 +1531,12 @@ void createInitStringLiterals() {
   INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
 
   // initialize the strings
-  for (auto pair : literals) {
+  for (const auto& pair : literals) {
     VarSymbol* s = pair.second;
 
     // unescape the string and compute its length
     std::string unescapedString =
-      unescapeString(s->immediate->to_string().c_str(), s);
+      chpl::unescapeStringC(s->immediate->to_string());
     int64_t numCodepoints = 0;
 
     if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
@@ -1642,7 +1635,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   s->immediate = new Immediate;
   *s->immediate = imm;
 
-  std::string unescapedString = unescapeString(str, s);
+  std::string unescapedString = chpl::unescapeStringC(str);
   int64_t numCodepoints = 0;
   const bool ret = isValidString(unescapedString, &numCodepoints);
   if (!ret) {
@@ -1882,6 +1875,22 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
 VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
   return new_FloatSymbol(n, size, NUM_KIND_REAL, dtReal[size]);
+}
+
+VarSymbol *new_RealSymbol(float val) {
+  Immediate imm;
+  imm.v_float32 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_32;
+  return new_ImmediateSymbol(&imm);
+}
+
+VarSymbol *new_RealSymbol(double val) {
+  Immediate imm;
+  imm.v_float64 = val;
+  imm.const_kind = NUM_KIND_REAL;
+  imm.num_index = FLOAT_SIZE_64;
+  return new_ImmediateSymbol(&imm);
 }
 
 VarSymbol *new_ImagSymbol(const char *n, IF1_float_type size) {
@@ -2151,28 +2160,7 @@ void initAstrConsts() {
 }
 
 bool isAstrOpName(const char* name) {
-  if (name == astrSassign || name == astrSeq || name == astrSne ||
-      name == astrSgt || name == astrSgte || name == astrSlt ||
-      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
-      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
-      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
-      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
-      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
-      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
-      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
-      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
-      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
-      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
-      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
-      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
-      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
-      strcmp(name, "#") == 0 || strcmp(name, "chpl_by") == 0 ||
-      strcmp(name, "by") == 0 || strcmp(name, "align") == 0 ||
-      strcmp(name, "chpl_align") == 0 || name == astrScolon) {
-    return true;
-  } else {
-    return false;
-  }
+  return chpl::uast::isOpName(UniqueString::get(gContext, name, strlen(name)));
 }
 
 /************************************* | **************************************
@@ -2319,7 +2307,7 @@ const char* toString(VarSymbol* var, bool withType) {
           SymExpr* dstSe = toSymExpr(c->get(1));
           SymExpr* srcSe = toSymExpr(c->get(2));
           if (dstSe && srcSe && dstSe->symbol() == sym) {
-            sym = singleDef->symbol();
+            sym = srcSe->symbol();
             continue;
           }
         }

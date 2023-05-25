@@ -1,0 +1,2 @@
+bug: fields of array of array of syncs trigger a sync deprecation warning
+#20984

@@ -525,7 +525,7 @@ proc writeFlags( flags: [?D] bool )
 
 
 
-proc main {
+private proc main {
 
 
  

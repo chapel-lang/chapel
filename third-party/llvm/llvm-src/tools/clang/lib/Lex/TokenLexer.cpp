@@ -295,7 +295,7 @@ void TokenLexer::ExpandFunctionArguments() {
       // the closing r_paren of the __VA_OPT__.
       if (!Tokens[I].is(tok::r_paren) || !VCtx.sawClosingParen()) {
         // Lazily expand __VA_ARGS__ when we see the first __VA_OPT__.
-        if (!CalledWithVariadicArguments.hasValue()) {
+        if (!CalledWithVariadicArguments) {
           CalledWithVariadicArguments =
               ActualArgs->invokedWithVariadicArgument(Macro, PP);
         }
@@ -472,11 +472,9 @@ void TokenLexer::ExpandFunctionArguments() {
 
         // If the '##' came from expanding an argument, turn it into 'unknown'
         // to avoid pasting.
-        for (Token &Tok : llvm::make_range(ResultToks.begin() + FirstResult,
-                                           ResultToks.end())) {
+        for (Token &Tok : llvm::drop_begin(ResultToks, FirstResult))
           if (Tok.is(tok::hashhash))
             Tok.setKind(tok::unknown);
-        }
 
         if(ExpandLocStart.isValid()) {
           updateLocForMacroArgTokens(CurTok.getLocation(),

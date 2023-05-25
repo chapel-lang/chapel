@@ -1,7 +1,6 @@
+use Sort;
 use SortedMap;
 use utilFunctions;
-
-
 
 var m1 = new sortedMap(string, int, true, defaultComparator);
 var m2 = new sortedMap(string, int, true, defaultComparator);
@@ -13,4 +12,4 @@ forall i in 19..40 with (ref m2) do
 
 m1.update(m2);
 var A = m1.values();
-writeln(A.sorted());
+writeln(sorted(A));

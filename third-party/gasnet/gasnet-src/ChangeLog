@@ -10,13 +10,225 @@ GASNet-EX ChangeLog
   GASNet-EX currently implements the following conduits:
   - InfiniBand Verbs (ibv-conduit)
   - Cray uGNI (aries-conduits)
+  - Libfabric (ofi-conduit)
   - Shared-memory (smp-conduit)
   - Portable UDP (udp-conduit)
   - Portable MPI (mpi-conduit)
   - Unified Communication X (ucx-conduit) [EXPERIMENTAL]
-  - Libfabric (ofi-conduit) [EXPERIMENTAL]
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
+
+----------------------------------------------------------------------
+2023-03-10: GASNet-EX 2023.2.0-snapshot
+
+* Libfabric (details in ofi-conduit README)
+  - Now requires libfabric 1.5 or newer
+  - Now enforces documented minimum libfabric versions for certain providers
+  - The --{en,dis}able-ofi-mr-scalable configure options have been deprecated
+    in favor of newer alternatives which provide finer-grained control
+  - Restore default use of the "RDMADISSEM" barrier, which had been previously
+    disabled in favor of a slower barrier implementaton due to bug 4427.
+  - New envvars GASNET_OFI_LIST_DEVICES{,_NODES} to request a list of
+    the available devices.
+  - A new opt-in work-around for bug 4461 (failure of the cxi provider under
+    certain AM traffic patterns).  This replaces a less effective workaround
+    introduced in GASNet-EX 2022.9.0.
+    See "Bug 4461" in the conduit README for details.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - The conduit-specific "IBDISSEM" barrier implementation has been removed.
+    The default barrier is now "RDMADISSEM", and "IBDISSEM" is accepted as
+    an alias for it.
+
+* GASNet tools (spec v1.20): (details in README-tools)
+  - Support specifying the complement of a desired trace or stats mask (via the
+    environment variables and library interfaces) by prefixing "^" to the string
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4157: ibv XRC deadlock under certain loads
+  - bug4170: RFE: mod and div operations in gasneti_getenv_hwloc_withdefault()
+  - bug4171: RFE: support local ranks in gasneti_getenv_hwloc_withdefault()
+  - bug4179: ofi: failures specific to verbs provider
+  - bug4427: ofi-conduit failures with RDMADISSEM barrier
+  - bug4527: Erroneous/confusing startup warning with psm2 provider
+  - bug4538: gasnet_client_attach_hook called after registering memory in ofi conduit
+  - bug4468: RFE: negative form of GASNET_TRACEMASK
+  - bug4507: ofi message too long
+  - bug4517: ofi/verbs 'no associated AM handler function' errors with libfabric 1.11 or older
+  - bug4542: ibv-conduit failures with IBDISSEM and RDMADISSEM barriers
+  - bug4561: cxi provider performance regression
+  - bug4567: broken support for psm2 provider in libfabric < 1.10
+  - bug4568: RFE: support for FI_AV_MAP
+  - bug4569: RFE: per-provider version
+  - bug4574: RFE: support per-endpoint AVs
+  - bug4579: Document tcp provider floor
+  - bug4587: Undefined behavior in testinternal
+  - bug4591: Fix confusing documentation regarding TrueScale IB hardware
+
+----------------------------------------------------------------------
+2023-01-13: GASNet-EX 2022.9.2 Release (bug fix release)
+
+This bug fix release addresses issues on HPE Cray EX platforms
+discovered since the 2022.9.0 release.
+
+* Libfabric (details in ofi-conduit README)
+  - Add support for providers (including cxi in HPE's libfabric 1.15.2.0)
+    in which the FI_MR_PROV_KEY and FI_MR_VIRT_ADDR bits of mr_mode differ.
+
+* General and Misc.
+  - Add a new GASNET_USE_HUGEPAGES environment variable to control run-time use
+    of hugepages (assuming configure-time support).
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4533: RFE: run-time disable for hugepage support
+  - bug4553: cxi provider assertion failure with libfabric/1.15.2.0
+
+----------------------------------------------------------------------
+2022-09-30: GASNet-EX 2022.9.0, 20th Anniversary Release
+
+The GASNet team is proudly celebrating **20 years** of providing
+high-quality/high-performance middleware for alternative HPC programming
+models; the GASNet specification was first published in October, 2002
+(https://doi.org/10.25344/S4MW28).  Such a long lifetime for a software
+project is only possible with a supportive community of users and
+contributors.  Most of you reading this are a part of that community and
+have our sincere thanks for making this milestone possible.
+
+* General and Misc.
+  - Add a new GASNET_SPAWN_VERBOSE mode that provides more debugging
+    information about job creation and teardown operations.
+  - gasnetrun*/amudprun now accept `-v` multiple times to increase verbosity
+  - envvar `GASNET_VERBOSEENV` now recognizes 'N|n|NO|no|0' to mean false
+  - Scaling improvements to startup costs (memory and time) in all conduits
+  - New options (and changed defaults) for `testalltoall`
+  - More detailed reporting for certain job spawning failure scenarios
+
+* Memory Kinds (support for non-host memory)
+  - This release adds Memory Kinds support to ofi-conduit with certain
+    libfabric providers, for both Nvidia and AMD GPUs.  Support includes the
+    Slingshot-10 and Slingshot-11 networks on HPE Cray EX systems.
+  See docs/memory_kinds.md for more information on the status of Memory Kinds.
+
+* Libfabric (details in ofi-conduit README)
+  - The ofi-conduit is no longer "experimental", with caveats:
+    + Its use is only recommended on HPE Cray EX (Shasta) systems and
+      Linux clusters with Intel Omni-Path (with the psm2 provider)
+    + Performance has not been tuned and further enhancements are planned
+    Please see the conduit README for more details
+  - New support for memory kinds `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP`
+  - On HPE Cray EX (aka Shasta) systems, huge pages are now used for
+    GASNet-allocated host memory segments by default (where supported) for
+    both PSHM and non-PSHM configurations.
+  - A new environment variable `GASNET_OFI_MAX_MEDIUM` enables setting the
+    size of AM Medium buffers at job launch, and the preexisting configure
+    option `--with-ofi-max-medium` is now used to set the default value.
+    In the absence of these settings, the default buffer size remains unchanged.
+  - Improvements to `--with-ofi-provider` argument handling, as documented
+    in the conduit README.
+  - --with-ofi-provider=default has been renamed to --with-ofi-provider=generic
+  - Opt-in work-around for bugs 4179 (verbs provider) and 4461 (cxi provider)
+    in which certain AM traffic patterns may lead to various failures.
+    See "Bug 4179" and "Bug 4461" in the conduit README.
+  - New support for immediate operations (GEX_FLAG_IMMEDIATE) for most AM and
+    RMA operations
+  - New support for asynchronous local completion for RMA puts
+  - Support for optional `GEX_TI_{ENTRY,IS_REQ,IS_LONG}` in `gex_Token_Info()`
+  - Numerous maintainability improvements
+  - Support for multiple endpoints
+
+* Platform support/portability
+  - System-specific defaults for many configure options have been adjusted
+    to align with recommended values when run on an HPE Cray EX platform.
+  - `PLATFORM_OS_CNL` and `PLATFORM_OS_WSL` macros have been renamed to
+    `PLATFORM_OS_SUBFAMILY_CNL` and `PLATFORM_OS_SUBFAMILY_WSL`.
+     These platforms now ALSO define `PLATFORM_OS_LINUX`.
+  - Additional variables from *.mak fragments now appear in pkg-config *.pc files
+  - Timer calibration output is now controlled by envvar `GASNET_TSC_VERBOSE`
+  - Improvements to the startup logic for network hardware detection, 
+    resulting in more accurate warnings about inadvisable configurations.
+  - Added initial/experimental support for RISC-V architecture
+
+* GASNet-EX Spec v0.16: (details in docs/GASNet-EX.txt)
+  - The return type of `gex_EP_BindSegment()` has changed from `void` to `int`
+    and this function is now permitted to return non-zero on failure.
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4083: incorrect GatherAll algorithm selection at large scale
+  - bug4305: Remove GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
+  - bug4379: HIP support using deprecated context functionality
+  - bug4392: Warn when running with --disable-pshm and multiple PPN
+  - bug4434: RFE: runtime adjustment of ofi-conduit MaxMedium
+  - bug4432: OFI provider selection issues
+  - bug4447: GASNET_VERBOSEENV doesn't have an explicit false setting
+  - bug4448: smp-conduit incorrectly duplicates GASNET_VERBOSEENV output
+  - bug4453: gex_Coll_* should trace more information
+  - bug4454: Scaling issues in gasneti_segmentLimit()
+  - bug4462: testcoll_p-par validation failures on Summit
+  - bug4475: configure --disable-full-path-expansion breaks default MPI_CC
+  - bug4483: gethostid() on Perlmutter rarely returns 0, breaking PSHM detection
+  - bug4490: startup hang for large GASNET_MAX_SEGSIZE and huge pages > 4MB
+  - bug4496: SEGV in gasnete_coll_pf_tm_reduce_TreePutSeg for reduce-to-all
+  - bug4509: Non-scalable reduction temporaries
+
+----------------------------------------------------------------------
+2022-03-31: GASNet-EX 2022.3.0 Release
+
+* General and Misc.
+  - Add docs/gasnet1_differences.md guide for legacy GASNet-1 clients
+  - Reduce locking overheads inside AMPoll for single-node runs of
+    {udp,mpi}-conduit in PAR mode.
+  - A new environment variable `GASNET_HOST_DETECT` controls the
+    algorithm used for detecting compute node boundaries in a job.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Improved reporting of fatal errors reported via IBV completion queues
+
+* Unified Communication X framework (details in ucx-conduit README) [EXPERIMENTAL]
+  - A new environment variable `GASNET_UCX_MAX_MEDIUM` enables setting the
+    size of AM Medium buffers at job launch, and a new configure option
+    `--with-ucx-max-medium` can be used to set the default value.
+    In the absence of these settings, default buffer size remains unchanged.
+  - `GASNET_DISABLE_MUNMAP=1` is now the default for ucx-conduit.
+
+* Libfabric [EXPERIMENTAL] (details in ofi-conduit README)
+  - Initial support for the "cxi" provider for the HPE Slingshot-11 network.
+    + Added support for providers which set the `FI_MR_ENDPOINT` memory mode bit
+    + Added support for providers which do not support multiple endpoints
+      reporting TX completions to a single completion queue
+  - ofi-conduit is now the recommended conduit for HPE Slingshot (such as 
+    present in HPE Cray EX systems) and Intel Omni-Path (OPA) networks
+  - A new family of `GASNET_OFI_DEVICE*` environment variables provide
+    control over which device is used by a given process.  When configure can
+    find (optional) hwloc, this can be based on a process's location in the node
+    architecture (e.g. by socket or numa node).
+  - The implementation now includes a native implementation of the
+    Extended API (Put and Get) in terms of `fi_write()` and `fi_read()`.
+
+* GASNet-EX Spec v0.15: (details in docs/GASNet-EX.txt)
+  - Clarify that src/dst overlap within one operation yields undefined behavior
+  - Initial implementation of gex_Segment_Destroy()
+
+* GASNet tools (spec v1.19): (details in README-tools)
+  - Add gasnett_exe_name() for exposing the current executable name
+  - gasnett_gethostname() now normalizes hostnames to lowercase
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug4211: intermittent udp-conduit exit-time hangs on macOS
+  - bug4227: Bogus maybe-uninit warning building libgasnet with GCC-11.1+ 
+  - bug4297: incorrect nbrhd construction for some multi-homed hosts
+  - bug4321: Intermittent "EBADENDPOINT" failures in single-node udp-conduit
+  - bug4339: ucx: many-to-one deadlock
+  - bug4345: Multiply defined symbols in aries-conduit w/ recent compilers
+  - bug4355: Erroneous memory access when deleting a segment
+  - bug4356: Missing bounds checks for Long payloads
+  - bug4360: Insufficient fixed exit timeouts (ucx, ibv, ofi)
+  - bug4361: (partial fix) reductions on DT_USER of unbounded length
+  - bug4366: intermittent exit-time assertion failures from debug memcheck
+  - bug4373: ofi: FI_MR_ENDPOINT support
+  - bug4374: Update mr_mode handling to OFI 1.5 API spec (or newer?)
+  - bug4375: ofi: support multiple tx CQs
+  - bug4376: ofi: infrequent FI_EAGAIN when reposting multi-recv buffer
+  - bug4399: (partial fix) stronger local address range checks when using kinds
 
 ----------------------------------------------------------------------
 2021-09-30: GASNet-EX 2021.9.0 Release
@@ -36,7 +248,7 @@ GASNet-EX ChangeLog
   - This release adds Memory Kinds support for AMD GPUs via the HIP API.
   - This release adds ucx-conduit support for `GEX_MK_CLASS_CUDA_UVA` and
     `GEX_MK_CLASS_HIP` on supported hardware and software.
-  - Fixed bugs 4148 and 4150, which had significant impact of the usability
+  - Fixed bugs 4148 and 4150, which had significant impact on the usability
     of RMA Put operations involving device memory.
   See docs/memory_kinds.md for more information on the status of Memory Kinds.
 
@@ -60,7 +272,7 @@ GASNet-EX ChangeLog
     + Fix corruption when using UCX-level shared memory communication (bug 4155)
     + Fix crashes when using synchronous local completion (bug 4277)
     + Fix leak of gex_Event_t for explicit-event local completion (bug 4292)
-  - Improved handing of non-collective exits
+  - Improved handling of non-collective exits
   - Support for multiple endpoints
 
 * Shared-memory without a network (details in smp-conduit README)
@@ -149,7 +361,7 @@ GASNet-EX ChangeLog
     aware that the behavior of configure in this release differs in that one
     must enable memory kinds explicitly using `--enable-memory-kinds` or an
     `--enable-kind-[...]` option for a specific kind.
-  - New preprocessor identifer 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
+  - New preprocessor identifier 'GASNET_HAVE_MK_CLASS_MULTIPLE' (undefined or
     defined to '1') indicates whether kinds support for anything other than
     host memory has been compiled-in.
 
@@ -277,7 +489,7 @@ GASNet-EX ChangeLog
 2020-10-30: GASNet-EX 2020.10.0 Release
 
 * General and Misc.
-  - NEW: Improved compatability with heap analysis tools like Valgrind
+  - NEW: Improved compatibility with heap analysis tools like Valgrind
     using new configure option --enable-valgrind. GASNet's valgrind
     suppression file now lives in other/valgrind/gasnet.supp.
   - GASNet trace/stats now categorize AMPoll calls in tracemask category 'X'

@@ -1,3 +1,3 @@
-uncaught IllegalArgumentError: illegal argument 'v, nbits': readbits nbits=9 > bits in v:uint(8)
+uncaught IllegalArgumentError: illegal argument 'x, numBits': readBits numBits=9 > bits in x:uint(8)
   bits-errors.chpl:58: thrown here
   bits-errors.chpl:58: uncaught here

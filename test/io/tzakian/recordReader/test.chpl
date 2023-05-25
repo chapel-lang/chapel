@@ -3,13 +3,13 @@ use RecordParser, IO;
 // Allow test to run with mmap or without since this test has exposed
 // QIO errors in the past for one of these configurations.
 config const no_mmap=false;
-var hints=IOHINT_NONE;
+var hints=ioHintSet.empty;
 if no_mmap {
-  hints = QIO_METHOD_PREADPWRITE;
+  hints = ioHintSet.mmap(false);
 }
 
-var f = open("input1.txt", iomode.rw);
-var ff = open("input2_beer.txt", iomode.rw, hints=hints);
+var f = open("input1.txt", ioMode.rw);
+var ff = open("input2_beer.txt", ioMode.rw, hints=hints);
 var fr = f.reader();
 var ffr = ff.reader();
 

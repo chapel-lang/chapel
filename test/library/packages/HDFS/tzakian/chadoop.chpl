@@ -42,7 +42,8 @@
 
 
  */
-use Sys, HDFS, HDFStools;
+use HDFS, HDFStools;
+use OS.POSIX;
 // Second col is for running on a cluster
 config const namenode = "default";//"sealcs01"; 
 var connectNumber: c_int = 0; // 54310
@@ -221,5 +222,3 @@ sync coforall loc in Locales { // look at this more
 
   } // on
 } // for each locale
-
-

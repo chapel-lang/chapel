@@ -1,6 +1,4 @@
 var s: sync bool;
-proc ensureDefaultInit(arg) { }
-ensureDefaultInit(s); // make sure s is default-initialized empty
 
 proc foo() {
   var i: int = 2;

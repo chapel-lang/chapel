@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for unordered non-fetching atomic operations.
+
    .. warning::
      This module represents work in progress. The API is unstable and likely to
      change over time.
@@ -88,7 +89,7 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedAdd(value:T): void {
     this.add(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedAdd(value:T): void {
     pragma "insert line file info" extern externFunc("add_unordered", T)
       proc atomic_add_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
@@ -101,7 +102,7 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedSub(value:T): void {
     this.sub(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedSub(value:T): void {
     pragma "insert line file info" extern externFunc("sub_unordered", T)
       proc atomic_sub_unordered(ref op:T, l:int(32), obj:c_void_ptr): void;
@@ -114,7 +115,7 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedOr(value:T): void {
     this.or(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedOr(value:T): void {
     if !isIntegral(T) then compilerError("or is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("or_unordered", T)
@@ -128,7 +129,7 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedAnd(value:T): void {
     this.and(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedAnd(value:T): void {
     if !isIntegral(T) then compilerError("and is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("and_unordered", T)
@@ -142,7 +143,7 @@ module UnorderedAtomics {
   inline proc AtomicT.unorderedXor(value:T): void {
     this.xor(value);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.unorderedXor(value:T): void {
     if !isIntegral(T) then compilerError("xor is only defined for integer atomic types");
     pragma "insert line file info" extern externFunc("xor_unordered", T)

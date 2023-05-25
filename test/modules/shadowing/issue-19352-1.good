@@ -1,0 +1,4 @@
+issue-19352-1.chpl:18: In function 'main':
+issue-19352-1.chpl:21: error: ambiguous call 'rec.method()'
+issue-19352-1.chpl:3: note: candidates are: rec.method()
+issue-19352-1.chpl:12: note:                 rec.method()

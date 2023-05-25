@@ -1,0 +1,12 @@
+true
+st_mode NNN
+st_nlink 1
+st_uid NNN
+st_gid NNN
+st_rdev NNN
+st_size 160
+st_atim SECS.NSECS
+st_mtim SECS.NSECS
+st_ctim SECS.NSECS
+st_blksize NNN
+st_blocks NNN

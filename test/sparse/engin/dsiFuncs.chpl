@@ -18,10 +18,10 @@ var SparseDom = if layoutType == layoutTypes.csr then
                   cooDom;
 var SparseMat: [SparseDom] int;
 
-writeln(ParentDom.alignedLow);
+writeln(ParentDom.low);
 
-const rowToAdd = ParentDom.dim(0).alignedLow + ParentDom.stride[0]*2;
-const colToAdd = ParentDom.dim(1).alignedLow + ParentDom.stride[1]*3;
+const rowToAdd = ParentDom.dim(0).low + ParentDom.stride[0]*2;
+const colToAdd = ParentDom.dim(1).low + ParentDom.stride[1]*3;
 var row = [i in ParentDom.dim(1)] (rowToAdd, i);
 var col = [i in ParentDom.dim(0)] (i, colToAdd);
 
@@ -39,24 +39,24 @@ for i in ParentDom.dim(0) {
 }
 
 writeln("size:\t\t", SparseDom.size);
-writeln("low:\t\t",SparseDom.low);
-writeln("high:\t\t",SparseDom.high);
+writeln("lowBound:\t",SparseDom.lowBound);
+writeln("highBound:\t",SparseDom.highBound);
 writeln("stride:\t\t",SparseDom.stride);
 writeln("alignment:\t",SparseDom.alignment);
 
 // first and last indices depend on the layout type
 if layoutType == layoutTypes.csc {
-  const expectedFirst = (rowToAdd, ParentDom.dim(1).low);
-  const expectedLast = (rowToAdd, ParentDom.dim(1).high);
+  const expectedFirst = (rowToAdd, ParentDom.dim(1).lowBound);
+  const expectedLast = (rowToAdd, ParentDom.dim(1).highBound);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 else {
-  const expectedFirst = (ParentDom.dim(0).low, colToAdd);
-  const expectedLast = (ParentDom.dim(0).high, colToAdd);
+  const expectedFirst = (ParentDom.dim(0).lowBound, colToAdd);
+  const expectedLast = (ParentDom.dim(0).highBound, colToAdd);
   writeln("first:\t\t", SparseDom.first == expectedFirst);
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 
-writeln("alignedLow:\t",SparseDom.alignedLow);
-writeln("alignedHigh:\t",SparseDom.alignedHigh);
+writeln("low:\t",SparseDom.low);
+writeln("high:\t",SparseDom.high);

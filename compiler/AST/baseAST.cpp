@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "WhileStmt.h"
@@ -112,13 +113,15 @@ void printStatistics(const char* pass) {
     kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
     kCatchStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr;
+    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr +
+    nTemporaryConversionThunk;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kDecoratedClassType;
+    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr +
+    kTemporaryConversionThunk;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -139,14 +142,14 @@ void printStatistics(const char* pass) {
             kStmt, kCondStmt, kBlockStmt, kGotoStmt);
 
   if (strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr);
+    fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d  Thunk %9d\n",
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
+    fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9d  Thunk %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
-    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr);
+    fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6d  Thunk %9dK\n",
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -241,13 +244,6 @@ void cleanAst() {
   for_vector (Type, key, keysToRm) {
     serializeMap.erase(key);
   }
-
-  // Important: Sometimes scopeResolve will create dummy UseStmts that are
-  // never inserted into the tree, and will be deleted in between passes.
-  //
-  // If we do not destroy the caches, they may contain pointers back to these
-  // dummy uses.
-  destroyModuleUsesCaches();
 
   //
   // clear back pointers to dead ast instances
@@ -489,10 +485,12 @@ Type* BaseAST::getWideRefType() {
 
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
+    case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
     case E_PrimitiveType:      return "PrimitiveType";
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";
     case E_AggregateType:      return "AggregateType";
+    case E_FunctionType:       return "FunctionType";
     case E_DecoratedClassType: return "DecoratedClassType";
     case E_ModuleSymbol:       return "ModuleSymbol";
     case E_VarSymbol:          return "VarSymbol";
@@ -503,6 +501,7 @@ const char* BaseAST::astTagAsString() const {
     case E_InterfaceSymbol:    return "InterfaceSymbol";
     case E_EnumSymbol:         return "EnumSymbol";
     case E_LabelSymbol:        return "LabelSymbol";
+    case E_TemporaryConversionSymbol: return "TemporaryConversionSymbol";
     case E_SymExpr:            return "SymExpr";
     case E_UnresolvedSymExpr:  return "UnresolvedSymExpr";
     case E_DefExpr:            return "DefExpr";
@@ -538,64 +537,6 @@ const char* BaseAST::astTagAsString() const {
   return "BaseAST??";
 }
 
-
-void BaseAST::printTabs(std::ostream *file, unsigned int tabs) {
-  for (unsigned int i = 0; i < tabs; i++) {
-    *file << this->tabText;
-  }
-}
-
-
-// This method is the same for several subclasses of BaseAST, so it is defined
-// here on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
-// taken as an argument here.
-//
-// TODO: Can BaseAST define a 'doc' member? What if `chpl --doc` went away and
-//       `chpldoc` was compiled with a special #define (e.g. -DCHPLDOC) so the
-//       'doc' member and all doc-related methods would only be available to
-//       chpldoc? (thomasvandoren, 2015-02-21)
-void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs) {
-  if (doc != NULL) {
-    std::stringstream sStream(ltrimAllLines(doc));
-    std::string line;
-    while (std::getline(sStream, line)) {
-      this->printTabs(file, tabs);
-      *file << line;
-      *file << std::endl;
-    }
-  }
-}
-
-// This method is the same for several subclasses of BaseAST, so it is defined
-// here on BaseAST. 'doc' is not defined as a member of BaseAST, so it must be
-// taken as an argument here.
-//
-// Will print a deprecation warning in the documentation, if one is not already
-// present.  Checks for "deprecat" in the original documentation string if it
-// exists and returns without adding a message.  This method assumes that we've
-// already checked that the symbol is deprecated.
-void BaseAST::printDocsDeprecation(const char *doc, std::ostream *file,
-                                   unsigned int tabs,
-                                   const char* deprecationMsg, bool extraLine) {
-  // The current documentation may already mention deprecation
-  if (doc != NULL) {
-    // If the documentation already mentions deprecation in some form, no need
-    // for further action
-    if (strstr(doc, "deprecat")) {
-      return;
-    }
-  }
-  this->printTabs(file, tabs);
-  *file << ".. warning::" << std::endl;
-  *file << std::endl;
-  this->printTabs(file, tabs+1); // Indent further for the deprecation message
-  *file << deprecationMsg << std::endl;
-
-  // Only add this extra line if we added lines for the deprecation warning
-  if (extraLine) {
-    *file << std::endl;
-  }
-}
 
 void registerModule(ModuleSymbol* mod) {
   switch (mod->modTag) {

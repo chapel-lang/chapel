@@ -14,5 +14,5 @@ writeln(isRefIter(range));
 writeln(isRefIter({1..10}));
 writeln(isRefIter({1..10}.type));
 
-writeln(isRefIter([1..10]));
-writeln(isRefIter([1..10].type));
+writeln(isRefIter([1..10, ]));
+writeln(isRefIter([1..10, ].type));

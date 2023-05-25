@@ -2,7 +2,7 @@ public use myrecord;
 
 printcopies = false;
 var GlobalArray:[1..2] R;
-var ArrTwo = [new R(2)];
+var ArrTwo = [new R(2), ];
 var ArrTwoThree = [new R(2), new R(3)];
 var one = new R(1);
 var two = new R(2);
@@ -11,7 +11,7 @@ printcopies = true;
 /*
 class Globals {
   var GlobalArray:[1..2] R;
-  var ArrTwo = [new R(2)];
+  var ArrTwo = [new R(2), ];
   var ArrTwoThree = [new R(2), new R(3)];
   var one = new R(1);
   var two = new R(2);

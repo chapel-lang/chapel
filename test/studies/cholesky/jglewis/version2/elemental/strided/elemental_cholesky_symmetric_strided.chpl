@@ -53,7 +53,7 @@ module elemental_cholesky_symmetric_strided {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barriers
+  // execution model more closely.  Barriers are implemented in the Collectives
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -67,7 +67,7 @@ module elemental_cholesky_symmetric_strided {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist, Barriers;
+  use CyclicDist, Collectives;
 
   use elemental_schur_complement,
       locality_info_strided, 
@@ -98,12 +98,12 @@ module elemental_cholesky_symmetric_strided {
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
-    assert ( A_grid_domain.low == (0,0) );
+    assert ( A_grid_domain.lowBound == (0,0) );
 
-    assert ( A (A.domain.low).locale.id == 0 );
+    assert ( A (A.domain.lowBound).locale.id == 0 );
 	     
     // initialize a tasking barrier
-    var bar = new Barrier(n_processors);
+    var bar = new barrier(n_processors);
 
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor
@@ -122,7 +122,7 @@ module elemental_cholesky_symmetric_strided {
 
 	//	writeln ("A.domain: ", A.domain);
 	//
-	//	assert ( A (A.domain.low + stride * processor ).locale ==
+	//	assert ( A (A.domain.lowBound + stride * processor ).locale ==
 	//		 A_locale_grid (processor) );
 
 	var save_tasks_to_finish : int;

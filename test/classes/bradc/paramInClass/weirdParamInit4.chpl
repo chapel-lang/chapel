@@ -7,9 +7,9 @@ class D {
   param y: int = c.x;
 }
 
-var c = new borrowed C(2);
+var c = (new owned C(2)).borrow();
 
-var d = new borrowed D(c);
+var d = (new owned D(c)).borrow();
 
 writeln("c is: ", c);
 writeln("d is: ", d);

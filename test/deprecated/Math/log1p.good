@@ -1,0 +1,15 @@
+log1p.chpl:8: warning: log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+log1p.chpl:10: warning: log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+log1p.chpl:12: warning: log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+log1p.chpl:14: warning: log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+log1p.chpl:16: warning: log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it
+a = 0.0
+log1p(a) = 0.0
+b = 1.72
+log1p(b) = 1.00063
+c = 8.0
+log1p(c) = 2.19722
+d = 26.0
+log1p(d) = 3.29584
+e = 80.0
+log1p(e) = 4.39445

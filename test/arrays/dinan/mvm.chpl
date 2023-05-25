@@ -6,7 +6,7 @@
 
 use Time;
 
-var t: Timer;
+var t: stopwatch;
 
 config param quiet   = true;
 config const M: uint = 1024;

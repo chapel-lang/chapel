@@ -434,7 +434,7 @@ For multilocale execution (see :ref:`readme-multilocale`),
 Chapel programs are executed indirectly by a launcher.  This section
 covers command line options that assist launchers in doing their job.
 These options are not supported for general use.  We document them here
-so that their presence in, say, the verbose output produced by ``-v``
+so that their presence in, say, the output produced by ``-v`` or ``--dry-run``
 can be understood.
 
 At present there is only one launcher support option:

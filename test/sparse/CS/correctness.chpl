@@ -367,8 +367,6 @@ proc writeDSI(D) {
   writeln("alignment:\t",D.alignment);
   writeln("first:\t\t",D.first);
   writeln("last:\t\t",D.last);
-  writeln("alignedLow:\t",D.alignedLow);
-  writeln("alignedHigh:\t",D.alignedHigh);
   writeln(D);
 }
 

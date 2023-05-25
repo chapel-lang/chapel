@@ -21,6 +21,9 @@ void gasnetc_req_free(void *req);
 
 GASNETI_INLINE(gasnetc_rreq_release)
 void gasnetc_rreq_release(gasnetc_ucx_request_t *req);
+
+size_t gasnetc_ammed_bufsz = (size_t)(-1); // "goes boom" if not overwritten
+
 /* ------------------------------------------------------------------------------------ */
 /*
   File-scoped completion callbacks
@@ -162,22 +165,49 @@ extern void gasnetc_counter_wait(gasnetc_counter_t *counter,
 // May AM Long logic assume in-order delivery?
 static int gasnetc_am_in_order = 1;
 
+#if GASNETI_STATS_OR_TRACE
+// Accounting for extra send-side buffers for Reply
+static size_t gasnetc_extra_reply_bufs = 0;
+#endif
+
+GASNETI_INLINE(gasnetc_sreq_alloc)
+gasnetc_am_req_t *gasnetc_sreq_alloc(gasneti_list_t *list) {
+  gasnetc_am_req_t *am_req;
+  GASNETI_LIST_ITEM_ALLOC(am_req, gasnetc_am_req_t, gasnetc_am_req_reset);
+  am_req->buffer.data = gasneti_malloc_aligned(GASNETI_MEDBUF_ALIGNMENT,
+                                               gasnetc_ammed_bufsz);
+  GASNETC_BUF_RESET(am_req->buffer);
+#if !GASNETC_PIN_SEGMENT
+  am_req->buffer.long_data_ptr = NULL;
+#endif
+  am_req->list = list;
+  if (list) {
+    gasneti_list_enq(am_req->list, am_req);
+  }
+  return am_req;
+}
+
+// TODO: bug 4334:
+// Code below allocates distinct small objects for each individual send buffer
+// and its associated gasnetc_am_req_t, without any attention to cache-line
+// alignment or allocator overheads. This should be refactored to use large
+// allocations that are divided into cache-line-aligned chunks.  Ideally the
+// region holding buffers can also be preemptively registered with UCX to
+// reduce time/space registration overheads and improve TLB utilization.
 void gasnetc_send_init(void)
 {
-  gasnetc_am_req_t *am_req;
-
   gasneti_list_init(&gasneti_ucx_module.send_queue);
-  gasneti_list_init(&gasneti_ucx_module.sreq_free);
 
+  // Pool for sending AM Requests
+  gasneti_list_init(&gasneti_ucx_module.sreq_free_req);
   for (int i = 0; i < GASNETC_UCX_REQ_POOL_SIZE; i++) {
-    GASNETI_LIST_ITEM_ALLOC(am_req, gasnetc_am_req_t, gasnetc_am_req_reset);
-    am_req->buffer.data = gasneti_malloc_aligned(GASNETI_MEDBUF_ALIGNMENT,
-                                                 GASNETC_MAX_MED);
-    GASNETC_BUF_RESET(am_req->buffer);
-#if !GASNETC_PIN_SEGMENT
-    am_req->buffer.long_data_ptr = NULL;
-#endif
-    gasneti_list_enq(&gasneti_ucx_module.sreq_free, am_req);
+    (void) gasnetc_sreq_alloc(&gasneti_ucx_module.sreq_free_req);
+  }
+
+  // Pool for sending AM Replies
+  gasneti_list_init(&gasneti_ucx_module.sreq_free_rep);
+  for (int i = 0; i < GASNETC_UCX_REQ_POOL_SIZE; i++) {
+    (void) gasnetc_sreq_alloc(&gasneti_ucx_module.sreq_free_rep);
   }
 
   { // AM Long logic may assume in-order if nbhrd contains all proc on this host.
@@ -212,13 +242,19 @@ void gasnetc_send_fini(void)
   }
   gasneti_list_fini(&gasneti_ucx_module.send_queue);
 
-  /* release pool of send requests */
+  /* release pools of send requests */
   while(NULL != (am_req = GASNETI_LIST_POP(
-                   &gasneti_ucx_module.sreq_free, gasnetc_am_req_t))){
+                   &gasneti_ucx_module.sreq_free_req, gasnetc_am_req_t))){
     gasneti_free_aligned(am_req->buffer.data);
     gasneti_free(am_req);
   }
-  gasneti_list_fini(&gasneti_ucx_module.sreq_free);
+  gasneti_list_fini(&gasneti_ucx_module.sreq_free_req);
+  while(NULL != (am_req = GASNETI_LIST_POP(
+                   &gasneti_ucx_module.sreq_free_rep, gasnetc_am_req_t))){
+    gasneti_free_aligned(am_req->buffer.data);
+    gasneti_free(am_req);
+  }
+  gasneti_list_fini(&gasneti_ucx_module.sreq_free_rep);
 }
 
 GASNETI_INLINE(gasnetc_am_req_get)
@@ -228,15 +264,46 @@ gasnetc_am_req_t *gasnetc_am_req_get(int is_request GASNETI_THREAD_FARG)
 
   gasnetc_ucx_progress();
   if (is_request) {
-    GASNETI_SPIN_UNTIL((am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free,
+    GASNETI_SPIN_UNTIL((am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free_req,
                                                   gasnetc_am_req_t)),
                        gasnetc_poll_sndrcv(GASNETC_LOCK_INLINE GASNETI_THREAD_PASS));
   } else {
-    GASNETI_SPIN_UNTIL((am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free,
-                                                  gasnetc_am_req_t)),
-                       gasnetc_poll_snd(GASNETC_LOCK_INLINE GASNETI_THREAD_PASS));
+    // Try at most twice (with a poll between) to allocate from the pool for reply buffers.
+    // Excessive polling risks buffering additional UCX traffic, pushing us toward OOM.
+    am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free_rep, gasnetc_am_req_t);
+    if (am_req) goto out;
+
+    gasnetc_poll_snd(GASNETC_LOCK_INLINE GASNETI_THREAD_PASS);
+    am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free_rep, gasnetc_am_req_t);
+    if_pt (am_req) goto out;
+
+    // Next, try once to "borrow" from the request buffer pool
+    // It will be returned to that pool upon completion
+    am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free_req, gasnetc_am_req_t);
+    if_pt (am_req) {
+      GASNETI_STAT_EVENT(C, BORROW_REPLY_BUF);
+      goto out;
+    }
+
+    // Finally, dynamically allocate an extra one to be freed when completed
+    // We need a gasnetc_am_req_t to send a reply, but have failed to find
+    // one in the free pools, even after (multiple) attempt to progress ucx.
+    // This likely inattentive peer(s) OR peers stuck in this same place!
+    // Since we currently lack the necessary isolation to progress only the
+    // reception of replies, that latter option spells deadlock if we spin
+    // poll indefinitely.  Currently, the best option is to (temporarily)
+    // grow the pool and thus buffer the outgoing reply.
+    // Unfortunately, there is no a priori bound on this growth!
+    // TODO: Bug 4359 for isolation and/or flow-control to avoid this mess.
+  #if GASNETI_STATS_OR_TRACE
+    gasnetc_extra_reply_bufs +=1;
+    GASNETI_STAT_EVENT_VAL(C, EXTRA_REPLY_BUF, gasnetc_extra_reply_bufs);
+  #endif
+    // NULL list argument marks this allocation to be freed when complete
+    am_req = gasnetc_sreq_alloc(NULL);
   }
 
+out:
   return am_req;
 }
 
@@ -262,8 +329,16 @@ void gasnetc_am_req_release(gasnetc_am_req_t *am_req)
     am_req->buffer.long_data_ptr = NULL;
   }
 #endif
-  gasnetc_am_req_reset(am_req);
-  gasneti_list_enq(&gasneti_ucx_module.sreq_free, am_req);
+  if_pf (! am_req->list) { // allocated to meet temporary burst
+  #if GASNETI_STATS_OR_TRACE
+    gasnetc_extra_reply_bufs -=1;
+  #endif
+    gasneti_free_aligned(am_req->buffer.data);
+    gasneti_free(am_req);
+  } else {
+    gasnetc_am_req_reset(am_req);
+    gasneti_list_enq(am_req->list, am_req);
+  }
 }
 
 /*
@@ -604,7 +679,7 @@ int gasnetc_am_reqrep_inner(gasnetc_ucx_am_type_t am_type,
   if (GASNETC_UCX_AM_MEDIUM == am_type ) {
       __am_req_format(0);
       gasneti_assert(src_addr);
-      gasneti_assert(nbytes <= GASNETC_MAX_MED);
+      gasneti_assert(nbytes <= GASNETC_MAX_MED_(numargs));
       /* pack payload */
       GASNETI_MEMCPY(GASNETC_BUF_PTR(am_req->buffer), src_addr, nbytes);
       GASNETC_BUF_ADD_SEND_BYTES(am_req, nbytes);
@@ -810,7 +885,7 @@ void gasnetc_recv_post(gasnetc_ucx_request_t *req) {
   gasnetc_req_reset(req);
   req->ucs_status =
       ucp_tag_recv_nbr(gasneti_ucx_module.ucp_worker, req->buffer.data,
-                       GASNETC_MAX_MED, ucp_dt_make_contig(1), 0, 0,
+                       gasnetc_ammed_bufsz, ucp_dt_make_contig(1), 0, 0,
                        req);
   if_pf (req->ucs_status < 0) {
     gasneti_fatalerror("UCX post request failed: %s",
@@ -832,6 +907,7 @@ int gasnetc_recv_init(void)
   status = ucp_context_query(gasneti_ucx_module.ucp_context, &attr);
   gasneti_ucx_module.request_size = attr.request_size;
 
+  // TODO: See comment preceding gasnetc_send_init regarding bug 4334
   for (i = 0; i < GASNETC_UCX_RCV_REAP_MAX; i++) {
     void *ucx_req = gasneti_malloc(gasneti_ucx_module.request_size +
                                    sizeof(gasnetc_ucx_request_t));
@@ -840,7 +916,7 @@ int gasnetc_recv_init(void)
 
     gasnetc_req_init(req);
     req->buffer.data = gasneti_malloc_aligned(GASNETI_MEDBUF_ALIGNMENT,
-                                              GASNETC_MAX_MED);
+                                              gasnetc_ammed_bufsz);
     gasneti_list_enq(&gasneti_ucx_module.recv_queue, req);
     gasnetc_recv_post(req);
   }
@@ -871,10 +947,11 @@ int gasnetc_recv_init(void)
   gasneti_list_init(&gasneti_ucx_module.recv_queue);
   gasneti_list_init(&gasneti_ucx_module.rreq_free);
 
+  // TODO: See comment preceding gasnetc_send_init regarding bug 4334
   for (i = 0; i < GASNETC_UCX_RCV_REAP_MAX; i++) {
     GASNETI_LIST_ITEM_ALLOC(rreq, gasnetc_am_req_t, gasnetc_am_req_reset);
     rreq->buffer.data = gasneti_malloc_aligned(GASNETI_MEDBUF_ALIGNMENT,
-                                               GASNETC_MAX_MED);
+                                               gasnetc_ammed_bufsz);
     rreq->buffer.long_data_ptr = NULL;
     GASNETC_BUF_RESET(rreq->buffer);
     gasneti_list_enq(&gasneti_ucx_module.rreq_free, rreq);
@@ -1015,7 +1092,7 @@ void gasnetc_poll_snd(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG)
     /* Message arrived */
     rreq = GASNETI_LIST_POP(&gasneti_ucx_module.rreq_free, gasnetc_am_req_t);
 
-    if (info_tag.length > GASNETC_MAX_MED) {
+    if (info_tag.length > gasnetc_ammed_bufsz) {
       rreq->buffer.long_data_ptr = gasneti_malloc(info_tag.length);
       rreq->buffer.long_bytes_used = info_tag.length;
       buf_ptr = rreq->buffer.long_data_ptr;

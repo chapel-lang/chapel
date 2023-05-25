@@ -1,7 +1,7 @@
 day18-bug3.chpl:11: In initializer:
 day18-bug3.chpl:13: error: const actual is passed to a 'ref' formal of init=()
 day18-bug3.chpl:14: error: const actual is passed to a 'ref' formal of init=()
-  day18-bug3.chpl:26: called as Node.init(l: owned Node, r: owned Node)
+  day18-bug3.chpl:25: called as Node.init(l: owned Node, r: owned Node)
 day18-bug3.chpl:23: In function 'lineToTree':
 day18-bug3.chpl:32: error: unresolved call '_new(type borrowed Node, owned Node?, owned Node?)'
 day18-bug3.chpl:11: note: this candidate did not match: _new(type chpl_t, l: owned Node, r: owned Node)

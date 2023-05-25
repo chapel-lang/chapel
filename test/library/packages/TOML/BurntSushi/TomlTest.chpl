@@ -9,15 +9,14 @@ use TOML, IO;
 config const f = 'bool.toml';
 
 proc main() {
-  var tomlChannel = openreader(f);
+  var tomlChannel = openReader(f);
   var tomlData = parseToml(tomlChannel);
 
   const j = f.replace('.toml', '.json.out');
-  var jsonChannel = openwriter(j);
+  var jsonChannel = openWriter(j);
 
   tomlData.writeJSON(jsonChannel);
 
   jsonChannel.close();
-  delete tomlData;
   tomlChannel.close();
 }

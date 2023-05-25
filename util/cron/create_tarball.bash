@@ -17,10 +17,10 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 export CHPL_LLVM=none
 
-version_num_text=$(cat $CHPL_HOME/compiler/main/version_num.h)
-major=$(echo "${version_num_text}" | grep MAJOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
-minor=$(echo "${version_num_text}" | grep MINOR_VERSION | cut -f3 -d" " | sed "s/\"//g")
-patch=$(echo "${version_num_text}" | grep UPDATE_VERSION | cut -f3 -d" " | sed "s/\"//g")
+source ${CHPL_HOME}/util/build_configs/functions.bash
+major=$(get_src_major_version ${CHPL_HOME})
+minor=$(get_src_minor_version ${CHPL_HOME})
+patch=$(get_src_patch_version ${CHPL_HOME})
 sha=$(git rev-parse --short HEAD)
 
 short_version="${major}.${minor}"

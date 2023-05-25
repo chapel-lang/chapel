@@ -1,4 +1,4 @@
-use Sys;
+use OS.POSIX;
 //
 // This test checks the error message printed by the comm=ugni SIGBUS
 // handler when we run out of memory trying to extend the heap, with
@@ -13,9 +13,9 @@ use Sys;
 // table entries and you'll get a different error message.  So for
 // example, on a 128g XC node use at least 256m hugepages.
 //
-var evHNR: c_string;
-const evHNRSet = sys_getenv(c'HUGETLB_NO_RESERVE', evHNR) != 0;
-if !evHNRSet || (evHNRSet && (evHNR:string).toLower() != 'yes') then
+var evHNR = getenv(c'HUGETLB_NO_RESERVE');
+if evHNR == c_nil
+  || (evHNR != c_nil && (evHNR:c_string:string).toLower() != 'yes') then
   writeln('Without HUGETLB_NO_RESERVE=yes, test may not work as expected.');
 
 config const arraySize = 2**20;

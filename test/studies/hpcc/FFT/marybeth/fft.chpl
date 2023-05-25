@@ -1,7 +1,7 @@
 use BitOps;
 use Random;
 use Time;
-
+use Math;
 
 // problem size configs
 config const logN = 5;
@@ -45,12 +45,12 @@ proc main() {
 
 
   // TIMED SECTION
-  var startTime = getCurrentTime();
+  var startTime = timeSinceEpoch().totalSeconds();
 
   Z = bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  var execTime = getCurrentTime() - startTime;
+  var execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   verifyResults(z, Z, execTime, Twiddles);
 }
@@ -182,7 +182,7 @@ proc verifyResults(z, Z, execTime, Twiddles) {
 
 proc butterfly(wk1: complex, wk2: complex, wk3: complex, 
               inout A:[?D] complex) {
-  const i1 = D.low,
+  const i1 = D.lowBound,
         i2 = i1 + D.stride,
         i3 = i2 + D.stride,
         i4 = i3 + D.stride;

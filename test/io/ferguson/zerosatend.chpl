@@ -1,4 +1,5 @@
 
+use FileSystem;
 use IO;
 
 config var testfile = "test.dat";
@@ -7,7 +8,7 @@ var n = sz / 8;
 
 // create the file.
 {
-  var tmp = open(testfile, iomode.cwr);
+  var tmp = open(testfile, ioMode.cwr);
 
   var och = tmp.writer(kind=iobig);
   for i in 0..#n {
@@ -21,7 +22,7 @@ var n = sz / 8;
 
 // read the file, check that we get exactly n back.
 {
-  var tmp = open(testfile, iomode.r);
+  var tmp = open(testfile, ioMode.r);
 
   var ich = tmp.reader(kind=iobig);
   for i in 0..#n {
@@ -45,5 +46,5 @@ var n = sz / 8;
   assert( j == 0 );
 }
 
-unlink(testfile);
+FileSystem.remove(testfile);
 

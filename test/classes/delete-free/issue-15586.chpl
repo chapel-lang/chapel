@@ -6,6 +6,7 @@ proc test(type t) {
   if isUnmanagedClassType(t) then delete x;
   return;
 }
+/* 'new borrowed C' is not allowed.
 // borrowed
 {
   writeln("borrowed C");
@@ -17,6 +18,7 @@ proc test(type t) {
   type t = borrowed C?;
   test(t);
 }
+*/
 // unmanaged
 {
   writeln("unmanaged C");

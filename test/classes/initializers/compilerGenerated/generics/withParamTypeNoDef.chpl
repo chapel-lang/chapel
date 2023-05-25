@@ -2,5 +2,5 @@ class Foo {
   param p: bool;
 }
 
-var foo = new borrowed Foo(true);
+var foo = (new owned Foo(true)).borrow();
 writeln(foo.type: string);

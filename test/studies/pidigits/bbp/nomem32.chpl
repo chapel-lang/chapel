@@ -40,7 +40,7 @@ var digits: [digitDom] int(8);
 
 proc main
 {
-  var t: Timer;
+  var t: stopwatch;
   if perfTest then t.start();
 
   for n in digitDom.dim(0) by blkSz align 0 do
@@ -53,7 +53,7 @@ proc main
   if perfTest then
   {
     t.stop();
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed time = ", t.elapsed());
   }
 
   write_out();
@@ -63,7 +63,7 @@ const coeff: [1..4] int = (4, -2, -1, -1);
 const offset: [1..4] int = (1, 4, 5, 6);
 
 // n is the index of the current digit (and the last fraction).
-proc next_block(n: I1) : I2
+proc next_block(n: I1) : I2 do
   return + reduce([c in 1..4] next_block(n, offset[c]) * coeff[c]);
 
 // n is the last index of the block.

@@ -15,9 +15,9 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time, Barriers, DSIUtil;
+  use SSCA2_compilation_config_params, Time, Collectives, DSIUtil;
 
-  var stopwatch : Timer;
+  var sw : stopwatch;
 
   // ========================================================
   //                           KERNEL 2:
@@ -33,7 +33,7 @@ module SSCA2_kernels
     // can either kind of domain or something else purpose-built
     // for this task.
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       // ---------------------------------------------------------
       // find heaviest edge weight in a single pass over all edges
@@ -61,10 +61,10 @@ module SSCA2_kernels
 	  };
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 2: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 2: ", sw.elapsed (), 
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
 
       // ------------------------------------------------
@@ -109,7 +109,7 @@ module SSCA2_kernels
     // -------------------------------------------------------------------------
   
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       const vertex_domain = G.vertices;
       
@@ -156,10 +156,10 @@ module SSCA2_kernels
       }
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 3: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 3: ", sw.elapsed (), 
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
     } // end of rooted_heavy_subgraphs
 
@@ -271,7 +271,7 @@ module SSCA2_kernels
       // one particular vertex  (s)  independently.
       // ------------------------------------------------------
   
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       forall s in starting_vertices do on vertex_domain.dist.idxToLocale(s) {
 
@@ -323,9 +323,9 @@ module SSCA2_kernels
           BCaux[s].path_count$.write(1.0);
         }
 
-        var barrier = new Barrier(numLocales);
+        var bar = new barrier(numLocales);
 
-        coforall loc in Locales with (ref remaining, ref barrier) do on loc {
+        coforall loc in Locales with (ref remaining, ref bar) do on loc {
           const AL = Active_Level[here.id]!;
           AL.Members.clear();
           AL.next!.Members.clear();
@@ -336,7 +336,7 @@ module SSCA2_kernels
             BCaux[s].min_distance.write(0);
             f2(BCaux, s);
           }
-          barrier.barrier();
+          bar.barrier();
 
           var current_distance : int = 0;
   
@@ -399,7 +399,7 @@ module SSCA2_kernels
             // level are completed before updating to use the next level
 
             // do some work while we wait
-            // barrier.notify(); // This is expensive without network atomics
+            // bar.notify(); // This is expensive without network atomics
             //  for now, just do a normal barrier
 
             if AL.next!.next == nil {
@@ -409,18 +409,18 @@ module SSCA2_kernels
             } else {
               AL.next!.next!.Members.clear();
             }
-            // barrier.wait(); // ditto
-            barrier.barrier();
+            // bar.wait(); // ditto
+            bar.barrier();
             if here.id==shere {
               remaining = false;
             }
 
-            barrier.barrier();
+            bar.barrier();
             Active_Level[here.id] = AL.next!;
             if Active_Level[here.id]!.Members.size:bool then
               remaining = true;
 
-            barrier.barrier();
+            bar.barrier();
 
           };  // end forward pass
 
@@ -460,7 +460,7 @@ module SSCA2_kernels
                 f4(BCaux, Between_Cent$, u);
             }
 
-            barrier.barrier();
+            bar.barrier();
           }
         }
 
@@ -469,9 +469,9 @@ module SSCA2_kernels
       }; // closure of outer embarrassingly parallel forall
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	var K4_time = stopwatch.elapsed ();
-	stopwatch.clear ();
+	sw.stop ();
+	var K4_time = sw.elapsed ();
+	sw.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
 	const n_edges          = G.num_edges;

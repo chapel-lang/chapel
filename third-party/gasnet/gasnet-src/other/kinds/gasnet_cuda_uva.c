@@ -46,12 +46,17 @@ const char *_gasneti_cuerror_name(CUresult res) {
     }                                                       \
   } while (0)
 
+static const char *gasneti_formatmk_cuda_uva(gasneti_MK_t i_mk)
+{
+  my_MK_t kind = (my_MK_t) i_mk;
+  return gasneti_dynsprintf("CUDA_UVA(gex_CUdevice=%d)", (int)kind->dev);
+}
+
 static void gasneti_MK_Destroy_cuda_uva(
             gasneti_MK_t                     i_mk,
             gex_Flags_t                      flags)
 {
   my_MK_t mk = (my_MK_t) i_mk;
-  gasneti_check_cudacall(cuCtxSetCurrent(NULL));
   gasneti_check_cudacall(cuDevicePrimaryCtxRelease(mk->dev));
   gasneti_free_mk(i_mk);
 }
@@ -133,7 +138,7 @@ static int gasneti_MK_Segment_Create_cuda_uva(
 
   gasneti_Client_t client = i_mk->_client;
   gex_MK_t e_mk = gasneti_export_mk(i_mk);
-  gasneti_Segment_t i_segment = gasneti_alloc_segment(client, addr, size, e_mk, flags);
+  gasneti_Segment_t i_segment = gasneti_alloc_segment(client, addr, size, e_mk, !to_free, flags);
   i_segment->_opaque_mk_use = to_free;
 
   *i_segment_p = i_segment;
@@ -181,6 +186,7 @@ static gasneti_mk_impl_t *get_impl(void) {
       the_impl.mk_name      = "CUDA_UVA";
       the_impl.mk_sizeof    = sizeof(struct my_MK_s);
 
+      the_impl.mk_format    = &gasneti_formatmk_cuda_uva;
       the_impl.mk_destroy   = &gasneti_MK_Destroy_cuda_uva;
       the_impl.mk_segment_create
                             = &gasneti_MK_Segment_Create_cuda_uva;

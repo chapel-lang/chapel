@@ -1,14 +1,16 @@
-extern proc fopen(name: c_string, mode: c_string): _file;
-extern proc fread(ref data, size: int, n: int, f: _file): int;
-extern proc fwrite(ref data, size: int, n: int, f: _file): int;
-extern proc fclose(f: _file);
+use CTypes;
+
+extern proc fopen(name: c_string, mode: c_string): c_FILE;
+extern proc fread(ref data, size: int, n: int, f: c_FILE): int;
+extern proc fwrite(ref data, size: int, n: int, f: c_FILE): int;
+extern proc fclose(f: c_FILE);
 extern proc sizeof(x): int;
 
 var i = 1, j = 2.0;
 
 writeln((i, j));
 
-var f: _file;
+var f: c_FILE;
 f = fopen("myfile.dat", "wb");
 fwrite(i, sizeof(i), 1, f);
 fwrite(j, sizeof(j), 1, f);

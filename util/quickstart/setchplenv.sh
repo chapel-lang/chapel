@@ -63,6 +63,12 @@ export CHPL_MEM
 echo "                           ...cstdlib"
 echo " "
 
+echo "Setting CHPL_HOST_MEM to..."
+CHPL_HOST_MEM=cstdlib
+export CHPL_HOST_MEM
+echo "                           ...cstdlib"
+echo " "
+
 echo "Setting CHPL_GMP to..."
 CHPL_GMP=none
 export CHPL_GMP
@@ -75,8 +81,9 @@ export CHPL_RE2
 echo "                           ...none"
 echo " "
 
+USE_LLVM=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_llvm.py --quickstart`
 echo "Setting CHPL_LLVM to..."
-CHPL_LLVM=none
+CHPL_LLVM=$USE_LLVM
 export CHPL_LLVM
-echo "                           ...none"
+echo "                           ...$USE_LLVM"
 echo " "

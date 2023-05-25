@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,22 +61,22 @@ module ChapelDebugPrint {
   // (chpl__testParFlag and related code is here to avoid order
   //  of resolution issues.)
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param chpl__testParFlag = false;
-  pragma "no doc"
+  @chpldoc.nodoc
   var chpl__testParOn = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__testParStart() {
     chpl__testParOn = true;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__testParStop() {
     chpl__testParOn = false;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
       // This function is written this way because it is called
@@ -87,7 +87,7 @@ module ChapelDebugPrint {
                                         __primitive("_get_user_file"));
       var file: string;
       try! {
-        file = createStringWithNewBuffer(file_cs);
+        file = string.createCopyingBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       var str = chpl_debug_stringify((...args));
@@ -95,14 +95,14 @@ module ChapelDebugPrint {
       printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl__testParWriteln(args...) {
     if chpl__testParFlag && chpl__testParOn {
       const file_cs : c_string = __primitive("chpl_lookupFilename",
                                         __primitive("_get_user_file"));
       var file: string;
       try! {
-        file = createStringWithNewBuffer(file_cs);
+        file = string.createCopyingBuffer(file_cs);
       }
       const line = __primitive("_get_user_line");
       writeln("CHPL TEST PAR (", file, ":", line, "): ", (...args));

@@ -38,7 +38,7 @@ proc initialize(B) {
 
 proc runTest(D, alpha: real) {
   use Time;
-  var timer: Timer;
+  var timer: stopwatch;
   var A, B: [D] real;
 
   initialize(B);
@@ -48,5 +48,5 @@ proc runTest(D, alpha: real) {
     a = alpha * b;
   }
   timer.stop();
-  return timer.elapsed(TimeUnits.milliseconds);
+  return timer.elapsed()*1_000;
 }

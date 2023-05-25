@@ -21,7 +21,7 @@ proc stringToRow(str: string, row) {
 
 proc readHeights() {
   var line: string;
-  while readline(line) {
+  while readLine(line) {
     line = line.strip();
     rows += 1;
     if cols == 0 then cols = line.size;

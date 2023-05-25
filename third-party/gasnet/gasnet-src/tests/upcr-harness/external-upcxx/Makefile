@@ -121,7 +121,8 @@ endif
 MAKE_TEST_ENV = \
 	    CC="$$($(UPCXX_INSTDIR)/bin/upcxx-meta CC)" \
 	   CXXFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)" \
-	   CXX="$$($(UPCXX_INSTDIR)/bin/upcxx-meta CXX) $(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
+	   CXX="$$($(UPCXX_INSTDIR)/bin/upcxx-meta CXX) $(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)" \
+	   UPCXX_INSTALL=$(UPCXX_INSTDIR)
 
 # Parametrized support for download/unpack
 UPCXX_DOWNLOAD ?=# one of "unzip", "p7zip" or "tgz", default to auto-detect from downloaded archive suffix
@@ -279,6 +280,11 @@ _upcxx-inst: upcxx-built
 	@touch upcxx-install
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
+_upcxx-smoke_test: upcxx-built
+	@( echo ======== UPCXX make check ========; set -x; \
+	   $(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) check || exit 1; ) $(TO_LOG)
+	@echo '#!/bin/sh' > $@ ; chmod +x $@
+
 # Build a single test from the installed UPCXX directory
 inst_test: upcxx-install
 	@set -x ; $(DO_ENV) && \
@@ -297,7 +303,7 @@ make_test: upcxx-install
 	           TESTS=^test-$(TEST_EXE) EXTRAFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
 	@mv $(UPCXX_BLDDIR)/test-$(TEST_EXE)-$(GASNET_CODEMODE)-$(UPCXX_CONDUIT) $(TEST_EXE)
 
-IGNORE_TESTS_PAT=neg-.+|getenv|promise_multiple_results|promise_reused|quiescence_failure|issue105
+IGNORE_TESTS_PAT=neg-.+|getenv|promise_multiple_results|promise_reused|quiescence_failure|issue105|hello_via_shell
 check-testsuite:
 	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) UPCXX_DRY_RUN=1 NETWORKS=$(UPCXX_CONDUIT) > check-testsuite.log
 	@$(PERL) -ne 'BEGIN { open F, "harness.conf" or die $$!; while (<F>) { $$tests{$$1}=1 if (m/^TestName:\s*(\S+)/); }; }' \
@@ -308,6 +314,7 @@ check-testsuite:
 
 VPATH = \
 	$(UPCXX_BLDDIR)/test \
+	$(UPCXX_BLDDIR)/test/ccs \
 	$(UPCXX_BLDDIR)/test/uts \
 	$(UPCXX_BLDDIR)/test/regression \
 	$(UPCXX_BLDDIR)/example \
@@ -316,71 +323,76 @@ VPATH = \
 	$(UPCXX_BLDDIR)/example/serialization \
 	$(UPCXX_BLDDIR)/bench \
 	$(UPCXX_BLDDIR)/extras/extensions/allocator \
-	$(UPCXX_BLDDIR)/extras/extensions/padded_cuda_allocator \
+	$(UPCXX_BLDDIR)/extras/extensions/padded_device_allocator \
 	$(UPCXX_BLDDIR)/extras/examples/rpc_ff_quiescence \
 	$(UPCXX_BLDDIR)/extras/examples/vector_accumulate \
-	$(UPCXX_BLDDIR)/extras/examples/kokkos_montecarlo \
-	$(UPCXX_BLDDIR)/extras/examples/kokkos_3dhalo \
-	$(UPCXX_BLDDIR)/extras/tutorials/2020-11/examples \
-	$(UPCXX_BLDDIR)/extras/tutorials/2020-11/solutions
+	$(UPCXX_BLDDIR)/extras/tutorials/2021-11/examples \
+	$(UPCXX_BLDDIR)/extras/tutorials/2021-11/solutions
 
-# Pattern rule builds tests, using logic dependent on their location
-%-seq %-par :: %.cpp force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	UPCXX_TESTMODE="$(strip $(UPCXX_TESTMODE))" ; \
+# strip off threadmode from target name and export it
+%-seq :: force ; $(MAKE) UPCXX_THREADMODE=seq TEST_EXE=$@ $*-exe
+%-par :: force ; $(MAKE) UPCXX_THREADMODE=par TEST_EXE=$@ $*-exe
+
+# Pattern rule builds tests, using logic dependent on TESTMODE
+%-exe :: %.cpp force
+	@ UPCXX_TESTMODE="$(strip $(UPCXX_TESTMODE))" ; \
 	if test "$$UPCXX_TESTMODE" = "meta" ; then set -x ; \
-	  $(MAKE) inst_test TEST_PATH=$< TEST_EXE=$@ ; \
+	  $(MAKE) inst_test TEST_PATH=$< ; \
 	elif test "$$UPCXX_TESTMODE" = "wrap" ; then set -x ; \
-	  $(MAKE) wrap_test TEST_PATH=$< TEST_EXE=$@ ; \
+	  $(MAKE) wrap_test TEST_PATH=$< ; \
 	elif test "$$UPCXX_TESTMODE" = "make" ; then set -x ; \
-	  $(MAKE) make_test TEST_EXE=$@ ; \
+	  $(MAKE) make_test ; \
 	else \
 	  echo "Unrecognized UPCXX_TESTMODE=$$UPCXX_TESTMODE" ; exit 100; \
 	fi 
 
+# tests/ccs
+ccs-%-exe :: ccs-%.sh force
+	@set -x ; $(DO_ENV) && \
+	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) NETWORKS=$(UPCXX_CONDUIT) \
+	           TESTS=^test-ccs-$*-$(UPCXX_THREADMODE) EXTRAFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
+	set -e -x; \
+	longname="test-ccs-$*-$(UPCXX_THREADMODE)-$(GASNET_CODEMODE)-$(UPCXX_CONDUIT)"; \
+	rm -Rf ./$$longname $(TEST_EXE) $(TEST_EXE).runcmd; \
+	if test -e $(UPCXX_BLDDIR)/$$longname.runcmd ; then \
+	  mv $(UPCXX_BLDDIR)/$$longname .; \
+	  mv $(UPCXX_BLDDIR)/$$longname.runcmd $(TEST_EXE).runcmd; \
+	  ln -sf $$longname $(TEST_EXE); \
+	else \
+	  mv $(UPCXX_BLDDIR)/$$longname $(TEST_EXE); \
+	fi
+
 # upcxx-examples guppie
-guppie-%-seq guppie-%-par :: $(UPCXX_BLDDIR)/extras/examples/gups/upcxx upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
-	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean guppie-$*
-	mv $</guppie-$* $@
+guppie-%-exe :: $(UPCXX_BLDDIR)/extras/examples/gups/upcxx upcxx-install force
+	@set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean guppie-$*
+	mv $</guppie-$* $(TEST_EXE)
 
 # upcxx-examples dist_array
-DA-%-seq DA-%-par :: $(UPCXX_BLDDIR)/extras/extensions/dist_array upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
-	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean bin/DA-$*
+DA-%-exe :: $(UPCXX_BLDDIR)/extras/extensions/dist_array upcxx-install force
+	@set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean bin/DA-$*
 	-ln -sf $</examples . # for examples/input file
-	mv $</bin/DA-$* $@
+	mv $</bin/DA-$* $(TEST_EXE)
 
 # upcxx-examples jac3d
-jac3d% :: $(UPCXX_BLDDIR)/extras/examples/jac3d upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
-	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean jac3d
-	mv $</jac3d $@
+jac3d-exe :: $(UPCXX_BLDDIR)/extras/examples/jac3d upcxx-install force
+	@set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean jac3d
+	mv $</jac3d $(TEST_EXE)
+
+# upcxx-examples laplace2d
+laplace2d-exe :: $(UPCXX_BLDDIR)/extras/examples/laplace2d upcxx-install force
+	@set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean lap2D
+	mv $</lap2D $(TEST_EXE)
 
 # upcxx-examples cannon
-canno%-seq canno%-par :: $(UPCXX_BLDDIR)/extras/examples/cannon upcxx-install force
+canno%-exe :: $(UPCXX_BLDDIR)/extras/examples/cannon upcxx-install force
 	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
-	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean canno$*
-	mv $</canno$* $@
+	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean canno$*
+	mv $</canno$* $(TEST_EXE)
 
 # upcxx-examples extend-add
-extend-add_%-seq extend-add_%-par :: $(UPCXX_BLDDIR)/extras/examples/extend-add upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; \
+extend-add_%-exe :: $(UPCXX_BLDDIR)/extras/examples/extend-add upcxx-install force
+	@set -x ; \
 	 SCALAPACK_HOME=$${SCALAPACK_HOME:-/usr/scalapack} ; \
 	 SCALAPACK_LIBS=$${SCALAPACK_LIBS:--L$$SCALAPACK_HOME/lib -lscalapack -Wl,--rpath=$$SCALAPACK_HOME/lib} ; \
 	 UPCXX_EXTENDADD_EXTRA=$${UPCXX_EXTENDADD_EXTRA:--Wno-unknown-pragmas} ; \
@@ -388,46 +400,37 @@ extend-add_%-seq extend-add_%-par :: $(UPCXX_BLDDIR)/extras/examples/extend-add 
                        SCALAPACK_LIBS="$$SCALAPACK_LIBS" \
                        OPTIMIZATION="$(OPT) $$UPCXX_EXTENDADD_EXTRA" \
                        clean extend-add_$*
-	mv $</bin/extend-add_$* $@
+	mv $</bin/extend-add_$* $(TEST_EXE)
 
-KOKKOS_MAKE = env $(MAKE_TEST_ENV) $(MAKE) $(UPCXX_MAKE_J) -C $< CC= UPCXX_INSTALL=$(UPCXX_INSTDIR)
+KOKKOS_MAKE = env $(MAKE_TEST_ENV) $(MAKE) $(UPCXX_MAKE_J) -C $< CC= 
 KOKKOS_ARCH ?= Maxwell52
 export KOKKOS_ARCH
 # upcxx-examples kokkos_montecarlo: clearing CC prevents a hang in Makefile.kokkos
-kokkos_montecarlo% :: $(UPCXX_BLDDIR)/extras/examples/kokkos_montecarlo upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; export UPCXX_CODEMODE=$(UPCXX_CODEMODE) ; \
+kokkos_montecarl%-exe :: $(UPCXX_BLDDIR)/extras/examples/kokkos_montecarlo upcxx-install force
+	@set -x ; export UPCXX_CODEMODE=$(UPCXX_CODEMODE) ; \
 	 $(KOKKOS_MAKE) clean ; \
 	 $(KOKKOS_MAKE) all ; \
-	mv $</MC_DartSampler $@
+	mv $</MC_DartSampler $(TEST_EXE)
 
 # upcxx-examples kokkos_3dhalo: clearing CC prevents a hang in Makefile.kokkos
-kokkos_3dhalo% :: $(UPCXX_BLDDIR)/extras/examples/kokkos_3dhalo upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; export UPCXX_CODEMODE=$(UPCXX_CODEMODE) ; \
+kokkos_3dhal%-exe :: $(UPCXX_BLDDIR)/extras/examples/kokkos_3dhalo upcxx-install force
+	@set -x ; export UPCXX_CODEMODE=$(UPCXX_CODEMODE) ; \
 	 $(KOKKOS_MAKE) clean ; \
 	 $(KOKKOS_MAKE) all ; \
-	mv $</*upcxx_heat_conduction $@
+	mv $</*upcxx_heat_conduction $(TEST_EXE)
 
 # UPC interop
-upc-%-seq upc-%-par :: $(UPCXX_BLDDIR)/test/interop upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env CFLAGS= $(MAKE_TEST_ENV) $(MAKE) -C $< OPTLVL= UPCC='$(UPCC)' \
+upc-%-exe :: $(UPCXX_BLDDIR)/test/interop upcxx-install force
+	@set -x ; env CFLAGS= $(MAKE_TEST_ENV) $(MAKE) -C $< OPTLVL= UPCC='$(UPCC)' \
 	             UPCXX=$(UPCXX_INSTDIR)/bin/upcxx \
 	             clean $*
-	mv $</$* $@
+	mv $</$* $(TEST_EXE)
 
 # misc make-based examples
-cuda_vecadd% :: $(UPCXX_BLDDIR)/example/cuda_vecadd/Makefile upcxx-install force
-	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
-	              *-par) export UPCXX_THREADMODE=par ;; esac; \
-	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $(<D) \
-	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             clean cuda_vecadd
-	mv $(<D)/cuda_vecadd $@
+# cuda_vecadd, hip_vecadd :
+%_vecadd-exe :: $(UPCXX_BLDDIR)/example/gpu_vecadd upcxx-install force
+	@set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< clean $*_vecadd
+	mv $</$*_vecadd $(TEST_EXE)
 
 CMAKE ?= cmake
 CMAKE_ARGS ?=
@@ -441,18 +444,17 @@ ifeq ($(shell uname -s),Darwin)
   CMAKE_FC_ARGS := -DCMAKE_Fortran_COMPILER="$${UPCXX_FC%% *}"
 endif
 
-cmake-%: upcxx-install
+cmake-exe :: upcxx-install
 	-rm -Rf cmake
 	cp -r $(UPCXX_BLDDIR)/utils/cmake .
 	rm -f cmake/UPCXXConfig*
 	cd cmake && ( set -x ; \
-	export UPCXX_THREADMODE=$* UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 \
-	       UPCXX_INSTALL=$(UPCXX_INSTDIR) ; \
+	export UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 ; \
 	export $(MAKE_TEST_ENV) ; \
 	$(CMAKE) --version ; \
 	$(CMAKE) -DCMAKE_PREFIX_PATH=$(UPCXX_INSTDIR) $(CMAKE_ARGS) . )
 	$(MAKE) -C cmake all VERBOSE=1
-	mv cmake/upcxx_test $@
+	mv cmake/upcxx_test $(TEST_EXE)
 
 SYMPACK_URL?=https://github.com/symPACK/symPACK/archive/master.tar.gz
 SYMPACK_GIT_REPO?=#https://github.com/symPACK/symPACK.git # does not support archive?
@@ -467,22 +469,21 @@ _sympack:
 	cp $(SYMPACK_DIR)/input/nasa2146.rb .
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
-sympack-%: upcxx-install force
-	-rm -Rf $(SYMPACK_DIR)/$*
-	mkdir $(SYMPACK_DIR)/$*
-	cd $(SYMPACK_DIR)/$* && ( set -x ; \
-	case "$*" in seq) export SYMPACK_THREADS=-DENABLE_THREADS=OFF ;; \
-	             par) export SYMPACK_THREADS=-DENABLE_THREADS=ON ;; esac; \
-	export UPCXX_THREADMODE=$* UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 \
-	       UPCXX_INSTALL=$(UPCXX_INSTDIR) ; \
+sympack-exe :: upcxx-install force
+	-rm -Rf $(SYMPACK_DIR)/$(UPCXX_THREADMODE)
+	mkdir $(SYMPACK_DIR)/$(UPCXX_THREADMODE)
+	cd $(SYMPACK_DIR)/$(UPCXX_THREADMODE) && ( set -x ; \
+	case "$(UPCXX_THREADMODE)" in seq) export SYMPACK_THREADS=-DENABLE_THREADS=OFF ;; \
+	                              par) export SYMPACK_THREADS=-DENABLE_THREADS=ON ;; esac; \
+	export UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 ; \
 	export $(MAKE_TEST_ENV) FC="$(UPCXX_FC)" ; \
 	$(CMAKE) --version ; \
 	$(CMAKE) -DCMAKE_PREFIX_PATH=$(UPCXX_INSTDIR) $(CMAKE_ARGS) $(CMAKE_FC_ARGS) \
 		 $$SYMPACK_THREADS $(SYMPACK_BUILD) \
 	         -DENABLE_PTSCOTCH=OFF -DENABLE_SCOTCH=OFF -DENABLE_PARMETIS=OFF -DENABLE_METIS=OFF \
 		 .. )
-	$(MAKE) -C $(SYMPACK_DIR)/$* all examples VERBOSE=1
-	mv $(SYMPACK_DIR)/$*/run_sympack $@
+	$(MAKE) -C $(SYMPACK_DIR)/$(UPCXX_THREADMODE) all examples VERBOSE=1
+	mv $(SYMPACK_DIR)/$(UPCXX_THREADMODE)/run_sympack $(TEST_EXE)
 
 
 

@@ -53,7 +53,7 @@ module elemental_cholesky_fully_blocked {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barriers
+  // execution model more closely.  Barriers are implemented in the Collectives
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -67,9 +67,9 @@ module elemental_cholesky_fully_blocked {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use CyclicDist, Barriers;
+  use CyclicDist, Collectives;
 
-  public use blocked_elemental_schur_complement, 
+  use blocked_elemental_schur_complement, 
       locality_info, 
       local_reduced_matrix_cyclic_partition_fb,
       scalar_inner_product_cholesky,
@@ -100,7 +100,7 @@ module elemental_cholesky_fully_blocked {
     assert ( A (A.domain.low).locale.id == 0 );
 	     
     // initialize a tasking barrier
-    var bar = new Barrier(n_processors);
+    var bar = new barrier(n_processors);
 
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor

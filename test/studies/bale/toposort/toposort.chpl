@@ -227,7 +227,7 @@ class DistributedWorkQueue {
   var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _value {
     if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
     return chpl_getPrivatizedCopy(unmanaged LocalDistributedWorkQueue(eltType,lockType), pid);
@@ -465,25 +465,25 @@ class PermutationMap {
     const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
-    f <~> "Row map\n";
-    for i in 0..#inSpace do f <~> " ";
-    f <~> "in -> out\n";
+    f.writeln("Row map");
+    for i in 0..#inSpace do f.write(" ");
+    f.write("in -> out");
     for i in rowDom {
-      f <~> formatString.format( i, rowMap[i] ) <~> "\n";
+      f.writeln(formatString.format( i, rowMap[i] ));
     }
-    f <~> "Column map\n" ;
-    for i in 0..#inSpace do f <~> " ";
-    f <~> "in -> out\n";
+    f.writeln("Column map");
+    for i in 0..#inSpace do f.write(" ");
+    f.writeln("in -> out");
     for i in columnDom {
-      f <~> formatString.format( i, columnMap[i] ) <~> "\n";
+      f.write(formatString.format( i, columnMap[i] ));
     }
   }
 
   proc permuteDomain( D : domain )
   where D.rank == 2 && D.isSparse()
   {
-    // Timer for debugging purposes
-    var timer : Timer;
+    // stopwatch for debugging purposes
+    var timer : stopwatch;
 
     // resulting domain after permutation
     var sD : D.type;
@@ -515,7 +515,7 @@ class TopoSortResult {
   type idxType;
   var permutationMap : shared PermutationMap(idxType)?;
   var timerDom : domain(string);
-  var timers : [timerDom] Timer;
+  var timers : [timerDom] stopwatch;
 
   proc init(type idxType){
     this.idxType = idxType;
@@ -823,7 +823,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }
@@ -955,7 +955,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }
@@ -1100,7 +1100,7 @@ where D.rank == 2
   } // while work in queue
   result.timers["toposort"].stop();
 
-  result.permutationMap = new owned PermutationMap( rowMap, columnMap );
+  result.permutationMap = new shared PermutationMap( rowMap, columnMap )?;
   result.timers["whole"].stop();
   return result;
 }

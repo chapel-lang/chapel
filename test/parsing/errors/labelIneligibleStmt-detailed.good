@@ -1,0 +1,8 @@
+─── syntax in labelIneligibleStmt.chpl:1 [LabelIneligibleStmt] ───
+  Cannot label this kind of statement.
+  Label on ineligible statement here:
+      |
+    1 | label asdf writeln("not a loop");
+      |
+  Only 'for', 'while', and 'do-while' statements can have labels.
+

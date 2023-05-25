@@ -198,7 +198,7 @@ proc main() {
   if (numChameneos1 < 2 || numChameneos2 < 2 || numMeetings < 0) {
     writeln("Please specify numChameneos1 and numChameneos2 of at least 2, and numMeetings of at least 0.");
   } else  {
-    var startTimeTotal = getCurrentTime();
+    var startTimeTotal = timeSinceEpoch().totalSeconds();
 
     printColorChanges();
 
@@ -207,20 +207,20 @@ proc main() {
     const population2           = populate(numChameneos2);
 
     if (verbose) {
-      var startTime = getCurrentTime();
+      var startTime = timeSinceEpoch().totalSeconds();
 
       run(population1, forest);
 
-      var endTime = getCurrentTime();
+      var endTime = timeSinceEpoch().totalSeconds();
 
       writeln("time for chameneos1 to meet = ", endTime - startTime);
       printInfo(population1);
 
-      startTime = getCurrentTime();
+      startTime = timeSinceEpoch().totalSeconds();
 
       run(population2, forest);
 
-      endTime = getCurrentTime();
+      endTime = timeSinceEpoch().totalSeconds();
       writeln("time for chameneos2 to meet = ", endTime - startTime);
       printInfo(population2);
     } else {
@@ -228,7 +228,7 @@ proc main() {
       runQuiet(population2, forest);
     }
 
-    var endTimeTotal = getCurrentTime();
+    var endTimeTotal = timeSinceEpoch().totalSeconds();
 
     if (verbose) {
       writeln("total execution time = ", endTimeTotal - startTimeTotal);

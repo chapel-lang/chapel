@@ -10,8 +10,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_TOOLING_TRANSFORMER_SOURCE_CODE_H
-#define LLVM_CLANG_TOOLING_TRANSFORMER_SOURCE_CODE_H
+#ifndef LLVM_CLANG_TOOLING_TRANSFORMER_SOURCECODE_H
+#define LLVM_CLANG_TOOLING_TRANSFORMER_SOURCECODE_H
 
 #include "clang/AST/ASTContext.h"
 #include "clang/Basic/SourceLocation.h"
@@ -41,6 +41,10 @@ CharSourceRange getExtendedRange(const T &Node, tok::TokenKind Next,
 /// terminators. The returned range consists of file locations, if valid file
 /// locations can be found for the associated content; otherwise, an invalid
 /// range is returned.
+///
+/// Note that parsing comments is disabled by default. In order to select a
+/// range containing associated comments, you may need to invoke the tool with
+/// `-fparse-all-comments`.
 CharSourceRange getAssociatedRange(const Decl &D, ASTContext &Context);
 
 /// Returns the source-code text in the specified range.
@@ -100,4 +104,4 @@ getRangeForEdit(const CharSourceRange &EditRange, const ASTContext &Context) {
 }
 } // namespace tooling
 } // namespace clang
-#endif // LLVM_CLANG_TOOLING_TRANSFORMER_SOURCE_CODE_H
+#endif // LLVM_CLANG_TOOLING_TRANSFORMER_SOURCECODE_H

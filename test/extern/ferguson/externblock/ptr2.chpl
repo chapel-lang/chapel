@@ -1,4 +1,6 @@
 extern {
+  #include <stdio.h>
+
   void printit(int n, int* arr);
   void printit(int n, int* arr)
   {
@@ -7,9 +9,9 @@ extern {
   }
 }
 
-var myarr = c_calloc(c_int, 10);
+var myarr = allocate(c_int, 10, clear=true);
 for i in 0..#10 {
   myarr[i] = i:c_int;
 }
 printit(10, myarr);
-c_free(myarr);
+deallocate(myarr);

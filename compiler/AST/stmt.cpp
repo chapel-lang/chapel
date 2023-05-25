@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,8 +160,8 @@ void VisibilityStmt::validateRenamed() {
                        it->second);
       }
 
-      if (sym->hasFlag(FLAG_DEPRECATED)) {
-        sym->generateDeprecationWarning(this);
+      if (!fDynoScopeResolve) {
+        sym->maybeGenerateDeprecationWarning(this);
       }
 
     } else {
@@ -310,6 +310,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->useList   = COPY_INT(useList);
   _this->modRefs   = COPY_INT(modRefs);
   _this->byrefVars = COPY_INT(byrefVars);
+  _this->userLabel = this->userLabel;
 
   for_alist(expr, body) {
     Expr* copy = COPY_INT(expr);
@@ -675,14 +676,29 @@ BlockStmt::useListClear() {
 }
 
 void
-BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+BlockStmt::modRefsEnsure() {
   if (modRefs == NULL) {
-    modRefs = new CallExpr(PRIM_REFERENCED_MODULES_LIST);
-
-    if (parentSymbol)
-      insert_help(modRefs, this, parentSymbol);
+    modRefsReplace(new CallExpr(PRIM_REFERENCED_MODULES_LIST));
   }
+}
 
+void
+BlockStmt::modRefsReplace(CallExpr* replacementRefs) {
+  modRefs = replacementRefs;
+
+  if (parentSymbol)
+    insert_help(modRefs, this, parentSymbol);
+}
+
+void
+BlockStmt::modRefsAdd(ModuleSymbol* mod) {
+  modRefsEnsure();
+  modRefs->insertAtTail(new SymExpr(mod));
+}
+
+void
+BlockStmt::modRefsAdd(TemporaryConversionSymbol* mod) {
+  modRefsEnsure();
   modRefs->insertAtTail(new SymExpr(mod));
 }
 

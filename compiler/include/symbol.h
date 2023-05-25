@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,10 +21,12 @@
 #ifndef _SYMBOL_H_
 #define _SYMBOL_H_
 
-#include "baseAST.h"
-
 #include "astutil.h"
+#include "baseAST.h"
+#include "chpl/framework/ID.h"
+#include "chpl/resolution/resolution-types.h"
 #include "flags.h"
+#include "intents.h"
 #include "library.h"
 #include "type.h"
 
@@ -40,6 +42,7 @@ namespace llvm
 {
   class MDNode;
   class Function;
+  class FunctionType;
 }
 #endif
 
@@ -52,77 +55,7 @@ class Stmt;
 class SymExpr;
 struct InterfaceReps;
 
-const int INTENT_FLAG_IN          = 0x01;
-const int INTENT_FLAG_OUT         = 0x02;
-const int INTENT_FLAG_CONST       = 0x04;
-const int INTENT_FLAG_REF         = 0x08;
-const int INTENT_FLAG_PARAM       = 0x10;
-const int INTENT_FLAG_TYPE        = 0x20;
-const int INTENT_FLAG_BLANK       = 0x40;
-const int INTENT_FLAG_MAYBE_CONST = 0x80;
-
-// If this enum is modified, ArgSymbol::intentDescrString()
-// and intentDescrString(IntentTag) should also be updated to match
-enum IntentTag {
-  INTENT_IN              = INTENT_FLAG_IN,
-  INTENT_OUT             = INTENT_FLAG_OUT,
-  INTENT_INOUT           = INTENT_FLAG_IN          | INTENT_FLAG_OUT,
-  INTENT_CONST           = INTENT_FLAG_CONST,
-  INTENT_CONST_IN        = INTENT_FLAG_CONST       | INTENT_FLAG_IN,
-  INTENT_REF             = INTENT_FLAG_REF,
-  INTENT_CONST_REF       = INTENT_FLAG_CONST       | INTENT_FLAG_REF,
-  INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM           = INTENT_FLAG_PARAM,
-  INTENT_TYPE            = INTENT_FLAG_TYPE,
-  INTENT_BLANK           = INTENT_FLAG_BLANK
-};
-
 typedef std::bitset<NUM_FLAGS> FlagSet;
-
-/*
-enum ForallIntentTag : task- or forall-intent tags
-
-TFI_IN_PARENT
-  The compiler adds this shadow var during resolution for each TFI_IN
-  and TFI_CONST_IN. A TFI_IN_PARENT represents the task function's formal
-  that the corresponding TFI_IN or TFI_CONST_IN is to be initialized from.
-
-TFI_REDUCE
-  This shadow var replaces the uses of the outer variable in the loop body
-  in case of a 'reduce' intent. This is done in parsing and scopeResolve.
-  It is analogous to the TFI_IN shadow var for an 'in' intent.
-  A TFI_REDUCE var represents the current task's accumulation state.
-
-TFI_REDUCE_*
-  The compiler adds one each of these shadow vars during resolution
-  for each TFI_REDUCE. They represent:
-
-  TFI_REDUCE_OP        - the current task's reduction OP
-  TFI_REDUCE_PARENT_AS - the parent task's Accumulation State
-  TFI_REDUCE_PARENT_OP - the parent task's reduction OP
-
-  The *PARENT* vars, like TFI_IN_PARENT, are the task function's formals.
-
-The remaining tags should be self-explanatory.
-*/
-enum ForallIntentTag {
-  // user-specified intents
-  TFI_DEFAULT,  // aka TFI_BLANK
-  TFI_CONST,                       // ShadowVarSymbol nicknames:
-  TFI_IN,                          //   SI
-  TFI_CONST_IN,                    //   "
-  TFI_REF,                         //   SR
-  TFI_CONST_REF,                   //   "
-  TFI_REDUCE,                      //   AS    (for Accumulation State)
-  TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers; note isCompilerAdded()
-  TFI_IN_PARENT,                   //   INP
-  TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
-  TFI_REDUCE_PARENT_AS,            //   PAS
-  TFI_REDUCE_PARENT_OP,            //   PRP
-};
-
-const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
@@ -187,7 +120,6 @@ public:
 
   bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
-  bool               noDocGen()                                const;
 
   // Future: consider merging qual, type into a single
   // field of type QualifiedType
@@ -235,11 +167,15 @@ public:
   Expr*              getInitialization()                       const;
 
   std::string deprecationMsg;
-
   const char* getDeprecationMsg() const;
-  const char* getSanitizedDeprecationMsg() const;
+  void maybeGenerateDeprecationWarning(Expr* context);
 
-  void generateDeprecationWarning(Expr* context);
+
+  std::string unstableMsg;
+  const char* getUnstableMsg() const;
+  void maybeGenerateUnstableWarning(Expr* context);
+
+  const char* getSanitizedMsg(std::string msg) const;
 
 protected:
                      Symbol(AstTag      astTag,
@@ -335,8 +271,6 @@ public:
   bool   isParameter()                                 const override;
   bool   isType()                                               const;
 
-  const char* doc;
-
   GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen()                                           override;
   void   codegenDefC(bool global = false, bool isHeader = false);
@@ -344,12 +278,9 @@ public:
   // global vars are different ...
   void   codegenGlobalDef(bool isHeader);
 
-  void printDocs(std::ostream *file, unsigned int tabs);
-
   void makeField();
 
 private:
-  std::string docsDirective();
   bool isField;
 
 protected:
@@ -412,6 +343,7 @@ public:
 
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
+  bool            typeExprFromDefaultExpr;
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
   BlockStmt*      defaultExpr;
 
@@ -497,8 +429,8 @@ public:
   BlockStmt* svInitBlock;      // always present
   BlockStmt* svDeinitBlock;    //  "
 
-  // Once pruning is no longer needed, this should be removed.
-  bool pruneit;
+  // This svar is for a task intent or TPV that is explicit in user code.
+  bool svExplicit;
 };
 
 /******************************** | *********************************
@@ -506,13 +438,22 @@ public:
 *                                                                   *
 ********************************* | ********************************/
 
+
+// These map from Chapel function types to LLVM function types. They
+// live here rather than in 'llvmUtil.h' because of a name conflict
+// between 'Type' and 'llvm::Type'.
+#ifdef HAVE_LLVM
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v);
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t);
+#endif
+
 class TypeSymbol final : public Symbol {
  public:
   // We need to know whether or not the definition
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
-  llvm::Type* llvmType;
+  llvm::Type* llvmImplType;
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -522,10 +463,12 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
+  llvm::Type* getLLVMStructureType();         // get structure type for class
+  llvm::Type* getLLVMType();                  // get pointer to structure type for class
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  void* llvmType;
+  void* llvmImplType;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -598,7 +541,6 @@ public:
   void  accept(AstVisitor* visitor)                      override;
 
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
-  void  printDocs(std::ostream* file, unsigned int tabs);
 
   int   numFormals()   const { return ifcFormals.length; }
   int   numAssocCons() const { return associatedConstraints.size(); }
@@ -677,6 +619,41 @@ public:
   void  codegenDef()                                      override;
 };
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+/* This type exists to be used temporarily during convert-uast.
+   By using this type, convert-uast code can robustly handle
+   AST copies from an AST node referring to something not yet converted.
+   */
+class TemporaryConversionSymbol final : public Symbol {
+public:
+  chpl::ID symId;
+  const chpl::resolution::TypedFnSignature* sig;
+
+  TemporaryConversionSymbol(chpl::ID symId);
+  TemporaryConversionSymbol(const chpl::resolution::TypedFnSignature* sig);
+
+  void  verify()                                          override;
+  void  accept(AstVisitor* visitor)                       override;
+  DECLARE_SYMBOL_COPY(TemporaryConversionSymbol);
+  TemporaryConversionSymbol* copyInner(SymbolMap* map)    override;
+
+  void  replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
+  void  codegenDef()                                      override;
+};
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+
+
 inline bool Symbol::hasFlag(Flag flag) const {
   CHECK_FLAG(flag);
   return flags[flag];
@@ -738,9 +715,6 @@ inline bool ShadowVarSymbol::isCompilerAdded() const {
 // Checks whether a string is valid in UTF8 encoding
 bool isValidString(std::string str, int64_t* numCodepoints);
 
-// Processes a char* to replace any escape sequences with the actual bytes
-std::string unescapeString(const char* const str, BaseAST* astForError);
-
 // Creates a new string literal with the given value.
 VarSymbol *new_StringSymbol(const char *s);
 //
@@ -770,6 +744,13 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 // function that has the same value.
 VarSymbol *new_RealSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
+
+// Creates a new real literal with the given value, where the
+// bit-width will be taken as 32 for the 'float' case and 64 for the
+// 'double' case.  The resulting symbol will have a cname equal to a
+// normalized version of 'val'.
+VarSymbol* new_RealSymbol(float val);
+VarSymbol* new_RealSymbol(double val);
 
 // Creates a new imaginary literal with the given value and bit-width.
 // n should be a string argument containing a Chapel decimal or hexadecimal
@@ -891,6 +872,8 @@ extern Symbol *gDummyWitness;
 // Pass this to a return-by-ref formal when the result is not needed.
 // Used when inlining iterators for ForallStmts.
 extern Symbol *gDummyRef;
+// used in convert-uast to mark a SymExpr needing future adjustment
+extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
@@ -908,6 +891,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+extern VarSymbol *gUseIOFormatters;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -921,6 +905,7 @@ typedef enum {
        NONE,
        BASIC,
        FULL,
+       ASM,
        EVERY, // after every optimization if possible
        // These options allow instrumenting the pass pipeline
        // and match ExtensionPointTy in PassManagerBuilder
@@ -950,6 +935,7 @@ void addCNameToPrintLlvmIr(const char* name);
 bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
 bool shouldLlvmPrintIrFn(FnSymbol* fn);
+std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);

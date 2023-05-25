@@ -6,7 +6,7 @@ const minS = min(int(32));
 const maxS = max(int(32));
 const maxS1 = maxS:int(64) + 1; // Note 1.
 const maxU = max(uint(32));
-const nI = ((-2):int(32))**53;
+const nI = 0:int(32);
 const pI = 2:uint(64)**63;
 
 writeln(1:int.. by 10 align minS);

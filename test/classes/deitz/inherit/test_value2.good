@@ -1,2 +1,2 @@
-(x = 1, y = 2.0)
-(x = 1, y = 2.0, z = three)
+test_value2.chpl:6: error: inheritance is not currently supported for records
+test_value2.chpl:6: note: D declared as a record here

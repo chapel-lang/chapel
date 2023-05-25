@@ -1,7 +1,7 @@
 //
-// Use standard modules for Block distributions and Timing routines
+// Use standard modules for Block distributions, Timing routines, and log2
 //
-use BlockDist, Time;
+use BlockDist, Time, Math;
 
 //
 // Use the user modules for computing HPCC problem sizes and for
@@ -131,7 +131,7 @@ proc main() {
   [i in TableSpace] T[i] = i;
 
   startVdebug("RAvis");
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -157,7 +157,7 @@ proc main() {
     forall (_, r) in zip(Updates, RAStream()) do
       T[r & indexMask] ^= r;
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
   stopVdebug();
 
   const validAnswer = verifyResults(T);            // verify the updates

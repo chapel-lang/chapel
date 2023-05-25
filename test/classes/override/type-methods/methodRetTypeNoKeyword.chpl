@@ -4,18 +4,18 @@
 //
 
 class Car { var x: int = 0; }
-class Building { var x: int = 0; }
+class Building { var y: int = 0; }
 class Tower: Building { var height: int = 0; }
 
 class Animal {
-  var x: int = 0;
+  var z: int = 0;
   proc getCarType() type { return Car; }
   proc getBuildingType() type { return Building; }
   proc getSelfType() type { return this.type; }
 }
 
 class Cat: Animal {
-  var x: int = 0;
+  var m: int = 0;
   proc getBuildingType() type { return Tower; }
   proc getSelfType() type { return this.type; }
 }

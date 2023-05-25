@@ -67,7 +67,7 @@ record R {
 */
 
 // The ``this`` method gives the record the ability to be accessed like an
-// array.  Here we use the the argument as an index to choose a tuple element.
+// array.  Here we use the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
   if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
@@ -146,21 +146,21 @@ myD += myR;
 
 // The ``writeThis`` method defines how to write an instance of R to a
 // channel. We'll write the ``vals`` tuple between asterisks. See section
-// :ref:`readThis-writeThis-readWriteThis` for more information  on the
-// ``writeThis``, ``readThis``, and ``readWriteThis`` methods.
+// :ref:`readThis-writeThis` for more information  on the ``writeThis`` and
+// ``readThis`` methods.
 
 use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: channel) throws {
+proc R.writeThis(ch: fileWriter) throws {
   ch.write("*", vals, "*");
 }
 
 {
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var ch = f.writer();
   ch.writeln(r);
 }
@@ -168,7 +168,7 @@ proc R.writeThis(ch: channel) throws {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: channel) throws {
+proc R.readThis(ch: fileReader) throws {
   var star = new ioLiteral("*");
   ch.read(star);
   ch.read(vals);
@@ -176,37 +176,23 @@ proc R.readThis(ch: channel) throws {
 }
 
 {
-  var f = open(filename, iomode.r);
+  var f = open(filename, ioMode.r);
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
   assert(r == r2);
 }
 
-// If the record should be read and written using the same
-// format, the combined ``readWriteThis`` method can replace the
-// ``readThis`` and ``writeThis`` methods. This method will be
-// used for both reading and writing the ``vals`` tuple
-// surrounded by double asterisks. The ``readThis`` and
-// ``writeThis`` methods defined above have higher precedence
-// than ``readWriteThis``, so this function is not used because
-// they are defined.
-proc R.readWriteThis(ch: channel) throws {
-  const stars = new ioLiteral("**");
-  ch <~> stars <~> vals <~> stars;
-}
-
 {
-  var chW = openwriter(filename);
+  var chW = openWriter(filename);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openreader(filename);
+  var chR = openReader(filename);
   chR.readln(r2);
   assert(r == r2);
-  
 }
 
 // Clean up the temporary file we created earlier.

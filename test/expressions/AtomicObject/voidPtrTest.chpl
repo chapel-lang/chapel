@@ -5,8 +5,8 @@ proc fn(f : c_void_ptr) {
 }
 
 
-var obj = new borrowed Obj(1,2,3);
+var obj = (new owned Obj(1,2,3)).borrow();
 fn(obj : c_void_ptr);
 
-var obj2 : borrowed Obj = new borrowed Obj(4,5,6);
+var obj2 : borrowed Obj = (new owned Obj(4,5,6)).borrow();
 fn(obj2 : c_void_ptr);

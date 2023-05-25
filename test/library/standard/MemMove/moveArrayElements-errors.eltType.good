@@ -1,0 +1,6 @@
+moveArrayElements-errors.chpl:nnnn: In function 'main':
+moveArrayElements-errors.chpl:nnnn: error: unresolved call 'moveArrayElements([domain(1,int(64),false)] int(64), domain(1,int(64),false), [domain(1,int(64),false)] string, domain(1,int(64),false))'
+$CHPL_HOME/modules/standard/MemMove.chpl:nnnn: note: this candidate did not match: moveArrayElements(ref dst: [] ?eltType, const dstRegion, const ref src: [] eltType, const srcRegion)
+$CHPL_HOME/modules/standard/MemMove.chpl:nnnn: note: because an argument was incompatible
+moveArrayElements-errors.chpl:nnnn: note: other candidates are:
+$CHPL_HOME/modules/standard/MemMove.chpl:nnnn: note:   moveArrayElements(ref dst: [] ?eltType, const ref src: [] eltType)

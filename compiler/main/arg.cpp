@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -312,7 +312,7 @@ static void word_wrap_print(const char* text, int startCol, int endCol)
 *                                                                             *
 ************************************** | *************************************/
 
-void init_args(ArgumentState* state, const char* argv0) {
+void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
   char* name = strdup(argv0);
 
   if (char* firstSlash = strrchr(name, '/')) {
@@ -485,8 +485,15 @@ static void ApplyValue(const ArgumentState*       state,
         break;
       }
       case 'U':
+      {
         *((size_t*) location) = str2uint64(value);
         break;
+      }
+      case 'X':
+      {
+        *((size_t*) location) = hexStr2uint64(value);
+        break;
+      }
     }
   }
 
@@ -706,6 +713,10 @@ static void process_arg(const ArgumentState*       state,
 
         case 'U':
           *((size_t*) desc->location) = std::stoull(arg);
+          break;
+
+        case 'X':
+          *((size_t*) desc->location) = std::stoull(arg, nullptr, 16);
           break;
 
         default:

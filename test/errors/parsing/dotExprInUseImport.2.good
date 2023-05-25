@@ -1,0 +1,8 @@
+─── error in dotExprInUseImport.chpl:6 [DotExprInUseImport] ───
+  Cannot use dot expression 'M.a' in 'except' list.
+      |
+    6 |   use M except M.a;
+      |                ⎺⎺⎺
+      |
+  Dot expressions are not allowed in the 'except' or 'only' list of a 'use' or 'import'.
+

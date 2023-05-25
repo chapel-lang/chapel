@@ -1,0 +1,18 @@
+
+Start analyzing forall (localArrays.chpl:56)
+| Found loop domain (localArrays.chpl:51)
+| Will attempt static and dynamic optimizations (localArrays.chpl:56)
+|
+|  Start analyzing call (localArrays.chpl:57)
+|   Found the domain of the access base (localArrays.chpl:51)
+|   Can optimize: Access base's domain is the iterator (localArrays.chpl:57)
+|  This call is a static optimization candidate (localArrays.chpl:57)
+|
+End analyzing forall (localArrays.chpl:56)
+
+Static check successful. Using localAccess (localArrays.chpl:57)
+Testing 1D COO
+1 2
+End testing 1D COO
+
+localAccess was called 2 times

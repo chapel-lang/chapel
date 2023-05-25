@@ -51,7 +51,57 @@ function ck_chpl_home()
     fi
 }
 
-# return Chapel version number from source (version_num.h)
+
+function get_src_version_part()
+{
+# get version part from CMakeLists.txt file
+# Rather than use directly, use the convenience helpers below
+# Usage: get_src_version <CHPL_HOME> <part>
+# Available parts: CHPL_MAJOR_VERSION,
+#                  CHPL_MINOR_VERSION,
+#                  CHPL_PATCH_VERSION,
+#                  CHPL_BUILD_VERSION
+    local thisfunc=get_src_major_version
+    local version_file="$1/CMakeLists.txt"
+    ls >/dev/null "$version_file" || {
+        log_error "$thisfunc: Missing source file '$version_file'"
+        exit 2
+    }
+
+    local part=$( grep 'set('$2 < "$version_file" | cut -f2 -d\  | sed "s/)//g")
+    case "$part" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' ($2='$part')"; exit 2;; esac
+    echo $part
+}
+
+function get_src_major_version()
+{
+# get major version from CMakeLists.txt file
+    local major=$(get_src_version_part $1 CHPL_MAJOR_VERSION)
+    echo $major
+}
+
+function get_src_minor_version()
+{
+# get minor version from CMakeLists.txt file
+    local minor=$(get_src_version_part $1 CHPL_MINOR_VERSION)
+    echo $minor
+}
+
+function get_src_patch_version()
+{
+# get patch version from CMakeLists.txt file
+    local patch=$(get_src_version_part $1 CHPL_PATCH_VERSION)
+    echo $patch
+}
+
+function get_src_build_version()
+{
+# get build version from CMakeLists.txt file
+    local build=$(get_src_version_part $1 CHPL_BUILD_VERSION)
+    echo $build
+}
+
+# return Chapel version number from source (CMakeLists.txt)
 function get_src_version()
 {
     local thisfunc=get_src_version
@@ -62,40 +112,31 @@ function get_src_version()
     ( * )   log_error "$thisfunc: Invalid argv1 (CHPL_HOME)='$1'"; exit 2;;
     esac
 
-    # get major.minor.update version from version_num.h file
-    local version_file="$1/compiler/main/version_num.h"
-    ls >/dev/null "$version_file" || {
-        log_error "$thisfunc: Missing source file '$version_file'"
-        exit 2
-    }
-
-    local major=$( grep MAJOR_VERSION < "$version_file" | cut -f3 -d\  )
-    local minor=$( grep MINOR_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
-    local update=$( grep UPDATE_VERSION < "$version_file" | cut -f3 -d\  | sed -e 's,",,g' )
-    case "$major" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MAJOR_VERSION='$major')"; exit 2;; esac
-    case "$minor" in    ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (MINOR_VERSION='$minor')"; exit 2;; esac
-    case "$update" in   ( "" | *[!0-9]* ) log_error "$thisfunc: Invalid version_file='$version_file' (UPDATE_VERSION='$update')"; exit 2;; esac
-
-    # if release_type (argv2) is nightly or release, return src_version as major.minor.update (from version_num.h)
+    # # get major.minor.patch version from helper functions
+    local major=$(get_src_major_version $1)
+    local minor=$(get_src_minor_version $1)
+    local patch=$(get_src_patch_version $1)
+    # if release_type (argv2) is nightly or release, return src_version as major.minor.update (from CMakeLists.txt)
     case "$2" in
     ( [dD]* | developer ) ;;
-    ( * )   echo "$major.$minor.$update"; return;;
+    ( * )   echo "$major.$minor.$patch"; return;;
     esac
 
-    # release_type is developer, get the contents of BUILD_VERSION file
-    local build_version_file="$1/compiler/main/BUILD_VERSION"
+    # release_type is developer, get the contents of git-version.cpp file
+    # TODO: when do we want the build_version and when do we want the git-sha?
+    local build_version_file="$1/frontend/lib/util/git-version.cpp"
     ls >/dev/null "$build_version_file" || {
         log_error "$thisfunc: Missing source file '$build_version_file'"
         exit 2
     }
 
-    local gitrev=$( sed -e 's,",,g' < "$build_version_file" )
+    local gitrev=$( grep 'const char\* GIT_SHA = ' < "$build_version_file" | sed "s/\"//g" | cut -f7 -d" " | sed "s/\;//g")
 
-    # and return src_version as major.minor.update.gitrev
+    # and return src_version as major.minor.patch.gitrev
     case "$gitrev" in
     ( "" )  log_error "$thisfunc: '$build_version_file' is empty" exit 2;;
     ( *[!0-9a-z]* ) log_error "$thisfunc: Invalid '$build_version_file' contains '$gitrev'"; exit 2;;
-    ( * )   echo "$major.$minor.$update.$gitrev";;
+    ( * )   echo "$major.$minor.$patch.$gitrev";;
     esac
 }
 

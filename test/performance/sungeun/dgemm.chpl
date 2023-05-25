@@ -15,12 +15,12 @@ proc dgemm(p: indexType,       // number of rows in A
           B: [1..q, 1..r] t,
           C: [1..p, 1..r] t) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
-  const st = getCurrentTime();
+  const st = timeSinceEpoch().totalSeconds();
   for i in 1..p do
     for j in 1..r do
       for k in 1..q do
         C[i,j] -= A[i, k] * B[k, j];
-  const dt = getCurrentTime() - st;
+  const dt = timeSinceEpoch().totalSeconds() - st;
   if printOutput then
     writeln("dgemm:\n", C);
   if printTiming then
@@ -38,12 +38,12 @@ proc dgemm_local(p: indexType,       // number of rows in A
 
   A = A * 2.0 - 1.0;
   // Calculate (i,j) using a dot product of a row of A and a column of B.
-  const st = getCurrentTime();
+  const st = timeSinceEpoch().totalSeconds();
   for i in 1..p do
     for j in 1..r do
       for k in 1..q do
         C[i,j] -= A[i, k] * B[k, j];
-  const dt = getCurrentTime() - st;
+  const dt = timeSinceEpoch().totalSeconds() - st;
   if printOutput then
     writeln("dgemm_local:\n", C);
   if printTiming then

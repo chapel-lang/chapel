@@ -9,5 +9,5 @@ proc foo(x: borrowed Foo(?a, ?b, ?c)) {
   writeln(c);
 }
 
-var f = new borrowed Foo(true, 5);
+var f = (new owned Foo(true, 5)).borrow();
 foo(f);

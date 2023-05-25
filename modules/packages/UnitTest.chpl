@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 /*
-The UnitTest module provides support for automated testing in Chapel.
+Support for automated testing in Chapel.
 
 The UnitTest module is intended to be used with the `mason test
 <https://chapel-lang.org/docs/tools/mason/mason.html>`_ command, which
@@ -217,7 +217,7 @@ You can specify the order in which tests should run using :proc:`~Test.dependsOn
    proc testFillFact(test: borrowed Test) throws {
      test.skipIf(factorial(0) != 1,"Base condition is wrong in factorial");
      for i in 1..10 do
-       factorials.append(factorial(i));
+       factorials.pushBack(factorial(i));
    }
 
    proc testSumFact(test: borrowed Test) throws {
@@ -246,31 +246,31 @@ module UnitTest {
   use List, Map;
   private use IO;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config const testNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const failedTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const errorTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const skippedTestNames: string = "None";
-  pragma "no doc"
+  @chpldoc.nodoc
   config const ranTests: string = "None";
   // This is a dummy test to capture the function signature
   private
   proc testSignature(test: borrowed Test) throws { }
-  pragma "no doc"
+  @chpldoc.nodoc
   var tempFcf = testSignature;
-  pragma "no doc"
+  @chpldoc.nodoc
   type argType = tempFcf.type;  //Type of First Class Test Functions
 
   class Test {
-    pragma "no doc"
+    @chpldoc.nodoc
     var numMaxLocales = max(int),
         numMinLocales = min(int);
-    pragma "no doc"
+    @chpldoc.nodoc
     var dictDomain: domain(int);
-    pragma "no doc"
+    @chpldoc.nodoc
     var testDependsOn: list(argType);
 
     /* Unconditionally skip a test.
@@ -322,7 +322,7 @@ module UnitTest {
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
       type firstType = first.type,
@@ -351,7 +351,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       Check that a boolean array is true.  If any element is false, returns 'false'
       else return 'true'.
@@ -364,14 +364,14 @@ module UnitTest {
       return true;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Method overloading for the above function. Return the argument itself
     */
     proc all(check: bool) {
       return check;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An equality assertion for non-array sequences (like tuples, strings, range).
       Args:
       seq1: The first sequence to compare.
@@ -395,29 +395,30 @@ module UnitTest {
         if len1 == len2 {
           if all(seq1 == seq2) then return;
         }
+        var shorterLength = min(len1, len2);
         tmpString = seq_type_name+"s differ: ";
         tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
-        for (item1, item2, i) in zip(seq1, seq2, 0..) {
-          if item1 != item2 {
-            tmpString += "\nFirst differing element at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
+        for i in 0..#shorterLength {
+          if seq1[i] != seq2[i] {
+            tmpString += "\nFirst differing element at index "+i:string +":\n'"+seq1[i]:string+"'\n'"+seq2[i]:string+"'\n";
             break;
           }
         }
         if len1 > len2 {
           var size_diff = len1 - len2;
           tmpString += "\nFirst "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len2+1):string+"\n'"+seq1[len2+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len2):string+"\n'"+seq1[len2]:string+"'\n";
         }
         else if len1 < len2 {
           var size_diff = len2 - len1;
           tmpString += "\nSecond "+seq_type_name+" contains "+ size_diff:string +" additional elements.\n";
-          tmpString += "First extra element is at index "+(len1+1):string+"\n'"+seq2[len1+1]:string+"'\n";
+          tmpString += "First extra element is at index "+(len1):string+"\n'"+seq2[len1]:string+"'\n";
         }
       }
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific equality assertion.
       Args:
       array1: The first array to compare.
@@ -452,7 +453,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific equality assertion.
       Args:
@@ -471,7 +472,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific equality assertion.
       Args:
@@ -482,7 +483,7 @@ module UnitTest {
       __baseAssertEqual(range1,range2);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific equality assertion.
       Args:
@@ -493,7 +494,7 @@ module UnitTest {
       assertSequenceEqual(string1,string2,"String");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
       if canResolve("!=",first,second) {
@@ -519,7 +520,7 @@ module UnitTest {
       checkAssertEquality(first, second);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Function that checks whether two arguments are unequal or not*/
     proc checkAssertInequality(first,second) throws {
       type firstType = first.type,
@@ -574,7 +575,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*checks the type of the arguments and then do greater than comparison */
     proc checkGreater(first, second) throws {
       type firstType = first.type,
@@ -603,7 +604,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
       seq1: The first sequence to compare.
@@ -667,7 +668,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific greater assertion.
       Args:
       array1: The first array to compare.
@@ -697,7 +698,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific greater assertion.
       Args:
@@ -716,7 +717,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific greater assertion.
       Args:
@@ -733,7 +734,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific Greater assertion.
       Args:
@@ -750,7 +751,7 @@ module UnitTest {
       }
     }
 
-     pragma "no doc"
+     @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
       if all(first <= second) {
@@ -776,7 +777,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
       type firstType = first.type,
@@ -805,7 +806,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An less than assertion for sequences (like arrays, tuples, strings).
       Args:
       seq1: The first sequence to compare.
@@ -869,7 +870,7 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*An array-specific less than assertion.
       Args:
       array1: The first array to compare.
@@ -899,7 +900,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A tuple-specific less than assertion.
       Args:
@@ -918,7 +919,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A range-specific Less than assertion.
       Args:
@@ -935,7 +936,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*
       A string-specific Less than assertion.
       Args:
@@ -952,7 +953,7 @@ module UnitTest {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
       if all(first >= second) {
@@ -1046,14 +1047,14 @@ module UnitTest {
     proc dependsOn(tests: argType ...?n) throws {
       if testDependsOn.size == 0 {
         for eachSuperTest in tests {
-          this.testDependsOn.append(eachSuperTest);
+          this.testDependsOn.pushBack(eachSuperTest);
         }
         throw new owned DependencyFound();
       }
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*A test result class that can print formatted text results to a stream.*/
   class TextTestResult {
     var separator1 = "="* 70,
@@ -1103,7 +1104,7 @@ module UnitTest {
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class TestSuite {
     var testCount = 0;
     var _tests: list(argType);
@@ -1112,7 +1113,7 @@ module UnitTest {
     // Pragma "unsafe" disables the lifetime checker here.
     pragma "unsafe"
     proc addTest(test) {
-      this._tests.append(test);
+      this._tests.pushBack(test);
       this.testCount += 1;
     }
 
@@ -1144,12 +1145,12 @@ module UnitTest {
   */
   proc main() throws {
 
-    var testStatus: map(string, bool, parSafe=true),
-        testsFailed: map(string, bool, parSafe=true),
-        testsErrored: map(string, bool, parSafe=true),
-        testsLocalFails: map(string, bool, parSafe=true),
-        testsPassed: map(string, bool, parSafe=true),
-        testsSkipped: map(string, bool, parSafe=true);
+    var testStatus: map(string, bool),
+        testsFailed: map(string, bool),
+        testsErrored: map(string, bool),
+        testsLocalFails: map(string, bool),
+        testsPassed: map(string, bool),
+        testsSkipped: map(string, bool);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -1176,36 +1177,36 @@ module UnitTest {
     }
     if testNames != "None" {
       for test in testNames.split(" ") {
-        testsLocalFails.set(test.strip(), true);
+        testsLocalFails.replace(test.strip(), true);
       }
     }
     if failedTestNames != "None" {
       for test in failedTestNames.split(" ") {
-        testsFailed.set(test.strip(), true); // these tests failed or skipped
-        testStatus.set(test.strip(), true);
+        testsFailed.replace(test.strip(), true); // these tests failed or skipped
+        testStatus.replace(test.strip(), true);
       }
     }
     if errorTestNames != "None" {
       for test in errorTestNames.split(" ") {
-        testsErrored.set(test.strip(), true); // these tests failed or skipped
-        testStatus.set(test.strip(), true);
+        testsErrored.replace(test.strip(), true); // these tests failed or skipped
+        testStatus.replace(test.strip(), true);
       }
     }
     if skippedTestNames != "None" {
       for test in skippedTestNames.split(" ") {
-        testsSkipped.set(test.strip(), true); // these tests failed or skipped
-        testStatus.set(test.strip(), true);
+        testsSkipped.replace(test.strip(), true); // these tests failed or skipped
+        testStatus.replace(test.strip(), true);
       }
     }
     if ranTests != "None" {
       for test in ranTests.split(" ") {
-        testsPassed.set(test.strip(), true); // these tests failed or skipped
-        testStatus.set(test.strip(), true);
+        testsPassed.replace(test.strip(), true); // these tests failed or skipped
+        testStatus.replace(test.strip(), true);
       }
     }
 
     for test in testSuite {
-      if !testStatus.getValue(test:string) {
+      if !testStatus[test:string] {
         // Create a test object per test
         var checkCircle: list(string);
         var circleFound = false;
@@ -1222,17 +1223,17 @@ module UnitTest {
                       ref circleFound) throws {
     var testResult = new TextTestResult();
     var testName = test: string; //test is a FCF:
-    checkCircle.append(testName);
+    checkCircle.pushBack(testName);
     try {
       testResult.startTest(testName);
       test(testObject);
       testResult.addSuccess(testName);
-      testsLocalFails.set(testName, false);
+      testsLocalFails.replace(testName, false);
     }
     // A variety of catch statements will handle errors thrown
     catch e: AssertionError {
       testResult.addFailure(testName, e: string);
-      testsFailed.set(testName, true);
+      testsFailed.replace(testName, true);
       // print info of the assertion error
     }
     catch e: DependencyFound {
@@ -1241,19 +1242,19 @@ module UnitTest {
         var checkCircleCount = checkCircle.count(superTest: string);
         // cycle is checked
         if checkCircleCount > 0 {
-          testsSkipped.set(testName, true);
+          testsSkipped.replace(testName, true);
           circleFound = true;
           var failReason = testName + " skipped because circular dependency found";
           testResult.addSkip(testName, failReason);
-          testStatus.set(testName, true);
+          testStatus.replace(testName, true);
           return;
         }
         // if super test didn't Error or Failed or skipped
-        if !testsErrored.getValue(superTest: string) &&
-           !testsFailed.getValue(superTest: string) &&
-           !testsSkipped.getValue(superTest: string) {
+        if !testsErrored[superTest: string] &&
+           !testsFailed[superTest: string] &&
+           !testsSkipped[superTest: string] {
           // checking if super test ran or not.
-          if !testStatus.getValue(superTest: string) {
+          if !testStatus[superTest: string] {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
@@ -1265,21 +1266,21 @@ module UnitTest {
               checkCircle.remove(superTest: string);
             }
             // if super test failed
-            if testsFailed.getValue(superTest: string) {
-              testsSkipped.set(testName, true);
+            if testsFailed[superTest: string] {
+              testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
-            if testsSkipped.getValue(superTest: string) {
-              testsSkipped.set(testName, true);
+            if testsSkipped[superTest: string] {
+              testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // this superTest has not yet finished.
-            if testsLocalFails.getValue(superTest: string) {
+            if testsLocalFails[superTest: string] {
               allTestsRan = false;
             }
 
@@ -1287,8 +1288,8 @@ module UnitTest {
             if circleFound then break;
 
             // if superTest error then
-            if testsErrored.getValue(superTest: string) {
-              testsSkipped.set(testName, true);
+            if testsErrored[superTest: string] {
+              testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
               testResult.addSkip(testName, skipReason);
               break;
@@ -1296,66 +1297,66 @@ module UnitTest {
           }
         }
         // super test Errored
-        else if testsErrored.getValue(superTest: string) {
-          testsSkipped.set(testName, true);
+        else if testsErrored[superTest: string] {
+          testsSkipped.replace(testName, true);
           var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
         }
         // super test Skipped
-        else if testsSkipped.getValue(superTest: string) {
-          testsSkipped.set(testName, true);
+        else if testsSkipped[superTest: string] {
+          testsSkipped.replace(testName, true);
           var skipReason = testName + " skipped because " + superTest: string +" Skipped";
           testResult.addSkip(testName, skipReason);
           break;
         }
         //super test failed
         else {
-          testsSkipped.set(testName, true);
+          testsSkipped.replace(testName, true);
           var skipReason = testName + " skipped because " + superTest: string +" failed";
           testResult.addSkip(testName, skipReason);
         }
       }
       if circleFound {
-        testsSkipped.set(testName, true);
+        testsSkipped.replace(testName, true);
         var skipReason = testName + " skipped because circular dependency found";
         testResult.addSkip(testName, skipReason);
       }
       // Test is not having error or failures or dependency or skipped
-      else if !testsErrored.getValue(testName) && allTestsRan &&
-              !testsFailed.getValue(testName) &&
-              !testsSkipped.getValue(testName) {
+      else if !testsErrored[testName] && allTestsRan &&
+              !testsFailed[testName] &&
+              !testsSkipped[testName] {
         testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
         runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
                       testsLocalFails, test, checkCircle, circleFound);
       }
-      else if !testsErrored.getValue(testName) && !allTestsRan &&
-              !testsFailed.getValue(testName) &&
-              !testsSkipped.getValue(testName) {
+      else if !testsErrored[testName] && !allTestsRan &&
+              !testsFailed[testName] &&
+              !testsSkipped[testName] {
         testResult.dependencyNotMet(testName);
       }
     }
     catch e: TestSkipped {
       testResult.addSkip(testName, e: string);
-      testsSkipped.set(testName, true);
+      testsSkipped.replace(testName, true);
       // Print info on test skipped
     }
     catch e: TestIncorrectNumLocales {
       testResult.addIncorrectNumLocales(testName, e: string);
-      testsLocalFails.set(testName, true);
+      testsLocalFails.replace(testName, true);
     }
     catch e: UnexpectedLocales {
       testResult.addFailure(testName, e: string);
-      testsFailed.set(testName, true);
+      testsFailed.replace(testName, true);
     }
     catch e {
       testResult.addError(testName, e:string);
-      testsErrored.set(testName, true);
+      testsErrored.replace(testName, true);
     }
-    testStatus.set(testName, true);
+    testStatus.replace(testName, true);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* These errors are used for implementation purposes (communication between
      the tests and test runner). Not intended for user consumption. */
   module TestError {

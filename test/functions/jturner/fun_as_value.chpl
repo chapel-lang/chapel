@@ -7,7 +7,7 @@ proc bob() {
     }
   }
 
-  var k = new borrowed call_i();
+  var k = (new owned call_i()).borrow();
   writeln(k(6));
 }
 bob();

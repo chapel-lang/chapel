@@ -17,7 +17,7 @@ set CHPL_PYTHON = `"$CHPL_HOME"/util/config/find-python.sh`
 
 # Remove any previously existing CHPL_HOME paths
 set MYPATH = `$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$PATH"`
-set exitcode = $?
+set exitcode = $status
 set MYMANPATH = `$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
@@ -47,11 +47,15 @@ setenv CHPL_TASKS fifo
 echo "Setting CHPL_MEM to cstdlib"
 setenv CHPL_MEM cstdlib
 
+echo "Setting CHPL_HOST_MEM to cstdlib"
+setenv CHPL_HOST_MEM cstdlib
+
 echo "Setting CHPL_GMP to none"
 setenv CHPL_GMP none
 
 echo "Setting CHPL_RE2 to none"
 setenv CHPL_RE2 none
 
-echo "Setting CHPL_LLVM to none"
-setenv CHPL_LLVM none
+set USE_LLVM = `$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_llvm.py --quickstart`
+echo "Setting CHPL_LLVM to $USE_LLVM"
+setenv CHPL_LLVM $USE_LLVM

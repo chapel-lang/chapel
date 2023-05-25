@@ -1,0 +1,18 @@
+design: the runtime type of a formal declared using `.type` - should it matter?
+
+Given a formal argument whose type is via calling a function
+returning an array value, should this array's bounds be checked
+against the actual argument?
+
+In other words, whereas the actual-argument array is bounds-checked
+when calling this function:
+
+    proc nonD_1(arg: [1..7] int) {}
+
+should the actual-argument array also be bounds-checked when calling:
+
+    proc nonD_2(arg: fn(7).type) {}
+    // where
+    proc fn() { var A: [1..7] int; return A; }
+
+Currently this latter check is not done.

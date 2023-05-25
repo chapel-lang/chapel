@@ -1,0 +1,3 @@
+# This is primarily a performance test. We want to check its correctness under
+# performance configuration
+--fast

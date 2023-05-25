@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -731,10 +731,10 @@ static chpl_bool pollingRequired;
 static atomic_spinlock_t pollingLock;
 
 static inline void am_poll_try(void) {
-  // Serialize polling for IBV, UCX, and Aries. Concurrent polling causes
+  // Serialize polling for IBV, UCX, Aries, and OFI. Concurrent polling causes
   // contention in these configurations. For other configurations that are
   // AM-based (udp/amudp, mpi/ammpi) serializing can hurt performance.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
   if (atomic_try_lock_spinlock_t(&pollingLock)) {
     (void) gasnet_AMPoll();
     atomic_unlock_spinlock_t(&pollingLock);
@@ -771,7 +771,7 @@ static void start_polling(void) {
   pollingRunning = 0;
   pollingQuit = 0;
 
-  if (chpl_task_createCommTask(polling, NULL)) {
+  if (chpl_task_createCommTask(polling, NULL, -1)) {
     chpl_internal_error("unable to start polling task for gasnet");
   }
 
@@ -836,13 +836,18 @@ static void set_num_comm_domains() {
 #endif
 }
 
+void chpl_comm_pre_topo_init(void) {
+  // not supported on this platform
+  chpl_set_num_locales_on_node(1);
+}
+
 void chpl_comm_init(int *argc_p, char ***argv_p) {
 //  int status; // Some compilers complain about unused variable 'status'.
 
   // For configurations that register a fixed heap at startup use a gasnet hook
   // to allow us to fault and interleave in the memory in parallel for faster
   // startup and better NUMA affinity.
-#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES)
+#if defined(GASNET_CONDUIT_IBV) || defined(GASNET_CONDUIT_UCX) || defined(GASNET_CONDUIT_ARIES) || defined(GASNET_CONDUIT_OFI)
 #if defined(GASNET_SEGMENT_FAST)
   gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
 #endif
@@ -930,10 +935,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #endif
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
-
-  // not supported on this platform
-  chpl_set_num_locales_on_node(1);
 }
+
+void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();

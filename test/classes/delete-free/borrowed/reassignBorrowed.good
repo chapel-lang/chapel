@@ -1,0 +1,1 @@
+reassignBorrowed.chpl:19: error: Scoped variable bc would outlive the value it is set to

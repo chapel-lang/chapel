@@ -1,1 +1,2 @@
-54
+test_use_chain_resolution.chpl:2: error: symbol aaa is multiply defined
+test_use_chain_resolution.chpl:14: note: also defined here

@@ -1,2 +1,2 @@
-in A.test()
-in A.test()
+method-of-parent-record-1.chpl:5: error: inheritance is not currently supported for records
+method-of-parent-record-1.chpl:5: note: B declared as a record here

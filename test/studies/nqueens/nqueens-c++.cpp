@@ -125,10 +125,10 @@ void Board::show() {
   }
   char notFilledMsg[64];
   if (lastfilled < boardSize) {
-    sprintf(notFilledMsg, " row(s) %d to %d are not filled\n",
+    snprintf(notFilledMsg, sizeof(notFilledMsg), " row(s) %d to %d are not filled\n",
             (lastfilled + 1), boardSize);
   } else {
-    sprintf(notFilledMsg, "");
+    snprintf(notFilledMsg, 1 * sizeof(char), "");
   }
   if (show1line) {
     for (int row = 1; row <= lastfilled; row++) {

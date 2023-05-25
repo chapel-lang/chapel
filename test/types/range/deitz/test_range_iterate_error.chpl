@@ -1,2 +1,2 @@
-for i in zip(..4,5..8) do
+for i in zip(5..8,..4) do
   writeln(i);

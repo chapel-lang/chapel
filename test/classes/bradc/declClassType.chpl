@@ -14,7 +14,7 @@ class D {
 }
 
 proc main() {
-  var d: borrowed D = new borrowed D();
+  var d: borrowed D = (new owned D()).borrow();
 
   d.doit;
   writeln(d);

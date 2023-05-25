@@ -13,6 +13,6 @@ class Child: Parent {
 }
 
 proc main {
-  var p: borrowed Parent = new borrowed Child();
+  var p: borrowed Parent = (new owned Child()).borrow();
   p.foo(1);
 }

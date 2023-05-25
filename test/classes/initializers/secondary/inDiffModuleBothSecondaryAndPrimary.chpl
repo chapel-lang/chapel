@@ -27,7 +27,7 @@ module A {
   }
 
   proc main() {
-    var f = new borrowed Foo(true);
+    var f = (new owned Foo(true)).borrow();
     writeln(f); // expect 3, true
   }
 }

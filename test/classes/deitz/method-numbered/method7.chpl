@@ -13,7 +13,7 @@ class foo {
   }
 }
 
-var f : borrowed foo = new borrowed foo();
+var f : borrowed foo = (new owned foo()).borrow();
 
 f.x = 4;
 f.print();

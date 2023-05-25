@@ -58,18 +58,27 @@ void gasnete_coll_get_nb(gasnete_coll_generic_data_t *data,
 /*---------------------------------------------------------------------------------*/
 /* gasnete_coll_broadcast_nb() */
 
-/* bcast RVGet: root node broadcasts address, others get from that address */
-/* Requires GASNETE_COLL_GENERIC_OPT_P2P on non-root nodes */
+// bcast RVGet: root node broadcasts (flat tree) address, others get from that address
+//
+// Uses GASNETE_COLL_GENERIC_OPT_P2P on non-root nodes to receive source address
 static int gasnete_coll_pf_bcast_RVGet(gasnete_coll_op_t *op GASNETI_THREAD_FARG) {
   gasnete_coll_generic_data_t *data = op->data;
   const gasnete_coll_broadcast_args_t *args = GASNETE_COLL_GENERIC_ARGS(data, broadcast);
   int result = 0;
 
   switch (data->state) {
-    case 0:	/* Optional IN barrier and rendezvous */
+    case 0:
+      // Thread rendezvous and optional IN barrier
       if (!gasnete_coll_generic_all_threads(data) ||
 	  !gasnete_coll_generic_insync(op->team, data)) {
 	break;
+      }
+      // Allocation of p2p structure
+      if (op->team->myrank != args->srcrank) {
+        size_t nstates = 1;
+        size_t ndata = sizeof(void*);
+        data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, 0, ndata);
+        data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
       }
       data->state = 1; GASNETI_FALLTHROUGH
 
@@ -114,8 +123,7 @@ gasnete_coll_bcast_RVGet(gasnet_team_handle_t team,
                          GASNETI_THREAD_FARG)
 {
   int options = GASNETE_COLL_GENERIC_OPT_INSYNC_IF (flags & GASNET_COLL_IN_ALLSYNC) |
-		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(!(flags & GASNET_COLL_OUT_NOSYNC)) |
-		GASNETE_COLL_GENERIC_OPT_P2P_IF(!gasnete_coll_image_is_local(team, srcimage));
+		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(!(flags & GASNET_COLL_OUT_NOSYNC));
 
   gasneti_assert(flags & GASNET_COLL_SRC_IN_SEGMENT);
 
@@ -150,9 +158,18 @@ static int gasnete_coll_pf_bcast_TreeRVGet(gasnete_coll_op_t *op GASNETI_THREAD_
   int result = 0;
 
   switch (data->state) {
-  case 0:	/* thread barrier */
+  case 0:
+    // thread barrier
     if (!gasnete_coll_generic_all_threads(data)) {
       break;
+    }
+    // Allocation of p2p structure
+    {
+      size_t nstates = (op->team->myrank == args->srcrank) ? 0 : 1;
+      size_t ncounters = 2;
+      size_t ndata = sizeof(void*);
+      data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, ncounters, ndata);
+      data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
     }
     data->state = 1; GASNETI_FALLTHROUGH
     
@@ -230,9 +247,7 @@ gasnete_coll_bcast_TreeRVGet(gasnet_team_handle_t team,
                          uint32_t sequence
                          GASNETI_THREAD_FARG)
 {
-  int options = 
-		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(flags & GASNET_COLL_OUT_ALLSYNC) |
-		GASNETE_COLL_GENERIC_OPT_P2P;
+  int options = GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF(flags & GASNET_COLL_OUT_ALLSYNC);
   
   gasneti_assert(flags & GASNET_COLL_SRC_IN_SEGMENT);
   gasneti_assert(flags & GASNET_COLL_DST_IN_SEGMENT);
@@ -245,8 +260,8 @@ gasnete_coll_bcast_TreeRVGet(gasnet_team_handle_t team,
                                            sequence, coll_params->num_params, coll_params->param_list GASNETI_THREAD_PASS);
 }
 
-/* bcast RVous: use AM Mediums to send to addrs provided by each node of a binimial tree */
-/* Requires GASNETE_COLL_GENERIC_OPT_P2P on all nodes */
+// bcast RVous: use AM Mediums to send to addrs provided by each node of a binimial tree */
+// Uses GASNETE_COLL_GENERIC_OPT_P2P on all nodes
 static int gasnete_coll_pf_bcast_RVous(gasnete_coll_op_t *op GASNETI_THREAD_FARG) {
   gex_TM_t const tm = op->e_tm;
   gasnete_coll_generic_data_t *data = op->data;
@@ -259,12 +274,23 @@ static int gasnete_coll_pf_bcast_RVous(gasnete_coll_op_t *op GASNETI_THREAD_FARG
   gex_Rank_t rel_rank = gasnete_tm_binom_rel_root(tm, args->srcrank);
 
   switch (data->state) {
-  case 0:	/* Optional IN barrier */
+  case 0:
+    // Thread rendezvous and optional IN barrier
     if (!gasnete_coll_generic_all_threads(data) ||
         !gasnete_coll_generic_insync(op->team, data)) {
       break;
     }
-    imm_flag = GEX_FLAG_IMMEDIATE; // execute next step w/ IMM flag only on first attempt
+    // Allocation of p2p structure
+    {
+      gex_Rank_t child_cnt = gasnete_tm_binom_children(tm, rel_rank);
+      size_t nstates = child_cnt;
+      size_t ncounters = 1;
+      size_t ndata = child_cnt * sizeof(struct gasnete_tm_p2p_send_struct);
+      data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, ncounters, ndata);
+      data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
+    }
+    // execute next step w/ IMM flag only on first attempt
+    imm_flag = GEX_FLAG_IMMEDIATE;
     data->state = 1; GASNETI_FALLTHROUGH
     
   case 1:	/* Rendevous w/ parent to pass addr */
@@ -345,8 +371,7 @@ gasnete_coll_bcast_RVous(gasnet_team_handle_t team,
                          GASNETI_THREAD_FARG)
 {
   int options = GASNETE_COLL_GENERIC_OPT_INSYNC_IF ((flags & GASNET_COLL_IN_ALLSYNC)) |
-		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF((flags & GASNET_COLL_OUT_ALLSYNC)) |
-		GASNETE_COLL_GENERIC_OPT_P2P;
+		GASNETE_COLL_GENERIC_OPT_OUTSYNC_IF((flags & GASNET_COLL_OUT_ALLSYNC));
 
   return gasnete_coll_generic_broadcast_nb(team, dst, srcimage, src, nbytes, flags,
 					   &gasnete_coll_pf_bcast_RVous, options,

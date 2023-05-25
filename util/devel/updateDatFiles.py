@@ -175,6 +175,29 @@ class DatFile:
                     self.data[r][c] = self.data[last_non_comment_row][c]
             last_non_comment_row = r
 
+    # add the values for a range of keys and store the result in a new key,
+    # removing the old keys
+    def merge_keys(self, first_key, last_key, new_key, precision=2):
+        keys = self.data[0]
+        first_key_col = self._get_col_num(first_key)
+        last_key_col = self._get_col_num(last_key)
+        if first_key_col >= last_key_col:
+            raise ValueError('Key "{0}" comes before "{1}". Known keys are: '
+                            '{2}'.format(last_key, first_key, keys))
+
+        running_total = self.remove_key(last_key)[1:]
+        for col in reversed(range(first_key_col, last_key_col)):
+            cur_key_vals = self.remove_key(keys[col])[1:]
+            for r in range(len(running_total)):
+                running_total_r = maybe_float(running_total[r]) + maybe_float(cur_key_vals[r])
+                running_total[r] = str(running_total_r)
+
+        for r in range(len(running_total)):
+            running_total_r = maybe_float(running_total[r])
+            running_total[r] = str(round(running_total_r, precision))
+
+        self.insert_key(new_key, keys[col-1], running_total)
+
 
 # This exist just to test this from our testing system
 def test(f):
@@ -204,6 +227,9 @@ def test(f):
 
         # Rename LICM
         dat_file.rename_key("loopInvariantCodeMotion", "elliotsAwesomePass")
+
+        # Merge scopeResolve - normalize
+        dat_file.merge_keys("scopeResolve", "normalize", "newNormalize")
 
 
 if __name__ == '__main__':

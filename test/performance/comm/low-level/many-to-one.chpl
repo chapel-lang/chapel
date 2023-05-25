@@ -55,7 +55,7 @@ proc main() {
     // connect endpoints dynamically upon first communication, for
     // example.
     //
-    var tWarmup: Timer;
+    var tWarmup: stopwatch;
     tWarmup.start();
 
     coforall locIdx in 0..#numLocales {
@@ -110,7 +110,7 @@ proc main() {
           var nopsAtCheck = minOpsPerTimerCheck;
           var nops: int;
 
-          var t: Timer;
+          var t: stopwatch;
           var tElapsed: real;
 
           allLocalesBarrier.barrier();

@@ -1,6 +1,6 @@
 class C { var x: int; }
 
-var c1 = new borrowed C(1);
+var c1 = (new owned C(1)).borrow();
 
 proc foo() {
   return c1;

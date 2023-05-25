@@ -1,0 +1,2 @@
+--detailed-errors # exceptOnlyInvalidExpr-detailed.good
+--no-detailed-errors # exceptOnlyInvalidExpr-brief.good

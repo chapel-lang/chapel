@@ -26,7 +26,7 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : channel(writing=false, kind=iokind.native, locking=false);
+  var chan : fileReader(kind=iokind.native, locking=false);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
@@ -43,7 +43,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:c_ssize_t);
+        chan.readBinary(c_ptrTo(buf), cap:c_ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
@@ -80,12 +80,12 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
-          // Character found, bulk-append characters up to and including 'idx'
+          // Character found, bulk-pushBack characters up to and including 'idx'
           // to the 'data' array.
-          data.extend(avail[..idx]);
+          data.pushBack(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.extend(avail);
+          data.pushBack(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
@@ -100,7 +100,7 @@ record buf {
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
   
@@ -136,9 +136,9 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=QIO_CH_ALWAYS_UNBUFFERED);
-  //
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.
   //

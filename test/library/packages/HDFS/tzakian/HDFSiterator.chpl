@@ -34,11 +34,12 @@
 
  */
 
-use Sys, 
-    HDFS,
+use HDFS,
     HDFStools, 
     ReplicatedVar,
     BlockDist;
+
+use OS.POSIX;
 
 // ============== Serial iterator ========================
 iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) {
@@ -271,12 +272,3 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
  -- Always holds
 
  */
-
-
-
-
-
-
-
-
-

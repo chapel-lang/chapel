@@ -21,6 +21,7 @@ module HPCC_PTRANS {
 
   use LinearAlgebra, 
       Time,
+      Math,
       BlockDist;
 
   proc main () {
@@ -48,7 +49,7 @@ module HPCC_PTRANS {
         C                  : [transpose_domain] real,
         C_plus_A_transpose : [transpose_domain] real;
 
-    var PTRANS_time : Timer;
+    var PTRANS_time : stopwatch;
 
     var error, norm_A, norm_C : real;
 
@@ -154,7 +155,7 @@ module HPCC_PTRANS {
     }
 
     if (printStats) {
-      elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
+      elapsed_time = PTRANS_time.elapsed ();
     
       if ( elapsed_time  > zero ) then
         GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );

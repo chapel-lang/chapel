@@ -13,16 +13,16 @@ for i in D {
 
 forall ai in DomIntType do
   AInt(ai) = ai;
-writeln(AInt.sorted());
+writeln(sorted(AInt));
 
 forall au in DomUintType do
   AUint(au) = au;
-writeln(AUint.sorted());
+writeln(sorted(AUint));
 
 forall ar in DomRealType do
   AReal(ar) = ar;
-writeln(AReal.sorted());
+writeln(sorted(AReal));
 
 forall aStr in DomStringType do
   AString(aStr) = aStr;
-writeln(AString.sorted());
+writeln(sorted(AString));

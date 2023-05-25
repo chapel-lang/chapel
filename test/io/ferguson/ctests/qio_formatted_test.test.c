@@ -11,7 +11,7 @@ void test_endian(void)
   // We write (hex) 00 0102 03040506 0708091011121314
   // as big endian and little endian, and then we check
   // that the data is what we expected.
-  
+ 
   qioerr err;
   qio_file_t* f;
   qio_channel_t* writing;
@@ -46,7 +46,7 @@ void test_endian(void)
     }
 
     // Create a "write to file" channel.
-    err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+    err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
     assert(!err);
 
     err = qio_channel_write_uint8(true, writing, n0);
@@ -67,7 +67,7 @@ void test_endian(void)
     writing = NULL;
 
     // Create a "read from file" channel.
-    err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+    err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
     assert(!err);
 
     err = qio_channel_read_amt(true, reading, got, len);
@@ -125,7 +125,7 @@ void test_readwriteint(void)
         memset(got, 0, sizeof(got));
 
         // Create a "write to file" channel.
-        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
         assert(!err);
 
         err = qio_channel_write_int(true, b_order, writing, data, len, sz < 0);
@@ -135,7 +135,7 @@ void test_readwriteint(void)
         writing = NULL;
 
         // Create a "read from file" channel.
-        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
 
 
@@ -320,7 +320,7 @@ void test_printscan_int(void)
       memset(got, 0, sizeof(got));
 
       // Create a "write to file" channel.
-      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style);
+      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style, 0);
       assert(!err);
 
       err = qio_channel_print_int(true, writing, &num, 8, true);
@@ -334,7 +334,7 @@ void test_printscan_int(void)
       writing = NULL;
 
       // Create a "read from file" channel.
-      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
       assert(!err);
 
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
@@ -350,7 +350,7 @@ void test_printscan_int(void)
 
       // Try scanning our number.
       // Create a "read from file" channel.
-      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style);
+      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style, 0);
       assert(!err);
 
       got_num = 0;
@@ -624,7 +624,7 @@ void test_printscan_float(void)
       memset(got, 0, sizeof(got));
 
       // Create a "write to file" channel.
-      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style);
+      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style, 0);
       assert(!err);
 
       err = qio_channel_print_float(true, writing, &num, 8);
@@ -638,7 +638,7 @@ void test_printscan_float(void)
       writing = NULL;
 
       // Create a "read from file" channel.
-      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style);
+      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style, 0);
       assert(!err);
 
       err = qio_channel_read(true, reading, got, sizeof(got), &amt_read);
@@ -659,7 +659,7 @@ void test_printscan_float(void)
       // Try scanning our number.
       // Create a "read from file" channel.
       {
-        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
 
         got_num = 0;
@@ -704,20 +704,20 @@ void test_verybasic()
 	qio_file_t *f = NULL;
 	qio_channel_t *writing = NULL;
 	qio_channel_t *reading = NULL;
-	qioerr err; 
+	qioerr err;
 	char buf[4] = {0};
-	
+
 	//open the tmp file, create a write channel, write our data, and release the channel
   	err = qio_file_open_tmp(&f, 0, NULL);
         assert(!err);
-      	err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+      	err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
         assert(!err);
       	err = qio_channel_write_amt(true, writing, "\xDE\xAD\xBE\xEF", 4);
         assert(!err);
         qio_channel_release(writing);
 
 	//open a read channel to the tmp file, and read back the data.
-    	err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+    	err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
       	err = qio_channel_read_amt(true, reading, buf, 4);
         assert(!err);
@@ -758,10 +758,10 @@ void string_escape_tests()
 	style.binary=0;
 	style.string_start = '"';
 	style.string_end = '"';
-	
+
 	err = qio_file_open_tmp(&f, 0, NULL);
         assert(!err);
-        
+       
         for( i = 0; inputs[i][0]; i++ ) {
           const char* input = inputs[i][0];
           ssize_t input_len = strlen(input);
@@ -770,24 +770,24 @@ void string_escape_tests()
             ssize_t expect_len = strlen(expect);
             style.string_format = j;
 
-            err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+            err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style, 0);
             assert(!err);
-            err = qio_channel_print_string(true, writing, input, input_len);	
+            err = qio_channel_print_string(true, writing, input, input_len);
             assert(!err);
             qio_channel_release(writing);
 
-            err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style);
+            err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style, 0);
             assert(!err);
             err = qio_channel_read_amt(true, reading, buf, expect_len);
             assert(!err);
-     
+    
             qio_channel_release(reading);
 
             //printf("Got %s expect %s\n", buf, expect);
             assert( memcmp(buf, expect, expect_len) == 0 );
 
             // Check that we can read it in again.
-            err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style);
+            err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style, 0);
             assert(!err);
 
             {
@@ -802,7 +802,7 @@ void string_escape_tests()
 
               qio_free((void*) got);
             }
-     
+    
             qio_channel_release(reading);
           }
         }
@@ -835,7 +835,7 @@ void write_65k_test()
         style.byteorder = QIO_BIG;
         style.str_style = -2;
 
-        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style, 0);
         assert(!err);
 
 	p = (char *)qio_calloc(1, buflen);
@@ -847,7 +847,7 @@ void write_65k_test()
         qio_channel_release(writing);
         assert(!err);
 
-        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
 
 	while(1){
@@ -872,7 +872,7 @@ void write_65k_test()
 }
 
 /**
- *   
+ *  
  **/
 void max_width_test()
 {
@@ -892,7 +892,7 @@ void max_width_test()
         style.max_width_columns = 5;
 
 
-        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style, 0);
         assert(!err);
 
         err = qio_channel_print_string(true, writing, "helloworld", 10);
@@ -900,7 +900,7 @@ void max_width_test()
         qio_channel_release(writing);
         assert(!err);
 
-        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
         err = qio_channel_scan_string(true, reading, &out, &out_len, -1);
         assert(!err);
@@ -920,7 +920,7 @@ void max_width_test()
 
 /**
  * Tests the min_width option.
- * by writing 10 byte helloworld string but specifying 
+ * by writing 10 byte helloworld string but specifying
  * min_width = 11 so the read should return 11 bytes where
  * the 11th byte would be a space character.
  */
@@ -941,7 +941,7 @@ void min_width_test()
 	style.string_format = 1;
 	style.min_width_columns = 11;
 
-        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+        err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style, 0);
         assert(!err);
 
 
@@ -949,7 +949,7 @@ void min_width_test()
         assert(!err);
         qio_channel_release(writing);
 
-        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+        err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
         assert(!err);
         err = qio_channel_scan_string(true, reading, &out, &out_len, -1);
         assert(!err);
@@ -970,7 +970,7 @@ void min_width_test()
  * Test basic ascii functionality
  */
 void basicstring_test()
-{ 
+{
  	const char *out = NULL;
         int64_t out_len = 0;
         qioerr err;
@@ -982,11 +982,11 @@ void basicstring_test()
 	#define NUM_STR_STYLES 12
         qio_style_t styles[NUM_STR_STYLES];
 
-	string_test_t strings[] = { 	
+	string_test_t strings[] = { 
 				    { "", 0 },
 				    { "a", 1 },
 				    { "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", 255},
-				  }; 
+				  };
         int NUM_STRINGS = sizeof(strings)/sizeof(string_test_t);
 
         if( verbose ) printf("Testing basic string writing/reading\n");
@@ -1034,12 +1034,12 @@ void basicstring_test()
                         // make style 8 always use the string length!
                         if( x == 8 ) style->str_style = string->length;
 
-        		err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style);
+        		err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, style, 0);
 			assert(!err);
 
                         //printf("Writing string '%s' with style %i\n", string->string, x);
 
-                        if( style->binary ) 
+                        if( style->binary )
                           err = qio_channel_write_string(true, style->byteorder, style->str_style, writing, string->string, string->length);
                         else
                           err = qio_channel_print_string(true, writing, string->string, string->length);
@@ -1047,11 +1047,11 @@ void basicstring_test()
 			assert(!err);
         		qio_channel_release(writing);
 
-			err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style);
+			err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, style, 0);
 			assert(!err);
 
                         //printf("Reading string '%s' with style %i\n", string->string, x);
-                        if( style->binary ) 
+                        if( style->binary )
                           err = qio_channel_read_string(true, style->byteorder, style->str_style, reading, &out, &out_len, -1);
                         else
                           err = qio_channel_scan_string(true, reading, &out, &out_len, -1);
@@ -1073,7 +1073,7 @@ void basicstring_test()
 
         qio_file_release(f);
         f = NULL;
-       
+      
         if( verbose ) printf("PASS: basic string test\n");
 #undef NUM_STR_STYLES
 #define NUM_STRINGS 1
@@ -1085,9 +1085,9 @@ void test_readwritestring()
 	//basicstring_test(); in main.
 	write_65k_test();   //write 65k then read it back.
 
-	//min_width_test();  //test min_width              
+	//min_width_test();  //test min_width             
 	//max_width_test();  //test max_width
-	
+
         string_escape_tests();
 }
 
@@ -1101,7 +1101,7 @@ void test_scanmatch()
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
-  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_write_char(true, writing, ' ');
@@ -1120,7 +1120,7 @@ void test_scanmatch()
 
   qio_channel_release(writing);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "test", 4, 1);
@@ -1132,20 +1132,20 @@ void test_scanmatch()
 
   qio_channel_release(reading);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
   err = qio_channel_scan_literal(true, reading, " match", 5, 1);
   assert(err == 0);
 
   qio_channel_release(reading);
- 
+
   qio_file_release(f);
   f = NULL;
 
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
-  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_write_char(true, writing, 'a');
@@ -1157,7 +1157,7 @@ void test_scanmatch()
 
   qio_channel_release(writing);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
@@ -1173,7 +1173,7 @@ void test_scanmatch()
 
   qio_channel_release(reading);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_scan_literal(true, reading, "ab", 2, 1);
@@ -1210,7 +1210,7 @@ void do_test_utf8(int wchar, char* utf8)
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
-  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_write_char(true, writing, wchar);
@@ -1218,7 +1218,7 @@ void do_test_utf8(int wchar, char* utf8)
 
   qio_channel_release(writing);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   for( i = 0; i < len; i++ ) {
@@ -1230,7 +1230,7 @@ void do_test_utf8(int wchar, char* utf8)
 
   qio_channel_release(reading);
 
-  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL);
+  err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, NULL, 0);
   assert(!err);
 
   err = qio_channel_read_char(true, reading, &got_wchar);
@@ -1239,7 +1239,7 @@ void do_test_utf8(int wchar, char* utf8)
   assert(got_wchar == wchar);
 
   qio_channel_release(reading);
- 
+
   qio_file_release(f);
   f = NULL;
 
@@ -1424,7 +1424,7 @@ void test_quoted_string_maxlength(void)
   style.binary=0;
   style.string_start = '"';
   style.string_end = '"';
-  
+ 
   err = qio_file_open_tmp(&f, 0, NULL);
   assert(!err);
 
@@ -1443,7 +1443,7 @@ void test_quoted_string_maxlength(void)
       ti.max_columns = style.max_width_columns;
       ti.max_chars = SSIZE_MAX;
       ti.max_bytes = SSIZE_MAX;
-      
+     
       // check that qio_quote_string gives correct string when
       // used in a no-quote mode
       if( i != 6 ) {
@@ -1469,13 +1469,13 @@ void test_quoted_string_maxlength(void)
 
       // Now, check that the quoting works correctly when writing.
 
-      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style);
+      err = qio_channel_create(&writing, f, QIO_CH_BUFFERED, 0, 1, 0, INT64_MAX, &style, 0);
       assert(!err);
-      err = qio_channel_print_string(true, writing, input, input_len);	
+      err = qio_channel_print_string(true, writing, input, input_len);
       assert(!err);
       qio_channel_release(writing);
 
-      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style);
+      err = qio_channel_create(&reading, f, QIO_CH_BUFFERED, 1, 0, 0, INT64_MAX, &style, 0);
       assert(!err);
       err = qio_channel_read_amt(true, reading, buf, expect_len);
       assert(!err);
@@ -1504,7 +1504,7 @@ int main(int argc, char** argv)
   }
 
   for( int i = 0; sizes[i] != 0; i++ ) {
-    char* codeset = nl_langinfo(CODESET); 
+    char* codeset = nl_langinfo(CODESET);
     qbytes_iobuf_size = sizes[i];
 
     if( 0 == strcmp(codeset, "UTF-8") ) {

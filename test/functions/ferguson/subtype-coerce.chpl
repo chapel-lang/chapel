@@ -19,5 +19,5 @@ proc main() {
   // string cannot coerce to int
   checkNotCoercible(string, int);
   // int cannot coerce to uint
-  checkNotCoercible(int, uint);
+  checkCoercible(int, uint);
 }

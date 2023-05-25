@@ -16,12 +16,10 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   Chapel Environment Variables <standard/ChapelEnv>
+   AutoMath <standard/AutoMath>
    Errors <standard/Errors>
    IO Support <standard/ChapelIO>
-   Math <standard/Math>
    Types <standard/Types>
-   VectorizingIterator <standard/VectorizingIterator>
 
 
 Data Structures
@@ -43,6 +41,8 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   GpuDiagnostics <standard/GpuDiagnostics>
+   MemDiagnostics <standard/MemDiagnostics>
    Memory <standard/Memory>
 
 
@@ -64,6 +64,7 @@ Language Support
 
    Reflection <standard/Reflection>
    Types <standard/Types>
+   MemMove <standard/MemMove>
 
 
 Math/Numerical
@@ -72,6 +73,7 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
+   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>
@@ -86,7 +88,10 @@ Parallelism/Distributed Computing
    :maxdepth: 1
 
    Barriers <standard/Barriers>
+   Collectives <standard/Collectives>
+   Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
+   GPU <standard/GPU>
    VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
@@ -95,14 +100,11 @@ System/Interoperability
 .. toctree::
    :maxdepth: 1
 
-   CPtr <standard/CPtr>
    CTypes <standard/CTypes>
-   Spawn <standard/Spawn>
+   OS <standard/OS>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
-   SysCTypes <standard/SysCTypes>
-   SysError <standard/SysError>
 
 Utilities
 ---------
@@ -111,8 +113,8 @@ Utilities
    :maxdepth: 1
 
    ChplConfig <standard/ChplConfig>
-   DateTime <standard/DateTime>
    Help <standard/Help>
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
+   WeakPointer <../builtins/WeakPointer>

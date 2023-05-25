@@ -253,7 +253,6 @@ extern gasneti_TM_t gasneti_thing_that_goes_thunk_in_the_dark;
 //     More efficient replacement for `gasneti_[ei]_tm_to_i_ep()->_index`,
 //     replacing multiple alternatives which do not accept a TM-pair
 //   + gasneti_boundscheck()
-//   + gasneti_boundscheck_allowoutseg()
 //   + gasneti_formattm()
 //   + gasneti_pshm_local_rank()
 //   + gasneti_pshm_in_supernode()
@@ -538,14 +537,6 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
   #define gasneti_in_local_segment gasneti_in_local_clientsegment
 #endif
 
-#ifdef GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET
-  /* in-segment check for internal put/gets that may exploit outofseg support */
-  #define gasneti_in_segment_allowoutseg(e_tm,rank,ptr,nbytes) \
-          (gasneti_check_e_tm_rank(e_tm,rank), 1)
-#else
-  #define gasneti_in_segment_allowoutseg  gasneti_in_segment
-#endif
-
 #define _gasneti_boundscheck(e_tm,rank,ptr,nbytes,segtest) do {         \
     gex_TM_t _gex_bc_tm = (e_tm);                                              \
     gasneti_assert(_gex_bc_tm);                                                \
@@ -582,15 +573,12 @@ int _gasneti_in_segment_t(const void *_ptr, size_t _nbytes, const gex_Segment_t 
   } while(0)
 
 
-// gasneti_boundscheck() and gasneti_boundscheck_allowoutseg()
+// gasneti_boundscheck()
 #if GASNET_NDEBUG
   #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) ((void)0)
-  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) ((void)0)
 #else
   #define gasneti_boundscheck(e_tm,rank,ptr,nbytes) \
          _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment)
-  #define gasneti_boundscheck_allowoutseg(e_tm,rank,ptr,nbytes) \
-         _gasneti_boundscheck(e_tm,rank,ptr,nbytes,gasneti_in_segment_allowoutseg)
 #endif
 
 /* make a GASNet core API call - if it fails, print error message and abort */
@@ -793,7 +781,7 @@ void gasneti_leaf_finish(gex_Event_t *_opt_val) {
   #elif defined GASNETI_HAVE_TLS_SUPPORT
     /* Default to OFF on some common ABIs with good TLS support */
     #if (PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC) && \
-        (PLATFORM_OS_DARWIN || PLATFORM_OS_SOLARIS || PLATFORM_OS_LINUX || PLATFORM_OS_CNL)
+        (PLATFORM_OS_DARWIN || PLATFORM_OS_SOLARIS || PLATFORM_OS_LINUX)
       #define GASNETI_THREADINFO_OPT    0
     #elif PLATFORM_ARCH_POWERPC && \
           PLATFORM_OS_LINUX
@@ -1650,6 +1638,39 @@ extern gasnet_nodeinfo_t *gasneti_nodeinfo;
   #define gasneti_e_segment_kind_is_host(segment) 1
 #endif
 
+#if GASNET_DEBUG && GASNET_HAVE_MK_CLASS_MULTIPLE
+  extern int _gasneti_boundscheck_local(gex_TM_t _tm, void *_addr, size_t _len, gasneti_Segment_t *_seg_p);
+  #define GASNETI_BAD_LOCAL_OUTSIDE_DEVICE_SEGMENT 1
+  #define GASNETI_BAD_LOCAL_INSIDE_DEVICE_SEGMENT 2
+  #define gasneti_boundscheck_local(e_tm,ptr,nbytes) do {                      \
+    gex_TM_t _gex_bcl_tm = (e_tm);                                             \
+    void *_gex_bcl_ptr = (void *)(ptr);                                        \
+    size_t _gex_bcl_nbytes = (size_t)(nbytes);                                 \
+    gasneti_assert(_gex_bcl_tm);                                               \
+    gasneti_Segment_t _gex_bcl_segment;                                        \
+    int _gex_bcl_result =                                                      \
+        _gasneti_boundscheck_local(_gex_bcl_tm,_gex_bcl_ptr,_gex_bcl_nbytes,&_gex_bcl_segment);\
+    if (_gex_bcl_result) {                                                     \
+      gex_Rank_t _gex_bcl_rank =                                               \
+           (gasneti_e_tm_is_pair(_gex_bcl_tm) ? gasneti_mynode : gex_TM_QueryRank(_gex_bcl_tm));\
+      gasneti_fatalerror("Invalid local address %s device segment ("           \
+         GASNETI_TMRANKFMT " ptr=" GASNETI_LADDRFMT" nbytes=%" PRIuPTR ")"     \
+         " kind=%s segment=(" GASNETI_LADDRFMT"..." GASNETI_LADDRFMT")",       \
+         ((_gex_bcl_result == GASNETI_BAD_LOCAL_OUTSIDE_DEVICE_SEGMENT) ?      \
+                                             "outside of the bound" : "in a"), \
+         GASNETI_TMRANKSTR(_gex_bcl_tm, _gex_bcl_rank),                        \
+         GASNETI_LADDRSTR(_gex_bcl_ptr),                                       \
+         (uintptr_t)_gex_bcl_nbytes,                                           \
+         gasneti_formatmk(_gex_bcl_segment->_kind),                            \
+         GASNETI_LADDRSTR(_gex_bcl_segment->_addr),                            \
+         GASNETI_LADDRSTR(_gex_bcl_segment->_ub)                               \
+       );                                                                      \
+     }                                                                         \
+  } while (0)
+#else
+  #define gasneti_boundscheck_local(e_tm,ptr,nbytes) ((void)0)
+#endif
+
 /* ------------------------------------------------------------------------------------ */
 // PSHM support - part 1 of 2
 #if GASNET_PSHM
@@ -1768,7 +1789,7 @@ gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
 
   if (gasneti_is_tm0(_i_tm)) {
     // fast path for TM0, which can only include primordial segments
-  #if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+  #if !GASNET_SEGMENT_EVERYTHING
     // Check that target segment exists by looking for non-NULL addr in seginfo table
     // TODO-EX: update if/when scalable storage replaces gasneti_seginfo[]
     // TODO-EX: update if/when it is possible to have a primordial segment which is NOT cross-mapped
@@ -1781,7 +1802,7 @@ gex_Rank_t gasneti_nbrhd_mapped_helper(gex_TM_t _e_tm, gex_Rank_t _rank) {
   gex_EP_Location_t _loc = gasneti_i_tm_rank_to_location(_i_tm, _rank, 0);
   gex_Rank_t _jobrank = _loc.gex_rank;
 
-#if !(GASNET_SEGMENT_EVERYTHING || GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
+#if !GASNET_SEGMENT_EVERYTHING
   // Regardless whether this query will eventually succeed or fail,
   // it is erroneous to query a target endpoint that does not yet
   // have a bound segment made known to us via gex_Segment_Attach()

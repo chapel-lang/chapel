@@ -3,7 +3,8 @@ class MyClass {
 }
 
 iter myiter() {
-  yield new borrowed MyClass();
+  var oYield = new owned MyClass();
+  yield oYield.borrow();
 }
 
 

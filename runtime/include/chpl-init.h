@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,7 @@ void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
 void chpl_std_module_init(void);
+void chpl_std_module_finalize(void);
 
 #ifdef __cplusplus
 }

@@ -5,7 +5,7 @@ public use Potential;
 
 record SubTimer {
   var D : domain(string);
-  var A : [D] Timer;
+  var A : [D] stopwatch;
 
   proc init(names : string...) {
     this.complete();
@@ -39,13 +39,13 @@ inline proc dot(A:vec3, B:vec3) {
 }
 
 proc dateString() {
-  use DateTime;
-  return datetime.now().strftime("%F, %T");
+  use Time;
+  return dateTime.now().strftime("%F, %T");
 }
 
 proc timestampMessage(msg : string) {
-  use DateTime;
-  const timeStr = datetime.now().ctime();
+  use Time;
+  const timeStr = dateTime.now().ctime();
   writeln(timeStr, ": ", msg);
   writeln();
 }

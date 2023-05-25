@@ -77,7 +77,6 @@ Manual Installation:
 
   ``$ cp -i sample-vimrc .vimrc``
 
-
 Enabling Chapel Support in Vim:
 ===============================
 
@@ -90,9 +89,7 @@ file (without the ":").
 
 .. code-block:: vim
 
-   " Enable automatic filetype detection
-   :filetype on
-   " Enable syntax highlighting scheme:
+   " Enable syntax highlighting:
    :syntax on
-   " Enable indenting scheme:
-   :filetype indent on
+   " Enable automatic filetype detection, plugins, and indent support
+   :filetype plugin indent on

@@ -10,10 +10,11 @@ class MyClass {
 
 proc testa() {
   writeln("testa");
-  var tmp = new borrowed MyClass(1);
+  var otmp = new owned MyClass(1);
+  var tmp = otmp.borrow();
   writeln(tmp);
   writeln(tmp.x);
-  // tmp should be deleted
+  // otmp should be deleted
 }
 
 proc testb() {

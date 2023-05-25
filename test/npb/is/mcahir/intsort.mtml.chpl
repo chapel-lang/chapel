@@ -127,9 +127,9 @@ var keycountbuf: [countDom] int = 0;	// buffer for pre-fix scan
 var bucket_cnts: [bucketDom] int;	// there is a row here for each pe (rank, locale)
 var bucket_ptrs: [bucketDom] int;  // similarly, a row for each pe, a column for each bucket
 
-// Timers
-var tsetup, tsort, tverif: Timer;
-var tloops: [1..5] Timer;
+// stopwatches
+var tsetup, tsort, tverif: stopwatch;
+var tloops: [1..5] stopwatch;
 
 // Compute log of the number of pes and num keys per pe
 var nkeys_per_pe: int = nkeys >> log2npes;
@@ -198,9 +198,9 @@ proc main () {
   writef(" Iterations      = %{#########################}\n",maxIterations);
   if (printTime) {
       writef(" Time in seconds = %{######################.##}\n",
-        tsort.elapsed(TimeUnits.seconds));
+        tsort.elapsed());
       writef(" Mop/s total     = %{######################.##}\n",
-        (maxIterations*nkeys)/tsort.elapsed(TimeUnits.seconds)/1000000 );
+        (maxIterations*nkeys)/tsort.elapsed()/1000000 );
   }
   writeln(" Operation type  = ","              keys ranked");
   if (passedVerifications ==  (maxIterations*5+1) ) then

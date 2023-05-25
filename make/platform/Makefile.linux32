@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -19,7 +19,7 @@
 # Makefile.linux32
 
 ifndef CHPL_LSB_RELEASE
-  export CHPL_LSB_RELEASE = $(shell lsb_release -s -i -r 2>/dev/null)
+  export CHPL_LSB_RELEASE := $(shell lsb_release -s -i -r 2>/dev/null)
   # e.g. Ubuntu 14.04
 endif
 

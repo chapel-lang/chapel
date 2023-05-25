@@ -21,6 +21,15 @@
 #include <amudp.h>
 #include <amudp_spmd.h>
 
+extern char *AMUDP_getenv_prefixed(const char *); // for probing settings
+#ifndef AMX_ENV_PREFIX_STR
+  #ifdef AMX_ENV_PREFIX
+    #define AMX_ENV_PREFIX_STR AMX_STRINGIFY(AMX_ENV_PREFIX)
+  #else
+    #define AMX_ENV_PREFIX_STR "AMUDP_"
+  #endif
+#endif
+
 static const char *argvzero;
 static void Usage(const char *msg) {
   int i;
@@ -31,7 +40,7 @@ static void Usage(const char *msg) {
     "  -np N     Spawn N processes (may also be spelled -N or -n)\n"
     "  -spawn F  Use spawning function F\n"
     "  -depth D  Use network depth D\n"
-    "  -v        Enable verbose mode spawn\n"
+    "  -v        Enable verbose output, repeated use increases verbosity\n"
     "  -h        Show this help\n\n"
     , argvzero, AMUDP_LIBRARY_VERSION_STR, argvzero);
   fprintf (stderr, "Available spawn functions:\n");
@@ -74,7 +83,7 @@ int main(int argc, char **argv) {
     const char *arg = argv[0];
     if (arg[1] == '-') arg++;
     if (!strcmp(arg,"-v")) {
-      verbose = 1;
+      verbose++;
     } else if (!strcmp(arg,"-np") || 
                !strcmp(arg,"-n") || 
                !strcmp(arg,"-N")) {
@@ -102,9 +111,16 @@ int main(int argc, char **argv) {
 
   AMX_VerboseErrors = 1;
 
-  if (verbose) {
+  if (verbose >= 1) {
+    if (!AMUDP_getenv_prefixed("VERBOSEENV")) {
+      putenv((char *)AMX_ENV_PREFIX_STR "_VERBOSEENV=1");
+    }
+  }
+  if (verbose >= 2) {
     int i;
-    if (!getenv("AMUDP_VERBOSEENV")) putenv((char *)"AMUDP_VERBOSEENV=1");
+    if (!AMUDP_getenv_prefixed("SPAWN_VERBOSE")) { 
+      putenv((char *)AMX_ENV_PREFIX_STR "_SPAWN_VERBOSE=1");
+    }
     fprintf(stderr,"%s: Launching: ",argvzero);
     for (i = 0; i < argc; i++) {
       fprintf(stderr,"%s ", argv[i]);

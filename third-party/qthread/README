@@ -2,7 +2,7 @@
 Qthreads README for Chapel
 ==========================
 
-This copy of Qthreads 1.16 is being released with Chapel for
+This copy of Qthreads 1.17 is being released with Chapel for
 convenience and was obtained from:
 
   https://github.com/qthreads/qthreads
@@ -25,14 +25,15 @@ as follows:
 * We added a simple mechanism to reset the automatic task spawning
   order for better affinity between consecutive parallel loops.
 
-* Pulled in an upstream fix for the binders topology layer.
-  https://github.com/Qthreads/qthreads/pull/82
+* Pulled in an upstream fix for build errors on Alpine linux
+  https://github.com/Qthreads/qthreads/pull/105
 
-* Pulled in an upstream fix for handling signals during configure.
-  https://github.com/Qthreads/qthreads/pull/84
+* We modified the configuration to support the
+  --with-hwloc-get-topology-function argument that specifies a function that
+  qthreads should call to get the hwloc topology, and several files to
+  support this behavior including the Makefile to pass this argument to
+  configure, and binders.c and hwloc.c to call the function.
 
-* Pulled in an upstream --with-hwloc-symbol-prefix configuration option.
-  https://github.com/Qthreads/qthreads/pull/87
-
-* Pulled in an upstream fix for errno with syscalls.
-  https://github.com/Qthreads/qthreads/pull/89
+* We added --disable-hwloc-configure-checks to disable hwloc link checks,
+  and --disable-hwloc-has-distance to specify whether or not hwloc supports
+  distance information.

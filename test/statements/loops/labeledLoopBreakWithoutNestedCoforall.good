@@ -1,0 +1,2 @@
+labeledLoopBreakWithoutNestedCoforall.chpl:10: error: 'break' to label 'outerer' outside of a 'coforall' statement is not allowed
+labeledLoopBreakWithoutNestedCoforall.chpl:3: note: cannot 'break' out of a 'coforall' statement

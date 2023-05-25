@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 type elemType = int;
 
@@ -48,12 +48,12 @@ on Locales[numLocales - 1] {
   var B: [1..n] elemType;
   [i in B.domain] B(i) = (n + 1 - i):B.eltType;
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
   if doGET then
     B = A;
   else
     A = B;
-  const elapsedTime = getCurrentTime() - startTime;
+  const elapsedTime = timeSinceEpoch().totalSeconds() - startTime;
 
   if verify {
     const arraysMatch = && reduce [i in 1..n by verifyStride] B(i) == A(i);

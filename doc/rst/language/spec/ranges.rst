@@ -2,14 +2,17 @@
 
 .. _Chapter-Ranges:
 
-======
 Ranges
 ======
 
 A *range* is a first-class, constant-space representation of a regular
-sequence of indices of either integer, boolean, or enumerated type.
-Ranges support iteration over the sequences they represent and are the
-basis for defining domains (:ref:`Chapter-Domains`).
+sequence of values.  These values are typically integers, though
+ranges over bools, enums, and other types are also supported.  Ranges
+support serial and parallel iteration over the sequence of values they
+represent, as well as operations such as counting, striding,
+intersection, shifting, and comparisons.  Ranges form the basis for
+defining rectangular domains (:ref:`Chapter-Domains`) and arrays
+(:ref:`Chapter-Arrays`) in Chapel.
 
 Ranges are presented as follows:
 
@@ -65,8 +68,8 @@ More formally, the represented sequence for the range
 such that:
 
 =========================================================================== ============================================
-:math:`low \leq ix \leq high` and :math:`ix \equiv alignmt \pmod{|stride|}` if :math:`alignmt` is not ambiguous
 :math:`low \leq ix \leq high`                                               if :math:`stride = 1` or :math:`stride = -1`
+:math:`low \leq ix \leq high` and :math:`ix \equiv alignmt \pmod{|stride|}` if :math:`alignmt` is not ambiguous
 the represented sequence is undefined                                       otherwise
 =========================================================================== ============================================
 
@@ -76,9 +79,9 @@ decreasing if :math:`stride < 0`.
 If the represented sequence is defined but there are no indices
 satisfying the applicable equation(s) above, the range and its
 represented sequence are *empty*. A common case of this occurs when the
-high bound is greater than the low bound.
+low bound is greater than the high bound.
 
-We will say that a value :math:`ix` is *aligned* w.r.t. the range
+We say that a value :math:`ix` is *aligned* w.r.t. the range
 :math:`(low, high, stride, alignmt)` if:
 
 -  :math:`alignmt` is not ambiguous and
@@ -148,9 +151,9 @@ Ranges have the following additional properties.
 Range Types
 -----------
 
-The type of a range is characterized by three parameters:
+The type of a range is characterized by three properties:
 
--  ``idxType`` is the type of the indices of the range’s represented
+-  ``idxType`` is the type of the values in the range’s represented
    sequence. However, when the range’s low and/or high bound is
    :math:`\infty`, the represented sequence also contains indices that
    are not representable by ``idxType``.
@@ -162,53 +165,45 @@ The type of a range is characterized by three parameters:
    bit size as ``idxType`` for integral ranges; for boolean and
    enumerated ranges, it is simply ``int``.
 
--  ``boundedType`` indicates which of the range’s bounds are not
-   :math:`\infty`. ``boundedType`` is an enumeration constant of the
+-  ``bounds`` indicates which of the range’s bounds are not
+   :math:`\infty`. ``bounds`` is an enumeration constant of the
    type ``BoundedRangeType``. It is discussed further below.
 
 -  ``stridable`` is a boolean that determines whether the range’s stride
    can take on values other than 1. ``stridable`` is ``false`` by
-   default. A range is called *stridable* if its type’s ``stridable`` is
-   ``true``.
+   default. A range is called *stridable* if its type’s ``stridable``
+   field is ``true``.
 
-``boundedType`` is one of the constants of the following type:
+``bounds`` is one of the constants of the following enumeration:
 
+.. enum::  enum boundKind { both, low, high, neither };
 
-
-.. code-block:: chapel
-
-   enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
-
-The value of ``boundedType`` determines which bounds of the range are
+The value of ``bounds`` determines which bound(s) of the range are
 specified (making the range “bounded”, as opposed to infinite, in the
 corresponding direction(s)) as follows:
 
--  ``bounded``: both bounds are specified.
+-  ``both``: both bounds are specified.
+   Such ranges are called *bounded*.
 
--  ``boundedLow``: the low bound is specified (the high bound is
-   +\ :math:`\infty`).
+-  ``low``: the low bound is specified, the high bound is +\ :math:`\infty`.
 
--  ``boundedHigh``: the high bound is specified (the low bound is
-   -:math:`\infty`).
+-  ``high``: the high bound is specified, the low bound is -:math:`\infty`.
 
--  ``boundedNone``: neither bound is specified (both bounds are
-   :math:`\infty`).
+-  ``neither``: neither bound is specified, both bounds are :math:`\infty`.
+   Such ranges are called *unbounded*.
 
-``boundedType`` is ``BoundedRangeType.bounded`` by default.
+``bounds`` is ``boundKind.both`` by default. 
 
-The parameters ``idxType``, ``boundedType``, and ``stridable`` affect
+The parameters ``idxType``, ``bounds``, and ``stridable`` affect
 all values of the corresponding range type. For example, the range’s low
-bound is -:math:`\infty` if and only if the ``boundedType`` of that
-range’s type is either ``boundedHigh`` or ``boundedNone``.
+bound is -:math:`\infty` if and only if the ``bounds`` of that
+range’s type is either ``high`` or ``neither``.
 
    *Rationale*.
 
-   Providing ``boundedType`` and ``stridable`` in a range’s type allows
-   the compiler to identify the more common cases where the range is
-   ``bounded`` and/or its stride is 1. The compiler can also detect user
-   and library code that is specialized to these cases. As a result, the
-   compiler has the opportunity to optimize these cases and the
-   specialized code more aggressively.
+   Providing ``bounds`` and ``stridable`` in a range’s type
+   allows the compiler to identify and optimize the common cases where
+   the range is bounded in both directions and/or its stride is 1.
 
 A range type has the following syntax: 
 
@@ -221,30 +216,25 @@ That is, a range type is obtained as if by invoking the range type
 constructor (:ref:`Type_Constructors`) that has the following
 header:
 
-
-
 .. code-block:: chapel
 
      proc range(type idxType = int,
-                param boundedType = BoundedRangeType.bounded,
+                param bounds = boundKind.both,
                 param stridable = false) type
 
 As a special case, the keyword ``range`` without a parenthesized
 argument list refers to the range type with the default values of all
-its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
+its parameters, i.e., ``range(int, boundKind.both, false)``.
 
    *Example (rangeVariable.chpl)*.
 
    The following declaration declares a variable ``r`` that can
-   represent ranges of 32-bit integers, with both high and low bounds
+   represent ranges of 32-bit integers, with both low and high bounds
    specified, and the ability to have a stride other than 1.
-   
 
    .. code-block:: chapel
 
-      var r: range(int(32), BoundedRangeType.bounded, stridable=true);
-
-   
+      var r: range(int(32), boundKind.both, stridable=true);
 
    .. BLOCK-test-chapelpost
 
@@ -252,8 +242,6 @@ its parameters, i.e., ``range(int, BoundedRangeType.bounded, false)``.
       var i32: int(32) = 3;
       r = i32..13 by 3 align 1;
       writeln(r);
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -275,8 +263,6 @@ Range Literals
 ~~~~~~~~~~~~~~
 
 Range literals are specified with the following syntax.
-
-
 
 .. code-block:: syntax
 
@@ -312,17 +298,17 @@ The type of a range literal is a range with the following parameters:
 
    -  Otherwise, the range literal is not legal.
 
--  ``boundedType`` is a value of the type ``BoundedRangeType`` that is
+-  ``bounds`` is a value of the type ``boundKind`` that is
    determined as follows:
 
-   -  ``bounded``, if both the lower bound and the upper bound expressions
+   -  ``both``, if both the lower bound and the upper bound expressions
       are given,
 
-   -  ``boundedLow``, if only the upper bound expression is given,
+   -  ``low``, if only the upper bound expression is given,
 
-   -  ``boundedHigh``, if only the lower bound expression is given,
+   -  ``high``, if only the lower bound expression is given,
 
-   -  ``boundedNone``, if neither bound expression is given.
+   -  ``neither``, if neither bound expression is given.
 
 -  ``stridable`` is ``false``.
 
@@ -334,7 +320,7 @@ The value of a range literal is as follows:
 - When the range has an upper bound expression, a closed-interval
   range (``..``) takes the expression's value as its high bound;
   whereas the high bound of a half-open interval range (``..<``)
-  excludes the upper bound and is therefore one less than the upper
+  excludes the upper bound and is one less than the upper
   bound expression.  If there is no upper bound expression, the high
   bound is +\ :math:`\infty`.
 
@@ -348,37 +334,37 @@ Default Values
 ~~~~~~~~~~~~~~
 
 The default value for a range with an integral ``idxType`` depends on
-the type’s ``boundedType`` parameter as follows:
+the type’s ``bounds`` parameter as follows:
 
--  ``1..0`` (an empty range) if ``boundedType`` is ``bounded``
+-  ``1..0`` (an empty range) if ``bounds`` is ``both``
 
--  ``1..`` if ``boundedType`` is ``boundedLow``
+-  ``1..`` if ``bounds`` is ``low``
 
--  ``..0`` if ``boundedType`` is ``boundedHigh``
+-  ``..0`` if ``bounds`` is ``high``
 
--  ``..`` if ``boundedType`` is ``boundedNone``
+-  ``..`` if ``bounds`` is ``neither``
 
 ..
 
    *Rationale*.
 
    We use 0 and 1 to represent an empty range because these values are
-   available for any integer ``idxType``.
+   available for any integer ``idxType`` with more than one value.
 
    We have not found the natural choice of the default value for
-   ``boundedLow`` and ``boundedHigh`` ranges. The values indicated above
+   ranges with ``low`` and ``high`` ``bounds``. The values indicated above
    are distinguished by the following property. Slicing the default
-   value for a ``boundedLow`` range with the default value for a
-   ``boundedHigh`` range (or visa versa) produces an empty range,
-   matching the default value for a ``bounded`` range
+   value for a ``low``-bounded range with the default value for a
+   ``high``-bounded range (or visa versa) produces an empty range,
+   matching the default value for a ``both``-bounded range
 
 Default values of ranges with boolean ``idxType`` are similar, but
 substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
 ``enum`` ``idxType`` use the 0th and 1st values in the enumeration in
 place of 0 and 1 above.  If the enum only has a single value, the
 default value uses the 0th value as the low bound and has an undefined
-high bound; the ``.size`` query should be used with such ranges to
-determine whether or not the high bound is valid.
+high bound; the ``.size`` query should be used with such ranges before
+querying the high bound to determine whether or not it is valid.
 
 .. _Ranges_Common_Operations:
 
@@ -386,8 +372,8 @@ Common Operations
 -----------------
 
 All operations on a range return a new range rather than modifying the
-existing one. This supports a coding style in which all ranges are
-*immutable* (i.e. declared as ``const``).
+existing one. This supports a coding style in which all range values are
+*immutable*.
 
    *Rationale*.
 
@@ -415,7 +401,7 @@ Range assignment is legal when:
 -  An implicit conversion is allowed from ``idxType`` of the source
    range to ``idxType`` of the destination range type,
 
--  the two range types have the same ``boundedType``, and
+-  the two range types have the same ``bounds``, and
 
 -  either the destination range is stridable or the source range is not
    stridable.
@@ -427,12 +413,15 @@ Range Comparisons
 
 Ranges can be compared using equality and inequality.
 
-
-
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 
    Returns ``true`` if the two ranges have the same represented sequence or
    the same four primary properties, and ``false`` otherwise.
+
+.. function:: operator !=(r1: range(?), r2: range(?)): bool
+
+   Returns ``false`` if the two ranges have the same represented sequence or
+   the same four primary properties, and ``true`` otherwise.
 
 .. _Iterating_over_Ranges:
 
@@ -440,25 +429,51 @@ Iterating over Ranges
 ~~~~~~~~~~~~~~~~~~~~~
 
 A range can be used as an iterator expression in a loop. This is legal
-only if the range is iterable. In this case the loop iterates over the
-members of the range’s represented sequence, in the order defined by the
+only if the range is iterable. In this case, the loop iterates over the
+members of the range’s represented sequence in the order defined by the
 sequence. If the range is empty, no iterations are executed.
+
+Overflow of the index variable while iterating over an unbounded range
+leads to undefined behavior.  For unbounded ranges of bool or enum
+index type, the iteration will stop at the last value represented
+by the type.
+
+In order for it to be possible to iterate over a range with a last
+index, it needs to be possible to add the stride to the range's last
+index without overflowing the index type. In other words, the last index
+plus the stride must be between the index type's minimum and maximum
+value (inclusive). If this property is not met, the program will have
+undefined behavior.
 
    *Implementation Notes*.
 
-   An attempt to iterate over a range causes an error if adding stride
-   to the range’s last index overflows its index type, i.e. if the sum
-   is greater than the index type’s maximum value, or smaller than its
-   minimum value.
+   When bounds checking is enabled, the case in the above paragraph is
+   checked at runtime and the program will halt if the range iteration is
+   invalid.
 
-.. _Iterating_over_Unbounded_Ranges_in_Zippered_Iterations:
+.. _Iterating_over_Unbounded_Ranges:
 
-Iterating over Unbounded Ranges in Zippered Iterations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Iterating over Unbounded Ranges
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When a range with the first index but without the last index is used in
-a zippered iteration ( :ref:`Zipper_Iteration`), it generates as
-many indices as needed to match the other iterator(s).
+When an unbounded range of integer values is used to drive a loop,
+either by being the only iterand, or by serving as the leader iterand
+of a zippered iteration, it will generate a conceptually infinite
+number of iterations.  In order for such loops to be useful in
+practice, they must typically contain a ``break`` or ``return``
+statement.  Of course, in practice, the values representable by
+``idxType`` are finite; as a result, when the loop reaches its extreme
+values, the behavior of the loop is undefined.
+
+   *Implementation Notes*.
+
+   In the current implementation of Chapel, the loop will halt with an
+   error once it yields a value within ``stride`` of the maximal
+   ``idxType`` value.
+
+When an unbounded range of integer values serves as a follower iterand
+in a zippered context ( :ref:`Zippered_Iteration`), it will generate as
+many indices as are needed to match its leader iterand.
 
    *Example (zipWithUnbounded.chpl)*.
 
@@ -469,8 +484,6 @@ many indices as needed to match the other iterator(s).
       for i in zip(1..5, 3..) do
         write(i, "; ");
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln();
@@ -480,6 +493,11 @@ many indices as needed to match the other iterator(s).
    .. code-block:: printoutput
 
       (1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
+
+When an unbounded range of ``bool`` or ``enum`` values is used in a
+loop context, it is equivalent to a bounded range where the omitted
+low/high bound is taken to be the ``false``/``true`` for a ``bool``
+range or the type's initial/final value for an ``enum`` range.
 
 .. _Range_Promotion_of_Scalar_Functions:
 
@@ -492,39 +510,33 @@ scalar function as described in :ref:`Promotion`.
 
    *Example (rangePromotion.chpl)*.
 
-   Given a function ``addOne(x:int)`` that accepts ``int`` values and a
-   range ``1..10``, the function ``addOne()`` can be called with
-   ``1..10`` as its actual argument which will result in the function
-   being invoked for each value in the range.
-
-   
+   Given a function ``addOne(x: int)`` that accepts ``int`` values,
+   the function ``addOne()`` can be called with the range ``1..10`` as
+   its actual argument, which will result in the function being
+   invoked for each value in the range in a data-parallel manner.
 
    .. code-block:: chapel
 
-      proc addOne(x:int) {
+      proc addOne(x: int) {
         return x + 1;
       }
-      var A:[1..10] int;
+      var A: [1..10] int;
       A = addOne(1..10);
-
-   
 
    .. BLOCK-test-chapelpost
 
       writeln(A);
 
-   
-
    .. BLOCK-test-chapeloutput
 
       2 3 4 5 6 7 8 9 10 11
 
-The last statement is equivalent to: 
+   The last statement is equivalent to: 
 
-.. code-block:: chapel
+   .. code-block:: chapel
 
-   forall (a,i) in zip(A,1..10) do
-     a = addOne(i);
+      forall (a, i) in zip(A, 1..10) do
+        a = addOne(i);
 
 .. _Range_Operators:
 
@@ -536,8 +548,6 @@ described in this section: stride (``by``), alignment (``align``), count
 (``#``) and slicing (``()`` or ``[]``). Chapel also defines a set
 of functions that operate on ranges. They are described in
 :ref:`Predefined_Range_Functions`.
-
-
 
 .. code-block:: syntax
 
@@ -576,17 +586,9 @@ The syntax of the ``by`` operator is:
    step-expression:
      expression
 
-The type of the step must be a signed or unsigned integer of the same
-bit size as the base range’s ``idxType``, or an implicit conversion must
-be allowed to that type from the step’s type. It is an error for the
-step to be zero.
-
-   .. note::
-
-      *Future*.
-
-      We may consider allowing the step to be of any integer type, for
-      maximum flexibility.
+The step expression can be any integral or boolean type.  Boolean
+values are interpreted as 0 or 1, respectively.  It is an error for
+the step to be zero.
 
 The type of the result of the ``by`` operator is the type of the base
 range, but with the ``stridable`` parameter set to ``true``.
@@ -623,14 +625,10 @@ following primary properties:
       var r1 = 1..20 by 2;
       var r2 = r1 by 2;
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln(r1);
       writeln(r2);
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -645,7 +643,9 @@ following primary properties:
    ``R by -1`` to contain the ordered sequence :math:`3,2,1`. But then
    ``R by -1`` would be different from ``3..1 by -1`` even though it
    should be identical by substituting the value in R into the
-   expression.
+   expression.  We have also found that using a strict ordering of low
+   and high bounds can be clearer when using ranges to slice
+   arrays.
 
 .. _Align_Operator_For_Ranges:
 
@@ -672,7 +672,6 @@ operand and therefore is not ambiguous.
 
    *Example (alignedStride.chpl)*.
 
-   
    .. BLOCK-test-chapelnoprint
       write("|");
 
@@ -702,7 +701,6 @@ When the stride is negative, the same indices are printed in reverse:
 
    *Example (alignedNegStride.chpl)*.
 
-   
    .. BLOCK-test-chapelnoprint
       write("|");
 
@@ -728,8 +726,8 @@ When the stride is negative, the same indices are printed in reverse:
       | 9 6 3 0
       | 10 7 4 1
 
-To create a range aligned relative to its ``first`` index, use the
-``offset`` method (:ref:`Range Offset Method <Range_Offset_Method>`).
+To create a range aligned relative to its ``first`` index, see
+``range.offset`` below.
 
 .. _Count_Operator:
 
@@ -737,38 +735,41 @@ Count Operator
 ~~~~~~~~~~~~~~
 
 The ``#`` operator takes a range and an integral count and creates a
-new range containing the specified number of indices. The low or high
-bound of the left operand is preserved, and the other bound adjusted to
-provide the specified number of indices. If the count is positive,
-indices are taken from the start of the range; if the count is negative,
-indices are taken from the end of the range. The count must be less than
-or equal to the ``length`` of the range.
+new range containing the specified number of indices. Specifically:
 
+-  If the count is positive, :math:`count` indices are taken starting from
+   the first index of the range argument.
 
+-  If the count is negative, :math:`-count` indices are taken starting from
+   the last index of the range argument.
+
+-  If the count is zero, the result is an empty range.
 
 .. code-block:: syntax
 
    counted-range-expression:
      range-expression # expression
 
-The type of the count expression must be a signed or unsigned integer of
-the same bit size as the base range’s ``idxType``, or an implicit
-conversion must be allowed to that type from the count’s type.
+The count expression can be any integral or boolean value, where
+boolean values are interpreted as 0 or 1, respectively.
 
-The type of the result of the ``#`` operator is the type of the range
-argument.
+In detail, the result of the ``#`` operator is calculated as follows.
+The type, stride, and alignment of the result are those of the range
+argument, except the result is always bounded.
 
 Depending on the sign of the count and the stride, the high or low bound
-is unchanged and the other bound is adjusted so that it is
-:math:`c * stride - 1` units away. Specifically:
+is unchanged and the other bound is adjusted to provide
+the specified number of indices. Specifically:
 
--  If the count times the stride is positive, the low bound is preserved
-   and the high bound is adjusted to be one less than the low bound plus
-   that product.
+-  If the count and the stride are both positive or both negative,
+   the indices are taken starting from the range's low bound.
+   In this case, the low bound is preserved and the high bound is set to
+   :math:`low bound + count * stride - 1`.
 
--  If the count times the stride is negative, the high bound is
-   preserved and the low bound is adjusted to be one greater than the
-   high bound plus that product.
+-  If the count and the stride have opposite signs,
+   the indices are taken starting from the range's high bound.
+   In this case, the high bound is preserved and the low bound is set to
+   :math:`high bound + count * stride + 1`.
 
 ..
 
@@ -796,6 +797,7 @@ range that has no first index. It is also an error to apply the count
 operator with a negative count to a range that has no last index. It is
 an error to apply the count operator to a range that is ambiguously
 aligned.
+It is an error if the count is greater than the ``size`` of the range.
 
    *Example (rangeCountOperator.chpl)*.
 
@@ -808,14 +810,10 @@ aligned.
       var r3 = -6..6 by -2 # 3;
       var r4 = 1..#6 by -2;
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln(r1 == r2 && r2 == r3 && r3 == r4);
       writeln((r1, r2, r3, r4));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -846,7 +844,7 @@ range’s low and high bounds, producing a shifted version of the range.
 If the operand range is unbounded above or below, the missing bounds are
 ignored. The index type of the resulting range is the type of the value
 that would result from an addition between the scalar value and a value
-with the range’s index type. The bounded and stridable parameters for
+with the range’s index type. The ``bounds`` and ``stridable`` parameters for
 the result range are the same as for the input range.
 
 The stride of the resulting range is the same as the stride of the
@@ -869,13 +867,9 @@ resulting range is also ambiguously aligned.
       var r = 0..3;
       var r2 = r + 1;    // 1..4
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln((r, r2));
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -888,9 +882,12 @@ Range Slicing
 
 Ranges can be *sliced* using other ranges to create new sub-ranges. The
 resulting range represents the intersection between the two ranges’
-represented sequences. The stride and alignment of the resulting range
-are adjusted as needed to make this true. ``idxType`` and the sign of
-the stride of the result are determined by the first operand.
+represented sequences. The stride, alignment, and bounds of the
+resulting range are adjusted as needed to make this true. ``idxType``
+of the result is determined by the first operand.
+The stride of the result is of the same sign as the stride
+of the first operand if the second operand's stride is positive,
+and of the opposite sign otherwise.
 
 Range slicing is specified by the syntax: 
 
@@ -900,30 +897,7 @@ Range slicing is specified by the syntax:
      range-expression ( range-expression )
      range-expression [ range-expression ]
 
-If either of the operand ranges is ambiguously aligned, then the
-resulting range is also ambiguously aligned. In this case, the result is
-valid only if the strides of the operand ranges are relatively prime.
-Otherwise, an error is generated at run time.
-
-   *Rationale*.
-
-   If the strides of the two operand ranges are relatively prime, then
-   they are guaranteed to have some elements in their intersection,
-   regardless whether their relative alignment can be determined. In
-   that case, the bounds and stride in the resulting range are valid
-   with respect to the given inputs. The alignment can be supplied later
-   to create a valid range.
-
-   If the strides are not relatively prime, then the result of the
-   slicing operation would be completely ambiguous. The only reasonable
-   action for the implementation is to generate an error.
-
-If the resulting sequence cannot be expressed as a range of the original
-type, the slice expression evaluates to the empty range ``1..0``. This
-can happen, for example, when the operands represent all odd and all
-even numbers, or when the first operand is an unbounded range with
-unsigned ``idxType`` and the second operand represents only negative
-numbers.
+..
 
    *Example (rangeSlicing.chpl)*.
 
@@ -940,318 +914,63 @@ numbers.
       var r3 = r[1.. by 2];
       var r4 = r3[0.. by 3];
 
-   
-
    .. BLOCK-test-chapelpost
 
       writeln((r, r2, r3, r4));
-
-   
 
    .. BLOCK-test-chapeloutput
 
       (1..20, 3..20, 1..20 by 2, 1..20 by 6 align 3)
 
+It is an error for the first operand to be ambiguously aligned.
+If the second operand is ambiguously aligned, it is replaced
+with a range that is identical except it is given an alignment
+in such a way that that the intersection of the two ranges'
+represented sequences is non-empty, if possible.
+How this substitute alignment is chosen when multiple possibilities
+are available is implementation-dependent.
+
+If the resulting sequence cannot be expressed as a range with the
+original ``idxType``, the slice expression evaluates to the empty
+range. This can happen, for example, when the first operand is an
+unbounded range with unsigned ``idxType`` and the second operand
+represents only negative numbers.
+
+If the resulting sequence is empty, the bounds, stride, and alignment
+of the resulting range are implementation-dependent.
+If the resulting sequence is empty and both operands are unbounded
+in the same direction, it is an error.
+
+
 .. _Predefined_Range_Functions:
 
-Predefined Functions on Ranges
-------------------------------
+Predefined Routines on Ranges
+-----------------------------
 
 .. _Range_Type_Accessors:
 
-Range Type Parameters
-~~~~~~~~~~~~~~~~~~~~~
+Range Type Queries
+~~~~~~~~~~~~~~~~~~
 
 
 
-.. function:: proc range.boundedType : BoundedRangeType
+.. function:: proc range.idxType type
 
-   Returns the ``boundedType`` parameter of the range’s type.
+   Returns the type of the range's indices (its ``idxType``).
 
 
 
-.. function:: proc range.idxType : type
+.. function:: proc range.bounds param : BoundedRangeType
 
-   Returns the ``idxType`` parameter of the range’s type.
+   Returns which bounds the range explicitly represents
+   (its ``bounds`` value).
 
 
 
-.. function:: proc range.stridable : bool
+.. function:: proc range.stridable param : bool
 
-   Returns the ``stridable`` parameter of the range’s type.
+   Returns whether or not the range can have non-unit strides (its
+   ``stridable`` value).
 
-.. _Range_Properties:
 
-Range Properties
-~~~~~~~~~~~~~~~~
-
-Most of the methods in this subsection report on the range properties
-defined in :ref:`Range_Concepts`. A range’s represented sequence
-can be examined, for example, by iterating over the range in a for loop
-:ref:`The_For_Loop`.
-
-   *Open issue*.
-
-   The behavior of the methods that report properties that may be
-   undefined, :math:`\infty`, or ambiguous, may change.
-
-
-
-.. function:: proc range.aligned : bool
-
-   Reports whether the range’s alignment is unambiguous.
-
-
-
-.. function:: proc range.alignedHigh : idxType
-
-   Returns the range’s aligned high bound. If the aligned high bound is
-   undefined (does not exist), the behavior is undefined.
-
-*Example (alignedHigh.chpl)*.
-
-   The following code: 
-
-   .. code-block:: chapel
-
-      var r = 0..20 by 3;
-      writeln(r.alignedHigh);
-
-   produces the output 
-
-   .. code-block:: printoutput
-
-      18
-
-
-
-.. function:: proc range.alignedLow : idxType
-
-   Returns the range’s aligned low bound. If the aligned low bound is
-   undefined (does not exist), the behavior is undefined.
-
-
-
-.. function:: proc range.alignment : idxType
-
-   Returns the range’s alignment. If the alignment is ambiguous, the
-   behavior is undefined. See also ``aligned``.
-
-
-
-.. function:: proc range.first : idxType
-
-   Returns the range’s first index. If the range has no first index, the
-   behavior is undefined. See also ``hasFirst``.
-
-
-
-.. function:: proc range.hasFirst(): bool
-
-   Reports whether the range has the first index.
-
-
-
-.. function:: proc range.hasHighBound() param: bool
-
-   Reports whether the range’s high bound is *not* +\ :math:`\infty`.
-
-
-
-.. function:: proc range.hasLast(): bool
-
-   Reports whether the range has the last index.
-
-
-
-.. function:: proc range.hasLowBound() param: bool
-
-   Reports whether the range’s low bound is *not* -:math:`\infty`.
-
-
-
-.. function:: proc range.high : idxType
-
-   Returns the range’s high bound. If the high bound is +\ :math:`\infty`,
-   the behavior is undefined. See also ``hasHighBound``.
-
-
-
-.. function:: proc range.isAmbiguous(): bool
-
-   Reports whether the range is ambiguously aligned.
-
-
-
-.. function:: proc range.last : idxType
-
-   Returns the range’s last index. If the range has no last index, the
-   behavior is undefined. See also ``hasLast``.
-
-
-.. function:: proc range.low : idxType
-
-   Returns the range’s low bound. If the low bound is -:math:`\infty`, the
-   behavior is undefined. See also ``hasLowBound``.
-
-
-
-.. function:: proc range.size : int
-
-   Returns the number of indices in the range’s represented sequence. If
-   the represented sequence is infinite or is undefined, an error is
-   generated.
-
-
-
-.. function:: proc range.stride : int(numBits(idxType))
-
-   Returns the range’s stride. This will never return 0. If the range is
-   not stridable, this will always return 1.
-
-.. _Range_Queries:
-
-Other Queries
-~~~~~~~~~~~~~
-
-
-
-.. function:: proc range.boundsCheck(r2: range(?)): bool
-
-   Returns ``false`` if either range is ambiguously aligned. Returns
-   ``true`` if range ``r2`` lies entirely within this range and ``false``
-   otherwise.
-
-
-
-.. function:: proc ident(r1: range(?), r2: range(?)): bool
-
-   Returns ``true`` if the two ranges are the same in every respect: i.e.
-   the two ranges have the same ``idxType``, ``boundedType``,
-   ``stridable``, ``low``, ``high``, ``stride`` and ``alignment`` values.
-
-
-
-.. function:: proc range.indexOrder(i: idxType): idxType
-
-   If ``i`` is a member of the range’s represented sequence, returns an
-   integer giving the ordinal index of ``i`` within the sequence using
-   0-based indexing. Otherwise, returns ``(-1):idxType``. It is an error to
-   invoke ``indexOrder`` if the represented sequence is not defined or the
-   range does not have the first index.
-
-*Example*.
-
-   The following calls show the order of index 4 in each of the given
-   ranges: 
-
-   .. code-block:: chapel
-
-      (0..10).indexOrder(4) == 4
-      (1..10).indexOrder(4) == 3
-      (3..5).indexOrder(4) == 1
-      (0..10 by 2).indexOrder(4) == 2
-      (3..5 by 2).indexOrder(4) == -1
-
-
-
-.. function:: proc range.contains(i: idxType): bool
-
-   Returns ``true`` if the range’s represented sequence contains ``i``,
-   ``false`` otherwise. It is an error to invoke ``contains`` if the
-   represented sequence is not defined.
-
-
-
-.. function:: proc range.contains(other: range): bool
-
-   Reports whether ``other`` is a subrange of the receiver. That is, if the
-   represented sequences of the receiver and ``other`` are defined and the
-   receiver’s sequence contains all members of the ``other``\ ’s sequence.
-
-.. _Range_Transformations:
-
-Range Transformations
-~~~~~~~~~~~~~~~~~~~~~
-
-
-
-.. function:: proc range.alignHigh()
-
-   Sets the high bound of this range to its aligned high bound, if it is
-   defined. Generates an error otherwise.
-
-
-
-.. function:: proc range.alignLow()
-
-   Sets the low bound of this range to its aligned low bound, if it is
-   defined. Generates an error otherwise.
-
-
-
-.. function:: proc range.expand(i: idxType)
-
-   Returns a new range whose bounds are extended by :math:`i` units on each
-   end. If :math:`i <
-   0` then the resulting range is contracted by its absolute value. In
-   symbols, given that the operand range is represented by the tuple
-   :math:`(l,h,s,a)`, the result is :math:`(l-i,h+i,s,a)`. The stride and
-   alignment of the original range are preserved. If the operand range is
-   ambiguously aligned, then so is the resulting range.
-
-
-
-.. function:: proc range.exterior(i: idxType)
-
-   Returns a new range containing the indices just outside the low or high
-   bound of the range (low if :math:`i < 0` and high otherwise). The stride
-   and alignment of the original range are preserved. Let the operand range
-   be denoted by the tuple :math:`(l,h,s,a)`. Then:
-
-   -  if :math:`i < 0`, the result is :math:`(l+i,l-1,s,a)`,
-
-   -  if :math:`i > 0`, the result is :math:`(h+1,h+i,s,a)`, and
-
-   -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
-
-   If the operand range is ambiguously aligned, then so is the resulting
-   range.
-
-
-
-.. function:: proc range.interior(i: idxType)
-
-   Returns a new range containing the indices just inside the low or high
-   bound of the range (low if :math:`i < 0` and high otherwise). The stride
-   and alignment of the original range are preserved. Let the operand range
-   be denoted by the tuple :math:`(l,h,s,a)`. Then:
-
-   -  if :math:`i < 0`, the result is :math:`(l,l-(i-1),s,a)`,
-
-   -  if :math:`i > 0`, the result is :math:`(h-(i-1),h,s,a)`, and
-
-   -  if :math:`i = 0`, the result is :math:`(l,h,s,a)`.
-
-   This differs from the behavior of the count operator, in that
-   ``interior()`` preserves the alignment, and it uses the low and high
-   bounds rather than ``first`` and ``last`` to establish the bounds of the
-   resulting range. If the operand range is ambiguously aligned, then so is
-   the resulting range.
-
-
-.. _Range_Offset_Method:
-
-.. function:: proc range.offset(n: idxType)
-
-   Returns a new range whose alignment is this range’s first index plus
-   ``n``. The new alignment, therefore, is not ambiguous. If the range has
-   no first index, a run-time error is generated.
-
-
-
-.. function:: proc range.translate(i: integral)
-
-   Returns a new range with its ``low``, ``high`` and ``alignment`` values
-   adjusted by :math:`i`. The ``stride`` value is preserved. If the range’s
-   alignment is ambiguous, the behavior is undefined.
+.. include:: ../../builtins/ChapelRange.rst

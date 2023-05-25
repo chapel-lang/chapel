@@ -2,7 +2,7 @@ class Foo { }
 
 var a = new owned Foo();
 var b = new unmanaged Foo();
-var c = new borrowed Foo();
+var c = (new owned Foo()).borrow();
 var d = new shared Foo();
 var e = new Foo();
 
@@ -14,7 +14,7 @@ var w = new owned Foo();
 /* Double check documentation */
 var x = new unmanaged Foo();
 /* Double check documentation */
-var y = new borrowed Foo();
+var y = (new owned Foo()).borrow();
 /* Double check documentation */
 var z = new shared Foo();
 
@@ -23,6 +23,6 @@ var wq = new owned Foo()?;
 /* Double check documentation */
 var xq = new unmanaged Foo()?;
 /* Double check documentation */
-var yq = new borrowed Foo()?;
+var yq = (new owned Foo()?).borrow();
 /* Double check documentation */
 var zq = new shared Foo()?;

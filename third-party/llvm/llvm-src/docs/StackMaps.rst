@@ -328,7 +328,7 @@ format of this section follows:
   uint32 : NumRecords
   StkSizeRecord[NumFunctions] {
     uint64 : Function Address
-    uint64 : Stack Size
+    uint64 : Stack Size (or UINT64_MAX if not statically known)
     uint64 : Record Count
   }
   Constants[NumConstants] {
@@ -511,7 +511,7 @@ stack map's location is a Direct location type.
 Supported Architectures
 =======================
 
-Support for StackMap generation and the related intrinsics requires 
-some code for each backend.  Today, only a subset of LLVM's backends 
-are supported.  The currently supported architectures are X86_64, 
+Support for StackMap generation and the related intrinsics requires
+some code for each backend.  Today, only a subset of LLVM's backends
+are supported.  The currently supported architectures are X86_64,
 PowerPC, Aarch64 and SystemZ.

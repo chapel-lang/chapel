@@ -23,7 +23,7 @@ config const printParams = true,
 
 proc main() {
   printConfiguration();
-  var t1, t2, t3: Timer;
+  var t1, t2, t3: stopwatch;
 
   t1.start();
   const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));
@@ -40,7 +40,7 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     // TODO: Want:
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
@@ -49,7 +49,7 @@ proc main() {
       a = b + alpha * c;
     }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 
   t3.start();

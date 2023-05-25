@@ -5,7 +5,7 @@ var favorite: dessert = dessert.pie;
 
 writeDessert(stdout, favorite);
 
-proc writeDessert(f: channel, val: dessert) {
+proc writeDessert(f: fileWriter, val: dessert) {
   select (val) {
     when (dessert.cake) do 
       f.write("cake");

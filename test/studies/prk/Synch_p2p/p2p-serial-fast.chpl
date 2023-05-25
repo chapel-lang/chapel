@@ -25,7 +25,7 @@ if (m < 1 || n < 1) {
   exit(1);
 }
 
-var timer: Timer;
+var timer: stopwatch;
 
 // Initialize and zero out vector
 const mrange = 0 .. # m,

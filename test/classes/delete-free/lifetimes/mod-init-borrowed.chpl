@@ -4,11 +4,11 @@ module M0 {
     use M1 only;
     use M2 only;
 
-    var a   = new borrowed A(10);
+    var a   = (new owned A(10)).borrow();
 
     writeln();
 
-    var m1a = new borrowed M1.A(20);
+    var m1a = (new owned M1.A(20)).borrow();
 
     writeln();
 

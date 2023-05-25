@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Provides routines for reasoning about memory usage.
+
   The :mod:`Diagnostics` module provides procedures which report information
   about memory usage.  With one exception, to use these procedures you
   must enable memory tracking.  Do this by setting one or more of the
@@ -90,6 +91,7 @@
     to its own file, with a dot ('.') and the locale ID appended to
     this path.
  */
+@deprecated("The Memory.Diagnostics module is deprecated - please use :mod:`MemDiagnostics` instead")
 module Diagnostics {
 
 pragma "insert line file info"

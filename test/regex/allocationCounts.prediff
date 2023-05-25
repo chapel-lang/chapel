@@ -3,6 +3,7 @@ testname=$1
 outfile=$2
 sed -E \
     -e '/of tasking layer unspecified/d' \
+    -e '/ of comm layer/d' \
     -e 's/free [[:digit:]]+.+at/free at/' \
     -e 's/[^ ]+.chpl:[[:digit:]]+/<file>.chpl:line/' \
     -e 's/at 0x[a-fA-F0-9]+/at <address>/' \

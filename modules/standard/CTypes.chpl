@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,7 @@
 
 /*
 
-Defines C types and related routines to support interoperability
+Defines C types and related routines to support interoperability.
 
 This module provides access to common C types for the purpose of
 calling between Chapel and C, declaring variables using C's types,
@@ -42,7 +42,7 @@ module CTypes {
   use HaltWrappers;
   public use ChapelSysCTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_typeMoveWarning(param name: string, param mod: string,
                             param newmod: string = "CTypes") {
     compilerWarning("type '" + name + "' has moved from '" + mod +
@@ -55,6 +55,9 @@ module CTypes {
 
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
+
+  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
+  extern "_cfile" type c_FILE;
 
   // Former CPtr contents start here
 
@@ -89,6 +92,12 @@ module CTypes {
     support assignment to other instances or nil, == or != comparison with a
     ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
     the ``c_void_ptr`` type.
+
+    Casting directly to a ``c_ptr`` of another pointee type is supported, but
+    will emit a safety warning for casts that can lead to violation of C's
+    strict aliasing rule. Casting to a char pointee type or across signedness,
+    or through an intermediate cast to ``c_void_ptr``, will not generate a
+    warning.
 
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
     by including it in an if statement conditional, like so:
@@ -132,6 +141,30 @@ module CTypes {
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
+    inline proc writeThis(ch) throws {
+      (this:c_void_ptr).writeThis(ch);
+    }
+  }
+
+  /*
+    Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
+    the type `const eltType*`.
+  */
+  // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
+  pragma "data class"
+  pragma "no object"
+  pragma "no default functions"
+  pragma "no wide class"
+  pragma "c_ptr class"
+  pragma "c_ptrConst class"
+  class c_ptrConst {
+    type eltType;
+    inline proc this(i: integral) const ref {
+      return __primitive("array_get", this, i);
+    }
+    inline proc deref() const ref {
+      return __primitive("array_get", this, 0);
+    }
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
@@ -194,7 +227,7 @@ module CTypes {
 
       return __primitive("array_get", this, i);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
@@ -214,7 +247,7 @@ module CTypes {
 
       return __primitive("array_get", this, i);
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const ref this(param i: integral) const ref : eltType {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i:string +
@@ -230,7 +263,7 @@ module CTypes {
       var first = true;
       for i in 0..#size {
 
-        ch <~> this(i);
+        ch.write(this(i));
 
         if i != size-1 then
           ch.readWriteLiteral(", ");
@@ -270,65 +303,177 @@ module CTypes {
     lhs = c_ptrTo(rhs[0]);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:c_ptr) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:c_ptrConst) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_ptrConst assignment");
+    __primitive("=", lhs, rhs);
+  }
+
+  @chpldoc.nodoc
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
+  @chpldoc.nodoc
+  inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:_nilType) {
+    __primitive("=", lhs, nil);
+  }
 
-  pragma "no doc"
+
+  @chpldoc.nodoc
   inline operator :(x:c_fn_ptr, type t:c_void_ptr) {
     return __primitive("cast", c_void_ptr, x);
   }
 
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
-  pragma "no doc"
+  /* Helper function for determining if casting between two types as pointee
+     types violates C strict aliasing rules. Only checks for types that have c_*
+     equivalents.
+   */
+  @chpldoc.nodoc
+  inline proc pointeeCastStrictAliasingAllowed(type from, type to) param
+      : bool {
+    // special checking when either to or from is a pointer
+    if (chpl_isAnyCPtr(from) || chpl_isAnyCPtr(to)) {
+      // allow casting to and from void pointer pointee type
+      if (from == c_void_ptr || to == c_void_ptr) {
+        return true;
+      } else if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
+        // if from and to are both pointer types themselves, recurse into their
+        // respective pointee types (strip a layer of indirection)
+        return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
+      } else if (from == c_string) {
+        // a c_string can be interpreted as a pointer to c_char for this purpose
+        return pointeeCastStrictAliasingAllowed(c_char, to.eltType);
+      } else if (to == c_string) {
+        return pointeeCastStrictAliasingAllowed(from.eltType, c_char);
+      }
+    }
+    // allow identical types
+    if (from == to) {
+      return true;
+    }
+    // allow aliasing to any char type
+    if (to == int(8) || to == uint(8)) {
+      return true;
+    }
+    // allow types differing only in signedness
+    if ((isIntegralType(from) && isIntegralType(to) ||
+         isRealType(from) && isRealType(to)) &&
+        numBytes(from) == numBytes(to)) {
+      return true;
+    }
+    // otherwise, return false
+    return false;
+  }
+
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:c_ptr) {
+    // emit warning for C strict aliasing violations
+    if (!pointeeCastStrictAliasingAllowed(x.eltType, t.eltType)) {
+      compilerWarning(
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptr to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
+    }
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
+    // emit warning for C strict aliasing violations
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
+      compilerWarning(
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptrConst to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
+    }
+    return __primitive("cast", t, x);
+  }
+  // Also need const to non-const and vice-versa versions; although coercion
+  // makes the casting extraneous, it is needed for strict aliasing warnings
+  @chpldoc.nodoc
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptr) {
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
+      compilerWarning(
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptrConst to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
+    }
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator c_ptr.:(x:c_ptr, type t:c_ptrConst) {
+    if (!pointeeCastStrictAliasingAllowed(x.type, t)) {
+      compilerWarning(
+          "This cast from '" + x.type:string + "' to '" + t:string +
+          "' casts a c_ptr to a pointer of non-equivalent, non-char " +
+          "element type, which can cause undefined behavior.");
+    }
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_ptr(?e)) where x.eltType == e {
     return c_ptrTo(x[0]);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator :(const ref x:c_array, type t:c_ptrConst(?e))
+      where x.eltType == e {
+    return c_ptrTo(x[0]):c_ptrConst(e);
+  }
+  @chpldoc.nodoc
   inline operator :(ref x:c_array, type t:c_void_ptr) {
     return c_ptrTo(x[0]):c_void_ptr;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_void_ptr) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator :(x:c_void_ptr, type t:c_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator :(x:c_void_ptr, type t:c_ptrConst) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:string) {
     try! {
-      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
-      return createStringWithOwnedBuffer(__primitive("ref to string", x));
+      return string.createAdoptingBuffer(__primitive("ref to string", x));
+    }
+  }
+  @chpldoc.nodoc
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:string) {
+    try! {
+      return string.createAdoptingBuffer(__primitive("ref to string", x));
     }
   }
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:_anyManagementAnyNilable) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_void_ptr to "+ t:string +
@@ -339,142 +484,198 @@ module CTypes {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:unmanaged class?) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:borrowed class?) {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:borrowed, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:unmanaged, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:_ddata) where t.eltType == x.eltType {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:c_void_ptr, type t:_ddata) {
     return __primitive("cast", t, x);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_void_ptr.:(x:_ddata, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
 
   // casts from c pointer to c_intptr / c_uintptr
-  pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:c_intptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_void_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:c_uintptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_void_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
-  pragma "no doc"
-  inline operator :(x:c_ptr, type t:c_intptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator :(x:c_ptr, type t:c_uintptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:c_uintptr) do
+    return __primitive("cast", t, x);
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_intptr) do
+    return __primitive("cast", t, x);
+  @chpldoc.nodoc
+  inline operator :(x:c_ptrConst, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
 
   // casts from c pointer to int / uint
   // note that these are only used if c_intptr != int / c_uintptr != uint
-  pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int
+  @chpldoc.nodoc
+  inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint
+  @chpldoc.nodoc
+  inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
-  pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int
+  @chpldoc.nodoc
+  inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint
+  @chpldoc.nodoc
+  inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint do
+    return __primitive("cast", t, x);
+  @chpldoc.nodoc
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:int) where c_intptr != int do
+    return __primitive("cast", t, x);
+  @chpldoc.nodoc
+  inline operator c_ptrConst.:(x:c_ptrConst, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   // casts from c_intptr / c_uintptr to c_void_ptr
-  pragma "no doc"
-  inline operator :(x:c_intptr, type t:c_void_ptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_intptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator :(x:c_uintptr, type t:c_void_ptr)
+  @chpldoc.nodoc
+  inline operator :(x:c_uintptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
 
   // casts from int / uint to c_void_ptr
   // note that these are only used if c_intptr != int / c_uintptr != uint
-  pragma "no doc"
-  inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int
+  @chpldoc.nodoc
+  inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int do
     return __primitive("cast", t, x);
-  pragma "no doc"
-  inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint
+  @chpldoc.nodoc
+  inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
+  @chpldoc.nodoc
+  inline operator c_ptrConst.==(a: c_ptrConst, b: c_ptrConst)
+      where a.eltType == b.eltType {
+    return __primitive("ptr_eq", a, b);
+  }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(a: c_void_ptr, b: c_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: c_ptrConst, b: c_void_ptr) {
+    return __primitive("ptr_eq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: c_void_ptr, b: c_ptrConst) {
     return __primitive("ptr_eq", a, b);
   }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator c_ptr.!=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator c_ptrConst.!=(a: c_ptrConst, b: c_ptrConst)
+      where a.eltType == b.eltType {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
   inline operator !=(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
+  @chpldoc.nodoc
+  inline operator !=(a: c_ptrConst, b: c_void_ptr) {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: c_void_ptr, b: c_ptrConst) {
+    return __primitive("ptr_neq", a, b);
+  }
 
-  pragma "no doc"
-  inline operator c_ptr.!(x: c_ptr) return x == c_nil;
+  @chpldoc.nodoc
+  inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
 
-  pragma "no doc"
-  inline operator c_ptr.+(a: c_ptr, b: integral) return __primitive("+", a, b);
+  @chpldoc.nodoc
+  inline operator c_ptr.+(a: c_ptr, b: integral) do return __primitive("+", a, b);
 
-  pragma "no doc"
-  inline operator c_ptr.-(a: c_ptr, b: integral) return __primitive("-", a, b);
+  @chpldoc.nodoc
+  inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator c_ptrConst.!(x: c_ptrConst) do return x == c_nil;
+
+  @chpldoc.nodoc
+  inline operator c_ptrConst.+(a: c_ptrConst, b: integral) do
+    return __primitive("+", a, b);
+
+  @chpldoc.nodoc
+  inline operator c_ptrConst.-(a: c_ptrConst, b: integral) do
+    return __primitive("-", a, b);
+
+  @chpldoc.nodoc
   inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
+  inline operator c_ptrConst.-(a: c_ptrConst(?t), b: c_ptrConst(t)):c_ptrdiff {
+    return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
+  }
+
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
-  pragma "no doc"
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  @chpldoc.nodoc
+  extern proc c_pointer_return_const(const ref x:?t):c_ptrConst(t);
+  pragma "fn synchronization free"
+  @chpldoc.nodoc
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
                              eltSize:c_ptrdiff):c_ptrdiff;
 
-
-
   /*
-
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
     :type:`c_ptr` has no impact on the lifetime of the array.  The
@@ -485,37 +686,310 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []) {
+  inline proc c_ptrTo(arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
     if (arr._value.locale != here) then
-      halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+      halt(
+          "c_ptrTo() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
+
+    if boundsChecking {
+      if (arr.size == 0) then
+        halt("Can't create a C pointer for an array with 0 elements.");
+    }
 
     return c_pointer_return(arr[arr.domain.low]);
   }
+  /*
+   Like c_ptrTo for arrays, but returns a :type:`c_ptrConst` which disallows
+   direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
+    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
 
-  /* Returns a :type:`c_ptr` to any Chapel object.
+    if (arr._value.locale != here) then
+      halt(
+          "c_ptrToConst() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
+
+    if boundsChecking {
+      if (arr.size == 0) then
+        halt("Can't create a C pointer for an array with 0 elements.");
+    }
+
+    return c_pointer_return_const(arr[arr.domain.low]);
+  }
+
+  /*
+    Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
+    :proc:`c_ptrToConst` is used for :type:`~String.string`,
+    :type:`~Bytes.bytes`, and class type arguments.
+
+    The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
+    underlying buffer of the ``string`` or ``bytes``, or to the heap instance of
+    a class type. The deprecated behavior is to return a
+    :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or ``bytes`` itself, or
+    the stack representation of the class — this matches the behavior of
+    :proc:`c_addrOf`/:proc:`c_addrOfConst`.
+
+    The deprecated behavior is on by default. To opt in to the new behavior,
+    compile your program with the following argument:
+    ``-s cPtrToStringBytesClassLogicalAddress=true``.
+  */
+  config param cPtrToStringBytesClassLogicalAddress = false;
+
+  /*
+    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the ``string``.  The returned pointer will be invalid if the ``string`` is
+    freed or even reallocated.
+
+    Halts if the ``string`` is empty and bounds checking is enabled.
+  */
+  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    if boundsChecking {
+      if (s.buffLen == 0) then
+        halt("Can't create a C pointer for an empty string.");
+    }
+    return c_pointer_return(s.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref s: string): c_ptr(string)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(s);
+  }
+
+  /*
+   Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
+   which disallows direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    if boundsChecking {
+      if (s.buffLen == 0) then
+        halt("Can't create a C pointer for an empty string.");
+    }
+    return c_pointer_return_const(s.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(s);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~Bytes.bytes`
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the ``bytes``.  The returned pointer will be invalid if the ``bytes`` is
+    freed or even reallocated.
+
+    Halts if the ``bytes`` is empty and bounds checking is enabled.
+  */
+  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return(b.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(b);
+  }
+
+  /*
+   Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
+   which disallows direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return_const(b.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(b);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the heap instance of a class type.
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the instance.  The returned pointer will be invalid if the instance is
+    freed or even reallocated.
+  */
+  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptr(c.type);
+  }
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptr(c.type);
+  }
+
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(c);
+  }
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOf(c);
+  }
+
+  /*
+   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
+   which disallows direct modification of the pointee.
+   */
+  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptrConst(c.type);
+  }
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == true
+  {
+    return c : c_void_ptr : c_ptrConst(c.type);
+  }
+
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(c);
+  }
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToStringBytesClassLogicalAddress == false
+  {
+    return c_addrOfConst(c);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to any Chapel object.
     Note that the existence of the :type:`c_ptr` has no impact of the lifetime
     of the object. In many cases the object will be stack allocated and
     could go out of scope even if this :type:`c_ptr` remains.
 
-    :arg x: the by-reference argument to get a pointer to. The argument should
-            not be an array or domain (there is a different overload for arrays).
-            Records, class instances, integral, real, imag, and complex types are
-            supported.
+    :arg x: the by-reference argument to get a pointer to. Domains are not
+            supported, and will cause a compiler error. Records, class
+            instances, integral, real, imag, and complex types are supported.
+            For arrays, strings, or bytes, separate overloads should be used.
     :returns: a pointer to the argument passed by reference
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+    return c_addrOf(x);
+  }
+
+  /*
+    Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+    modification of the pointee.
+  */
+  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
+    return c_addrOfConst(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo(x: c_fn_ptr) {
+    return x;
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the address of an array.
+
+    This is distinct from :func:`c_ptrTo` in that it returns a pointer to
+    the array object itself, rather than to the first element of the array's
+    buffer.
+
+    Note that the existence of this :type:`c_ptr` has no impact on the lifetime
+    of the array. The returned pointer will be invalid if the array is freed.
+  */
+  inline proc c_addrOf(arr: []) {
+    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
+
+    if (arr._value.locale != here) then
+      halt(
+          "c_addrOf() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
+
+    return c_pointer_return(arr);
+  }
+
+  /*
+   Like c_addrOf for arrays, but returns a :type:`c_ptrConst` which disallows
+   direct modification of the pointee.
+  */
+  inline proc c_addrOfConst(arr: []) {
+    if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
+
+    if (arr._value.locale != here) then
+      halt(
+          "c_addrOfConst() can only be applied to an array from the locale on " +
+          "which it lives (array is on locale " + arr._value.locale.id:string +
+          ", call was made on locale " + here.id:string + ")");
+
+    return c_pointer_return_const(arr);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the address of any chapel object.
+
+    Note that the behavior of this procedure is identical to :func:`c_ptrTo`
+    for scalar types. It only differs for arrays, strings, and bytes.
+  */
+  inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
-      compilerError("c_ptrTo domain type not supported", 2);
-    // Other cases should be avoided, e.g. sync vars
+      compilerError("c_addrOf domain type not supported", 2);
     return c_pointer_return(x);
   }
 
-  pragma "no doc"
-  inline proc c_ptrTo(x: c_fn_ptr) {
+  /*
+    Like c_addrOf, but returns a :type:`c_ptrConst` which disallows direct
+    modification of the pointee.
+  */
+  inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
+    if isDomainType(t) then
+      compilerError("c_addrOfConst domain type not supported", 2);
+    return c_pointer_return_const(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_addrOf(x: c_fn_ptr) {
     return x;
   }
 
@@ -527,6 +1001,12 @@ module CTypes {
     pragma "fn synchronization free"
     extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
+  }
+
+  pragma "last resort"
+  @deprecated(notes="c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead")
+  inline proc c_sizeof(type x): c_size_t {
+    return c_sizeof(x);
   }
 
   /*
@@ -542,10 +1022,10 @@ module CTypes {
          * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type x): c_size_t {
+  inline proc c_sizeof(type t): c_size_t {
     pragma "fn synchronization free"
-    extern proc sizeof(type x): c_size_t;
-    return sizeof(x);
+    extern proc sizeof(type t): c_size_t;
+    return sizeof(t);
   }
 
   /*
@@ -567,12 +1047,83 @@ module CTypes {
     pragma "no init"
     var x: t;
 
-    return c_ptrTo(getFieldRef(x, fieldname)):c_size_t - c_ptrTo(x):c_size_t;
+    return c_addrOf(getFieldRef(x, fieldname)):c_size_t - c_addrOf(x):c_size_t;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc c_offsetof(type t, param fieldname: string) where !isRecordType(t) {
     compilerError("Cannot call c_offsetof on type that is not a record");
+  }
+
+  /* Allocate memory.
+
+     This uses the Chapel allocator. Memory allocated with this function should
+     eventually be freed with :proc:`deallocate`.
+
+    :arg eltType: the type of the elements to allocate
+    :arg size: the number of elements to allocate space for
+    :arg clear: whether to initialize all bits of allocated memory to 0
+    :arg alignment: Memory alignment of the allocation, which must be a power of
+                    two and a multiple of `c_sizeof(c_void_ptr)`. Alignment of 0
+                    is invalid and taken to mean default alignment.
+    :returns: a c_ptr(eltType) to allocated memory
+   */
+  @unstable("'allocate' is unstable, and may be renamed or moved")
+  inline proc allocate(type eltType, size: c_size_t, clear: bool = false,
+      alignment: c_size_t = 0) : c_ptr(eltType) {
+    const alloc_size = size * c_sizeof(eltType);
+    const aligned : bool = (alignment != 0);
+    var ptr : c_void_ptr = nil;
+
+    // pick runtime allocation function based on requested zeroing + alignment
+    if (!aligned) {
+      if (clear) {
+        // normal calloc
+        ptr = chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS);
+      } else {
+        // normal malloc
+        ptr = chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS);
+      }
+    } else {
+      // check alignment, size restriction
+      // Alignment of 0 is our sentinel value for no specified alignment,
+      // so no need to check for it.
+      if boundsChecking {
+        use Math;
+        var one:c_size_t = 1;
+        // Round the alignment up to the nearest power of 2
+        var p = log2(alignment); // power of 2 rounded down
+        // compute alignment rounded up
+        if (one << p) < alignment then
+          p += 1;
+        assert(alignment <= (one << p));
+        if alignment != (one << p) then
+          halt("allocate called with non-power-of-2 alignment ", alignment);
+        if alignment < c_sizeof(c_void_ptr) then
+          halt("allocate called with alignment smaller than pointer size");
+      }
+
+      // normal aligned alloc, whether we clear after or not
+      ptr = chpl_here_aligned_alloc(alignment, alloc_size,
+          offset_ARRAY_ELEMENTS);
+
+      if (clear) {
+        // there is no aligned calloc; have to aligned_alloc + memset to 0
+        memset(ptr, 0, alloc_size);
+      }
+    }
+
+    return ptr : c_ptr(eltType);
+  }
+
+  /* Free memory that was allocated with :proc:`allocate`.
+
+    :arg data: the c_ptr to memory that was allocated. Note that both
+               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+    */
+  @unstable("'deallocate' is unstable, and may be renamed or moved")
+  inline proc deallocate(data: c_void_ptr) {
+    chpl_here_free(data);
   }
 
   /*
@@ -585,6 +1136,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_calloc' is deprecated; use ':proc:`allocate`' with 'clear' argument")
   inline proc c_calloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_calloc(alloc_size, 1, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -598,6 +1150,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a c_ptr(eltType) to allocated memory
     */
+  @deprecated("'c_malloc' is deprecated; use ':proc:`allocate`'")
   inline proc c_malloc(type eltType, size: integral) : c_ptr(eltType) {
     const alloc_size = size.safeCast(c_size_t) * c_sizeof(eltType);
     return chpl_here_alloc(alloc_size, offset_ARRAY_ELEMENTS):c_ptr(eltType);
@@ -617,9 +1170,12 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :returns: a ``c_ptr(eltType)`` to allocated memory
     */
+  @deprecated("'c_aligned_alloc' is deprecated; use ':proc:`allocate`' with 'alignment' argument")
   inline proc c_aligned_alloc(type eltType,
                               alignment : integral,
                               size: integral) : c_ptr(eltType) {
+    use Math;
+
     // check alignment, size restriction
     if boundsChecking {
       var one:c_size_t = 1;
@@ -649,17 +1205,38 @@ module CTypes {
     :arg data: the c_ptr to memory that was allocated. Note that both
                `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
     */
+  @deprecated("'c_free' is deprecated; use ':proc:`deallocate`'")
   inline proc c_free(data: c_void_ptr) {
     chpl_here_free(data);
   }
 
-  /* Returns true if t is a c_ptr type or c_void_ptr.
+
+  // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
+  // the deprecated warning is not propogated across our internal modules by
+  // using the internal name.
+  // After the deprecated function is removed, we can remove the extra
+  // definition and just have `isAnyCPtr` as a private nodoc function
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
+  @chpldoc.nodoc
+  proc chpl_isAnyCPtr(type t) param do return false;
+
+  /*
+     Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
    */
-  proc isAnyCPtr(type t:c_ptr) param return true;
-  pragma "no doc"
-  proc isAnyCPtr(type t:c_void_ptr) param return true;
-  pragma "no doc"
-  proc isAnyCPtr(type t) param return false;
+  @deprecated("isAnyCPtr is deprecated")
+  proc isAnyCPtr(type t) param do return chpl_isAnyCPtr(t);
+
+
+  // this can be removed after the following deprecations are complete
+  //  it's only here so that links in the deprecation messages work
+  //  and to avoid deprecation warnings when using these procs internally in this module
+  // private use OS;
+  private use OS.POSIX;
 
   /*
     Copies n potentially overlapping bytes from memory area src to memory
@@ -672,6 +1249,7 @@ module CTypes {
     :arg n: the number of bytes from src to copy to dest
    */
   pragma "fn synchronization free"
+  @deprecated(notes=":proc:`c_memmove` is deprecated; please use :proc:`POSIX.memmove` instead")
   inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
@@ -689,6 +1267,7 @@ module CTypes {
     :arg n: the number of bytes from src to copy to dest
    */
   pragma "fn synchronization free"
+  @deprecated(notes=":proc:`c_memcpy` is deprecated; please use :proc:`POSIX.memcpy` instead")
   inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
@@ -705,6 +1284,7 @@ module CTypes {
               to match, or be greater than the first n bytes of s2.
    */
   pragma "fn synchronization free"
+  @deprecated(notes=":proc:`c_memcmp` is deprecated; please use :proc:`POSIX.memcmp` instead")
   inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
     pragma "fn synchronization free"
     extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t) : c_int;
@@ -723,6 +1303,7 @@ module CTypes {
     :returns: s
    */
   pragma "fn synchronization free"
+  @deprecated(notes=":proc:`c_memset` is deprecated; please use :proc:`POSIX.memset` instead")
   inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
     pragma "fn synchronization free"
     extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t) : c_void_ptr;

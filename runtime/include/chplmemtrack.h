@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -71,6 +71,18 @@ void chpl_track_realloc_post(void* moreMemAlloc,
                          void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);
+
+static inline void chpl_track_gen_subloc_info(char* subloc_info,
+                                              c_sublocid_t subloc) {
+#ifdef HAS_GPU_LOCALE
+  if (subloc >= 0) {
+    snprintf(subloc_info, 16, " (gpu %" PRI_c_sublocid_t ")", subloc);
+  }
+  else {
+    snprintf(subloc_info, 16, " (cpu)");
+  }
+#endif
+}
 
 #else // LAUNCHER
 

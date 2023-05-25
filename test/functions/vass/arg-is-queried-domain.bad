@@ -1,0 +1,2 @@
+arg-is-queried-domain.chpl:2: In function 'test1':
+arg-is-queried-domain.chpl:2: error: 'chpl__buildDomainRuntimeType' undeclared (first use this function)

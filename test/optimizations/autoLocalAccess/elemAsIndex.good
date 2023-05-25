@@ -1,23 +1,23 @@
 
-Start analyzing forall (elemAsIndex.chpl:19)
-| Found loop domain (elemAsIndex.chpl:15)
-| Will attempt static and dynamic optimizations (elemAsIndex.chpl:19)
+Start analyzing forall (elemAsIndex.chpl:7)
+| Found loop domain (elemAsIndex.chpl:3)
+| Will attempt static and dynamic optimizations (elemAsIndex.chpl:7)
 |
-|  Start analyzing call (elemAsIndex.chpl:20)
-|   Can't determine the domain of access base (elemAsIndex.chpl:15)
-|  This call is a dynamic optimization candidate (elemAsIndex.chpl:20)
+|  Start analyzing call (elemAsIndex.chpl:8)
+|   Can't determine the domain of access base (elemAsIndex.chpl:3)
+|  This call is a dynamic optimization candidate (elemAsIndex.chpl:8)
 |
-End analyzing forall (elemAsIndex.chpl:19)
+End analyzing forall (elemAsIndex.chpl:7)
 
-Local access attempt reverted. All static checks failed or code is unreachable.(elemAsIndex.chpl:20)
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
-Custom this was called
+Local access attempt reverted. All static checks failed or code is unreachable.(elemAsIndex.chpl:8)
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
+default _array accessor was called
 2 4 6 8 10 12 14 16 18 20

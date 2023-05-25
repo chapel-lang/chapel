@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,6 +69,7 @@ void chpl_comm_ofi_oob_init(void) {
   } else {
     INTERNAL_ERROR_V("need slurm system launcher");
   }
+  chpl_comm_oob = "sockets";
 }
 
 
@@ -101,7 +102,10 @@ void chpl_comm_ofi_oob_bcast(void* buf, size_t len) {
   }
 }
 
-int chpl_comm_ofi_oob_locales_on_node(void) {
+int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   // assume the answer is 1
+  if (rank != NULL) {
+    *rank = -1; // not implemented
+  }
   return 1;
 }

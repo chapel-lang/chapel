@@ -19,7 +19,7 @@ const tableSize = M * numTasks;
 // help indexing speed until we optimize them.
 config param useBlockArr = false;
 
-var t: Timer;
+var t: stopwatch;
 proc startTimer() {
   t.start();
 }
@@ -31,11 +31,11 @@ proc stopTimer(name) {
 }
 
 proc main() {
-  const D = if useBlockArr then newBlockDom(0..#tableSize)
-                           else newCyclicDom(0..#tableSize);
+  const D = if useBlockArr then Block.createDomain(0..#tableSize)
+                           else Cyclic.createDomain(0..#tableSize);
   var A: [D] int = D;
 
-  const UpdatesDom = newBlockDom(0..#numUpdates);
+  const UpdatesDom = Block.createDomain(0..#numUpdates);
   var Rindex: [UpdatesDom] int;
 
   fillRandom(Rindex, 208);

@@ -35,7 +35,7 @@ Usage: $( basename ${BASH_SOURCE[0]} )" '[options]
     ignored. CHPL_HOME will be determined from -C workdir and/or -t tarball,
     and by the top-level directory name used in the given tar archive.
     By convention, this directory name is "chapel-" plus the Chapel release
-    version number defined in version_num.h.
+    version number defined in CMakeLists.txt.
 '
     exit "${1:-1}"
 }

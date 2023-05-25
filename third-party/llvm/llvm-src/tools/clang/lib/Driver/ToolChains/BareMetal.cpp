@@ -125,6 +125,20 @@ static bool isARMBareMetal(const llvm::Triple &Triple) {
   return true;
 }
 
+/// Is the triple aarch64-none-elf?
+static bool isAArch64BareMetal(const llvm::Triple &Triple) {
+  if (Triple.getArch() != llvm::Triple::aarch64)
+    return false;
+
+  if (Triple.getVendor() != llvm::Triple::UnknownVendor)
+    return false;
+
+  if (Triple.getOS() != llvm::Triple::UnknownOS)
+    return false;
+
+  return Triple.getEnvironmentName() == "elf";
+}
+
 static bool isRISCVBareMetal(const llvm::Triple &Triple) {
   if (Triple.getArch() != llvm::Triple::riscv32 &&
       Triple.getArch() != llvm::Triple::riscv64)
@@ -151,7 +165,8 @@ void BareMetal::findMultilibs(const Driver &D, const llvm::Triple &Triple,
 }
 
 bool BareMetal::handlesTarget(const llvm::Triple &Triple) {
-  return isARMBareMetal(Triple) || isRISCVBareMetal(Triple);
+  return isARMBareMetal(Triple) || isAArch64BareMetal(Triple) ||
+         isRISCVBareMetal(Triple);
 }
 
 Tool *BareMetal::buildLinker() const {
@@ -261,6 +276,8 @@ void BareMetal::AddCXXStdlibLibArgs(const ArgList &Args,
   switch (GetCXXStdlibType(Args)) {
   case ToolChain::CST_Libcxx:
     CmdArgs.push_back("-lc++");
+    if (Args.hasArg(options::OPT_fexperimental_library))
+      CmdArgs.push_back("-lc++experimental");
     CmdArgs.push_back("-lc++abi");
     break;
   case ToolChain::CST_Libstdcxx:

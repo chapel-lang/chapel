@@ -12,6 +12,7 @@
 */
 use DistributedFFT;
 use Time;
+import Math.{pi, exp, log};
 
 // Define the classes
 enum NPB {S,W,A,B,C,D,E,F};
@@ -39,7 +40,7 @@ var W : [Dom] complex;
 var V, Wt: [DomT] complex;
 var Twiddle : [DomT] real;
 
-var timeit : Timer;
+var timeit : stopwatch;
 
 // Touch the arrays once
 timeit.clear(); timeit.start();

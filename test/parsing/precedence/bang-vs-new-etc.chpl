@@ -5,19 +5,19 @@
 
 class C { }
 class D { type t; }
-proc tm() type return C;
-proc tn(type arg) type return D(arg);
+proc tm() type do return C;
+proc tn(type arg) type do return D(arg);
 type CN = C?;
 
 param Cm = "C.meth";
-proc C.meth param  return Cm;
-proc type C.tmeth type  return D(int);
-proc type (shared C).tmeth type  return D(real);
+proc C.meth param do  return Cm;
+proc type C.tmeth type do  return D(int);
+proc type (shared C).tmeth type do  return D(real);
 class X { var fld; }
-proc type C.xmeth type  return X;
+proc type C.xmeth type do  return X;
 
 param Dtm = "D.tdmeth";
-proc type D.tdmeth param  return Dtm;
+proc type D.tdmeth param do  return Dtm;
 
 var xx = new C();
 var yy: owned C?;
@@ -149,8 +149,8 @@ proc main {
   var z19d = new C(): unmanaged class?;
   check("z19d = new C(): unmanaged class?", z19d, "unmanaged C?");
 
-  var z19e = new borrowed C() : unmanaged class?;
-  check("z19e = new borrowed C() :unmanaged class?", z19e, "unmanaged C?");
+  var z19e = (new owned C()).borrow() : unmanaged class?;
+  check("z19e = (new owned C()).borrow() :unmanaged class?", z19e, "unmanaged C?");
 
   // '.' binds more tightly than 'new'
   // param z = new C().meth;  -- error: C.meth is not a type method

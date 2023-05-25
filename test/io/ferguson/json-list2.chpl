@@ -5,13 +5,13 @@ record MyRecord {
 }
 
 var myEntry:MyRecord;
-myEntry.numbers.append(1);
-myEntry.numbers.append(2);
-myEntry.numbers.append(3);
+myEntry.numbers.pushBack(1);
+myEntry.numbers.pushBack(2);
+myEntry.numbers.pushBack(3);
 
 writef("testing json write: %jt\n", myEntry);
 
-var f = opentmp();
+var f = openTempFile();
 {
   var writer = f.writer();
   var str = '{"numbers": []}';
@@ -211,4 +211,3 @@ var f = opentmp();
 
   reader.close();
 }
-

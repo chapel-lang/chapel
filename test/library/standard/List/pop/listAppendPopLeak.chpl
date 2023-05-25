@@ -12,7 +12,7 @@ proc main() {
    
     // Repeated push/pop of the same index should not leak.
     for i in 1..testIters {
-      lines.append(s);
+      lines.pushBack(s);
       lines.pop(0);
     }
   }

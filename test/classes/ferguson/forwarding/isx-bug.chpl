@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (Barriers), and timers (Time).
+// synchronization (Barriers), timers (Time), and log2 (Math).
 //
-use BlockDist, AllLocalesBarriers, Time;
+use BlockDist, AllLocalesBarriers, Time, Math;
 
 //
 // The type of key to use when sorting.
@@ -186,8 +186,8 @@ proc main() {
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();

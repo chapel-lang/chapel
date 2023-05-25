@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"
@@ -38,6 +39,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"
@@ -83,6 +85,12 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts) {
 }
 
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs) {
+  AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
+  if (DefExpr* defExpr = toDefExpr(ast))
+    defExprs.push_back(defExpr);
+}
+
+void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs) {
   AST_CHILDREN_CALL(ast, collectDefExprs, defExprs);
   if (DefExpr* defExpr = toDefExpr(ast))
     defExprs.push_back(defExpr);
@@ -162,6 +170,12 @@ void computeHasToplevelYields(BaseAST* ast, bool& result) {
 
 
 void collectSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs) {
+  AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
+  if (SymExpr* symExpr = toSymExpr(ast))
+    symExprs.push_back(symExpr);
+}
+
+void collectSymExprs(BaseAST* ast, llvm::SmallVectorImpl<SymExpr*>& symExprs) {
   AST_CHILDREN_CALL(ast, collectSymExprs, symExprs);
   if (SymExpr* symExpr = toSymExpr(ast))
     symExprs.push_back(symExpr);
@@ -385,6 +399,15 @@ void collectSymbolSet(BaseAST* ast, std::set<Symbol*>& symSet) {
   AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
 }
 
+void collectSymbolSet(BaseAST* ast, llvm::SmallPtrSetImpl<Symbol*>& symSet) {
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (isLcnSymbol(def->sym)) {
+      symSet.insert(def->sym);
+    }
+  }
+  AST_CHILDREN_CALL(ast, collectSymbolSet, symSet);
+}
+
 
 // builds the vectors for every variable/argument in 'fn' and looks
 // for uses and defs only in 'fn'
@@ -494,12 +517,12 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SET_SVEC_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
-// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
+// TODO handle PRIM_FTABLE_CALL
 //
-// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -511,7 +534,7 @@ int isDefAndOrUse(SymExpr* se) {
   const int USE = 2;
   const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    bool isFirstActual = (call->get(1) == se);
+    bool isFirstActual = (call->numActuals() && call->get(1) == se);
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -546,6 +569,17 @@ int isDefAndOrUse(SymExpr* se) {
       // se   =   se <op> ?
       // ^-def    ^-use
       return DEF_USE;
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      // actual_to_formal() breaks if passed the cid argument
+      if (se == call->get(2))
+        return USE;
+      // same as for resolvedFunction()
+      ArgSymbol* arg = actual_to_formal(se);
+      if (arg->intent == INTENT_REF ||
+          arg->intent == INTENT_INOUT)
+        return DEF_USE;
+      else if (arg->intent == INTENT_OUT)
+        return DEF;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
 
@@ -785,6 +819,47 @@ static bool isNumericTypeSymExpr(Expr* expr) {
   return false;
 }
 
+bool isExternType(Type* t) {
+  // narrow references are OK but not wide references
+  if (t->isWideRef())
+    return false;
+
+  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
+  // unmanaged or borrowed classes are OK
+  if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
+    d = removeNilableFromDecorator(classTypeDecorator(t));
+
+  TypeSymbol* ts = t->symbol;
+
+  EnumType* et = toEnumType(t);
+
+  return t->isRef() ||
+         d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED ||
+         (et && et->isConcrete()) ||
+         (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
+         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
+         ts->hasFlag(FLAG_DATA_CLASS) ||
+         ts->hasFlag(FLAG_C_PTR_CLASS) ||
+         ts->hasFlag(FLAG_C_ARRAY) ||
+         ts->hasFlag(FLAG_EXTERN) ||
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
+}
+
+bool isExportableType(Type* t) {
+
+  // TODO: Exporting will need a different representation of FCF types.
+  if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
+  if (t == dtString || t == dtBytes) {
+    // string/bytes are OK in export functions
+    // because they are converted to wrapper
+    // functions
+    return true;
+  }
+
+  return isExternType(t);
+}
+
 bool isTypeExpr(Expr* expr) {
   bool retval = false;
 
@@ -827,6 +902,9 @@ bool isTypeExpr(Expr* expr) {
       getPrimGetRuntimeTypeFieldReturnType(call, isType);
       retval = isType;
 
+    } else if (call->isPrimitive(PRIM_COERCE)) {
+      retval = isTypeExpr(call->get(1));
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
@@ -835,10 +913,28 @@ bool isTypeExpr(Expr* expr) {
 
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       retval = fn->retTag == RET_TYPE;
+
+    // TODO: Is it safe to just check if the base expression is a type?
+    } else if (isTypeConstructorWithRuntimeTypeActual(call)) {
+      retval = true;
     }
   }
 
   return retval;
+}
+
+bool isTypeConstructorWithRuntimeTypeActual(CallExpr* call) {
+  if (!call || call->isPrimitive()) return false;
+
+  auto se = toSymExpr(call->baseExpr);
+  if (!se || !se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) return false;
+
+  for_actuals(actual, call)
+    if (auto se = toSymExpr(actual))
+      if (auto sym = se->symbol()->type->symbol)
+        if (sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) return true;
+
+  return false;
 }
 
 static void pruneVisit(TypeSymbol*       ts,
@@ -866,9 +962,9 @@ static void
 pruneVisit(TypeSymbol* ts, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (types.set_in(ts)) return;
   types.set_add(ts);
-  std::vector<DefExpr*> defExprs;
+  llvm::SmallVector<DefExpr*, 32> defExprs;
   collectDefExprs(ts, defExprs);
-  for_vector(DefExpr, def, defExprs) {
+  for (DefExpr* def : defExprs) {
     if (def->sym->type)
       pruneVisit(def->sym, fns, types);
   }
@@ -881,9 +977,12 @@ static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (fns.set_in(fn)) return;
   fns.set_add(fn);
-  std::vector<SymExpr*> symExprs;
+
+  if (fn->retType) types.set_add(fn->retType->symbol);
+
+  llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
-  for_vector(SymExpr, se, symExprs) {
+  for(SymExpr* se : symExprs) {
     if (FnSymbol* next = toFnSymbol(se->symbol()))
       if (!fns.set_in(next))
         pruneVisit(next, fns, types);

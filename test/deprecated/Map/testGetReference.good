@@ -1,0 +1,2 @@
+testGetReference.chpl:12: warning: 'Map.getReference' is deprecated. Please rely on '[]' accessors instead.
+{one: {i = -1}, two: {i = 2}}

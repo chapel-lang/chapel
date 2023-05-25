@@ -42,7 +42,7 @@ sub usage
     print "      -N <N>                 number of nodes to run on (not always supported)\n";
     print "      -c <n>                 number of cpus per process (not always supported)\n";
     print "      -E <VAR1[,VAR2...]>    list of environment vars to propagate\n";
-    print "      -v                     be verbose about what is happening\n";
+    print "      -v                     enable verbose output, repeated use increases verbosity\n";
     print "      -t                     test only, don't execute anything (implies -v)\n";
     print "      -k                     keep any temporary files created (implies -v)\n";
     print "      -spawner=(ssh|mpi|pmi) force use of a specific spawner\n";
@@ -123,13 +123,13 @@ sub fullpath($)
 	    usage "-restart option given without an argument\n" unless @ARGV >= 1;
 	    last;
 	} elsif ($_ eq '-v') {
-	    $verbose = 1;
+	    $verbose++;
 	} elsif ($_ eq '-t') {
 	    $dryrun = 1;
-	    $verbose = 1;
+	    $verbose = 1 if (!$verbose);
 	} elsif ($_ eq '-k') {
 	    $keep = 1;
-	    $verbose = 1;
+	    $verbose = 1 if (!$verbose);
 	} elsif (m/^-/) {
 	    usage ("unrecognized option '$_'\n");
 	} else {
@@ -248,7 +248,12 @@ if (($conduit eq 'IBV') && !exists($ENV{'OMPI_MCA_mpi_warn_on_fork'})) {
     }
 
 # Run it which ever way makes sense
-    $ENV{"GASNET_VERBOSEENV"} = "1" if ($verbose);
+    if ($verbose >= 1) {
+      $ENV{"GASNET_VERBOSEENV"} = "1" unless (exists($ENV{"GASNET_VERBOSEENV"}));
+    }
+    if ($verbose >= 2) {
+      $ENV{"GASNET_SPAWN_VERBOSE"} = "1" unless (exists($ENV{"GASNET_SPAWN_VERBOSE"}));
+    }
     if ($spawner eq 'MPI') {
         print("gasnetrun: forwarding to mpi-based spawner\n") if ($verbose);
         @ARGV = (@mpi_args, @ARGV);
@@ -280,7 +285,7 @@ if (($conduit eq 'IBV') && !exists($ENV{'OMPI_MCA_mpi_warn_on_fork'})) {
           sysseek($fh, 0, SEEK_SET);
           $fileno = fileno($fh);
         }
-        $ENV{'GASNET_SPAWN_ARGS'} = join(',', (($restart?'R':'M').($verbose?'v':'')),
+        $ENV{'GASNET_SPAWN_ARGS'} = join(',', (($restart?'R':'M').($verbose >= 2?'v':'')),
                                          $fileno, $numproc, $numnode, $wrapper);
         print("gasnetrun: set GASNET_SPAWN_ARGS=|$ENV{GASNET_SPAWN_ARGS}|\n") if ($verbose);
         print("gasnetrun: running: ", join(' ', @ARGV), "\n") if ($verbose);

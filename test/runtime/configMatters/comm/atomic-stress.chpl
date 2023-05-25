@@ -79,7 +79,7 @@ proc testLoopAdd(type t, param exchangeType: ExchangeType) {
 }
 
 proc testLoopAdd(type t) {
-  var timer: Timer; timer.start();
+  var timer: stopwatch; timer.start();
   testLoopAdd(t, ExchangeType.cmpxchgW);
   if printTimers { writef("cmpxchgW %8s: %.2dr\n", t:string, timer.elapsed()); timer.clear(); }
 

@@ -29,5 +29,6 @@ record D {
   var bounded1DDomainBy = {1..10 by 2};
   var bounded1DDomainByAlign = {1..10 by 2 align 1};
 
-
+  var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType;
+  var openHighBound: [myLocaleSpace] [0..<bufferSize] elemType;
 }

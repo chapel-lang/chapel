@@ -1,0 +1,1 @@
+cannotAttachPragmas.chpl:2: syntax error: cannot attach 'pragma's to this statement

@@ -606,7 +606,7 @@ GASNETT_IDENT(GASNetT_TiCompiler_IdentString,
    TEST_USE_PRIMORDIAL_THREAD can be defined to spawn only numthreads-1 new pthreads and run the last on this thread
  */
 #ifndef TEST_USE_PRIMORDIAL_THREAD
-  #if PLATFORM_OS_CNL
+  #if PLATFORM_OS_SUBFAMILY_CNL
     /* some do default thread pinning that can mess with our results */
     #define TEST_USE_PRIMORDIAL_THREAD 1
   #else

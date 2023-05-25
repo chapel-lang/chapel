@@ -22,5 +22,5 @@ implements LessThan(Foo);
 // Writes 3
 writeln(minFn(new shared Foo(3), new shared Foo(4)).n);
 
-writeln(minFn(new borrowed Foo(3), new borrowed Foo(4)).n);
+writeln(minFn((new owned Foo(3)).borrow(), (new owned Foo(4)).borrow()).n);
 

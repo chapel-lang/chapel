@@ -20,7 +20,7 @@ class C {
   }
 }
 
-var myC = new borrowed C();
+var myC = (new owned C()).borrow();
 
 forall i in myC {
   writeln("i is: ", i);

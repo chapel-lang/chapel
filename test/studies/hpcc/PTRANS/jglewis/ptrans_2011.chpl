@@ -22,6 +22,7 @@ module HPCC_PTRANS {
 
   use LinearAlgebra, 
       Time,
+      Math,
       BlockDist;
  
 
@@ -51,7 +52,7 @@ module HPCC_PTRANS {
         C_save             : [transpose_domain] real,
         C_plus_A_transpose : [transpose_domain] real;
 
-    var PTRANS_time : Timer;
+    var PTRANS_time : stopwatch;
 
     var norm_A, norm_C : real;
 
@@ -402,7 +403,7 @@ module HPCC_PTRANS {
         writeln ( "    *** SUCCESS ***  exact match" );
     }
 
-    const elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
+    const elapsed_time = PTRANS_time.elapsed ();
     
     const GB_sec = if ( elapsed_time  > zero ) then
                      ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time )

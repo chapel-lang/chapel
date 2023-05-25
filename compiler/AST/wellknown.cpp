@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -212,6 +212,8 @@ static void gatherType(Symbol* sym, Type* t, const char* name) {
     WellKnownAggregateType& wkt = sWellKnownAggregateTypes[i];
 
     if (name == wkt.name) {
+      if (isDecoratedClassType(t)) continue;
+
       if (*wkt.type_ != NULL)
         multipleDefinedTypeError(sym, name);
       INT_ASSERT(t != NULL);

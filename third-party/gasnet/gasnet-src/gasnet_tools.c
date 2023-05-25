@@ -244,9 +244,8 @@ static int gasneti_slow_atomic_warning_issued = 0;
 GASNETI_NEVER_INLINE(gasneti_slow_atomic_warn,
 static void gasneti_slow_atomic_warn(void)) {
   gasneti_slow_atomic_warning_issued = 1;
-  fprintf(stderr,
-          "WARNING: using slow atomics due to use of a compiler not probed by GASNet at configure time\n");
-  fflush(stderr);
+  gasneti_console_message("WARNING",
+          "using slow atomics due to use of a compiler not probed by GASNet at configure time");
 }
 #define GASNETI_SLOW_ATOMIC_WARNING() do { \
     if_pf (! gasneti_slow_atomic_warning_issued) gasneti_slow_atomic_warn(); \
@@ -502,6 +501,19 @@ const char *gasneti_gethostname(void) {
       if (gethostname(hostname, MAXHOSTNAMELEN))
         gasnett_fatalerror("gasneti_gethostname() failed to get hostname: aborting");
       hostname[MAXHOSTNAMELEN - 1] = '\0';
+      size_t len = strlen(hostname);
+      // Scan for chars that suggest anything other than 7-bit ASCII
+      int safe = 1;
+      for (int i = 0; i < len; ++i) {
+        if (iscntrl(hostname[i])) {
+          safe = 0;
+          break;
+        }
+      }
+      // Normalize to lowercase if it looks "safe" to do so
+      if (safe) {
+        for (int i = 0; i < len; ++i) { hostname[i] =  tolower(hostname[i]); }
+      }
       firsttime = 0;
     }
   gasneti_mutex_unlock(&hnmutex);
@@ -632,10 +644,20 @@ extern double gasneti_tick_metric(int idx) {
     #define GASNETI_MAYBE_TRACEFILE ((FILE *)NULL)
   #endif
 #endif
+#if GASNETI_BUILDING_CONDUIT
+  // shadows gasnet_fwd.h, which is deliberately excluded:
+  extern uint32_t gasneti_mynode;
+  #define GASNETI_PROCID         gasneti_mynode
+  #define GASNETI_PROCID_INVALID ((uint32_t)-1)
+#else
+  #define GASNETI_PROCID          0
+  #define GASNETI_PROCID_INVALID -1
+#endif
 extern const char *gasneti_procid_str;
 const char *gasneti_procid_str = NULL;
 
 extern void gasneti_console_messageVA(const char *funcname, const char *filename, int linenum,
+                                      int console_procid, // -1 == wildcard
                                       const char *prefix, const char *msg, va_list argptr) {
   #ifndef GASNETI_CONSOLEMSG_PREFIX_LEN
   #define GASNETI_CONSOLEMSG_PREFIX_LEN 128
@@ -646,8 +668,13 @@ extern void gasneti_console_messageVA(const char *funcname, const char *filename
   #ifndef GASNETI_CONSOLEMSG_CONTEXT_LEN
   #define GASNETI_CONSOLEMSG_CONTEXT_LEN 128
   #endif
+  int console_speak = 1;
   char expandedmsg[GASNETI_CONSOLEMSG_PREFIX_LEN+GASNETI_CONSOLEMSG_IDSTR_LEN+GASNETI_CONSOLEMSG_CONTEXT_LEN+20];
-  if (gasneti_procid_str) {
+  if (console_procid >= 0) { // omit proc id for "job-wide" messages
+    snprintf(expandedmsg, sizeof(expandedmsg)-4, "*** %s: ", prefix);
+    console_speak = (console_procid == GASNETI_PROCID)          // I am the walrus
+                 || (GASNETI_PROCID == GASNETI_PROCID_INVALID); // too early to know, assume I am the walrus
+  } else if (gasneti_procid_str) {
     snprintf(expandedmsg, sizeof(expandedmsg)-4, "*** %s (%s): ", prefix, gasneti_procid_str);
   } else {
     // we are either in tools-only mode or early in conduit startup before procid's are established
@@ -714,7 +741,7 @@ extern void gasneti_console_messageVA(const char *funcname, const char *filename
     va_end(args);
   }
 
-  FILE * streams[] = { stderr, GASNETI_MAYBE_TRACEFILE };
+  FILE * streams[] = { (console_speak ? stderr : NULL), GASNETI_MAYBE_TRACEFILE };
   for (int s = 0; s < sizeof(streams)/sizeof(streams[0]); s++) {
     FILE *stream = streams[s];
     if (stream) {
@@ -736,11 +763,21 @@ extern void gasneti_console_messageVA(const char *funcname, const char *filename
     }
   }
 }
+#undef GASNETI_MAYBE_TRACEFILE
+#undef GASNETI_PROCID
+#undef GASNETI_PROCID_INVALID
 
 extern void gasneti_console_message(const char *prefix, const char *msg, ...) {
   va_list argptr;
   va_start(argptr, msg); /*  pass in last argument */
-    gasneti_console_messageVA(0,0,0, prefix, msg, argptr);
+    gasneti_console_messageVA(0,0,0,-1, prefix, msg, argptr);
+  va_end(argptr);
+}
+
+extern void gasneti_console0_message(const char *prefix, const char *msg, ...) {
+  va_list argptr;
+  va_start(argptr, msg); /*  pass in last argument */
+    gasneti_console_messageVA(0,0,0,0, prefix, msg, argptr);
   va_end(argptr);
 }
 
@@ -801,7 +838,7 @@ extern void _gasneti_fatalerror(const char *msg, ...) {
     gasneti_console_messageVA(_gasneti_fatalerror_funcname,
                               _gasneti_fatalerror_filename, 
                               _gasneti_fatalerror_linenum,
-                              "FATAL ERROR", msg, argptr);
+                              -1, "FATAL ERROR", msg, argptr);
   va_end(argptr);
   gasneti_error_abort();
 }
@@ -809,7 +846,7 @@ extern void _gasneti_fatalerror(const char *msg, ...) {
 extern void gasneti_fatalerror_nopos(const char *msg, ...) {
   va_list argptr;
   va_start(argptr, msg); /*  pass in last argument */
-    gasneti_console_messageVA(0,0,0, "FATAL ERROR", msg, argptr);
+    gasneti_console_messageVA(0,0,0,-1, "FATAL ERROR", msg, argptr);
   va_end(argptr);
   gasneti_error_abort();
 }
@@ -819,7 +856,7 @@ extern void _gasneti_assert_fail(const char *funcname, const char *filename, int
   // generate the fatal error and crash
   va_list argptr;
   va_start(argptr, fmt); /*  pass in last argument */
-    gasneti_console_messageVA(funcname, filename, linenum,
+    gasneti_console_messageVA(funcname, filename, linenum, -1,
                               "FATAL ERROR: Assertion failure", fmt, argptr);
   va_end(argptr);
   gasneti_error_abort();
@@ -1070,6 +1107,39 @@ gasnett_siginfo_t *gasnett_siginfo_fromstr(const char *str) {
   }
 }
 /* ------------------------------------------------------------------------------------ */
+// Utility for signal context formatting of integers - available even without STATS/TRACE
+
+// Convert an unsigned 64-bit integer to null-terminated string of given base.
+// Returns the number of digits written (excluding the '\0').
+// The `buflen` is maximum number of characters written including the '\0'.
+// If `buflen` must be 4 or larger.
+// If `buflen` is too small for the digits of `val`, an empty string is generated (and return is 0).
+// Safe for use in signal context (otherwise printf-family would suffice).
+size_t gasneti_utoa(uint64_t val, char *buffer, size_t buflen, unsigned int base) {
+  gasneti_assert(buflen >= 4);
+  gasneti_assert(buffer);
+  gasneti_assert(base > 1);
+  gasneti_assert(base <= 16);
+  size_t maxlen = buflen - 1;
+  char *p = buffer + buflen; // one past end
+  size_t len = 0;
+  // construct output in reverse order (starting with least-significant digit)
+  static const char digits[] = "0123456789abcdef";
+  for (size_t i = 0; i < maxlen; ++i) {
+    ++len;
+    *(--p) = digits[val % base];
+    val /= base;
+    if (!val) break;
+  }
+  gasneti_assert_uint(len ,<=, maxlen);
+  if (val) len = 0; // overflow
+  // shift output to align with start of caller's buffer
+  for (size_t i = 0; i < len; ++i) buffer[i] = p[i];
+  buffer[len] = '\0';
+  return len;
+}
+
+/* ------------------------------------------------------------------------------------ */
 extern int gasneti_raise(int sig) {
   #if PLATFORM_OS_CYGWIN && CYGWIN_VERSION_DLL_MAJOR < 3000 && \
       GASNETT_THREAD_SAFE && HAVE_PTHREAD_KILL 
@@ -1207,6 +1277,333 @@ extern void gasneti_freezeForDebuggerErr(void) {
   if (gasneti_freezeonerr_userenabled)
     gasneti_freezeForDebuggerNow(&gasnet_frozen,"gasnet_frozen"); /* allow user freeze */
 }
+/* ------------------------------------------------------------------------------------ */
+// command-line retrieval support
+
+#if PLATFORM_OS_LINUX || PLATFORM_OS_CYGWIN || \
+    PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+#define GASNETI_HAVE_ARGV_FROM_PROC 1
+/* Try to get substitute argv from /proc, if available.
+ * Note that /proc is not mounted by default on many/most BSD systems.
+ */
+static void gasneti_argv_from_proc(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+#if PLATFORM_OS_LINUX || PLATFORM_OS_CYGWIN
+  const char *filename = "/proc/self/cmdline";
+#elif PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+  const char *filename = "/proc/curproc/cmdline";
+#endif
+  int fd;
+  size_t len = 0;
+  char *cmdline;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  if ((fd = open(filename, O_RDONLY)) < 0) return;
+
+  /* Read the whole file, made harder because stat() yields st_size=0 */
+  {
+    ssize_t rc;
+    size_t asize = 32;
+    cmdline = malloc(asize);
+    while (1) {
+      rc = read(fd, cmdline+len, asize-len);
+      if (rc == 0) {
+        break; /* Normal termination */
+      } else if (rc < 0) {
+        if (errno == EINTR) continue;
+        free(cmdline);
+        (void) close(fd);
+        return; /* Fail silently (non-fatal) */
+      }
+      len += rc;
+      if (len == asize) {
+        asize += MIN(asize,1024); /* double up to 1k and linear after */
+        cmdline = realloc(cmdline, asize);
+      }
+    }
+    (void) close(fd);
+  }
+  if (len == 0 || !cmdline[0] || cmdline[len-1]) { // bug 4076: we read an obviously garbled cmdline
+    static int retried = 0;
+    free(cmdline);
+    if (!retried) { // retry at most once
+      gasneti_nsleep(100*1000*1000); // sleep 100ms
+      gasneti_sched_yield();
+      retried = 1;
+      gasneti_argv_from_proc(ppargc, ppargv);
+    } 
+    return; // fail silently
+  }
+  cmdline = realloc(cmdline, len);
+  gasneti_assert(cmdline[len-1] == 0);
+
+  /* Parse the cmdline on '\0' separators */
+  {
+    char *p;
+    int i;
+
+    for (p = cmdline, argc = 0; p < (cmdline+len); ++argc) {
+      p += strlen(p) + 1;
+    }
+
+    argv = malloc((argc+1) * sizeof(char*));
+    for (p = cmdline, i = 0; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+
+#if PLATFORM_OS_SOLARIS
+#include <procfs.h>
+#define GASNETI_HAVE_ARGV_FROM_PROC 1
+/* Try to get address of true original argv from /proc, if available. */
+static void gasneti_argv_from_proc(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int fd;
+  size_t len = 0;
+  psinfo_t psi;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  if ((fd = open("/proc/self/psinfo", O_RDONLY)) < 0) return;
+
+  /* Read the whole file */
+  {
+    ssize_t rc;
+    char *p = (char *)&psi;
+    do {
+      rc = read(fd, p + len, sizeof(psi) - len);
+      if (rc < 0) {
+        if (errno == EINTR) continue;
+        (void) close(fd);
+        return; /* Fail silently (non-fatal) */
+      }
+      len += rc;
+    } while (len != sizeof(psi));
+    (void) close(fd);
+  }
+
+  /* Extract argc and (shallow) copy argv */
+  argc = psi.pr_argc;
+  len = (argc+1) * sizeof(char*);
+  argv = memcpy(malloc(len), (void*)(psi.pr_argv), len);
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+
+#if PLATFORM_OS_DARWIN
+#include <sys/sysctl.h>
+#if defined(CTL_KERN) && defined(KERN_PROCARGS2)
+#define GASNETI_HAVE_ARGV_FROM_SYSCTL 1
+/* Try to get substitute argv from the memory above our stack.  */
+static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int i, mib[3];
+  char *argv0, *buf;
+  size_t len;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROCARGS2;
+  mib[2] = getpid();
+
+retry:
+  /* Query for length and allocate space */
+  len = 0;
+  if (sysctl(mib, 3, NULL, &len, NULL, 0) < 0) return;
+  len += 8; /* Empirically determined that we must add at least 1 */
+  buf = malloc(len);
+
+  /* Actual sysctl() query */
+  if (sysctl(mib, 3, buf, &len, NULL, 0) < 0) {
+    free(buf);
+    return;
+  }
+
+  /* Extract argc and the argv array from buf */
+  { char *start, *end;
+
+    if (mib[1] == KERN_PROCARGS2) {
+      /* argc is first int */
+      argc = *(int*)buf;
+      start = buf + sizeof(int);
+    } else {
+      start = buf;
+    }
+
+    /* Skip over execpath and any trailing '\0' to find argv[0] */
+    start += strlen(start) + 1;
+    while ((start - buf < len) && ! *start) start++;
+
+    #if defined(KERN_PROCARGS)
+      if ((start - buf == len) && (mib[1] == KERN_PROCARGS2)) {
+        // Did not find anything after exepath.
+        // So, try again using KERN_PROCARGS (which excludes argc).
+        free(buf);
+        len = 0;
+        mib[1] = KERN_PROCARGS;
+        goto retry;
+      }
+    #endif
+    gasneti_assert_uint(start - buf ,<, len);
+
+    /* Skip over the args to find end */
+    for (end = start, i = 0; i < argc; ++i) {
+      end += strlen(end) + 1;
+      gasneti_assert_uint(end - buf ,<, len);
+    }
+
+    /* Keep a copy of only what we need */
+    len = end - start;
+    argv0 = memcpy(malloc(len), start, len);
+    free(buf);
+  }
+
+  /* Build the argv array */
+  argv = malloc((argc+1) * sizeof(char*));
+  { char *p = argv0;
+    for (i = 0; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+#endif
+
+#if PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+#include <sys/sysctl.h>
+#if (PLATFORM_OS_FREEBSD && defined(CTL_KERN) && defined(KERN_PROC) && defined(KERN_PROC_ARGS)) || \
+    (PLATFORM_OS_NETBSD && defined(CTL_KERN) && defined(KERN_PROC_ARGS) && defined(KERN_PROC_ARGV)) || \
+    (PLATFORM_OS_OPENBSD && defined(CTL_KERN) && defined(KERN_PROC_ARGS) && defined(KERN_PROC_ARGV))
+#define GASNETI_HAVE_ARGV_FROM_SYSCTL 1
+static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
+  static int argc = 0;
+  static char **argv = NULL;
+
+  int mib[4];
+  char *buf;
+  size_t len;
+
+  if_pf (argc) { /* duplicate call */
+    *ppargc = &argc;
+    *ppargv = &argv;
+    return;
+  }
+
+  mib[0] = CTL_KERN;
+#if PLATFORM_OS_FREEBSD
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_ARGS;
+  mib[3] = getpid();
+#elif PLATFORM_OS_NETBSD || PLATFORM_OS_OPENBSD
+  mib[1] = KERN_PROC_ARGS;
+  mib[2] = getpid();
+  mib[3] = KERN_PROC_ARGV;
+#else
+  #error
+#endif
+
+  /* Query for length and allocate space */
+  len = 0;
+  if (sysctl(mib, 4, NULL, &len, NULL, 0) < 0) return;
+  buf = malloc(len);
+
+  /* Actual sysctl() query */
+  if (sysctl(mib, 4, buf, &len, NULL, 0) < 0) {
+    free(buf);
+    return;
+  }
+
+#if PLATFORM_OS_FREEBSD || PLATFORM_OS_NETBSD
+  /* Extract argc and the argv array from buf */
+  { char *p;
+    int i;
+    buf = realloc(buf, len);
+    for (argc = 0, p = buf ; p - buf < len; ++argc) {
+      p += strlen(p) + 1;
+    }
+    argv = malloc((argc+1) * sizeof(char*));
+    for (i = 0, p = buf; i < argc; ++i) {
+      argv[i] = p;
+      p += strlen(p) + 1;
+    }
+    argv[argc] = NULL;
+  }
+#elif PLATFORM_OS_OPENBSD
+  /* Count and relocate (due to realloc) argv[] array already in buf */
+  argv = realloc(buf, len);
+  for (argc = 0; argv[argc]; ++argc) {
+    argv[argc] += ((uintptr_t)argv - (uintptr_t)buf);
+  }
+#else
+  #error
+#endif
+
+  *ppargc = &argc;
+  *ppargv = &argv;
+}
+#endif
+#endif
+
+// retrieve the argc/argv into the (empty) provided variables
+GASNETI_COLD
+extern void gasneti_argv_from_system(int **pargc, char ****pargv) {
+ gasneti_assert(pargc && pargv);
+ // Some systems may support multiple mechanisms,
+ // and we try them all until we get something.
+ #ifdef GASNETI_HAVE_ARGV_FROM_SYSCTL
+  gasneti_argv_from_sysctl(pargc,pargv);
+ #endif
+ #ifdef GASNETI_HAVE_ARGV_FROM_PROC
+  if (!*pargc || !*pargv) gasneti_argv_from_proc(pargc,pargv);
+ #endif
+}
+
+extern const char *gasneti_exe_name(void) {
+  static char exename[PATH_MAX] = { 0 };
+  if (*exename) return exename;
+  static int *argc = 0; 
+  static char ***argv = 0;
+  gasneti_argv_from_system(&argc, &argv);
+  if (argc && *argc > 0 && argv && *argv && (*argv)[0] && (*argv)[0][0]) {
+    gasneti_qualify_path(exename, (*argv)[0]);
+  }
+  return exename;
+}
+
 /* ------------------------------------------------------------------------------------ */
 /* Dynamic backtrace support */
 
@@ -1716,8 +2113,8 @@ extern void gasneti_backtrace_init(const char *exename) {
 
   gasneti_tmpdir_bt = gasneti_tmpdir();
   if (!gasneti_tmpdir_bt) {
-    fprintf(stderr,"WARNING: Failed to init backtrace support because none of $GASNET_TMPDIR, $TMPDIR or /tmp is usable\n");
-    fflush(stderr);
+    gasneti_console_message("WARNING",
+      "Failed to init backtrace support because none of $GASNET_TMPDIR, $TMPDIR or /tmp is usable");
     return;
   }
 
@@ -1762,8 +2159,7 @@ extern int gasneti_print_backtrace(int fd) {
   int retval = 1;
 
   if (!gasneti_backtrace_isinit) {
-    fprintf(stderr,"WARNING: Ignoring call to gasneti_print_backtrace before gasneti_backtrace_init\n");
-    fflush(stderr);
+    gasneti_console_message("WARNING", "Ignoring call to gasneti_print_backtrace before gasneti_backtrace_init");
     return -1;
   }
 
@@ -1854,7 +2250,7 @@ extern int gasneti_print_backtrace(int fd) {
           gasneti_rc_unused = ftruncate(tmpfd, 0); // in case failed backtrace wrote any output
 
           // detect and report system configuration issues that may be responsible for backtrace failure
-          #if (PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL) && !defined(YAMA_PTRACE_SCOPE)
+          #if PLATFORM_OS_LINUX && !defined(YAMA_PTRACE_SCOPE)
             #define YAMA_PTRACE_SCOPE "/proc/sys/kernel/yama/ptrace_scope"
           #endif
           #ifdef YAMA_PTRACE_SCOPE
@@ -1939,15 +2335,13 @@ void gasneti_registerSignalHandlers(gasneti_sighandlerfn_t handler) {
 static int _gasneti_print_backtrace_ifenabled(int fd) {
   static int noticeshown = 0;
   if (!gasneti_backtrace_isinit) {
-    fprintf(stderr,"WARNING: Ignoring call to gasneti_print_backtrace_ifenabled before gasneti_backtrace_init\n");
-    fflush(stderr);
+    gasneti_console_message("WARNING", "Ignoring call to gasneti_print_backtrace_ifenabled before gasneti_backtrace_init");
     return -1;
   }
   #if !GASNET_DEBUG
     #define GASNETI_NDEBUG_ADVISORY() do { \
       if (!noticeshown) {                  \
-        fprintf(stderr, "NOTICE: We recommend linking the debug version of GASNet to assist you in resolving this application issue.\n"); \
-        fflush(stderr);                    \
+        gasneti_console_message("NOTICE","We recommend linking the debug version of GASNet to assist you in resolving this application issue."); \
         noticeshown = 1;                   \
       }                                    \
     } while (0)
@@ -1964,8 +2358,7 @@ static int _gasneti_print_backtrace_ifenabled(int fd) {
     if (gasneti_internal_crash) gasneti_output_config(); // GEX info iff this looks like a GEX-related crash
     return gasneti_print_backtrace(fd);
   } else if (gasneti_backtrace_mechanism_count && !noticeshown) {
-    fprintf(stderr, "NOTICE: Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace. \n");
-    fflush(stderr);
+    gasneti_console_message("NOTICE", "Before reporting bugs, run with GASNET_BACKTRACE=1 in the environment to generate a backtrace.");
     GASNETI_NDEBUG_ADVISORY();
     noticeshown = 1;
     return 1;
@@ -2130,6 +2523,18 @@ extern int gasneti_parse_dbl(const char *str, double *result_p) {
   *result_p = result;
   return 0;
 }
+
+// Parses a string indicating a boolean yes/no value.
+// Returns 1 for a valid YES, 0 for a valid NO and -1 for no conforming value
+extern int gasneti_parse_yesno(const char *str) {
+  if (!str) return -1;
+  char s[10];
+  strncpy(s, str, sizeof(s)-1); s[sizeof(s)-1] = '\0';
+  for (int i = 0; i < sizeof(s); i++) s[i] = toupper(s[i]);
+  if (!strcmp(s, "N") || !strcmp(s, "NO") || !strcmp(s, "0")) return 0;
+  else if (!strcmp(s, "Y") || !strcmp(s, "YES") || !strcmp(s, "1")) return 1;
+  else return -1;
+}
 /* ------------------------------------------------------------------------------------ */
 /* environment support */
 #if HAVE_SETENV && !HAVE_SETENV_DECL
@@ -2244,6 +2649,15 @@ extern char *gasneti_getenv(const char *keyname) {
   return retval;
 }
 
+// parse a GASNET_VERBOSEENV value into boolean enable/disable
+extern int gasneti_verboseenv_parse(const char *v) {
+  if (!v) return 0; // default is off
+  else {
+    if (gasneti_parse_yesno(v) == 0) return 0;
+    else return 1; // for legacy reasons accept anything else including empty as yes
+  }
+}
+
 /* indicate whether GASNET_VERBOSEENV reporting is enabled on this node 
    1 = yes, 0 = no, -1 = not yet / don't know
 */
@@ -2252,7 +2666,7 @@ extern int gasneti_verboseenv(void) {
   if (gasneti_verboseenv_fn) return (*gasneti_verboseenv_fn)();
   else 
 #endif
-    return !!gasneti_getenv("GASNET_VERBOSEENV");
+    return gasneti_verboseenv_parse(gasneti_getenv("GASNET_VERBOSEENV"));
 }
 
 typedef struct gasneti_verboseenv_S {
@@ -2360,12 +2774,9 @@ static char *_gasneti_getenv_withdefault(const char *keyname, const char *defaul
     /* just a string value */
     gasneti_envstr_display(keyname, retval, is_dflt);
   } else if (valmode == 1) { /* yes/no value */
-    char s[10];
-    int i;
-    strncpy(s, retval, sizeof(s)-1); s[sizeof(s)-1] = '\0';
-    for (i = 0; i < sizeof(s); i++) s[i] = toupper(s[i]);
-    if (!strcmp(s, "N") || !strcmp(s, "NO") || !strcmp(s, "0")) retval = "NO";
-    else if (!strcmp(s, "Y") || !strcmp(s, "YES") || !strcmp(s, "1")) retval = "YES";
+    int r = gasneti_parse_yesno(retval);
+    if (r == 1) retval = "YES";
+    else if (r == 0) retval = "NO";
     else gasneti_fatalerror("If used, environment variable '%s' must be set to 'Y|YES|y|yes|1' or 'N|n|NO|no|0'", keyname);
     gasneti_envstr_display(keyname, retval, is_dflt);
   } else if (valmode == 2 || valmode == 3) { /* int value, regular or memsize */
@@ -2387,6 +2798,11 @@ extern int64_t gasneti_getenv_int_withdefault(const char *keyname, int64_t defau
   int64_t val = mem_size_multiplier;
   char defstr[80];
   gasneti_format_number(defaultval, defstr, 80, mem_size_multiplier);
+  if (gasneti_parse_int(defstr, mem_size_multiplier) != defaultval) {
+    // Discard result from gasneti_format_number() if it is rounded/truncated
+    gasneti_assert(mem_size_multiplier); // should not happen otherwise
+    snprintf(defstr, sizeof(defstr), "%"PRId64" B", defaultval);
+  }
   _gasneti_getenv_withdefault(keyname, defstr, (mem_size_multiplier?3:2), &val);
   return val;
 }
@@ -2697,7 +3113,7 @@ extern int gasneti_cpu_count(void) {
 extern uint64_t gasneti_getPhysMemSz(int failureIsFatal) {
   uint64_t retval = _gasneti_getPhysMemSysconf();
   if (retval) return retval;
-  #if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX || PLATFORM_OS_WSL
+  #if PLATFORM_OS_LINUX || PLATFORM_OS_UCLINUX
     #define _BUFSZ        120
     { FILE *fp;
       char line[_BUFSZ+1];
@@ -2766,13 +3182,12 @@ static int gasneti_set_affinity_cpus(void) {
       static int once = 1;
       if (once) {
 	once = 0;
-        fprintf(stderr, "WARNING: gasnett_set_affinity called, but cannot determine cpu count.\n");
-        fflush(stderr);
+        gasneti_console_message("WARNING","gasnett_set_affinity called, but cannot determine cpu count.");
       }
     }
     return cpus;
 }
-#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+#if PLATFORM_OS_LINUX
 // return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
 extern int gasneti_platform_isWSL(void) {
     // Ideally we would use uname(2) here, but direct experimentation on the 4/16/17 version
@@ -2813,7 +3228,7 @@ int gasneti_set_affinity_default(int rank) {
 
     // Dynamically handle binaries built on native Ubuntu and ported to Microsoft's WSL kernel
     // emulator, which currently fail inside plpa_sched_setaffinity with EINVAL.
-  #if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+  #if PLATFORM_OS_LINUX
     if (gasneti_platform_isWSL()) {
         /* NO-OP on WSL */
         fails = 1;
@@ -3205,6 +3620,13 @@ gasneti_count0s(const void * src, size_t bytes) {
   const uint8_t *s = src;
   size_t zeros = 0;
   while (bytes--) { zeros += !*(s++); }
+#elif (PLATFORM_COMPILER_CLANG && __cray__) && \
+      PLATFORM_COMPILER_VERSION_GE(13,0,0) && \
+      __CRAY_MIC_KNL
+  // Version which works-around a CCE-13 ICE (see bug 4417)
+  const uint8_t *s = src;
+  volatile size_t zeros = 0;
+  while (bytes--) { zeros = zeros + !*(s++); }
 #else /* Carefully optimized (but still portable) word-oriented loop */
   const uintptr_t *s;
   size_t zeros, tmp;
@@ -3260,6 +3682,7 @@ gasneti_count0s(const void * src, size_t bytes) {
   #define gasneti_clock_to_ns(x) ((x).tv_sec*((uint64_t)1E9)+1000*(x).tv_usec)
 #endif
 static int gasneti_clock_is_init = 0;
+static int gasneti_tsc_verbose = 0;
 static void gasneti_clock_init(void) {
   if (gasneti_clock_is_init) return;
   gasneti_clock_is_init = 1;
@@ -3269,20 +3692,16 @@ static void gasneti_clock_init(void) {
     if (!clock_gettime(CLOCK_MONOTONIC, &tm)) {
       // Monotonic but subject to rate adjustment by NTP
       gasneti_clockid = CLOCK_MONOTONIC;
-      #if GASNET_DEBUG_VERBOSE
-      fprintf(stderr, "TICKS: using clock_gettime(CLOCK_MONOTONIC)\n");
-      #endif
+      if (gasneti_tsc_verbose) gasneti_console_message("TICKS","using clock_gettime(CLOCK_MONOTONIC)");
     } else
     #endif
     {
       // May be adjusted by both ntp and by clock_settime()
       gasneti_assert(gasneti_clockid == CLOCK_REALTIME);
-      #if GASNET_DEBUG_VERBOSE
-      fprintf(stderr, "TICKS: using clock_gettime(CLOCK_REALTIME)\n");
-      #endif
+      if (gasneti_tsc_verbose) gasneti_console_message("TICKS","using clock_gettime(CLOCK_REALTIME)");
     }
-  #elif GASNET_DEBUG_VERBOSE
-    fprintf(stderr, "TICKS: using gettimeofday()\n");
+  #else
+   if (gasneti_tsc_verbose) gasneti_console_message("TICKS","using gettimeofday()");
   #endif
 }
 GASNETI_INLINE(gasneti_clock_gettime)
@@ -3364,7 +3783,7 @@ static double gasneti_calibrate_tick_ghz(uint64_t ref_res, double *err_p) {
   #define GASNETI_TICKS_WC_MIN_REF_TICKS 1000
   #endif
   #ifndef GASNETI_TICKS_WC_MAX_RETRY
-  #define GASNETI_TICKS_WC_MAX_RETRY 1
+  #define GASNETI_TICKS_WC_MAX_RETRY 2
   #endif
 
   // Collected start and end times:
@@ -3396,10 +3815,9 @@ retry_calibration:;
     ref_res = MIN(ref_res, tmp2);
   }
 
-  #if GASNET_DEBUG_VERBOSE
-  fprintf(stderr, "TICKS: ticks and wallclock resolutions are %d and %d ns (or better)\n",
+  if (gasneti_tsc_verbose) 
+    gasneti_console_message("TICKS","ticks and wallclock resolutions are %d and %d ns (or better)",
           (int)ticks_res, (int)ref_res);
-  #endif
 
   // Delay, with a default interval of MAX(100ms, 1000 ref ticks)
   const uint64_t interval_ns = MAX(GASNETI_TICKS_WC_MIN_INTERVAL,
@@ -3483,7 +3901,8 @@ retry_calibration:;
   // with a process migration across cores with sufficiently de-synchronized time bases.
   if (lo > hi || 
       max_err_tick > 0 || max_err_wcns > 0) {  // also report monotonicity violations
-    gasneti_console_message("WARNING","GASNet timer calibration on %s detected non-linear timer behavior: "
+    if (gasneti_tsc_verbose || (trycnt == GASNETI_TICKS_WC_MAX_RETRY))
+      gasneti_console_message("WARNING","GASNet timer calibration on %s detected non-linear timer behavior: "
                     "max_err_tick=%"PRIu64" max_err_wcns=%"PRIu64" ticks_res=%"PRIu64" ref_res=%"PRIu64" lo=%"PRIu64" hi=%"PRIu64". See docs for GASNET_TSC_RATE."
                     "%s\n",
                     gasneti_gethostname(),
@@ -3492,19 +3911,20 @@ retry_calibration:;
                     (uint64_t)(1e9 * lo), (uint64_t)(1e9 * hi), 
                     (trycnt < GASNETI_TICKS_WC_MAX_RETRY?" Retrying...":""));
 
-    char sample_msg[GASNETI_TICKS_WC_ITERS*400];
-    char *p = sample_msg;
-    for (int n0 = 0; n0 < count; ++n0) {
-      if (p < &sample_msg[sizeof(sample_msg)]) {
-        int n1 = count-1-n0;
-        uint64_t wc0_n0 = gasneti_clock_to_ns(wc0[n0]);
-        uint64_t wc1_n1 = gasneti_clock_to_ns(wc1[n1]);
-        const double wc_delta  = (double)(int64_t)(wc1_n1 - wc0_n0);
-        const double lo_delta  = (double)(int64_t)(lo1[n1] - lo0[n0]);
-        const double hi_delta  = (double)(uint64_t)(hi1[n1] - hi0[n0]);
-        double new_lo = (lo_delta - ticks_res) / (wc_delta + ref_res);
-        double new_hi = (hi_delta + ticks_res) / (wc_delta - ref_res);
-        p += snprintf(p, sizeof(sample_msg) - (p - sample_msg),
+    if (gasneti_tsc_verbose) {
+      char sample_msg[GASNETI_TICKS_WC_ITERS*400];
+      char *p = sample_msg;
+      for (int n0 = 0; n0 < count; ++n0) {
+        if (p < &sample_msg[sizeof(sample_msg)]) {
+          int n1 = count-1-n0;
+          uint64_t wc0_n0 = gasneti_clock_to_ns(wc0[n0]);
+          uint64_t wc1_n1 = gasneti_clock_to_ns(wc1[n1]);
+          const double wc_delta  = (double)(int64_t)(wc1_n1 - wc0_n0);
+          const double lo_delta  = (double)(int64_t)(lo1[n1] - lo0[n0]);
+          const double hi_delta  = (double)(uint64_t)(hi1[n1] - hi0[n0]);
+          double new_lo = (lo_delta - ticks_res) / (wc_delta + ref_res);
+          double new_hi = (hi_delta + ticks_res) / (wc_delta - ref_res);
+          p += snprintf(p, sizeof(sample_msg) - (p - sample_msg),
              " wc1[%i]=%-10"PRIu64" wc0[%i]=%-10"PRIu64" delta=%-10.0f"
              " lo1[%i]=%-10"PRIu64" lo0[%i]=%-10"PRIu64" delta=%-10.0f"
              " hi1[%i]=%-10"PRIu64" hi0[%i]=%-10"PRIu64" delta=%-10.0f"
@@ -3513,9 +3933,10 @@ retry_calibration:;
              n1, lo1[n1], n0, lo0[n0], lo_delta,
              n1, hi1[n1], n0, hi0[n0], hi_delta,
              new_lo, new_hi);
+        }
       }
+      gasneti_console_message("TICKS: Debugging information:","\n%s",sample_msg);
     }
-    gasneti_console_message("TICKS: Debugging information:","\n%s",sample_msg);
 
     if (++trycnt <= GASNETI_TICKS_WC_MAX_RETRY) goto retry_calibration;
 
@@ -3532,19 +3953,19 @@ retry_calibration:;
   double err = half_width / hi;
   if (err_p) *err_p = err;
 
-  #if GASNET_DEBUG_VERBOSE
-  double sum = 0;
-  for (int i = 0; i < count; ++i) {
-    const double delta  = gasneti_clock_to_ns(wc1[i]) - gasneti_clock_to_ns(wc0[i]);
-    sum += (hi1[i] - lo0[i]) / delta;
-    sum += (lo1[i] - hi0[i]) / delta;
+  if (gasneti_tsc_verbose) {
+    double sum = 0;
+    for (int i = 0; i < count; ++i) {
+      const double delta  = gasneti_clock_to_ns(wc1[i]) - gasneti_clock_to_ns(wc0[i]);
+      sum += (hi1[i] - lo0[i]) / delta;
+      sum += (lo1[i] - hi0[i]) / delta;
+    }
+    double mean = sum / (2 * count);
+    gasneti_console_message("TICKS","range: %"PRIu64" +/- %"PRIu64"  mean: %"PRIu64"  offset: %"PRId64,
+            (uint64_t)(1e9 * mid),  (uint64_t)(1e9 * half_width),
+            (uint64_t)(1e9 * mean), (int64_t)(1e9 * (mean-mid)));
+    gasneti_console_message("TICKS","calibrated to err of %g in %d iters\n", err, GASNETI_TICKS_WC_ITERS);
   }
-  double mean = sum / (2 * count);
-  fprintf(stderr, "TICKS: range: %"PRIu64" +/- %"PRIu64"  mean: %"PRIu64"  offset: %"PRId64"\n",
-          (uint64_t)(1e9 * mid),  (uint64_t)(1e9 * half_width),
-          (uint64_t)(1e9 * mean), (int64_t)(1e9 * (mean-mid)));
-  fprintf(stderr, "TICKS: calibrated to err of %g in %d iters\n", err, GASNETI_TICKS_WC_ITERS);
-  #endif
 
   return mid;
 }
@@ -3574,7 +3995,7 @@ extern double gasneti_calibrate_tsc_from_kernel(void) {
     gasneti_assert_int(MHz ,>, 1);
     gasneti_assert_int(MHz ,<, 100000); 
     Tick = 1000. / MHz;
-  #else /* (X86 || X86_64 || MIC) && (Linux || CNL || WSL) */
+  #else // Linux && (X86 || X86_64 || MIC)
   FILE *fp = NULL;
   char input[512]; /* 256 is too small for "flags" line in /proc/cpuino */
   double MHz = 0.0;
@@ -3663,9 +4084,16 @@ extern double gasneti_calibrate_tsc(void) {
   //   and will run when it is safe.
   if_pf (firstTime) {
   #if !(PLATFORM_ARCH_X86 || PLATFORM_ARCH_X86_64 || PLATFORM_ARCH_MIC) || \
-      !(PLATFORM_OS_LINUX || PLATFORM_OS_CNL || PLATFORM_OS_WSL)
+      !PLATFORM_OS_LINUX
     Tick = gasneti_calibrate_tsc_from_kernel();
-  #else /* (X86 || X86_64 || MIC) && (Linux || CNL || WSL) */
+  #else // Linux && (X86 || X86_64 || MIC)
+    int tsc_verbose_dflt = 1;
+    { const char *s = gasneti_getenv_early("GASNET_TSC_VERBOSE");
+      if (s) {
+        gasneti_tsc_verbose = gasneti_parse_yesno(s);
+        tsc_verbose_dflt = 0;
+      }
+    }
     #ifndef GASNETI_DEFAULT_TSC_RATE
     // TODO: need logic to default to "cpuinfo" when we can determine CPU model is trustworthy
     #define GASNETI_DEFAULT_TSC_RATE "wallclock"
@@ -3740,6 +4168,7 @@ extern double gasneti_calibrate_tsc(void) {
     }
 
     #define GASNETI_TSC_TRACE_OUTPUT()  do { \
+      gasneti_envstr_display("GASNET_TSC_VERBOSE", (gasneti_tsc_verbose?"YES":"NO"), tsc_verbose_dflt); \
       gasneti_envstr_display("GASNET_TSC_RATE", tsc_rate, tsc_rate_dflt); \
       gasneti_envdbl_display("GASNET_TSC_RATE_TOLERANCE", soft_tolerance, soft_tol_dflt); \
       gasneti_envdbl_display("GASNET_TSC_RATE_HARD_TOLERANCE", hard_tolerance, hard_tol_dflt); \
@@ -3748,9 +4177,7 @@ extern double gasneti_calibrate_tsc(void) {
     // Determine/initialize the best available wallclock timer
     gasneti_clock_init();
 
-    #if GASNET_DEBUG_VERBOSE
     uint64_t begin_tsc_calibration = gasneti_clock_getns();
-    #endif
 
     // Approximate the resolution of the reference clock in ns (if needed)
     uint64_t ref_res = (uint64_t)1E9;
@@ -3767,10 +4194,9 @@ extern double gasneti_calibrate_tsc(void) {
         ref_res = MIN(ref_res, delta);
         sum += delta;
       }
-      #if GASNET_DEBUG_VERBOSE
-      fprintf(stderr, "TICKS: reference resolution is %d ns or better (in %d iters, %lu ns)\n",
-                      (int)ref_res, i, (unsigned long)sum);
-      #endif
+      if (gasneti_tsc_verbose) 
+        gasneti_console_message("TICKS","reference resolution is %d ns or better (in %d iters, %lu ns)\n",
+                        (int)ref_res, i, (unsigned long)sum);
       if_pf (ref_res > max_res) {
         gasneti_fatalerror("Reference timer resolution of %lu ns on %s is not acceptable for calibration of the TSC.\n"
                            "Please reconfigure with --enable-force-gettimeofday or --enable-force-posix-realtime.\n",
@@ -3833,15 +4259,12 @@ extern double gasneti_calibrate_tsc(void) {
                 gasneti_gethostname(), best);
         }
       }
-      #if GASNET_DEBUG_VERBOSE
-      fprintf(stderr, "TICKS: relative to wallclock = %g\n", best);
-      #endif
+      if (gasneti_tsc_verbose) gasneti_console_message("TICKS","relative to wallclock = %g", best);
     }
 
-    #if GASNET_DEBUG_VERBOSE
-    fprintf(stderr, "TICKS: rate calibrated to %g MHz in %g sec\n",
-            1e3/Tick, 1e-9*(gasneti_clock_getns()-begin_tsc_calibration));
-    #endif
+    if (gasneti_tsc_verbose) 
+      gasneti_console_message("TICKS","rate calibrated to %g MHz in %g sec",
+              1e3/Tick, 1e-9*(gasneti_clock_getns()-begin_tsc_calibration));
   #endif
 
     gasneti_sync_writes();

@@ -1,0 +1,4 @@
+16
+uncaught Error: 8
+  lambdaThrows.chpl:2: thrown here
+  lambdaThrows.chpl:6: uncaught here

@@ -1,0 +1,27 @@
+─── warning in singleStatementReturn.chpl:1 [SingleStmtReturnDeprecated] ───
+  Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
+  For this return statement:
+      |
+    1 | proc foo return 42;
+      |          ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── warning in singleStatementReturn.chpl:2 [SingleStmtReturnDeprecated] ───
+  Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
+  For this return statement:
+      |
+    2 | proc bar() return 42;
+      |            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── warning in singleStatementReturn.chpl:5 [SingleStmtReturnDeprecated] ───
+  Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
+  For this return statement:
+      |
+    5 |   return 42;
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+42
+42
+42

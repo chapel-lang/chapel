@@ -54,7 +54,6 @@ do
       RESULT[$i]="FAIL: $lastline"
       echo "     FAIL:" $name
       echo "     Leaving virtual machine up"
-      cd ..
       echo "     You might want to run:"
       echo
       echo "     cd" $name
@@ -66,6 +65,7 @@ do
       #exit 1
       ;;
     esac
+
     vagrant halt 2>&1 | tee -a "$DIR"/log
     cd "$DIR"
 

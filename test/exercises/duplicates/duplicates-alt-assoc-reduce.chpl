@@ -82,7 +82,7 @@ class CombiningReduceOp: ReduceScanOp {
 }
 
 proc main(args: [] string) {
-  var clock:Timer;
+  var clock:stopwatch;
   var paths:Set(string);
 
   if timing {
@@ -93,7 +93,7 @@ proc main(args: [] string) {
     if isFile(arg) {
       paths.keys += relativeRealPath(arg);
     } else if isDir(arg) {
-      for path in findfiles(arg, recursive=true) {
+      for path in findFiles(arg, recursive=true) {
         paths.keys += relativeRealPath(path);
       }
     } else {

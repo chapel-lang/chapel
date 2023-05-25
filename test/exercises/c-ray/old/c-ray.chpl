@@ -24,9 +24,10 @@
  */
 
 use Image;    // use helper module related to writing out images
-use IO;       // allows access to stderr, stdin, iomode
+use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
+import Math.quarter_pi;
 
 //
 // Configuration constants
@@ -143,7 +144,7 @@ proc main() {
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
@@ -411,16 +412,16 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    objects.append(new owned sphere((-1.5, -0.3, -1), 0.7,
+    objects.pushBack(new owned sphere((-1.5, -0.3, -1), 0.7,
                                  new material((1.0, 0.2, 0.05), 50.0, 0.3)));
-    objects.append(new owned sphere((1.5, -0.4, 0), 0.6,
+    objects.pushBack(new owned sphere((1.5, -0.4, 0), 0.6,
                                  new material((0.1, 0.85, 1.0), 50.0, 0.4)));
-    objects.append(new owned sphere((0, -1000, 2), 999,
+    objects.pushBack(new owned sphere((0, -1000, 2), 999,
                                  new material((0.1, 0.2, 0.6), 80.0, 0.8)));
-    objects.append(new owned sphere((0, 0, 2), 1,
+    objects.pushBack(new owned sphere((0, 0, 2), 1,
                                  new material((1.0, 0.5, 0.1), 60.0, 0.7)));
-    lights.append((-50, 100, -50));
-    lights.append((40, 40, 150));
+    lights.pushBack((-50, 100, -50));
+    lights.pushBack((40, 40, 150));
     cam = new camera((0, 6, -17), (0, -1, 0), 45);
     return;
   }
@@ -431,7 +432,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader();
+                                     else open(scene, ioMode.r).reader();
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
@@ -463,7 +464,7 @@ proc loadScene() {
 
     // if this is a light, store it as such
     if inType == 'l' {
-      lights.append(pos);
+      lights.pushBack(pos);
       continue;
     }
 
@@ -484,7 +485,7 @@ proc loadScene() {
           refl = columns[9]: real;
 
     // this must be a sphere, so store it
-    objects.append(new owned sphere(pos, rad, new material(col, spow, refl)));
+    objects.pushBack(new owned sphere(pos, rad, new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file
     proc inputError(msg) {

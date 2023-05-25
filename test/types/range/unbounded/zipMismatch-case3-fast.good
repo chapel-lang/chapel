@@ -1,0 +1,9 @@
+zipMismatch.chpl:4: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+zipMismatch.chpl:8: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+zipMismatch.chpl:12: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+(250, 1)
+(251, 2)
+(252, 3)
+(253, 4)
+(254, 5)
+zipMismatch.chpl:12: error: halt reached - Loop over unbounded range surpassed representable values

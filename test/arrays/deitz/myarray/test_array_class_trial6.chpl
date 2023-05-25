@@ -15,7 +15,7 @@ class array1d {
   }
 }
 
-var a : borrowed array1d(int) = new borrowed array1d(int);
+var a : borrowed array1d(int) = (new owned array1d(int)).borrow();
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;

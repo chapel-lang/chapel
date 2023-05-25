@@ -19,7 +19,7 @@ fi
 #             CHPL_HOME will be determined from shell variables workdir and tarball
 #             and by the top-level directory name used in the given tar archive.
 #             By convention, this directory name is "chapel-" plus the Chapel release
-#             version number defined in version_num.h.
+#             version number defined in CMakeLists.txt.
 #
 # workdir   : If non-null, cd to this directory before starting. See below.
 #           : If null, the workdir variable will be reset to the users CWD.

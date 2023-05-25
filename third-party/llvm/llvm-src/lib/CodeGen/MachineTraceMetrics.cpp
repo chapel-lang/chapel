@@ -80,9 +80,9 @@ bool MachineTraceMetrics::runOnMachineFunction(MachineFunction &Func) {
 void MachineTraceMetrics::releaseMemory() {
   MF = nullptr;
   BlockInfo.clear();
-  for (unsigned i = 0; i != TS_NumStrategies; ++i) {
-    delete Ensembles[i];
-    Ensembles[i] = nullptr;
+  for (Ensemble *&E : Ensembles) {
+    delete E;
+    E = nullptr;
   }
 }
 
@@ -398,9 +398,9 @@ void MachineTraceMetrics::invalidate(const MachineBasicBlock *MBB) {
   LLVM_DEBUG(dbgs() << "Invalidate traces through " << printMBBReference(*MBB)
                     << '\n');
   BlockInfo[MBB->getNumber()].invalidate();
-  for (unsigned i = 0; i != TS_NumStrategies; ++i)
-    if (Ensembles[i])
-      Ensembles[i]->invalidate(MBB);
+  for (Ensemble *E : Ensembles)
+    if (E)
+      E->invalidate(MBB);
 }
 
 void MachineTraceMetrics::verifyAnalysis() const {
@@ -408,9 +408,9 @@ void MachineTraceMetrics::verifyAnalysis() const {
     return;
 #ifndef NDEBUG
   assert(BlockInfo.size() == MF->getNumBlockIDs() && "Outdated BlockInfo size");
-  for (unsigned i = 0; i != TS_NumStrategies; ++i)
-    if (Ensembles[i])
-      Ensembles[i]->verify();
+  for (Ensemble *E : Ensembles)
+    if (E)
+      E->verify();
 #endif
 }
 
@@ -484,7 +484,7 @@ void MachineTraceMetrics::Ensemble::computeTrace(const MachineBasicBlock *MBB) {
   // Run an upwards post-order search for the trace start.
   Bounds.Downward = false;
   Bounds.Visited.clear();
-  for (auto I : inverse_post_order_ext(MBB, Bounds)) {
+  for (const auto *I : inverse_post_order_ext(MBB, Bounds)) {
     LLVM_DEBUG(dbgs() << "  pred for " << printMBBReference(*I) << ": ");
     TraceBlockInfo &TBI = BlockInfo[I->getNumber()];
     // All the predecessors have been visited, pick the preferred one.
@@ -502,7 +502,7 @@ void MachineTraceMetrics::Ensemble::computeTrace(const MachineBasicBlock *MBB) {
   // Run a downwards post-order search for the trace end.
   Bounds.Downward = true;
   Bounds.Visited.clear();
-  for (auto I : post_order_ext(MBB, Bounds)) {
+  for (const auto *I : post_order_ext(MBB, Bounds)) {
     LLVM_DEBUG(dbgs() << "  succ for " << printMBBReference(*I) << ": ");
     TraceBlockInfo &TBI = BlockInfo[I->getNumber()];
     // All the successors have been visited, pick the preferred one.
@@ -984,8 +984,7 @@ addLiveIns(const MachineInstr *DefMI, unsigned DefOp,
   const MachineBasicBlock *DefMBB = DefMI->getParent();
 
   // Reg is live-in to all blocks in Trace that follow DefMBB.
-  for (unsigned i = Trace.size(); i; --i) {
-    const MachineBasicBlock *MBB = Trace[i-1];
+  for (const MachineBasicBlock *MBB : llvm::reverse(Trace)) {
     if (MBB == DefMBB)
       return;
     TraceBlockInfo &TBI = BlockInfo[MBB->getNumber()];
@@ -1204,8 +1203,8 @@ unsigned MachineTraceMetrics::Trace::getResourceDepth(bool Bottom) const {
     for (unsigned K = 0; K != PRDepths.size(); ++K)
       PRMax = std::max(PRMax, PRDepths[K] + PRCycles[K]);
   } else {
-    for (unsigned K = 0; K != PRDepths.size(); ++K)
-      PRMax = std::max(PRMax, PRDepths[K]);
+    for (unsigned PRD : PRDepths)
+      PRMax = std::max(PRMax, PRD);
   }
   // Convert to cycle count.
   PRMax = TE.MTM.getCycles(PRMax);

@@ -33,7 +33,7 @@ proc elegant(order, param subOrder, iterations): real {
   const subDom = {1..subOrder, 1..subOrder};
   var subArray: [subDom] real = 2.0;
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 
@@ -59,7 +59,7 @@ proc performant(order, param subOrder, iterations): real {
     subArray[i][j] = 2.0;
 
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 

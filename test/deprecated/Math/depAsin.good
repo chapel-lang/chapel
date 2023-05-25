@@ -1,0 +1,3 @@
+depAsin.chpl:16: warning: In an upcoming release 'asin' will no longer be included by default, please 'use' or 'import' the Math module to call it
+-1.0 -0.8 -0.6 -0.4 -0.2 0.0 0.2 0.4 0.6 0.8 1.0
+-1.5708 -0.927295 -0.643501 -0.411517 -0.201358 0.0 0.201358 0.411517 0.643501 0.927295 1.5708

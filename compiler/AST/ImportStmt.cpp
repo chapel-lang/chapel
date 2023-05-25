@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -205,8 +205,9 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
-        if (modSym->hasFlag(FLAG_DEPRECATED)) {
-          modSym->generateDeprecationWarning(this);
+        if (!fDynoScopeResolve) {
+          modSym->maybeGenerateDeprecationWarning(this);
+          modSym->maybeGenerateUnstableWarning(this);
         }
 
       } else {
@@ -323,7 +324,10 @@ bool ImportStmt::checkValid(Expr* expr) const {
 *                                                                             *
 ************************************** | *************************************/
 void ImportStmt::validateList() {
-  noRepeats();
+  // Dyno already issues these warnings and errors.
+  if (!fDynoScopeResolve) {
+    noRepeats();
+  }
 
   validateUnqualified();
   validateRenamed();
@@ -390,8 +394,9 @@ void ImportStmt::validateUnqualified() {
                            name);
           }
 
-          if (sym->hasFlag(FLAG_DEPRECATED)) {
-            sym->generateDeprecationWarning(this);
+          if (!fDynoScopeResolve) {
+            sym->maybeGenerateDeprecationWarning(this);
+            sym->maybeGenerateUnstableWarning(this);
           }
         }
       }
@@ -406,15 +411,15 @@ void ImportStmt::validateUnqualified() {
 * to find its methods.                                                        *
 *                                                                             *
 ************************************** | *************************************/
-std::set<const char*> ImportStmt::typeWasNamed(Type* t) const {
-  std::set<const char*> namedTypes;
+ImportStmt::PtrSet<const char*> ImportStmt::typeWasNamed(Type* t) const {
+  PtrSet<const char*> namedTypes;
 
   typeWasNamed(t, &namedTypes);
   return namedTypes;
 }
 
 void ImportStmt::typeWasNamed(Type* t,
-                              std::set<const char*>* namedTypes) const {
+                              PtrSet<const char*>* namedTypes) const {
   // We don't define any symbols for unqualified access, so the type was not
   // listed
   if (!providesUnqualifiedAccess()) {

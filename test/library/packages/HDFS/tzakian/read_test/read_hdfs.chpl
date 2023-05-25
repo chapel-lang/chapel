@@ -3,7 +3,7 @@ use IO, RecordParser, HDFS;
 writeln("============= Start of HDFS->record parser ==========================");
 
 var hdfs = hdfs_chapel_connect("default", 0);
-var ff = hdfs.hdfs_chapel_open("/tmp/beer.txt", iomode.r);
+var ff = hdfs.hdfs_chapel_open("/tmp/beer.txt", ioMode.r);
 var ffr = ff.reader();
 
 record Beer {
@@ -38,9 +38,9 @@ write("========== Starting basic HDFS/Channels interleaved reading test ========
 writeln();
 
 
-var fi = open("data/foo.txt", iomode.r);
+var fi = open("data/foo.txt", ioMode.r);
 // Were already connected..
-var f = hdfs.hdfs_chapel_open("/tmp/foo.txt", iomode.r);
+var f = hdfs.hdfs_chapel_open("/tmp/foo.txt", ioMode.r);
 
 var ffi  = f.reader();
 var fff = fi.reader(); 
@@ -48,8 +48,8 @@ var fff = fi.reader();
 var str:  string;
 var str2: string;
 
-while(ffi.readline(str)) {
-  fff.readline(str2);
+while(ffi.readLine(str)) {
+  fff.readLine(str2);
   write("read string from HDFS: " + str);
   write("read string from  LFS: " + str2);
 }
@@ -63,14 +63,14 @@ writeln("=== Reading from HDFS into data/bar.txt ===\n");
 
  //This file differes from beer.txt in that its block size is
  //set to 1024 -- and therefore it must have blocks residing on different locales
-var r = hdfs.hdfs_chapel_open("/tmp/uly.txt", iomode.r);
+var r = hdfs.hdfs_chapel_open("/tmp/uly.txt", ioMode.r);
 var rr = r.reader(); 
 
-var w = open("data/bar.txt", iomode.cw);
+var w = open("data/bar.txt", ioMode.cw);
 var ww = w.writer();
 
 //var str:  string;
-while(rr.readline(str)) {
+while(rr.readLine(str)) {
   ww.write(str);
 }
 rr.close();

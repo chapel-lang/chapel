@@ -1,7 +1,14 @@
 bug: function-scoped enum can't be initialized with global param
 #7681
 
-The error in the .bad file corresponds to this in
-ensureEnumTypeResolved():
+In the following code:
 
-test/types/enum/scope-param-offset-concrete.chpl:4: internal error: Unable to resolve enumerator type expression [resolution/functionResolution.cpp:6183]
+    enumScopeTest();
+    param x = 2;
+    proc enumScopeTest() {
+      enum Numbers {one=x, two, three};
+      writeln(Numbers.one);
+    }
+
+the enum constant 'one' gets initialized to 'x' before 'x' gets resolved.
+Should this work?

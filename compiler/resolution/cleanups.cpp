@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -216,6 +216,33 @@ static void removeRandomPrimitive(CallExpr* call) {
         Symbol* sym = se->symbol();
         if (isTypeSymbol(sym) || sym->hasFlag(FLAG_TYPE_VARIABLE))
           call->remove();
+
+      // Remove type construction calls that contain runtime types, now.
+      // They may have been used to default-init but are no longer needed.
+      } else if (auto innerCall = toCallExpr(call->get(2))) {
+        auto baseExpr = innerCall->baseExpr;
+
+        if (baseExpr && isTypeExpr(baseExpr)) {
+          if (isTypeExpr(call->get(1))) {
+            bool containsRuntimeType = false;
+
+            for_actuals(actual, innerCall) {
+              if (auto se = toSymExpr(actual)) {
+                auto ts = se->symbol()->type->symbol;
+
+                // Runtime types should have been transformed into values.
+                if (ts && ts->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                  INT_ASSERT(se->symbol()->defPoint->inTree());
+                  containsRuntimeType = true;
+                  break;
+                }
+              }
+            }
+
+            INT_ASSERT(containsRuntimeType);
+            call->remove();
+          }
+        }
       }
     }
     break;
@@ -762,7 +789,7 @@ static void cleanupNothingVarsAndFields() {
       case PRIM_ASSIGN:
         if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
-          INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
+          INT_ASSERT(call, call->get(1)->typeInfo() == call->get(2)->typeInfo());
           // Remove moves where the rhs has type nothing. If the rhs is a
           // call to something other than a few primitives, still make
           // that call, just don't move the result into anything.

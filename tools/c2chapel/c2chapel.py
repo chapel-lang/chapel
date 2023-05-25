@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -83,8 +83,8 @@ c2chapel["unsigned short"]     = "c_ushort"
 c2chapel["intptr_t"]           = "c_intptr"
 c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
-c2chapel["ssize_t"]            = "ssize_t"
-c2chapel["size_t"]             = "size_t"
+c2chapel["ssize_t"]            = "c_ssize_t"
+c2chapel["size_t"]             = "c_size_t"
 c2chapel["long double"]        = "c_longlong"
 c2chapel["signed short"]       = "c_short"
 c2chapel["signed int"]         = "c_int"
@@ -217,7 +217,9 @@ def getIntentInfo(ty):
         ptrType = toChapelType(curType)
 
     if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
-        refIntent = "ref"
+        if ptrType and "const" in curType.type.quals:
+            refIntent = "const "
+        refIntent += "ref"
         curType = curType.type
     else:
         refIntent = ""
@@ -274,14 +276,20 @@ def toChapelType(ty):
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:
-            return "c_ptr(" + eltType + ")"
+            if "const" in ty.type.quals:
+                return "c_ptrConst(" + eltType + ")"
+            else:
+                return "c_ptr(" + eltType + ")"
         else:
             return None
     elif type(ty) == c_ast.PtrDecl:
         if type(ty.type) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
             return "c_fn_ptr"
         else:
-            return "c_ptr(" + toChapelType(ty.type) + ")"
+            if "const" in ty.type.quals:
+                return "c_ptrConst(" + toChapelType(ty.type) + ")"
+            else:
+                return "c_ptr(" + toChapelType(ty.type) + ")"
     elif type(ty) in (c_ast.TypeDecl, ext_c_parser.TypeDeclExt):
         inner = ty.type
         name = ""

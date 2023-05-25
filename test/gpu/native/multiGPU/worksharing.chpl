@@ -1,6 +1,6 @@
 use Time;
-
-writeln("Number of sublocales: ", here.getChildCount());
+use GpuDiagnostics;
+use MemDiagnostics;
 
 config const validate = true;
 config const printStats = false;
@@ -8,12 +8,12 @@ config const debug = false;
 config const justCPU = false;
 config const numIters = 100;
 
-config const alpha = 2;
+config const alpha = 10;
 config const n = 10;
 
 config const cpuToGpuRatio = 2.0;
 
-var t = new Timer();
+var t = new stopwatch();
 
 var A, B, C: [0..#n] int;
 
@@ -22,14 +22,15 @@ C = 2;
 
 var minTime = max(real);
 
+startGpuDiagnostics();
+
 for i in 1..numIters {
   t.start();
   if justCPU {
     A = B + alpha * C;
   }
   else {
-    const numPUs = here.getChildCount(); 
-    const numGPUs = numPUs-1;
+    const numGPUs = here.gpus.size;
     const chunkDiv = numGPUs+cpuToGpuRatio;
     var chunkSize = (n/chunkDiv):int;
     var cpuSize = (chunkSize*cpuToGpuRatio):int;
@@ -40,9 +41,9 @@ for i in 1..numIters {
     cobegin {
       A[cpuRange] = B[cpuRange] + alpha * C[cpuRange];
 
-      coforall sublocID in 1..#numGPUs do on here.getChild(sublocID) {
-        const myChunk = cpuSize+(sublocID-1)*gpuChunkSize..#gpuChunkSize;
-        if debug then writeln(sublocID, ": ", myChunk);
+      coforall (gpu, gpuID) in zip(here.gpus, here.gpus.domain) do on gpu {
+        const myChunk = cpuSize+gpuID*gpuChunkSize..#gpuChunkSize;
+        if debug then writeln(gpuID, ": ", myChunk);
 
         var Aloc: [myChunk] int;
         var Bloc = B[myChunk];
@@ -58,6 +59,12 @@ for i in 1..numIters {
   if t.elapsed() < minTime then minTime = t.elapsed();
 }
 
+stopGpuDiagnostics();
+const nLaunch = getGpuDiagnostics().kernel_launch;
+
+assert(nLaunch == here.gpus.size*numIters);
+
+writeln(A);
 
 if validate then
   assert(n*(1+alpha*2) == + reduce A);

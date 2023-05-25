@@ -1,4 +1,4 @@
-use Math; //doesn't make a difference -- works either way
+use Math;
 writeln(Math.pi);
 writeln(pi);
 

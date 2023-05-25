@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,7 @@ void chpl_mem_exit(void);
 
 int chpl_mem_inited(void);
 
+extern void* chpl_gpu_memmove(void* dest, const void* src, size_t num);
 
 static inline
 void* chpl_mem_allocMany(size_t number, size_t size,
@@ -166,7 +167,12 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 static inline
 void* chpl_memmove(void* dest, const void* src, size_t num)
 {
-  return memmove(dest, src, num);
+  // check for GPU_RUNTIME_CPU is needed to break recursion
+#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU)
+    return chpl_gpu_memmove(dest, src, num);
+#else
+    return memmove(dest, src, num);
+#endif
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

@@ -1,3 +1,13 @@
 --n=0 < fasta.small
 --n=0 < fasta-250000.rvcmp  # revcomp-250000.good
 --n=0 < /dev/null           # revcomp-empty.good
+--n=0 --readSize=10 < fasta.small
+--n=0 --readSize=10 < fasta-250000.rvcmp  # revcomp-250000.good
+--n=0 --readSize=10000 < fasta.small
+--n=0 --readSize=10000 < fasta-250000.rvcmp  # revcomp-250000.good
+--n=0 --readSize=2055 < fasta.small
+--n=0 --readSize=2056 < fasta.small
+--n=0 --readSize=2057 < fasta.small
+--n=0 --readSize=5130 < fasta.small
+--n=0 --readSize=5131 < fasta.small
+--n=0 --readSize=5132 < fasta.small

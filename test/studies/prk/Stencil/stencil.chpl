@@ -55,7 +55,7 @@ const activePoints = (order-2*R)*(order-2*R),
       /* Determine if tiling is enabled */
       tiling = (tileSize > 0 && tileSize < order);
 
-var timer: Timer;
+var timer: stopwatch;
 
 /* Parallel Research Kernel - Stencil */
 proc main() {
@@ -167,7 +167,7 @@ proc main() {
   }
 
   var stenTime, incTime, commTime : real;
-  var subTimer : Timer;
+  var subTimer : stopwatch;
 
   //
   // Main loop of Stencil

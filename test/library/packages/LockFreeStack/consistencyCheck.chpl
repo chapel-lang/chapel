@@ -1,14 +1,14 @@
 use LockFreeStack;
 use Time;
 
-config const N = 1024 * 1024;
+config const N = 1024;
 config const printTiming = false;
 var expected = + reduce (1..N);
 
 
 var lfs = new LockFreeStack(int);
 
-var timer = new Timer();
+var timer = new stopwatch();
 timer.start();
 
 forall i in 1..N {

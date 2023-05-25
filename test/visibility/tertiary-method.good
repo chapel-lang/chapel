@@ -1,0 +1,3 @@
+tertiary-method.chpl:14: In function 'foo':
+tertiary-method.chpl:15: error: 'x' undeclared (first use this function)
+tertiary-method.chpl:15: error: 'y' undeclared (first use this function)

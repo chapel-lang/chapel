@@ -37,7 +37,7 @@ proc elegant(order, subOrder, iterations): real {
   var Array : [Dom] real,
    subArray: [subDom] real = 2.0;
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 
@@ -59,7 +59,7 @@ proc performant(order, subOrder, iterations): real {
   var Array : [Dom] real,
    subArray: [subDom] real = 2.0;
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   t.start();
 

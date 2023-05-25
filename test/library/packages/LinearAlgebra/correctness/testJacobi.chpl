@@ -9,7 +9,7 @@ config const n = 16,
              threshold = 0.00001;
 
 
-var t: Timer;
+var t: stopwatch;
 var itern: int;
 
 // Dense

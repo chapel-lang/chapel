@@ -38,9 +38,9 @@ proc cgFun(cgArg1: ?Q1, cgArg2: ?Q2) where implements IFC2(Q1, Q2) {
 
 record MyRec1 {
   var   xx;
-  proc  AT1 type return xx.type;
-  proc  AT2 type return this.type;
-  proc  AT3 type return uint;
+  proc  AT1 type do return xx.type;
+  proc  AT2 type do return this.type;
+  proc  AT3 type do return uint;
   type  AT4;
   param PP;
 }

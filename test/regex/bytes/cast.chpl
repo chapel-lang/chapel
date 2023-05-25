@@ -5,11 +5,11 @@ use Regex;
 var s = "contains";
 var b = b"contains";
 
-var rs = s:regex(string);
-var rb = b:regex(bytes);
+var rcs = new regex(s);
+var rcb = new regex(b);
 
-writeln("contains regular expression".search(rs));
-writeln(b"contains regular expression".search(rb));
+writeln("contains regular expression".find(rcs));
+writeln(b"contains regular expression".find(rcb));
 
-writeln("doesn't contain regular expression".search(rs));
-writeln(b"doesn't contain regular expression".search(rb));
+writeln("doesn't contain regular expression".find(rcs));
+writeln(b"doesn't contain regular expression".find(rcb));

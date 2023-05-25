@@ -23,12 +23,12 @@ if printArrays then
 
 use Time;
 
-const startTime = getCurrentTime();
+const startTime = timeSinceEpoch().totalSeconds();
 
 for i in 1..numIters do
   A[B] += 1;
 
-const stopTime = getCurrentTime();
+const stopTime = timeSinceEpoch().totalSeconds();
 if printTiming then
   writeln("Time: ", stopTime-startTime);
 

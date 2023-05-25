@@ -1,0 +1,3 @@
+init-field-arg-oknil-shared-from-nonnil-owned.chpl:7: In initializer:
+init-field-arg-oknil-shared-from-nonnil-owned.chpl:8: warning: assigning owned class to shared class is deprecated.
+  init-field-arg-oknil-shared-from-nonnil-owned.chpl:14: called as MyRecord.init(rhs: owned MyClass)

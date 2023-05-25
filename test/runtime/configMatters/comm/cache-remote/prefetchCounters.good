@@ -1,0 +1,12 @@
+Running test 1
+	cache_num_prefetches: 32
+	cache_prefetch_unused: 32
+	cache_prefetch_waited: 0
+Running test 2
+	cache_num_prefetches: 32
+	cache_prefetch_unused: 16
+	cache_prefetch_waited: 0
+Running test 3
+	cache_num_prefetches: 32
+	cache_prefetch_unused: 0
+	cache_prefetch_waited: 32

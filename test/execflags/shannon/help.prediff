@@ -8,9 +8,16 @@ fh = open(execout, 'r')
 myLines = fh.readlines()
 fh.close()
 
+skippingCmdLineFlags = True
 inConfigs = False
 fh = open(execout, 'w')
 for line in myLines:
+    # ignore --help output other than config var stuff
+    if skippingCmdLineFlags:
+        if line == "CONFIG VAR FLAGS:\n":
+            skippingCmdLineFlags = False
+        else:
+            continue
     if inConfigs:
         if line.strip().find('============') == -1:
             if line.strip().find(' config vars:') != -1:

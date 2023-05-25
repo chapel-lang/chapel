@@ -1,0 +1,2 @@
+issue-19474-duplicate-fields.chpl:6: error: field 'x' has same name as parent class field
+issue-19474-duplicate-fields.chpl:2: note: parent class field declared here

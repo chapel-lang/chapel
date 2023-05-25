@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,7 +96,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   proc setup() {
     //    writeln("In setup");
     var thisid = this.locale.id;
-    if locDoms(dist.targetLocDom.low) == nil {
+    if locDoms(dist.targetLocDom.lowBound) == nil {
       coforall localeIdx in dist.targetLocDom do {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
@@ -147,11 +147,11 @@ class SparseBlockDom: BaseSparseDomImpl {
     return dsiAdd((ind,));
   }
 
-  proc dsiFirst {
+  override proc dsiFirst {
     return min reduce ([l in locDoms] l!.mySparseBlock.first);
   }
 
-  proc dsiLast {
+  override proc dsiLast {
     return max reduce ([l in locDoms] l!.mySparseBlock.last);
   }
 
@@ -230,16 +230,16 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiSerialWrite(f) {
     if (rank == 1) {
-      f <~> "{";
+      f.write("{");
       for locdom in locDoms do {
         // on locdom do {
         if (locdom!.dsiNumIndices) {
-            f <~> " ";
+            f.write(" ");
             locdom!.dsiSerialWrite(f);
           }
           //}
       }
-      f <~> "}";
+      f.write("}");
     } else {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
@@ -260,7 +260,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   }
 
   // stopgap to avoid accessing locDoms field (and returning an array)
-  proc getLocDom(localeIdx) return locDoms(localeIdx)!;
+  proc getLocDom(localeIdx) do return locDoms(localeIdx)!;
 
   iter these() {
     for locDom in locDoms do
@@ -318,7 +318,7 @@ class SparseBlockDom: BaseSparseDomImpl {
         locDom!.dsiClear();
   }
 
-  override proc dsiMyDist() return dist;
+  override proc dsiMyDist() do return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if !lhsPrivate then
@@ -369,7 +369,6 @@ class LocSparseBlockDom {
   proc dsiSerialWrite(w) {
     mySparseBlock._value.dsiSerialWrite(w, printBrackets=false);
     // w.write(mySparseBlock); // works, but gets brackets printed out redundantly
-    //    w <~> mySparseBlock;
   }
 
   proc dsiNumIndices {
@@ -484,8 +483,8 @@ class SparseBlockArr: BaseSparseArr {
   iter these(param tag: iterKind) ref where tag == iterKind.standalone &&
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
-    __primitive("resolves",
-                locArr[locArrDom.low]!.myElems._value.these(tag)) {
+    __primitive("method call resolves",
+                locArr[locArrDom.low]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {
@@ -524,17 +523,17 @@ class SparseBlockArr: BaseSparseArr {
 
 
 
-  proc dsiAccess(i: idxType...rank) ref
+  proc dsiAccess(i: idxType...rank) ref do
     return dsiAccess(i);
   proc dsiAccess(i: idxType...rank)
-  where shouldReturnRvalueByValue(eltType)
+  where shouldReturnRvalueByValue(eltType) do
     return dsiAccess(i);
-  proc dsiAccess(i: idxType...rank) const ref
+  proc dsiAccess(i: idxType...rank) const ref do
     return dsiAccess(i);
 
 
 
-  override proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() do return dom;
 
   override proc dsiIteratorYieldsLocalElements() param {
     return true;
@@ -645,9 +644,9 @@ proc _matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 
-proc SparseBlockDom.dsiLow return whole.low;
-proc SparseBlockDom.dsiHigh return whole.high;
-proc SparseBlockDom.dsiStride return whole.stride;
+proc SparseBlockDom.dsiLow do return whole.lowBound;
+proc SparseBlockDom.dsiHigh do return whole.highBound;
+proc SparseBlockDom.dsiStride do return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -698,7 +697,7 @@ proc SparseBlockDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocSparseBlockDom.contains(i) return mySparseBlock.contains(i);
+proc LocSparseBlockDom.contains(i) do return mySparseBlock.contains(i);
 
 override proc SparseBlockArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -723,7 +722,7 @@ inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
 proc SparseBlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 1..rank {
-    low(i) = ranges(i).low;
+    low(i) = ranges(i).lowBound;
   }
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
 }
@@ -791,16 +790,16 @@ proc LocSparseBlockArr.this(i) ref {
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
-    f <~> "[";
+    f.write("[");
     for locarr in locArr do {
       // on locdom do {
       if (locarr!.locDom.dsiNumIndices) {
-        f <~> " ";
+        f.write(" ");
         locarr!.dsiSerialWrite(f);
       }
       // }
     }
-    f <~> "]";
+    f.write("]");
   } else {
     compilerError("Can't write out multidimensional sparse distributed arrays yet");
   }
@@ -811,9 +810,9 @@ proc LocSparseBlockArr.dsiSerialWrite(f) {
 }
 
 
-override proc SparseBlockDom.dsiSupportsPrivatization() param return true;
+override proc SparseBlockDom.dsiSupportsPrivatization() param do return true;
 
-proc SparseBlockDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc SparseBlockDom.dsiGetPrivatizeData() do return (dist.pid, whole.dims());
 
 proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
@@ -831,7 +830,7 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc SparseBlockDom.dsiGetReprivatizeData() return whole.dims();
+proc SparseBlockDom.dsiGetReprivatizeData() do return whole.dims();
 
 proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
@@ -839,9 +838,9 @@ proc SparseBlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-override proc SparseBlockArr.dsiSupportsPrivatization() param return true;
+override proc SparseBlockArr.dsiSupportsPrivatization() param do return true;
 
-proc SparseBlockArr.dsiGetPrivatizeData() return dom.pid;
+proc SparseBlockArr.dsiGetPrivatizeData() do return dom.pid;
 
 proc SparseBlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
@@ -859,24 +858,27 @@ proc SparseBlockArr.dsiPrivatize(privatizeData) {
 proc SparseBlockDom.numRemoteElems(rlo,rid){
   var blo,bhi:dist.idxType;
   if rid==(dist.targetLocDom.dim(rank-1).size - 1) then
-    bhi=whole.dim(rank-1).high;
+    bhi=whole.dim(rank-1).highBound;
   else
-      bhi=dist.boundingBox.dim(rank-1).low +
-        intCeilXDivByY((dist.boundingBox.dim(rank-1).high - dist.boundingBox.dim(rank-1).low +1)*(rid+1),
+      bhi=dist.boundingBox.dim(rank-1).lowBound +
+        intCeilXDivByY((dist.boundingBox.dim(rank-1).highBound - dist.boundingBox.dim(rank-1).lowBound +1)*(rid+1),
                    dist.targetLocDom.dim(rank-1).size) - 1;
 
   return(bhi - rlo + 1);
 }
 
-proc SparseBlockDom.dsiHasSingleLocalSubdomain() param return true;
-proc SparseBlockArr.dsiHasSingleLocalSubdomain() param return true;
+proc SparseBlockDom.dsiHasSingleLocalSubdomain() param do return true;
+proc SparseBlockArr.dsiHasSingleLocalSubdomain() param do return true;
 
 proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
   if loc != here then
     unimplementedFeatureHalt("the Sparse Block distribution",
                              "remote subdomain queries");
 
-  const (found, targetIdx) = dist.targetLocales.find(here);
+  var targetIdx: dist.targetLocales.fullIdxType;
+  const found = dist.targetLocales.find(here, targetIdx);
+  if !found then
+    halt("couldn't find locale ", here.id, " in the targetLocales array");
   return locDoms[targetIdx]!.mySparseBlock;
 }
 

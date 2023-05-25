@@ -41,7 +41,7 @@ var remainders: [0..extend, 1..4] I1;
 
 proc main
 {
-  var t: Timer;
+  var t: stopwatch;
   if perfTest then t.start();
 
   start_digit(start);
@@ -54,7 +54,7 @@ proc main
   if perfTest then
   {
     t.stop();
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed time = ", t.elapsed());
   }
 
   write_out();

@@ -1,0 +1,3 @@
+--no-warn-unknown-attribute-toolname # toolnames.nowarn.doc.good
+--warn-unknown-attribute-toolname # toolnames.warn.doc.good
+--using-attribute-toolname=linter # toolnames.warn.additional.doc.good

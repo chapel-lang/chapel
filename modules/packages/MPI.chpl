@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,10 +209,10 @@ module MPI {
    */
   config const requireThreadedMPI=true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config const debugMPI=false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var CHPL_COMM_WORLD_REPLICATED : [rcDomain] MPI_Comm;
   rcReplicate(CHPL_COMM_WORLD_REPLICATED, MPI_COMM_NULL);
 
@@ -226,13 +226,13 @@ module MPI {
     return CHPL_COMM_WORLD_REPLICATED(1);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _doinit : bool = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   var _freeChplComm : bool = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Module level deinit */
   proc deinit() {
     if _freeChplComm {
@@ -316,7 +316,7 @@ module MPI {
     setChplComm();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setChplComm() {
     if numLocales > 1 {
       coforall loc in Locales do on loc {
@@ -439,7 +439,7 @@ module MPI {
   extern type MPI_Op;
 
   {
-    pragma "no doc"
+    @chpldoc.nodoc
     extern proc sizeof(type t): c_size_t;
     assert(sizeof(MPI_Aint) == sizeof(c_ptrdiff));
   }
@@ -728,7 +728,7 @@ module MPI {
    } // End C_MPI
 
 
-  module C_Env {
+  private module C_Env {
     use CTypes;
     // Helper routines to access the environment
     extern proc getenv(name : c_string) : c_string;

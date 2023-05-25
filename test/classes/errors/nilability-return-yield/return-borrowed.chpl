@@ -1,4 +1,4 @@
 class C { }
-var global = new borrowed C() : borrowed C?;
-proc P(): borrowed C  return global;
+var global = (new owned C() : borrowed C?).borrow();
+proc P(): borrowed C do  return global;
 var dum = P();

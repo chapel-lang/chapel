@@ -146,27 +146,41 @@ int main(int argc, char **argv)
   {
     unsigned int offset = page_align ? 0 : 16;
 
+  #if MISSING_MULTI_SEGMENT_SUPPORT
+    int have_gseg = !client_segment;
+    int have_cseg =  client_segment;
+  #else
+    int have_gseg = 1;
+    int have_cseg = 1;
+  #endif
+
     // Test creation of a GASNet-allocated segment
     gex_Segment_t g_segment = GEX_SEGMENT_INVALID;
-    size_t g_segment_size = GASNET_PAGESIZE - offset;
-    GASNET_Safe(gex_Segment_Create(&g_segment, myclient, NULL, g_segment_size, GEX_MK_HOST, 0));
-    if ((g_segment == GEX_SEGMENT_INVALID) ||
-        (gex_Segment_QueryAddr(g_segment) == NULL) ||
-        (gex_Segment_QuerySize(g_segment) < g_segment_size)) {
-      ERR("FAILED GASNET-ALLOCATED SEGMENT CREATE TEST");
+    if (have_gseg) {
+      size_t g_segment_size = GASNET_PAGESIZE - offset;
+      GASNET_Safe(gex_Segment_Create(&g_segment, myclient, NULL, g_segment_size, GEX_MK_HOST, 0));
+      if ((g_segment == GEX_SEGMENT_INVALID) ||
+          (gex_Segment_QueryAddr(g_segment) == NULL) ||
+          (gex_Segment_QuerySize(g_segment) < g_segment_size)) {
+        ERR("FAILED GASNET-ALLOCATED SEGMENT CREATE TEST");
+      }
     }
 
     // Test creation of a client-allocated segment
     // TODO: should also cover client allocation from mmap(), stack and static data.
     gex_Segment_t c_segment = GEX_SEGMENT_INVALID;
-    uint8_t *c_segment_mem = (uint8_t *) test_malloc(GASNET_PAGESIZE);
-    uint8_t *c_segment_addr = c_segment_mem + offset;
-    size_t c_segment_size = GASNET_PAGESIZE - 2*offset;
-    GASNET_Safe(gex_Segment_Create(&c_segment, myclient, c_segment_addr, c_segment_size, GEX_MK_HOST, 0));
-    if ((c_segment == GEX_SEGMENT_INVALID) ||
-        (gex_Segment_QueryAddr(c_segment) != c_segment_addr) ||
-        (gex_Segment_QuerySize(c_segment) != c_segment_size)) {
-      ERR("FAILED CLIENT-ALLOCATED SEGMENT CREATE TEST");
+    uint8_t *c_segment_addr = NULL;
+    size_t c_segment_size = 0;
+    if (have_cseg) {
+      uint8_t *c_segment_mem = (uint8_t *) test_malloc(GASNET_PAGESIZE);
+      c_segment_addr = c_segment_mem + offset;
+      c_segment_size = GASNET_PAGESIZE - 2*offset;
+      GASNET_Safe(gex_Segment_Create(&c_segment, myclient, c_segment_addr, c_segment_size, GEX_MK_HOST, 0));
+      if ((c_segment == GEX_SEGMENT_INVALID) ||
+          (gex_Segment_QueryAddr(c_segment) != c_segment_addr) ||
+          (gex_Segment_QuerySize(c_segment) != c_segment_size)) {
+        ERR("FAILED CLIENT-ALLOCATED SEGMENT CREATE TEST");
+      }
     }
 
     // Test pre-bind (no segments yet) Publish
@@ -175,24 +189,51 @@ int main(int argc, char **argv)
       ERR("FAILED EARLY SEGMENT PUBLISH TEST");
     }
 
-    // Pick a segment to test and (TODO:) destroy the other
-    gex_Segment_t seg;
+    // Pick a segment for the main tests
+    // The other is used in one later test and then destroyed
+    gex_Segment_t seg, other_seg;
     void *    seg_addr;
     uintptr_t seg_size;
     if (client_segment) {
+      assert(have_cseg);
       seg      = c_segment;
       seg_addr = c_segment_addr;
       seg_size = c_segment_size;
-      // GASNET_Safe(gex_Segment_Destroy(g_segment, 0));
+      other_seg = g_segment;
     } else {
+      assert(have_gseg);
       seg      = g_segment;
       seg_addr = gex_Segment_QueryAddr(g_segment);
       seg_size = gex_Segment_QuerySize(g_segment);
-      // GASNET_Safe(gex_Segment_Destroy(c_segment, 0));
+      other_seg = c_segment;
     }
 
-    // Bind the chosen segments and validate
-    gex_EP_BindSegment(myep, seg, 0);
+    // Verify desired behavior for erroneous arguments to gex_EP_BindSegment(),
+    // taking care to provide valid values for two of the three arguments.
+    // NOTE: specification does not require diagnosis of these errors, nor
+    // specify the error code to be used if one does diagnose them.
+    gex_System_SetVerboseErrors(0);
+      // invalid ep
+      if (GASNET_ERR_BAD_ARG != gex_EP_BindSegment(GEX_EP_INVALID, seg, 0)) {
+          ERR("FAILED GEX_EP_INVALID BIND TEST");
+      }
+
+      // invalid segment
+      if (GASNET_ERR_BAD_ARG != gex_EP_BindSegment(myep, GEX_SEGMENT_INVALID, 0)) {
+          ERR("FAILED GEX_SEGMENT_INVALID BIND TEST");
+      }
+
+      // invalid flags
+      // NOTE: currently, all non-zero flags values are invalid, but that may change
+      if (GASNET_ERR_BAD_ARG != gex_EP_BindSegment(myep, seg, 1)) {
+          ERR("FAILED INVALID FLAGS BIND TEST");
+      }
+    gex_System_SetVerboseErrors(1);
+
+    // Bind the chosen segment and validate
+    if (gex_EP_BindSegment(myep, seg, 0)) {
+        ERR("FAILED CALL TO gex_EP_BindSegment");
+    }
     {
       void *tmp_addr;
       size_t tmp_size;
@@ -203,6 +244,18 @@ int main(int argc, char **argv)
         ERR("FAILED SEGMENT EP BIND TEST");
       }
     }
+
+  #if !MISSING_MULTI_SEGMENT_SUPPORT
+    gex_System_SetVerboseErrors(0);
+      // Verify desired behavior for erroneous double-bind
+      // NOTE: specification does not require diagnosis nor specify the error code
+      if (GASNET_ERR_BAD_ARG != gex_EP_BindSegment(myep, other_seg, 0)) {
+          ERR("FAILED DOUBLE-BIND TEST");
+      }
+    gex_System_SetVerboseErrors(1);
+
+    gex_Segment_Destroy(other_seg, 0);
+  #endif
 
     // Publish the segment over a permuted temporary team,
     // consisting all odds in reverse order followed by evens in reverse order.
@@ -220,6 +273,17 @@ int main(int argc, char **argv)
       }
       GASNET_Safe(gex_TM_Destroy(tmp_tm, NULL, 0));
     }
+
+  #if GASNET_MAXEPS > 1
+    // Test binding same segment to a second endpoint
+    gex_EP_t ep2;
+    if ((GASNET_OK != gex_EP_Create(&ep2, myclient, GEX_EP_CAPABILITY_RMA, 0)) ||
+        (GASNET_OK != gex_EP_BindSegment(ep2, seg, 0)) ||
+        (GASNET_OK != gex_EP_PublishBoundSegment(myteam, &ep2, 1, 0))) {
+        ERR("FAILED MULTI-BOUND SEGMENT TEST");
+    }
+    // TODO: Unpublish, Unbind and Destroy
+  #endif
 
     // Prepare for comms
     gex_Rank_t peer = (myrank + 1) % nranks;

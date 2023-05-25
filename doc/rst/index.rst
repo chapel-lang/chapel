@@ -22,11 +22,10 @@ Chapel Documentation
    Hello World Variants <examples/index>
    Primers <primers/index>
    Language Specification <language/spec/index>
-   builtins/index
    modules/standard
    modules/packages
    modules/layoutdist
-   mason-packages
+   mason-packages/index
    users-guide/index
 
 .. toctree::

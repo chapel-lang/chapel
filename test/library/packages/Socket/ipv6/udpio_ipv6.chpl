@@ -1,5 +1,6 @@
 use UnitTest;
 use Socket;
+use OS.POSIX;
 
 proc test_send_recv(test: borrowed Test) throws {
   var host = "::1";
@@ -52,7 +53,7 @@ proc test_send_recv_timed(test: borrowed Test) throws {
       var sentBytes = sender.send(sent, address);
       test.assertEqual(sentBytes, sent.size);
     }
-    received = receiver.recv(sent.size, new timeval(2,0));
+    received = receiver.recv(sent.size, new struct_timeval(2,0));
     test.assertEqual(received, sent);
   }
 }
@@ -71,7 +72,7 @@ proc test_send_recv_from_timed(test: borrowed Test) throws {
       var sentBytes = sender.send(sent, receiverAddress);
       test.assertEqual(sentBytes, sent.size);
     }
-    var (received, receivedAddress) = receiver.recvfrom(sent.size, new timeval(2,0));
+    var (received, receivedAddress) = receiver.recvfrom(sent.size, new struct_timeval(2,0));
     test.assertEqual(received, sent);
     test.assertEqual(receivedAddress, sender.addr);
   }
@@ -93,7 +94,7 @@ proc test_recv_timeout(test: borrowed Test) throws {
   bind(receiver, receiverAddress);
   var sent = b"hello";
   try {
-    var received = receiver.recv(sent.size, new timeval(2,0));
+    var received = receiver.recv(sent.size, new struct_timeval(2,0));
     test.assertEqual(-1,0);
   } catch e:TimeoutError {
     test.assertEqual(e.message(), "Connection timed out (recv timed out)");
@@ -107,7 +108,7 @@ proc test_recv_from_timeout(test: borrowed Test) throws {
   bind(receiver, receiverAddress);
   var sent = b"hello";
   try {
-    var (received, receivedAddress) = receiver.recvfrom(sent.size, new timeval(2,0));
+    var (received, receivedAddress) = receiver.recvfrom(sent.size, new struct_timeval(2,0));
     test.assertEqual(-1,0);
   } catch e:TimeoutError {
     test.assertEqual(e.message(), "Connection timed out (recv timed out)");

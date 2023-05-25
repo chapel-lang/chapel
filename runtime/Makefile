@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -51,6 +51,8 @@ ifneq ($(CHPL_MAKE_LAUNCHER),none)
 	@$(MAKE) -f Makefile.help MAKE_LAUNCHER=1 CHPL_MAKE_RULE=$* $*
 endif
 
+# save output of printchplenv into #defines but munge away
+# characters that can't be in #defines
 $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/chplenv/*
 	@mkdir -p $(CHPL_ENV_HEADER_DIR)
 	@echo "Generating $(CHPL_ENV_HEADER)"
@@ -59,13 +61,9 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/c
 	@echo "#ifndef _CHPL_ENV_GEN_H_" >> $(CHPL_ENV_HEADER)
 	@echo "#define _CHPL_ENV_GEN_H_" >> $(CHPL_ENV_HEADER)
 	@$(CHPL_MAKE_HOME)/util/printchplenv --runtime --no-tidy --anonymize --simple | \
-          grep -v CHPL_HOST_CC | \
-          grep -v CHPL_HOST_CXX | \
-          grep -v CHPL_TARGET_CC | \
-          grep -v CHPL_TARGET_CXX | \
-          sed s/[-+.\/]/_/g | \
-          sed s/\=/' '/ | \
-          awk '{ print "#define " $$1 "_" toupper($$2) }' >> $(CHPL_ENV_HEADER)
+	  sed 's/^ *//;s/ *$$//' | \
+	  sed 's/[^0-9A-Za-z]/_/g' | \
+	  awk '{ print "#define " toupper($$1) }' >> $(CHPL_ENV_HEADER)
 	@echo "#endif /* _CHPL_ENV_GEN_H_ */" >> $(CHPL_ENV_HEADER)
 
 THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)

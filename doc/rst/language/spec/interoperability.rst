@@ -244,8 +244,9 @@ If an optional ``external-name`` is supplied, it provides the name of
 the symbol(s) in C, where the given Chapel identifier(s) are used to
 refer to them within Chapel code.
 
-Fixed-size C array types can be described within Chapel using its
-homogeneous tuple type. For example, the C typedef 
+Fixed-size C array types can be described within Chapel using the
+``c_array`` type defined by the standard ``CTypes`` module.
+For example, the C typedef 
 
 .. code-block:: chapel
 
@@ -255,7 +256,7 @@ can be described in Chapel using
 
 .. code-block:: chapel
 
-   extern type vec = 3*real(64);
+   extern type vec = c_array(c_double, 3);
 
 .. _Referring_to_External_C_Structs:
 
@@ -565,21 +566,22 @@ correspondence between Chapel intents and C argument type declarations.
 These correspondences pertain to both imported and exported function
 signatures.
 
-======= =======
-Chapel  C
-======= =======
-T       const T
-in T    T
-ref T   T\*
+=========== =========
+Chapel      C
+=========== =========
+T           const T
+in T        T
+ref T       T\*
+const ref T const T\*
 param  
-type    char\*
-======= =======
+type        char\*
+=========== =========
 
 Currently, ``param`` arguments are not allowed in an extern function
 declaration, and ``type`` args are passed as a string containing the
 name of the actual type being passed. Note that the level of indirection
 is changed when passing arguments to a C function using
-the ``ref`` intent. The C code implementing that function must
+the ``ref`` or ``const ref`` intent. The C code implementing that function must
 dereference the argument to extract its value.
 
 .. _Interop_Variable_Initialization:

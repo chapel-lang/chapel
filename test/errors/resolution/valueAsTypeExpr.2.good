@@ -1,0 +1,8 @@
+─── error in valueAsTypeExpr.chpl:2 [ValueUsedAsType] ───
+  Type specifier is a value of type 'int(64)', but it was expected to be a type.
+  In the following type specifier:
+      |
+    2 | var x: someInt = 1;
+      |        ⎺⎺⎺⎺⎺⎺⎺
+      |
+

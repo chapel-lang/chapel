@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,17 +45,17 @@ module ChapelIteratorSupport {
   //
   // module support for iterators
   //
-  pragma "no doc"
   pragma "allow ref" // needs to to return tuples with refs
   pragma "fn returns iterator"
+  @chpldoc.nodoc
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
-  pragma "no doc"
   pragma "expand tuples with values"  // needs to return tuples with refs
   pragma "fn returns iterator"
+  @chpldoc.nodoc
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
@@ -69,7 +69,7 @@ module ChapelIteratorSupport {
     return iteratorIndexHelp(t, 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc iteratorIndexType(x) type {
    // If the result is a runtime type, we do not want to call iteratorIndex()
    // - to avoid ic.advance(). We can do this for an array or a domain.
@@ -100,7 +100,7 @@ module ChapelIteratorSupport {
    }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc iteratorIndexTypeZip(xs...) type {
     proc iteratorIndexTypeZipHelp(param dim) type {
       if dim == xs.size-1 then
@@ -123,7 +123,7 @@ module ChapelIteratorSupport {
   //
   // This function IS executed at runtime - and 'x' is advanced once -
   // because the returned type is an array and so has a runtime component.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc chpl_elemTypeForReducingIterables(x) type {
 
     // Part 1 - get the first element yielded by 'x'
@@ -131,7 +131,7 @@ module ChapelIteratorSupport {
     // for the case of a non-array non-domain argument.
 
     for i in x {
-      compilerAssert(i.type <= _iteratorRecord); // prevent unintended use
+      compilerAssert(isSubtype(i.type, _iteratorRecord)); // prevent unintended use
 
       // The case where the shape is a range can be implemented
       // analogously to the two versions of chpl__initCopy(_iteratorRecord)
@@ -270,7 +270,7 @@ module ChapelIteratorSupport {
   // run-time types from it. So we create them from scratch.
   //
   proc chpl_buildStandInRTT(domInst) type
-    where domInst.type <= unmanaged DefaultRectangularDom
+    where isSubtype(domInst.type, unmanaged DefaultRectangularDom)
   {
     // The only _RuntimeTypeInfo component for a domain type is
     // a BaseDist subclass. We use 'defaultDist' for that.
@@ -282,7 +282,7 @@ module ChapelIteratorSupport {
   // Other kinds of arrays/domains are not supported.
   proc chpl_buildStandInRTT(domInst) type
   {
-    if domInst.type <= unmanaged BaseDom then
+    if isSubtype(domInst.type, unmanaged BaseDom) then
       compilerError("for/forall/promoted expressions are not implemented when the elements are or contain non-DefaultRectangular domains or arrays");
     else
       compilerError("unexpected argument of type ", domInst.type:string, " for chpl_buildStandInRTT()");
@@ -357,11 +357,16 @@ module ChapelIteratorSupport {
     var first: bool = true;
     for e in this {
       if !first then
-        f <~> " ";
+        f.write(" ");
       else
         first = false;
-      f <~> e;
+      f.write(e);
     }
+  }
+
+  @chpldoc.nodoc
+  proc _iteratorRecord.encodeTo(f) throws {
+    writeThis(f);
   }
 
   operator =(ref ic: _iteratorRecord, xs) {
@@ -440,28 +445,28 @@ module ChapelIteratorSupport {
   pragma "fn returns iterator"
   pragma "no implicit copy"
   inline proc _toLeader(ir: _iteratorRecord)
-    where __primitive("has leader", ir)
+    where __primitive("has leader", ir) do
     return chpl__autoCopy(__primitive("to leader", ir), definedConst=false);
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
   inline proc _toLeader(x)
-    where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these())
+    where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these()) do
     return _toLeader(x.these());
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x)
-    where !isTuple(x) && Reflection.canResolve("_toLeader", x)
+    where !isTuple(x) && Reflection.canResolve("_toLeader", x) do
     return _toLeader(x);
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x: _tuple)
-    where Reflection.canResolve("_toLeader", x(0))
+    where Reflection.canResolve("_toLeader", x(0)) do
     return _toLeader(x(0));
 
   pragma "no implicit copy"
   pragma "fn returns iterator"
-  inline proc _toStandalone(iterator: _iteratorClass)
+  inline proc _toStandalone(iterator: _iteratorClass) do
     return chpl__autoCopy(__primitive("to standalone", iterator),
                           definedConst=false);
 
@@ -498,23 +503,23 @@ module ChapelIteratorSupport {
   pragma "suppress lvalue error"
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeader(x, args...)
+  inline proc _toLeader(x, args...) do
     return _toLeader(x.these(), (...args));
 
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeaderZip(x, args...)
+  inline proc _toLeaderZip(x, args...) do
     return _toLeader(x, (...args));
 
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeaderZip(x: _tuple, args...)
+  inline proc _toLeaderZip(x: _tuple, args...) do
     return _toLeader(x(0), (...args));
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toStandalone(iterator: _iteratorClass, args...)
+  inline proc _toStandalone(iterator: _iteratorClass, args...) do
     return chpl__autoCopy(__primitive("to standalone", iterator,
                                              (...args)), definedConst=false);
 
@@ -631,7 +636,7 @@ module ChapelIteratorSupport {
 
   pragma "no implicit copy"
   pragma "fn returns iterator"
-  inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
+  inline proc _toFollower(iterator: _iteratorClass, leaderIndex) do
     return chpl__autoCopy(__primitive("to follower", iterator,
                                              leaderIndex), definedConst=false);
 
@@ -694,12 +699,12 @@ module ChapelIteratorSupport {
 
   // helper functions used by the below iterators to check if the argument is a
   // value or reference iterator.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc singleValIter(iterables: _tuple) param {
     return iterables.size == 1 && !isRefIter(_getIterator(iterables(0)));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc singleRefIter(iterables: _tuple) param  {
     return iterables.size == 1 && isRefIter(_getIterator(iterables(0)));
   }

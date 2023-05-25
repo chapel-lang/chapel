@@ -9,7 +9,7 @@
 #ifndef LLVM_DWARFLINKER_DWARFSTREAMER_H
 #define LLVM_DWARFLINKER_DWARFSTREAMER_H
 
-#include "llvm/CodeGen/AccelTable.h"
+#include "llvm/BinaryFormat/Swift.h"
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/DWARFLinker/DWARFLinker.h"
 #include "llvm/MC/MCAsmInfo.h"
@@ -17,9 +17,11 @@
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCObjectFileInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
+template <typename DataT> class AccelTable;
 
 enum class OutputFileType {
   Object,
@@ -48,7 +50,7 @@ public:
       : OutFile(OutFile), OutFileType(OutFileType), Translator(Translator),
         ErrorHandler(Error), WarningHandler(Warning) {}
 
-  bool init(Triple TheTriple);
+  bool init(Triple TheTriple, StringRef Swift5ReflectionSegmentName);
 
   /// Dump the file to the disk.
   void finish();
@@ -85,11 +87,16 @@ public:
   /// Emit the swift_ast section stored in \p Buffer.
   void emitSwiftAST(StringRef Buffer);
 
+  /// Emit the swift reflection section stored in \p Buffer.
+  void emitSwiftReflectionSection(
+      llvm::binaryformat::Swift5ReflectionSectionKind ReflSectionKind,
+      StringRef Buffer, uint32_t Alignment, uint32_t Size);
+
   /// Emit debug_ranges for \p FuncRange by translating the
   /// original \p Entries.
   void emitRangesEntries(
       int64_t UnitPcOffset, uint64_t OrigLowPc,
-      const FunctionIntervals::const_iterator &FuncRange,
+      Optional<std::pair<AddressRange, int64_t>> FuncRange,
       const std::vector<DWARFDebugRangeList::RangeListEntry> &Entries,
       unsigned AddressSize) override;
 

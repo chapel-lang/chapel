@@ -7,5 +7,5 @@ class Foo {
   }
 }
 
-var foo1 = new borrowed Foo(3);
+var foo1 = (new owned Foo(3)).borrow();
 writeln(foo1.s.readFE()); // the omitted initialization should set s to full

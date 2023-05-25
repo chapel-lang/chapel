@@ -61,7 +61,7 @@ proc print_matrix(A: [], m_dim: int, n_dim: int) {
 /* The process which runs the benchmark */
 proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
   var still_correct = true;
-    var t:Timer;
+    var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -70,7 +70,7 @@ proc kernel_correlation(dist_square, dist_linear, m_dim: int, n_dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   

@@ -1,6 +1,7 @@
 // Modules for timing and random number generator routines
 use Time;
 use Random;
+use Math;
 
 // constants related to memory
 param MB = 1024**2,
@@ -49,7 +50,7 @@ var curGBs: real;
 param seed = 314159265;
 
 proc main() {
-  var clock: Timer;
+  var clock: stopwatch;
 
   initStreamVectors();
 
@@ -71,7 +72,7 @@ proc main() {
 }
 
 proc initStreamVectors() {
-  var randlist = new borrowed NPBRandomStream(eltType=real, seed=seed);
+  var randlist = (new owned NPBRandomStream(eltType=real, seed=seed)).borrow();
 
   randlist.fillRandom(A);
   randlist.fillRandom(B);

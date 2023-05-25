@@ -1,5 +1,3 @@
-vectorWhileLoop.chpl:6: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
-vectorWhileLoop.chpl:11: warning: 'vectorizeOnly()' is deprecated; please use 'foreach' loops instead
 vectorWhileLoop.chpl:6: note: loop vectorization (with parallel access) hinted for WhileDoStmt
 vectorWhileLoop.chpl:11: note: loop vectorization (with parallel access) hinted for WhileDoStmt
 1 2 3 4 5 6 7 8 9 10

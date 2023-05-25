@@ -32,10 +32,10 @@ proc returnArrayArgTyped(X:[1..size] real) {
   }
 }
 
-var t1 = new Timer();
-var t2 = new Timer();
-var t3 = new Timer();
-var t4 = new Timer();
+var t1 = new stopwatch();
+var t2 = new stopwatch();
+var t3 = new stopwatch();
+var t4 = new stopwatch();
 var sum0 = 0.0;
 var sum1 = 0.0;
 var sum2 = 0.0;

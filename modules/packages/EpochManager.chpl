@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for Epoch-based Memory Reclamation.
+
   .. warning::
 
     This module relies on the :mod:`AtomicObjects` package module, which
@@ -124,7 +125,7 @@
 */
 module EpochManager {
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module LockFreeLinkedListModule {
 
     use AtomicObjects;
@@ -184,7 +185,7 @@ module EpochManager {
   }
 
   // Michael & Scott Queue: https://www.cs.rochester.edu/u/scott/papers/1996_PODC_queues.pdf
-  pragma "no doc"
+  @chpldoc.nodoc
   module LockFreeQueueModule {
 
     use AtomicObjects;
@@ -341,7 +342,7 @@ module EpochManager {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   // The LimboList is a linked list that is optimized for insertion and bulk removal.
   // Atomic exchanges are entirely wait-free and are at least an order of magnitude faster
   // than compare-exchange based one. This data structure supports a multi-producer but
@@ -409,8 +410,9 @@ module EpochManager {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   module VectorModule {
+    private use IO;
     /**
      * Obtained from https://github.com/pnnl/chgl/blob/master/src/Vectors.chpl
      */
@@ -492,7 +494,7 @@ module EpochManager {
         forall a in this.arr[0..#sz] do yield a;
       }
 
-      proc size: int return sz;
+      proc size: int do return sz;
 
       proc clear() {
         this.sz = 0;
@@ -510,8 +512,18 @@ module EpochManager {
       return arr;
       }
 
-      proc readWriteThis(f) throws {
-        f <~> "(Vector) {" <~> this.toArray() <~> "}";
+      @chpldoc.nodoc
+      proc readThis(f) throws {
+        compilerError("Reading a Vector is not supported");
+      }
+
+      proc init(type eltType, r: fileReader) {
+        this.init(eltType);
+        compilerError("Reading a Vector is not supported");
+      }
+
+      proc writeThis(f) throws {
+        f.write("(Vector) {", this.toArray(), "}");
       }
     }
 
@@ -528,31 +540,31 @@ module EpochManager {
   class LocalEpochManager {
 
     //  Total number of epochs
-    pragma "no doc"
+    @chpldoc.nodoc
     const EBR_EPOCHS : uint = 3;
 
     // An inactive task has local_epoch set to 0
-    pragma "no doc"
+    @chpldoc.nodoc
     const INACTIVE : uint = 0;
 
     //  Global Epoch is used to synchronize registered tasks' local epochs
-    pragma "no doc"
+    @chpldoc.nodoc
     var global_epoch : atomic uint;
 
     //  flag to indicate a task is trying to advance global epoch
-    pragma "no doc"
+    @chpldoc.nodoc
     var is_setting_epoch : atomic bool;
 
     //  List of all tokens
-    pragma "no doc"
+    @chpldoc.nodoc
     var allocated_list : unmanaged LockFreeLinkedList(unmanaged _token);
 
     //  Collection of inactive tokens, which can be recycled
-    pragma "no doc"
+    @chpldoc.nodoc
     var free_list : unmanaged LockFreeQueue(unmanaged _token);
 
     //  Collection of objects marked deleted
-    pragma "no doc"
+    @chpldoc.nodoc
     var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
 
     /*
@@ -590,7 +602,7 @@ module EpochManager {
       return new owned TokenWrapper(tok!, this:unmanaged);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc unregister(tok: unmanaged _token) {
       if (tok.is_registered.read()) {
         unpin(tok);
@@ -600,7 +612,7 @@ module EpochManager {
     }
 
     // TODO: Add support for recursive `pin`/`unpin`
-    pragma "no doc"
+    @chpldoc.nodoc
     proc pin(tok: unmanaged _token) {
       // An inactive task has local_epoch set to 0. A value other than 0
       // implies active task
@@ -608,14 +620,14 @@ module EpochManager {
         tok.local_epoch.write(global_epoch.read());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc unpin(tok: unmanaged _token) {
       tok.local_epoch.write(INACTIVE);
     }
 
     // Attempt to announce a new epoch. A new epoch is announced if all
     // active tasks are on the current global epoch
-    pragma "no doc"
+    @chpldoc.nodoc
     proc tryAdvance() : uint {
       var epoch = global_epoch.read();
       for tok in allocated_list {
@@ -637,7 +649,7 @@ module EpochManager {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
@@ -695,7 +707,7 @@ module EpochManager {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _token {
     var local_epoch : atomic uint;
     var is_registered : atomic bool;
@@ -709,13 +721,13 @@ module EpochManager {
   */
   class TokenWrapper {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _tok : unmanaged _token?;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var manager : unmanaged LocalEpochManager;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(_tok : unmanaged _token, manager : unmanaged LocalEpochManager) {
       this._tok = _tok;
       this.manager = manager;
@@ -777,7 +789,7 @@ module EpochManager {
   pragma "always RVF"
   record EpochManager {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid : int = -1;
 
     /*
@@ -805,50 +817,50 @@ module EpochManager {
   */
   class EpochManagerImpl {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid : int;
 
 
     //  Total number of epochs
-    pragma "no doc"
+    @chpldoc.nodoc
     const EBR_EPOCHS : uint = 3;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     const INACTIVE : uint = 0;
 
     //  Global Epoch is used to synchronize registered tasks' local epochs
-    pragma "no doc"
+    @chpldoc.nodoc
     var global_epoch : unmanaged GlobalEpoch;
 
     //  Locale Epoch is the copy of Global Epoch on each locale
-    pragma "no doc"
+    @chpldoc.nodoc
     var locale_epoch : atomic uint;
 
     //  Local flag to indicate a task is trying to advance global epoch
-    pragma "no doc"
+    @chpldoc.nodoc
     var is_setting_epoch : atomic bool;
 
 
     // TODO: May need to set these to nil-able?
     //  List of all tokens on current locale
-    pragma "no doc"
+    @chpldoc.nodoc
     var allocated_list : unmanaged LockFreeLinkedList(unmanaged _token);
 
     //  Collection of inactive tokens, which can be recycled, on current locale
-    pragma "no doc"
+    @chpldoc.nodoc
     var free_list : unmanaged LockFreeQueue(unmanaged _token);
 
     //  Collection of objects marked deleted on current locale
-    pragma "no doc"
+    @chpldoc.nodoc
     var limbo_list : [1..EBR_EPOCHS] unmanaged LimboList();
 
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale
-    pragma "no doc"
+    @chpldoc.nodoc
     var objsToDelete : [LocaleSpace] unmanaged Vector(unmanaged object?);
 
     //  Initializer for master locale
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       this.global_epoch = new unmanaged GlobalEpoch(1:uint);
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
@@ -864,7 +876,7 @@ module EpochManager {
 
 
     //  Initializer for slave locales
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, privatizedData, global_epoch) {
       this.global_epoch = global_epoch;
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
@@ -878,7 +890,7 @@ module EpochManager {
     }
 
     // Initialise the free list pool with here.maxTaskPar tokens and other members
-    pragma "no doc"
+    @chpldoc.nodoc
     proc initializeMembers() {
       forall i in 0..#here.maxTaskPar {
         var tok = new unmanaged _token();
@@ -888,7 +900,7 @@ module EpochManager {
       this.locale_epoch.write(global_epoch.read());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       // Delete locale-private data
       delete limbo_list;
@@ -918,7 +930,7 @@ module EpochManager {
       return new owned DistTokenWrapper(tok!, this:unmanaged);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc unregister(tok: unmanaged _token) {
       if (tok.is_registered.read()) {
         unpin(tok);
@@ -927,7 +939,7 @@ module EpochManager {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc pin(tok: unmanaged _token) {
       // An inactive task has local_epoch set to 0. A value other than 0
       // implies active task
@@ -936,7 +948,7 @@ module EpochManager {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
@@ -948,7 +960,7 @@ module EpochManager {
 
     // Return epoch which is safe to be reclaimed. It is safe to
     // reclaim from e-2 epoch
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getReclaimEpoch() : uint {
       const epoch = locale_epoch.read();
       select epoch {
@@ -1016,7 +1028,7 @@ module EpochManager {
       is_setting_epoch.clear();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc unpin(tok: unmanaged _token) {
       tok.local_epoch.write(INACTIVE);
     }
@@ -1056,23 +1068,23 @@ module EpochManager {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(privatizedData) {
       return new unmanaged EpochManagerImpl(this, pid, this.global_epoch);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData() {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedInstance() {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class GlobalEpoch {
     var epoch : atomic uint;
     var is_setting_epoch : atomic bool;
@@ -1090,13 +1102,13 @@ module EpochManager {
   */
   class DistTokenWrapper {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _tok : unmanaged _token?;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var manager : unmanaged EpochManagerImpl;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(_tok : unmanaged _token, manager : unmanaged EpochManagerImpl) {
       this._tok = _tok;
       this.manager = manager;

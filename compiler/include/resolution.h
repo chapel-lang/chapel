@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,6 +178,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
+bool isConstrainedGenericSymbol(Symbol* sym);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
@@ -224,11 +225,12 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 
 class DisambiguationContext {
 public:
-                 DisambiguationContext(CallInfo& info);
-
+                 DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;
+  bool           isMethodCall;
+  bool           useOldVisibility;
 
 private:
                  DisambiguationContext();
@@ -292,6 +294,9 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call, FnSymbol* resolvedFn)
 
 void checkMoveIntoClass(CallExpr* call, Type* lhs, Type* rhs);
 
+void warnForIntUintConversion(BaseAST* context, Type* formalType,
+                              Type* actualType, Symbol* actual);
+
 void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
@@ -332,6 +337,14 @@ SymExpr* findSourceOfYield(CallExpr* yield);
 void expandInitFieldPrims();
 
 void removeCopyFns(Type* t);
+
+bool moveIsAcceptable(CallExpr* call);
+
+Type* moveDetermineLhsType(CallExpr* call);
+
+Type* moveDetermineRhsType(CallExpr* call);
+
+bool moveTypesAreAcceptable(Type* lhsType, Type* rhsType);
 
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);

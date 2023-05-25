@@ -56,7 +56,7 @@ record path {
   proc init(xs:int...) {
     this.complete();
     for x in xs do
-      steps.append(x);
+      steps.pushBack(x);
   }
 }
 
@@ -470,7 +470,7 @@ record state {
           const id = newBoard.uniqueID();
           var alreadyDidThis = false;
           if searchedConfigs.contains(id) {
-            const prevCost = searchedConfigs.getValue(id);
+            const prevCost = searchedConfigs[id];
             if prevCost < newBoard.cost {
               alreadyDidThis = true;
 /*
@@ -478,7 +478,7 @@ record state {
               newBoard.print();
 */
             } else {
-              searchedConfigs.set(id, newBoard.cost);
+              searchedConfigs.replace(id, newBoard.cost);
             }
           } else {
             searchedConfigs.add(id, newBoard.cost);

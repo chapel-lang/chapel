@@ -1,0 +1,2 @@
+queryGenericField3.chpl:7: In function 'test':
+queryGenericField3.chpl:7: error: 'R' has 1 generic field(s) howevever is queried for 3 generic fields(s)

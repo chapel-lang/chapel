@@ -3,9 +3,9 @@ record R {
   var x: int = 42;
 }
 
-proc R.getX where flag return x;
-proc R.getX param where !flag return 0;
-proc R.getX param where !flag return 0;
+proc R.getX where flag do return x;
+proc R.getX param where !flag do return 0;
+proc R.getX param where !flag do return 0;
 
 var myR1 = new R(false);
 var myR2 = new R(true);

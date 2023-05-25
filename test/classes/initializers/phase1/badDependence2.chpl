@@ -13,6 +13,6 @@ class ManyFields {
 }
 
 proc main() {
-  var c: borrowed ManyFields = new borrowed ManyFields(2);
+  var c: borrowed ManyFields = (new owned ManyFields(2)).borrow();
   writeln(c);
 }

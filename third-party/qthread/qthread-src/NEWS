@@ -1,4 +1,16 @@
---- 1.16 (current) ---
+
+--- 1.17 (current) ---
+
+Improvements:
+ - Add GitHub actions for CI testing
+ - Add missing include files in the binders topology layer
+ - Handle SIGSEGV during configure testing to avoid user exposure
+ - Add --with-hwloc-symbol-prefix configure option
+ - Add errno preservation from system calls
+ - Fix compilation errors on M1 MAC computers
+ - Remove Loxley experimental schedulers
+
+--- 1.16 ---
 
 Improvements:
  - Add support for Spack testing (spack test run qthreads)

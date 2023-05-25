@@ -58,6 +58,7 @@ CONDUITMODE_EXTRA_DIST =    	\
 	gasnet_trace.c
 CONDUITMODE_INSTALL_DOCS =    \
 	docs/memory_kinds.md  \
+	docs/gasnet1_differences.md \
 	docs/GASNet-EX.txt
 # GASNET_TOOLSONLY_FALSE_END
 

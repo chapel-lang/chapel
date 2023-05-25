@@ -1,5 +1,5 @@
 module Main {
-  deprecated "This module is deprecated, use Foob instead"
+  @deprecated(notes="This module is deprecated, use Foob instead")
   module Foo {
     public use super.Foob;
   }

@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import os
+
+print('--case 1')
+if '--baseline' in os.getenv('COMPOPTS') or '--fast' in os.getenv('COMPOPTS'):
+   print('--case 2  # zipMismatch-case2-baseline.good')
+else:
+   print('--case 2  # zipMismatch-case2.good')
+if '--fast' in os.getenv('COMPOPTS'):
+   print('--case 3  # zipMismatch-case3-fast.good')
+else:
+   print('--case 3  # zipMismatch-case3.good')

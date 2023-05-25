@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,6 +43,9 @@ public:
   bool   enterModSym      (ModuleSymbol*      node) override;
   void   exitModSym       (ModuleSymbol*      node) override;
   void   visitVarSym      (VarSymbol*         node) override;
+
+
+  bool   enterLoopExpr    (LoopExpr*          node) override;
 
   bool   enterBlockStmt   (BlockStmt*         node) override;
   bool   enterForallStmt  (ForallStmt*        node) override;

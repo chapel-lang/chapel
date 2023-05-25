@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,8 +70,6 @@ static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 
-static bool        isConstructor(FnSymbol* fn);
-
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -119,8 +117,6 @@ static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
-static bool        firstConstructorWarning = true;
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -165,15 +161,7 @@ void normalize() {
     } else {
       fixupQueryFormals(fn);
 
-      if (isConstructor(fn) == true) {
-        Type* ct = fn->_this->getValType();
-        if (firstConstructorWarning) {
-          USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
-          firstConstructorWarning = false;
-        }
-        USR_FATAL_CONT(fn, "Type '%s' defines a constructor here", ct->symbol->name);
-
-      } else if (fn->isInitializer() || fn->isCopyInit()) {
+      if (fn->isInitializer() || fn->isCopyInit()) {
         updateInitMethod(fn);
       }
     }
@@ -768,9 +756,9 @@ void checkUseBeforeDefs(FnSymbol* fn) {
         CallExpr* call = toCallExpr(use->parentExpr);
 
         if (call == NULL ||
-            (call->baseExpr                              != use   &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+            (call->baseExpr != use &&
+             !call->isPrimitive(PRIM_CAPTURE_FN) &&
+             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 
@@ -1419,7 +1407,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
     return;
 
   // Gather symexprs used in the statement
-  std::vector<SymExpr*> mentions;
+  llvm::SmallVector<SymExpr*, 32> mentions;
   collectSymExprs(node, mentions);
 
   SET_LINENO(node);
@@ -1444,7 +1432,7 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
   // the variable lifetime still matches the user's view of the code.
   // A reasonable alternative would be for transformations such as
   // the removal of .type blocks to add such SymExprs.
-  for_vector(SymExpr, se, mentions) {
+  for (SymExpr* se : mentions) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (!var->hasFlag(FLAG_TEMP) &&
           !var->isParameter() &&
@@ -1563,8 +1551,9 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   // Anything contained in a non-normalizable expr is non-normalizable.
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
-      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
-      if (isResolvePrim) return node;
+      Expr* root = nullptr;
+      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (root) return root;
     }
   }
 
@@ -1672,6 +1661,8 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
                           bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
@@ -1754,9 +1745,8 @@ static void normalizeReturns(FnSymbol* fn) {
   //  return/yield type)
   if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-
   } else {
-    // Handle declared return type.
+
     retval = newTemp("ret", fn->retType);
 
     retval->addFlag(FLAG_RVV);
@@ -1866,11 +1856,14 @@ static void normalizeYields(FnSymbol* fn) {
       // the compiler.
       VarSymbol* retval = newTemp("yret", fn->retType);
       retval->addFlag(FLAG_YVV);
+      if (fn->retTag == RET_REF)
+        retval->qual = QUAL_REF;
+      else if (fn->retTag == RET_CONST_REF)
+        retval->qual = QUAL_CONST_REF;
 
       yield->insertBefore(new DefExpr(retval));
       insertRetMove(fn, retval, yield, false);
-      yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
-      yield->remove();
+      yield->insertAtTail(retval);
     }
   }
 }
@@ -1909,6 +1902,29 @@ static bool hasGenericArrayReturn(FnSymbol* fn) {
   return false;
 }
 
+//
+// modifyPartiallyGenericArrayReturn() is about to clone 'retExpr'
+// for some checks. If it is a call, we do not want to clone it
+// because then the call will be executed more than once, see #19674.
+// Therefore we force insertCallTemps() and clone the temp symexpr.
+// We could use the RVV 'retval' instead of the temp, except the resolution
+// of retval's type is delayed, so its uses fail to resolve. See
+// moveSupportsUnresolvedFunctionReturn() in resolveMove().
+//
+static void prepareRetExpr(Expr*& retExpr, CallExpr* retCall) {
+  CallExpr* call = toCallExpr(retExpr);
+  if (call == nullptr) return;
+  // insertCallTemps() needs 'call' to be inTree()
+  BlockStmt* holder = new BlockStmt();
+  holder->insertAtTail(call);
+  retCall->insertBefore(holder);
+  Symbol* temp = insertCallTempsWithStmt(call, retCall);
+  SymExpr* tempSE = toSymExpr(holder->body.only()->remove());
+  INT_ASSERT(tempSE->symbol() == temp);
+  holder->remove();
+  retExpr = tempSE;
+}
+
 // Validates the declared domain, if it exists.
 static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
                               Expr* domExpr) {
@@ -1940,11 +1956,13 @@ static void modifyPartiallyGenericArrayReturn(FnSymbol* fn,
   bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
 
   if (!noDom) {
+    prepareRetExpr(retExpr, ret);
     // Add checks against the declared domain
     insertDomainCheck(retExpr, ret, domExpr);
   }
 
   if (retEltExpr != NULL) {
+    prepareRetExpr(retExpr, ret);
     insertElementTypeCheck(retEltExpr, retExpr, ret);
   }
 
@@ -2079,6 +2097,8 @@ static void fixPrimNew(CallExpr* primNewToFix) {
 
   CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
   CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  newNew->tryTag = primNewToFix->tryTag; // preserve the tryTag
+
   Expr*     exprModToken = NULL;
   Expr*     exprMod      = NULL;
 
@@ -3264,8 +3284,8 @@ static void hack_resolve_types(ArgSymbol* arg) {
           se = toSymExpr(arg->defaultExpr->body.tail);
         if (!se || se->symbol() != gTypeDefaultToken) {
           SET_LINENO(arg->defaultExpr);
-          // MPF: this seems wrong since the result is a value not
-          // a type.
+          // white lie: `typeExpr` should be a type, not a value
+          arg->typeExprFromDefaultExpr = true;
           arg->typeExpr = arg->defaultExpr->copy();
           insert_help(arg->typeExpr, NULL, arg);
         }
@@ -4502,18 +4522,6 @@ static void addToWhereClause(FnSymbol*  fn,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isConstructor(FnSymbol* fn) {
-  bool retval = false;
-
-  if (fn->numFormals()       >= 2 &&
-      fn->getFormal(1)->type == dtMethodToken) {
-
-    retval = strcmp(fn->name, fn->getFormal(2)->type->symbol->name) == 0;
-  }
-
-  return retval;
-}
 
 static void updateInitMethod(FnSymbol* fn) {
   Type* thisType = fn->_this->type;

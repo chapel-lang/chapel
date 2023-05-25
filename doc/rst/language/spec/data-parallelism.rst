@@ -155,11 +155,11 @@ the current iteration of the forall loop.
 
 .. _forall_zipper:
 
-Zipper Iteration
-~~~~~~~~~~~~~~~~
+Zippered Iteration
+~~~~~~~~~~~~~~~~~~
 
-Zipper iteration has the same semantics as described
-in :ref:`Zipper_Iteration`
+Zippered iteration has the same semantics as described
+in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
 .. _Forall_Expressions:
@@ -217,7 +217,7 @@ When a forall expression is used to initialize a variable, such as
 the variable will be inferred to have an array type. The array’s domain
 is defined by the ``iterable-expression`` following the same rules as
 for promotion, both in the regular case :ref:`Promotion` and in
-the zipper case :ref:`Zipper_Promotion`.
+the zippered case :ref:`Zippered_Promotion`.
 
    *Example (forallExpr.chpl)*.
 
@@ -239,11 +239,11 @@ the zipper case :ref:`Zipper_Promotion`.
 The forall expression follows the semantics of the forall statement as
 described in :ref:`forall_semantics`.
 
-Zipper Iteration
-~~~~~~~~~~~~~~~~
+Zippered Iteration
+~~~~~~~~~~~~~~~~~~
 
 Forall expression also support zippered iteration semantics as described
-in :ref:`Zipper_Iteration`
+in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
 .. _Filtering_Predicates_Forall:
@@ -310,8 +310,9 @@ variable within the forall construct implicitly refer to a *shadow
 variable*, i.e. the corresponding formal argument of the task function
 or the leading iterator.
 
-When the forall construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as an outer variable. That is,
+When the forall construct is inside a method on a record, accesses a
+field of ``this``, and does not contain an explicit forall intent on ``this``
+(see below), the field itself is treated as an outer variable. That is,
 it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
@@ -514,7 +515,7 @@ iterator         0-based one-dimensional domain
 
    .. code-block:: chapel
    
-      proc square(x: int) return x**2;
+      proc square(x: int) do return x**2;
 
    then the call ``square(A)`` results in the promotion of the
    ``square`` function over the values in the array ``A``. The result is
@@ -623,7 +624,8 @@ expression can be evaluated many times. For example:
 
    .. BLOCK-test-chapelnoprint
 
-      writeln(A.sorted());
+      use Sort;
+      writeln(sorted(A));
 
    
 
@@ -631,13 +633,13 @@ expression can be evaluated many times. For example:
 
       0 1 2 3 4
 
-.. _Zipper_Promotion:
+.. _Zippered_Promotion:
 
-Zipper Promotion
-~~~~~~~~~~~~~~~~
+Zippered Promotion
+~~~~~~~~~~~~~~~~~~
 
 Promotion also supports zippered iteration semantics as described
-in :ref:`Zipper_Iteration`
+in :ref:`Zippered_Iteration`
 and :ref:`Parallel_Iterators` for parallel iteration.
 
 Consider a function ``f`` with formal arguments ``s1``, ``s2``, ... that
@@ -654,13 +656,31 @@ is equivalent to
 
    [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., a1, a2, ...)
 
-The usual constraints of zipper iteration apply to zipper promotion so
+The usual constraints of zippered iteration apply to zippered promotion, so
 the promoted actuals must have the same shape.
 
-A zipper promotion can be captured in a variable, such as
+Formal arguments that are not promoted are evaluated once and stored in a
+temporary variable. If formal ``a1`` is an expression, then the call 
+
+.. code-block:: chapel
+
+   f(s1, s2, ..., a1, a2, ...)
+
+is equivalent to 
+
+.. code-block:: chapel
+
+   var tmp = a1;
+   [(e1, e2, ...) in zip(s1, s2, ...)] f(e1, e2, ..., tmp, a2, ...)
+
+
+In this instance, if formal ``a1`` is an expression that has side effects
+(such as printing), those side effects will only occur once.
+
+A zippered promotion can be captured in a variable, such as
 ``var X = f(s1, s2, ..., a1, a2, ...);`` using the above example. If so,
 the domain of the resulting array is defined by the first argument that
-causes promotion. The rules are the same as in the non-zipper case.
+causes promotion. The rules are the same as in the non-zippered case.
 
    *Example (zipper-promotion.chpl)*.
 
@@ -744,7 +764,7 @@ reduction applied to all of the elements in the aggregate up to that
 expression. Chapel provides a number of predefined reduction and scan
 operators, and also supports a mechanism for the user to define
 additional reductions and scans
-(Chapter `[User_Defined_Reductions_and_Scans] <#User_Defined_Reductions_and_Scans>`__).
+(:ref:`Chapter-User_Defined_Reductions_and_Scans`).
 
 .. _reduce:
 
@@ -816,7 +836,7 @@ the second argument component.
       config const n = 10;
       const D = {1..n};
       var A: [D] int = [i in D] i % 7;
-      proc foo(x) return x % 7;
+      proc foo(x) do return x % 7;
 
    
 

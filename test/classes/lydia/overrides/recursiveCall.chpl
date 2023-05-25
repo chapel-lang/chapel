@@ -17,8 +17,8 @@ class B: A {
   }
 }
 
-var a = new borrowed A();
-var b = new borrowed B();
+var a = (new owned A()).borrow();
+var b = (new owned B()).borrow();
 
 a.foo(3);
 b.foo(2);

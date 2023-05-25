@@ -270,7 +270,8 @@ public:
   /// compares against in CmpValue. Return true if the comparison instruction
   /// can be analyzed.
   bool analyzeCompare(const MachineInstr &MI, Register &SrcReg,
-                      Register &SrcReg2, int &Mask, int &Value) const override;
+                      Register &SrcReg2, int64_t &Mask,
+                      int64_t &Value) const override;
 
   /// Compute the instruction latency of a given instruction.
   /// If the instruction has higher cost when predicated, it's returned via
@@ -334,6 +335,13 @@ public:
   getSerializableBitmaskMachineOperandTargetFlags() const override;
 
   bool isTailCall(const MachineInstr &MI) const override;
+  bool isAsCheapAsAMove(const MachineInstr &MI) const override;
+
+  // Return true if the instruction should be sunk by MachineSink.
+  // MachineSink determines on its own whether the instruction is safe to sink;
+  // this gives the target a hook to override the default behavior with regards
+  // to which instructions should be sunk.
+  bool shouldSink(const MachineInstr &MI) const override;
 
   /// HexagonInstrInfo specifics.
 
@@ -355,7 +363,6 @@ public:
   bool isDotCurInst(const MachineInstr &MI) const;
   bool isDotNewInst(const MachineInstr &MI) const;
   bool isDuplexPair(const MachineInstr &MIa, const MachineInstr &MIb) const;
-  bool isEarlySourceInstr(const MachineInstr &MI) const;
   bool isEndLoopN(unsigned Opcode) const;
   bool isExpr(unsigned OpType) const;
   bool isExtendable(const MachineInstr &MI) const;
@@ -367,9 +374,6 @@ public:
   bool isIndirectL4Return(const MachineInstr &MI) const;
   bool isJumpR(const MachineInstr &MI) const;
   bool isJumpWithinBranchRange(const MachineInstr &MI, unsigned offset) const;
-  bool isLateInstrFeedsEarlyInstr(const MachineInstr &LRMI,
-                                  const MachineInstr &ESMI) const;
-  bool isLateResultInstr(const MachineInstr &MI) const;
   bool isLateSourceInstr(const MachineInstr &MI) const;
   bool isLoopN(const MachineInstr &MI) const;
   bool isMemOp(const MachineInstr &MI) const;
@@ -523,6 +527,8 @@ public:
   short changeAddrMode_ur_rr(const MachineInstr &MI) const {
     return changeAddrMode_ur_rr(MI.getOpcode());
   }
+
+  MCInst getNop() const override;
 };
 
 } // end namespace llvm

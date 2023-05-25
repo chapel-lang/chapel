@@ -9,7 +9,7 @@ config const numTrials : int = 3;
 config const allocationsPerTrial : int = 16 * 1024 * 1024;
 
 proc doUnmanagedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   
   var times : [1..numTrials] real;
@@ -25,7 +25,7 @@ proc doUnmanagedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
   
@@ -33,7 +33,7 @@ proc doUnmanagedAllocation() {
 }
 
 proc doSharedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   var times : [1..numTrials] real;
   for trial in 0..numTrials {
@@ -45,7 +45,7 @@ proc doSharedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 
@@ -53,7 +53,7 @@ proc doSharedAllocation() {
 }
 
 proc doOwnedAllocation() {
-  var timer = new Timer();
+  var timer = new stopwatch();
   
   var times : [1..numTrials] real;
   for trial in 0..numTrials {
@@ -65,7 +65,7 @@ proc doOwnedAllocation() {
       }
     }
     timer.stop();
-    if trial != 0 then times[trial] = timer.elapsed(TimeUnits.seconds);
+    if trial != 0 then times[trial] = timer.elapsed();
     timer.clear();
   }
 

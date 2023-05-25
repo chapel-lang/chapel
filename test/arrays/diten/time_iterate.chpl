@@ -15,7 +15,7 @@ config param compareTimes = false;
 proc main {
   use Time;
   var A: [1..arrsize] int(32);
-  var t: Timer;
+  var t: stopwatch;
   t.start();
   for i in 1..ntrials {
     assign(A, arrsize);
@@ -24,7 +24,7 @@ proc main {
 
   if compareTimes {
     writeln("chpl wrote ", arrsize, " elements ", ntrials, " times in ",
-            t.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+            t.elapsed(), " seconds");
     c_trial();
   }
 }

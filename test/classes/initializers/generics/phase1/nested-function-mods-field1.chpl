@@ -13,6 +13,6 @@ class Foo {
 }
 
 proc main() {
-  var f = new borrowed Foo(13);
+  var f = (new owned Foo(13)).borrow();
   writeln(f.type: string);
 }

@@ -29,7 +29,7 @@ testit((..max(uint(8)) by -2)#0);
 
 proc testit(r) {
   writeln(r, ": ", r.type:string);
-  if (r.low > min(r.idxType)+2 || r.high < max(r.idxType)-2) {
+  if (r.lowBound > min(r.idxType)+2 || r.highBound < max(r.idxType)-2) {
     for i in r do
       write(" ", i);
   }

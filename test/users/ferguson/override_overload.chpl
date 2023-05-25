@@ -23,8 +23,8 @@ class SubWriterTwo : BaseWriter {
   }
 }
 
-var s1 = new borrowed SubWriterOne();
-var s2 = new borrowed SubWriterTwo();
+var s1 = (new owned SubWriterOne()).borrow();
+var s2 = (new owned SubWriterTwo()).borrow();
 
 var s1w = s1:borrowed BaseWriter;
 var s2w = s2:borrowed BaseWriter;

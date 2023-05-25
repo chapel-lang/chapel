@@ -63,13 +63,7 @@ AS_IF([test "x$ac_cv_func_getcontext" = "xyes"], [
 				   [the uc_stack structure in ucontext_t has an ss_flags structure that needs to be initialized])])
 AC_CACHE_CHECK([whether swapcontext works properly],
   [qthread_cv_swapcontext_works],
-  [
-  case "$host" in
-  *-darwin*)
-  qthread_cv_swapcontext_works=no
-  ;;
-  *)
-  AC_RUN_IFELSE([AC_LANG_SOURCE([[
+  [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <ucontext.h>
 #include <stdlib.h>
 ucontext_t child, parent;
@@ -97,9 +91,7 @@ int main()
 	       [AS_IF([test "x$enable_fastcontext" = xyes],
 		          [qthread_cv_swapcontext_works=no],
 				  [qthread_cv_swapcontext_works=yes])],
-	       [qthread_cv_swapcontext_works=yes])])
-	;;
-	esac])
+	       [qthread_cv_swapcontext_works=yes])])])
 AS_IF([test "$qthread_cv_swapcontext_works" = yes],
 	[AC_DEFINE([HAVE_NATIVE_MAKECONTEXT], [1], [The system provides functional native make/swap/get-context functions])
 	 QTHREAD_CHECK_MAKECONTEXT_SPLIT_ARGS(

@@ -18,7 +18,7 @@ var ptrHstResult = chpl_here_alloc(n, 0): c_ptr(c_uchar);
 var expandedPtrHst = chpl_here_alloc(n*2, 0): c_ptr(c_uchar);
 
 var s: uint;
-on here.getChild(1) {
+on here.gpus[0] {
 
   ////////////////////////////////////////////////////
 

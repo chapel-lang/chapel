@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -702,9 +702,9 @@ static void noteUse(VarSymbol* var, VarToCopyElisionState& map) {
 }
 
 static void noteUses(Expr* e, VarToCopyElisionState& map) {
-  std::vector<SymExpr*> symExprs;
+  llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(e, symExprs);
-  for_vector (SymExpr, se, symExprs) {
+  for (SymExpr* se : symExprs) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       noteUse(var, map);
     }

@@ -1,0 +1,3 @@
+recursive-generic-declared-type.chpl:13: warning: RR(int(64))
+recursive-generic-declared-type.chpl:17: In iterator 'recIter':
+recursive-generic-declared-type.chpl:18: error: at present, a generic return type is not allowed for recursive iterators

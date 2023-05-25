@@ -95,6 +95,10 @@ int main(int argc, char **argv) {
 
   test_init("testtools", 0,"(iters) (num_threads) (tests_to_run)");
 
+  const char *exename = gasnett_exe_name();
+  if (!exename || !*exename) MSG("WARNING: gasnett_exe_name() failed to discover exename");
+  else MSG("gasnett_exe_name()='%s'",exename);
+
   TEST_BACKTRACE_INIT(argv[0]);
   
   if (argc > 1) iters = atoi(argv[1]);
@@ -195,7 +199,7 @@ int main(int argc, char **argv) {
     int timeiters = MAX(1,iters / 10);
     gasnett_tick_t ticktimemin = GASNETT_TICK_MIN;
     gasnett_tick_t ticktimemax = GASNETT_TICK_MAX;
-    #if PLATFORM_OS_CYGWIN || PLATFORM_OS_WSL
+    #if PLATFORM_OS_CYGWIN || PLATFORM_OS_SUBFAMILY_WSL
       // bug 2410: avoid false negatives due to cygwin's high gettimeofday() reference timer granularity
       double default_slack = 0.05; // 50 ms for cygwin
     #else
@@ -249,7 +253,7 @@ int main(int argc, char **argv) {
         do {
           gasnett_tick_t next = gasnett_ticks_now();
           if (next < last) 
-            ERR("gasnett_ticks_to_us not monotonic! !(%" PRIu64 " <= %" PRIu64 ")",
+            ERR("gasnett_ticks_now not monotonic! !(%" PRIu64 " <= %" PRIu64 ")",
                  (uint64_t)last, (uint64_t)next);
           if (next <= GASNETT_TICK_MIN) 
             ERR("gasnett_ticks_to_us()=%" PRIu64 " <= GASNETT_TICK_MIN=%" PRIu64,

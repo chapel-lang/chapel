@@ -1,0 +1,34 @@
+--- test0() ---
+8
+bar()
+3.1415
+bar()
+Hello!
+bar()
+--- test1() ---
+c_fn_ptr
+--- test2a() ---
+2
+4
+8
+--- test2b() ---
+2
+4
+8
+--- test3() ---
+proc(): int
+int(64)
+int(64)
+proc(): int
+--- test4() ---
+Error: P1
+Error: P2
+--- test5() ---
+foo()
+foo()
+chpl_anon_proc_4()
+--- test6() ---
+--- test7() ---
+--- test8() ---
+--- test9() ---
+8

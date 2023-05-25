@@ -74,7 +74,7 @@ proc handleArguments(args: [] string, ref paths: domain(string)) {
         paths += relativeRealPath(arg);
       }
     } else if isDir(arg) {
-      for path in findfiles(arg, recursive=true) {
+      for path in findFiles(arg, recursive=true) {
         if filter == "" || path.endsWith(filter) {
           paths += relativeRealPath(path);
         }

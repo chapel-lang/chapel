@@ -1,0 +1,17 @@
+testing int(8)
+1..3
+testing uint(8)
+1..3
+testing int(16)
+1..3
+testing uint(16)
+1..3
+testing int(32)
+1..3
+testing uint(32)
+1..3
+testing int(64)
+1..3
+testing uint(64)
+1..3
+countIntegralTypes.chpl:14: error: halt reached - range of size 10 is too small for counting 11 elements

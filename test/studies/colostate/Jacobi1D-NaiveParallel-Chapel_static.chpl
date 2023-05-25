@@ -45,7 +45,7 @@ proc main(){
 
   // Storage array.
   var space: [0..1, totalSpaceRange ] Cell;
-  var timer: Timer;
+  var timer: stopwatch;
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 

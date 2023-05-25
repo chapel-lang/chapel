@@ -1,0 +1,2 @@
+qio_err_t.chpl:1: warning: The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate
+qio_err_t.chpl:3: warning: 'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead.

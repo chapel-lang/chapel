@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@ use MasonUtils;
 use TOML;
 
 
-proc masonRun(args: [] string) throws {
+proc masonRun(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
@@ -47,6 +47,12 @@ proc masonRun(args: [] string) throws {
 
   parser.parseArgs(args);
 
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType != "application" then
+      throw new owned MasonError("Only mason applications can be run, but this is a Mason " + projectType);
+  }
+
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
@@ -59,7 +65,7 @@ proc masonRun(args: [] string) throws {
     exit(0);
   } else if exampleOpts._present || buildFlag.valueAsBool() {
     // --example with value or build flag
-    masonBuildRun(args);
+    masonBuildRun(args, checkProj);
     exit(0);
   }
   runProjectBinary(show, release, execopts);
@@ -71,8 +77,8 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", iomode.r);
-    const tomlFile = owned.create(parseToml(toParse));
+    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
+    const tomlFile = parseToml(toParse);
     const project = tomlFile["brick"]!["name"]!.s;
 
     // Find the Binary and execute
@@ -129,7 +135,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
 
 /* Builds program before running. */
-private proc masonBuildRun(args: [?d] string) {
+private proc masonBuildRun(args: [?d] string, checkProj=true) {
 
   var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
@@ -154,7 +160,7 @@ private proc masonBuildRun(args: [?d] string) {
     var release = releaseFlag.valueAsBool();
     var force = forceFlag.valueAsBool();
     var exec = false;
-    var buildExample = false;
+    var buildExample = buildFlag.valueAsBool();
     var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
     var exampleProgram='';
@@ -173,23 +179,23 @@ private proc masonBuildRun(args: [?d] string) {
     if example {
       // add expected arguments for masonExample
       execopts.insert(0,["example", "--example"]);
-      for val in exampleOpts.values() do execopts.append(val);
-      if !buildExample then execopts.append("--no-build");
-      if release then execopts.append("--release");
-      if force then execopts.append("--force");
-      if show then execopts.append("--show");
-      masonExample(execopts.toArray());
+      for val in exampleOpts.values() do execopts.pushBack(val);
+      if !buildExample then execopts.pushBack("--no-build");
+      if release then execopts.pushBack("--release");
+      if force then execopts.pushBack("--force");
+      if show then execopts.pushBack("--show");
+      masonExample(execopts.toArray(), checkProj);
     }
     else {
       var buildArgs: list(string);
-      buildArgs.append("build");
-      if skipUpdate then buildArgs.append("--no-update");
-                    else buildArgs.append("--update");
-      if release then buildArgs.append("--release");
-      if force then buildArgs.append("--force");
-      if show then buildArgs.append("--show");
-      masonBuild(buildArgs.toArray());
-      for val in passArgs.values() do execopts.append(val);
+      buildArgs.pushBack("build");
+      if skipUpdate then buildArgs.pushBack("--no-update");
+                    else buildArgs.pushBack("--update");
+      if release then buildArgs.pushBack("--release");
+      if force then buildArgs.pushBack("--force");
+      if show then buildArgs.pushBack("--show");
+      masonBuild(buildArgs.toArray(), checkProj);
+      for val in passArgs.values() do execopts.pushBack(val);
       runProjectBinary(show, release, execopts);
     }
   }
@@ -197,5 +203,3 @@ private proc masonBuildRun(args: [?d] string) {
     stderr.writeln(e.message());
   }
 }
-
-

@@ -1,0 +1,5 @@
+perfkeys: Average kernel launch time (ms):
+files: emptyKernelLaunch.dat
+graphkeys: foreach
+ylabel: Time (ms)
+graphtitle: Kernel Launch Time

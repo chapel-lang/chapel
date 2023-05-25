@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -30,6 +30,9 @@
 
 #include "files.h"
 
+#include "chpl/util/filesystem.h"
+#include "chpl/util/subprocess.h"
+
 #include "beautify.h"
 #include "driver.h"
 #include "llvmVer.h"
@@ -39,11 +42,6 @@
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "tmpdirname.h"
-
-#ifdef HAVE_LLVM
-#include "llvm/Support/FileSystem.h"
-#endif
 
 #include <pwd.h>
 #include <unistd.h>
@@ -57,6 +55,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+
 char executableFilename[FILENAME_MAX + 1] = "";
 char libmodeHeadername[FILENAME_MAX + 1]  = "";
 char fortranModulename[FILENAME_MAX + 1]  = "";
@@ -65,6 +64,7 @@ char saveCDir[FILENAME_MAX + 1]           = "";
 
 std::string ccflags;
 std::string ldflags;
+bool ccwarnings = false;
 
 std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
@@ -108,165 +108,46 @@ void addIncInfo(const char* incDir) {
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
-#ifdef HAVE_LLVM
-  std::error_code err = llvm::sys::fs::create_directories(dirname);
-  if (err) {
-    USR_FATAL("creating directory %s failed: %s\n",
-              dirname,
-              err.message().c_str());
+  // forward to chpl::ensureDirExists(), check for errors, and report them
+  std::string dirName = std::string(dirname);
+  if (auto err = chpl::ensureDirExists(dirName)) {
+    USR_FATAL("creating directory %s failed: %s\n", dirname,
+                   err.message().c_str());
   }
-#else
-  const char* mkdircommand = "mkdir -p ";
-  const char* command = astr(mkdircommand, dirname);
-
-  mysystem(command, explanation);
-#endif
 }
 
+static const char* makeTempDir() {
+ std::string tmpDirPath = gContext->tmpDir();
+ ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
 
-static void removeSpacesBackslashesFromString(char* str)
-{
-  char* src = str;
-  char* dst = str;
-  while (*src != '\0')
-  {
-    *dst = *src++;
-    if (*dst != ' ' && *dst != '\\')
-        dst++;
-  }
-  *dst = '\0';
-}
-
-
-/*
- * Find the default tmp directory. Try getting the tmp dir from the ISO/IEC
- * 9945 env var options first, then P_tmpdir, then "/tmp".
- */
-static const char* getTempDir() {
-  const char* possibleDirsInEnv[] = {"TMPDIR", "TMP", "TEMP", "TEMPDIR"};
-  for (unsigned int i = 0; i < (sizeof(possibleDirsInEnv) / sizeof(char*)); i++) {
-    const char* curDir = getenv(possibleDirsInEnv[i]);
-    if (curDir != NULL) {
-      return curDir;
-    }
-  }
-#ifdef P_tmpdir
-  return P_tmpdir;
-#else
-  return "/tmp";
-#endif
-}
-
-
-const char* makeTempDir(const char* dirPrefix) {
-  const char* tmpdirprefix = astr(getTempDir(), "/", dirPrefix);
-  const char* tmpdirsuffix = ".deleteme-XXXXXX";
-
-  struct passwd* passwdinfo = getpwuid(geteuid());
-  const char* userid;
-  if (passwdinfo == NULL) {
-    userid = "anon";
-  } else {
-    userid = passwdinfo->pw_name;
-  }
-  char* myuserid = strdup(userid);
-  removeSpacesBackslashesFromString(myuserid);
-
-  const char* tmpDir = astr(tmpdirprefix, myuserid, tmpdirsuffix);
-  char* tmpDirMut = strdup(tmpDir);
-  char* dirRes = mkdtemp(tmpDirMut);
-
-  if (dirRes == NULL) {
-    USR_FATAL("unable to create temporary directory at %s\n", tmpDir);
-  }
-
-  free(myuserid); myuserid = NULL;
-
-  const char* ret = astr(dirRes);
-  free(tmpDirMut);
-
-  return ret;
+ return astr(tmpDirPath.c_str());
 }
 
 void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
-    if (tmpdirname == NULL) {
-      tmpdirname = makeTempDir("chpl-");
-      intDirName = tmpdirname;
+    if (intDirName == NULL) {
+      intDirName = makeTempDir();
     }
   } else {
     if (intDirName != saveCDir) {
       intDirName = saveCDir;
       ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      if (0 != strcmp(makeTempDir(), saveCDir)) {
+        // expected gContext to have been constructed with saveCDir
+        INT_FATAL("misconfiguration with temp dir");
+      }
     }
   }
 }
 
-
-#if !defined(HAVE_LLVM)
-static
-void deleteDirSystem(const char* dirname) {
-  const char* cmd = astr("rm -rf ", dirname);
-  mysystem(cmd, astr("removing directory: ", dirname));
-}
-#endif
-
-#ifdef HAVE_LLVM
-static
-void deleteDirLLVM(const char* dirname) {
-  // LLVM 5 added remove_directories
-  std::error_code err = llvm::sys::fs::remove_directories(dirname, false);
+void deleteDir(const char* dirname) {
+  auto err = chpl::deleteDir(std::string(dirname));
   if (err) {
     USR_FATAL("removing directory %s failed: %s\n",
               dirname,
               err.message().c_str());
   }
 }
-#endif
-
-
-
-void deleteDir(const char* dirname) {
-#ifdef HAVE_LLVM
-  deleteDirLLVM(dirname);
-#else
-  deleteDirSystem(dirname);
-#endif
-}
-
-
-void deleteTmpDir() {
-  static int inDeleteTmpDir = 0; // break infinite recursion
-
-  if (inDeleteTmpDir) {
-    return;
-  }
-  inDeleteTmpDir = 1;
-
-#ifndef DEBUGTMPDIR
-  if (tmpdirname != NULL) {
-    if (strlen(tmpdirname) < 1 ||
-        strchr(tmpdirname, '*') != NULL ||
-        strcmp(tmpdirname, "//") == 0) {
-      INT_FATAL("tmp directory name looks fishy");
-    }
-    deleteDir(tmpdirname);
-    tmpdirname = NULL;
-  }
-  if (doctmpdirname != NULL) {
-    if (strlen(doctmpdirname) < 1 ||
-        strchr(doctmpdirname, '*') != NULL ||
-        strcmp(doctmpdirname, "//") == 0) {
-      INT_FATAL("doc tmp directory name looks fishy");
-    }
-    deleteDir(doctmpdirname);
-    doctmpdirname = NULL;
-  }
-#endif
-
-  inDeleteTmpDir = 0;
-}
-
 
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
@@ -395,6 +276,17 @@ void closeInputFile(FILE* infile) {
 
 static const char** inputFilenames = NULL;
 
+std::vector<std::string> getChplFilenames() {
+  std::vector<std::string> ret;
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isChplSource(fname)) {
+      ret.push_back(std::string(fname));
+    }
+  }
+  return ret;
+}
+
 
 static bool checkSuffix(const char* filename, const char* suffix) {
   const char* dot = strrchr(filename, '.');
@@ -423,11 +315,18 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
+bool isDynoLib(const char* filename) {
+  bool retval = checkSuffix(filename, "dyno");
+  if (retval) foundChplSource = true;
+  return retval;
+}
+
 static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
-          isChplSource(filename));
+          isChplSource(filename) ||
+          isDynoLib(filename));
 }
 
 
@@ -473,7 +372,9 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     }
   }
   inputFilenames[cursor] = NULL;
+}
 
+void assertSourceFilesFound() {
   if (!foundChplSource)
     USR_FATAL("Command line contains no .chpl source files");
 }
@@ -559,21 +460,6 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   return dbgfilename;
 }
 
-std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
-  // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command;
-
-  // Pass known variables in varMap into printchplenv by prepending to command
-  for (auto& ii : varMap)
-    command += ii.first + "=" + ii.second + " ";
-
-  command += "CHPLENV_SKIP_HOST=true ";
-  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
-
-  return runCommand(command);
-}
-
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
@@ -590,29 +476,14 @@ bool compilingWithPrgEnv() {
   return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
-std::string runCommand(std::string& command) {
-  // Run arbitrary command and return result
-  char buffer[256];
-  std::string result = "";
-
-  // Call command
-  FILE* pipe = popen(command.c_str(), "r");
-  if (!pipe) {
-    USR_FATAL("running %s", command.c_str());
+std::string runCommand(const std::string& command) {
+  auto commandOutput = chpl::getCommandOutput(command);
+  if (auto err = commandOutput.getError()) {
+    USR_FATAL("failed to run '%s', error: %s",
+              command.c_str(),
+              err.message().c_str());
   }
-
-  // Read output of command into result via buffer
-  while (!feof(pipe)) {
-    if (fgets(buffer, 256, pipe) != NULL) {
-      result += buffer;
-    }
-  }
-
-  if (pclose(pipe)) {
-    USR_FATAL("'%s' did not run successfully", command.c_str());
-  }
-
-  return result;
+  return commandOutput.get();
 }
 
 const char* getIntermediateDirName() {
@@ -822,16 +693,15 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   // Compiler flags for each deliverable.
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
   if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
-            "$(SHARED_LIB_CFLAGS)",
-            includedirs.c_str(),
-            ccflags.c_str());
-  } else {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
-            includedirs.c_str(),
-            ccflags.c_str());
+    fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
+  fprintf(makefile.fptr, "%s %s%s\n",
+          includedirs.c_str(),
+          ccflags.c_str(),
+          // We only need to compute and store dependencies if --savec is used
+          (saveCDir[0] ? " $(DEPEND_CFLAGS)" : ""));
 
   // Linker flags for each deliverable.
   const char* lmode = "";
@@ -944,6 +814,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
+
+  // We only need to compute and store dependencies if --savec is used
+  if (saveCDir[0]) {
+    fprintf(makefile.fptr, "DEPENDS = output/*.d\n\n");
+    fprintf(makefile.fptr, "-include $(DEPENDS)\n");
+  }
 
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
@@ -1062,6 +938,15 @@ bool isDirectory(const char* path)
   return false;
 }
 
+bool pathExists(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0)
+    return true;
+
+  return false;
+}
+
 // would just use realpath, but it is not supported on all platforms.
 char* chplRealPath(const char* path)
 {
@@ -1108,65 +993,18 @@ char* dirHasFile(const char *dir, const char *file)
   return real;
 }
 
-// This also exists in runtime/src/qio/sys.c
-// returns 0 on success.
-static int sys_getcwd(char** path_out)
-{
-  int sz = 128;
-  char* buf;
-
-  buf = (char*) malloc(sz);
-  if( !buf ) return ENOMEM;
-
-  while( 1 ) {
-    if ( getcwd(buf, sz) != NULL ) {
-      break;
-
-    } else if ( errno == ERANGE ) {
-      // keep looping but with bigger buffer.
-      sz *= 2;
-
-      /*
-       * Realloc may return NULL, in which case we will need to free the memory
-       * initially pointed to by buf.  This is why we store the result of the
-       * call in newP instead of directly into buf.  If a non-NULL value is
-       * returned we update the buf pointer.
-       */
-      void* newP = realloc(buf, sz);
-
-      if (newP != NULL) {
-        buf = static_cast<char*>(newP);
-
-      } else {
-        free(buf);
-        return ENOMEM;
-      }
-
-    } else {
-      // Other error, stop.
-      free(buf);
-      return errno;
-    }
-  }
-
-  *path_out = buf;
-  return 0;
-}
-
 
 /*
  * Returns the current working directory. Does not report failures. Use
- * sys_getcwd() if you need error reports.
+ * chpl::currentWorkingDir if you need error reports.
  */
 const char* getCwd() {
-  char* ret = nullptr;;
-  int rc;
-
-  rc = sys_getcwd(&ret);
-  if (rc == 0)
-    return ret;
-  else
+  std::string cwd;
+  if (auto err = chpl::currentWorkingDir(cwd)) {
     return "";
+  } else {
+    return astr(cwd);
+  }
 }
 
 
@@ -1207,13 +1045,12 @@ char* findProgramPath(const char *argv0)
 
   // Is argv0 a relative path?
   if( strchr(argv0, '/') != NULL ) {
-    char* cwd = NULL;
-    if( 0 == sys_getcwd(&cwd) ) {
-      real = dirHasFile(cwd, argv0);
-    } else {
+    std::string cwd;
+    if(auto err = chpl::currentWorkingDir(cwd)) {
       real = NULL;
+    } else {
+      real = dirHasFile(astr(cwd), argv0);
     }
-    free(cwd);
     return real;
   }
 

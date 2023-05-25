@@ -1,0 +1,1 @@
+bug: PRIM_RESOLVES can't handle non-existent idents in nested exprs

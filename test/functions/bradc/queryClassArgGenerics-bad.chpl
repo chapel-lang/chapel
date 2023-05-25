@@ -8,9 +8,9 @@ proc foo(x: borrowed C(t=?tt, r=?rr),
   writeln("In foo, x = ", x, ", y = ", y);
 }
 
-var myC = new borrowed C(int, 2),
-    myC2 = new borrowed C(int, 3),
-    myC3 = new borrowed C(real, 4);
+var myC = (new owned C(int, 2)).borrow(),
+    myC2 = (new owned C(int, 3)).borrow(),
+    myC3 = (new owned C(real, 4)).borrow();
 
 foo(myC, myC2);
 foo(myC, myC3);

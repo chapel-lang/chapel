@@ -1,0 +1,6 @@
+readStridedArr.chpl:6: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:8: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:12: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:16: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:19: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays
+readStridedArr.chpl:21: error: 'readLine()' is currently only supported for non-strided 1D rectangular arrays

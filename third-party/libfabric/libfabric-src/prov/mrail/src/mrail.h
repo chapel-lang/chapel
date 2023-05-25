@@ -44,7 +44,7 @@
 #include <rdma/fi_eq.h>
 #include <rdma/fi_rma.h>
 #include <rdma/fi_tagged.h>
-#include "rdma/providers/fi_log.h"
+#include <rdma/providers/fi_log.h>
 
 #include <ofi.h>
 #include <ofi_util.h>

@@ -1,0 +1,1 @@
+normalErrorMessage.chpl:8: error: illegal use of function that does not return a value: 'returnsVoid'

@@ -188,7 +188,7 @@ public:
 
   bool hasTypedMatcher(ASTNodeKind NK) const {
     if (!Value) return false;
-    return Value->getTypedMatcher(MatcherOps(NK)).hasValue();
+    return Value->getTypedMatcher(MatcherOps(NK)).has_value();
   }
 
   /// Determines if the contained matcher can be converted to \p Kind.
@@ -356,4 +356,4 @@ private:
 } // end namespace ast_matchers
 } // end namespace clang
 
-#endif  // LLVM_CLANG_AST_MATCHERS_DYNAMIC_VARIANT_VALUE_H
+#endif // LLVM_CLANG_ASTMATCHERS_DYNAMIC_VARIANTVALUE_H

@@ -1,3 +1,4 @@
+redefineTypeNames.chpl:1: In function 'main':
 redefineTypeNames.chpl:3: error: attempt to redefine reserved type 'int'
 redefineTypeNames.chpl:4: error: attempt to redefine reserved type 'real'
 redefineTypeNames.chpl:5: error: attempt to redefine reserved type 'bool'

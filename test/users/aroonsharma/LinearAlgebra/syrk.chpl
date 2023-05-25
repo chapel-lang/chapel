@@ -55,7 +55,7 @@ proc print_2D(A: [], m_dim: int, n_dim: int) {
 /* The process which runs the benchmark */
 proc kernel_syrk(dist_2D, m_dim: int, n_dim: int) {
   var still_correct = true;
-    var t:Timer;
+    var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -64,7 +64,7 @@ proc kernel_syrk(dist_2D, m_dim: int, n_dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   
@@ -140,7 +140,7 @@ proc main() {
     /* Initialize the domains */
     var dom_2D = {1..M, 1..N};
     
-    var t: Timer;
+    var t: stopwatch;
     
     if dist == "NONE" {
         var dist_2D = dom_2D;

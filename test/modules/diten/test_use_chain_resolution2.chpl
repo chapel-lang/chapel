@@ -21,7 +21,7 @@ module M5 {
 module M6 {
   var aaa = 6;
   proc main() {
-    public use M2, M5;
+    use M2, M5;
     writeln(aaa); // M2.M1.aaa and M5.M4.aaa are defined at the same use-depth
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -99,9 +99,16 @@ const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
 const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg);
 
+const clang::CodeGen::ABIArgInfo*
+getSingleCGArgInfo(Type* type);
+
+bool useDarwinArmFix(Type* type);
+
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
 void finishCodegenLLVM();
+// appends clang arguments to be used to the provided vector
+void computeClangArgs(std::vector<std::string>& clangCCArgs);
 void runClang(const char* just_parse_filename);
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,

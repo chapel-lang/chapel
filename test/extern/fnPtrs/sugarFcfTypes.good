@@ -1,2 +1,4 @@
-sugarFcfTypes.chpl:13: error: unresolved call 'bar(func())'
-sugarFcfTypes.chpl:7: note: candidates are: bar(f: c_fn_ptr)
+sugarFcfTypes.chpl:13: error: unresolved call 'bar(proc())'
+sugarFcfTypes.chpl:7: note: this candidate did not match: bar(f: c_fn_ptr)
+sugarFcfTypes.chpl:13: note: because actual argument #1 with type 'proc()'
+sugarFcfTypes.chpl:7: note: is passed to formal 'f: c_fn_ptr'

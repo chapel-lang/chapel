@@ -35,6 +35,11 @@ elif $CHPL_HOME/util/printchplenv --make --all --internal \
   # a compopts-by-compopts basis, but we can't do that yet.
   #
   echo True
+elif [ ! -f "/usr/lib64/libpthread.a" ] ; then
+  # Many modern OS's don't ship static system libraries we depend on. We always
+  # link libpthread (and libm) so use that as a proxy for systems lacking
+  # static systems libs.
+  echo True
 else
   echo False
 fi

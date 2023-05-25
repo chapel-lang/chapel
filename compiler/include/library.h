@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,7 @@ extern std::set<FnSymbol*> exportedStrRets;
 void codegen_library_header(std::vector<FnSymbol*> functions);
 void codegen_library_fortran(std::vector<FnSymbol*> functions);
 void codegen_library_makefile();
+void codegen_library_cmakelists();
 void codegen_library_python(std::vector<FnSymbol*> functions);
 void codegen_make_python_module();
 

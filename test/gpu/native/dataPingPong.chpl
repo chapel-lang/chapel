@@ -1,4 +1,5 @@
 use Time;
+use GpuDiagnostics;
 
 config const n = 10;
 config const numOps = 10;
@@ -6,8 +7,8 @@ config const printResult = true;
 config const printTimes = false;
 config const useGPU = true;
 
-var detailTimer = new Timer();
-var totalTimer = new Timer();
+var detailTimer = new stopwatch();
+var totalTimer = new stopwatch();
 
 var A: [1..n] int;
 
@@ -20,9 +21,10 @@ var copyIn = 0.0,
     copyOut = 0.0,
     total = 0.0;
 
+startGpuDiagnostics();
 totalTimer.start();
 if useGPU {
-  on here.getChild(1) {
+  on here.gpus[0] {
     detailTimer.start();
     var B = A;
     detailTimer.stop();
@@ -61,6 +63,9 @@ else {
 }
 totalTimer.stop();
 total = totalTimer.elapsed();
+stopGpuDiagnostics();
+
+assert(getGpuDiagnostics().kernel_launch == 1);
 
 if printTimes {
   writeln("copyIn: ", copyIn);

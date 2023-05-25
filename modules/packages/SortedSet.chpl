@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,7 +18,7 @@
  */
 
 /*
-  This module contains the implementation of the ``sortedSet`` type.
+  Provides the 'sortedSet' type for storing sorted unique elements.
 
   An ``sortedSet`` is a collection of unique and sorted elements. The
   ``sortedSet`` accepts a :ref:`comparator <comparators>` to determine how
@@ -50,9 +50,28 @@ module SortedSet {
     /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
+    type comparatorType = defaultComparator.type;
+
     /* The underlying implementation */
-    pragma "no doc"
-    var instance: treap(eltType, parSafe, ?);
+    @chpldoc.nodoc
+    var instance: treap(eltType, parSafe, comparatorType);
+
+    /*
+      Initializes an empty sortedSet containing elements of the given type.
+
+      :arg eltType: The type of the elements of this sortedSet.
+      :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
+      :arg comparatorType: The comparator type
+    */
+    proc init(type eltType, param parSafe = false,
+              type comparatorType = defaultComparator.type) {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+      this.comparatorType = comparatorType;
+
+      var comparator: comparatorType;
+      this.instance = new treap(eltType, parSafe, comparator);
+    }
 
     /*
       Initializes an empty sortedSet containing elements of the given type.
@@ -61,10 +80,10 @@ module SortedSet {
       :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
-    proc init(type eltType, param parSafe = false,
-              comparator: record = defaultComparator) {
+    proc init(type eltType, param parSafe = false, comparator: record) {
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this.comparatorType = comparator.type;
 
       this.instance = new treap(eltType, parSafe, comparator);
     }
@@ -84,6 +103,7 @@ module SortedSet {
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this.comparatorType = comparator.type;
 
       this.instance = new treap(eltType, iterable, parSafe, comparator);
     }
@@ -98,6 +118,7 @@ module SortedSet {
     proc init=(const ref other: sortedSet(?t)) lifetime this < other {
       this.eltType = t;
       this.parSafe = other.parSafe;
+      this.comparatorType = other.comparatorType;
       this.instance = new treap(this.eltType, this.parSafe,
                                             other.instance.comparator);
 
@@ -113,11 +134,11 @@ module SortedSet {
     }
 
     /*
-      Write the contents of this sortedSet to a channel.
+      Write the contents of this sortedSet to a fileWriter.
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: channel) throws {
+    inline proc const writeThis(ch: fileWriter) throws {
       instance.writeThis(ch);
     }
 

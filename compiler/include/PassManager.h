@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 #include <memory>
 #include <unordered_set>
 #include <vector>
+#include "vec.h"
 
 //
 // A PassT is a Pass that runs on things of type T and can return results of ResultType
@@ -178,8 +179,46 @@ template <typename T> using PassTList = std::vector<std::unique_ptr<PassT<T>>>;
 // today so that eg. a pass over CallExpr is actually a Function pass
 // with an adapter to visit every CallExpr without a performance hit.
 //
+// When working over a "std::vector" or "Vec" type, the PassManager will
+// only iterate over elements present when the pass started running, by
+// noting the size at that time.
+//
 class PassManager {
  private:
+  // Run pass over many and return it's results (if any). Specialization
+  // for vector with fixed length iteration in order to avoid iterator
+  // invalidation.
+  template <typename T, typename R, typename Elt>
+  R runPassImpl(PassT<T, R>& pass, const std::vector<Elt>& xs) {
+    const int stop = xs.size();
+    for (int i = 0; i < stop; i++) {
+      pass.run(xs[i]);
+    }
+
+    while (pass.hasNext()) {
+      pass.processNext();
+    }
+
+    return pass.getResult();
+  }
+
+  // Run pass over many and return it's results (if any). Specialization
+  // for vector with fixed length iteration in order to avoid iterator
+  // invalidation.
+  template <typename T, typename R, typename Elt>
+  R runPassImpl(PassT<T, R>& pass, const Vec<Elt>& xs) {
+    const int stop = xs.size();
+    for (int i = 0; i < stop; i++) {
+      pass.run(xs.v[i]);
+    }
+
+    while (pass.hasNext()) {
+      pass.processNext();
+    }
+
+    return pass.getResult();
+  }
+
   // Run pass over many and return it's results (if any)
   template <typename T, typename R, typename Container>
   R runPassImpl(PassT<T, R>& pass, const Container& xs) {

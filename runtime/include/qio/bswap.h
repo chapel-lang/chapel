@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,7 +96,7 @@
 // have htobe## htole## be##toh and le##toh. We do that by
 // checking for one of them. We assume that if one of that
 // width exists, the rest do. If we don't have bswap_## already,
-// we will define it so that we can define the the htobe...
+// we will define it so that we can define the htobe...
 // functions based on the machine's byte order.
 //
 // These default implementations are copied from glibc bits/byteswap.h

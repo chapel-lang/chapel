@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -43,7 +43,8 @@
 // code generator might have started with loads and stores.
 
 // This code was based upon the LLVM optimization MemCpyOptimizer.cpp
-
+// TODO: MemCpyOptimizer has evolved quite a bit since then,
+// so look at making a new version of this pass.
 #include "llvmAggregateGlobalOps.h"
 
 #ifdef HAVE_LLVM
@@ -65,8 +66,8 @@
 
 #include "llvm/IR/Verifier.h"
 
-#include "llvm/Analysis/AliasAnalysis.h"
-#include "llvm/Analysis/MemoryDependenceAnalysis.h"
+#include "llvm/Analysis/CallGraph.h"
+#include "llvm/Analysis/LazyCallGraph.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/Transforms/Utils/ValueMapper.h"
 
@@ -343,16 +344,27 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
                        // element in a structure.
 
     addRange(OffsetFromFirst, StoreSize, Slack,
-             SI->getPointerOperand(), SI->getAlignment(), SI);
+             SI->getPointerOperand(),
+#if HAVE_LLVM_VER >= 150
+             SI->getAlign().value(),
+#else
+             SI->getAlignment(),
+#endif
+             SI);
   }
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
   void addLoad(int64_t OffsetFromFirst, LoadInst *LI) {
-    Type* ptrType = LI->getOperand(0)->getType();
-    int64_t LoadSize = DL.getTypeStoreSize(ptrType->getPointerElementType());
+    int64_t LoadSize = DL.getTypeStoreSize(LI->getType());
     int64_t Slack =  GET_EXTRA; // Pretend loads use more space...
 
     addRange(OffsetFromFirst, LoadSize, Slack,
-             LI->getPointerOperand(), LI->getAlignment(), LI);
+             LI->getPointerOperand(),
+#if HAVE_LLVM_VER >= 150
+             LI->getAlign().value(),
+#else
+             LI->getAlignment(),
+#endif
+             LI);
   }
   // CUSTOM adds Slack
   void addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Ptr,
@@ -435,49 +447,53 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
 // END stolen from MemCpyOptimizer.
 
-  struct AggregateGlobalOpsOpt final : public FunctionPass {
-    const DataLayout *DL;
-    unsigned globalSpace;
-
-  public:
-    static char ID; // Pass identification, replacement for typeid
-    AggregateGlobalOpsOpt() : FunctionPass(ID) {
-      DL = 0;
-      errs() << "Warning: aggregate-global-opts using default configuration\n";
-      globalSpace = 100;
-    }
-    AggregateGlobalOpsOpt(unsigned _globalSpace) : FunctionPass(ID) {
-      DL = 0;
-      globalSpace = _globalSpace;
-    }
-
-
-    bool runOnFunction(Function &F) override;
-
-  private:
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      // TODO -- update these better
-      AU.setPreservesCFG();
-      /*AU.addRequired<DominatorTree>();
-      AU.addRequired<MemoryDependenceAnalysis>();
-      AU.addRequired<AliasAnalysis>();
-      AU.addRequired<TargetLibraryInfo>();*/
-      //AU.addPreserved<AliasAnalysis>();
-      //AU.addPreserved<MemoryDependenceAnalysis>();
-    }
-
-    Instruction *tryAggregating(Instruction *I, Value *StartPtr, bool DebugThis);
-  };
-
-  char AggregateGlobalOpsOpt::ID = 0;
-  static RegisterPass<AggregateGlobalOpsOpt> X("aggregate-global-ops", "Aggregate Global Pointer Operations", false /* only looks at CFG */, false /* Analysis pass */ );
-
 } // end anon namespace.
 
+AggregateGlobalOpsOpt::AggregateGlobalOpsOpt() {
+  errs() << "Warning: aggregate-global-opts using default configuration\n";
+}
+
+AggregateGlobalOpsOpt::AggregateGlobalOpsOpt(unsigned _globalSpace)
+  : globalSpace(_globalSpace) {
+}
+
+bool LegacyAggregateGlobalOpsOptPass::runOnFunction(Function &F) {
+  return pass.run(F);
+}
+
+void
+LegacyAggregateGlobalOpsOptPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  // TODO -- update these better
+  AU.setPreservesCFG();
+  /*AU.addRequired<DominatorTree>();
+  AU.addRequired<MemoryDependenceAnalysis>();
+  AU.addRequired<AliasAnalysis>();
+  AU.addRequired<TargetLibraryInfo>();*/
+  //AU.addPreserved<AliasAnalysis>();
+  //AU.addPreserved<MemoryDependenceAnalysis>();
+}
+
+char LegacyAggregateGlobalOpsOptPass::ID = 0;
+static RegisterPass<LegacyAggregateGlobalOpsOptPass> X("aggregate-global-ops", "Aggregate Global Pointer Operations", false /* only looks at CFG */, false /* Analysis pass */ );
+
 // createAggregateGlobalOpsOptPass - The public interface to this file...
-FunctionPass *createAggregateGlobalOpsOptPass(unsigned globalSpace)
+FunctionPass* createLegacyAggregateGlobalOpsOptPass(unsigned globalSpace)
 {
-  return new AggregateGlobalOpsOpt(globalSpace);
+  return new LegacyAggregateGlobalOpsOptPass(globalSpace);
+}
+
+PreservedAnalyses AggregateGlobalOpsOptPass::run(Function &F,
+                                                 FunctionAnalysisManager &AM) {
+  bool changed = pass.run(F);
+  if (!changed) {
+    return PreservedAnalyses::all();
+  }
+
+  PreservedAnalyses preserved;
+  preserved.preserve<CallGraphAnalysis>();
+  //preserved.preserve<LazyCallGraphAnalysis>();
+  // TODO: I'm sure there is more that could be marked as preserved
+  return preserved;
 }
 
 /// tryAggregating - When scanning forward over instructions, we look for
@@ -671,9 +687,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Determine alignment
     unsigned Alignment = Range.Alignment;
     if (Alignment == 0) {
-      Type *EltType =
-        cast<PointerType>(StartPtr->getType())->getElementType();
-      Alignment = DL->getABITypeAlignment(EltType);
+      Type* eltType = nullptr;
+      if (LoadInst* ld = dyn_cast<LoadInst>(First)) {
+        eltType = ld->getType();
+      } else if (StoreInst* st = dyn_cast<StoreInst>(First)) {
+        eltType = st->getValueOperand()->getType();
+      }
+      if (eltType) {
+        Alignment = DL->getABITypeAlignment(eltType);
+      } else {
+        assert(false && "expected eltType when computing natural alignment");
+      }
     }
 
     Instruction *alloc = NULL;
@@ -710,9 +734,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                                                    alloc,
                                                    offsets);
 
-        Type* origDstTy = oldStore->getPointerOperand()->getType();
-        Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
-        Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);
+        Type* StoreType = oldStore->getValueOperand()->getType();
+        Type* PtrType = StoreType->getPointerTo(0);
+        Value* Dst = irBuilder.CreatePointerCast(i8Dst, PtrType);
 
         StoreInst* newStore =
           irBuilder.CreateStore(oldStore->getValueOperand(), Dst);
@@ -809,15 +833,14 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
-        Type* origSrcTy = oldLoad->getPointerOperand()->getType();
-        Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
-        Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
-#if HAVE_LLVM_VER >= 130
-        LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
-#else
-        LoadInst* newLoad = irBuilder.CreateLoad(Src);
-#endif
+        Type* LoadType = oldLoad->getType();
+        Type* PtrType = LoadType->getPointerTo(0);
+
+        Value* Src = irBuilder.CreatePointerCast(i8Src, PtrType);
+
+        LoadInst* newLoad = irBuilder.CreateLoad(LoadType, Src);
+
 #if HAVE_LLVM_VER >= 100
         newLoad->setAlignment(oldLoad->getAlign());
 #else
@@ -840,10 +863,10 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
   return lastAddedInsn;
 }
 
-// AggregateGlobalOpsOpt::runOnFunction - This is the main transformation
-// entry point for a function.
+// AggregateGlobalOpsOpt::run - This is the main transformation
+// entry point for a function. Returns true if it changed the function.
 //
-bool AggregateGlobalOpsOpt::runOnFunction(Function &F) {
+bool AggregateGlobalOpsOpt::run(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 

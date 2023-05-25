@@ -1,0 +1,5 @@
+in fn()
+in DA()
+runtime-type-1.chpl:12: error: halt reached - Domain mismatch passing array argument:
+  Formal domain is: {1..5}
+  Actual domain is: {1..6}

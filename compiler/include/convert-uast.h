@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,11 +24,19 @@
 #include "alist.h"
 #include "baseAST.h"
 #include "ModuleSymbol.h"
-#include "chpl/queries/Context.h"
+#include "chpl/framework/Context.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-ModuleSymbol* convertToplevelModule(chpl::Context* context,
-                                    const chpl::uast::Module* mod,
-                                    ModTag modTag);
+ModuleSymbol*
+convertToplevelModule(chpl::Context* context,
+                      const chpl::uast::Module* mod,
+                      ModTag modTag);
+
+// apply fixups to fix SymExprs to refer to Symbols that
+// might have been created in a different order.
+// TODO: in the future, this should be a method on Converter,
+// and there should be 1 Converter to convert a module and its dependencies.
+void postConvertApplyFixups(chpl::Context* context);
 
 #endif

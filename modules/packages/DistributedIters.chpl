@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for dynamic iterators distributed across multiple locales.
+
   This module contains iterators that can be used to distribute a `forall`
   loop for a range or domain by dynamically splitting iterations between
   locales.
@@ -118,7 +119,7 @@ iter distributedDynamic(c,
 }
 
 // Zippered leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int=1,
@@ -129,6 +130,8 @@ iter distributedDynamic(param tag:iterKind,
                         workerLocales=Locales)
 where tag == iterKind.leader
 {
+  use Sort;
+
   compilerAssert(isDomain(c) || isRange(c),
                  ("DistributedIters: Dynamic iterator (leader): must use a "
                   + "valid domain or range"),
@@ -196,7 +199,7 @@ where tag == iterKind.leader
     else
     {
       const numWorkerLocales = workerLocales.size;
-      const denseRangeHigh:int = denseRange.high;
+      const denseRangeHigh:int = denseRange.highBound;
       const masterLocale = here.locale;
 
       const actualWorkerLocales =
@@ -208,7 +211,7 @@ where tag == iterKind.leader
       if infoDistributedIters then
       {
         const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
-        const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
+        const actualWorkerLocaleIdsSorted = sorted(actualWorkerLocaleIds);
         writeln("DistributedIters: distributedDynamic:");
         writeln("  coordinated = ", coordinated);
         writeln("  numLocales = ", numLocales);
@@ -221,7 +224,7 @@ where tag == iterKind.leader
       }
 
       var localeTimes:[0..#numLocales]real;
-      var totalTime:Timer;
+      var totalTime:stopwatch;
       if timeDistributedIters then totalTime.start();
 
       // The dynamic iterator stage (determines next subrange index and size).
@@ -238,14 +241,14 @@ where tag == iterKind.leader
         // localeChunkSize should not be less than chunkSize
         const maxSize = max(computedSize, chunkSize);
         const actualLocaleChunkSize = min(maxSize, denseRange.size);
-        var localeTime:Timer;
+        var localeTime:stopwatch;
         if timeDistributedIters then localeTime.start();
 
         var localeStage:int = dynamicStageCount.fetchAdd(1);
         var localeRange:cType = dynamicSubrange(denseRange,
                                                 actualLocaleChunkSize,
                                                 localeStage);
-        while localeRange.low <= denseRangeHigh
+        while localeRange.lowBound <= denseRangeHigh
         {
           const denseLocaleRange:cType = densify(localeRange, localeRange);
           for denseTaskRangeTuple in DynamicIters.dynamic(tag=iterKind.leader,
@@ -288,7 +291,7 @@ where tag == iterKind.leader
 }
 
 // Zippered follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int,
@@ -383,7 +386,7 @@ iter distributedGuided(c,
 }
 
 // Zippered leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int=0,
@@ -393,6 +396,8 @@ iter distributedGuided(param tag:iterKind,
                        workerLocales=Locales)
 where tag == iterKind.leader
 {
+  use Sort;
+
   compilerAssert(isDomain(c) || isRange(c),
                  ("DistributedIters: Guided iterator (leader): must use a "
                   + "valid domain or range"),
@@ -454,7 +459,7 @@ where tag == iterKind.leader
     else
     {
       const numWorkerLocales = workerLocales.size;
-      const denseRangeHigh:int = denseRange.high;
+      const denseRangeHigh:int = denseRange.highBound;
       const masterLocale = here.locale;
 
       const actualWorkerLocales =
@@ -470,7 +475,7 @@ where tag == iterKind.leader
       if infoDistributedIters then
       {
         const actualWorkerLocaleIds = [L in actualWorkerLocales] L.id:string;
-        const actualWorkerLocaleIdsSorted = actualWorkerLocaleIds.sorted();
+        const actualWorkerLocaleIdsSorted = sorted(actualWorkerLocaleIds);
         writeln("DistributedIters: distributedGuided:");
         writeln("  coordinated = ", coordinated);
         writeln("  numLocales = ", numLocales);
@@ -483,21 +488,21 @@ where tag == iterKind.leader
       }
 
       var localeTimes:[0..#numLocales]real;
-      var totalTime:Timer;
+      var totalTime:stopwatch;
       if timeDistributedIters then totalTime.start();
 
       coforall L in actualWorkerLocales
       with (ref guidedStageCount, ref localeTimes)
       do on L
       {
-        var localeTime:Timer;
+        var localeTime:stopwatch;
         if timeDistributedIters then localeTime.start();
 
         var localeStage:int = guidedStageCount.fetchAdd(1);
         var localeRange:cType = guidedSubrange(denseRange,
                                                numActualWorkerLocales,
                                                localeStage);
-        while localeRange.high <= denseRangeHigh
+        while localeRange.highBound <= denseRangeHigh
         {
           const denseLocaleRange:cType = densify(localeRange, localeRange);
           for denseTaskRangeTuple in DynamicIters.guided(tag=iterKind.leader,
@@ -539,7 +544,7 @@ where tag == iterKind.leader
 }
 
 // Zippered follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int,
@@ -595,9 +600,9 @@ private proc dynamicSubrange(c:range(?),
                              chunkSize:int,
                              stage:int)
 {
-  const low:int = (c.low + (stage * chunkSize));
+  const low:int = (c.lowBound + (stage * chunkSize));
   const potentialHigh:int = (low + (chunkSize - 1));
-  const high:int = min(potentialHigh, c.high);
+  const high:int = min(potentialHigh, c.highBound);
   const subrange:c.type = (low..high);
   return subrange;
 }
@@ -635,7 +640,7 @@ private proc guidedSubrange(c:range(?),
   assert(workerCount > 0, ("DistributedIters: guidedSubrange: "
                            + "'workerCount' must be positive"));
   const cLength = c.size;
-  var low:int = c.low;
+  var low:int = c.lowBound;
   var chunkSize:int = (cLength / workerCount);
   var remainder:int = (cLength - chunkSize);
   for unused in (1..#stage)
@@ -685,7 +690,7 @@ private proc writeTimeStatistics(wallTime:real,
     const localeTime = localeTimes[i];
     localeTotalTime += localeTime;
     localeTimesFormatted += (i:string + ": " + localeTime:string);
-    localeTimesFormatted += if i == localeRange.high
+    localeTimesFormatted += if i == localeRange.highBound
                             then ""
                             else ", ";
   }

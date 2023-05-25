@@ -12,7 +12,7 @@ use LinkedLists, IO;
   mylist.destroy();
 }
 
-var f = opentmp();
+var f = openTempFile();
 {
   var writer = f.writer();
   var str = '[]';

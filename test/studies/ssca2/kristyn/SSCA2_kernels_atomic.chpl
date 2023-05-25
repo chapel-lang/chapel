@@ -51,7 +51,7 @@ module SSCA2_kernels
 { 
   use SSCA2_compilation_config_params, Time;
 
-  var stopwatch : Timer;
+  var sw : stopwatch;
 
   // ========================================================
   //                           KERNEL 2:
@@ -67,7 +67,7 @@ module SSCA2_kernels
     // can either kind of domain or something else purpose-built
     // for this task.
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
       var heaviest_edge_weight : int = 0;
 
       // ---------------------------------------------------------
@@ -97,10 +97,10 @@ module SSCA2_kernels
 	      atomic heavy_edge_list.add ( (s,t) ); 
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 2: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 2: ", sw.elapsed (), 
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
 
       // ------------------------------------------------
@@ -145,7 +145,7 @@ module SSCA2_kernels
     // -------------------------------------------------------------------------
   
     {
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       const vertex_domain = G.vertices;
        
@@ -194,10 +194,10 @@ module SSCA2_kernels
       }
 
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	writeln ( "Elapsed time for Kernel 3: ", stopwatch.elapsed (), 
+	sw.stop ();
+	writeln ( "Elapsed time for Kernel 3: ", sw.elapsed (), 
 		  " seconds");
-	stopwatch.clear ();
+	sw.clear ();
       }
     } // end of rooted_heavy_subgraphs
 
@@ -261,7 +261,7 @@ module SSCA2_kernels
       // one particular vertex  (s)  independently.
       // ------------------------------------------------------
   
-      if PRINT_TIMING_STATISTICS then stopwatch.start ();
+      if PRINT_TIMING_STATISTICS then sw.start ();
 
       Between_Cent = 0.0;
       Sum_Min_Dist = 0.0;
@@ -400,9 +400,9 @@ module SSCA2_kernels
       }; // closure of outer embarrassingly parallel forall
   
       if PRINT_TIMING_STATISTICS then {
-	stopwatch.stop ();
-	var K4_time = stopwatch.elapsed ();
-	stopwatch.clear ();
+	sw.stop ();
+	var K4_time = sw.elapsed ();
+	sw.clear ();
 	writeln ( "Elapsed time for Kernel 4: ", K4_time, " seconds");
 
 	var n0            = + reduce [v in vertex_domain] (G.n_Neighbors (v)== 0);

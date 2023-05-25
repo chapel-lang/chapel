@@ -1,1 +1,6 @@
+inout-subclass.chpl:6: In function 'procInoutC':
+inout-subclass.chpl:7: warning: here, 'arg' is set to the result of borrowing from a 'new'
+inout-subclass.chpl:7: note: if you meant to save the result of new, change the type of 'arg' to not be 'borrowed'
+inout-subclass.chpl:7: note: if you meant to refer to another variable storing the 'new', use an explicit variable, e.g. 'var myOwned = new C(); var myBorrowed = myOwned.borrow();'
+  inout-subclass.chpl:13: called as procInoutC(arg: borrowed C?)
 inout-subclass.chpl:14: error: Cannot assign to borrowed D? from borrowed C?

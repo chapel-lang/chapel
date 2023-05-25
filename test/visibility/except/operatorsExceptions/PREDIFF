@@ -11,6 +11,6 @@ tmptmp=`mktemp "tmp.XXXXXX"`
 
 regex='\|CHPL_HOME/modules|s/:[0-9:]*:/:nnnn:/'
 
-sed -e "$regex" $tmpfile > $tmptmp
+sed -e "$regex" $tmpfile | grep -v 'print-all-candidates' > $tmptmp
 
 mv $tmptmp $tmpfile

@@ -13,7 +13,7 @@ class SubReader : BaseReader {
   }
 }
 
-var s1 = new borrowed SubReader();
+var s1 = (new owned SubReader()).borrow();
 
 var x:int;
 var y:real;

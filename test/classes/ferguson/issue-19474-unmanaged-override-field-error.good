@@ -1,0 +1,1 @@
+issue-19474-unmanaged-override-field-error.chpl:6: error: Child(1).rank override keyword required for method matching signature of superclass method

@@ -15,7 +15,7 @@
 
 namespace clang {
 
-static const llvm::SmallVector<llvm::StringRef, 4>
+static llvm::SmallVector<llvm::StringRef, 4>
 getAllPossibleAMDGPUTargetIDFeatures(const llvm::Triple &T,
                                      llvm::StringRef Proc) {
   // Entries in returned vector should be in alphabetical order.
@@ -33,7 +33,7 @@ getAllPossibleAMDGPUTargetIDFeatures(const llvm::Triple &T,
   return Ret;
 }
 
-const llvm::SmallVector<llvm::StringRef, 4>
+llvm::SmallVector<llvm::StringRef, 4>
 getAllPossibleTargetIDFeatures(const llvm::Triple &T,
                                llvm::StringRef Processor) {
   llvm::SmallVector<llvm::StringRef, 4> Ret;
@@ -109,8 +109,7 @@ parseTargetID(const llvm::Triple &T, llvm::StringRef TargetID,
   if (!OptionalProcessor)
     return llvm::None;
 
-  llvm::StringRef Processor =
-      getCanonicalProcessorName(T, OptionalProcessor.getValue());
+  llvm::StringRef Processor = getCanonicalProcessorName(T, *OptionalProcessor);
   if (Processor.empty())
     return llvm::None;
 
@@ -150,8 +149,7 @@ getConflictTargetIDCombination(const std::set<llvm::StringRef> &TargetIDs) {
   llvm::StringMap<Info> FeatureMap;
   for (auto &&ID : TargetIDs) {
     llvm::StringMap<bool> Features;
-    llvm::StringRef Proc =
-        parseTargetIDWithFormatCheckingOnly(ID, &Features).getValue();
+    llvm::StringRef Proc = *parseTargetIDWithFormatCheckingOnly(ID, &Features);
     auto Loc = FeatureMap.find(Proc);
     if (Loc == FeatureMap.end())
       FeatureMap[Proc] = Info{ID, Features};

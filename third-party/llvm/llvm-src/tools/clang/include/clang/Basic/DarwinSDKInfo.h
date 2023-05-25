@@ -6,8 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef LLVM_CLANG_BASIC_DARWIN_SDK_INFO_H
-#define LLVM_CLANG_BASIC_DARWIN_SDK_INFO_H
+#ifndef LLVM_CLANG_BASIC_DARWINSDKINFO_H
+#define LLVM_CLANG_BASIC_DARWINSDKINFO_H
 
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/DenseMap.h"
@@ -55,6 +55,20 @@ public:
     static inline constexpr OSEnvPair macCatalystToMacOSPair() {
       return OSEnvPair(llvm::Triple::IOS, llvm::Triple::MacABI,
                        llvm::Triple::MacOSX, llvm::Triple::UnknownEnvironment);
+    }
+
+    /// Returns the os-environment mapping pair that's used to represent the
+    /// iOS -> watchOS version mapping.
+    static inline constexpr OSEnvPair iOStoWatchOSPair() {
+      return OSEnvPair(llvm::Triple::IOS, llvm::Triple::UnknownEnvironment,
+                       llvm::Triple::WatchOS, llvm::Triple::UnknownEnvironment);
+    }
+
+    /// Returns the os-environment mapping pair that's used to represent the
+    /// iOS -> tvOS version mapping.
+    static inline constexpr OSEnvPair iOStoTvOSPair() {
+      return OSEnvPair(llvm::Triple::IOS, llvm::Triple::UnknownEnvironment,
+                       llvm::Triple::TvOS, llvm::Triple::UnknownEnvironment);
     }
 
   private:
@@ -128,8 +142,7 @@ public:
     auto Mapping = VersionMappings.find(Kind.Value);
     if (Mapping == VersionMappings.end())
       return nullptr;
-    return Mapping->getSecond().hasValue() ? Mapping->getSecond().getPointer()
-                                           : nullptr;
+    return Mapping->getSecond() ? Mapping->getSecond().getPointer() : nullptr;
   }
 
   static Optional<DarwinSDKInfo>
@@ -154,4 +167,4 @@ Expected<Optional<DarwinSDKInfo>> parseDarwinSDKInfo(llvm::vfs::FileSystem &VFS,
 
 } // end namespace clang
 
-#endif // LLVM_CLANG_BASIC_DARWIN_SDK_INFO_H
+#endif // LLVM_CLANG_BASIC_DARWINSDKINFO_H

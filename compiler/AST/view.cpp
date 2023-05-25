@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,6 +42,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
@@ -1315,10 +1316,10 @@ static char* parentMsg(Expr* expr, int* cntInTreeP, int* cntNonTreeP) {
   static char result[128];
   if (expr->inTree()) {
     (*cntInTreeP)++;
-    sprintf(result, "psym %d", expr->parentSymbol->id);
+    snprintf(result, sizeof(result), "psym %d", expr->parentSymbol->id);
   } else {
     (*cntNonTreeP)++;
-    sprintf(result, "<not in tree>");
+    snprintf(result, sizeof(result), "<not in tree>");
   }
   return result;
 }

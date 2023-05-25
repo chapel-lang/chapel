@@ -1,4 +1,4 @@
-use DateTime;
+use Time;
 
 proc test_basic_attributes() {
   var t = new time(12, 0);
@@ -52,28 +52,28 @@ proc test_comparing() {
 
 proc test_isoformat() {
   var t = new time(4, 5, 1, 123);
-  assert(t.isoformat() == "04:05:01.000123");
+  assert(t.isoFormat() == "04:05:01.000123");
 
   t = new time();
-  assert(t.isoformat() == "00:00:00");
+  assert(t.isoFormat() == "00:00:00");
 
   t = new time(microsecond=1);
-  assert(t.isoformat() == "00:00:00.000001");
+  assert(t.isoFormat() == "00:00:00.000001");
 
   t = new time(microsecond=10);
-  assert(t.isoformat() == "00:00:00.000010");
+  assert(t.isoFormat() == "00:00:00.000010");
 
   t = new time(microsecond=100);
-  assert(t.isoformat() == "00:00:00.000100");
+  assert(t.isoFormat() == "00:00:00.000100");
 
   t = new time(microsecond=1000);
-  assert(t.isoformat() == "00:00:00.001000");
+  assert(t.isoFormat() == "00:00:00.001000");
 
   t = new time(microsecond=10000);
-  assert(t.isoformat() == "00:00:00.010000");
+  assert(t.isoFormat() == "00:00:00.010000");
 
   t = new time(microsecond=100000);
-  assert(t.isoformat() == "00:00:00.100000");
+  assert(t.isoFormat() == "00:00:00.100000");
 }
 
 proc test_strftime() {
@@ -85,19 +85,19 @@ proc test_strftime() {
 }
 
 proc test_resolution_info() {
-  proc valIsType(type t, val: t) param return true;
-  proc valIsType(type t, val) param return false;
+  proc valIsType(type t, val: t) param do return true;
+  proc valIsType(type t, val) param do return false;
 
   assert(valIsType(time, time.min));
   assert(valIsType(time, time.max));
-  assert(valIsType(timedelta, time.resolution));
+  assert(valIsType(timeDelta, time.resolution));
   assert(time.max > time.min);
 }
 
 proc test_replace() {
   var args = (1, 2, 3, 4);
   var base = new time((...args));
-  assert(base == base.replace(tzinfo=base.tzinfo));
+  assert(base == base.replace(tz=base.timezone));
 
   var i = 0;
   for (name, newval) in (("hour", 5),
@@ -109,13 +109,13 @@ proc test_replace() {
     var expected = new time((...newargs));
     var got: time;
     if name == "hour" then
-      got = base.replace(hour=newval, tzinfo=base.tzinfo);
+      got = base.replace(hour=newval, tz=base.timezone);
     else if name == "minute" then
-      got = base.replace(minute=newval, tzinfo=base.tzinfo);
+      got = base.replace(minute=newval, tz=base.timezone);
     else if name == "second" then
-      got = base.replace(second=newval, tzinfo=base.tzinfo);
+      got = base.replace(second=newval, tz=base.timezone);
     else if name == "microsecond" then
-      got = base.replace(microsecond=newval, tzinfo=base.tzinfo);
+      got = base.replace(microsecond=newval, tz=base.timezone);
     assert(expected == got);
     i += 1;
   }

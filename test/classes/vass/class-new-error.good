@@ -1,1 +1,1 @@
-class-new-error.chpl:4: error: type in 'new' expression is missing its argument list
+class-new-error.chpl:4: syntax error: 'new' expression is missing its argument list

@@ -27,17 +27,18 @@ endif
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
+  TOPOLOGY=binders
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
-    TOPOLOGY = hwloc_via_chapel
     CFLAGS_NEEDS_RT_INCLUDES = y
-  else
-    TOPOLOGY = hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
     ifdef CHPL_HWLOC_PREFIX
-      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix="$(CHPL_HWLOC_PREFIX)hwloc_"
+      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
     endif
+    # don't bother checking if we can link against hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 
@@ -49,6 +50,12 @@ ifneq (, $(TOPOLOGY))
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
+# Used to create qthread-chapel.h
+ifeq ($(TOPOLOGY),binders)
+  USE_TOPOLOGY_BINDERS=1
+else
+  USE_TOPOLOGY_BINDERS=0
+endif
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
@@ -111,11 +118,15 @@ endif
 
 CHPL_QTHREAD_CFG_OPTIONS += --enable-static --disable-shared
 
-# determine which scheduler to use. Use nemesis for flat and distrib for
-# non-flat.  Override with a user provided option if they requested one
+# determine which scheduler to use based on locale model.  Override with a user
+# provided option if they requested one.
 SCHEDULER = nemesis
-ifneq ($(CHPL_MAKE_LOCALE_MODEL),flat)
-SCHEDULER = distrib
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),numa)
+  # The distrib scheduler is numa aware (you can say things like "run this new
+  # task on numa domain X" or "which numa domain is this task running on?");
+  # however its performance is generally worse than nemesis so we don't use it
+  # by default.
+  SCHEDULER = distrib
 endif
 ifneq (, $(CHPL_QTHREAD_SCHEDULER))
 SCHEDULER = $(CHPL_QTHREAD_SCHEDULER)
@@ -133,6 +144,21 @@ CHPL_QTHREAD_CFG_OPTIONS += --enable-condwait-queue
 # spinlocks to be fast, so disable them for pgi, and PrgEnv-pgi
 ifneq (, $(findstring pgi,$(CHPL_MAKE_TARGET_COMPILER)))
 CHPL_QTHREAD_CFG_OPTIONS += --disable-internal-spinlock
+endif
+
+# Address sanitizer doesn't work with asm context switching so try
+# makecontext/swapcontext (which may have false-positives, but doesn't
+# immediately fail)
+ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
+  CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
+endif
+
+# No fastcontext on m1, fallback to ucontext (with _XOPEN_SOURCE to allow it)
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
+  ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
+    CFLAGS += -D_XOPEN_SOURCE
+  endif
 endif
 
 ifeq ($(CHPL_LIB_PIC),pic)
@@ -216,6 +242,9 @@ qthread-chapel-h: FORCE
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TOPOLOGY_BINDERS" \
+	     $(USE_TOPOLOGY_BINDERS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h

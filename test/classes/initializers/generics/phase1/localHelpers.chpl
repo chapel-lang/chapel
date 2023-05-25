@@ -23,7 +23,7 @@ proc helperFunc(val: int) {
 }
 
 proc main() {
-  var c = new borrowed UsesHelpers(9);
+  var c = (new owned UsesHelpers(9)).borrow();
   writeln(c.type: string);
   writeln(c);
 }

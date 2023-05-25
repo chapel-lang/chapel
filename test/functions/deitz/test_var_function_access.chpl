@@ -6,7 +6,7 @@ proc bar(x : borrowed foo) ref {
   return x;
 }
 
-var f : borrowed foo = new borrowed foo(a = 12);
+var f : borrowed foo = (new owned foo(a = 12)).borrow();
 
 writeln(f);
 

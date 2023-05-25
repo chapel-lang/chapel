@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,10 +31,10 @@ class Symbol;
 // or NULL if there isn't a C declaration with that name in an extern block.
 //
 // This is called during scopeResolve
-// it can call lookup() and addToSymbolTable()
+// it can call lookupInModuleOrBuiltins() and addToSymbolTable()
 //
-Symbol* tryCResolve(BaseAST* context, const char* cname);
-Symbol* tryCResolveLocally(ModuleSymbol* module, const char* cname);
+Symbol* tryCResolve(ModuleSymbol* mod, const char* cname);
+Symbol* tryCResolveLocally(ModuleSymbol* mod, const char* cname);
 
 #endif
 

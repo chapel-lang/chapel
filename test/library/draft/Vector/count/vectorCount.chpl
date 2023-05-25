@@ -22,7 +22,7 @@ for 1..testIters do {
 
 var vec2 = vec1;
 
-vec2.extend(vec1);
+vec2.append(vec1);
 
 writeln(vec2.count(testNum));
 

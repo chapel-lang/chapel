@@ -14,20 +14,19 @@ proc test(goodLock: string, tf: string) {
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');
-  var temp = open(lf, iomode.cw);
+  var temp = open(lf, ioMode.cw);
   {
     var w = temp.writer();
-    for line in open(goodLock, iomode.r).lines() do
+    for line in openReader(goodLock).lines() do
       w.write(line.replace('CHPL_CUR_FULL', currentVersion));
     w.close();
   }
 
-  var configs = updateLock(true, tf=tf, lf=temp.tryGetPath());
-  var lock = open(temp.tryGetPath(), iomode.r);
+  var configs = updateLock(true, tf=tf, lf=temp.path);
+  var lock = open(temp.path, ioMode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);
   remove(lf);
   temp.close();
   lock.close();
-  delete lockFile;
 }

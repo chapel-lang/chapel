@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,7 +64,7 @@
 */
 
 
-/*
+/* Implements a highly parallel segmented multiset.
 
   Summary
   _______
@@ -126,7 +126,7 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use CTypes;
-  use IO only channel;
+  private use IO;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -202,7 +202,7 @@ module DistributedBag {
   /*
     Reference counter for DistributedBag
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedBagRC {
     type eltType;
     var _pid : int;
@@ -234,21 +234,21 @@ module DistributedBag {
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid : int = -1;
 
     // Reference Counting...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _rc : shared DistributedBagRC(eltType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");
@@ -256,34 +256,43 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
-    pragma "no doc"
-    /* Read/write the contents of DistBag from/to a channel */
-    proc readWriteThis(ch: channel) throws {
-      ch <~> "[";
+    @chpldoc.nodoc
+    proc readThis(f) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    proc init(type eltType, r: fileReader) {
+      this.init(eltType);
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    @chpldoc.nodoc
+    proc writeThis(ch) throws {
+      ch.write("[");
       var size = this.getSize();
       for (i,iteration) in zip(this, 0..<size) {
-        ch <~> i;
-        if iteration < size-1 then ch <~> ", ";
+        ch.write(i);
+        if iteration < size-1 then ch.write(", ");
       }
-      ch <~> "]";
+      ch.write("]");
     }
 
     forwarding _value;
   }
 
   class DistributedBagImpl : CollectionImpl {
-    pragma "no doc"
+    @chpldoc.nodoc
     var targetLocDom : domain(1);
     /*
       The locales to allocate bags for and load balance across.
     */
     var targetLocales : [targetLocDom] locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid : int = -1;
 
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
-    pragma "no doc"
+    @chpldoc.nodoc
     var bag : unmanaged Bag(eltType)?;
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
@@ -298,7 +307,7 @@ module DistributedBag {
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, pid, type eltType = other.eltType) {
       super.init(eltType);
 
@@ -311,27 +320,27 @@ module DistributedBag {
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       delete bag;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(pid) {
       return new unmanaged DistributedBagImpl(this, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData() {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedThis {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter targetLocalesNotHere() {
       foreach loc in targetLocales {
         if loc != here {
@@ -469,7 +478,7 @@ module DistributedBag {
 
         // Allocate buffer, which holds the 'excess' elements for redistribution.
         // Then fill it.
-        var buffer = c_malloc(eltType, excess);
+        var buffer = allocate(eltType, excess);
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
@@ -513,7 +522,7 @@ module DistributedBag {
           segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
         }
 
-        c_free(buffer);
+        deallocate(buffer);
       }
 
       // Phase 3: Release all locks from first node and segment to last node and segment.
@@ -587,7 +596,7 @@ module DistributedBag {
             // Create a snapshot...
             var block = segment.headBlock;
             var bufferSz = segment.nElems.read() : int;
-            var buffer = c_malloc(eltType, bufferSz);
+            var buffer = allocate(eltType, bufferSz);
             var bufferOffset = 0;
 
             while block != nil {
@@ -602,7 +611,7 @@ module DistributedBag {
             // Yield this chunk to be process...
             segment.releaseStatus();
             yield (bufferSz, buffer);
-            c_free(buffer);
+            deallocate(buffer);
           }
         }
       }
@@ -625,7 +634,7 @@ module DistributedBag {
     It should be noted that the block itself is not parallel-safe, and access must be
     synchronized.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class BagSegmentBlock {
     type eltType;
 
@@ -679,7 +688,7 @@ module DistributedBag {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      this.elems = c_malloc(eltType, capacity);
+      this.elems = allocate(eltType, capacity);
       this.cap = capacity;
     }
 
@@ -691,7 +700,7 @@ module DistributedBag {
     }
 
     proc deinit() {
-      c_free(elems);
+      deallocate(elems);
     }
   }
 
@@ -699,7 +708,7 @@ module DistributedBag {
     A segment is, in and of itself an unrolled linked list. We maintain one per core
     to ensure maximum parallelism.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record BagSegment {
     type eltType;
 
@@ -912,7 +921,7 @@ module DistributedBag {
     We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
     which is required for work stealing.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class Bag {
     type eltType;
 
@@ -1182,7 +1191,7 @@ module DistributedBag {
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;
 
                                 // Allocate storage...
-                                on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
+                                on stolenWork do stolenWork[loc.id] = (toSteal, allocate(eltType, toSteal));
                                 var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
@@ -1210,7 +1219,7 @@ module DistributedBag {
                       for (nStolen, stolenPtr) in stolenWork {
                         if nStolen == 0 then continue;
                         recvSegment.addElementsPtr(stolenPtr, nStolen);
-                        c_free(stolenPtr);
+                        deallocate(stolenPtr);
 
                         // Let parent know that the bag is not empty.
                         isEmpty.write(false);

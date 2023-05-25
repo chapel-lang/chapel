@@ -6,7 +6,7 @@
 Error Handling
 ==============
 
-The Chapel language supports ``throw``, ``try``, ``try``!, ``catch``,
+The Chapel language supports ``throw``, ``try``, ``try!``, ``catch``,
 and ``throws`` which are described below. Chapel supports several error
 handling modes, including a mode suitable for prototype development and
 a less-permissive mode intended for production code.
@@ -15,7 +15,7 @@ a less-permissive mode intended for production code.
 
    Additional information about the current implementation of
    error handling and the *strict* error handling mode, which is not
-   defined here, is available in the 
+   defined here, is available in the
    :ref:`errorHandling technical note <readme-errorHandling>`
 
 .. _Throwing_Errors:
@@ -28,12 +28,26 @@ statement. For a function to throw an error, its signature must include
 a ``throws`` declaration. The declaration is put after the return type
 and before any ``where`` clauses.
 
+The statements following a throw statement in the same block
+are ignored by the compiler because they cannot be executed.
+
+..
+
+   *Open issue*.
+
+   The current implementation makes an exception to this rule: it does
+   consider the statements following a throw statement or a call to
+   `halt()` in the case these statements include a return
+   statement. This is done to support legacy codes that use return
+   statement(s) to establish the return type implicitly.
+   Should we remove this exception?
+
 Only ``owned`` instances of a type inheriting from ``Error`` can be
 thrown.
 
    *Example (throwing.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -57,7 +71,7 @@ Handling Errors
 
 There are three ways to handle an error:
 
--  Halt with ``try``!.
+-  Halt with ``try!``.
 
 -  Handle the error with ``catch`` blocks.
 
@@ -68,12 +82,12 @@ There are three ways to handle an error:
 Halting on error with try!
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If an error is thrown by a call within the lexical scope of a ``try``!
-block or a ``try``! expression prefix, the program halts.
+If an error is thrown by a call within the lexical scope of a ``try!``
+block or a ``try!`` expression prefix, the program halts.
 
    *Example (try-bang.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -95,7 +109,7 @@ block or a ``try``! expression prefix, the program halts.
 Handling an error with catch
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-When an error is raised by a call in a ``try`` or ``try``! block, the
+When an error is raised by a call in a ``try`` or ``try!`` block, the
 rest of the block is abandoned and control flow is passed to its
 ``catch`` clause(s), if any.
 
@@ -104,7 +118,7 @@ rest of the block is abandoned and control flow is passed to its
 Catch clauses
 ^^^^^^^^^^^^^
 
-A ``try`` or ``try``! block can have one or more ``catch`` clauses.
+A ``try`` or ``try!`` block can have one or more ``catch`` clauses.
 
 A ``catch`` clause can specify the variable that refers to the caught
 error within the ``catch`` block. If the variable is given a type, for
@@ -127,11 +141,11 @@ statement after the ``try``-``catch`` blocks.
 
    *Example (catching-errors.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrors() throws {
         try {
@@ -155,16 +169,16 @@ statement after the ``try``-``catch`` blocks.
 try! with catch
 ^^^^^^^^^^^^^^^
 
-If an error is thrown within a ``try``! block and none of its ``catch``
+If an error is thrown within a ``try!`` block and none of its ``catch``
 clauses, if any, match that error, the program halts.
 
    *Example (catching-errors-halt.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrorsHalt() {
         try! {
@@ -187,7 +201,7 @@ enclosing ``try`` block, when present.
 
    *Example (nested-try.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -206,7 +220,7 @@ enclosing ``try`` block, when present.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -234,11 +248,11 @@ error raised in a ``try`` block.
 
    *Example (catching-errors-propagate.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       proc catchingErrorsPropagate() throws {
         try {
@@ -261,7 +275,7 @@ calls to clarify control flow.
 
    *Example (propagates-error.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -287,13 +301,13 @@ calls to clarify control flow.
 try expressions
 ^^^^^^^^^^^^^^^
 
-``try`` and ``try``! are available as expressions to clarify control
+``try`` and ``try!`` are available as expressions to clarify control
 flow at expression granularity. The expression form may not be used with
 ``catch`` clauses.
 
    *Example (expression-try.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -318,7 +332,7 @@ ways:
 
       *Example (warns-on-error.chpl)*.
 
-      
+
 
       .. code-block:: chapel
 
@@ -330,12 +344,12 @@ ways:
            }
          }
 
--  ``try``! instead of ``try``. This will halt the program if no
+-  ``try!`` instead of ``try``. This will halt the program if no
    matching ``catch`` clause is found, instead of propagating.
 
       *Example (halts-on-error.chpl)*.
 
-      
+
 
       .. code-block:: chapel
 
@@ -359,7 +373,7 @@ scope is exited, regardless of how it is exited.
 
    *Example (defer.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -395,7 +409,7 @@ throw if the overridden method does not throw.
 
    *Example (throwing-methods.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -422,7 +436,7 @@ will be propagated out of the ``on`` statement.
 
    *Example (handle-from-on.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -466,7 +480,7 @@ task.
 
    *Example (handle-from-begin.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -492,7 +506,7 @@ flattened ``TaskErrors`` error.
 
    *Example (handle-from-coforall.chpl)*.
 
-   
+
    .. BLOCK-test-chapelpre
 
      class DemoError : Error { }
@@ -511,7 +525,7 @@ flattened ``TaskErrors`` error.
         } catch errors: TaskErrors { // not nested
           // all of e will be of runtime type DemoError in this example
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -536,7 +550,7 @@ flattened ``TaskErrors`` error.
           writeln("after cobegin block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -567,7 +581,7 @@ may execute serially within a single task, it will always throw a
           writeln("after forall block");
         } catch errors: TaskErrors {
           for e in errors {
-            writeln("Caught task error e ", e.message());
+            writeln("Caught task error e ", e!.message());
           }
         }
       }
@@ -582,17 +596,17 @@ defined in the standard modules. ``Error`` may be used directly, and new
 subclass hierarchies may be created from it. See also
 the module documentation for :mod:`Errors`.
 
-A hierarchy for system errors is included in the ``SysError`` module,
+A hierarchy for system errors is included in the ``OS`` module,
 accessed with a ``use`` statement. See also
-the module documentation for :mod:`SysError`.
+the module documentation for :mod:`OS`.
 
    *Example (defining-errors.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
-      use SysError;
+      use OS;
 
       class DemoError : Error { }
 
@@ -630,7 +644,7 @@ in the prototype mode:
 
    *Example (fatal-mode.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -646,7 +660,7 @@ in the prototype mode:
         alwaysThrows();
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -662,7 +676,7 @@ prototype mode applies here, too.
 
    *Example (PrototypeModule.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -699,7 +713,7 @@ error will be propagated out, as with the prototype mode.
 
    *Example (ProductionModule.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,9 @@ typedef enum {
 } qio_fdflag_t;
 
 typedef uint32_t qio_hint_t;
+
+extern ssize_t qio_write_unbuffered_threshold;
+extern ssize_t qio_read_unbuffered_threshold;
 
 // TODO: make these better values
 #ifndef FTYPE_NONE
@@ -147,7 +150,7 @@ static inline void qio_unlock(qio_lock_t* x) { int rc = pthread_mutex_unlock(x);
 
 static inline qioerr qio_lock_init(qio_lock_t* x) {
   pthread_mutexattr_t attr;
-  err_t err, newerr;
+  qio_err_t err, newerr;
 
   err = pthread_mutexattr_init(&attr);
   if( err ) return qio_int_to_err(err);
@@ -674,7 +677,7 @@ typedef struct qio_channel_s {
    * we allocate bufferspace (appending without updating av_end)
    * and then update av_end to be the end of the buffer.
    *
-   * right_mark_start is mark_space[mark_next-1] or av_start if mark_next==0.
+   * right_mark_start is mark_space[mark_cur] or av_start if mark_cur==0.
    *
    * How does marking interact with cached_cur/start/end?
    *  - mark positions are always offsets from get_offset which includes cached_cur.
@@ -687,7 +690,7 @@ typedef struct qio_channel_s {
    * |             | aka available           | aka allocated          |
    *             mark_stack[0]              av_end
    *             "av_start"
-   *                  mark_stack[mark_next-1]
+   *                  mark_stack[mark_cur-1]
    *                  "right_mark_start"
    * the available section is ready for user read/write.
    * Space to the right of av_end is allocated but not yet read from disk
@@ -719,6 +722,7 @@ typedef struct qio_channel_s {
   int64_t mark_space[MARK_INITIAL_STACK_SZ];
 
   qio_style_t style;
+  int64_t bufIoMax; // maximum single I/O to/from buffer
 } qio_channel_t;
 
 
@@ -771,12 +775,11 @@ void* qio_channel_get_plugin(qio_channel_t* ch) {
 }
 
 qioerr _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
-qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
+qioerr _qio_channel_init_file(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style, int64_t bufIoMax);
 
 
 // maybe want to use INT64_MAX for end if it's not to be restricted.
-qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);
-
+qioerr qio_channel_create(qio_channel_t** ch_out, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style, int64_t bufIoMax);
 
 qioerr qio_relative_path(const char** path_out, const char* cwd, const char* path);
 qioerr qio_shortest_path(qio_file_t* file, const char** path_out, const char* path_in);
@@ -859,7 +862,7 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
 
   if( threadsafe ) {
     qioerr err;
-    err_t errcode;
+    qio_err_t errcode;
     err = qio_lock(&ch->lock);
     errcode = qio_err_to_int(err);
     if( errcode ) {
@@ -875,10 +878,11 @@ int32_t qio_channel_read_byte(const int threadsafe, qio_channel_t* restrict ch)
   } else {
     ssize_t amt_read;
     qioerr err;
-    err_t errcode;
+    qio_err_t errcode;
     uint8_t tmp;
     err = _qio_slow_read(ch, &tmp, 1, &amt_read);
     if( err == 0 && amt_read != 1 ) err = QIO_ESHORT;
+
     if( err == 0 ) ret = tmp;
     else {
       _qio_channel_set_error_unlocked(ch, err);
@@ -963,6 +967,14 @@ static inline
 void qio_channel_set_style(qio_channel_t* ch, qio_style_t* style)
 {
   ch->style = *style;
+}
+static inline
+int64_t qio_channel_get_size(qio_channel_t* ch) {
+  if (ch->end_pos == INT64_MAX) {
+    return -1;
+  } else {
+    return ch->end_pos - ch->start_pos;
+  }
 }
 static inline
 uint8_t qio_channel_binary(qio_channel_t* ch)
@@ -1201,7 +1213,7 @@ qioerr qio_channel_end_peek_cached(const int threadsafe, qio_channel_t* ch, void
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte);
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte);
 
 qioerr qio_channel_begin_peek_buffer(const int threadsafe, qio_channel_t* ch, int64_t require, int writing, qbuffer_t** buf_out, qbuffer_iter_t* start_out, qbuffer_iter_t* end_out);
 

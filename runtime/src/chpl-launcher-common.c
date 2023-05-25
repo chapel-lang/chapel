@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -29,6 +30,7 @@
 #include "chplcgfns.h"
 #include "chpl-comm-launch.h"
 #include "chpl-comm-locales.h"
+#include "chplexit.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
@@ -47,6 +49,20 @@ extern const int mainHasArgs;
 extern const int mainPreserveDelimiter;
 extern const int launcher_is_mli;
 extern const char* launcher_mli_real_name;
+
+
+//
+// Are we doing a dry run, printing the system launcher command but
+// not running it?
+//
+#define CHPL_DRY_RUN_ARG "--dry-run"
+
+static int dryRunFlag = 0;
+
+int chpl_doDryRun(void) {
+  return dryRunFlag;
+}
+
 
 static void chpl_launch_sanity_checks(const char* argv0) {
   // Do sanity checks just before launching.
@@ -105,11 +121,13 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
   int rv, numRead;
 
   if (pipe(fdo) < 0) {
-    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
+    snprintf(buf, sizeof(buf), "Unable to run '%s' (pipe failed): %s\n",
+             command, strerror(errno));
     chpl_internal_error(buf);
   }
   if (pipe(fde) < 0) {
-    sprintf(buf, "Unable to run '%s' (pipe failed): %s\n", command, strerror(errno));
+    snprintf(buf, sizeof(buf), "Unable to run '%s' (pipe failed): %s\n",
+             command, strerror(errno));
     chpl_internal_error(buf);
   }
 
@@ -119,7 +137,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fdo[0]);
     if (fdo[1] != STDOUT_FILENO) {
       if (dup2(fdo[1], STDOUT_FILENO) != STDOUT_FILENO) {
-        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
+        snprintf(buf, sizeof(buf), "Unable to run '%s' (dup2 failed): %s",
                 command, strerror(errno));
         chpl_internal_error(buf);
       }
@@ -127,18 +145,18 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
     close(fde[0]);
     if (fde[1] != STDERR_FILENO) {
       if (dup2(fde[1], STDERR_FILENO) != STDERR_FILENO) {
-        sprintf(buf, "Unable to run '%s' (dup2 failed): %s",
+        snprintf(buf, sizeof(buf), "Unable to run '%s' (dup2 failed): %s",
                 command, strerror(errno));
         chpl_internal_error(buf);
       }
     }
     execvp(command, argv);
     // should only return on error
-    sprintf(buf, "Unable to run '%s': %s",
+    snprintf(buf, sizeof(buf), "Unable to run '%s': %s",
                 command, strerror(errno));
     chpl_internal_error(buf);
   case -1:
-    sprintf(buf, "Unable to run '%s' (fork failed): %s",
+    snprintf(buf, sizeof(buf), "Unable to run '%s' (fork failed): %s",
             command, strerror(errno));
     chpl_warning(buf, 0, 0);
     return -1;
@@ -164,7 +182,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
           cur += rv;
           numRead += rv;
         } else {
-          sprintf(buf, "Unable to run '%s' (read failed): %s",
+          snprintf(buf, sizeof(buf), "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
           chpl_warning(buf, 0, 0);
           return -1;
@@ -179,7 +197,7 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
           cur += rv;
           numRead += rv;
         } else {
-          sprintf(buf, "Unable to run '%s' (read failed): %s",
+          snprintf(buf, sizeof(buf), "Unable to run '%s' (read failed): %s",
                   command, strerror(errno));
           chpl_warning(buf, 0, 0);
           return -1;
@@ -198,7 +216,8 @@ chpl_run_utility1K(const char *command, char *const argv[], char *outbuf, int ou
         return -1;
       }
     } else {
-      sprintf(buf, "Unable to run '%s' (no bytes read)", command);
+      snprintf(buf, sizeof(buf), "Unable to run '%s' (no bytes read)",
+               command);
       chpl_warning(buf, 0, 0);
       return -1;
     }
@@ -248,7 +267,7 @@ chpl_run_cmdstr(const char *commandStr, char *outbuf, int outbuflen) {
 // Find the named executable in the PATH, if it's there.
 //
 char *chpl_find_executable(const char *prog_name) {
-  const char *cmd_fmt = "/usr/bin/which --skip-alias --skip-functions %s";
+  const char *cmd_fmt = "which %s";
   const int cmd_len
             = strlen(cmd_fmt)     // 'which' command, as printf() format
               - 2                 //   length of "%s" specifier
@@ -287,9 +306,11 @@ void chpl_launcher_record_env_var(const char* evName, const char *evVal) {
   evList = chpl_mem_realloc(evList, evListSize,
                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   if (evListSizeWas == 0) {
-    sprintf(evList, "%s=%s", evName, evVal);
+    snprintf(evList, (size_t) evListSize, "%s=%s", evName, evVal);
   } else {
-    sprintf(evList + evListSizeWas - 1, " %s=%s", evName, evVal);
+    snprintf(evList + evListSizeWas - 1,
+             (size_t) (evListSize - (evListSizeWas - 1)),
+             " %s=%s", evName, evVal);
   }
 }
 
@@ -432,30 +453,46 @@ char** chpl_bundle_exec_args(int argc, char *const argv[],
   return newargv;
 }
 
+
+//
+// Print out the system launcher command (used by --verbose and
+// --dry-run).
+//
+static
+void print_sys_launch_cmd(FILE *f, const char* command, char * const argv[]) {
+  if (evListSize > 0) {
+    fprintf(f, "%s ", evList);
+  }
+  // TODO: remove this sanity check
+  if (command != NULL && strcmp(command, argv[0]) != 0) {
+    chpl_internal_error("command, argv[0]) != 0");
+  }
+  for (char * const *arg = argv; *arg != NULL; arg++) {
+    fprintf(f, "%s%s", (arg == argv) ? "" : " ", *arg);
+  }
+  fprintf(f, "\n");
+  fflush(f);
+}
+
+
 //
 // This function calls execvp(3)
 //
 int chpl_launch_using_exec(const char* command, char * const argv1[], const char* argv0) {
-  if (verbosity > 1) {
-    char * const *arg;
-    if (evListSize > 0) {
-      printf("%s ", evList);
-    }
-    printf("%s ", command);
-    fflush(stdout);
-    for (arg = argv1+1; *arg; arg++) {
-      printf(" %s", *arg);
-      fflush(stdout);
-    }
-    printf("\n");
-    fflush(stdout);
+  if (verbosity > 1 || chpl_doDryRun()) {
+    print_sys_launch_cmd(stdout, command, argv1);
   }
   chpl_launch_sanity_checks(argv0);
+
+  if (chpl_doDryRun()) {
+    chpl_exit_any(0);
+  }
 
   execvp(command, argv1);
   {
     char msg[256];
-    sprintf(msg, "execvp() failed: %s", strerror(errno));
+    snprintf(msg, sizeof(msg), "execvp() failed for command %s: %s", command,
+             strerror(errno));
     chpl_internal_error(msg);
   }
   return -1;
@@ -471,14 +508,14 @@ int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const
   case -1:
   {
     char msg[256];
-    sprintf(msg, "fork() failed: %s", strerror(errno));
+    snprintf(msg, sizeof(msg), "fork() failed: %s", strerror(errno));
     chpl_internal_error(msg);
   }
   default:
     {
       if (waitpid(pid, &status, 0) != pid) {
         char msg[256];
-        sprintf(msg, "waitpid() failed: %s", strerror(errno));
+        snprintf(msg, sizeof(msg), "waitpid() failed: %s", strerror(errno));
         chpl_internal_error(msg);
       }
     }
@@ -487,15 +524,12 @@ int chpl_launch_using_fork_exec(const char* command, char * const argv1[], const
 }
 
 int chpl_launch_using_system(char* command, char* argv0) {
-  if (verbosity > 1) {
-    if (evListSize > 0) {
-      printf("%s ", evList);
-    }
-    printf("%s\n", command);
-    fflush(stdout);
+  if (verbosity > 1 || chpl_doDryRun()) {
+    char * const argv[] = { command, NULL };
+    print_sys_launch_cmd(stdout, NULL, argv);
   }
   chpl_launch_sanity_checks(argv0);
-  return system(command);
+  return chpl_doDryRun() ? 0 : system(command);
 }
 
 // This function returns a string containing a character-
@@ -541,66 +575,30 @@ char* chpl_get_enviro_keys(char sep)
   return ret;
 }
 
-static const int charset_env_nargs = 4;
 
-int chpl_get_charset_env_nargs()
-{
-  return charset_env_nargs;
-}
+static const
+argDescTuple_t universalArgs[]
+               = { { CHPL_DRY_RUN_ARG,
+                     "just print system launcher command, don't run it" },
+                   { NULL, NULL },
+                 };
 
-//
-// Populate the argv array and return the number of arguments added.
-// Return the number of arguments populated.
-//
-int chpl_get_charset_env_args(char *argv[])
-{
-  // If any of the relevant character set environment variables
-  // are set, replicate the state of all of them.  This needs to
-  // be done separately from the -E mechanism because Perl
-  // launchers modify the character set environment, losing our
-  // settings.
-  //
-  // Note that if we are setting these variables, and one or more
-  // of them is empty, we must set it with explicitly empty
-  // contents (e.g. LC_ALL= instead of -u LC_ALL) so that the
-  // Chapel launch mechanism will not overwrite it.
-  char *lang = getenv("LANG");
-  char *lc_all = getenv("LC_ALL");
-  char *lc_collate = getenv("LC_COLLATE");
-  if (!lang && !lc_all && !lc_collate)
-    return 0;
-
-  argv[0] = (char *)"env";
-  if (lang == NULL)
-    lang = (char *)"";
-  char *lang_buf = chpl_mem_allocMany(sizeof("LANG=") + strlen(lang),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  strcpy(lang_buf, "LANG=");
-  strcat(lang_buf, lang);
-  argv[1] = lang_buf;
-  if (lc_all == NULL)
-    lc_all = (char *)"";
-  char *lc_all_buf = chpl_mem_allocMany(sizeof("LC_ALL=") + strlen(lc_all),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  strcpy(lc_all_buf, "LC_ALL=");
-  strcat(lc_all_buf, lc_all);
-  argv[2] = lc_all_buf;
-  if (lc_collate == NULL)
-    lc_collate = (char *)"";
-  char *lc_collate_buf = chpl_mem_allocMany(
-                        sizeof("LC_COLLATE=") + strlen(lc_collate),
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  strcpy(lc_collate_buf, "LC_COLLATE=");
-  strcat(lc_collate_buf, lc_collate);
-  argv[3] = lc_collate_buf;
-
-  return charset_env_nargs;
-}
 
 int handleNonstandardArg(int* argc, char* argv[], int argNum,
                          int32_t lineno, int32_t filename) {
   int numHandled = chpl_launch_handle_arg(*argc, argv, argNum,
                                           lineno, filename);
+  if (numHandled == 0) {
+    //
+    // The specific launcher didn't handle this arg.  Check to see if
+    // it's one that is universal to all launchers.
+    //
+    if (strcmp(argv[argNum], CHPL_DRY_RUN_ARG) == 0) {
+      dryRunFlag = 1;
+      numHandled = 1;
+    }
+  }
+
   if (numHandled == 0) {
     if (mainHasArgs) {
       chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
@@ -611,20 +609,65 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
       chpl_error(message, lineno, filename);
     }
     return 0;
-  } else {
-    int i;
-    for (i=argNum+numHandled; i<*argc; i++) {
-      argv[i-numHandled] = argv[i];
+  }
+
+  //
+  // Remove the handled arg from caller's argv and tell them to
+  // continue parsing where what used to be the next arg now is.
+  //
+  int i;
+  for (i=argNum+numHandled; i<*argc; i++) {
+    argv[i-numHandled] = argv[i];
+  }
+  *argc -= numHandled;
+  return -1;
+}
+
+
+static void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
+                                     size_t argFieldWidth);
+
+void printAdditionalHelp(void) {
+  const argDescTuple_t* argSources[] = { chpl_launch_get_help(),
+                                         universalArgs };
+
+  //
+  // So we can format nicely, first figure out the longest arg we'll
+  // need to print, then do the actual printing.
+  //
+  size_t argLenMax = 0;
+  for (int i = 0; i < sizeof(argSources) / sizeof(argSources[0]); i++) {
+    if (argSources[i] != NULL) {
+      for (const argDescTuple_t* p = argSources[i]; p->arg != NULL; p++) {
+        size_t argLen = strlen(p->arg);
+        if (argLen > argLenMax) {
+          argLenMax = argLen;
+        }
+      }
     }
-    *argc -= numHandled;
-    return -1;  // back the cursor up in order to re-parse this arg
+  }
+
+  fprintf(stdout, "LAUNCHER FLAGS:\n");
+  fprintf(stdout, "===============\n");
+  for (int i = 0; i < sizeof(argSources) / sizeof(argSources[0]); i++) {
+    if (argSources[i] != NULL) {
+      for (const argDescTuple_t* p = argSources[i]; p->arg != NULL; p++) {
+        printAdditionalHelpEntry(p, argLenMax);
+      }
+    }
   }
 }
 
-
-void printAdditionalHelp(void) {
-  chpl_launch_print_help();
+static
+void printAdditionalHelpEntry(const argDescTuple_t* argTuple,
+                              size_t argFieldWidth) {
+  fprintf(stdout,
+          "  %-*s  %s %s\n",
+          (int) argFieldWidth, argTuple->arg,
+          (argTuple->arg[0] == '\0') ? " " : ":",
+          argTuple->desc);
 }
+
 
 // These are defined in the config.c file, which is built
 // on-the-fly in runtime/etc/Makefile.launcher.
@@ -697,6 +740,22 @@ const char* chpl_get_real_binary_wrapper(void) {
 const char* chpl_get_real_binary_name(void) {
   return &chpl_real_binary_name[0];
 }
+
+void chpl_launcher_get_job_name(char *baseName, char *jobName, int jobLen) {
+  const char* prefix = getenv("CHPL_LAUNCHER_JOB_PREFIX");
+  const char* name = getenv("CHPL_LAUNCHER_JOB_NAME");
+
+  if (prefix == NULL) {
+    prefix = "CHPL-";
+  }
+  if (name == NULL) {
+    snprintf(jobName, jobLen, "%s%.10s", prefix, baseName);
+  } else {
+    strncpy(jobName, name, jobLen);
+    jobName[jobLen-1] = '\0';
+  }
+}
+
 
 int chpl_launch_prep(int* c_argc, char* argv[], int32_t* c_execNumLocales) {
   //

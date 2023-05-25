@@ -1,0 +1,2 @@
+cast-nil-to-generic-3.chpl:25: In method 'fetchone':
+cast-nil-to-generic-3.chpl:27: error: illegal cast from nil to a generic shared type

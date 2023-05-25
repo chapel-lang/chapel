@@ -1,0 +1,2 @@
+hetLiteralsNotUnifiable-local.chpl:5: In function 'bar':
+hetLiteralsNotUnifiable-local.chpl:6: error: can't compute a unified element type for this array

@@ -36,7 +36,7 @@ proc main() {
   for trial in 1..numTrials {
     X = 1.0;
 
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
 
     for it in 1..numIter {
       const (rnorm, Z) = conjGrad(A, X);
@@ -50,7 +50,7 @@ proc main() {
       X = normTemp(2)*Z;
     }
 
-    const runtime = getCurrentTime() - startTime;
+    const runtime = timeSinceEpoch().totalSeconds() - startTime;
 
     writeln("Execution time = ", runtime);
 

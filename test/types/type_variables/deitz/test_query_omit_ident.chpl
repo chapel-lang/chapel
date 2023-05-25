@@ -3,8 +3,8 @@ class C {
   var x: t;
 }
 
-var c1 = new borrowed C(int);
-var c2 = new borrowed C(real);
+var c1 = (new owned C(int)).borrow();
+var c2 = (new owned C(real)).borrow();
 
 proc foo(c: borrowed C(?)) {
   writeln(c);

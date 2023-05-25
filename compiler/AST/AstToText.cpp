@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,9 @@
 #include "symbol.h"
 #include "IfExpr.h"
 #include "LoopExpr.h"
+#include "chpl/uast/chpl-syntax-printer.h"
+
+using namespace chpl;
 
 const std::string& AstToText::text() const
 {
@@ -45,6 +48,23 @@ void AstToText::appendNameAndFormals(FnSymbol* fn)
     appendFormals(fn);
   }
 }
+
+// wrapper to allow call sites that relied on char* to remain unchanged
+static bool wantSpaces(const char* op, bool printingType) {
+  return wantSpaces(UniqueString::get(gContext, op), printingType);
+}
+
+// wrapper to allow call sites that relied on char* to remain unchanged
+static bool needParens(const char* outer, const char* inner,
+                  bool outerUnary, bool outerPostfix,
+                  bool innerUnary, bool innerPostfix,
+                  bool innerIsRHS) {
+  return needParens(UniqueString::get(gContext, outer),
+                    UniqueString::get(gContext, inner),
+                    outerUnary, outerPostfix,
+                    innerUnary, innerPostfix,
+                    innerIsRHS);
+                  }
 
 /************************************ | *************************************
 *                                                                           *
@@ -305,7 +325,7 @@ void AstToText::appendFormalType(ArgSymbol* arg)
     if (blockStmt->length() == 1)
     {
       // Do not print a synthesized typeExpr
-      if (typeExprCopiedFromDefaultExpr(arg) == false)
+      if (! arg->typeExprFromDefaultExpr)
       {
         mText += ": ";
         appendExpr(arg->typeExpr->body.get(1), true);
@@ -358,109 +378,6 @@ void AstToText::appendFormalType(ArgSymbol* arg)
     // Might become ASSERT in the future
     mText += " AppendType.02";
   }
-}
-
-//
-// Attempt to determine, heuristically, if normalize.hack_resolve_types()
-// has copied defaultExpr to typeExpr. We want to avoid printing this
-// synthesizedtypeExpr expression.
-//
-// The current minimum conditions for this are
-//
-//     a) typeExpr was NULL
-//     b) the defaultExpr is a blockStmt with 1 stmt
-//
-// Then it gets tricky. We fall back on a tree-recursion that tries to
-// determine if two expression are structurally "equal" in a manner that
-// appears to handle the current use cases.
-//
-//
-bool AstToText::typeExprCopiedFromDefaultExpr(ArgSymbol* arg) const
-{
-  BlockStmt* typeBlock    = arg->typeExpr;
-  BlockStmt* defaultBlock = arg->defaultExpr;
-  bool       retval       = false;
-
-  if (typeBlock != NULL && defaultBlock != NULL)
-  {
-    if (typeBlock->body.length == 1 && defaultBlock->body.length == 1)
-    {
-      Expr* typeExpr    = typeBlock->body.only();
-      Expr* defaultExpr = defaultBlock->body.only();
-
-      retval = exprTypeHackEqual(typeExpr, defaultExpr);
-    }
-  }
-
-  return retval;
-}
-
-// Compares two expressions for signs of the typeHack copy
-bool AstToText::exprTypeHackEqual(Expr* expr0, Expr* expr1) const
-{
-  bool retval = true;
-
-  if (expr0 == NULL && expr1 == NULL)
-  {
-    retval = true;
-  }
-
-  else if (isUnresolvedSymExpr(expr0) && isUnresolvedSymExpr(expr1))
-  {
-    UnresolvedSymExpr* sym0 = toUnresolvedSymExpr(expr0);
-    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
-
-    retval = (sym0->unresolved == sym1->unresolved);
-  }
-
-  else if (isSymExpr(expr0) && isSymExpr(expr1))
-  {
-    SymExpr* sym0 = toSymExpr(expr0);
-    SymExpr* sym1 = toSymExpr(expr1);
-
-    retval = (sym0->symbol() == sym1->symbol());
-  }
-
-  else if (isCallExpr(expr0) && isCallExpr(expr1))
-  {
-    CallExpr* call0 = toCallExpr(expr0);
-    CallExpr* call1 = toCallExpr(expr1);
-
-    if (call0->primitive != call1->primitive)
-      retval = false;
-
-    else if (call0->numActuals() != call1->numActuals())
-      retval = false;
-
-    else if (exprTypeHackEqual(call0->baseExpr, call1->baseExpr) == false)
-      retval = false;
-
-    else
-    {
-      for (int i = 1; i <= call0->numActuals() && retval == true; i++)
-        retval = exprTypeHackEqual(call0->get(i), call1->get(i));
-    }
-  }
-
-  // For proc of the form "proc foo(x = bar())",
-  //   expr0 wraps a FnSymbol
-  //   expr1 is the original function name
-  else if (isSymExpr(expr0) && isUnresolvedSymExpr(expr1))
-  {
-    SymExpr*           sym0 = toSymExpr(expr0);
-    FnSymbol*          fn   = toFnSymbol(sym0->symbol());
-
-    UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr1);
-
-    retval = (fn != 0 && strcmp(fn->name, sym1->unresolved) == 0);
-  }
-
-  else
-  {
-    retval = false;
-  }
-
-  return retval;
 }
 
 //
@@ -786,9 +703,9 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
       if (var->type == dtBool)
       {
         if (var->immediate->v_bool == 0)
-          sprintf(imm, "false");
+          snprintf(imm, bufSize, "false");
         else
-          sprintf(imm, "true");
+          snprintf(imm, bufSize, "true");
       }
 
       else if (var->immediate->const_kind == CONST_KIND_STRING)
@@ -885,156 +802,6 @@ static bool looksLikeInfixOperator(const char *fnName)
   bool looksLikeIdentifier = isalpha(fnName[0]) || fnName[0] == '_';
 
   return !looksLikeIdentifier;
-}
-
-/*
- * Operator precedence according to the table in the spec,
- * expressions.rst
- *
- * unary flag is needed because unary - (and +) have higher precedence
- * than binary - (and +).
- *
- * postfix flag is needed because postfix ! has higher precedence than
- * prefix !.
- *
- * Returns precedence: higher is tighter-binding.
- * Returns -1 for unhandled operator -- caller should respond conservatively.
- */
-static int opToPrecedence(const char *op, bool unary, bool postfix) {
-  // new is precedence 19, but doesn't come through this path.
-  if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
-    return 18;
-  else if (strcmp(op, ":") == 0)
-    return 17;
-  else if (strcmp(op, "**") == 0)
-    return 16;
-  // reduce/scan/dmapped are precedence 15, but don't come through this path.
-  else if (strcmp(op, "!") == 0 || strcmp(op, "~") == 0)
-    return 14;
-  else if (strcmp(op, "*") == 0 ||
-           strcmp(op, "/") == 0 || strcmp(op, "%") == 0)
-    return 13;
-  else if (unary &&
-           (strcmp(op, "+") == 0 || strcmp(op, "-") == 0))
-    return 12;
-  else if (strcmp(op, "<<") == 0 || strcmp(op, ">>") == 0)
-    return 11;
-  else if (strcmp(op, "&") == 0)
-    return 10;
-  else if (strcmp(op, "^") == 0)
-    return 9;
-  else if (strcmp(op, "|") == 0)
-    return 8;
-  else if (strcmp(op, "+") == 0 || strcmp(op, "-") == 0)
-    return 7;
-  // .. and ..< are precedence 6, but don't come through this path.
-  else if (op == astrSlt || op == astrSlte ||
-           op == astrSgt || op == astrSgte)
-    return 5;
-  else if (op == astrSeq || op == astrSne)
-    return 4;
-  else if (strcmp(op, "&&") == 0)
-    return 3;
-  else if (strcmp(op, "||") == 0)
-    return 2;
-  // by and align are precedence 1 too, but don't come through this path.
-  else if (strcmp(op, "#") == 0)
-    return 1;
-
-  return -1;
-}
-
-/*
- * needParens(outer, inner, ...) is called to evaluate whether we need
- * to add parens around the inner op.  We're here when
- * appendExpr(outer) is calling appendExpr(expr->get(1)) or
- * expr->get(2), which has become appendExpr(inner).
- *
- * Given an AST node outer, with one child inner, this function
- * returns true if we need to emit parens around the child expression.
- * That is, if emitting the expression without parenthesis would
- * change the semantics from what the AST represents.
- *
- * If the inner (child) operator has higher precedence than the outer
- * (parent), then we don't need parens, as emitting
- * "a outer_op b inner_op c" is equivalent to
- * "a outer_op (b inner_op c)".
- *
- * If the child operator has equal precedence to the outer, then we
- * generally don't need parenthesis, except for a few exceptions.  If
- * the desired expression is a-(b-c) or a-(b+c), then the parentheses
- * are needed.  Of course they're not needed for a+(b-c) or a+(b+c).
- * If the desired expression is a/(b/c) or a/(b*c) or a%(b/c), they're
- * needed, but not for a*(b*c) or a*(b/c).
- * (TODO: a*(b/c) might need the parens for overflow reasons.)
- *
- * Unary - (and +) have higher precedence than binary - (and +), so we
- * need the unary flag to know which case we're in.
- *
- * The postfix flag is needed because postfix ! has higher precedence
- * than prefix !.
- *
- * The innerIsRHS flag is needed because we need parens to express
- * a-(b-c) where inner- is the RHS of the outer-.  But we can emit
- * a-b-c instead of (a-b)-c -- when inner- is the LHS of outer-.
- * Also, to distinguish (-1)**2 (parens needed) from 1**(-2) (not needed).
- */
-static bool needParens(const char *outer, const char *inner,
-                       bool outerUnary, bool outerPostfix,
-                       bool innerUnary, bool innerPostfix,
-                       bool innerIsRHS) {
-  bool ret = false;
-  int outerprec, innerprec;
-
-  if (!outer)
-    return false;
-
-  outerprec = opToPrecedence(outer, outerUnary, outerPostfix);
-  innerprec = opToPrecedence(inner, innerUnary, innerPostfix);
-
-  // -1 means opToPrecedence wasn't expecting one of these operators.
-  // Conservatively wrap parentheses around the representation of this
-  // AST node.
-  if (outerprec == -1 || innerprec == -1)
-    return true;
-
-  // We never need parens around the unary expression on the RHS:
-  // 1**-2 vs 1**(-2)
-  if (innerUnary && innerIsRHS)
-    return false;
-
-  if (outerprec > innerprec)
-    ret = true;
-
-  // If inner and outer have the same precedence, and inner is the
-  // rhs, it needs parens if a op1 (b op2 c) isn't equivalent to
-  // a op1 b op2 c.  (Note op1 and op2 may be the same op, a - (b - c))
-  if (innerIsRHS &&
-      (strcmp(outer, "-") == 0 ||
-       strcmp(outer, "/") == 0 || strcmp(outer, "%") == 0 ||
-       strcmp(outer, "<<") == 0 || strcmp(outer, ">>") == 0 ||
-       // (a==b)==true vs. a==(b==true)
-       strcmp(outer, "==") == 0 || strcmp(outer, "!=") == 0)
-      && outerprec == innerprec)
-    ret = true;
-
-  // ** is right-associative, and a**(b**c) != (a**b)**c.
-  if (!innerIsRHS && strcmp(outer, "**") == 0 && outerprec == innerprec)
-    ret = true;
-
-  return ret;
-}
-
-/*
- * Do we want to print spaces around this binary operator?
- */
-static bool wantSpaces(const char *op, bool printingType)
-{
-  if (strcmp(op, "**") == 0)
-    return false;
-  if (printingType)
-    return false;
-  return true;
 }
 
 /*

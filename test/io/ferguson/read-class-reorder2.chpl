@@ -13,11 +13,11 @@ class Child : Parent {
   var y: int;
 }
 
-var a: borrowed Child = new borrowed Child(a = 1, b = 2, x = 3, y = 4);
+var a: borrowed Child = (new owned Child(a = 1, b = 2, x = 3, y = 4)).borrow();
 
 writeln("a is ", a);
 
-var f = open("test.txt", iomode.cwr);
+var f = open("test.txt", ioMode.cwr);
 var writer = f.writer();
 var s = "{b=5,a=4,y=7,x=6}";
 writer.writeln(s);

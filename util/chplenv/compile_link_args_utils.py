@@ -53,10 +53,21 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
+        if chpl_gpu.get() == "cpu":
+            bundled.append("-DGPU_RUNTIME_CPU")
+        memtype = chpl_gpu.get_gpu_mem_strategy()
+
         # If compiling for GPU locales, add CUDA runtime headers to include path
-        cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-I" + os.path.join(cuda_path, "include"))
+        gpu_type = chpl_gpu.get()
+        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
+
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
+        if gpu_type == "nvidia":
+            system.append("-I" + os.path.join(sdk_path, "include"))
+        elif gpu_type == "amd":
+            # -isystem instead of -I silences warnings from inside these includes.
+            system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
+            system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
@@ -81,10 +92,18 @@ def get_runtime_link_args(runtime_subdir):
     if locale_model == "gpu":
         # If compiling for GPU locales, add CUDA to link path,
         # and add cuda libraries
-        cuda_path = chpl_gpu.get_cuda_path()
-        system.append("-L" + os.path.join(cuda_path, "lib64"))
-        system.append("-lcuda")
-        system.append("-lcudart")
+        gpu_type = chpl_gpu.get()
+        sdk_path = chpl_gpu.get_sdk_path(gpu_type)
+        if gpu_type == "nvidia":
+            system.append("-L" + os.path.join(sdk_path, "lib64"))
+            system.append("-lcuda")
+            system.append("-lcudart")
+        elif gpu_type == "amd":
+            lib_path = os.path.join(sdk_path, "lib")
+            system.append("-L" + lib_path)
+            system.append("-Wl,-rpath," + lib_path)
+            system.append("-lamdhip64")
+            system.append("-lhsa-runtime64")
 
     # always link with the math library
     system.append("-lm")
@@ -117,11 +136,10 @@ def compute_internal_compile_link_args(runtime_subdir):
 
     # add 3p arguments
 
-    if (chpl_llvm.get() == 'bundled' or
-        chpl_llvm.get() == 'system'):
-        if not skip_host:
-            extend2(host_compile, chpl_llvm.get_host_compile_args())
-            extend2(host_link, chpl_llvm.get_host_link_args())
+    # add args from chpl_llvm
+    if not skip_host:
+        extend2(host_compile, chpl_llvm.get_host_compile_args())
+        extend2(host_link, chpl_llvm.get_host_link_args())
 
     extend2(tgt_compile, chpl_gmp.get_compile_args())
     extend2(tgt_link, chpl_gmp.get_link_args())
@@ -201,3 +219,14 @@ def compute_internal_compile_link_args(runtime_subdir):
             'host_link': host_link,
             'target_compile': tgt_compile,
             'target_link': tgt_link}
+
+# return the target linker to use (it can be overriden by gasnet)
+# this function returns an array of arguments
+#  e.g. ['clang++', '--gcc-toolchain=/usr']
+def get_target_link_command():
+    if chpl_comm.get() == 'gasnet':
+        override_ld = chpl_gasnet.get_override_ld()
+        if override_ld != None:
+            return override_ld.split()
+
+    return chpl_compiler.get_compiler_command('target', 'cxx')

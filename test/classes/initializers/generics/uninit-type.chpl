@@ -12,6 +12,6 @@ class A {
   // initializer for class 'A' requires a generic argument called 't'
 }
 
-var a = new borrowed A(int);
+var a = (new owned A(int)).borrow();
 
 writeln(a);

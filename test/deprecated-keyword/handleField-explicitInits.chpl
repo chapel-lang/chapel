@@ -6,7 +6,7 @@ record Foo {
   }
 
   pragma "last resort"
-  deprecated "'new Foo(oldName=val)' is deprecated, please use 'new Foo(newName=val)' or 'new Foo(val)' instead"
+  @deprecated(notes="'new Foo(oldName=val)' is deprecated, please use 'new Foo(newName=val)' or 'new Foo(val)' instead")
   proc init(oldName: int) {
     this.newName = oldName;
   }

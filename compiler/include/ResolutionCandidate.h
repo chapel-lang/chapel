@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,8 @@
 
 #include "baseAST.h"
 #include "vec.h"
+
+#include "llvm/ADT/SmallVector.h"
 
 #include <map>
 #include <vector>
@@ -80,6 +82,9 @@ typedef enum {
   // Named argument uses argument name not present
   RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT,
 
+  // The receiver types differ, although may be related
+  RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES,
+
   // expand if var args failure (shouldn't be user facing)
   // computeSubstitutions failure
   // failure to instantiate signature
@@ -97,13 +102,27 @@ public:
                                        VisibilityInfo* visInfo);
 
   FnSymbol*               fn;
-  std::vector<Symbol*>    formalIdxToActual;
-  std::vector<ArgSymbol*> actualIdxToFormal;
+  llvm::SmallVector<Symbol*, 8>    formalIdxToActual;
+  llvm::SmallVector<ArgSymbol*, 8> actualIdxToFormal;
 
   // One ImplementsStmt per IfcConstraint when 'fn' is CG
   std::vector<ImplementsStmt*> witnessIstms;
   // Is this a CG "interim instantiation"?
   bool                    isInterimInstantiation;
+  // Does any argument use promotion?
+  bool                    anyPromotes;
+
+  // Have the below counts about implicit conversions been computed?
+  bool                    nImplicitConversionsComputed;
+  // Does it convert any negative params to unsigned?
+  bool                    anyNegParamToUnsigned;
+  // How many implicit conversions?
+  int                     nImplicitConversions;
+  // How many param-narrowing implicit conversions?
+  int                     nParamNarrowingImplicitConversions;
+
+  // What is the visibility distance? This is -1 if it has not been computed.
+  int                     visibilityDistance;
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;

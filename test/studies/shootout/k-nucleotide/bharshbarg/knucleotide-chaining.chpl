@@ -144,7 +144,7 @@ inline proc startsWithThree(data : []) {
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const inFile = openfd(0);
+  const inFile = new file(0);
   const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 
@@ -152,14 +152,21 @@ proc main(args: [] string) {
   var tempdata : [1..lineSize] uint(8);
   var numRead = 0;
   var total = 0;
-  while myin.readline(tempdata, numRead) && !startsWithThree(tempdata) { total += numRead; }
-
+  numRead = myin.readLine(tempdata);
+  while numRead>0 && !startsWithThree(tempdata) {
+    total += numRead;
+    numRead = myin.readLine(tempdata);  
+  }
 
   // Read in the rest of the file
   var dataDom = {1..fileLen-total};
   var data : [dataDom] uint(8);
   var idx = 1;
-  while myin.readline(data, numRead, idx) { idx += numRead - 1; }
+  numRead = myin.readLine(data[idx..]);
+  while numRead > 0 { 
+    idx += numRead - 1; 
+    numRead = myin.readLine(data[idx..]);
+  }
   
   // Resize our array to the amount actually read
   dataDom = {1..idx};

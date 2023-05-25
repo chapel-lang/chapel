@@ -53,14 +53,14 @@ proc main() {
   }
 
   var datastart:int(64);
-  var f = open(outfile, iomode.cwr);
+  var f = open(outfile, ioMode.cwr);
   var hwriter = f.writer();
   hwriter.writeln("P4");
   hwriter.writeln(size, " ", size);
   datastart = hwriter.offset();
   hwriter.close();
 
-  var writer = f.writer(kind=iokind.native, locking=false, start=datastart);
+  var writer = f.writer(kind=iokind.native, locking=false, region=datastart..);
   for (im,re8) in D {
     writer.write(set(im,re8));
   }

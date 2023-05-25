@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,6 +78,9 @@ qioerr chpl_fs_samefile_string(int* ret, const char* file1, const char* file2);
 qioerr chpl_fs_symlink(const char* orig, const char* linkName);
 
 mode_t chpl_fs_umask(mode_t mask);
+
+mode_t chpl_int_to_mode(int mode);
+int chpl_mode_to_int(mode_t mode);
 
 qioerr chpl_fs_viewmode(int* ret, const char* name);
 

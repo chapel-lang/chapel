@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,11 @@ for more information on LLVM debug information.
 char current_dir[128];
 llvm::DenseMap<const Type *, llvm::MDNode *> myTypeDescriptors;
 
+// Ifdef'd to avoid unused warning, because its only usage has the same ifdef.
+// If this gets used elsewhere the ifdef can be removed; besides the warning,
+// there is nothing wrong with this code being included without
+// HAVE_LLVM_TYPED_POINTERS.
+#ifdef HAVE_LLVM_TYPED_POINTERS
 static
 std::string myGetTypeName(llvm::Type *ty) {
   std::string TypeName;
@@ -85,6 +90,7 @@ std::string myGetTypeName(llvm::Type *ty) {
   TypeStream.flush();
   return TypeName;
 }
+#endif
 
 static
 llvm::MDNode *myGetType(const Type *type) {
@@ -105,7 +111,7 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   this->optimized = is_optimized;
   char version[128];
   char chapel_string[256];
-  get_version(version);
+  get_version(version, sizeof(version));
   snprintf(chapel_string, 256, "Chapel version %s", version);
   strncpy(current_dir, directory,sizeof(current_dir)-1);
 
@@ -127,7 +133,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
-  llvm::Type* ty = type->symbol->llvmType;
+  llvm::Type* ty = type->symbol->getLLVMType();
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
@@ -172,6 +178,8 @@ llvm::DIType* debug_data::construct_type(Type *type)
     }
     else {
       if(type->astTag == E_PrimitiveType) {
+        // TODO: reimplement this properly within the Chapel type system
+#ifdef HAVE_LLVM_TYPED_POINTERS
         llvm::Type *PointeeTy = ty->getPointerElementType();
         // handle string, c_string, nil, opaque, c_void_ptr
         if(PointeeTy->isIntegerTy()) {
@@ -220,6 +228,9 @@ llvm::DIType* debug_data::construct_type(Type *type)
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
         }
+#else
+        return NULL;
+#endif
       }
       else if(type->astTag == E_AggregateType) {
         // dealing with classes
@@ -274,7 +285,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               const char* fieldDefFile = field->defPoint->fname();
               int fieldDefLine = field->defPoint->linenum();
               TypeSymbol* fts = field->type->symbol;
-              llvm::Type* fty = fts->llvmType;
+              llvm::Type* fty = fts->getLLVMType();
               llvm::DIType* mty;
               llvm::DIType* fditype =  get_type(field->type);
               if(fditype == NULL)
@@ -351,7 +362,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       const char* fieldDefFile = field->defPoint->fname();
       int fieldDefLine = field->defPoint->linenum();
       TypeSymbol* fts = field->type->symbol;
-      llvm::Type* fty = fts->llvmType;
+      llvm::Type* fty = fts->getLLVMType();
       llvm::DIType* fditype =  get_type(field->type);
       if(fditype == NULL)
       // See line 270 for a comment about this if
@@ -453,11 +464,11 @@ llvm::DIType* debug_data::construct_type(Type *type)
   // These are some debug prints for helping find these types.
   //
   /*printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
-  if(type->symbol->llvmType) {
-    printf("\tllvmType->getTypeID() = %i\n", type->symbol->llvmType->getTypeID());
+  if(type->symbol->getLLVMType()) {
+    printf("\tllvmImplType->getTypeID() = %i\n", type->symbol->getLLVMType()->getTypeID());
   }
   else {
-    printf("\tllvmType is NULL\n");
+    printf("\tllvmImplType is NULL\n");
   }*/
 
   return NULL;

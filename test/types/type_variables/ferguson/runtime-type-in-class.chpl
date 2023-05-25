@@ -11,7 +11,7 @@ proc run() {
   // now D is {6}
 
   type arrType = [D] real;
-  var c = new borrowed C(arrType);
+  var c = (new owned C(arrType)).borrow();
 
   // now c.x.domain is {6}
 

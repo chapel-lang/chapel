@@ -100,7 +100,7 @@ class PotentialEAM : BasePotential {
 }
 
 proc readSetFl() {
-  var chan = open(potDir + "/" + potName, iomode.r);
+  var chan = open(potDir + "/" + potName, ioMode.r);
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();
@@ -146,7 +146,7 @@ proc readSetFl() {
 }
 
 proc readFuncFl() {
-  var chan = open(potDir + "/" + potName, iomode.r);
+  var chan = open(potDir + "/" + potName, ioMode.r);
   var r = chan.reader();
 
   var info = new unmanaged BasePotential();
@@ -212,7 +212,7 @@ proc PotentialEAM.computePairWise() {
           const r2 = dot(dr, dr);
 
           if r2 <= cut2 && r2 > 0.0 {
-            const r = Math.sqrt(r2);
+            const r = AutoMath.sqrt(r2);
             var phiTmp, dPhi, rhoTmp, dRho : real;
             phiIO.interpolate(r, phiTmp, dPhi);
             rhoIO.interpolate(r, rhoTmp, dRho);
@@ -262,7 +262,7 @@ proc PotentialEAM.computeElectronCloud() {
           const r2 = dot(dr, dr);
 
           if r2 <= cut2 && r2 > 0.0 {
-            const r = Math.sqrt(r2);
+            const r = AutoMath.sqrt(r2);
             var rhoTmp, dRho : real;
             rhoIO.interpolate(r, rhoTmp, dRho);
 

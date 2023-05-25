@@ -15,7 +15,7 @@ iter indexGen(d) {
 }
 
 {
-  var spsIndexBuffer = sparseDom1D.makeIndexBuffer(size=10);
+  var spsIndexBuffer = sparseDom1D.createIndexBuffer(size=10);
   for i in indexGen(sparseDom1D) do
     spsIndexBuffer.add(i);
 }

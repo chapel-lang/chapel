@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2526,7 +2526,8 @@ static void emitError(Expr* inExpr,
   Expr* fromExpr = relevantLifetime.relevantExpr;
   if (fromSym && !fromSym->hasFlag(FLAG_TEMP) && isUser(fromSym))
     USR_PRINT(fromSym, "consider scope of %s", fromSym->name);
-  else if (fromExpr && inExpr->astloc != fromExpr->astloc && isUser(fromExpr))
+  else if (fromExpr && !inExpr->astloc.hasSameFileLine(fromExpr->astloc) &&
+           isUser(fromExpr))
     USR_PRINT(fromExpr, "consider result here");
 
   handleDebugOutputOnError(inExpr, lifetimes);

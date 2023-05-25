@@ -23,7 +23,7 @@ proc main() {
   var fs = HDFS.connect();
 
   {
-    var wfd = fs.open(path, iomode.cw);
+    var wfd = fs.open(path, ioMode.cw);
     var w = wfd.writer(iokind.native);
 
     for i in 0..#n {
@@ -35,7 +35,7 @@ proc main() {
   }
 
   {
-    var rfd = fs.open(path, iomode.r);
+    var rfd = fs.open(path, ioMode.r);
     var r = rfd.reader(iokind.native);
 
     for i in 0..#n {

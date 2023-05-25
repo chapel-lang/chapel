@@ -4,13 +4,13 @@ use LayoutCS;
 use Map;
 use Time;
 
-var subTimers = new map(string, Timer);
-subTimers['multiply'] = new Timer();
-subTimers['add indices'] = new Timer();
-subTimers['find indices'] = new Timer();
-subTimers[' overlap'] = new Timer();
-subTimers['  push_back'] = new Timer();
-subTimers['setup'] = new Timer();
+var subTimers = new map(string, stopwatch);
+subTimers['multiply'] = new stopwatch();
+subTimers['add indices'] = new stopwatch();
+subTimers['find indices'] = new stopwatch();
+subTimers[' overlap'] = new stopwatch();
+subTimers['  push_back'] = new stopwatch();
+subTimers['setup'] = new stopwatch();
 
 config param subtimers = false;
 
@@ -152,7 +152,7 @@ proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where A.isSparse() && B.i
       for (i, j) in overlap(aRange, bRange) {
         // Add to index!
         if subtimers then subTimers['  push_back'].start();
-        indices.append((r, c));
+        indices.pushBack((r, c));
         if subtimers then subTimers['  push_back'].stop();
         break;
       }

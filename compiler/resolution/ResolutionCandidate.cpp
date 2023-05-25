@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@
 #include "symbol.h"
 
 static ResolutionCandidateFailureReason
-classifyTypeMismatch(Type* actualType, Type* formalType);
+classifyTypeMismatch(Type* actualType, Symbol* formalSym);
 static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
@@ -51,6 +51,12 @@ std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
   fn = function;
   isInterimInstantiation = false;
+  anyPromotes = false;
+  nImplicitConversionsComputed = false;
+  anyNegParamToUnsigned = false;
+  nImplicitConversions = 0;
+  nParamNarrowingImplicitConversions = 0;
+  visibilityDistance = -1;
   failingArgument = NULL;
   reason = RESOLUTION_CANDIDATE_MATCH;
 }
@@ -898,10 +904,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
                  actual->getValType() != formal->getValType()) {
         // coercions should not generally be allowed for type variables
         failingArgument = actual;
-        reason = classifyTypeMismatch(actual->getValType(),
-                                      formal->getValType());
+        reason = classifyTypeMismatch(actual->getValType(), formal);
         return false;
-
 
       } else if (formal->originalIntent != INTENT_OUT &&
                  (actual->getValType() == dtSplitInitType ||
@@ -924,7 +928,7 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
                              formalIsParam) == false &&
                  formal->originalIntent != INTENT_OUT) {
         failingArgument = actual;
-        reason = classifyTypeMismatch(actual->type, formal->type);
+        reason = classifyTypeMismatch(actual->type, formal);
         return false;
 
       } else if (isInitThis || isNewTypeArg) {
@@ -945,6 +949,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         reason = RESOLUTION_CANDIDATE_OTHER;
         return false;
       }
+
+      if (promotes)
+        anyPromotes = true;
     }
   }
 
@@ -1021,7 +1028,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
           Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {
             failingArgument = actual;
-            reason = classifyTypeMismatch(actual->type, formal->type);
+            reason = classifyTypeMismatch(actual->type, formal);
             return false;
           }
 
@@ -1044,7 +1051,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
                           NULL,
                           formalIsParam) == false) {
             failingArgument = actual;
-            reason = classifyTypeMismatch(actual->type, formal->type);
+            reason = classifyTypeMismatch(actual->type, formal);
             return false;
           }
         }
@@ -1071,7 +1078,8 @@ static bool isClassLikeOrPtrOrManaged(Type* t) {
 }
 
 static ResolutionCandidateFailureReason
-classifyTypeMismatch(Type* actualType, Type* formalType) {
+classifyTypeMismatch(Type* actualType, Symbol* formalSym) {
+  Type* formalType = formalSym->type;
   if (actualType == formalType)
     return RESOLUTION_CANDIDATE_MATCH;
 
@@ -1083,6 +1091,10 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
 
   if (canonicalClassType(actualType) == canonicalClassType(formalType))
     return RESOLUTION_CANDIDATE_TYPE_RELATED;
+
+  // Receiver type mismatch is more severe than other causes
+  if (formalSym->hasFlag(FLAG_ARG_THIS))
+    return RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES;
 
   if ((is_bool_type   (actualType) && is_bool_type   (formalType)) ||
       (is_int_type    (actualType) && is_int_type    (formalType)) ||
@@ -1194,6 +1206,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TYPE_RELATED:
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
+    case RESOLUTION_CANDIDATE_DIFFERENT_RECEIVER_TYPES:
       USR_PRINT(call, "because %s with type '%s'",
                     failingActualDesc,
                     toString(failingActual->getValType()));

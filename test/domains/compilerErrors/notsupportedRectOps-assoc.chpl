@@ -8,8 +8,8 @@ proc test(dom) {
   writeln(dom.alignment);
   writeln(dom.first);
   writeln(dom.last);
-  writeln(dom.alignedLow);
-  writeln(dom.alignedHigh);
+
+
   writeln();
 }
 

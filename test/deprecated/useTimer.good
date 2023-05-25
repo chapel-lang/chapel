@@ -1,0 +1,1 @@
+useTimer.chpl:3: warning: 'Timer' is deprecated, please use 'stopwatch' instead

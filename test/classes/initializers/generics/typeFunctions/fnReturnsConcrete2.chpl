@@ -9,7 +9,7 @@ class C {
 }
 
 proc getType(type t) type {
-  return borrowed C(t);
+  return owned C(t);
 }
 
 var myC: getType(int)?;

@@ -1,0 +1,12 @@
+{x = 1}
+(f = {x = 1})
+{x = 2}
+(f = {x = 2})
+{x = 3}
+(f = {x = 3})
+{x = 4}
+(f = {x = 4})
+I've been cleaned up with x= 4
+I've been cleaned up with x= 3
+I've been cleaned up with x= 2
+I've been cleaned up with x= 1

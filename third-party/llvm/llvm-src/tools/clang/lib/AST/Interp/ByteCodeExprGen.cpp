@@ -207,13 +207,13 @@ bool ByteCodeExprGen<Emitter>::VisitBinaryOperator(const BinaryOperator *BO) {
 
 template <class Emitter>
 bool ByteCodeExprGen<Emitter>::discard(const Expr *E) {
-  OptionScope<Emitter> Scope(this, /*discardResult=*/true);
+  OptionScope<Emitter> Scope(this, /*NewDiscardResult=*/true);
   return this->Visit(E);
 }
 
 template <class Emitter>
 bool ByteCodeExprGen<Emitter>::visit(const Expr *E) {
-  OptionScope<Emitter> Scope(this, /*discardResult=*/false);
+  OptionScope<Emitter> Scope(this, /*NewDiscardResult=*/false);
   return this->Visit(E);
 }
 
@@ -496,7 +496,7 @@ ByteCodeExprGen<Emitter>::getGlobalIdx(const VarDecl *VD) {
 
 template <class Emitter>
 const RecordType *ByteCodeExprGen<Emitter>::getRecordTy(QualType Ty) {
-  if (auto *PT = dyn_cast<PointerType>(Ty))
+  if (const PointerType *PT = dyn_cast<PointerType>(Ty))
     return PT->getPointeeType()->getAs<RecordType>();
   else
     return Ty->getAs<RecordType>();

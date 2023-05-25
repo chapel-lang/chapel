@@ -23,6 +23,7 @@ static gex_Client_t      myclient;
 static gex_EP_t    myep;
 static gex_TM_t myteam;
 static gex_Segment_t     mysegment;
+static gex_Rank_t peerproc;
 
 #define OUTPUT_SUCCESS 0
 uint64_t failures = 0;
@@ -46,13 +47,58 @@ void assert_eq(char *x, char *y, int len, int start, int i, int j, const char *m
   }
 }
 
+void do_put(void *dst, void *src, size_t len) {
+  switch(TEST_RAND(0,6)) {
+    case 0:
+      gex_RMA_PutBlocking(myteam, peerproc, dst, src, len, 0);
+      break;
+    case 1:
+      gex_Event_Wait(gex_RMA_PutNB(myteam, peerproc, dst, src, len, GEX_EVENT_NOW, 0));
+      break;
+    case 2:
+      gex_Event_Wait(gex_RMA_PutNB(myteam, peerproc, dst, src, len, GEX_EVENT_DEFER, 0));
+      break;
+    case 3: {
+      gex_Event_t lc_ev;
+      gex_Event_Wait(gex_RMA_PutNB(myteam, peerproc, dst, src, len, &lc_ev, 0));
+      break;
+    }
+    case 4:
+      gex_RMA_PutNBI(myteam, peerproc, dst, src, len, GEX_EVENT_NOW, 0);
+      gex_NBI_Wait(GEX_EC_PUT, 0);
+      break;
+    case 5:
+      gex_RMA_PutNBI(myteam, peerproc, dst, src, len, GEX_EVENT_DEFER, 0);
+      gex_NBI_Wait(GEX_EC_PUT, 0);
+      break;
+    case 6:
+      gex_RMA_PutNBI(myteam, peerproc, dst, src, len, GEX_EVENT_GROUP, 0);
+      gex_NBI_Wait(GEX_EC_PUT|GEX_EC_LC, 0);
+      break;
+  }
+}
+
+void do_get(void *dst, void *src, size_t len) {
+  switch(TEST_RAND(0,2)) {
+    case 0:
+      gex_RMA_GetBlocking(myteam, dst, peerproc, src, len, 0);
+      break;
+    case 1:
+      gex_Event_Wait(gex_RMA_GetNB(myteam, dst, peerproc, src, len, 0));
+      break;
+    case 2:
+      gex_RMA_GetNBI(myteam, dst, peerproc, src, len, 0);
+      gex_NBI_Wait(GEX_EC_GET, 0);
+      break;
+  }
+}
+
 int main(int argc, char **argv)
 {
     int outer_iterations = 0;
     int inner_iterations = 0;
     int seedoffset = 0;
-    int numprocs, myproc;
-    int peerproc;
+    gex_Rank_t numprocs, myproc;
 
     int crossmachinemode = 0;
     int help = 0;
@@ -176,21 +222,26 @@ int main(int argc, char **argv)
           size_t local_starting_point_1 = TEST_RAND(0,arenasz-len);
           size_t local_starting_point_2 = TEST_RAND(0,arenasz-len);
 
+          char *remote = target_base + remote_starting_point;
+          char *local  = local_base + local_starting_point_1;
+          char *shadow1 = shadow_region_1 + starting_point;
+          char *shadow2 = shadow_region_2 + local_starting_point_2;;
+
           /* Perform operations */
           /* Out of segment put from shadow_region 1 to remote */
-          gex_RMA_PutBlocking(myteam, peerproc,target_base+remote_starting_point,shadow_region_1 + starting_point,len, 0); 
+          do_put(remote, shadow1, len);
   
           /* In segment get from remote to local segment */
-          gex_RMA_GetBlocking(myteam, local_base+local_starting_point_1,peerproc,target_base+remote_starting_point,len, 0); 
+          do_get(local, remote, len);
   
           /* Verify */
-          assert_eq(shadow_region_1 + starting_point, local_base + local_starting_point_1, len,starting_point,i,j,"Out of segment put + in segment get");
+          assert_eq(shadow1, local, len, starting_point, i, j, "Out of segment put + in segment get");
   
           /* Out of segment get from remote to shadow_region_2 (starting from 0) */
-          gex_RMA_GetBlocking(myteam, shadow_region_2+local_starting_point_2,peerproc,target_base+remote_starting_point,len, 0); 
+          do_get(shadow2, remote, len);
   
           /* Verify */
-          assert_eq(shadow_region_2+local_starting_point_2, shadow_region_1 + starting_point, len,starting_point,i,j,"Out of segment get");
+          assert_eq(shadow2, shadow1, len, starting_point, i, j, "Out of segment get");
         }
         TEST_PROGRESS_BAR(i,outer_iterations);
 

@@ -114,7 +114,8 @@ bool WebAssemblyTTIImpl::areInlineCompatible(const Function *Caller,
 }
 
 void WebAssemblyTTIImpl::getUnrollingPreferences(
-  Loop *L, ScalarEvolution &SE, TTI::UnrollingPreferences &UP) const {
+    Loop *L, ScalarEvolution &SE, TTI::UnrollingPreferences &UP,
+    OptimizationRemarkEmitter *ORE) const {
   // Scan the loop: don't unroll loops with calls. This is a standard approach
   // for most (all?) targets.
   for (BasicBlock *BB : L->blocks())
@@ -137,4 +138,8 @@ void WebAssemblyTTIImpl::getUnrollingPreferences(
   // Set number of instructions optimized when "back edge"
   // becomes "fall through" to default value of 2.
   UP.BEInsns = 2;
+}
+
+bool WebAssemblyTTIImpl::supportsTailCalls() const {
+  return getST()->hasTailCall();
 }

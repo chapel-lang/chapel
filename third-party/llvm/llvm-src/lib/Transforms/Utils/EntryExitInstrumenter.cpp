@@ -89,7 +89,7 @@ static bool runOnFunction(Function &F, bool PostInlining) {
 
     insertCall(F, EntryFunc, &*F.begin()->getFirstInsertionPt(), DL);
     Changed = true;
-    F.removeAttribute(AttributeList::FunctionIndex, EntryAttr);
+    F.removeFnAttr(EntryAttr);
   }
 
   if (!ExitFunc.empty()) {
@@ -111,69 +111,10 @@ static bool runOnFunction(Function &F, bool PostInlining) {
       insertCall(F, ExitFunc, T, DL);
       Changed = true;
     }
-    F.removeAttribute(AttributeList::FunctionIndex, ExitAttr);
+    F.removeFnAttr(ExitAttr);
   }
 
   return Changed;
-}
-
-namespace {
-struct EntryExitInstrumenter : public FunctionPass {
-  static char ID;
-  EntryExitInstrumenter() : FunctionPass(ID) {
-    initializeEntryExitInstrumenterPass(*PassRegistry::getPassRegistry());
-  }
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addPreserved<GlobalsAAWrapperPass>();
-    AU.addPreserved<DominatorTreeWrapperPass>();
-  }
-  bool runOnFunction(Function &F) override { return ::runOnFunction(F, false); }
-};
-char EntryExitInstrumenter::ID = 0;
-
-struct PostInlineEntryExitInstrumenter : public FunctionPass {
-  static char ID;
-  PostInlineEntryExitInstrumenter() : FunctionPass(ID) {
-    initializePostInlineEntryExitInstrumenterPass(
-        *PassRegistry::getPassRegistry());
-  }
-  void getAnalysisUsage(AnalysisUsage &AU) const override {
-    AU.addPreserved<GlobalsAAWrapperPass>();
-    AU.addPreserved<DominatorTreeWrapperPass>();
-  }
-  bool runOnFunction(Function &F) override { return ::runOnFunction(F, true); }
-};
-char PostInlineEntryExitInstrumenter::ID = 0;
-}
-
-INITIALIZE_PASS_BEGIN(
-    EntryExitInstrumenter, "ee-instrument",
-    "Instrument function entry/exit with calls to e.g. mcount() (pre inlining)",
-    false, false)
-INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-INITIALIZE_PASS_END(
-    EntryExitInstrumenter, "ee-instrument",
-    "Instrument function entry/exit with calls to e.g. mcount() (pre inlining)",
-    false, false)
-
-INITIALIZE_PASS_BEGIN(
-    PostInlineEntryExitInstrumenter, "post-inline-ee-instrument",
-    "Instrument function entry/exit with calls to e.g. mcount() "
-    "(post inlining)",
-    false, false)
-INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-INITIALIZE_PASS_END(
-    PostInlineEntryExitInstrumenter, "post-inline-ee-instrument",
-    "Instrument function entry/exit with calls to e.g. mcount() "
-    "(post inlining)",
-    false, false)
-
-FunctionPass *llvm::createEntryExitInstrumenterPass() {
-  return new EntryExitInstrumenter();
-}
-
-FunctionPass *llvm::createPostInlineEntryExitInstrumenterPass() {
-  return new PostInlineEntryExitInstrumenter();
 }
 
 PreservedAnalyses
@@ -182,4 +123,14 @@ llvm::EntryExitInstrumenterPass::run(Function &F, FunctionAnalysisManager &AM) {
   PreservedAnalyses PA;
   PA.preserveSet<CFGAnalyses>();
   return PA;
+}
+
+void llvm::EntryExitInstrumenterPass::printPipeline(
+    raw_ostream &OS, function_ref<StringRef(StringRef)> MapClassName2PassName) {
+  static_cast<PassInfoMixin<llvm::EntryExitInstrumenterPass> *>(this)
+      ->printPipeline(OS, MapClassName2PassName);
+  OS << "<";
+  if (PostInlining)
+    OS << "post-inline";
+  OS << ">";
 }

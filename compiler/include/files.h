@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,9 +54,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();
 void ensureTmpDirExists();
-const char* makeTempDir(const char* dirPrefix);
 void deleteDir(const char* dirname);
-void deleteTmpDir();
 const char* objectFileForCFile(const char* cfile);
 
 const char* genIntermediateFilename(const char* filename);
@@ -80,12 +78,15 @@ void      closefile(FILE*     thefile);
 
 FILE* openInputFile(const char* filename);
 void closeInputFile(FILE* infile);
+std::vector<std::string> getChplFilenames();
 bool isChplSource(const char* filename);
 bool isCHeader(const char* filename);
 bool isCSource(const char* filename);
 bool isObjFile(const char* filename);
+bool isDynoLib(const char* filename);
 void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename, const char* modFilename);
+void assertSourceFilesFound();
 const char* nthFilename(int i);
 void addLibPath(const char* filename);
 void addLibFile(const char* filename);
@@ -95,10 +96,9 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
-std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap);
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();
-std::string runCommand(std::string& command);
+std::string runCommand(const std::string& command);
 
 const char* filenameToModulename(const char* filename);
 
@@ -111,6 +111,7 @@ void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
 bool isDirectory(const char* path);
+bool pathExists(const char* path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

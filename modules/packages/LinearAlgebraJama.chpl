@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -169,7 +169,7 @@ class CholeskyDecomposition {
    /* Row and column dimension (square matrix). */
    var n:int;
 
-   pragma "no doc"
+   @chpldoc.nodoc
    var lDom = {0..1,0..1};
 
    /* Array for internal storage of decomposition. internal array storage. */

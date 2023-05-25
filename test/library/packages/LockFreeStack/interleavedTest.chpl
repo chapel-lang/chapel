@@ -1,7 +1,7 @@
 use LockFreeStack;
 
-const InitialStackSize = 1024 * 1024;
-const OperationsPerThread = 1024 * 1024;
+const InitialStackSize = 1024;
+const OperationsPerThread = 1024;
 
 proc main() {
   var lfs = new unmanaged LockFreeStack(int);

@@ -269,9 +269,9 @@ TEST(YAMLParser, SameNodeIteratorOperatorNotEquals) {
   auto Begin = Node->begin();
   auto End = Node->end();
 
-  EXPECT_TRUE(Begin != End);
-  EXPECT_FALSE(Begin != Begin);
-  EXPECT_FALSE(End != End);
+  EXPECT_NE(Begin, End);
+  EXPECT_EQ(Begin, Begin);
+  EXPECT_EQ(End, End);
 }
 
 TEST(YAMLParser, SameNodeIteratorOperatorEquals) {
@@ -284,9 +284,9 @@ TEST(YAMLParser, SameNodeIteratorOperatorEquals) {
   auto Begin = Node->begin();
   auto End = Node->end();
 
-  EXPECT_FALSE(Begin == End);
-  EXPECT_TRUE(Begin == Begin);
-  EXPECT_TRUE(End == End);
+  EXPECT_NE(Begin, End);
+  EXPECT_EQ(Begin, Begin);
+  EXPECT_EQ(End, End);
 }
 
 TEST(YAMLParser, DifferentNodesIteratorOperatorNotEquals) {
@@ -305,9 +305,9 @@ TEST(YAMLParser, DifferentNodesIteratorOperatorNotEquals) {
   auto AnotherBegin = AnotherNode->begin();
   auto AnotherEnd = AnotherNode->end();
 
-  EXPECT_TRUE(Begin != AnotherBegin);
-  EXPECT_TRUE(Begin != AnotherEnd);
-  EXPECT_FALSE(End != AnotherEnd);
+  EXPECT_NE(Begin, AnotherBegin);
+  EXPECT_NE(Begin, AnotherEnd);
+  EXPECT_EQ(End, AnotherEnd);
 }
 
 TEST(YAMLParser, DifferentNodesIteratorOperatorEquals) {
@@ -326,9 +326,9 @@ TEST(YAMLParser, DifferentNodesIteratorOperatorEquals) {
   auto AnotherBegin = AnotherNode->begin();
   auto AnotherEnd = AnotherNode->end();
 
-  EXPECT_FALSE(Begin == AnotherBegin);
-  EXPECT_FALSE(Begin == AnotherEnd);
-  EXPECT_TRUE(End == AnotherEnd);
+  EXPECT_NE(Begin, AnotherBegin);
+  EXPECT_NE(Begin, AnotherEnd);
+  EXPECT_EQ(End, AnotherEnd);
 }
 
 TEST(YAMLParser, FlowSequenceTokensOutsideFlowSequence) {
@@ -344,12 +344,12 @@ TEST(YAMLParser, FlowSequenceTokensOutsideFlowSequence) {
 
 static void expectCanParseBool(StringRef S, bool Expected) {
   llvm::Optional<bool> Parsed = yaml::parseBool(S);
-  EXPECT_TRUE(Parsed.hasValue());
+  EXPECT_TRUE(Parsed.has_value());
   EXPECT_EQ(*Parsed, Expected);
 }
 
 static void expectCannotParseBool(StringRef S) {
-  EXPECT_FALSE(yaml::parseBool(S).hasValue());
+  EXPECT_FALSE(yaml::parseBool(S).has_value());
 }
 
 TEST(YAMLParser, ParsesBools) {

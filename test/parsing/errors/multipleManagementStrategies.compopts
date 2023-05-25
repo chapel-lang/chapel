@@ -1,0 +1,2 @@
+--detailed-errors # multipleManagementStrategies-detailed.good
+--no-detailed-errors # multipleManagementStrategies-brief.good

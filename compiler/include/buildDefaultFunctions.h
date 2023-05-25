@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 // callee is expected to fill in the body of the function and to
 // normalize the returned function before continuing.
 
-FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg);
+FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const char* name);
 
 #endif
 

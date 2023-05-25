@@ -1,2 +1,2 @@
-foo
-Task failed successfully
+{CHPL_HOME}/test/io/dtjong/foo
+File was closed successfully

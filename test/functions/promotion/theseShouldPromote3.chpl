@@ -30,7 +30,7 @@ class C {
   }
 }
 
-var myC = new borrowed C();
+var myC = (new owned C()).borrow();
 
 for c in myC do
   writeln(c);

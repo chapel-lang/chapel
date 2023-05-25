@@ -1,0 +1,1 @@
+stringVarargLeakByRef.chpl:14: error: Cannot set a const reference to a non-const reference.

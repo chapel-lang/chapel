@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,9 +45,11 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
+#include "llvm/ADT/DenseSet.h"
 
 #include <set>
 
@@ -67,7 +69,7 @@ static ConversionsTable conversionsTable;
 
 static void resolveFormals(FnSymbol* fn);
 
-static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call);
+static void markIteratorAndLoops(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn);
 
@@ -95,15 +97,17 @@ void resolveSignatureAndFunction(FnSymbol* fn) {
 ************************************** | *************************************/
 
 void resolveSignature(FnSymbol* fn) {
-    // Don't resolve formals for concrete functions
-    // more often than necessary.
-    static std::set<FnSymbol*> done;
+  // Don't resolve formals for concrete functions
+  // more often than necessary.
+  static llvm::DenseSet<FnSymbol*> done;
 
-    if (done.find(fn) == done.end()) {
-      done.insert(fn);
+  // This gets called about 10M times in arkouda and
+  // resolve goes from 30s to 28s
+  if (done.find(fn) == done.end()) {
+    done.insert(fn);
 
-      resolveFormals(fn);
-    }
+    resolveFormals(fn);
+  }
 }
 
 /************************************* | **************************************
@@ -371,7 +375,7 @@ static bool needRefFormal(FnSymbol* fn, ArgSymbol* formal,
 //   test/functions/bradc/intents/test_construct_atomic_intent.chpl
 //   test/users/vass/barrierWF.test-1.chpl
 //   test/studies/shootout/spectral-norm/sidelnik/spectralnorm.chpl
-//   test/release/examples/benchmarks/ssca2/SSCA2_main.chpl
+//   test/studies/ssca2/main/SSCA2_main.chpl
 //   test/parallel/taskPar/sungeun/barrier/*.chpl
 //
 static bool shouldUpdateAtomicFormalToRef(FnSymbol* fn, ArgSymbol* formal) {
@@ -433,8 +437,6 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
 ************************************** | *************************************/
 
 void resolveSpecifiedReturnType(FnSymbol* fn) {
-  Type* retType = NULL;
-
 
   // resolve specified return types for any 'out' intent formals
   for_formals(formal, fn) {
@@ -445,6 +447,11 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       }
     }
   }
+
+  // Stop if there is nothing else to do.
+  if (!fn->retExprType || fn->retType != dtUnknown) return;
+
+  Type* retType = NULL;
 
   resolveBlockStmt(fn->retExprType);
 
@@ -471,7 +478,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       retType     = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
 
-    } else if (fn->returnsRefOrConstRef() == true) {
+    } else if (fn->returnsRefOrConstRef() &&
+               ! retType->symbol->hasFlag(FLAG_GENERIC)) {
+      // makeRefType is no-op if retType is generic?
       makeRefType(retType);
 
       retType     = retType->refType;
@@ -481,11 +490,14 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = retType;
     }
 
-    if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+    if (fn->isIterator() && fn->iteratorInfo == NULL &&
+        ! retType->symbol->hasFlag(FLAG_GENERIC)) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
       // The original return type is stored here in retType.
       protoIteratorClass(fn, retType);
     }
+    // Note: if not here, we will protoIteratorClass()
+    // in resolveFunction() after resolveReturnTypeAndYieldedType().
 
   } else {
     fn->retType = retType;
@@ -529,14 +541,23 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       }
     }
 
-    if (fn->hasFlag(FLAG_EXTERN) == true) {
+    if (fn->hasFlag(FLAG_NO_FN_BODY) || fn->hasFlag(FLAG_EXTERN)) {
+      // TODO: Should be empty, can we just remove this?
       resolveBlockStmt(fn->body);
 
-      resolveReturnType(fn);
+
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+
+      // If there is no body and no return type, the function returns void.
+      } else {
+        INT_ASSERT(fn->retType == dtVoid || fn->retType == dtUnknown);
+        fn->retType = dtVoid;
+      }
 
     } else {
       if (fn->isIterator() == true) {
-        markIteratorAndLoops(fn, forCall);
+        markIteratorAndLoops(fn);
       }
 
       if (needsCapture(fn))
@@ -845,7 +866,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 static bool isIteratorOfType(FnSymbol* fn, Symbol* iterTag);
 static bool isLoopBodyJustYield(LoopStmt* loop);
 
-static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call) {
+static void markIteratorAndLoops(FnSymbol* fn) {
   /* Marks loops in iterators as order-independent:
        * if a pragma says to do so
        * or, if the body of the loop is just a yield
@@ -854,10 +875,6 @@ static void markIteratorAndLoops(FnSymbol* fn, CallExpr* call) {
   bool markAllYieldingLoops = fn->hasFlag(FLAG_PROMOTION_WRAPPER) ||
                               fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
                               markOrderIndep;
-
-  if (fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS)) {
-    USR_WARN(call, "'vectorizeOnly()' is deprecated; please use 'foreach' loops instead");
-  }
 
   std::vector<CallExpr*> callExprs;
 
@@ -1004,16 +1021,31 @@ bool isParallelIterator(FnSymbol* fn) {
 
 static bool doNotUnaliasArray(FnSymbol* fn);
 static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
+static void insertUnrefForTupleYields(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    insertUnrefForTupleYields(fn);
+    return;
+  }
+
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
-  if (skipArray && skipTuple)
-    // neither tuple nor array unref is necessary, so return
-    return;
+  // neither tuple nor array unref is necessary, so return
+  if (skipArray && skipTuple) return;
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   Symbol* ret = fn->getReturnSymbol();
+
+  // surely returning neither tuple nor array, so return
+  // TODO: the addition of this early return resulted in a substantial reduction
+  // of compilation time in some cases. We should investigate how to speed up
+  // the remainder of this function.
+  if (ret->type != dtUnknown                   &&
+      ! ret->type->symbol->hasFlag(FLAG_TUPLE) &&
+      ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
+      ! ret->type->symbol->hasFlag(FLAG_DOMAIN) ) return;
 
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -1139,6 +1171,51 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
       }
   // not found
   return NULL;
+}
+
+static void insertUnrefForTupleYields(FnSymbol* fn) {
+  // do not unref:
+  if (fn->retTag == RET_TYPE       ||  // could iterators yield types?
+      fn->retTag == RET_REF        ||  // if yielding refs
+      fn->retTag == RET_CONST_REF  ||
+      fn->hasFlag(FLAG_DONT_UNREF_FOR_YIELDS) ) // if opted out
+    return;
+
+  // todo: return also if fn->retType or fn->iteratorInfo->yieldedType
+  // is meaningful, i.e., not dtUnknown and not an iterator record,
+  // and is not a tuple: not yielding tuples ==> no need to convert
+
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn->body, callExprs);
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      Symbol* yieldSym  = toSymExpr(call->get(1))->symbol();
+      Type*   yieldType = yieldSym->type;
+      if (! yieldType->symbol->hasFlag(FLAG_TUPLE)   ||
+          yieldSym->hasFlag(FLAG_NO_COPY)            ||
+          ! isTupleContainingAnyReferences(yieldType) )
+        continue;
+
+      // follow insertUnrefForArrayOrTupleReturn()
+      // yield rhs; --> move(tmp, initCopyFn(rhs)); yield tmp;
+      SET_LINENO(call);
+      Expr*     rhs        = call->get(1)->remove();
+      FnSymbol* initCopyFn = getInitCopyDuringResolution(yieldType);
+      VarSymbol* tmp       = newTemp("copy_yield_tmp", initCopyFn->retType);
+      Symbol* definedConst = gFalse;
+      CallExpr*  unrefCall = new CallExpr(initCopyFn, rhs, definedConst);
+      yieldSym->removeFlag(FLAG_YVV);
+      tmp->addFlag(FLAG_YVV);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, unrefCall));
+      call->insertAtHead(tmp); // yield this temp
+
+    } else if (FnSymbol* callee = call->resolvedFunction()) {
+      if (isTaskFun(callee))
+        insertUnrefForTupleYields(callee);
+    }
+  }
 }
 
 class SplitInitVisitor final : public AstVisitorTraverse {
@@ -1314,7 +1391,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       // also handle out intent variables being inited here
       FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
       if (fn != NULL) {
-        int i = 1;
         for_formals_actuals(formal, actual, subCall) {
           bool outIntent = (formal->intent == INTENT_OUT ||
                             formal->originalIntent == INTENT_OUT);
@@ -1335,7 +1411,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
               }
             }
           }
-          i++;
         }
       }
     }
@@ -1881,8 +1956,10 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
-  bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
+  // TODO - do we need || fn->iteratorInfo != NULL;
+  bool isIterator = fn->isIterator();
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;
 
@@ -1890,8 +1967,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
+    // We have three cases of the iterator's declared return (yielded) type:
+    // * not declared ==> retType==dtUnknown
+    // * declared concrete ==> retType is an IR; we have fn->iteratorInfo
+    // * declared generic ==> retType has it; no fn->iteratorInfo
     ret = NULL;
-    retType = dtUnknown;
+    if (retType == dtUnknown)
+      ; // keep dtUnknown
+    else if (retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+      retType = fn->iteratorInfo->yieldedType;
+    else
+      INT_ASSERT(retType->symbol->hasFlag(FLAG_GENERIC)); // fyi
   }
 
   Vec<Type*>   retTypes;
@@ -1973,11 +2059,23 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
   }
 
+  if (fn->retTag != RET_TYPE && retType->symbol->hasFlag(FLAG_GENERIC))
+    // The compiler should have reported an error earlier. If it has not,
+    // give user-friendly error here - avoid potential confusion at callsite.
+    USR_FATAL(fn, "could not determine the concrete type"
+              " for the generic %s type '%s'",
+              isIterator ? "yielded" : "return", toString(retType));
+
   if (isIterator == false) {
     ret->type = retType;
 
     if (retType == dtUnknown) {
-      USR_FATAL(fn, "unable to resolve return type");
+      if (fn->hasFlag(FLAG_COMPUTE_UNIFIED_TYPE_HELP)) {
+        USR_FATAL(callStack.v[callStack.n-2],
+                  "can't compute a unified element type for this array");
+      } else {
+        USR_FATAL(fn, "unable to resolve return type");
+      }
     }
 
     fn->retType = retType;
@@ -2001,7 +2099,7 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 }
 
 void resolveReturnType(FnSymbol* fn) {
-  return resolveReturnTypeAndYieldedType(fn, NULL);
+  resolveReturnTypeAndYieldedType(fn, NULL);
 }
 
 
@@ -2580,6 +2678,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     }
     // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
+
+    // generate a warning in some cases for int->uint implicit conversion
+    warnForIntUintConversion(insertBefore, toValType, fromValType, from);
   }
 
   // seemingly redundant toType->type->symbol is for lowered runtime type vars
@@ -2772,7 +2873,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
   }
 }
 
-// Adds conversions for cases where the the lhs and rhs types of
+// Adds conversions for cases where the lhs and rhs types of
 // PRIM_MOVE/PRIM_ASSIGN do not match. The conversions might be implemented
 // with a cast or init=.
 //
@@ -2848,6 +2949,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               toType = lhsType->symbol;
             }
 
+            if (from != NULL && from->hasFlag(FLAG_TYPE_VARIABLE)) {
+              INT_ASSERT(lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
+              // The lhs and rhs types differ when the return type is inferred
+              // from return statements with different types, ex. see #20481.
+              if (lhsType == rhs->typeInfo()) {
+                // move from a type to the same type -- nothing else to do
+                from = NULL;
+              }
+            }
             // If rewriting this operation is required, do it
             if (from != NULL) {
               SET_LINENO(rhs);

@@ -1,1 +1,1 @@
-domainQueryField.chpl:2: error: Domain query expressions may currently only be used in formal argument types
+domainQueryField.chpl:2: error: domain query expressions may currently only be used in formal argument types

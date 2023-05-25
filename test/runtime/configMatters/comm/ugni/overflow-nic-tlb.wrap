@@ -6,6 +6,7 @@
 # heap size so that it's just big enough to cause the message
 # we're testing here.
 #
+module list &> /dev/null || . $MODULESHOME/init/bash
 hpm=$(module -t list 2>&1 | grep craype-hugepages)
 if [[ -n "$hpm" ]] ; then module unload $hpm ; fi
 

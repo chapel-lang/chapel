@@ -82,9 +82,9 @@ public:
 
   int getSizeOf(const Value *Val) const;
   int getSizeOf(const Type *Ty) const;
+  int getAllocSizeOf(const Type *Ty) const;
   int getTypeAlignment(Type *Ty) const;
 
-  VectorType *getByteVectorTy(int ScLen) const;
   Constant *getNullValue(Type *Ty) const;
   Constant *getFullValue(Type *Ty) const;
 
@@ -149,6 +149,7 @@ private:
              Align H)
         : Inst(I), Addr(A), ValTy(T), HaveAlign(H),
           NeedAlign(HVC.getTypeAlignment(ValTy)) {}
+    AddrInfo &operator=(const AddrInfo &) = default;
 
     // XXX: add Size member?
     Instruction *Inst;
@@ -185,6 +186,7 @@ private:
       Segment(Value *Val, int Begin, int Len)
           : Val(Val), Start(Begin), Size(Len) {}
       Segment(const Segment &Seg) = default;
+      Segment &operator=(const Segment &Seg) = default;
       Value *Val; // Value representable as a sequence of bytes.
       int Start;  // First byte of the value that belongs to the segment.
       int Size;   // Number of bytes in the segment.
@@ -195,6 +197,7 @@ private:
       Block(Value *Val, int Off, int Len, int Pos)
           : Seg(Val, Off, Len), Pos(Pos) {}
       Block(const Block &Blk) = default;
+      Block &operator=(const Block &Blk) = default;
       Segment Seg; // Value segment.
       int Pos;     // Position (offset) of the segment in the Block.
     };
@@ -442,9 +445,9 @@ auto AlignVectors::createAdjustedPointer(IRBuilder<> &Builder, Value *Ptr,
   // we don't need to do pointer casts.
   auto *PtrTy = cast<PointerType>(Ptr->getType());
   if (!PtrTy->isOpaque()) {
-    Type *ElemTy = PtrTy->getElementType();
-    int ElemSize = HVC.getSizeOf(ElemTy);
-    if (Adjust % ElemSize == 0) {
+    Type *ElemTy = PtrTy->getNonOpaquePointerElementType();
+    int ElemSize = HVC.getAllocSizeOf(ElemTy);
+    if (Adjust % ElemSize == 0 && Adjust != 0) {
       Value *Tmp0 =
           Builder.CreateGEP(ElemTy, Ptr, HVC.getConstInt(Adjust / ElemSize));
       return Builder.CreatePointerCast(Tmp0, ValTy->getPointerTo());
@@ -535,7 +538,7 @@ auto AlignVectors::createAddressGroups() -> bool {
   erase_if(AddrGroups, [](auto &G) { return G.second.size() == 1; });
   // Remove groups that don't use HVX types.
   erase_if(AddrGroups, [&](auto &G) {
-    return !llvm::any_of(
+    return llvm::none_of(
         G.second, [&](auto &I) { return HVC.HST.isTypeForHVX(I.ValTy); });
   });
 
@@ -717,7 +720,7 @@ auto AlignVectors::realignGroup(const MoveGroup &Move) const -> bool {
 
   // Maximum alignment present in the whole address group.
   const AddrInfo &WithMaxAlign =
-      getMaxOf(BaseInfos, [](const AddrInfo &AI) { return AI.HaveAlign; });
+      getMaxOf(MoveInfos, [](const AddrInfo &AI) { return AI.HaveAlign; });
   Align MaxGiven = WithMaxAlign.HaveAlign;
 
   // Minimum alignment present in the move address group.
@@ -748,7 +751,6 @@ auto AlignVectors::realignGroup(const MoveGroup &Move) const -> bool {
                                       WithMaxAlign.ValTy, Adjust);
     int Diff = Start - (OffAtMax + Adjust);
     AlignVal = HVC.getConstInt(Diff);
-    // Sanity.
     assert(Diff >= 0);
     assert(static_cast<decltype(MinNeeded.value())>(Diff) < MinNeeded.value());
   } else {
@@ -979,6 +981,10 @@ auto HexagonVectorCombine::getSizeOf(const Type *Ty) const -> int {
   return DL.getTypeStoreSize(const_cast<Type *>(Ty)).getFixedValue();
 }
 
+auto HexagonVectorCombine::getAllocSizeOf(const Type *Ty) const -> int {
+  return DL.getTypeAllocSize(const_cast<Type *>(Ty)).getFixedValue();
+}
+
 auto HexagonVectorCombine::getTypeAlignment(Type *Ty) const -> int {
   // The actual type may be shorter than the HVX vector, so determine
   // the alignment based on subtarget info.
@@ -1177,12 +1183,15 @@ auto HexagonVectorCombine::rescale(IRBuilder<> &Builder, Value *Mask,
   int ToCount = (FromCount * FromSize) / ToSize;
   assert((FromCount * FromSize) % ToSize == 0);
 
+  auto *FromITy = IntegerType::get(F.getContext(), FromSize * 8);
+  auto *ToITy = IntegerType::get(F.getContext(), ToSize * 8);
+
   // Mask <N x i1> -> sext to <N x FromTy> -> bitcast to <M x ToTy> ->
   // -> trunc to <M x i1>.
   Value *Ext = Builder.CreateSExt(
-      Mask, VectorType::get(FromSTy, FromCount, /*Scalable*/ false));
+      Mask, VectorType::get(FromITy, FromCount, /*Scalable*/ false));
   Value *Cast = Builder.CreateBitCast(
-      Ext, VectorType::get(ToSTy, ToCount, /*Scalable*/ false));
+      Ext, VectorType::get(ToITy, ToCount, /*Scalable*/ false));
   return Builder.CreateTrunc(
       Cast, VectorType::get(getBoolTy(), ToCount, /*Scalable*/ false));
 }
@@ -1303,7 +1312,7 @@ auto HexagonVectorCombine::calculatePointerDifference(Value *Ptr0,
   auto Simplify = [&](Value *V) {
     if (auto *I = dyn_cast<Instruction>(V)) {
       SimplifyQuery Q(DL, &TLI, &DT, &AC, I);
-      if (Value *S = SimplifyInstruction(I, Q))
+      if (Value *S = simplifyInstruction(I, Q))
         return S;
     }
     return V;
@@ -1326,7 +1335,7 @@ auto HexagonVectorCombine::calculatePointerDifference(Value *Ptr0,
     return None;
 
   Builder B(Gep0->getParent());
-  int Scale = DL.getTypeStoreSize(Gep0->getSourceElementType());
+  int Scale = getAllocSizeOf(Gep0->getSourceElementType());
 
   // FIXME: for now only check GEPs with a single index.
   if (Gep0->getNumOperands() != 2 || Gep1->getNumOperands() != 2)
@@ -1343,7 +1352,7 @@ auto HexagonVectorCombine::calculatePointerDifference(Value *Ptr0,
   KnownBits Known0 = computeKnownBits(Idx0, DL, 0, &AC, Gep0, &DT);
   KnownBits Known1 = computeKnownBits(Idx1, DL, 0, &AC, Gep1, &DT);
   APInt Unknown = ~(Known0.Zero | Known0.One) | ~(Known1.Zero | Known1.One);
-  if (Unknown.isAllOnesValue())
+  if (Unknown.isAllOnes())
     return None;
 
   Value *MaskU = ConstantInt::get(Idx0->getType(), Unknown);
@@ -1397,7 +1406,7 @@ auto HexagonVectorCombine::isSafeToMoveBeforeInBB(const Instruction &In,
   if (isa<PHINode>(In) || (To != Block.end() && isa<PHINode>(*To)))
     return false;
 
-  if (!mayBeMemoryDependent(In))
+  if (!mayHaveNonDefUseDependency(In))
     return true;
   bool MayWrite = In.mayWriteToMemory();
   auto MaybeLoc = getLocOrNone(In);

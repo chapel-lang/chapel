@@ -1,0 +1,4 @@
+ref-sync-2a.chpl:7: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+ref-sync-2a.chpl:7: error: in call to 'fun', cannot pass result of coercion by reference
+ref-sync-2a.chpl:7: note: implicit coercion from 'sync int(64)' to 'int(64)'
+ref-sync-2a.chpl:3: note: when passing to 'ref' intent formal 'x'

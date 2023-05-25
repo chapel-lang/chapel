@@ -4,7 +4,7 @@ class C {
 
 var myC = new owned C(42);
 
-var myC2 = new borrowed myC;  // note: Calling `new` on a value, not a type.
+var myC2 = (new owned myC).borrow();  // note: Calling `new` on a value, not a type.
 writeln(myC2);
 
 var myC3 = new unmanaged myC;

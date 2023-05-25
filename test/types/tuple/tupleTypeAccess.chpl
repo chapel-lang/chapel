@@ -11,7 +11,7 @@ class ExcellentStudent: Student {
 }
 
 class AdvancedBasketWeaving {
-  type acceptableStudentTypes = (GoodStudent, ExcellentStudent);
+  type acceptableStudentTypes = (borrowed GoodStudent, borrowed ExcellentStudent); // currently has to be concrete, see #10172
 
   proc accept(student: Student) {
     for param i in 1..acceptableStudentTypes.size do

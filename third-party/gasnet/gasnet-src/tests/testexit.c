@@ -66,6 +66,7 @@ const char *crashtestdesc[] = {
 void do_crash_test(int crashid);
 
 static char *peerseg;
+static char *replyseg;
 
 #define hidx_exit_handler		201
 #define hidx_noop_handler               202
@@ -81,7 +82,7 @@ void ping_handler(gex_Token_t token, void *buf, size_t nbytes) {
   if (x) 
     gex_AM_ReplyMedium0(token, hidx_noop_handler, buf, nbytes, GEX_EVENT_NOW, 0);
   else
-    gex_AM_ReplyLong0(token, hidx_noop_handler, buf, nbytes, peerseg, GEX_EVENT_NOW, 0);
+    gex_AM_ReplyLong0(token, hidx_noop_handler, buf, nbytes, replyseg, GEX_EVENT_NOW, 0);
 }
 
 void noop_handler(gex_Token_t token, void *buf, size_t nbytes) {
@@ -130,7 +131,7 @@ void *workerthread(void *args) {
                         gex_AM_MaxReplyMedium  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
                         gex_AM_MaxRequestLong  (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
                         gex_AM_MaxReplyLong    (myteam,GEX_RANK_INVALID,GEX_EVENT_NOW,0,0)),
-                        TEST_SEGSZ);
+                        (TEST_SEGSZ / 2));
         char *p = malloc(lim);
         while (1) {
           switch (rand() % 18) {
@@ -238,11 +239,7 @@ int main(int argc, char **argv) {
       (testid > NUMTEST && testid < 100) || 
       numpthreads <= 1) test_usage_early();
 
-  peer = mynode + 1;
-  if (peer == nodes) {
-    // w/ odd # of ranks, last one talks to self, else to 0
-    peer = (nodes%2) ? mynode : 0;
-  }
+  peer = (mynode + 1) % nodes;
 
   if (testid < 100) {
     snprintf(testdescstr, sizeof(testdescstr), "Running exit test %i: %s",testid, testdesc[testid-1]);
@@ -283,6 +280,7 @@ int main(int argc, char **argv) {
   gasnett_reghandler(SIGQUIT, testSignalHandler);
 
   peerseg = TEST_SEG(peer);
+  replyseg = (char *)TEST_SEG((mynode + nodes - 1) % nodes) + (TEST_SEGSZ / 2);
 
   BARRIER();
   PUTS0(testdescstr);

@@ -6,7 +6,7 @@ config const noisy = false;
 proc testio(param typ:iokind, style:iostyleInternal, x)
 {
   if noisy then writeln("Testing ",typ:int(64)," ",x.type:string," ",style.binary:int(64)," ",style.byteorder:int(64)," ",style.str_style);
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer(typ, style=style);
     if noisy then writeln("Writing ", x:string);
@@ -51,10 +51,10 @@ proc testio(x)
   }
 }
 
-proc test_readlines()
+proc test_readlines(stripNewline = false)
 {
 
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer();
     ch.writeln("a b");
@@ -62,48 +62,33 @@ proc test_readlines()
     ch.flush();
   }
 
-  if noisy then writeln("Testing readlines: channel.readline(line)");
+  if noisy then writeln("Testing readlines: channel.readLine(line)");
   // try reading it in a few ways.
   {
     var ch = f.reader();
     var line:dataType;
     var got:bool;
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( got && line == "a b\n":dataType );
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( got && line == "c d\n":dataType );
-    got = ch.readline(line);
+    got = ch.readLine(line);
     if noisy then writeln("got ", got, " line ", line);
     assert( !got );
   }
 
-  if noisy then writeln("Testing readlines: itemReader");
-  {
-    var style = defaultIOStyleInternal();
-    style.string_format = iostringformat.toend:uint(8);
-    style.string_end = 0x0a;
-    var ch = f.reader(style=style);
-    for (line,i) in zip(ch.itemReader(string),1..) {
-      if i == 1 {
-        assert(line == "a b\n");
-      } else if i == 2 {
-        assert(line == "c d\n");
-      } else {
-        assert(false);
-      }
-    }
-  }
 
-
-  if noisy then writeln("Testing readlines: file.lines()");
+  if noisy then writeln("Testing readlines: fileReader.lines(stripNewline=", stripNewline, ")");
   {
-    for (line,i) in zip(f.lines(),1..) {
+    proc getTestString(s) do return if stripNewline then s else s + "\n";
+
+    for (line,i) in zip(f.reader().lines(stripNewline),1..) {
       if i == 1 {
-        assert(line == "a b\n");
+        assert(line == getTestString("a b"));
       } else if i == 2 {
-        assert(line == "c d\n");
+        assert(line == getTestString("c d"));
       } else {
         assert(false);
       }
@@ -146,11 +131,9 @@ proc main() {
   testio(1.0:imag(64));
   //testio(100:uint(8));
 
-  testio(new ioChar(97));
   testio(new ioNewline());
   testio(new ioLiteral("test"));
-  testio(new ioBits(0b011011001101000110101101, 24));
-
+  
   test_readlines();
+  test_readlines(true);
 }
-

@@ -12,7 +12,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      0.4
+#define GASNET_CORE_VERSION      0.5
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME        UCX
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -20,8 +20,8 @@
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_UCX 1
 
-#define GASNETC_MAX_MED             4096
-#define GASNETC_MAX_MEDIUM_NBRHD    GASNETC_MAX_MED
+// PSHM and loopback support need to know largest Medium if larger than MAX(LUB{Request,Reply}Medium)
+#define GASNETC_MAX_MEDIUM_NBRHD GASNETC_MAX_MED_(0)
 
   /* GASNET_PSHM defined 1 if this conduit supports PSHM. leave undefined otherwise. */
 #if GASNETI_PSHM_ENABLED
@@ -36,12 +36,15 @@
   #define GASNET_ALIGNED_SEGMENTS   1//###
 #endif
 
-  /* define to 1 if conduit allows internal GASNet fns to issue put/get for remote
-     addrs out of segment - not true when PSHM is used */
-#if !GASNET_PSHM && 0
-#define GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET 1
-#endif
-
+  // If this conduit is considered a "portable conduit" only *conditionally*,
+  // uncomment to enable calls to gasnetc_check_portable_conduit(void) as
+  // described in gasnet_internal.c.
+// TODO: As originally noted in bug 4438, our intent is to only recommend
+// ucx-conduit for use with supported hardware (currently Mellanox ConnectX-5
+// or newer).  If/when UCP can provide us with information about this selected
+// transports OR we recode to UCT (and thus control the selection), we should
+// apply this conduit-specific knowledge to implement this hook.
+//#define GASNETC_CHECK_PORTABLE_CONDUIT_HOOK 1
 
   // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
 #define GASNET_HAVE_MK_CLASS_CUDA_UVA (GASNETI_MK_CLASS_CUDA_UVA_ENABLED && !GASNET_SEGMENT_EVERYTHING)
@@ -138,8 +141,14 @@
   // See gasnet_internal.h for prototypes and brief descriptions.
 #define GASNETC_SEGMENT_ATTACH_HOOK 1
 #define GASNETC_SEGMENT_CREATE_HOOK 1
-//#define GASNETC_SEGMENT_DESTROY_HOOK 1
+#define GASNETC_SEGMENT_DESTROY_HOOK 1
+//#define GASNETC_EP_BINDSEGMENT_HOOK 1
 #define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See other/kinds/gasnet_kinds_internal.h for prototypes and brief descriptions.
+//#define GASNETC_MK_CREATE_HOOK 1
+//#define GASNETC_MK_DESTROY_HOOK 1
 
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
 // Leaving GASNETC_MAXEPS_DFLT unset will result in GASNET_MAXEPS=1, independent
@@ -151,6 +160,17 @@
 
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
-#define GASNETC_CONDUIT_STATS(CNT,VAL,TIME) 
+#define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)  \
+      CNT(C, BORROW_REPLY_BUF, cnt) \
+      VAL(C, EXTRA_REPLY_BUF, depth)
+
+#define GASNETC_FATALSIGNAL_CALLBACK(sig) gasnetc_fatalsignal_callback(sig)
+    extern void gasnetc_fatalsignal_callback(int _sig);
+
+// No validated support for hugetlbfs w/ or w/o PSHM at this time and risk of
+// issues if auto-enabled on an HPE Cray EX system (e.g. bug 4473).
+#if GASNETI_ARCH_CRAYEX
+#undef GASNETI_USE_HUGETLBFS
+#endif
 
 #endif

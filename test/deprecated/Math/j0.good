@@ -1,0 +1,32 @@
+j0.chpl:11: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:13: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:15: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:17: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:19: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:31: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:33: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:35: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:37: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+j0.chpl:39: warning: j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+For 64-bit reals: 
+a = -100.0
+j0(a) = 0.0199859
+b = -0.05
+j0(b) = 0.999375
+c = 0.0
+j0(c) = 1.0
+d = 0.05
+j0(d) = 0.999375
+e = 100.0
+j0(e) = 0.0199859
+For 32-bit reals: 
+a = -100.0
+j0(a) = 0.0199859
+b = -0.05
+j0(b) = 0.999375
+c = 0.0
+j0(c) = 1.0
+d = 0.05
+j0(d) = 0.999375
+e = 100.0
+j0(e) = 0.0199859

@@ -1,5 +1,5 @@
 #!/bin/bash
 output=$2
 
-sed -e 's/:[0-9]*:/:N:/' $output > $output.tmp
+sed -e 's/:[0-9]*:/:N:/' $output | sed -e 's/and [0-9]* other/and N other/' > $output.tmp
 mv $output.tmp $output

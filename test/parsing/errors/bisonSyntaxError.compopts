@@ -1,0 +1,2 @@
+--detailed-errors # bisonSyntaxError-detailed.good
+--no-detailed-errors # bisonSyntaxError-brief.good

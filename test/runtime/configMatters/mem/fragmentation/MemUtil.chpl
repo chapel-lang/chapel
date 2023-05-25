@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 // Estimate for how much memory we can allocate. Based on
 // chpl_comm_regMemHeapInfo if using a fixed heap, otherwise physical memory

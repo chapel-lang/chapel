@@ -22,7 +22,7 @@ proc main {
   }
   writeln(660);
 
-  forall idx7 in DDD with (var ARR7 = [ 700 ]) {
+  forall idx7 in DDD with (var ARR7 = [ 700, ]) {
     ARR7 += 1;
     writeln(ARR7);
   }
@@ -32,7 +32,7 @@ proc main {
   forall idx7 in DDD with (
     var ARR9a: [Dtpv] int,
     var ARR9b: [Dtpv] int = 900,
-    var ARR9c = [ 900 ]
+    var ARR9c = [ 900, ]
   ) {
     ARR9a += 1;
     ARR9b += 2;

@@ -1,0 +1,2 @@
+transitiveUsePrivate.chpl:8: In function 'inner':
+transitiveUsePrivate.chpl:9: error: 'x' undeclared (first use this function)

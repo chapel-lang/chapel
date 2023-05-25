@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,42 +21,40 @@
 #include "parser.h"
 
 #include "ImportStmt.h"
-#include "bison-chapel.h"
 #include "build.h"
 #include "config.h"
 #include "convert-uast.h"
-#include "countTokens.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-#include "flex-chapel.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
+#include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
-// Turn this on to report which modules are parsed as uAST.
-#define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
-
-// Only convert user module to uAST
-#define UAST_CONVERT_USER_MODULE_ONLY 0
-
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
 
 #include <cstdlib>
+#include <fstream>
+
+chpl::ID dynoIdForLastContainingDecl = chpl::ID();
 
 BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
 
+bool                 parsingPrivate                = true;
+
+bool                 countTokens                   = false;
+bool                 printTokens                   = false;
 ModTag               currentModuleType             = MOD_INTERNAL;
 const char*          currentModuleName             = NULL;
 
@@ -73,6 +71,8 @@ static const char* stdGenModulesPath;
 
 static void          countTokensInCmdLineFiles();
 
+static void          addDynoLibFiles();
+
 static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
@@ -82,10 +82,17 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
-static bool uASTAttemptToParseMod(const char* modName,
-                                  const char* path,
-                                  ModTag modTag,
-                                  ModuleSymbol*& outModSym);
+std::vector<UniqueString> parsedPaths;
+
+// TODO: Remove me.
+struct YYLTYPE {
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+  const char* comment;
+  const char* prevModule;
+};
 
 static void initializeGlobalParserState(const char* path, ModTag modTag,
                                         bool namedOnCommandLine,
@@ -95,16 +102,36 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc=nullptr);
 
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
-                               bool        namedOnCommandLine,
-                               bool        include);
+                               bool        namedOnCommandLine);
 
-// Callback to configure the context error handler when converting to uAST.
-static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err);
+static void maybePrintModuleFile(ModTag modTag, const char* path);
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
+class DynoErrorHandler : public chpl::Context::ErrorHandler {
+  std::vector<chpl::owned<chpl::ErrorBase>> errors_;
+ public:
+  DynoErrorHandler() = default;
+  ~DynoErrorHandler() = default;
+
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
+    return errors_;
+  }
+
+  virtual void
+  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+    errors_.push_back(err->clone());
+  }
+
+  inline void clear() { errors_.clear(); }
+};
+
+// Call to insert an instance of the error handler above into the context.
+static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
+
+static bool dynoRealizeErrors(void);
+
+static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include);
+                                   bool        namedOnCommandLine);
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -112,30 +139,6 @@ static const char*   stdModNameToPath(const char* modName,
 static const char*   searchThePath(const char*      modName,
                                    bool             isInternal,
                                    Vec<const char*> searchPath);
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-void parse() {
-  yydebug = debugParserLevel;
-
-  if (countTokens == true) {
-    countTokensInCmdLineFiles();
-  }
-
-  parseInternalModules();
-
-  parseCommandLineFiles();
-
-  checkConfigs();
-
-  finishCountingTokens();
-
-  parsed = true;
-}
 
 /************************************* | **************************************
 *                                                                             *
@@ -161,6 +164,7 @@ void parse() {
 *                                                                             *
 ************************************** | *************************************/
 
+// TODO: Remove these, dyno should be handling this.
 static Vec<const char*> sModPathSet;
 
 static Vec<const char*> sIntModPath;
@@ -173,12 +177,20 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
 
+static std::set<std::string> gDynoGenLibPaths;
+
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
+  gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibPaths.insert(std::string(newpath));
 }
 
 void setupModulePaths() {
@@ -290,14 +302,30 @@ void addModuleToParseList(const char* name, VisibilityStmt* expr) {
 static void countTokensInCmdLineFiles() {
   int         fileNum       = 0;
   const char* inputFileName = 0;
+  auto parseStats = chpl::parsing::ParserStats(printTokens);
 
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName) == true) {
-      parseFile(inputFileName, MOD_USER, true, false);
+      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      parseStats.startCountingFileTokens(path.c_str());
+      chpl::parsing::countTokens(gContext, path, &parseStats);
+      parseStats.stopCountingFileTokens();
     }
   }
 
-  finishCountingTokens();
+  parseStats.finishCountingTokens();
+  clean_exit(0);
+}
+
+static void addDynoLibFiles() {
+  const char* inputFileName = NULL;
+  int fileNum = 0;
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isDynoLib(inputFileName)) {
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      chpl::parsing::registerFilePathsInLibrary(gContext, libPath);
+    }
+  }
 }
 
 /************************************* | **************************************
@@ -308,31 +336,29 @@ static void countTokensInCmdLineFiles() {
 
 
 static void parseInternalModules() {
-  if (fDocs == false || fDocsProcessUsedModules == true) {
-    baseModule            = parseMod("ChapelBase",           true);
-    standardModule        = parseMod("ChapelStandard",       true);
-    printModuleInitModule = parseMod("PrintModuleInitOrder", true);
-    if (fLibraryFortran) {
-                            parseMod("ISO_Fortran_binding", true);
-    }
-
-    // parse ChapelSysCTypes right away to provide well-known types.
-    ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
-    if (sysctypes == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
-    }
-    // ditto Errors
-    ModuleSymbol* errors = parseMod("Errors", false);
-    if (errors == NULL && fMinimalModules == false) {
-      USR_FATAL("Could not find standard module 'Errors'");
-    }
-
-    parseDependentModules(true);
-
-    gatherIteratorTags();
-    gatherWellKnownTypes();
-    gatherWellKnownFns();
+  baseModule            = parseMod("ChapelBase",           true);
+  standardModule        = parseMod("ChapelStandard",       true);
+  printModuleInitModule = parseMod("PrintModuleInitOrder", true);
+  if (fLibraryFortran) {
+                          parseMod("ISO_Fortran_binding", true);
   }
+
+  // parse ChapelSysCTypes right away to provide well-known types.
+  ModuleSymbol* sysctypes = parseMod("ChapelSysCTypes", false);
+  if (sysctypes == NULL && fMinimalModules == false) {
+    USR_FATAL("Could not find module 'ChapelSysCTypes', which should be defined by '%s/ChapelSysCTypes.chpl'", stdGenModulesPath);
+  }
+  // ditto Errors
+  ModuleSymbol* errors = parseMod("Errors", false);
+  if (errors == NULL && fMinimalModules == false) {
+    USR_FATAL("Could not find standard module 'Errors'");
+  }
+
+  parseDependentModules(true);
+
+  gatherIteratorTags();
+  gatherWellKnownTypes();
+  gatherWellKnownFns();
 }
 
 
@@ -373,11 +399,21 @@ static void parseChplSourceFile(const char* inputFileName) {
     USR_FATAL(errorMessage, baseName, maxFileName);
   }
 
-  if (fDynoCompilerLibrary == false) {
-    parseFile(inputFileName, MOD_USER, true, false);
-  } else {
-    uASTParseFile(inputFileName, MOD_USER, true, false);
+  parseFile(inputFileName, MOD_USER, true);
+}
+
+static UniqueString cleanLocalPath(UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
   }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(gContext, str);
 }
 
 static void parseCommandLineFiles() {
@@ -395,31 +431,81 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
-      parseChplSourceFile(inputFileName);
+      auto path = cleanLocalPath(chpl::UniqueString::get(gContext, inputFileName));
+      chpl::UniqueString emptySymbolPath;
+      chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
     }
   }
 
-  if (fDocs == false || fDocsProcessUsedModules == true) {
-    bool foundSomethingNew = false;
-    do {
-      foundSomethingNew = false;
-
-      parseDependentModules(false);
-
-      fileNum--;  // back up from previous NULL
-      while ((inputFileName = nthFilename(fileNum++))) {
-        if (isChplSource(inputFileName)) {
-          parseChplSourceFile(inputFileName);
-          foundSomethingNew=true;
+  fileNum = 0;
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isChplSource(inputFileName))
+    {
+      parseChplSourceFile(inputFileName);
+    } else if (isDynoLib(inputFileName)) {
+      // Need to parse these files so that they all get converted into the
+      // old AST. This is necessary in case the 'main' module is also in a
+      // .dyno file.
+      //
+      // TODO: It's not necessarily the case that a .dyno file implies that the
+      // serialized file would have been listed on the command line. We
+      // probably to clarify what it means to be listed on the command line.
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      auto lib = chpl::parsing::loadLibraryFile(gContext, libPath);
+      if (lib.isUser()) {
+        for (const auto& pair : lib.offsets()) {
+          parseFile(pair.first.c_str(), MOD_USER, true);
         }
       }
-    } while (foundSomethingNew);
-
-    ensureRequiredStandardModulesAreParsed();
-
-    forv_Vec(ModuleSymbol, mod, allModules) {
-      mod->addDefaultUses();
     }
+  }
+
+  bool foundSomethingNew = false;
+  do {
+    foundSomethingNew = false;
+
+    parseDependentModules(false);
+
+    fileNum--;  // back up from previous NULL
+    while ((inputFileName = nthFilename(fileNum++))) {
+      if (isChplSource(inputFileName)) {
+        parseChplSourceFile(inputFileName);
+        foundSomethingNew=true;
+      }
+    }
+  } while (foundSomethingNew);
+
+  ensureRequiredStandardModulesAreParsed();
+
+  forv_Vec(ModuleSymbol, mod, allModules) {
+    mod->addDefaultUses();
+  }
+
+  if (gDynoGenLibPaths.size() > 0) {
+    for (std::string path : gDynoGenLibPaths) {
+      if (path == "<standard>") {
+        std::vector<UniqueString> todo;
+        for (auto& path : parsedPaths) {
+          const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
+          if (path.startsWith(modulePrefix)) {
+            todo.push_back(path);
+          }
+        }
+        chpl::parsing::LibraryFile::generate(gContext, todo,
+                                             "chpl_standard.dyno", false);
+      } else {
+        std::string justFile = path.substr(path.find_last_of("/") + 1);
+        auto dot = justFile.find_last_of(".");
+        std::string noExt = justFile.substr(0, dot);
+        auto ustr = chpl::UniqueString::get(gContext, path);
+        chpl::parsing::LibraryFile::generate(gContext, {ustr},
+                                             noExt + ".dyno", true);
+      }
+    }
+
+    // As .dyno files become more capable, this exit will be moved further and
+    // further into resolution.
+    clean_exit(0);
   }
 }
 
@@ -530,11 +616,23 @@ static void ensureRequiredStandardModulesAreParsed() {
         }
       }
 
+      // Allow automatically-included standard libraries to be overridden
+      // by a user module.
+      // See also test/modules/bradc/userInsteadOfStandard.
+      // TODO: use a better strategy than this workaround in the future,
+      // such as ideas proposed in issue #19313.
+      if (0 == strcmp(modName, "AutoMath") ||
+          0 == strcmp(modName, "Errors") ||
+          0 == strcmp(modName, "ChapelIO") ||
+          0 == strcmp(modName, "Types")) {
+        foundInt = foundInt || foundUsr;
+      }
+
       // If we haven't found the standard version of the module,
       // then we need to parse it
       if (foundInt == false) {
         if (const char* path = searchThePath(modName, false, sStdModPath)) {
-          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false, false);
+          ModuleSymbol* mod = parseFile(path, MOD_STANDARD, false);
 
           // If we also found a user module by the same name,
           // we need to rename the standard module and the use of it
@@ -589,21 +687,6 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool uASTAttemptToParseMod(const char* modName,
-                                  const char* path,
-                                  ModTag modTag,
-                                  ModuleSymbol*& outModSym) {
-  if (!fDynoCompilerLibrary) return false;
-
-  if (UAST_CONVERT_USER_MODULE_ONLY && modTag != MOD_USER) return false;
-  const bool namedOnCommandLine = false;
-  const bool include = false;
-
-  outModSym = uASTParseFile(path, modTag, namedOnCommandLine, include);
-
-  return true;
-}
-
 static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   const char* path   = NULL;
   ModTag      modTag = MOD_INTERNAL;
@@ -624,22 +707,8 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   // is not eligible (e.g. not internal). In that case, parse the file
   // into AST instead.
   if (path != nullptr) {
-    bool usedNewParser = uASTAttemptToParseMod(modName, path, modTag, ret);
-
-    if (!usedNewParser) {
-      INT_ASSERT(ret == nullptr);
-      ret = parseFile(path, modTag, false, false);
-    }
-
-#if REPORT_AST_KIND_WHEN_PARSING_MODULE
-    const char* modTagStr = ModuleSymbol::modTagToString(modTag);
-    const char* astKindStr = usedNewParser ? "uAST" : "AST";
-    printf("- Parsed %s module '%s' -> %s\n",
-           modTagStr,
-           modName,
-           astKindStr);
-    printf("@ %s\n", path);
-#endif
+    INT_ASSERT(ret == nullptr);
+    ret = parseFile(path, modTag, false);
   }
 
   return ret;
@@ -651,7 +720,6 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool containsOnlyModules(BlockStmt* block, const char* path);
 static void addModuleToDoneList(ModuleSymbol* module);
 
 //
@@ -718,238 +786,275 @@ static void deinitializeGlobalParserState(YYLTYPE* yylloc) {
 
 static ModuleSymbol* parseFile(const char* path,
                                ModTag      modTag,
-                               bool        namedOnCommandLine,
-                               bool        include) {
-  ModuleSymbol* retval = NULL;
-
-  // Make sure we haven't already parsed this file
-  if (haveAlreadyParsed(path)) {
-    return NULL;
-  }
-
-  if (FILE* fp = openInputFile(path)) {
-    gFilenameLookup.push_back(path);
-
-    // State for the lexer
-    int           lexerStatus  = 100;
-
-    // State for the parser
-    yypstate*     parser       = yypstate_new();
-    int           parserStatus = YYPUSH_MORE;
-    YYLTYPE       yylloc;
-    ParserContext context;
-
-    initializeGlobalParserState(path, modTag, namedOnCommandLine, &yylloc);
-
-    // look for the ArgumentParser and set flag to indicate we should copy
-    // the delimiter -- to the arguments passed to chapel program's main
-    if (modTag == MOD_STANDARD &&
-        strcmp("$CHPL_HOME/modules/packages/ArgumentParser.chpl",
-               cleanFilename(path)) == 0 ) {
-      mainPreserveDelimiter = true;
-    }
-
-    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
-      if (sFirstFile) {
-        fprintf(stderr, "Parsing module files:\n");
-
-        sFirstFile = false;
-      }
-
-      fprintf(stderr, "  %s\n", cleanFilename(path));
-    }
-
-    if (namedOnCommandLine == true) {
-      startCountingFileTokens(path);
-    }
-
-    yylex_init(&context.scanner);
-
-    stringBufferInit();
-
-    yyset_in(fp, context.scanner);
-
-    while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
-      YYSTYPE yylval;
-
-      lexerStatus = yylex(&yylval, &yylloc, context.scanner);
-
-      if        (lexerStatus >= 0) {
-        parserStatus          = yypush_parse(parser,
-                                             lexerStatus,
-                                             &yylval,
-                                             &yylloc,
-                                             &context);
-
-      } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
-        context.latestComment = yylval.pch;
-      } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
-        context.latestComment = NULL;
-      }
-    }
-
-    if (namedOnCommandLine == true) {
-      stopCountingFileTokens(context.scanner);
-    }
-
-    // Cleanup after the parser
-    yypstate_delete(parser);
-
-    // Cleanup after the lexer
-    yylex_destroy(context.scanner);
-
-    closeInputFile(fp);
-
-    // Halt now if there were parse errors.
-    USR_STOP();
-
-    if (yyblock == NULL) {
-      INT_FATAL("yyblock should always be non-NULL after yyparse()");
-    }
-
-    if (containsOnlyModules(yyblock, path) == true) {
-      ModuleSymbol* moduleLast  = 0;
-      int           moduleCount = 0;
-
-      for_alist(stmt, yyblock->body) {
-        if (DefExpr* defExpr = toDefExpr(stmt)) {
-          if (ModuleSymbol* modSym = toModuleSymbol(defExpr->sym)) {
-
-            defExpr->remove();
-
-            if (include == false) {
-              ModuleSymbol::addTopLevelModule(modSym);
-              if (namedOnCommandLine) {
-                modSym->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-              }
-            }
-
-            addModuleToDoneList(modSym);
-
-            moduleLast  = modSym;
-            moduleCount = moduleCount + 1;
-          }
-        }
-      }
-
-      if (moduleCount == 1) {
-        retval = moduleLast;
-      } else if (include) {
-        USR_FATAL(moduleLast, "included module file contains multiple modules");
-      }
-
-    } else {
-      const char* modName = filenameToModulename(path);
-
-      retval = buildModule(modName, modTag, yyblock, yyfilename, false, false, NULL);
-
-      if (include == false) {
-        ModuleSymbol::addTopLevelModule(retval);
-        if (namedOnCommandLine) {
-          retval->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
-        }
-      }
-
-      retval->addFlag(FLAG_IMPLICIT_MODULE);
-
-      addModuleToDoneList(retval);
-    }
-
-    deinitializeGlobalParserState(&yylloc);
-
-  } else {
-    fprintf(stderr,
-            "ParseFile: Unable to open \"%s\" for reading\n",
-            path);
-  }
-  if (retval && strcmp(retval->name, "IO") == 0) {
-    ioModule = retval;
-  }
-
-  return retval;
+                               bool        namedOnCommandLine) {
+  return dynoParseFile(path, modTag, namedOnCommandLine);
 }
 
-static void uASTDisplayError(const chpl::ErrorMessage& err) {
-  //astlocMarker locMarker(err.location());
+static void maybePrintModuleFile(ModTag modTag, const char* path) {
+  if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
+    if (sFirstFile) {
+      fprintf(stderr, "Parsing module files:\n");
+      sFirstFile = false;
+    }
 
-  auto loc = err.location();
+    auto msg = cleanFilename(path);
+    fprintf(stderr, "  %s\n", msg);
+  }
+}
 
+void noteParsedIncludedModule(ModuleSymbol* mod, const char* pathAstr) {
+  maybePrintModuleFile(mod->modTag, pathAstr);
+  gFilenameLookup.push_back(pathAstr);
+}
+
+static chpl::ID findIdForContainingDecl(chpl::ID id) {
+  if (id.isEmpty()) return chpl::ID();
+
+  auto ret = chpl::ID();
+  auto up = id;
+
+  while (1) {
+    up = chpl::parsing::idToParentId(gContext, up);
+    if (up.isEmpty()) break;
+    auto ast = chpl::parsing::idToAst(gContext, up);
+    INT_ASSERT(ast);
+    if (ast->isFunction() || ast->isModule()) {
+      ret = ast->id();
+      break;
+    }
+  }
+
+  return ret;
+}
+
+static const char* labelForContainingDeclFromId(chpl::ID id) {
+  if (id.isEmpty()) return nullptr;
+
+  auto ast = chpl::parsing::idToAst(gContext, id);
+  const char* preface = "function";
+  const char* name = nullptr;
+  bool doUseName = true;
+
+  if (auto fn = ast->toFunction()) {
+    name = astr(fn->name());
+
+    if (fn->name() == "init") {
+      preface = "initializer";
+      doUseName = false;
+    } else if (fn->kind() == chpl::uast::Function::ITER) {
+      preface = "iterator";
+    } else if (fn->isMethod()) {
+      preface = "method";
+    }
+  } else if (auto mod = ast->toModule()) {
+    name = astr(mod->name());
+    preface = "module";
+  }
+
+  const char* ret = (doUseName && name)
+      ? astr(preface, " '", name, "'")
+      : astr(preface);
+
+  return ret;
+}
+
+static bool shouldPrintHeaderForDecl(chpl::ID declId) {
+  if (declId.isEmpty() || declId == dynoIdForLastContainingDecl) {
+    return false;
+  }
+
+  // Always print new headers in developer mode.
+  if (developer) return true;
+
+  bool ret = true;
+  auto ast = chpl::parsing::idToAst(gContext, declId);
+  INT_ASSERT(ast);
+
+  // TODO: Could we just simplify this logic down to 'if it's an implicit
+  // module, don't print the module? Or just always print the header?
+  // Would save a bit of pain.
+  if (auto mod = ast->toModule()) {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    if (gContext->filePathForId(mod->id(), path, parentSymbolPath)) {
+      auto name = chpl::uast::Builder::filenameToModulename(path.c_str());
+      if (name == mod->name().c_str()) ret = false;
+    }
+  }
+
+  return ret;
+}
+
+// Print out 'in function/module/initializer' etc...
+static void maybePrintErrorHeader(chpl::ID id) {
+
+  // No ID associated with this error, so no UAST information.
+  if (id.isEmpty()) return;
+
+  auto declId = findIdForContainingDecl(id);
+
+  if (shouldPrintHeaderForDecl(declId)) {
+    auto declLabelStr = labelForContainingDeclFromId(declId);
+
+    // No label was created, so we have nothing to print.
+    if (declLabelStr == nullptr) return;
+
+    auto& declLoc = chpl::parsing::locateId(gContext, declId);
+    auto line = declLoc.firstLine();
+    auto path = declLoc.path();
+
+    fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
+
+    // Set so that we don't print out the same header over and over.
+    dynoIdForLastContainingDecl = declId;
+  }
+}
+
+static void dynoDisplayError(chpl::Context* context,
+                             const chpl::ErrorMessage& err) {
   const char* msg = err.message().c_str();
+  auto loc = err.computeLocation(context);
+  auto id = err.id();
 
-  switch (err.kind()) {
-    case chpl::ErrorMessage::NOTE:
-      USR_PRINT(loc,"%s", msg);
-      break;
-    case chpl::ErrorMessage::WARNING:
-      USR_WARN(loc,"%s", msg);
-      break;
-    case chpl::ErrorMessage::SYNTAX: {
-      const char* path = err.path().c_str();
-      const int line = err.line();
-      const int tagUsrFatalCont = 3;
-      setupError("parser", path, line, tagUsrFatalCont);
-      fprintf(stderr, "%s:%d: %s", path, line, "syntax error");
-      if (strlen(msg) > 0) {
-        fprintf(stderr, ": %s\n", msg);
-      } else {
-        fprintf(stderr, "\n");
-      }
-    } break;
-    case chpl::ErrorMessage::ERROR:
-      USR_FATAL_CONT(loc,"%s", msg);
-      break;
-    default:
-      INT_FATAL("Should not reach here!");
-      break;
+  // For now have syntax errors just do their own thing (mimic old parser).
+  if (err.kind() == chpl::ErrorMessage::SYNTAX) {
+    UniqueString path = loc.path();
+    const int line = loc.line();
+    const int tagUsrFatalCont = 3;
+    setupError("parser", path.c_str(), line, tagUsrFatalCont);
+    fprintf(stderr, "%s:%d: %s", path.c_str(), line, "syntax error");
+    if (strlen(msg) > 0) {
+      fprintf(stderr, ": %s\n", msg);
+    } else {
+      fprintf(stderr, "\n");
+    }
+  } else {
+    maybePrintErrorHeader(id);
+
+    switch (err.kind()) {
+      case chpl::ErrorMessage::NOTE:
+        USR_PRINT(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::WARNING:
+        USR_WARN(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::ERROR:
+        USR_FATAL_CONT(loc, "%s", msg);
+        break;
+      default:
+        INT_FATAL("Should not reach here!");
+        break;
+    }
+  }
+
+  // Also show the details if there is additional information.
+  for (const chpl::ErrorMessage& e : err.details()) {
+    dynoDisplayError(context, e);
   }
 }
 
-// TODO: Add helpers to convert locations without passing IDs.
-static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
-  uASTDisplayError(err);
-
-  for (auto& detail : err.details()) {
-    uASTDisplayError(detail);
-  }
+static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
+  auto ret = new DynoErrorHandler();
+  auto handler = chpl::toOwned<chpl::Context::ErrorHandler>(ret);
+  std::ignore = gContext->installErrorHandler(std::move(handler));
+  return ret;
 }
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
+//
+// TODO: The error handler would like to do something like fetch AST from
+// IDs, but it cannot due to the possibility of a query cycle:
+//
+// - The 'parseFileToBuilderResult' query is called
+// - Some errors are encountered
+// - Errors are reported to the context by the builder
+// - Which calls the custom error handler, which calls 'idToAst'...
+// - Which calls 'parseFileToBuilderResult' again!
+//
+// I'm sure there's a better way to avoid this cycle, but for right now
+// I am just going to store the errors and display them at a later point
+// after the parsing has completed.
+//
+// One option to fix this is to wield query powers and manually check
+// for and handle the recursion. Another option might be to make our
+// error handler more robust (e.g., make it a class, and separate out the
+// reporting and "realizing" of the errors, as we are doing here).
+//
+static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
+
+// Only install one of these for the entire session.
+static DynoErrorHandler* gDynoErrorHandler = nullptr;
+
+static bool dynoRealizeErrors(void) {
+  INT_ASSERT(gDynoErrorHandler);
+  bool hadErrors = false;
+  for (auto& err : gDynoErrorHandler->errors()) {
+    const chpl::ErrorBase* e = err.get();
+
+    if (e->kind() == chpl::ErrorBase::SYNTAX ||
+        e->kind() == chpl::ErrorBase::ERROR) {
+      // make a note if we found any errors
+      hadErrors = true;
+    }
+
+    // skip emitting warnings for '--no-warnings'
+    if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
+      continue;
+    }
+
+    if (fDetailedErrors) {
+      chpl::Context::defaultReportError(gContext, e);
+      // Use production compiler's exit-on-error functionality for errors
+      // reported via new Dyno mechanism
+      setupDynoError(e->kind());
+    } else {
+      // Try to maintain compatibility with the old reporting mechanism
+      dynoDisplayError(gContext, e->toErrorMessage(gContext));
+    }
+  }
+  gDynoErrorHandler->clear();
+  return hadErrors;
+}
+
+static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include) {
+                                   bool        namedOnCommandLine) {
   ModuleSymbol* ret = nullptr;
 
   if (gContext == nullptr) {
     INT_FATAL("compiler library context not initialized");
   }
 
-  // TODO: Move this to the point where we set up the context.
-  gContext->setErrorHandler(&uASTParseFileErrorHandler);
-
   // Do not parse if we've already done so.
-  if (haveAlreadyParsed(fileName)) {
-    return nullptr;
-  }
+  if (haveAlreadyParsed(fileName)) return nullptr;
 
-  auto path = chpl::UniqueString::get(gContext, fileName);
+  auto path = cleanLocalPath(chpl::UniqueString::get(gContext, fileName));
 
   // The 'parseFile' query gets us a builder result that we can inspect to
-  // see if there were any parse errors. The 'parse' query makes us a vector
-  // of top-level modules for easy use, but it does not reparse any modules.
-  // It simply reuses the result of the 'parseFile' query.
-  auto& builderResult = chpl::parsing::parseFile(gContext, path);
-  auto& modules = chpl::parsing::parse(gContext, path);
+  // see if there were any parse errors.
+  chpl::UniqueString emptySymbolPath;
+  auto& builderResult =
+    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
+                                                    emptySymbolPath);
+  gFilenameLookup.push_back(path.c_str());
 
-  // Any errors while building will have already been emitted by the global
-  // error handling callback that was set above. So just stop.
-  // TODO (dlongnecke): What if errors were emitted outside of / not noted
-  // by the builder result of this query?
-  if (builderResult.numErrors()) {
-    USR_STOP();
-  }
+  if (dynoRealizeErrors()) USR_STOP();
+
+  parsedPaths.push_back(path);
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
+
+  if (fDynoVerifySerialization) {
+    std::stringstream ss;
+    chpl::Serializer ser(ss);
+    builderResult.serialize(ser);
+
+    chpl::Deserializer des(gContext, ss, ser.stringCache());
+    auto res = chpl::uast::BuilderResult::deserialize(des);
+    if (builderResult.equals(res) == false) {
+      USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
+    }
+  }
 
   //
   // Cases here:
@@ -960,8 +1065,15 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   // The uAST builder will have already created a top level implicit module
   // for us, which sidesteps the case that 'parseFile' addresses.
   //
-  for (auto mod : modules) {
-    INT_ASSERT(mod != nullptr);
+  for (auto ast : builderResult.topLevelExpressions()) {
+
+    // Store the last comment for use when converting the module.
+    if (ast->isComment()) {
+      continue;
+    }
+
+    auto mod = ast->toModule();
+    INT_ASSERT(mod);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
     printf("> Dumping uAST for module %s\n", mod->name().c_str());
@@ -994,52 +1106,27 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
       got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
     }
 
-    if (!include) {
-      SET_LINENO(got);
-      ModuleSymbol::addTopLevelModule(got);
-    }
+    SET_LINENO(got);
+    ModuleSymbol::addTopLevelModule(got);
 
     lastModSym = got;
     numModSyms++;
 
-    if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
-      if (sFirstFile) {
-        fprintf(stderr, "Parsing module files:\n");
-
-        sFirstFile = false;
-      }
-
-      fprintf(stderr, "  %s\n", cleanFilename(path.c_str()));
-    }
     deinitializeGlobalParserState();
   }
 
-  // TODO (dlongnecke): We should not need this. New parser should report
-  // all errors that occurred. If we've reached this point, then the old
-  // AST should all be valid (at parse-time). When we remove this, add an
-  // assert that there are no errors.
+  maybePrintModuleFile(modTag, path.c_str());
+
+  // Try stopping one final time if there were any errors.
   USR_STOP();
 
   INT_ASSERT(lastModSym && numModSyms);
-
-  // Use this temporarily to check the contents of the implicit module.
-  // TODO (dlongnecke): Emit the errors in this helper function in the
-  // parse query instead when we have warnings (e.g. 'noteWarning').
-  if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
-    SET_LINENO(lastModSym);
-    containsOnlyModules(lastModSym->block, path.c_str());
-  }
 
   // All modules were already added to the done list in the loop above.
   // The non-uAST variant of this function returns 'nullptr' if multiple
   // top level modules were produced by parsing the file.
   if (numModSyms == 1) {
     ret = lastModSym;
-  } else {
-    if (include) {
-      auto msg = "included module file contains multiple modules";
-      USR_FATAL(lastModSym, "%s", msg);
-    }
   }
 
   // TODO: Helper function to do this.
@@ -1059,221 +1146,8 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   return ret;
 }
 
-static bool containsOnlyModules(BlockStmt* block, const char* path) {
-  int           moduleDefs     =     0;
-  bool          hasUses        = false;
-  bool          hasImports     = false;
-  bool          hasRequires    = false;
-  bool          hasOther       = false;
-  ModuleSymbol* lastModSym     =  NULL;
-  BaseAST*      lastModSymStmt =  NULL;
-  BaseAST*      firstOtherStmt =  NULL;
-
-  for_alist(stmt, block->body) {
-    if (BlockStmt* block = toBlockStmt(stmt))
-      stmt = block->body.first();
-
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      ModuleSymbol* modSym = toModuleSymbol(defExpr->sym);
-
-      if (modSym != NULL && !modSym->hasFlag(FLAG_INCLUDED_MODULE)) {
-        lastModSym     = modSym;
-        lastModSymStmt = stmt;
-
-        moduleDefs++;
-      } else {
-        hasOther = true;
-        if (firstOtherStmt == NULL)
-          firstOtherStmt = stmt;
-      }
-
-    } else if (CallExpr* callexpr = toCallExpr(stmt)) {
-      if (callexpr->isPrimitive(PRIM_REQUIRE)) {
-        hasRequires = true;
-      } else {
-        hasOther = true;
-        if (firstOtherStmt == NULL)
-          firstOtherStmt = stmt;
-      }
-
-    } else if (isUseStmt(stmt)  == true) {
-      hasUses = true;
-
-    } else if (isImportStmt(stmt) == true) {
-      hasImports = true;
-
-    } else {
-      hasOther = true;
-      if (firstOtherStmt == NULL)
-        firstOtherStmt = stmt;
-    }
-  }
-
-  if ((hasUses == true || hasImports == true || hasRequires == true) &&
-      hasOther == false &&
-      moduleDefs == 1) {
-    const char* stmtKind = "require', 'use', and/or 'import";
-
-    USR_WARN(lastModSymStmt,
-             "as written, '%s' is a sub-module of the module created for "
-             "file '%s' due to the file-level '%s' statements.  If you "
-             "meant for '%s' to be a top-level module, move the '%s' "
-             "statements into its scope.",
-             lastModSym->name,
-             path,
-             stmtKind,
-             lastModSym->name,
-             stmtKind);
-
-  } else if (moduleDefs >= 1 && (hasUses || hasOther)) {
-    USR_WARN(firstOtherStmt,
-             "This file-scope code is outside of any "
-             "explicit module declarations (e.g., module %s), "
-             "so an implicit module named '%s' is being "
-             "introduced to contain the file's contents.",
-             lastModSym->name,
-             filenameToModulename(path));
-  }
-
-  return hasUses == false &&
-    hasImports == false &&
-    hasRequires == false &&
-    hasOther == false &&
-    moduleDefs > 0;
-}
-
 static void addModuleToDoneList(ModuleSymbol* module) {
   sModDoneSet.set_add(astr(module->name));
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-
-ModuleSymbol* parseIncludedSubmodule(const char* name, const char* path) {
-  // save parser global variables to restore after parsing the submodule
-  BlockStmt*  s_yyblock = yyblock;
-  const char* s_yyfilename = yyfilename;
-  int         s_yystartlineno = yystartlineno;
-  ModTag      s_currentModuleType = currentModuleType;
-  const char* s_currentModuleName = currentModuleName;
-  int         s_chplLineno = chplLineno;
-  bool        s_chplParseString = chplParseString;
-  const char* s_chplParseStringMsg = chplParseStringMsg;
-
-  std::string curPath = path;
-
-  // compute the path of the file to include
-  size_t lastDot = curPath.rfind(".");
-  INT_ASSERT(lastDot < curPath.size());
-  std::string noDot = curPath.substr(0, lastDot);
-  std::string includeFile = noDot + "/" + name + ".chpl";
-
-  const char* modNameFromFile = filenameToModulename(curPath.c_str());
-  if (0 != strcmp(modNameFromFile, currentModuleName))
-    USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
-
-  ModuleSymbol* ret = nullptr;
-  const bool namedOnCommandLine = false;
-  const bool include = true;
-
-  if (fDynoCompilerLibrary) {
-    ret = uASTParseFile(astr(includeFile), currentModuleType,
-                        namedOnCommandLine,
-                        include);
-  } else {
-    ret = parseFile(astr(includeFile), currentModuleType,
-                    namedOnCommandLine,
-                    include);
-  }
-
-  INT_ASSERT(ret);
-
-  ret->addFlag(FLAG_INCLUDED_MODULE);
-
-  // restore parser global variables
-  yyblock = s_yyblock;
-  yyfilename = s_yyfilename;
-  yystartlineno = s_yystartlineno;
-  currentModuleType = s_currentModuleType;
-  currentModuleName = s_currentModuleName;
-  chplLineno = s_chplLineno;
-  chplParseString = s_chplParseString;
-  chplParseStringMsg = s_chplParseStringMsg;
-
-  return ret;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
-BlockStmt* parseString(const char* string,
-                       const char* path,
-                       const char* msg) {
-  // State for the lexer
-  YY_BUFFER_STATE handle       =   0;
-  int             lexerStatus  = 100;
-  YYLTYPE         yylloc;
-
-  // State for the parser
-  yypstate*       parser       = yypstate_new();
-  int             parserStatus = YYPUSH_MORE;
-  ParserContext   context;
-
-  yylex_init(&(context.scanner));
-
-  stringBufferInit();
-
-  handle              = yy_scan_string(string, context.scanner);
-
-  yyblock             = NULL;
-  yyfilename          = path;
-
-  chplParseString     = true;
-  chplParseStringMsg  = msg;
-
-  yylloc.first_line   = 1;
-  yylloc.first_column = 0;
-
-  yylloc.last_line    = 1;
-  yylloc.last_column  = 0;
-
-  while (lexerStatus != 0 && parserStatus == YYPUSH_MORE) {
-    YYSTYPE yylval;
-
-    lexerStatus  = yylex(&yylval, &yylloc, context.scanner);
-
-    if (lexerStatus >= 0) {
-      parserStatus          = yypush_parse(parser,
-                                           lexerStatus,
-                                           &yylval,
-                                           &yylloc,
-                                           &context);
-
-    } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
-      context.latestComment = yylval.pch;
-    } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
-      context.latestComment = NULL;
-    }
-  }
-
-  chplParseString    = false;
-  chplParseStringMsg = NULL;
-
-  // Cleanup after the parser
-  yypstate_delete(parser);
-
-  // Cleanup after the lexer
-  yy_delete_buffer(handle, context.scanner);
-  yylex_destroy(context.scanner);
-
-  return yyblock;
 }
 
 /************************************* | **************************************
@@ -1320,7 +1194,14 @@ static const char* searchThePath(const char*      modName,
   const char* retval   = NULL;
 
   forv_Vec(const char*, dirName, searchPath) {
-    const char* path = astr(dirName, "/", fileName);
+    std::string dirStr = dirName;
+
+    // Remove slashes at the end of the directory path
+    while (dirStr.size() > 1 && dirStr.back() == '/') {
+      dirStr.pop_back();
+    }
+
+    const char* path = astr(dirStr.c_str(), "/", fileName);
 
     if (FILE* file = openfile(path, "r", false)) {
       closefile(file);
@@ -1341,4 +1222,34 @@ static const char* searchThePath(const char*      modName,
   }
 
   return retval;
+}
+
+void parseAndConvertUast() {
+
+  // TODO: Runtime configuration of debug level for dyno parser.
+  if (debugParserLevel) {
+    INT_FATAL("The '%s' flag currently has no effect", "parser-debug");
+  }
+
+  gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
+
+  if (countTokens || printTokens) countTokensInCmdLineFiles();
+
+  addDynoLibFiles();
+
+  parseInternalModules();
+
+  parseCommandLineFiles();
+
+  checkConfigs();
+
+  postConvertApplyFixups(gContext);
+
+  // One last catchall for errors.
+  if (dynoRealizeErrors()) USR_STOP();
+
+  // Revert to using the default error handler now.
+  gContext->installErrorHandler(nullptr);
+
+  parsed = true;
 }

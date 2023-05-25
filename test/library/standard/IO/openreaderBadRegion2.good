@@ -1,0 +1,1 @@
+openreaderBadRegion2.chpl:4: error: file region's lower bound must be less than its high bound

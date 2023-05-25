@@ -1,0 +1,7 @@
+─── error in cantApplyPrivate.chpl:2 [CantApplyPrivate] ───
+  Can't apply private to the fields or methods of a class or record yet.
+  The following declaration has unsupported 'private' modifier:
+      |
+    2 |   private var a : int = 5;
+      |
+

@@ -4,12 +4,12 @@ proc typeAlias.methodTA() {
   compilerWarning("typeAlias.methodTA");
 }
 
-proc parenlessFun type return int;
+proc parenlessFun type do return int;
 proc parenlessFun.methodPLF() {
   compilerWarning("parenlessFun.methodPLF");
 }
 
-proc parenfulFun() type return int;
+proc parenfulFun() type do return int;
 proc (parenfulFun()).methodPFF() {
   compilerWarning("parenfulFun.methodPFF");
 }

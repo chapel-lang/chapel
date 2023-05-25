@@ -452,11 +452,17 @@ struct gasnete_coll_p2p_t_ {
 #endif
   uint32_t		sequence;
   
-  /* Volatile arrays of data and state for the point-to-point synchronization */
+  // Volatile arrays of data and state for the point-to-point synchronization
   uint8_t		*data;
   volatile uint32_t	*state;
   gasneti_weakatomic_t	*counter;
-    
+
+  // Allocated sizes of the arrays above
+  size_t ndata;
+  size_t nstates;
+  size_t ncounters;
+  int    finalized; // indicates that counts above should not change
+
   /* Handler-safe lock (if needed) */
   gex_HSL_t		lock;
   
@@ -466,7 +472,44 @@ struct gasnete_coll_p2p_t_ {
 };
 #endif
 
-extern gasnete_coll_p2p_t *gasnete_coll_p2p_get(uint32_t team_id, uint32_t sequence);
+#if GASNET_DEBUG
+  #define gasnete_coll_p2p_check(p2p) do { \
+    gasneti_memcheck(p2p);                                      \
+    if (p2p->nstates) gasneti_memcheck((void*)p2p->state);      \
+    else gasneti_assert(!p2p->state);                           \
+    if (p2p->ncounters) gasneti_memcheck((void*)p2p->counter);  \
+    else gasneti_assert(!p2p->counter);                         \
+    if (p2p->ndata) gasneti_memcheck(p2p->data);                \
+    else gasneti_assert(!p2p->data);                            \
+  } while (0)
+#else
+  #define gasnete_coll_p2p_check(p2p) ((void)0)
+#endif
+
+extern gasnete_coll_p2p_t *gasnete_coll_p2p_get_inner(
+                        gasnete_coll_team_t team, uint32_t sequence,
+                        size_t nstates, size_t ncounters, size_t ndata,
+                        int finalize);
+
+// Lookup/create p2p with the final sizes of fields 'state', 'counter' and 'data'
+// Further growth is prohibited after this call, and thus the caller may use these
+// three fields without fear of concurrent realloc()
+#define gasnete_coll_p2p_get_final(team,sequence,nstates,ncounters,ndata) \
+        gasnete_coll_p2p_get_inner(team,sequence,nstates,ncounters,ndata,1)
+
+// Lookup/create p2p with at least the specified sizes of fields 'state', 'counter' and 'data'
+// Since these fields are subject to realloc(), this call returns with a lock held
+#define gasnete_coll_p2p_get_locked(team,sequence,nstates,ncounters,ndata) \
+        gasnete_coll_p2p_get_inner(team,sequence,nstates,ncounters,ndata,0)
+
+// Callers of gasnete_coll_p2p_get_locked() use this call to release the lock
+// TODO: may want to use fine-grained p2p->lock instead of team->p2p_lock
+#define gasnete_coll_p2p_unlock(team,p2p) do { \
+    gasneti_assert((p2p)->team_id == (team)->team_id); \
+    gasnete_coll_p2p_check(p2p);                       \
+    gex_HSL_Unlock(&(team)->p2p_lock);                 \
+  } while (0)
+
 extern void gasnete_coll_p2p_purge(gasnete_coll_team_t team);
 extern void gasnete_tm_p2p_counting_put(gasnete_coll_op_t *op, gex_Rank_t dstrank, void *dst,
                                         void *src, size_t nbytes, uint32_t idx GASNETI_THREAD_FARG);
@@ -810,18 +853,6 @@ GASNETI_COLD extern void gasnete_count_no_scratch(gasnet_team_handle_t team);
 /*---------------------------------------------------------------------------------*/
 /* In-segment checks */
 
-/*
-* For a purely AM based conduit internal in-segment checks might always be true and other
-* conduits may also override this to allow for regions outside the normal
-* segment.  Note that this override relies on the fact that the gasnete_ calls
-* don't perform bounds checking on their own 
-*/
-#if defined(GASNET_SEGMENT_EVERYTHING) || defined(GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
-#define GASNETE_COLL_ALWAYS_IN_SEGMENT 1
-#else
-#define GASNETE_COLL_ALWAYS_IN_SEGMENT 0
-#endif
-
 /* The flags GASNET_COLL_SRC_IN_SEGMENT and GASNET_COLL_DST_IN_SEGMENT are just
 * assertions from the caller.  If they are NOT set, we will try to determine (when
 * possible) if the addresses are in-segment to allow a one-sided implementation
@@ -829,23 +860,18 @@ GASNETI_COLD extern void gasnete_count_no_scratch(gasnet_team_handle_t team);
 * gasnete_coll_segment_check returns a new set of flags.
 */
 #ifndef gasnete_coll_segment_check
-#if GASNETE_COLL_ALWAYS_IN_SEGMENT
 GASNETI_INLINE(gasnete_coll_segment_check)
 int gasnete_coll_segment_check(gasnete_coll_team_t team, int flags, 
                                int dstrooted, gasnet_image_t dstimage, const void *dst, size_t dstlen,
                                int srcrooted, gasnet_image_t srcimage, const void *src, size_t srclen) {
-  /* Everything is reachable via get/put, regardless of segment */
-  return (flags | GASNET_COLL_DST_IN_SEGMENT | GASNET_COLL_SRC_IN_SEGMENT);
+  #if GASNET_SEGMENT_EVERYTHING
+    // Everything is reachable via get/put, regardless of segment
+    return (flags | GASNET_COLL_DST_IN_SEGMENT | GASNET_COLL_SRC_IN_SEGMENT);
+  #else
+    // Only (removed) single-valued addresing would have enough info to upgrade the flags
+    return flags;
+  #endif
 }
-#else
-GASNETI_INLINE(gasnete_coll_segment_check)
-int gasnete_coll_segment_check(gasnete_coll_team_t team, int flags, 
-                               int dstrooted, gasnet_image_t dstimage, const void *dst, size_t dstlen,
-                               int srcrooted, gasnet_image_t srcimage, const void *src, size_t srclen) {
-  /* Only (removed) single-valued addresing benefited here */
-  return flags;
-}
-#endif
 #endif
 
 /*---------------------------------------------------------------------------------*/
@@ -1071,7 +1097,7 @@ int gasnete_coll_generic_upsync_acq(gasnete_coll_op_t *op, gex_Rank_t rootrank,
   if (gasneti_weakatomic_read(&data->p2p->counter[counter], 0) == count) {
     if (op->team->myrank != rootrank) {
       gasneti_local_wmb();
-      gasnete_tm_p2p_advance(op, GASNETE_COLL_TREE_GEOM_PARENT(data->tree_geom), 0, 0 GASNETI_THREAD_PASS);
+      gasnete_tm_p2p_advance(op, GASNETE_COLL_TREE_GEOM_PARENT(data->tree_geom), 0, counter GASNETI_THREAD_PASS);
     } else {
       gasneti_local_rmb();
     }
@@ -1200,7 +1226,6 @@ gasnete_coll_bcast_##FUNC_EXT(gasnet_team_handle_t team,\
                        uint32_t sequence\
                        GASNETI_THREAD_FARG)
 
-GASNETE_COLL_DECLARE_BCAST_ALG(Eager);
 GASNETE_COLL_DECLARE_BCAST_ALG(RVGet);
 GASNETE_COLL_DECLARE_BCAST_ALG(TreeRVGet);
 GASNETE_COLL_DECLARE_BCAST_ALG(RVous);
@@ -1260,7 +1285,7 @@ GASNETE_COLL_DECLARE_GATHER_ALG(RVous);
                                uint32_t sequence                        \
                                GASNETI_THREAD_FARG)
 
-GASNETE_COLL_DECLARE_GATHER_ALL_ALG(Gath);
+GASNETE_COLL_DECLARE_GATHER_ALL_ALG(GathBcast);
 GASNETE_COLL_DECLARE_GATHER_ALL_ALG(EagerDissem);
 GASNETE_COLL_DECLARE_GATHER_ALL_ALG(Dissem);
 GASNETE_COLL_DECLARE_GATHER_ALL_ALG(FlatEagerPut);

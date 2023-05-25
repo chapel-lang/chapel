@@ -1,0 +1,2 @@
+$CHPL_HOME/modules/standard/Types.chpl:nnnn: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+3

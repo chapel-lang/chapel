@@ -46,7 +46,7 @@ proc illegal() {
   // In particular, allow array initialization by reading from a channel.
   // Motivated by studies/parsec/blackscholes.chpl.
   use IO;
-  const ch: channel; // initialization is not shown - todo
+  const ch: fileReader; // initialization is not shown - todo
   var Arr3: [D] RECTYPE;
   ch.read(Arr3); //wholesale
   writeln(Arr3);

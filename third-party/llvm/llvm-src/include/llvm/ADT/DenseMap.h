@@ -5,9 +5,10 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-//
-// This file defines the DenseMap class.
-//
+///
+/// \file
+/// This file defines the DenseMap class.
+///
 //===----------------------------------------------------------------------===//
 
 #ifndef LLVM_ADT_DENSEMAP_H
@@ -136,6 +137,7 @@ public:
         }
       }
       assert(NumEntries == 0 && "Node count imbalance!");
+      (void)NumEntries;
     }
     setNumEntries(0);
     setNumTombstones(0);
@@ -905,6 +907,8 @@ class SmallDenseMap
 
 public:
   explicit SmallDenseMap(unsigned NumInitBuckets = 0) {
+    if (NumInitBuckets > InlineBuckets)
+      NumInitBuckets = NextPowerOf2(NumInitBuckets - 1);
     init(NumInitBuckets);
   }
 

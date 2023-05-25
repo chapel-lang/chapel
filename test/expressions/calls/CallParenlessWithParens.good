@@ -1,0 +1,2 @@
+CallParenlessWithParens.chpl:3: In function 'test':
+CallParenlessWithParens.chpl:4: error: unresolved access of 'int(64)' by '()'

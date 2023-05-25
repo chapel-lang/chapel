@@ -11,5 +11,5 @@ class C {
 const D = {1..3} dmapped Block({1..3});
 var A: [D] real;
 
-var myC = new borrowed C(A);
+var myC = (new owned C(A)).borrow();
 writeln("myC is: ", myC);

@@ -1,2 +1,6 @@
-bug: compiler crashes upon a borrowed->unmanaged coercion upon return
-#11456
+error message: would like to indicate the context of the error
+
+was: #11456
+
+In addition to "could not coerce", we may want the error message
+to indicate that this coercion was attempted upon a yield statement.

@@ -48,7 +48,7 @@ proc within_epsilon(a: real, b: real, eps=1e-6) {
 /* The process which runs the benchmark */
 proc kernel_trmm(dist, dim: int) {
   var still_correct = true;
-    var t:Timer;
+    var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -57,7 +57,7 @@ proc kernel_trmm(dist, dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   

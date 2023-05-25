@@ -1,0 +1,16 @@
+Hello there, just writing an input file so we can count up some
+words.  For example, file is showing up twice.  Also count.
+What else should we have show up more than once?  Well we
+can repeat all of the text.
+Hello there, just writing an input file so we can count up some
+words.  For example, file is showing up twice.  Also count.
+What else should we have show up more than once?  Well we
+can repeat all of the text.
+Hello there, just writing an input file so we can count up some
+words.  For example, file is showing up twice.  Also count.
+What else should we have show up more than once?  Well we
+can repeat all of the text.
+Hello there, just writing an input file so we can count up some
+words.  For example, file is showing up twice.  Also count.
+What else should we have show up more than once?  Well we
+can repeat all of the text.

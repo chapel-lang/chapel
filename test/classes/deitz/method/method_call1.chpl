@@ -11,7 +11,7 @@ class bar {
   }
 }
 
-var b = new borrowed bar();
+var b = (new owned bar()).borrow();
 
 foo();
 b.foo();

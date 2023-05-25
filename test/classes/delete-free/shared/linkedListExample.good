@@ -1,0 +1,4 @@
+{head = {next = {next = {next = nil, x = 1}, x = 2}, x = 3}}
+Cleaning up x=3
+Cleaning up x=2
+Cleaning up x=1

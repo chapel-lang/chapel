@@ -162,9 +162,9 @@ proc clone()
     //used to identify where should we insert a timer.
     writeln("start reduce");
     var OnePassRedObj: redObj;
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     OnePassRedObj = kmeansReduction reduce data1;
-    const endTime = getCurrentTime() - startTime;
+    const endTime = timeSinceEpoch().totalSeconds() - startTime;
 
     write("finish reduce");
     if printTiming then

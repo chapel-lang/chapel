@@ -1,0 +1,5 @@
+unstable_proc.chpl:12: In function 'main':
+unstable_proc.chpl:14: warning: This function is unstable
+unstable_proc.chpl:16: warning: This function is unstable
+What's up!
+Hey!

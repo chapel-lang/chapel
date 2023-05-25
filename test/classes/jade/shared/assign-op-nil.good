@@ -1,0 +1,12 @@
+assign-op-nil.chpl:8: warning: shared A
+assign-op-nil.chpl:15: warning: shared A?
+assign-op-nil.chpl:9: error: Illegal use of dead value
+assign-op-nil.chpl:7: note: 's' is dead due to ownership transfer here
+assign-op-nil.chpl:16: error: applying postfix-! to nil
+assign-op-nil.chpl:14: note: 's' is set to nil here
+assign-op-nil.chpl:23: error: Illegal use of dead value
+assign-op-nil.chpl:22: note: 's1' is dead due to ownership transfer here
+assign-op-nil.chpl:8: error: mention of non-nilable variable after ownership is transferred out of it
+assign-op-nil.chpl:7: note: ownership transfer occurred here
+assign-op-nil.chpl:23: error: mention of non-nilable variable after ownership is transferred out of it
+assign-op-nil.chpl:22: note: ownership transfer occurred here

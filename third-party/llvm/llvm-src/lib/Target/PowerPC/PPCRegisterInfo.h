@@ -91,6 +91,8 @@ public:
   void adjustStackMapLiveOutMask(uint32_t *Mask) const override;
 
   BitVector getReservedRegs(const MachineFunction &MF) const override;
+  bool isAsmClobberable(const MachineFunction &MF,
+                        MCRegister PhysReg) const override;
   bool isCallerPreservedPhysReg(MCRegister PhysReg,
                                 const MachineFunction &MF) const override;
 
@@ -128,6 +130,8 @@ public:
   void lowerCRBitRestore(MachineBasicBlock::iterator II,
                          unsigned FrameIndex) const;
 
+  void lowerOctWordSpilling(MachineBasicBlock::iterator II,
+                            unsigned FrameIndex) const;
   void lowerACCSpilling(MachineBasicBlock::iterator II,
                         unsigned FrameIndex) const;
   void lowerACCRestore(MachineBasicBlock::iterator II,
@@ -146,8 +150,6 @@ public:
   void eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
                            unsigned FIOperandNum,
                            RegScavenger *RS = nullptr) const override;
-
-  bool addAllocPriorityToGlobalRanges() const override { return true; }
 
   // Support for virtual base registers.
   bool needsFrameBaseReg(MachineInstr *MI, int64_t Offset) const override;
@@ -186,6 +188,10 @@ public:
     }
 
     return RegName;
+  }
+
+  bool isNonallocatableRegisterCalleeSave(MCRegister Reg) const override {
+    return Reg == PPC::LR || Reg == PPC::LR8;
   }
 };
 

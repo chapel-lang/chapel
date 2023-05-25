@@ -26,7 +26,7 @@ class array1d {
 
 }
 
-var a : borrowed array1d(int) = new borrowed array1d(int);
+var a : borrowed array1d(int) = (new owned array1d(int)).borrow();
 
 a(1) = 2;
 writeln(a(1));

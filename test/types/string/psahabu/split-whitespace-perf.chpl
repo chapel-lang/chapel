@@ -25,7 +25,7 @@ else {
 }
 
 var i: int;
-var t: Timer;
+var t: stopwatch;
 t.start();
 for s in very_long.split() {
   i += 1;

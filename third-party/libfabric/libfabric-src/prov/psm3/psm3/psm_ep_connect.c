@@ -56,7 +56,7 @@
 #include "psm_user.h"
 #include "psm_mq_internal.h"
 
-int psmi_ep_device_is_enabled(const psm2_ep_t ep, int devid);
+int psm3_ep_device_is_enabled(const psm2_ep_t ep, int devid);
 
 #if _HFI_DEBUGGING
 PSMI_ALWAYS_INLINE(
@@ -76,7 +76,7 @@ char *psmi_getdevice(int type))
 #endif
 
 psm2_error_t
-__psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epid,
+psm3_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epid,
 		 int const *array_of_epid_mask,	/* can be NULL */
 		 psm2_error_t *array_of_errors, psm2_epaddr_t *array_of_epaddr,
 		 int64_t timeout)
@@ -102,8 +102,8 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 	 */
 	if (ep == NULL || array_of_epaddr == NULL || array_of_epid == NULL ||
 	    num_of_epid < 1) {
-		err = psmi_handle_error(ep, PSM2_PARAM_ERR,
-					"Invalid psm2_ep_connect parameters");
+		err = psm3_handle_error(ep, PSM2_PARAM_ERR,
+					"Invalid psm3_ep_connect parameters");
 		goto fail_nolock;
 	}
 
@@ -129,21 +129,32 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 			epid_mask[j] = 1;
 			array_of_errors[j] = PSM2_EPID_UNKNOWN;
 			array_of_epaddr[j] = NULL;
-			if (psmi_epid_version(array_of_epid[j]) !=
-						 PSMI_EPID_VERSION
-				&& psmi_epid_version(array_of_epid[j]) !=
-					psmi_epid_version(ep->epid)) {
-					psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-					  " Mismatched version of EPID - %"PRIu64"\n"
-					  "Confirm all nodes are running the same interconnect HW and PSM version\n",
-					  psmi_epid_version(array_of_epid[j]));
+			if (psm3_epid_addr_fmt(array_of_epid[j]) != ep->addr_fmt) {
+				psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+					  " Mismatched address format: remote EP (%s): %s (%u) Local EP: %s (%u)\n"
+					  "Confirm all nodes are running the same interconnect HW, addressing format and PSM version\n",
+					  psm3_epid_fmt_addr(array_of_epid[j], 0),
+					  psm3_epid_str_addr_fmt(array_of_epid[j]),
+					  psm3_epid_addr_fmt(array_of_epid[j]),
+					  psm3_epid_str_addr_fmt(ep->epid),
+					  ep->addr_fmt);
+			}
+			if (psm3_epid_protocol(array_of_epid[j]) != psm3_epid_protocol(ep->epid)) {
+				psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+					  " Mismatched protocol: remote EP (%s): %s (%u) Local EP: %s (%u)\n"
+					  "Confirm all nodes are running the same interconnect HW, addressing format, protocol and PSM version\n",
+					  psm3_epid_fmt_addr(array_of_epid[j], 0),
+					  psm3_epid_str_protocol(array_of_epid[j]),
+					  psm3_epid_protocol(array_of_epid[j]),
+					  psm3_epid_str_protocol(ep->epid),
+					  psm3_epid_protocol(ep->epid));
 			}
 			num_toconnect++;
 		}
 		epid_mask_isdupof[j] = -1;
 	}
 
-	psmi_getenv("PSM3_CONNECT_TIMEOUT",
+	psm3_getenv("PSM3_CONNECT_TIMEOUT",
 		    "End-point minimum connection timeout. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_UINT,
 		    (union psmi_envvar_val)(timeout/SEC_ULL), &timeout_intval);
@@ -165,7 +176,7 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 	/* Look for duplicates in input array */
 	for (i = 0; i < num_of_epid; i++) {
 		for (j = i + 1; j < num_of_epid; j++) {
-			if (array_of_epid[i] == array_of_epid[j] &&
+			if (!psm3_epid_cmp_internal(array_of_epid[i], array_of_epid[j]) &&
 			    epid_mask[i] && epid_mask[j]) {
 				epid_mask[j] = 0;	/* don't connect more than once */
 				epid_mask_isdupof[j] = i;
@@ -193,27 +204,21 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 		default:
 			ptlctl = &ep->ptl_ips;	/*no-unused */
 			ptl = ep->ptl_ips.ptl;	/*no-unused */
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+			psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 					  "Unknown/unhandled PTL id %d\n",
 					  ep->devid_enabled[i]);
 			break;
 		}
-		t_left = psmi_cycles_left(t_start, timeout);
+		t_left = psm3_cycles_left(t_start, timeout);
 
-		if (_HFI_VDBG_ON) {
-			_HFI_VDBG_ALWAYS
-				("Trying to connect with device %s\n",
+		_HFI_VDBG("Trying to connect with device %s\n",
 				psmi_getdevice(ep->devid_enabled[i]));
-		}
 		if ((err = ptlctl->ep_connect(ptl, num_of_epid, array_of_epid,
 					      epid_mask, array_of_errors,
 					      array_of_epaddr,
 					      cycles_to_nanosecs(t_left)))) {
-			if (_HFI_PRDBG_ON) {
-				_HFI_PRDBG_ALWAYS
-					("Connect failure in device %s err=%d\n",
+			_HFI_PRDBG("Connect failure in device %s err=%d\n",
 					psmi_getdevice(ep->devid_enabled[i]), err);
-			}
 			goto connect_fail;
 		}
 
@@ -250,7 +255,7 @@ __psm2_ep_connect(psm2_ep_t ep, int num_of_epid, psm2_epid_t const *array_of_epi
 		c = array_of_epaddr[i]->ptlctl;
 		psmi_assert_always(c != NULL);
 		_HFI_VDBG("%-20s DEVICE %s (%p)\n",
-			  psmi_epaddr_get_name(array_of_epid[i]),
+			  psm3_epaddr_get_name(array_of_epid[i], 0),
 			  c == &ep->ptl_ips ? "nic" :
 			  (c == &ep->ptl_amsh ? "amsh" : "self"),
 			  (void *)array_of_epaddr[i]->ptlctl->ptl);
@@ -270,12 +275,12 @@ connect_fail:
 			char *deverr = "of an incorrect setting";
 			char *eperr = "";
 			char *devname = NULL;
-			if (!psmi_ep_device_is_enabled(ep, PTL_DEVID_AMSH)) {
+			if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_AMSH)) {
 				deverr =
 				    "there is no shared memory PSM3 device (shm)";
 				eperr = " shared memory";
 			} else
-			    if (!psmi_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
+			    if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
 				deverr =
 				    "there is no OPA PSM3 device (nic)";
 				eperr = " OPA";
@@ -311,7 +316,7 @@ connect_fail:
 			len = snprintf(errbuf, sizeof(errbuf) - 1,
 				       "%s", err == PSM2_TIMEOUT ?
 				       "Detected connection timeout" :
-				       psm2_error_get_string(err));
+				       psm3_error_get_string(err));
 
 		/* first pass, look for all nodes with the error */
 		for (i = 0; i < num_of_epid && len < sizeof(errbuf) - 1; i++) {
@@ -330,13 +335,13 @@ connect_fail:
 				    snprintf(errbuf + len,
 					     sizeof(errbuf) - len - 1, "%c %s",
 					     j == 0 ? ':' : ',',
-					     psmi_epaddr_get_hostname
-					     (array_of_epid[i]));
+					     psm3_epaddr_get_hostname
+					     (array_of_epid[i], 0));
 				j++;
 			}
 		}
 		errbuf[sizeof(errbuf) - 1] = '\0';
-		err = psmi_handle_error(ep, err, "%s", errbuf);
+		err = psm3_handle_error(ep, err, "%s", errbuf);
 	}
 
 fail:
@@ -351,21 +356,19 @@ fail_nolock:
 	PSM2_LOG_MSG("leaving");
 	return err;
 }
-PSMI_API_DECL(psm2_ep_connect)
 
-psm2_error_t __psm2_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
+psm2_error_t psm3_ep_disconnect(psm2_ep_t ep, int num_of_epaddr,
 				  psm2_epaddr_t *array_of_epaddr,
 				  const int *array_of_epaddr_mask,
 				  psm2_error_t *array_of_errors,
 				  int64_t timeout)
 {
-	return psm2_ep_disconnect2(ep, num_of_epaddr, array_of_epaddr,
+	return psm3_ep_disconnect2(ep, num_of_epaddr, array_of_epaddr,
 				   array_of_epaddr_mask, array_of_errors,
 				   PSM2_EP_DISCONNECT_GRACEFUL, timeout);
 }
-PSMI_API_DECL(psm2_ep_disconnect)
 
-psm2_error_t __psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
+psm2_error_t psm3_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 				  psm2_epaddr_t *array_of_epaddr,
 				  const int *array_of_epaddr_mask,
 				  psm2_error_t *array_of_errors,
@@ -393,8 +396,8 @@ psm2_error_t __psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 	 */
 	if (ep == NULL || array_of_epaddr == NULL ||
 	    num_of_epaddr < 1) {
-		err = psmi_handle_error(ep, PSM2_PARAM_ERR,
-					"Invalid psm2_ep_disconnect parameters");
+		err = psm3_handle_error(ep, PSM2_PARAM_ERR,
+					"Invalid psm3_ep_disconnect parameters");
 		goto fail_nolock;
 	}
 
@@ -424,7 +427,7 @@ psm2_error_t __psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 		epaddr_mask_isdupof[j] = -1;
 	}
 
-	psmi_getenv("PSM3_DISCONNECT_TIMEOUT",
+	psm3_getenv("PSM3_DISCONNECT_TIMEOUT",
 		    "End-point disconnection timeout over-ride. 0 for no time-out.",
 		    PSMI_ENVVAR_LEVEL_HIDDEN, PSMI_ENVVAR_TYPE_UINT,
 		    (union psmi_envvar_val)0, &timeout_intval);
@@ -474,27 +477,21 @@ psm2_error_t __psm2_ep_disconnect2(psm2_ep_t ep, int num_of_epaddr,
 		default:
 			ptlctl = &ep->ptl_ips;	/*no-unused */
 			ptl = ep->ptl_ips.ptl;	/*no-unused */
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+			psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 					  "Unknown/unhandled PTL id %d\n",
 					  ep->devid_enabled[i]);
 			break;
 		}
-		t_left = psmi_cycles_left(t_start, timeout);
+		t_left = psm3_cycles_left(t_start, timeout);
 
-		if (_HFI_CONNDBG_ON) {
-			_HFI_CONNDBG_ALWAYS
-				("Trying to disconnect with device %s\n",
+		_HFI_CONNDBG("Trying to disconnect with device %s\n",
 				psmi_getdevice(ep->devid_enabled[i]));
-		}
 		if ((err = ptlctl->ep_disconnect(ptl, (mode == PSM2_EP_DISCONNECT_FORCE),
 					      num_of_epaddr, array_of_epaddr,
 					      epaddr_mask, array_of_errors,
 					      cycles_to_nanosecs(t_left)))) {
-			if (_HFI_PRDBG_ON) {
-				_HFI_PRDBG_ALWAYS
-					("Disconnect failure in device %s err=%d\n",
+			_HFI_PRDBG("Disconnect failure in device %s err=%d\n",
 					psmi_getdevice(ep->devid_enabled[i]), err);
-			}
 			goto disconnect_fail;
 		}
 
@@ -540,12 +537,12 @@ disconnect_fail:
 			char *deverr = "of an incorrect setting";
 			char *eperr = "";
 			char *devname = NULL;
-			if (!psmi_ep_device_is_enabled(ep, PTL_DEVID_AMSH)) {
+			if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_AMSH)) {
 				deverr =
 				    "there is no shared memory PSM3 device (shm)";
 				eperr = " shared memory";
 			} else
-			    if (!psmi_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
+			    if (!psm3_ep_device_is_enabled(ep, PTL_DEVID_IPS)) {
 				deverr =
 				    "there is no OPA PSM3 device (nic)";
 				eperr = " OPA";
@@ -580,7 +577,7 @@ disconnect_fail:
 			len = snprintf(errbuf, sizeof(errbuf) - 1,
 				       "%s", err == PSM2_TIMEOUT ?
 				       "Detected disconnect timeout" :
-				       psm2_error_get_string(err));
+				       psm3_error_get_string(err));
 
 		/* first pass, look for all nodes with the error */
 		for (i = 0; i < num_of_epaddr && len < sizeof(errbuf) - 1; i++) {
@@ -597,13 +594,13 @@ disconnect_fail:
 				    snprintf(errbuf + len,
 					     sizeof(errbuf) - len - 1, "%c %s",
 					     j == 0 ? ':' : ',',
-					     array_of_epaddr[i]?psmi_epaddr_get_hostname
-					     (array_of_epaddr[i]->epid):"Unknown");
+					     array_of_epaddr[i]?psm3_epaddr_get_hostname
+					     (array_of_epaddr[i]->epid, 0):"Unknown");
 				j++;
 			}
 		}
 		errbuf[sizeof(errbuf) - 1] = '\0';
-		err = psmi_handle_error(ep, err, "%s", errbuf);
+		err = psm3_handle_error(ep, err, "%s", errbuf);
 	}
 
 fail:
@@ -618,4 +615,3 @@ fail_nolock:
 	PSM2_LOG_MSG("leaving");
 	return err;
 }
-PSMI_API_DECL(psm2_ep_disconnect2)

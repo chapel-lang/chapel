@@ -5,7 +5,7 @@ proc foo(i: int) {
   writeln(i);
 }
 
-proc bar(i: int) return n + i;
+proc bar(i: int) do return n + i;
 
 serial {
   foo(bar(1..10));

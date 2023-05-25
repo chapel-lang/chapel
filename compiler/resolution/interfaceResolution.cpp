@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,9 +50,9 @@ static const char* symstring(Symbol* sym) {
   if (!sym)
     return "<no symbol provided>";
   if (developer)
-    snprintf(nameBuff, nameBuffSize, "%s[%d]", sym->name, sym->id);
+    snprintf(nameBuff, (size_t)nameBuffSize, "%s[%d]", sym->name, sym->id);
   else
-    snprintf(nameBuff, nameBuffSize, "'%s'", sym->name);
+    snprintf(nameBuff, (size_t)nameBuffSize, "'%s'", sym->name);
   return nameBuff;
 }
 
@@ -61,9 +61,9 @@ static const char* idstring(const char* prefix, BaseAST* ast) {
   if (!ast)
     return "<no node provided>";
   if (developer)
-    snprintf(idBuff, idBuffSize, "%s [%d]", prefix, ast->id);
+    snprintf(idBuff, (size_t)idBuffSize, "%s [%d]", prefix, ast->id);
   else
-    sprintf(idBuff, "");
+    snprintf(idBuff, 1 * sizeof(char), "");
   return idBuff;
 }
 
@@ -365,6 +365,7 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
 static void markCompositeTypesForRemoval(FnSymbol* fn) {
   std::vector<DefExpr*> defExprs;
   collectDefExprs(fn, defExprs);
+  if (fn->retType) markTypeForRemovalIfNeeded(fn->retType);
   for (DefExpr* def: defExprs)
    if (! def->sym->hasFlag(FLAG_PARAM))
     if (Type* type = def->sym->type)
@@ -2359,6 +2360,16 @@ void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
       pciMap.put(elem->key, elem->value);
     }
   }
+}
+
+bool isConstrainedGenericSymbol(Symbol* sym) {
+  bool ret = false;
+  if (FnSymbol* fn = toFnSymbol(sym)) {
+    ret |= fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER);
+    ret |= fn->isConstrainedGeneric();
+  }
+  ret |= isInterfaceSymbol(sym);
+  return ret;
 }
 
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {

@@ -8,7 +8,7 @@ module FooExample {
            var isFoo: bool;
         }
 
-        var mem = try! openmem();
+        var mem = try! openMemFile();
         try! mem.writer().write('{"name":"fooOne", "id":1, "isFoo":false}');
         var reader = try! mem.reader();
         var f = new Foo();

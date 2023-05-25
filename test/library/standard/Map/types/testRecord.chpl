@@ -6,4 +6,4 @@ record T {
 
 type t = T;
 
-MapTest.testMap(t);
+MapTest.testMap(t, testIndexing = true);

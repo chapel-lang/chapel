@@ -9,13 +9,13 @@ class Child : Parent {
   var z: int;
 }
 
-var a: borrowed Child = new borrowed Child(x = 1, y = 2, z = 3);
-var b: borrowed Child = new borrowed Child(x = 10, y = 20, z = 30);
+var a: borrowed Child = (new owned Child(x = 1, y = 2, z = 3)).borrow();
+var b: borrowed Child = (new owned Child(x = 10, y = 20, z = 30)).borrow();
 
 writeln("a is ", a);
 writeln("b is ", b);
 
-var f = open("test.txt", iomode.cwr);
+var f = open("test.txt", ioMode.cwr);
 var writer = f.writer();
 writer.writeln(a);
 writer.close();

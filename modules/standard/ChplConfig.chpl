@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 /*
-Access to configuration information for the ``chpl`` compiler
+Access to configuration information for the 'chpl' compiler.
 
 This module's contents provide access to compile-time aspects of
 Chapel's configuration, such as those specified by ``CHPL_*``
@@ -39,7 +39,7 @@ module ChplConfig {
   CHPL_HOME = __primitive("get compiler variable", "CHPL_HOME");
 
   /* Deprecated */
-  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
+  @deprecated(notes="CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem")
   proc CHPL_AUX_FILESYS param :string {
     // use a proc here because the split initialization caused an
     // additional deprecation warning
@@ -90,7 +90,7 @@ module ChplConfig {
   param CHPL_GASNET_SEGMENT:string;
   CHPL_GASNET_SEGMENT = __primitive("get compiler variable", "CHPL_GASNET_SEGMENT");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* See :ref:`readme-chplenv.CHPL_LIBFABRIC` for more information. */
   param CHPL_LIBFABRIC:string;
   CHPL_LIBFABRIC = __primitive("get compiler variable", "CHPL_LIBFABRIC");
@@ -135,7 +135,7 @@ module ChplConfig {
   param CHPL_HWLOC:string;
   CHPL_HWLOC = __primitive("get compiler variable", "CHPL_HWLOC");
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* See :ref:`readme-chplenv.CHPL_JEMALLOC` for more information. */
   param CHPL_JEMALLOC:string;
   CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_TARGET_JEMALLOC");
@@ -147,4 +147,12 @@ module ChplConfig {
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   param CHPL_LLVM:string;
   CHPL_LLVM = __primitive("get compiler variable", "CHPL_LLVM");
+
+  @chpldoc.nodoc
+  param CHPL_GPU_MEM_STRATEGY:string;
+  CHPL_GPU_MEM_STRATEGY = __primitive("get compiler variable", "CHPL_GPU_MEM_STRATEGY");
+
+  @chpldoc.nodoc
+  param CHPL_GPU:string;
+  CHPL_GPU = __primitive("get compiler variable", "CHPL_GPU");
 }

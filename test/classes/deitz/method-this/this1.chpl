@@ -4,7 +4,7 @@ class D {
 
 class C {
   var d : unmanaged D = new unmanaged D();
-  proc this() ref : unmanaged D
+  proc this() ref : unmanaged D do
     return d;
 }
 

@@ -22,12 +22,13 @@
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+#include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/TargetRegistry.h"
 #include <cstdint>
 #include <string>
 
 #define GET_INSTRINFO_MC_DESC
+#define ENABLE_INSTR_PREDICATE_VERIFIER
 #include "LanaiGenInstrInfo.inc"
 
 #define GET_SUBTARGETINFO_MC_DESC
@@ -96,6 +97,9 @@ public:
   bool evaluateBranch(const MCInst &Inst, uint64_t Addr, uint64_t Size,
                       uint64_t &Target) const override {
     if (Inst.getNumOperands() == 0)
+      return false;
+    if (!isConditionalBranch(Inst) && !isUnconditionalBranch(Inst) &&
+        !isCall(Inst))
       return false;
 
     if (Info->get(Inst.getOpcode()).OpInfo[0].OperandType ==

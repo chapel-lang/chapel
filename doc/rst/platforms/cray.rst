@@ -240,8 +240,8 @@ Using Chapel on a Cray System
    second contains the program code itself; it is not intended to be
    executed directly from the shell prompt.
 
-   You can use the ``-v`` flag to see the commands used by the launcher
-   binary to start your program.
+   You can use the ``-v`` or ``--dry-run`` flags to see the commands
+   used by the launcher binary to start your program.
 
    If ``CHPL_LAUNCHER`` is ``pbs-aprun``:
 

@@ -3,4 +3,4 @@ use BigInteger;
 var a: bigint = 15;
 var b = 0;
 var res: bigint;
-res.divQ(a, b);
+divQ(res, a, b);

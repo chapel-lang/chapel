@@ -161,10 +161,10 @@ module interopWithC {
    An example of compiling a C program with a generated Chapel library using
   the generated Makefile can be found under the `interopWithC` target in the
   `Makefile
-  <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile>`_
+  <https://github.com/chapel-lang/chapel/blob/main/test/release/examples/primers/Makefile>`_
   for the primers directory, to build this source file.  An example of using the
   generated Makefile can be seen in `Makefile.cClient
-  <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile.cClient>`_.
+  <https://github.com/chapel-lang/chapel/blob/main/test/release/examples/primers/Makefile.cClient>`_.
   To build the C client, first run `make interopWithC` then run `make -f
   Makefile.cClient`.
 */ 

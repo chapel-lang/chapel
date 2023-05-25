@@ -1,0 +1,2 @@
+bug: Internal error from declaring a secondary initializer on a tuple type
+#15718

@@ -1,0 +1,109 @@
+.. default-domain:: chpl
+
+.. module:: operatorPrimaryMethods.doc
+
+operatorPrimaryMethods.doc
+==========================
+**Usage**
+
+.. code-block:: chapel
+
+   use operatorPrimaryMethods.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import operatorPrimaryMethods.doc;
+
+.. class:: Foo
+
+   .. attribute:: var x: int
+
+   .. method:: operator +(a: Foo, b: Foo)
+
+   .. method:: operator align(r: range(?i), count: Foo)
+
+   .. method:: operator by(r: range(?i), count: Foo)
+
+   .. method:: operator :(rhs: Foo, type t: Bar)
+
+   .. method:: operator #(r: range(?i), count: Foo)
+
+   .. method:: operator /=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator /(lhs: Foo, rhs: Foo)
+
+   .. method:: operator ==(lhs: Foo, rhs: Foo)
+
+   .. method:: operator **=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator **(lhs: Foo, rhs: Foo)
+
+   .. method:: operator >(lhs: Foo, rhs: Foo)
+
+   .. method:: operator >=(lhs: Foo, rhs: Foo)
+
+   .. method:: operator !=(lhs: Foo, rhs: Foo)
+
+   .. method:: operator <(lhs: Foo, rhs: Foo)
+
+   .. method:: operator <=(lhs: Foo, rhs: Foo)
+
+   .. method:: operator -=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator %(lhs: Foo, rhs: Foo)
+
+   .. method:: operator %=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator *(lhs: Foo, rhs: Foo)
+
+   .. method:: operator -(arg: Foo)
+
+   .. method:: operator +=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator +(arg: Foo)
+
+   .. method:: operator <<(lhs: Foo, rhs: Foo)
+
+   .. method:: operator <<=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator >>(lhs: Foo, rhs: Foo)
+
+   .. method:: operator >>=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator -(lhs: Foo, rhs: Foo)
+
+   .. method:: operator <=>(ref lhs: owned Foo?, ref rhs: owned Foo?)
+
+   .. method:: operator *=(ref lhs: Foo, rhs: Foo)
+
+   .. method:: operator ~(arg: Foo)
+
+.. class:: Foo2
+
+   .. attribute:: var x: bool
+
+   .. method:: operator &(lhs: Foo2, rhs: Foo2)
+
+   .. method:: operator &=(ref lhs: Foo2, rhs: Foo2)
+
+   .. method:: operator !(arg: Foo2)
+
+   .. method:: operator |(lhs: Foo2, rhs: Foo2)
+
+   .. method:: operator |=(ref lhs: Foo2, rhs: Foo2)
+
+   .. method:: operator ^(lhs: Foo2, rhs: Foo2)
+
+   .. method:: operator ^=(ref lhs: Foo2, rhs: Foo2)
+
+.. record:: Bar
+
+   .. attribute:: var y: int
+
+   .. method:: proc init=(other: Bar)
+
+   .. method:: operator  = (ref lhs: Bar, rhs: Bar)
+

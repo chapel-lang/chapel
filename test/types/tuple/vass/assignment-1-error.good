@@ -1,0 +1,2 @@
+assignment-1-error.chpl:6: In function 'test':
+assignment-1-error.chpl:7: error: cannot assign to const variable

@@ -2,6 +2,11 @@ use IO;
 
 record MyRecord {
   var i: int;
+  proc init(i: int = 0) { this.i = i; }
+  proc init(f: fileReader) throws {
+    this.init();
+    this.i = f.readln(int);
+  }
 }
 
 config const fileName = "test.txt";
@@ -9,11 +14,19 @@ config const debug = true;
 
 // Open up a file to work with.
 // Note that fileName not exist or have no contents
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
-proc MyRecord.readWriteThis(f) throws {
-  f <~> i;
-  f <~> new ioLiteral("\n");
+proc MyRecord.readThis(f) throws {
+  readWriteHelper(f);
+}
+
+proc MyRecord.writeThis(f) throws {
+  readWriteHelper(f);
+}
+
+proc MyRecord.readWriteHelper(f) throws {
+  if f.writing then f.write(i); else i = f.read(int);
+  if f.writing then f.writeNewline(); else f.readNewline();
 }
 
 {

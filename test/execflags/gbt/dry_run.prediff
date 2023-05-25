@@ -1,0 +1,22 @@
+#! /usr/bin/env python3
+
+import sys, os, re
+from dry_run_helper import sysLauncherName
+
+prog = sys.argv[1]
+with open(prog + '.good', 'w') as fGood:
+    sysLch = sysLauncherName(os.getenv('CHPL_LAUNCHER'))
+    if sysLch == None:
+        fGood.write('*** Please update %s.prediff for launcher \'%s\'\n'
+                    %(prog, os.getenv('CHPL_LAUNCHER')))
+    else:
+        with open(sys.argv[2], 'r') as fExecOut:
+            lines = fExecOut.readlines()
+            pat = ('^([A-Z0-9_]+=[^ ]*)*.*'               # env var assignments
+                   + '[^ ]*' + sysLch + '.*'              # sys launcher + args
+                   + '[^ ]*' + prog + '_real( -nl 1)?$')  # user program + args
+            if re.match(pat, lines[0]) != None:
+                fGood.writelines(lines)
+            else:
+                fGood.write('*** Unexpected %s contents for launcher \'%s\'\n'
+                            %(sys.argv[2], os.getenv('CHPL_LAUNCHER')))

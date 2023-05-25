@@ -1,2 +1,0 @@
-chapelEnv-warning.chpl:1: warning: In an upcoming release, you will need to 'use'/'import ChplConfig' in order to access 'CHPL_*' params
-true

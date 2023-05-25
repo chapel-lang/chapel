@@ -20,14 +20,14 @@ else {
 }
 
 // substring
-var tSubstring: Timer;
+var tSubstring: stopwatch;
 if timing then tSubstring.start();
 for i in 1..n do
   var substr = search[1..i];
 if timing then tSubstring.stop();
 
 // count
-var tCount: Timer;
+var tCount: stopwatch;
 var count;
 if timing then tCount.start();
 if testType == types.utf8String {
@@ -42,7 +42,7 @@ else {
 if timing then tCount.stop();
 
 // replace
-var tReplace: Timer;
+var tReplace: stopwatch;
 if timing then tReplace.start();
 if testType == types.utf8String {
   search.replace("habíahabíahabíahabía", "ía");

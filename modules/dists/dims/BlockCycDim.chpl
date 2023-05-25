@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -78,8 +78,8 @@ record BlockCyclicDim {
   const blockSize:  int;
 
   // tell the compiler these are positive
-  proc blockSizePos   return blockSize: bcdPosInt;
-  proc numLocalesPos  return numLocales: bcdPosInt;
+  proc blockSizePos do   return blockSize: bcdPosInt;
+  proc numLocalesPos do  return numLocales: bcdPosInt;
   const cycleSizePos: bcdPosInt = (blockSize:bcdPosInt) * (numLocales:bcdPosInt);
 }
 
@@ -89,10 +89,10 @@ record BlockCyclic1dom {
   param stridable: bool;
 
   // convenience
-  proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, stridable);
 
   // our range, normalized; its absolute stride
-  var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
+  var wholeR: range(idxType, boundKind.both, stridable);
   var wholeRstrideAbs: idxType;
 
   // a copy of BlockCyclicDim constants
@@ -125,7 +125,7 @@ proc type BlockCyclicDim.dsiPrivatize1d(privatizeData) {
                             numLocales = privatizeData(2));
 }
 
-proc BlockCyclicDim.dsiUsesLocalLocID1d() param return false;
+proc BlockCyclicDim.dsiUsesLocalLocID1d() param do return false;
 
 proc BlockCyclic1dom.dsiGetPrivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle, adjLowIdx);
@@ -157,9 +157,9 @@ proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
   this.storagePerCycle = reprivatizeData(2);
 }
 
-proc BlockCyclic1dom.dsiUsesLocalLocID1d() param return false;
+proc BlockCyclic1dom.dsiUsesLocalLocID1d() param do return false;
 
-proc BlockCyclic1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
+proc BlockCyclic1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param do return false;
 
 /////////// privatization - end
 
@@ -171,7 +171,7 @@ inline proc BlockCyclicDim.checkInvariants() {
   assert(numLocales > 0, "BlockCyclic1d-numLocales");
 }
 
-proc BlockCyclicDim.toString()
+proc BlockCyclicDim.toString() do
   return "BlockCyclicDim(" + numLocales:string + ", " +
          lowIdx:string + ", " + blockSize:string + ")";
 
@@ -185,7 +185,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   }
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
-  proc numMantBits(type T) param
+  proc numMantBits(type T) param do
     return numBits(T) - if isIntType(T) then 1 else 0;
 
   if isUintType(destT) {
@@ -252,7 +252,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   return result;
 }
 
-proc BlockCyclic1dom.dsiIsReplicated1d() param return false;
+proc BlockCyclic1dom.dsiIsReplicated1d() param do return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   const result = new BlockCyclic1locdom(idxType = this.idxType,
@@ -385,13 +385,13 @@ That may not be convenient in practice.
 
 /* do not use the above comment for chpldoc */
 
-inline proc BlockCyclic1dom._dsiInd0(ind: idxType): idxType
+inline proc BlockCyclic1dom._dsiInd0(ind: idxType): idxType do
   return ind + adjLowIdx;
 
-inline proc BlockCyclic1dom._dsiCycNo(ind: idxType)
+inline proc BlockCyclic1dom._dsiCycNo(ind: idxType) do
   return divfloorP2(_dsiInd0(ind), cycleSizePos): idxType;
 
-inline proc BlockCyclic1dom._dsiCycOff(ind: idxType)
+inline proc BlockCyclic1dom._dsiCycOff(ind: idxType) do
   return modP2(_dsiInd0(ind), cycleSizePos): bcdPosInt;
 
 // "formula" in the name emphasizes no sanity checking
@@ -404,19 +404,19 @@ inline proc BlockCyclic1dom._dsiLocNo_formula(ind: idxType): locIdT {
     ;
 }
 
-inline proc BlockCyclic1dom._dsiLocOff(ind: idxType)
+inline proc BlockCyclic1dom._dsiLocOff(ind: idxType) do
   return ( _dsiCycOff(ind) % blockSizePos ): stoIndexT;
 
 // hoist some common code
-inline proc BlockCyclic1dom._dsiStorageIdx2(cycNo, locOff)
+inline proc BlockCyclic1dom._dsiStorageIdx2(cycNo, locOff) do
   return mulP2(cycNo, storagePerCycle) + _divByStride(locOff);
 
 // "formula" in the name implies no sanity checking
 // in particular at the moment its type may not be stoIndexT
-inline proc BlockCyclic1dom._dsiStorageIdx_formula(ind: idxType)
+inline proc BlockCyclic1dom._dsiStorageIdx_formula(ind: idxType) do
   return _dsiStorageIdx2(_dsiCycNo(ind), _dsiLocOff(ind));
 
-inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType)
+inline proc BlockCyclic1dom._dsiStorageIdx(ind: idxType) do
   return _dsiStorageIdx_formula(ind): stoIndexT;
 
 // oblivious of 'wholeR'
@@ -432,13 +432,13 @@ inline proc BlockCyclic1dom._dsiIndicesOnCycLoc(cycNo: idxType, locNo: locIdT,
 }
 
 // Support mixing uint and int.
-inline proc mulP2(m: integral, n: bcdPosInt)
+inline proc mulP2(m: integral, n: bcdPosInt) do
   return if m.type == uint then m * (n:uint)
   else                          m * n;
-inline proc divP2(m: integral, n: bcdPosInt): m.type
+inline proc divP2(m: integral, n: bcdPosInt): m.type do
   return if m.type == uint then m / (n:uint)
   else                         (m / n): m.type;
-inline proc remP2(m: integral, n: bcdPosInt): m.type
+inline proc remP2(m: integral, n: bcdPosInt): m.type do
   return if m.type == uint then m % (n:uint)
   else                         (m % n): m.type;
 
@@ -456,7 +456,7 @@ inline proc modP2(m: integral, n: bcdPosInt) {
       // n < 0
       ( if temp <= 0 then temp else temp + n );
 }
-inline proc divfloorP2(m: integral, n: bcdPosInt) return
+inline proc divfloorP2(m: integral, n: bcdPosInt) do return
   if isNonnegative(m) then
     if true             then divP2(m, n)
     else                     (m - n - 1) / n
@@ -466,7 +466,7 @@ inline proc divfloorP2(m: integral, n: bcdPosInt) return
 
 /////////////////////////////////
 
-proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
+proc BlockCyclicDim.doDsiIndexToLocale1d(ind): locIdT {
   // keep in sync with BlockCyclic1dom._dsiLocNo_formula
   const ind0 = ind - lowIdx;
   const locNo =
@@ -481,11 +481,15 @@ proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
   return locNo;
 }
 
+proc BlockCyclicDim.dsiIndexToLocale1d(ind): locIdT {
+  return doDsiIndexToLocale1d(ind);
+}
+
 // allow uint(64) indices, but assert that they fit in int(64)
 inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   type convT = int(64);
   assert(ind <= max(convT));
-  return dsiIndexToLocale1d(ind:convT);
+  return doDsiIndexToLocale1d(ind:convT);
 }
 
 proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
@@ -500,14 +504,14 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   const prevStoragePerCycle = storagePerCycle;
   dsiSetIndicesUnimplementedCase = false;
 
-  // As of this writing, alignedLow/High are valid even for empty ranges
+  // As of this writing, low/high are valid even for empty ranges
   if stridable {
-    wholeR = rangeArg.alignedLow..rangeArg.alignedHigh by rangeArg.stride;
+    wholeR = rangeArg.low..rangeArg.high by rangeArg.stride;
     wholeRstrideAbs = abs(rangeArg.stride): idxType;
     storagePerCycle = (1 + divP2(blockSizePos-1, wholeRstrideAbs:int)): bcdPosInt;
   } else {
     assert(rangeArg.stride == 1); // ensures we can simplify things
-    wholeR = rangeArg.alignedLow..rangeArg.alignedHigh;
+    wholeR = rangeArg.low..rangeArg.high;
     wholeRstrideAbs = 0; // be sure nobody ever reads this
     storagePerCycle = blockSizePos;
   }
@@ -516,14 +520,14 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
     dsiSetIndicesUnimplementedCase = true;
 }
 
-inline proc BlockCyclic1dom._divByStride(locOff)  return
+inline proc BlockCyclic1dom._divByStride(locOff) do  return
   if stridable then ( locOff / wholeRstrideAbs ): stoIndexT
   else              locOff: stoIndexT;
 
 // _dsiStorageLow(), _dsiStorageHigh(): save a few mods and divisions
 // at the cost of potentially allocating more storage
 inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
-  const lowW = wholeR.low;
+  const lowW = wholeR.lowBound;
 
   // smallest cycNo(i) for i in wholeR
   var   lowCycNo  = _dsiCycNo(lowW): stoIndexT;
@@ -544,7 +548,7 @@ inline proc BlockCyclic1dom._dsiStorageLow(locId: locIdT): stoIndexT {
 }
 
 inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
-  const hiW = wholeR.high;
+  const hiW = wholeR.highBound;
 
   // biggest cycNo(i) for i in wholeR
   var   hiCycNo  = _dsiCycNo(hiW): stoIndexT;
@@ -571,7 +575,7 @@ proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIn
   return stoLow:stoIndexT .. stoHigh:stoIndexT;
 }
 
-proc BlockCyclic1dom.dsiStorageUsesUserIndices() param return false;
+proc BlockCyclic1dom.dsiStorageUsesUserIndices() param do return false;
 
 proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
   return (_dsiLocNo_formula(ind), _dsiStorageIdx(ind));
@@ -587,8 +591,8 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   const wholeROrig = globDD.wholeR;
   const wholeR  = globDD.wholeR +
     if zbased then globDD.adjLowIdx else 0:idxType;
-  const lowIdx  = wholeROrig.low;
-  const highIdx = wholeROrig.high;
+  const lowIdx  = wholeROrig.lowBound;
+  const highIdx = wholeROrig.highBound;
   type retT = dsiMyDensifiedRangeType1d(globDD);
   param stridable = globDD.stridable;
   compilerAssert(stridable == wholeR.stridable); // sanity
@@ -616,7 +620,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
   proc rangecast(ref r1: range(?), r2: range(?)): void {
-    compilerAssert(r1.boundedType == r2.boundedType);
+    compilerAssert(r1.bounds == r2.bounds);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
     r1._low       = r2._low: r1.idxType;
@@ -647,7 +651,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
                      if up then lowCycNo else highCycNo, locNo, zbased);
   const firstRange = wholeR[curIndices];
   _bcddb("  curIndices ", curIndices, "  firstRange ", firstRange);
-  if firstRange.low <= firstRange.high then
+  if firstRange.lowBound <= firstRange.highBound then
     yield mydensify(firstRange);
   // else nothing to yield on this locale
 
@@ -671,12 +675,12 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   advance();
   const lastRange = wholeR[curIndices];
-  if lastRange.low <= lastRange.high then
+  if lastRange.lowBound <= lastRange.highBound then
     yield mydensify(lastRange);
 }
 
 // available in a special case only, for now
-proc BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d()
+proc BlockCyclic1dom.dsiSingleTaskPerLocaleOnly1d() do
   return !BlockCyclicDim_allowParLeader ||
          !((blockSizePos:wholeR.stride.type) == wholeR.stride);
 
@@ -706,9 +710,9 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   // In this case, the densified range for *all* indices on this locale is:
   //   0..#wholeR.size by numLocales align AL
   // where
-  //   (_dsiLocNo(wholeR.low) + AL) % numLocales == this.locId
+  //   (_dsiLocNo(wholeR.lowBound) + AL) % numLocales == this.locId
 
-  const firstLoc = globDD._dsiLocNo_formula(wholeR.low) :resultIdxType;
+  const firstLoc = globDD._dsiLocNo_formula(wholeR.lowBound) :resultIdxType;
   const AL = this.locId :resultIdxType + (nLocs - firstLoc);
 
   // Here is the densified range for all indices on this locale.
@@ -718,11 +722,11 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTa
   return RangeChunk.chunk(hereDenseInds, numTasks, taskid);
 }
 
-proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type
+proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type do
   return range(idxType=globDD.idxType, stridable=globDD.stridable);
 
 proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
-  : range(stoIndexT, sliceRange.boundedType, false)
+  : range(stoIndexT, sliceRange.bounds, false)
 {
   if sliceRange.stridable {
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride
@@ -730,13 +734,13 @@ proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
   } else {
     if sliceRange.hasLowBound() {
       if sliceRange.hasHighBound() {
-        return globDD._dsiStorageIdx(sliceRange.low)..globDD._dsiStorageIdx(sliceRange.high);
+        return globDD._dsiStorageIdx(sliceRange.lowBound)..globDD._dsiStorageIdx(sliceRange.highBound);
       } else {
-        return globDD._dsiStorageIdx(sliceRange.low)..;
+        return globDD._dsiStorageIdx(sliceRange.lowBound)..;
       }
     } else {
       if sliceRange.hasHighBound() {
-        return ..globDD._dsiStorageIdx(sliceRange.high);
+        return ..globDD._dsiStorageIdx(sliceRange.highBound);
       } else {
         return ..;
       }
@@ -757,8 +761,8 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
-  const firstIdx = rangeToIterateOver.low;
-  const lastIdx = rangeToIterateOver.high;
+  const firstIdx = rangeToIterateOver.lowBound;
+  const lastIdx = rangeToIterateOver.highBound;
 
   // This rarely fires, but if so it gets rid of lots of computations.
   // In the common case it adds just 1 branch to at least 2 branches.
@@ -775,7 +779,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   const lastLocOff = _dsiLocOff(lastIdx);
 
   // shortcut
-  proc spec(start, end)  return
+  proc spec(start, end) do  return
     (locNo, _dsiStorageIdx2(cycNo, start): stoIndexT ..
              _dsiStorageIdx2(cycNo, end): stoIndexT);
 

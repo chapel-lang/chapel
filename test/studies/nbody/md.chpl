@@ -30,7 +30,7 @@ proc computeOne(b_i, b_j) {
 // a simple version of the algorithm
 proc try1() {
 
-  var tm: Timer;
+  var tm: stopwatch;
   tm.start();
 
   // "forall": parallel, distributed over D_distrib
@@ -54,7 +54,7 @@ proc try1() {
 // overlap computation and communication
 proc try2() {
 
-  var tm: Timer;
+  var tm: stopwatch;
   tm.start();
 
   // parallel over locales

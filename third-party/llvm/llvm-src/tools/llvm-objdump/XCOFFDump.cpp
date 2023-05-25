@@ -19,11 +19,11 @@
 using namespace llvm;
 using namespace llvm::object;
 
-Error objdump::getXCOFFRelocationValueString(const XCOFFObjectFile *Obj,
+Error objdump::getXCOFFRelocationValueString(const XCOFFObjectFile &Obj,
                                              const RelocationRef &Rel,
                                              SmallVectorImpl<char> &Result) {
   symbol_iterator SymI = Rel.getSymbol();
-  if (SymI == Obj->symbol_end())
+  if (SymI == Obj.symbol_end())
     return make_error<GenericBinaryError>(
         "invalid symbol reference in relocation entry",
         object_error::parse_failed);
@@ -44,9 +44,9 @@ Error objdump::getXCOFFRelocationValueString(const XCOFFObjectFile *Obj,
 }
 
 Optional<XCOFF::StorageMappingClass>
-objdump::getXCOFFSymbolCsectSMC(const XCOFFObjectFile *Obj,
+objdump::getXCOFFSymbolCsectSMC(const XCOFFObjectFile &Obj,
                                 const SymbolRef &Sym) {
-  const XCOFFSymbolRef SymRef = Obj->toSymbolRef(Sym.getRawDataRefImpl());
+  const XCOFFSymbolRef SymRef = Obj.toSymbolRef(Sym.getRawDataRefImpl());
 
   if (!SymRef.isCsectSymbol())
     return None;
@@ -58,10 +58,25 @@ objdump::getXCOFFSymbolCsectSMC(const XCOFFObjectFile *Obj,
   return CsectAuxEntOrErr.get().getStorageMappingClass();
 }
 
-bool objdump::isLabel(const XCOFFObjectFile *Obj, const SymbolRef &Sym) {
+Optional<object::SymbolRef>
+objdump::getXCOFFSymbolContainingSymbolRef(const XCOFFObjectFile &Obj,
+                                           const SymbolRef &Sym) {
+  const XCOFFSymbolRef SymRef = Obj.toSymbolRef(Sym.getRawDataRefImpl());
+  if (!SymRef.isCsectSymbol())
+    return None;
 
-  const XCOFFSymbolRef SymRef = Obj->toSymbolRef(Sym.getRawDataRefImpl());
+  Expected<XCOFFCsectAuxRef> CsectAuxEntOrErr = SymRef.getXCOFFCsectAuxRef();
+  if (!CsectAuxEntOrErr || !CsectAuxEntOrErr.get().isLabel())
+    return None;
+  uint32_t Idx =
+      static_cast<uint32_t>(CsectAuxEntOrErr.get().getSectionOrLength());
+  DataRefImpl DRI;
+  DRI.p = Obj.getSymbolByIndex(Idx);
+  return SymbolRef(DRI, &Obj);
+}
 
+bool objdump::isLabel(const XCOFFObjectFile &Obj, const SymbolRef &Sym) {
+  const XCOFFSymbolRef SymRef = Obj.toSymbolRef(Sym.getRawDataRefImpl());
   if (!SymRef.isCsectSymbol())
     return false;
 
@@ -79,8 +94,8 @@ std::string objdump::getXCOFFSymbolDescription(const SymbolInfoTy &SymbolInfo,
   std::string Result;
   // Dummy symbols have no symbol index.
   if (SymbolInfo.XCOFFSymInfo.Index)
-    Result = ("(idx: " + Twine(SymbolInfo.XCOFFSymInfo.Index.getValue()) +
-              ") " + SymbolName)
+    Result = ("(idx: " + Twine(SymbolInfo.XCOFFSymInfo.Index.value()) + ") " +
+              SymbolName)
                  .str();
   else
     Result.append(SymbolName.begin(), SymbolName.end());
@@ -88,7 +103,7 @@ std::string objdump::getXCOFFSymbolDescription(const SymbolInfoTy &SymbolInfo,
   if (SymbolInfo.XCOFFSymInfo.StorageMappingClass &&
       !SymbolInfo.XCOFFSymInfo.IsLabel) {
     const XCOFF::StorageMappingClass Smc =
-        SymbolInfo.XCOFFSymInfo.StorageMappingClass.getValue();
+        *SymbolInfo.XCOFFSymInfo.StorageMappingClass;
     Result.append(("[" + XCOFF::getMappingClassString(Smc) + "]").str());
   }
 

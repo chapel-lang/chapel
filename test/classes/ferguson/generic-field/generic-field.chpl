@@ -11,9 +11,9 @@ class GenericClass {
 
 
 proc test() {
-  var x = new borrowed GenericClass(new GenericRecord(1));
-  var y:borrowed GenericClass = new borrowed GenericClass(new GenericRecord(1));
-  var z:borrowed GenericClass(GenericRecord(int)) = new borrowed GenericClass(new GenericRecord(1));
+  var x = (new owned GenericClass(new GenericRecord(1))).borrow();
+  var y:borrowed GenericClass = (new owned GenericClass(new GenericRecord(1))).borrow();
+  var z:borrowed GenericClass(GenericRecord(int)) = (new owned GenericClass(new GenericRecord(1))).borrow();
 
   writeln(x.type:string, " ", x);
   writeln(y.type:string, " ", y);

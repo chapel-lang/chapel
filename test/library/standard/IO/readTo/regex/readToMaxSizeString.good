@@ -1,0 +1,4 @@
+BadFormatError: bad format: no match (in readTo(regex(string)) with path "test.txt" offset 0)
+abcdefg||||||1234567
+before: abcdefg after: ||||||1234567
+before: abcdefg after: ||||||1234567

@@ -84,7 +84,7 @@ module cholesky_test_unsymmetric_ranges {
       print_lower_triangle ( L );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("elemental cholesky factorization symmetric index range code\n " + 

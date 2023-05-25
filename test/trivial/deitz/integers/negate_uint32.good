@@ -1,1 +1,1 @@
--32768
+negate_uint32.chpl:3: error: illegal use of '-' on operand of type uint(32)

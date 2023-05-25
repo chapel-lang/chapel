@@ -20,11 +20,11 @@ To use AddressSanitizer with Chapel (compiler and executables):
 .. code-block:: bash
 
      export CHPL_MEM=cstdlib
+     export CHPL_HOST_MEM=cstdlib
      export CHPL_TASKS=fifo
      export CHPL_LLVM=none
      export CHPL_SANITIZE=address
      export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
-     export ASAN_OPTIONS=detect_leaks=0
 
      cd $CHPL_HOME
      make

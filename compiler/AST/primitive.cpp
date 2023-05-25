@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -56,6 +56,11 @@ returnInfoString(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoBytes(CallExpr* call) {
+  return QualifiedType(dtBytes, QUAL_VAL);
+}
+
+static QualifiedType
 returnInfoStringC(CallExpr* call) {
   return QualifiedType(dtStringC, QUAL_VAL);
 }
@@ -98,12 +103,10 @@ returnInfoInt64(CallExpr* call) {
   return QualifiedType(dtInt[INT_SIZE_64], QUAL_VAL);
 }
 
-/*
 static QualifiedType
 returnInfoUInt64(CallExpr* call) {
   return QualifiedType(dtUInt[INT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoSizeType(CallExpr* call) {
@@ -122,7 +125,6 @@ returnInfoDefaultInt(CallExpr* call) {
   return returnInfoInt64(call);
 }
 
-/*
 static QualifiedType
 returnInfoUInt32(CallExpr* call) { // unexecuted none/gasnet on 4/25/08
   return QualifiedType(dtUInt[INT_SIZE_32], QUAL_VAL);
@@ -137,7 +139,6 @@ static QualifiedType
 returnInfoReal64(CallExpr* call) {
   return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
 }
-*/
 
 static QualifiedType
 returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
@@ -442,8 +443,11 @@ returnInfoCoerce(CallExpr* call) {
     // and return that type.
     SymExpr* actualOne = toSymExpr(call->get(1));
     SymExpr* actualTwo = toSymExpr(call->get(2));
-    t = getInstantiationType(call->get(1)->getValType(), actualOne->symbol(),
+    t = getInstantiationType(actualOne->getValType(), actualOne->symbol(),
                              t, actualTwo->symbol(), call);
+    if (t == nullptr)
+      USR_FATAL(call, "could not coerce a value of type '%s' to type '%s'",
+        actualOne->getValType()->symbol->name, actualTwo->symbol()->name);
   }
 
   return QualifiedType(t, QUAL_VAL);
@@ -471,6 +475,21 @@ returnInfoToUnmanaged(CallExpr* call) {
     }
   }
   return QualifiedType(t, QUAL_VAL);
+}
+
+static QualifiedType returnInfoSecondActualTypeSymbol(CallExpr* call) {
+  auto ret = QualifiedType(dtUnknown, QUAL_VAL);
+
+  if (call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (auto ts = toTypeSymbol(se->symbol())) {
+        Type* t = ts->type;
+        ret = QualifiedType(t, QUAL_VAL);
+      }
+    }
+  }
+
+  return ret;
 }
 
 static QualifiedType
@@ -700,6 +719,9 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  // indicates the body of the initializer is now in Phase 2
+  prim_def(PRIM_INIT_DONE, "init done", returnInfoVoid);
+
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_THROW, "throw", returnInfoFirst, true, true);
@@ -789,9 +811,9 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
-  // get complex real component
+  // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
-  // get complex imag component
+  // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
@@ -859,6 +881,13 @@ initPrimitive() {
 
   // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
   prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
+
+  // If embedded inside a gpuizable loop will set the blocksize when the kernel
+  // for that loop launches.
+  prim_def(PRIM_GPU_SET_BLOCKSIZE, "gpu set blockSize", returnInfoVoid, true);
+
+  // Generates call that produces runtime error when not run by a GPU
+  prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
 
   // task primitives
   // get serial state
@@ -1039,8 +1068,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
-  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_TO_CLASS, "capture fn to class", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);
@@ -1049,10 +1078,14 @@ initPrimitive() {
   prim_def(PRIM_STRING_LENGTH_BYTES, "string_length_bytes", returnInfoDefaultInt);
   prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
   prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
+  prim_def(PRIM_STRING_ITEM, "string item", returnInfoString);
+  prim_def(PRIM_BYTES_ITEM, "bytes item", returnInfoBytes);
   prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
+  // Cast to the second argument at codegen time.
+  prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
   prim_def(PRIM_REAL_TO_INT, "real2int", returnInfoDefaultInt);
@@ -1101,6 +1134,7 @@ initPrimitive() {
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_TYPE, "is extern type", returnInfoBool);
+  prim_def(PRIM_IS_BORROWED_CLASS_TYPE, "is borrowed class type", returnInfoBool);
   prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);
@@ -1221,6 +1255,11 @@ initPrimitive() {
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 
   prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
+
+  prim_def(PRIM_UINT32_AS_REAL32, "uint32 as real32", returnInfoReal32);
+  prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
+  prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
+  prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

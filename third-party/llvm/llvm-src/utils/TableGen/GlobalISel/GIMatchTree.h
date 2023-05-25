@@ -32,11 +32,11 @@ public:
                              Optional<unsigned> OpIdx = None)
       : Name(Name), InstrID(InstrID), OpIdx(OpIdx) {}
 
-  bool isInstr() const { return !OpIdx.hasValue(); }
+  bool isInstr() const { return !OpIdx; }
   StringRef getName() const { return Name; }
   unsigned getInstrID() const { return InstrID; }
   unsigned getOpIdx() const {
-    assert(OpIdx.hasValue() && "Is not an operand binding");
+    assert(OpIdx && "Is not an operand binding");
     return *OpIdx;
   }
 };
@@ -588,7 +588,7 @@ class GIMatchTreeVRegDefPartitioner : public GIMatchTreePartitioner {
   unsigned OpIdx;
   std::vector<BitVector> TraversedEdges;
   DenseMap<unsigned, unsigned> ResultToPartition;
-  std::vector<bool> PartitionToResult;
+  BitVector PartitionToResult;
 
   void addToPartition(bool Result, unsigned LeafIdx);
 

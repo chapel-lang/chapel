@@ -1,7 +1,7 @@
-// Timers
+// stopwatches
 
 /*
-   This primer demonstrates the use of a Timer from the ``Time`` module.
+   This primer demonstrates the use of a stopwatch from the ``Time`` module.
 */
 
 //
@@ -16,9 +16,9 @@ use Time;
 config const quiet: bool = false;
 
 //
-// A ``Timer`` can be used like a stopwatch to time portions of code.
+// A ``stopwatch`` can be used to time portions of code.
 //
-var t: Timer;
+var t: stopwatch;
 
 //
 // To time a procedure, start the timer before calling the
@@ -30,31 +30,23 @@ sleep(1);
 t.stop();
 
 //
-// To report the time, use the ``elapsed()`` method.  By default, the
-// ``elapsed`` method reports time in seconds.
+// To report the time, use the ``elapsed()`` method. The ``elapsed``
+// method reports time in seconds.
 //
 if !quiet then
   writeln("A. ", t.elapsed(), " seconds");
 
 //
-// The elapsed time can also be checked in units other than
-// seconds. The supported units are: ``microseconds``, ``milliseconds``,
-// ``seconds``, ``minutes``, ``hours``.
-//
-if !quiet then
-  writeln("B. ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-
-//
-// The ``Timer`` can be started again to accumulate additional time.
+// The ``stopwatch`` can be started again to accumulate additional time.
 //
 t.start();
 sleep(1);
 t.stop();
 if !quiet then
-  writeln("C. ", t.elapsed(TimeUnits.microseconds), " microseconds");
+  writeln("C. ", t.elapsed()*1_000_000, " microseconds");
 
 //
-// To start the ``Timer`` over at zero, call the ``clear`` method.
+// To start the ``stopwatch`` over at zero, call the ``clear`` method.
 //
 t.clear();
 writeln("D. ", t.elapsed(), " seconds");
@@ -68,11 +60,11 @@ config const n = 5;
 var iterationTimes: [1..n] real;
 t.start();
 for i in 1..n {
-  var startTime = t.elapsed(TimeUnits.microseconds);
+  var startTime = t.elapsed();
   //
   // This code will be timed n times.
   //
-  iterationTimes(i) = t.elapsed(TimeUnits.microseconds) - startTime;
+  iterationTimes(i) = t.elapsed() - startTime;
 }
 t.stop();
 
@@ -87,9 +79,9 @@ t.stop();
 // idiom to time the number of seconds something will take:
 //
 
-const start = getCurrentTime();
+const start = timeSinceEpoch().totalSeconds();
 sleep(1);
-const elapsed = getCurrentTime() - start;
+const elapsed = timeSinceEpoch().totalSeconds() - start;
 
 if !quiet then
   writeln("E. ", elapsed, " seconds");

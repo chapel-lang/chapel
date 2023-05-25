@@ -6,7 +6,7 @@ class C {
   var i: int = -1;
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 
 var A: [D] int = c.i;
 

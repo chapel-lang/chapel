@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -389,7 +389,7 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
 
     if (rlim.rlim_max != RLIM_INFINITY && css > rlim.rlim_max) {
       char warning[128];
-      sprintf(warning, "call stack size capped at %lu\n",
+      snprintf(warning, sizeof(warning), "call stack size capped at %lu\n",
               (unsigned long)rlim.rlim_max);
       chpl_warning(warning, 0, 0);
 

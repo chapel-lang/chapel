@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -161,7 +161,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
 //
 // helper function for blocking index ranges
 //
-proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+proc intCeilXDivByY(x, y) do return 1 + (x - 1)/y;
 
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
@@ -215,7 +215,7 @@ proc _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-proc computeZeroBasedDomain(dom: domain)
+proc computeZeroBasedDomain(dom: domain) do
   return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {
@@ -274,7 +274,7 @@ proc densify(subs, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * range(IT, boundKind.both, true);
 
   for param d in 0..rank-1 {
     _densiCheck(isRange(subs(d)), argtypes);
@@ -288,7 +288,7 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErrors=true) : range(IT,B,true)
+proc densify(s: range(?,bounds=?B), w: range(?IT,?,stridable=true), userErrors=true) : range(IT,B,true)
 {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
@@ -329,7 +329,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
   }
 }
 
-proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridable=false), userErrors=true) : range(IT,B,S)
+proc densify(sArg: range(?,bounds=?B,stridable=?S), w: range(?IT,?,stridable=false), userErrors=true) : range(IT,B,S)
 {
   _densiEnsureBounded(sArg);
   _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
@@ -342,20 +342,21 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
 
   // todo: account for the case s.isAmbiguous()
   ensure(s.isEmpty() ||
-         // If idxType is unsigned, caller must ensure that s.low is big enough
+         // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.
-         w.low <= if isIntType(IT) then s.alignedLow else s.low);
-  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.high);
+         w.lowBound <= if isIntType(IT) then s.low else s.lowBound);
+  ensure(s.isEmpty() || !w.hasHighBound() || s.high <= w.highBound);
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
   if isUintType(IT) && s.isEmpty() then
     return 1:IT..0:IT;
 
-  return (s - w.low): range(IT,B,S);
+  return (s - w.lowBound): range(IT,B,S);
 }
 
-proc _densiEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("densify() currently requires that sub-ranges be bounded", 2);
+proc _densiEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("densify() currently requires that sub-ranges be bounded", 2);
 }
 
 // not sure what kind of relationship we want to enforce
@@ -394,7 +395,7 @@ proc unDensify(denses, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * range(IT, boundKind.both, true);
 
   for param d in 0..rank-1 {
     _undensCheck(isRange(denses(d)), argtypes);
@@ -407,10 +408,10 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
+proc unDensify(dense: range(?dIT,bounds=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
 {
   _undensEnsureBounded(dense);
-  if whole.boundedType == BoundedRangeType.boundedNone then
+  if whole.bounds == boundKind.neither then
     compilerError("unDensify(): the 'whole' argument must have at least one bound");
 
   // ensure we can call dense.first below
@@ -432,20 +433,63 @@ proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=t
   return low .. high by stride;
 }
 
-proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,stridable=false)) : range(IT,B,S)
+proc unDensify(dense: range(?,bounds=?B,stridable=?S), whole: range(?IT,?,stridable=false)) : range(IT,B,S)
 {
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
 
-  return (dense + whole.low): range(IT,B,S);
+  return (dense + whole.lowBound): range(IT,B,S);
 }
 
-proc _undensEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
+proc _undensEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
   if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogeneous tuples of ranges, but is invoked on ", argtypes:string, errlevel);
+}
+
+
+//
+// allStridesArePositive avoids run-time checks as much as possible
+// args can be: array, domain, or their DSI classes; must be rectangular
+//
+// todo: when we switch from range.stridable to an enum,
+// return param false when 1+ args have compile-time negative stride(s)
+//
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4) param
+  where asapP1(arg1) && asapP1(arg2) && asapP1(arg3) && asapP1(arg4)
+  do return true;
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4)
+  do return asap1(arg1) && asap1(arg2) && asap1(arg3) && asap1(arg4);
+
+// helpers
+
+// asap1 = All Strides Are Positive - 1 arg
+// returns a param when possible
+private proc asap1(arg) param where asapP1(arg) {
+  return true;
+}
+private proc asap1(arg) {
+  if isSubtype(arg.type, _domain) then return asapTuple(arg.dims());
+  if isSubtype(arg.type, _array)  then return asapTuple(arg.dims());
+  if isSubtype(arg.type, BaseDom) then return asapTuple(arg.dsiDims());
+  if isSubtype(arg.type, BaseArr) then return asapTuple(arg.dom.dsiDims());
+  compilerError("asap1: unsupported argument type ", arg.type:string);
+}
+
+// asapP1 = All Strides Are Positive - Param - 1 arg
+// returns true if all strides are known to be positive at compile time
+private proc asapP1(arg) param {
+  return !arg.stridable;
+}
+
+private proc asapTuple(dims: _tuple) {
+  for d in dims do if ! d.chpl_hasPositiveStride() then return false;
+  return true;
 }
 
 

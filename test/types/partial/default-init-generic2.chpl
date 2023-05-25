@@ -10,9 +10,9 @@ record R {
 }
 
 proc main() {
-  var B : R(real);
+  var B : R(real, ?);
   writeln(B.type:string, ": ", B);
 
-  var C : R(n=3);
+  var C : R(n=3, ?);
   writeln(C.type:string, ": ", C);
 }

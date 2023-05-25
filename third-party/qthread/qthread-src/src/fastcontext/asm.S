@@ -43,7 +43,7 @@
 #  define SET _qt_setmctxt
 #  define GET _qt_getmctxt
 # else
-#  error What kind of a Mac is this?
+#  error What kind of a Mac is this? If M1, use CFLAGS=-D_XOPEN_SOURCE and --disable-fastcontext --with-default-stack-size=65536 in configure.
 # endif
 #elif defined(__linux__)
 # if (QTHREAD_ASSEMBLY_ARCH == QTHREAD_ARM)

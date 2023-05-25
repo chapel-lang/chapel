@@ -107,9 +107,6 @@ class HexagonTargetLowering : public TargetLowering {
   const HexagonTargetMachine &HTM;
   const HexagonSubtarget &Subtarget;
 
-  bool CanReturnSmallStruct(const Function* CalleeFn, unsigned& RetSize)
-      const;
-
 public:
   explicit HexagonTargetLowering(const TargetMachine &TM,
                                  const HexagonSubtarget &ST);
@@ -328,7 +325,7 @@ public:
   Value *emitStoreConditional(IRBuilderBase &Builder, Value *Val, Value *Addr,
                               AtomicOrdering Ord) const override;
   AtomicExpansionKind shouldExpandAtomicLoadInIR(LoadInst *LI) const override;
-  bool shouldExpandAtomicStoreInIR(StoreInst *SI) const override;
+  AtomicExpansionKind shouldExpandAtomicStoreInIR(StoreInst *SI) const override;
   AtomicExpansionKind
   shouldExpandAtomicCmpXchgInIR(AtomicCmpXchgInst *AI) const override;
 
@@ -458,6 +455,7 @@ private:
                           SelectionDAG &DAG) const;
 
   SDValue LowerHvxBuildVector(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerHvxSplatVector(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxConcatVectors(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxExtractElement(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxInsertElement(SDValue Op, SelectionDAG &DAG) const;
@@ -468,7 +466,6 @@ private:
   SDValue LowerHvxSignExt(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxZeroExt(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxCttz(SDValue Op, SelectionDAG &DAG) const;
-  SDValue LowerHvxMul(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxMulh(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxSetCC(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxExtend(SDValue Op, SelectionDAG &DAG) const;
@@ -476,6 +473,8 @@ private:
   SDValue LowerHvxShift(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxIntrinsic(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerHvxMaskedOp(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerHvxFpExtend(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerHvxConvertFpInt(SDValue Op, SelectionDAG &DAG) const;
 
   SDValue SplitHvxPairOp(SDValue Op, SelectionDAG &DAG) const;
   SDValue SplitHvxMemOp(SDValue Op, SelectionDAG &DAG) const;

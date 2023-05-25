@@ -2,14 +2,15 @@
 import sys
 
 import overrides
+import chpl_platform
 from utils import memoize
-
 
 @memoize
 def get():
     lib_pic_val = overrides.get('CHPL_LIB_PIC')
     if not lib_pic_val:
         lib_pic_val = 'none'
+
     return lib_pic_val
 
 

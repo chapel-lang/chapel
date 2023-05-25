@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -111,6 +111,12 @@
 #else
 #define restrict
 #endif
+#endif
+
+#if defined(HAS_GPU_LOCALE) && !defined(GPU_RUNTIME_CPU) && defined(CHPL_GEN_CODE)
+#define MAYBE_GPU __host__ __device__
+#else
+#define MAYBE_GPU
 #endif
 
 

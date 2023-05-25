@@ -1,0 +1,1 @@
+redistBlock-error2.chpl:13: error: halt reached - Block distribution assignments currently require the target locale arrays to match

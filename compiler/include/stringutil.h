@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,7 +21,7 @@
 #ifndef _STRINGUTIL_H_
 #define _STRINGUTIL_H_
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/framework/UniqueString.h"
 
 using chpl::UniqueString;
 

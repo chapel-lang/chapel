@@ -38,10 +38,9 @@ In ``$CHPL_HOME/util/devel/`` - grep these files:
 
 * grepchpl    - all of the above
 
-* grepgoods   - .good files in the test subtree
-
 * grepstdchdrs - grep C files to look for std C header ``#includes``
 
-* greptests    - Chapel sources in the test subtree
-
-* greptestoutputs - .good files from the test subtree
+* greptests   - grep files in the test subtree.  Takes argument with ``-t`` to
+  specify the file type to search through (e.g. ``-t tests`` to search ``.chpl``
+  files, ``-t outputs`` to search ``.good`` and ``.bad`` files, etc), defaulting
+  to ``tests``.

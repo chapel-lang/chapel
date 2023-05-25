@@ -11,7 +11,7 @@ proc write32u(w, u: uint(32)) {
 config param filename = "write_no_flush.tmp";
 
 proc main {
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var w = f.writer(kind=ionative);
   for i in 1..5000 {
     write32u(w, i:uint(32));

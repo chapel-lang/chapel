@@ -4,7 +4,7 @@
 
 use FileSystem;
 
-for file in listdir("no/such/dir/ever") do
+for file in listDir("no/such/dir/ever") do
   writeln(file);
-for file in listdir("listdir-errors.chpl") do
+for file in listDir("listdir-errors.chpl") do
   writeln(file);

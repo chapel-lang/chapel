@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,7 +82,7 @@ void usage(const ArgumentState* arg_state,
            bool                 printEnvHelp,
            bool                 printCurrentSettings);
 
-void init_args(ArgumentState* state, const char* argv0);
+void init_args(ArgumentState* state, const char* argv0, void* mainAddr);
 
 void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc);
 

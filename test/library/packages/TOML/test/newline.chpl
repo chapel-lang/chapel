@@ -11,7 +11,5 @@ config const str: string = """[owner]
 proc main() {
   var TomlData = parseToml(str);
   writeln(TomlData);
-
-  delete TomlData;
 }
 

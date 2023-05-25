@@ -2,7 +2,7 @@ use Time;
 
 config const numTasks = 2;
 config const numIncsPerTask = 1000;
-var t: Timer;
+var t: stopwatch;
 var count$: sync int = 0;
 
 t.clear();

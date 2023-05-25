@@ -2,8 +2,8 @@
 
 class MyClass {  var x: int;  }
 
-var lhs = new borrowed MyClass();
-var rhs = new borrowed MyClass();
+var lhs = (new owned MyClass()).borrow();
+var rhs = (new owned MyClass()).borrow();
 
 lhs = rhs;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -297,7 +297,8 @@ void AstDump::visitSymExpr(SymExpr* node) {
     char         buff[bufSize + 1];
 
     snprint_imm(imm, bufSize, *var->immediate);
-    sprintf(buff, "%s%s", imm, is_imag_type(var->type) ? "i" : "");
+    snprintf(buff, sizeof(buff), "%s%s", imm,
+            is_imag_type(var->type) ? "i" : "");
 
     write(buff);
 

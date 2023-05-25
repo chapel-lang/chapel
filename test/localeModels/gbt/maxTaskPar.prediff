@@ -3,7 +3,6 @@
 # This just creates an appropriate .good.
 #
 target=$($CHPL_HOME/util/chplenv/chpl_platform.py --target)
-locModel=$($CHPL_HOME/util/chplenv/chpl_locale_model.py)
 tasks=$($CHPL_HOME/util/chplenv/chpl_tasks.py)
 
 function cores_from_lscpu_or_proc_cpuinfo() {
@@ -46,26 +45,8 @@ function cores_from_lscpu_or_proc_cpuinfo() {
 
 case $target in
   linux*|cray-xc|cygwin*)
-    case $locModel-$tasks in
-      numa-qthreads)
-        ucp=$( $CHPL_HOME/util/printchplenv --make --all --internal |
-               grep HWLOC_UNIQ_CFG_PATH |
-               cut -d= -f2 )
-        hwld=$CHPL_HOME/third-party/hwloc/install/$ucp
-        if [[ -n $hwld && -d $hwld/bin ]] ; then
-          numNuma=$( $hwld/bin/lstopo --only numa | wc -l )
-          numCores=$( $hwld/bin/lstopo --only cores | wc -l )
-          echo $numCores > $1.good
-          for (( i=0 ; $i < $numNuma ; i++ )) ; do
-            echo $(( $numCores / $numNuma )) >> $1.good
-          done
-        else
-          echo Could not find hwloc lstopo utility > $1.good
-        fi;;
-      *)
-        cores_from_lscpu_or_proc_cpuinfo
-        echo $numCores > $1.good;;
-    esac;;
+    cores_from_lscpu_or_proc_cpuinfo
+    echo $numCores > $1.good;;
 
   darwin)
     echo $( sysctl -n hw.physicalcpu ) > $1.good;;

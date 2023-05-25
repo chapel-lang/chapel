@@ -1,0 +1,4 @@
+fn-shadows-public-import.chpl:9: In function 'main':
+fn-shadows-public-import.chpl:10: error: ambiguous call 'f()'
+fn-shadows-public-import.chpl:5: note: candidates are: f()
+fn-shadows-public-import.chpl:15: note:                 f()

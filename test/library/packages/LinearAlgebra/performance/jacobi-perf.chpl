@@ -10,7 +10,7 @@ config const n = 128,
              correctness = false;
 
 
-var t: Timer;
+var t: stopwatch;
 var itern: int;
 
 // Dense

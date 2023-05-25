@@ -14,14 +14,14 @@ proc postfix!(A:[]) { var B = for a in A do a!; return B; } //#15080
 
 class Ticker {
   var name : string;
-  var tick : Timer;
+  var tick : stopwatch;
   var duration : real;
   var times : int;
 
   proc init(const in tName : string) {
     this.complete();
     name = tName;
-    tick = new Timer();
+    tick = new stopwatch();
     tick.clear();
     duration = 0.0;
     times = 0;

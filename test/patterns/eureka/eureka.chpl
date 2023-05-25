@@ -30,7 +30,7 @@ const foundD: domain(1) dmapped Block(boundingBox={0..#numLocales})
 var found: [foundD] atomic int;
 [f in found] f.write(-1); // alas, can't (yet) write this as an initial value
 
-var T: Timer;
+var T: stopwatch;
 T.start();
 
 // Do a parallel search across the locales.

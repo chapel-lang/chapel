@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ExecutionEngine/Orc/Shared/SimplePackedSerialization.h"
-#include "llvm/ExecutionEngine/Orc/LLVMSPSSerializers.h"
 #include "gtest/gtest.h"
 
 using namespace llvm;
@@ -47,7 +46,7 @@ TEST(SimplePackedSerializationTest, SPSInputBuffer) {
 }
 
 template <typename SPSTagT, typename T>
-static void blobSerializationRoundTrip(const T &Value) {
+static void spsSerializationRoundTrip(const T &Value) {
   using BST = SPSSerializationTraits<SPSTagT, T>;
 
   size_t Size = BST::size(Value);
@@ -66,24 +65,24 @@ static void blobSerializationRoundTrip(const T &Value) {
 }
 
 template <typename T> static void testFixedIntegralTypeSerialization() {
-  blobSerializationRoundTrip<T, T>(0);
-  blobSerializationRoundTrip<T, T>(static_cast<T>(1));
+  spsSerializationRoundTrip<T, T>(0);
+  spsSerializationRoundTrip<T, T>(static_cast<T>(1));
   if (std::is_signed<T>::value) {
-    blobSerializationRoundTrip<T, T>(static_cast<T>(-1));
-    blobSerializationRoundTrip<T, T>(std::numeric_limits<T>::min());
+    spsSerializationRoundTrip<T, T>(static_cast<T>(-1));
+    spsSerializationRoundTrip<T, T>(std::numeric_limits<T>::min());
   }
-  blobSerializationRoundTrip<T, T>(std::numeric_limits<T>::max());
+  spsSerializationRoundTrip<T, T>(std::numeric_limits<T>::max());
 }
 
 TEST(SimplePackedSerializationTest, BoolSerialization) {
-  blobSerializationRoundTrip<bool, bool>(true);
-  blobSerializationRoundTrip<bool, bool>(false);
+  spsSerializationRoundTrip<bool, bool>(true);
+  spsSerializationRoundTrip<bool, bool>(false);
 }
 
 TEST(SimplePackedSerializationTest, CharSerialization) {
-  blobSerializationRoundTrip<char, char>((char)0x00);
-  blobSerializationRoundTrip<char, char>((char)0xAA);
-  blobSerializationRoundTrip<char, char>((char)0xFF);
+  spsSerializationRoundTrip<char, char>((char)0x00);
+  spsSerializationRoundTrip<char, char>((char)0xAA);
+  spsSerializationRoundTrip<char, char>((char)0xFF);
 }
 
 TEST(SimplePackedSerializationTest, Int8Serialization) {
@@ -120,18 +119,22 @@ TEST(SimplePackedSerializationTest, UInt64Serialization) {
 
 TEST(SimplePackedSerializationTest, SequenceSerialization) {
   std::vector<int32_t> V({1, 2, -47, 139});
-  blobSerializationRoundTrip<SPSSequence<int32_t>, std::vector<int32_t>>(V);
+  spsSerializationRoundTrip<SPSSequence<int32_t>>(V);
 }
 
 TEST(SimplePackedSerializationTest, StringViewCharSequenceSerialization) {
   const char *HW = "Hello, world!";
-  blobSerializationRoundTrip<SPSString, StringRef>(StringRef(HW));
+  spsSerializationRoundTrip<SPSString>(StringRef(HW));
+}
+
+TEST(SimplePackedSerializationTest, StdTupleSerialization) {
+  std::tuple<int32_t, std::string, bool> P(42, "foo", true);
+  spsSerializationRoundTrip<SPSTuple<int32_t, SPSString, bool>>(P);
 }
 
 TEST(SimplePackedSerializationTest, StdPairSerialization) {
   std::pair<int32_t, std::string> P(42, "foo");
-  blobSerializationRoundTrip<SPSTuple<int32_t, SPSString>,
-                             std::pair<int32_t, std::string>>(P);
+  spsSerializationRoundTrip<SPSTuple<int32_t, SPSString>>(P);
 }
 
 TEST(SimplePackedSerializationTest, ArgListSerialization) {
@@ -162,6 +165,67 @@ TEST(SimplePackedSerializationTest, ArgListSerialization) {
 
 TEST(SimplePackedSerialization, StringMap) {
   StringMap<int32_t> M({{"A", 1}, {"B", 2}});
-  blobSerializationRoundTrip<SPSSequence<SPSTuple<SPSString, int32_t>>,
-                             StringMap<int32_t>>(M);
+  spsSerializationRoundTrip<SPSSequence<SPSTuple<SPSString, int32_t>>>(M);
+}
+
+TEST(SimplePackedSerializationTest, ArrayRef) {
+  constexpr unsigned BufferSize = 6 + 8; // "hello\0" + sizeof(uint64_t)
+  ArrayRef<char> HelloOut = "hello";
+  char Buffer[BufferSize];
+  memset(Buffer, 0, BufferSize);
+
+  SPSOutputBuffer OB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::serialize(OB, HelloOut));
+
+  ArrayRef<char> HelloIn;
+  SPSInputBuffer IB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::deserialize(IB, HelloIn));
+
+  // Output should be copied to buffer.
+  EXPECT_NE(HelloOut.data(), Buffer);
+
+  // Input should reference buffer.
+  EXPECT_LT(HelloIn.data() - Buffer, BufferSize);
+}
+
+TEST(SimplePackedSerializationTest, ArrayRefEmpty) {
+  // Make sure that empty ArrayRefs serialize and deserialize as expected.
+  // Empty ArrayRefs should not succeed even when the data field is null, and
+  // should deserialize to a default-constructed ArrayRef, not a pointer into
+  // the stream.
+  constexpr unsigned BufferSize = sizeof(uint64_t);
+  char Buffer[BufferSize];
+  memset(Buffer, 0, BufferSize);
+
+  ArrayRef<char> AOut;
+  SPSOutputBuffer OB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::serialize(OB, AOut));
+
+  ArrayRef<char> AIn;
+  SPSInputBuffer IB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::deserialize(IB, AIn));
+
+  EXPECT_EQ(AIn.data(), nullptr);
+  EXPECT_EQ(AIn.size(), 0U);
+}
+
+TEST(SimplePackedSerializationTest, StringRefEmpty) {
+  // Make sure that empty StringRefs serialize and deserialize as expected.
+  // Empty StringRefs should not succeed even when the data field is null, and
+  // should deserialize to a default-constructed StringRef, not a pointer into
+  // the stream.
+  constexpr unsigned BufferSize = sizeof(uint64_t);
+  char Buffer[BufferSize];
+  memset(Buffer, 0, BufferSize);
+
+  StringRef SROut;
+  SPSOutputBuffer OB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::serialize(OB, SROut));
+
+  StringRef SRIn;
+  SPSInputBuffer IB(Buffer, BufferSize);
+  EXPECT_TRUE(SPSArgList<SPSSequence<char>>::deserialize(IB, SRIn));
+
+  EXPECT_EQ(SRIn.data(), nullptr);
+  EXPECT_EQ(SRIn.size(), 0U);
 }

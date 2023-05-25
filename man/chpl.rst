@@ -124,6 +124,18 @@ OPTIONS
     Enable [disable] the printing of compiler warnings. Defaults to printing
     warnings.
 
+**\--[no-]warn-unknown-attribute-toolname**
+
+    [Don't] warn about attribute tool names that aren't recognized. Without this
+    warning, attributes belonging to unknown tools will be silently ignored.
+    The default is to warn about all unknown tool names.
+
+**\--using-attribute-toolname <**\ *toolname*\ **>**
+
+    Provide a tool name whose use in an attribute will not trigger an
+    "unknown tool name" warning. To provide multiple tool names, use one
+    **\--using-attribute-toolname** flag per name.
+
 *Parallelism Control Options*
 
 **\--[no-]local**
@@ -745,6 +757,10 @@ OPTIONS
 
     Print the compiler's license information.
 
+**\--print-chpl-home**
+
+    Prints the compiler's notion of $CHPL\_HOME.
+
 **\--version**
 
     Print the version number of the compiler.
@@ -797,5 +813,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

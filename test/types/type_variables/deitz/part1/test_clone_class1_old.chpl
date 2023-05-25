@@ -5,6 +5,6 @@ class foo {
   }
 }
 
-var f : borrowed foo(2) = new borrowed foo(2);
+var f : borrowed foo(2) = (new owned foo(2)).borrow();
 
 f.print();

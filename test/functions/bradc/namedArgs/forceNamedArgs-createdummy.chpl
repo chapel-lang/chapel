@@ -11,4 +11,4 @@ proc momentum(dummy: borrowed dummyarg? = nil, mass: real, velocity: real) {
 var m1 = momentum(mass=1.2, velocity=2.3);
 var m2 = momentum(velocity=2.3, mass=1.2);
 
-var m3 = momentum2(new borrowed dummyarg(), 1.2, 2.3);
+var m3 = momentum2((new owned dummyarg(), 1.2, 2.3)).borrow();

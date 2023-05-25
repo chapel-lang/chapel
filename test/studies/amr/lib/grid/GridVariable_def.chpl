@@ -115,7 +115,7 @@ proc writeTimeFile(
   meqn:    int,
   ngrids:  int,
   naux:    int,
-  outfile: channel)
+  outfile: fileWriter)
 {
 
   //==== Formatting parameters ====
@@ -146,7 +146,7 @@ proc writeTimeFile(
 proc GridVariable.writeData (
   grid_number: int,
   AMR_level:   int,
-  outfile: channel)
+  outfile: fileWriter)
 {
 
   //==== Formatting parameters ====
@@ -275,13 +275,13 @@ proc GridVariable.clawOutput(
 
 
   //==== Time file ====
-  var outfile = open(time_filename, iomode.cw).writer();
+  var outfile = open(time_filename, ioMode.cw).writer();
   writeTimeFile(time, 1, 1, 0, outfile);
   outfile.close();
   
   
   //==== Data file ====
-  outfile = open(data_filename, iomode.cw).writer();
+  outfile = open(data_filename, ioMode.cw).writer();
   this.writeData(1, 1, outfile);
   outfile.close();
 

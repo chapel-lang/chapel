@@ -23,7 +23,7 @@ Base Language Features
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
-
+   Attributes <attributes>
 
 Initializers and Generic Programming
 ------------------------------------
@@ -35,6 +35,7 @@ Initializers and Generic Programming
    The ‘init=’ Method <initequals>
    Invoking Initializers with a Generic Instantiation <initTypeAlias>
    Partial Instantiations <partialInstantiations>
+   Throwing Initializers <throwingInit>
 
 Parallel Language Features
 --------------------------
@@ -44,7 +45,6 @@ Parallel Language Features
 
    Domain Map Standard Interface <dsi>
    The ‘local’ keyword <local>
-   Locale Models <localeModels>
    Querying a Local Subdomain <subquery>
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>

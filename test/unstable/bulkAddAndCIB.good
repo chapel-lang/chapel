@@ -1,0 +1,5 @@
+bulkAddAndCIB.chpl:6: warning: createIndexBuffer() is subject to change in the future.
+bulkAddAndCIB.chpl:7: warning: createIndexBuffer() is subject to change in the future.
+bulkAddAndCIB.chpl:9: warning: bulkAdd() is subject to change in the future.
+bulkAddAndCIB.chpl:10: warning: bulkAdd() is subject to change in the future.
+bulkAddAndCIB.chpl:11: error: done

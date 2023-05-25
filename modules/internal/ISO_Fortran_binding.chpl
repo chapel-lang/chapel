@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -90,56 +90,56 @@ module ISO_Fortran_binding {
     return for_CFI_address(dv, subscripts);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_address(ref dv : CFI_cdesc_t, subscripts : c_ptr(CFI_index_t)) : c_void_ptr;
 
   inline proc CFI_allocate(ref dv: CFI_cdesc_t, lower_bounds: c_ptr(CFI_index_t), upper_bounds: c_ptr(CFI_index_t), elem_len: c_size_t): c_int {
     return for_CFI_allocate(dv, lower_bounds, upper_bounds, elem_len);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_allocate(ref dv : CFI_cdesc_t, lower_bounds : c_ptr(CFI_index_t), upper_bounds : c_ptr(CFI_index_t), elem_len : c_size_t) : c_int;
 
   inline proc CFI_deallocate(ref dv: CFI_cdesc_t): c_int {
     return for_CFI_deallocate(dv);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_deallocate(ref dv : CFI_cdesc_t) : c_int;
 
   inline proc CFI_establish(ref dv: CFI_cdesc_t, base_addr: c_void_ptr, attribute: CFI_attribute_t, type_arg: CFI_type_t, elem_len: c_size_t, rank: CFI_rank_t, extents: c_ptr(CFI_index_t)): c_int {
     return for_CFI_establish(dv, base_addr, attribute, type_arg, elem_len, rank, extents, CFI_VERSION);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_establish(ref dv : CFI_cdesc_t, base_addr : c_void_ptr, attribute : CFI_attribute_t, type_arg : CFI_type_t, elem_len : c_size_t, rank : CFI_rank_t, extents : c_ptr(CFI_index_t), version : c_int) : c_int;
 
   inline proc CFI_is_contiguous(ref dv: CFI_cdesc_t): c_int {
     return for_CFI_is_contiguous(dv);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_is_contiguous(ref dv : CFI_cdesc_t) : c_int;
 
   inline proc CFI_section(ref result: CFI_cdesc_t, ref source: CFI_cdesc_t, lower_bounds: c_ptr(CFI_index_t), upper_bounds: c_ptr(CFI_index_t), strides: c_ptr(CFI_index_t)): c_int {
     return for_CFI_section(result, source, lower_bounds, upper_bounds, strides);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_section(ref result : CFI_cdesc_t, ref source : CFI_cdesc_t, lower_bounds : c_ptr(CFI_index_t), upper_bounds : c_ptr(CFI_index_t), strides : c_ptr(CFI_index_t)) : c_int;
 
   inline proc CFI_select_part(ref result: CFI_cdesc_t, ref source: CFI_cdesc_t, displacement: c_size_t, elem_len: c_size_t): c_int {
     return for_CFI_select_part(result, source, displacement, elem_len);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_select_part(ref result : CFI_cdesc_t, ref source : CFI_cdesc_t, displacement : c_size_t, elem_len : c_size_t) : c_int;
 
   inline proc CFI_setpointer(ref result: CFI_cdesc_t, ref source: CFI_cdesc_t, lower_bounds: c_ptr(CFI_index_t)): c_int {
     return for_CFI_setpointer(result, source, lower_bounds);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern proc for_CFI_setpointer(ref result : CFI_cdesc_t, ref source : CFI_cdesc_t, lower_bounds : c_ptr(CFI_index_t)) : c_int;
 
   // ==== c2chapel typedefs ====

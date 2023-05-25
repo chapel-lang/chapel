@@ -1,0 +1,19 @@
+.. default-domain:: chpl
+
+.. module:: IrregularCommentClose
+
+IrregularCommentClose
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use IrregularCommentClose;
+
+
+or
+
+.. code-block:: chapel
+
+   import IrregularCommentClose;
+

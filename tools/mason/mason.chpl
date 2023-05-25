@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,7 @@ use MasonSystem;
 use MasonTest;
 use MasonUpdate;
 use MasonUtils;
+use MasonModules;
 use List;
 /*
 
@@ -83,7 +84,7 @@ proc main(args: [] string) throws {
   // define all the supported subcommand strings here
   var cmds = ["add","build","clean","doc","env","external","init","publish",
               "new","rm","run","search","system","test","update",
-              "help","version"];
+              "help","version","modules"];
   for cmd in cmds {
     subCmds.add(cmd,parser.addSubCommand(cmd));
   }
@@ -102,7 +103,7 @@ proc main(args: [] string) throws {
   var usedCmd:string;
   var cmdList:list(string);
   // identify which, if any, subcommand was used and collect its arguments
-  for (cmd, arg) in subCmds.items() {
+  for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
     if arg.hasValue() {
       usedCmd = cmd;
       cmdList = new list(arg.values());
@@ -129,6 +130,7 @@ proc main(args: [] string) throws {
       when "system" do masonSystem(cmdArgs);
       when "test" do masonTest(cmdArgs);
       when "update" do masonUpdate(cmdArgs);
+      when "modules" do masonModules(cmdArgs);
       when "version" do printVersion();
       otherwise {
         throw new owned MasonError("No such subcommand '%s'\ntry mason --help"

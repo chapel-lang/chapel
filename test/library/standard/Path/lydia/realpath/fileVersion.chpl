@@ -3,7 +3,7 @@ use Path;
 use IO;
 
 var filename = "../realpath/./blahblahblah.txt";
-var openedFile = open(filename, iomode.cw);
+var openedFile = open(filename, ioMode.cw);
 
 var path = realPath(openedFile);
 var shouldMatch = here.cwd() + "/blahblahblah.txt";

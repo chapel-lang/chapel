@@ -28,6 +28,7 @@ The syntax of a type is as follows:
      if-expression
      unary-expression
      binary-expression
+     expression
 
 Many expressions are syntactically allowed as a type; however not all
 expressions produce a type. For example, a call to a function is
@@ -73,7 +74,7 @@ The primitive types are summarized by the following syntax:
    primitive-type:
      'void'
      'nothing'
-     'bool' primitive-type-parameter-part[OPT]
+     'bool'
      'int' primitive-type-parameter-part[OPT]
      'uint' primitive-type-parameter-part[OPT]
      'real' primitive-type-parameter-part[OPT]
@@ -139,11 +140,9 @@ The Bool Type
 ~~~~~~~~~~~~~
 
 Chapel defines a logical data type designated by the symbol ``bool``
-with the two predefined values ``true`` and ``false``. This default
-boolean type is stored using an implementation-defined number of bits. A
-particular number of bits can be specified using a parameter value
-following the ``bool`` keyword, such as ``bool(8)`` to request an 8-bit
-boolean value. Legal sizes are 8, 16, 32, and 64 bits.
+with the two predefined values ``true`` and ``false``. Values of this
+boolean type are stored using an implementation-defined number of
+bits.
 
 Some statements require expressions of ``bool`` type and Chapel supports
 a special conversion of values to ``bool`` type when used in this
@@ -156,8 +155,8 @@ Signed and Unsigned Integral Types
 
 The integral types can be parameterized by the number of bits used to
 represent them. Valid bit-sizes are 8, 16, 32, and 64. The default
-signed integral type, ``int``, and the default unsigned integral type,
-``uint`` correspond to ``int(64)`` and ``uint(64)`` respectively.
+signed integral type, ``int``, is a synonym for ``int(64)``; and the
+default unsigned integral type, ``uint``, is a synonym for ``uint(64)``.
 
 The integral types and their ranges are given in the following table:
 
@@ -174,11 +173,15 @@ int(64), int   -9223372036854775808 9223372036854775807
 uint(64), uint 0                    18446744073709551615
 ============== ==================== ====================
 
-The unary and binary operators that are pre-defined over the integral
-types operate with 32- and 64-bit precision. Using these operators on
-integral types represented with fewer bits results in an implicit
-conversion to the corresponding 32-bit types according to the rules
-defined in :ref:`Implicit_Conversions`.
+Integer literals such as `3` have type ``int``. However, such literals
+can implicitly convert to other numeric types that can losslessly store
+the value. See :ref:`Implicit_Compile_Time_Constant_Conversions`.
+
+It is possible for overflow to occur with binary operators on integers.
+For signed integers, overflow leads to undefined behavior. For unsigned
+integers, overflow leads to wrapping according to two's complement
+arithmetic.
+
 
 .. _Real_Types:
 
@@ -268,7 +271,7 @@ The String Type
 
 Strings are a primitive type designated by the symbol ``string``
 comprised of Unicode characters in UTF-8 encoding. Their length is
-unbounded.
+unbounded. Strings are defined in :ref:`Chapter-Strings`.
 
 .. _The_Bytes_Type:
 
@@ -277,7 +280,7 @@ The Bytes Type
 
 Bytes is a primitive type designated by the symbol ``bytes`` comprised
 of arbitrary bytes. Bytes are immutable in-place and their length is
-unbounded.
+unbounded. Bytes are defined in :ref:`Chapter-Bytes`.
 
 .. _Enumerated_Types:
 

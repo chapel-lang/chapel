@@ -4,7 +4,7 @@ const n2 = n/2;
 const np = n*(n-1);
 const np2 = n2*(n2-1);
 
-inline proc sumOfI(n) return n*(n+1)/2;
+inline proc sumOfI(n) do return n*(n+1)/2;
 
 if n < 4 then halt("n must be > 4");
 

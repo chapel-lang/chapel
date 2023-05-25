@@ -1,3 +1,4 @@
+use FileSystem;
 use Subprocess;
 
 {
@@ -20,5 +21,5 @@ if printEnv {
 }
 
 
-unlink("print-args-env");
+FileSystem.remove("print-args-env");
 

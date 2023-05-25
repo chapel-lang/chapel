@@ -42,8 +42,8 @@ def get_compile_args():
 def get_link_args():
     hwloc_val = get()
     if hwloc_val == 'bundled':
-        return third_party_utils.get_bundled_link_args('hwloc',
-                                                       ucp=get_uniq_cfg_path())
+        return third_party_utils.pkgconfig_get_bundled_link_args(
+                                          'hwloc', ucp=get_uniq_cfg_path())
     elif hwloc_val == 'system':
         # Check that hwloc version is OK
         okversions = ('1.11.5', '1.11.6', '1.11.7', '1.11.8', '1.11.9', '1.11.10', '1.11.11', '1.11.12', '1.11.13')

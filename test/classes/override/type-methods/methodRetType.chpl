@@ -15,7 +15,7 @@ class Animal {
 }
 
 class Cat: Animal {
-  var x: int = 0;
+  var m: int = 0;
   override proc getBuildingType() type { return Tower; }
   override proc getSelfType() type { return this.type; }
 }

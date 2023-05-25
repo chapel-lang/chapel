@@ -1,4 +1,5 @@
 use IO;
+import OS.errorCode;
 
 extern record R {
   var a,b,c,d,e,f,g,h,i,j,k: int(64);
@@ -10,7 +11,7 @@ proc printR(r:R) {
 
 proc testSyserr() {
   writeln("testSyserr");
-  var x:syserr;
+  var x:errorCode;
   writeln(x:int);
 }
 testSyserr();
@@ -24,7 +25,7 @@ testMystruct();
 
 proc testSyserrArr() {
   writeln("testSyserrArr");
-  var A:[1..3] syserr;
+  var A:[1..3] errorCode;
   for x in A {
     writeln(x:int);
   }
@@ -41,7 +42,7 @@ proc testMystructArr() {
 testMystructArr();
 
 writeln("global syserr");
-var globSysErr: syserr;
+var globSysErr: errorCode;
 writeln(globSysErr:int);
 
 writeln("global mystruct");

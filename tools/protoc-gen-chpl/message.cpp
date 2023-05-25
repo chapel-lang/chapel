@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -182,7 +182,7 @@ namespace chapel {
               "  $field_name$ = $proto_field_type$Consume(binCh, $type_name$);\n");
           } else {
             printer->Print(vars[i],
-              "  $field_name$.extend($proto_field_type$RepeatedConsume(binCh, $type_name$));\n");
+              "  $field_name$.pushBack($proto_field_type$RepeatedConsume(binCh, $type_name$));\n");
           }
         } else if(vars[i]["proto_field_type"] == "enum") {
           if(vars[i]["is_repeated"] == "0") {
@@ -198,7 +198,7 @@ namespace chapel {
               "  $field_name$ = $proto_field_type$Consume(binCh);\n");
           } else {
             printer->Print(vars[i],
-              "  $field_name$.extend($proto_field_type$RepeatedConsume(binCh));\n");
+              "  $field_name$.pushBack($proto_field_type$RepeatedConsume(binCh));\n");
           }
         }
 

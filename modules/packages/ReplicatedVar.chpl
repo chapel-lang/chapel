@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -118,7 +118,7 @@ private proc _rcTargetLocalesHelper(replicatedVar: [?D])
   return replicatedVar.targetLocales();
 }
 
-pragma "no doc" // documented with the following entry
+@chpldoc.nodoc // documented with the following entry
 proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
 { compilerError("the domain of first argument to rcReplicate()", _rcErr1); }
 
@@ -133,7 +133,7 @@ proc rcReplicate(replicatedVar: [?D] ?MYTYPE, valToReplicate: MYTYPE): void
       replicatedVar[rcDomainIx] = valToReplicate;
 }
 
-pragma "no doc" // documented with the following entry
+@chpldoc.nodoc // documented with the following entry
 proc rcCollect(replicatedVar: [?D] ?MYTYPE, collected: [?CD] MYTYPE): void
   where ! isSubtype(_to_borrowed(replicatedVar._value.type), ReplicatedArr)
 { compilerError("the domain of first argument to rcCollect()", _rcErr1); }
@@ -180,7 +180,7 @@ proc rcRemote(replicatedVar: [?D] ?MYTYPE, remoteLoc: locale) ref: MYTYPE {
 // - stores 'newVal' into its copy on the locale 'newLocale',
 // - collects all its copies into an array 'collected'.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExample(initVal: ?MyType, newVal: MyType, newLocale: locale): void {
   writeln("starting rcExample");
 
@@ -229,7 +229,7 @@ private proc writeReplicands(RV, locs) {
 // This is the same as 'rcExample', except the user can provide
 // specific locales to replicate over. The two differences are marked.
 //
-pragma "no doc" // TODO: move to a primer
+@chpldoc.nodoc // TODO: move to a primer
 proc rcExampleOverLocales(initVal: ?MyType, newVal: MyType, newLocale: locale,
                           localesToReplicateOver: [] locale = Locales): void {
   writeln("starting rcExampleOverLocales over ", localesToReplicateOver);

@@ -20,7 +20,7 @@ proc test(dom : domain) {
   {
     // Create a tuple of ranges where the first dimension is halved
     var rs : rank*Space.dim(0).type;
-    rs(0) = dom.dim(0)[dom.dim(0).low..dom.dim(0).high/2];
+    rs(0) = dom.dim(0)[dom.dim(0).lowBound..dom.dim(0).highBound/2];
     for param i in 1..rank-1 do rs(i) = dom.dim(i);
 
     var HalfDom = Space[(...rs)];
@@ -55,8 +55,8 @@ proc test(dom : domain) {
       // Translate our index if needed
       if !Space.contains(idx) {
         for param i in 0..rank-1 {
-          if idx(i) < Space.dim(i).low then idx(i) += Space.dim(i).size * abstr(i);
-          else if idx(i) > Space.dim(i).high then idx(i) -= Space.dim(i).size * abstr(i);
+          if idx(i) < Space.dim(i).lowBound then idx(i) += Space.dim(i).size * abstr(i);
+          else if idx(i) > Space.dim(i).highBound then idx(i) -= Space.dim(i).size * abstr(i);
         }
       }
 

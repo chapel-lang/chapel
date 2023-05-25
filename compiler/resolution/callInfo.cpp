@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -205,7 +205,18 @@ const char* CallInfo::toString() {
 
         snprint_imm(buff, bufSize, *var->immediate);
 
-        retval = astr(retval, buff);
+        std::string s = buff;
+        if (is_imag_type(type))
+          s += 'i';
+
+        // Add the type if it's not default
+        if (isNumericParamDefaultType(type) == false &&
+            type != dtUnknown && type != dtString && type != dtBytes) {
+          s += ": ";
+          s += ::toString(type);
+        }
+
+        retval = astr(retval, s.c_str());
       }
 
     } else {

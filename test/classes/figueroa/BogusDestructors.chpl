@@ -1,4 +1,4 @@
-// See also: test/classes/deinitializers/deinitAndDestruct
+
 
 class C {
   proc deinit () {writeln("inside ~C");}

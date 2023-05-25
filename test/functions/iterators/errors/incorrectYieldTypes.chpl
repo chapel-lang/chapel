@@ -1,5 +1,5 @@
 
-proc myYieldType() type return int;
+proc myYieldType() type do return int;
 
 iter IT(): myYieldType() {
   if numLocales > 1 then

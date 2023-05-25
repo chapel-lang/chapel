@@ -118,13 +118,13 @@ config var reproducible = false, verbose = false;
 
   initAB();
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();     // capture the start time
 
   LUFactorize(n, piv);                 // compute the LU factorization
 
   var x = backwardSub(n);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
 
   //
   // Validate the answer and print the results

@@ -11,7 +11,7 @@ class foo {
 
 
 
-var f1 : borrowed foo = new borrowed foo();
+var f1 : borrowed foo = (new owned foo()).borrow();
 
 f1.primary();
 f1.secondary();
@@ -19,7 +19,7 @@ f1.secondary();
 
 
 
-var f2 : borrowed foo = new borrowed foo();
+var f2 : borrowed foo = (new owned foo()).borrow();
 f2.i = 4;
 
 f2.primary();

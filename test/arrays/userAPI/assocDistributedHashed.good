@@ -2,10 +2,11 @@
 ----------------
 eltType is: real(64)
 idxType is: string
+fullIdxType is: string
 rank is: 1
 
 size is: 13
-shape is: (13)
+shape is: (13,)
 
 X is:
 [eight => 8.0, five => 5.0, four => 4.0, half => 0.5, nine => 9.0, one => 1.0, pointone => 0.1, seven => 7.0, six => 6.0, ten => 10.0, three => 3.0, two => 2.0, zero => 0.0]
@@ -43,8 +44,7 @@ local subdomains:
 {half, one, pointone, zero}
 
 is empty: false
-find last: (true, half)
-count last: 1
+find 10.6: true, ten
 equals same: true
 equals diff: false
 

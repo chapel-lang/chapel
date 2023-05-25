@@ -12,7 +12,7 @@ proc modifyBlankArgElement(tup: (?t,)) where isIntegralType(t) {
   tup[0] = 64;
 }
 
-proc modifyBlankArgElement(tup: (?t,)) where isFloatType(t) {
+proc modifyBlankArgElement(tup: (?t,)) where isRealType(t) || isImagType(t) {
   tup[0] = 64.0:t;
 }
 
@@ -33,7 +33,7 @@ proc modifyBlankArgElement(tup: (shared C?,)) {
 }
 
 proc modifyBlankArgElement(tup: (borrowed C?,)) {
-  tup[0] = new borrowed C?(64);
+  tup[0] = (new owned C?(64)).borrow();
 }
 
 proc modifyBlankArgElement(tup: (unmanaged C?,)) {
@@ -147,7 +147,7 @@ proc test() {
   run(new shared C?());
 
   // borrowed, OK
-  run(new borrowed C?());
+  run((new owned C?()).borrow());
 
   // unmanaged, OK
   run(new unmanaged C?());

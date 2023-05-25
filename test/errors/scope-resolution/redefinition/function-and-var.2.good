@@ -1,0 +1,13 @@
+─── error in function-and-var.chpl:2 [Redefinition] ───
+  'foo' has multiple definitions.
+  It was first defined here:
+      |
+    2 |   proc foo(x: int) { }
+      |        ⎺⎺⎺
+      |
+  Redefined here:
+      |
+    3 |   var foo: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

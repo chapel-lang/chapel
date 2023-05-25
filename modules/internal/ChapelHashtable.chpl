@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,7 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
-  private use CTypes;
+  private use CTypes, Math, OS.POSIX;
 
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
@@ -78,17 +78,29 @@ module ChapelHashtable {
       }
       when ArrayInit.serialInit {
         for slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
       when ArrayInit.parallelInit {
         // This should match the 'these' iterator in terms of idx->task
         forall slot in _allSlots(size) {
-          c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+        }
+      }
+      when ArrayInit.gpuInit {
+        use ChplConfig;
+        if CHPL_LOCALE_MODEL=="gpu" {
+          extern proc chpl_gpu_memset(addr, byte, numBytes);
+          foreach slot in _allSlots(size) {
+            chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        else {
+          halt("ArrayInit.gpuInit should not have been selected");
         }
       }
       otherwise {
-        halt("ArrayInit.heuristicInit should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been implemented");
       }
     }
 
@@ -235,7 +247,7 @@ module ChapelHashtable {
 
     const startingSize: int;
 
-    proc init(type keyType, type valType, resizeThreshold=0.5,
+    proc init(type keyType, type valType, resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       if isDomainType(keyType) then
@@ -263,8 +275,8 @@ module ChapelHashtable {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
       if _typeNeedsDeinit(keyType) || _typeNeedsDeinit(valType) {
-        if _deinitElementsIsParallel(keyType) &&
-           _deinitElementsIsParallel(valType) {
+        if (!_typeNeedsDeinit(keyType) || _deinitElementsIsParallel(keyType, tableSize)) &&
+           (!_typeNeedsDeinit(valType) || _deinitElementsIsParallel(valType, tableSize)) {
           forall slot in _allSlots(tableSize) {
             ref aSlot = table[slot];
             if _isSlotFull(aSlot) {
@@ -424,7 +436,7 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
-      use Memory.Initialization;
+      use MemMove;
 
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
@@ -469,11 +481,11 @@ module ChapelHashtable {
     // Returns the key and value that were removed in the out arguments
     proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
-      use Memory.Initialization;
+      use MemMove;
 
       // move the table entry into the key/val variables to be returned
-      key = moveToValue(tableEntry.key);
-      val = moveToValue(tableEntry.val);
+      key = moveFrom(tableEntry.key);
+      val = moveFrom(tableEntry.val);
 
       // set the slot status to deleted
       tableEntry.status = chpl__hash_status.deleted;
@@ -534,7 +546,7 @@ module ChapelHashtable {
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSize:int) {
-      use Memory.Initialization;
+      use MemMove;
 
       // save the old table
       var oldSize = tableSize;
@@ -581,8 +593,8 @@ module ChapelHashtable {
             // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            moveInitialize(dstSlot.key, moveToValue(oldEntry.key));
-            moveInitialize(dstSlot.val, moveToValue(oldEntry.val));
+            moveInitialize(dstSlot.key, moveFrom(oldEntry.key));
+            moveInitialize(dstSlot.val, moveFrom(oldEntry.val));
 
             // move array elements to the new location
             if rehashHelpers != nil then

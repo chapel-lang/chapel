@@ -40,12 +40,12 @@
 #include <assert.h>
 #include <string.h>
 
-struct bitmask {
+struct ofi_bitmask {
 	size_t size;
 	uint8_t *bytes;
 };
 
-static inline int ofi_bitmask_create(struct bitmask *mask, size_t size)
+static inline int ofi_bitmask_create(struct ofi_bitmask *mask, size_t size)
 {
 	size_t byte_size = size / 8;
 	if (byte_size % 8)
@@ -60,35 +60,35 @@ static inline int ofi_bitmask_create(struct bitmask *mask, size_t size)
 	return FI_SUCCESS;
 }
 
-static inline void ofi_bitmask_free(struct bitmask *mask)
+static inline void ofi_bitmask_free(struct ofi_bitmask *mask)
 {
 	free(mask->bytes);
 	mask->bytes = NULL;
 }
 
-static inline size_t ofi_bitmask_bytesize(struct bitmask *mask)
+static inline size_t ofi_bitmask_bytesize(struct ofi_bitmask *mask)
 {
 	return (mask->size % 8) ? (mask->size / 8 + 1) : (mask->size / 8);
 }
 
-static inline void ofi_bitmask_unset(struct bitmask *mask, size_t idx)
+static inline void ofi_bitmask_unset(struct ofi_bitmask *mask, size_t idx)
 {
 	assert(idx <= mask->size);
 	mask->bytes[idx / 8] &= ~(0x01 << (idx % 8));
 }
 
-static inline void ofi_bitmask_set(struct bitmask *mask, size_t idx)
+static inline void ofi_bitmask_set(struct ofi_bitmask *mask, size_t idx)
 {
 	assert(idx <= mask->size);
 	mask->bytes[idx / 8] |= (0x01 << (idx % 8));
 }
 
-static inline void ofi_bitmask_set_all(struct bitmask *mask)
+static inline void ofi_bitmask_set_all(struct ofi_bitmask *mask)
 {
 	memset(mask->bytes, 0xff, ofi_bitmask_bytesize(mask));
 }
 
-static inline size_t ofi_bitmask_get_lsbset(struct bitmask mask)
+static inline size_t ofi_bitmask_get_lsbset(struct ofi_bitmask mask)
 {
 	size_t cur;
 	uint8_t tmp;

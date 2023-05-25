@@ -2,7 +2,7 @@ use Time;
 
 config const printTiming = true;
 
-var timer: Timer;
+var timer: stopwatch;
 timer.start();
 sleep(1);
 const time = timer.elapsed();

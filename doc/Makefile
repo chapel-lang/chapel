@@ -12,7 +12,7 @@ endif
 # release's verion number
 #
 WEB_DOC_DIR=
-WEB_DOC_VERSION=master
+WEB_DOC_VERSION=main
 
 # Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
@@ -59,14 +59,14 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-docs) || \
+	(cd ../compiler && $(MAKE) frontend-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
-	  echo " This docs build does not include compiler library API docs" ; \
-	  echo " Try 'make clobber-dyno && make dyno-docs'" ; \
+	  echo " This docs build does not include frontend library API docs" ; \
+	  echo " Try 'make frontend-docs'" ; \
 	fi
 
 
@@ -87,7 +87,7 @@ collect-syntax:
 
 module-docs:
 	@echo
-	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
+	@echo "Generating module docs from "'$(CHPL_MAKE_HOME)'"/modules/ into $(SOURCEDIR)/modules"
 	@# modules/Makefile will
 	@#   store module docs in doc/rst/modules and doc/rst/builtins
 	@#   including meta/modules/* and meta/builtins/*
@@ -95,7 +95,7 @@ module-docs:
 
 primers:
 	@echo
-	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/primers"
+	@echo "Generating primers from "'$(CHPL_MAKE_HOME)'"/test/release/examples to $(SOURCEDIR)/primers"
 	@rm -rf $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@mkdir -p $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@#Note - this assumes that we are not in a release tar ball
@@ -107,7 +107,7 @@ primers:
 
 examples:
 	@echo
-	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
+	@echo "Generating hellos from "'$(CHPL_MAKE_HOME)'"/test/release/examples to $(SOURCEDIR)/examples"
 	@rm -rf $(CHPL_DOC_EXAMPLES_BUILD_DIR)
 	@mkdir -p $(CHPL_DOC_EXAMPLES_BUILD_DIR)
 	@$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../examples/hello*.chpl
@@ -118,13 +118,13 @@ examples:
 symlinks:
 	@echo
 	@echo "Creating symlinks"
-	@if [ ! -e $(SOURCEDIR)/usingchapel/man.rst ]; then ln -s $$CHPL_HOME/man/chpl.rst $(SOURCEDIR)/usingchapel/man.rst; fi
-	@if [ ! -e $(SOURCEDIR)/tools/chpldoc/man.rst ]; then ln -s $$CHPL_HOME/man/chpldoc.rst $(SOURCEDIR)/tools/chpldoc/man.rst; fi
-	@if [ ! -e $(SOURCEDIR)/tools/chplvis/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/tools/chplvis/examples; fi
-	@if [ ! -e $(SOURCEDIR)/users-guide/base/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/base/examples; fi
-	@if [ ! -e $(SOURCEDIR)/users-guide/taskpar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/taskpar/examples; fi
-	@if [ ! -e $(SOURCEDIR)/users-guide/datapar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples; fi
-	@if [ ! -e $(SOURCEDIR)/users-guide/locality/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples; fi
+	@if [ ! -e $(SOURCEDIR)/usingchapel/man.rst ]; then ln -s $(CHPL_MAKE_HOME)/man/chpl.rst $(SOURCEDIR)/usingchapel/man.rst; fi
+	@if [ ! -e $(SOURCEDIR)/tools/chpldoc/man.rst ]; then ln -s $(CHPL_MAKE_HOME)/man/chpldoc.rst $(SOURCEDIR)/tools/chpldoc/man.rst; fi
+	@if [ ! -e $(SOURCEDIR)/tools/chplvis/examples ]; then ln -s $(CHPL_MAKE_HOME)/test/release/examples $(SOURCEDIR)/tools/chplvis/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/base/examples ]; then ln -s $(CHPL_MAKE_HOME)/test/release/examples $(SOURCEDIR)/users-guide/base/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/taskpar/examples ]; then ln -s $(CHPL_MAKE_HOME)/test/release/examples $(SOURCEDIR)/users-guide/taskpar/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/datapar/examples ]; then ln -s $(CHPL_MAKE_HOME)/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/locality/examples ]; then ln -s $(CHPL_MAKE_HOME)/test/release/examples $(SOURCEDIR)/users-guide/locality/examples; fi
 
 compiler-internals: FORCE
 	@echo "Updating compiler-internals"
@@ -191,7 +191,7 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-dyno-docs
+	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
 
 FORCE:
 

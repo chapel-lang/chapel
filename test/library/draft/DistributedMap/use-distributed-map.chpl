@@ -54,7 +54,7 @@ verify(dm2, "check2");
 // randomStrings: generate random strings from "-32768" to "32767"
 
 record randomStrings {
-  const dom    = newBlockDom({0..#numStrings});
+  const dom    = Block.createDomain({0..#numStrings});
   const seed   = defaultSeed;
   const stream = createRandomStream(stringsType, seed, parSafe=false);
 
@@ -81,7 +81,7 @@ proc createReference() {
 
 proc verify(dm, msg) {
   assert(reference.size == dm.size);
-  for (k,v) in reference.items() do
+  for (k,v) in zip(reference.keys(), reference.values()) do
     manage dm.updateManager(k) as element do
       assert(element == v && v > 0);
   writeln(msg, " passed");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -159,11 +159,13 @@ void chpl_task_exit(void);        // called by the main task
 // This task should be quite dedicated (e.g., get its own system
 // thread) in order to be responsive and not be held up by other
 // user-level tasks. returns 0 on success, nonzero on failure.
+// If cpu is >= 0 then the task is bound to the specified CPU if
+// the platform supports CPU binding.
 //
 // The caller of this function is responsible for ensuring that
 // *arg remains available to the task as long as it is needed.
 //
-int chpl_task_createCommTask(chpl_fn_p fn, void* arg);
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg, int cpu);
 
 //
 // Have the tasking layer call the 'chpl_main' function pointer
@@ -367,6 +369,21 @@ chpl_bool chpl_task_guardPagesInUse(void);
 static inline
 uint32_t chpl_task_getFixedNumThreads(void) {
   return CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS();
+}
+
+//
+// Similar to the above, but only indicates whether or not the tasking
+// layer uses a fixed number of threads. This may be called prior to
+// the initialization of the tasking layer when the number of threads
+// is not yet known.
+//
+
+#ifndef CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS
+#define CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS() false
+#endif
+static inline
+chpl_bool chpl_task_hasFixedNumThreads(void) {
+  return CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS();
 }
 
 //

@@ -7,8 +7,8 @@ Conversions
 ===========
 
 A *conversion* converts an expression of one type to another type,
-possibly producing a new value. In certain cases noted below the source
-expression can be a type expression. We refer to these two types the
+possibly producing a new value. In certain cases noted below, the source
+expression can be a type expression. We refer to these two types as the
 *source* and *target* types. Conversions can be either
 implicit (:ref:`Implicit_Conversions`) or
 explicit (:ref:`Explicit_Conversions`).
@@ -18,8 +18,8 @@ explicit (:ref:`Explicit_Conversions`).
 Implicit Conversions
 --------------------
 
-An *implicit conversion* is a conversion that occurs implicitly - that is -
-without an explicit specification in the program. Implicit conversions
+An *implicit conversion* is a conversion that occurs implicitly—that
+is, without an explicit operation within the program. Implicit conversions
 fall into the following categories:
 
  * implicit conversions for initialization and assignment
@@ -29,12 +29,12 @@ fall into the following categories:
  * implicit conversions for conditionals
    (:ref:`Implicit_Conversion_Conditionals`)
 
-If implicit conversion for a function call is allowed from type ``T1`` to
+If an implicit conversion for a function call is allowed from type ``T1`` to
 type ``T2`` then implicit conversion for initialization and assignment is
 allowed.
 
 In addition, an implicit conversion from a type to the same type is
-allowed for any type. Such conversion does not change the value of the
+allowed for any type. Such a conversion does not change the value of the
 expression.
 
 Implicit conversion is not transitive. That is, if an implicit
@@ -46,7 +46,7 @@ Implicit conversion for function calls, initialization, and assignment
 are allowed between the following source and target types, as defined in
 the referenced subsections:
 
--  numeric and boolean
+-  boolean and numeric types
    types (:ref:`Implicit_NumBool_Conversions`),
 
 -  numeric types in the special case when the expression’s value is a
@@ -71,64 +71,108 @@ Implicit Numeric and Bool Conversions
 Implicit conversions among numeric types are allowed when all values
 representable in the source type can also be represented in the target
 type, retaining their full precision. In addition, implicit conversions
-from types ``int(64)`` and ``uint(64)`` to types ``real(64)`` and
-``complex(128)`` are allowed, even though they may result in a loss of
-precision.
+are permitted from ``int(s)`` and ``uint(s)`` values to ``real(t)`` and
+``complex(2*t)``, for any widths ``s`` and ``t``, even though these cases
+may result in a loss of precision.
 
    *Rationale*.
 
-   We allow these additional conversions because they are an important
-   convenience for application programmers. Therefore we are willing to
-   lose precision in these cases. The largest real and complex types are
-   chosen to retain precision as often as as possible.
+   We allow these additional conversions because they provide an
+   important convenience for application programmers who want to mix
+   integral and floating point values in mathematical expressions, and
+   for computing using values using a specific bit-width. For these
+   benefits, the loss of precision seemed like a reasonable tradeoff,
+   particularly given that floating point types are approximate by
+   nature.
 
-Any boolean type can be implicitly converted to any other boolean type,
-retaining the boolean value. Any boolean type can be implicitly
-converted to any integral type by representing ``false`` as 0 and
-``true`` as 1, except (if applicable) a boolean cannot be converted to
-``int(1)``.
+Signed integral types ``int(s)`` can implicitly convert to ``uint(s)``
+where ``s <= t``.
 
    *Rationale*.
 
-   We disallow implicit conversion of a boolean to a real, imaginary, or
-   complex type because of the following. We expect that the cases where
-   such a conversion is needed will more likely be unintended by the
-   programmer. Marking those cases as errors will draw the programmer’s
-   attention. If such a conversion is actually desired, a cast
-   :ref:`Explicit_Conversions` can be inserted.
+   We allow these conversions to avoid the situation that something
+   similar to a binary operator produces surprising results when mixing
+   ``int`` and ``uint`` types. In particular, without this rule, the
+   ``plus`` function defined below would surprisingly produce values of a
+   different width or a different kind:
+
+   .. code-block:: chapel
+
+     proc plus(a: int(32), b: int(32)) : int(32) { ... }
+     proc plus(a: int(64), b: int(64)) : int(64) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: uint(32), b: uint(32)) : uint(32) { ... }
+     proc plus(a: real(64), b: real(64)) : real(64) { ... }
+
+     var myInt32: int(32);
+     var myUint32: uint(32);
+     plus(myInt32, myUint32); // calls 'uint(32)' version, but
+                              // without int->uint implicit conversion,
+                              // would call the 'int(64)' version
+     var myInt64: int(64);
+     var myUint64: uint(64);
+     plus(myInt64, myUint64); // calls 'uint(64)' version, but
+                              // without int->uint implicit conversion,
+                              // would call the 'real(64)' version
+
+   While implicitly converting an ``int`` to a ``uint`` can lead to
+   surprising behavior, this behavior is less problematic than the
+   surprising behavior that comes from the above scenario.
+
+A ``bool`` can be implicitly converted to any integral type by
+representing ``false`` as 0 and ``true`` as 1.
+
+   *Rationale*.
+
+   We disallow implicit conversion of a ``bool`` to a real, imaginary,
+   or complex type because we expect that such conversions are most
+   likely to be an unintended mistake by the programmer.
+   Marking such cases as errors will draw the programmer’s attention
+   to the issue, and if such a conversion is actually desired, a cast
+   can be used (see :ref:`Explicit_Conversions`).
 
 Legal implicit conversions with numeric and boolean types may thus be
-tabulated as follows:
+summarized as follows:
 
-==================== ================= ================= ============================== ======================= ================= =========================
-\                                                                                                                                
-Source Type          bool(\ :math:`t`) uint(\ :math:`t`) int(\ :math:`t`)               real(\ :math:`t`)       imag(\ :math:`t`) complex(\ :math:`t`)
-\                                                                                                                                
-bool(\ :math:`s`)    all :math:`s,t`   all :math:`s,t`   all :math:`s`; :math:`2 \le t`                                          
-uint(\ :math:`s`)                      :math:`s \le t`   :math:`s < t`                  :math:`s \le mant(t)`                     :math:`s \le mant(t/2)`
-uint(64)                                                                                real(64)                                  complex(128)
-int(\ :math:`s`)                                         :math:`s \le t`                :math:`s \le mant(t)+1`                   :math:`s \le mant(t/2)+1`
-int(64)                                                                                 real(64)                                  complex(128)
-real(\ :math:`s`)                                                                       :math:`s \le t`                           :math:`s \le t/2`
-imag(\ :math:`s`)                                                                                               :math:`s \le t`   :math:`s \le t/2`
-complex(\ :math:`s`)                                                                                                              :math:`s \le t`
-==================== ================= ================= ============================== ======================= ================= =========================
+==================== ================= ================ ================= ================= ====================
+\                                                **Destination Type**
+-------------------- -------------------------------------------------------------------------------------------
+**Source Type**      uint(\ :math:`t`) int(\ :math:`t`) real(\ :math:`t`) imag(\ :math:`t`) complex(\ :math:`t`)
+bool                 all :math:`t`     all :math:`t`
+uint(\ :math:`s`)    :math:`s \le t`   :math:`s < t`    all :math:`s,t`                     all :math:`s,t`
+int(\ :math:`s`)     :math:`s \le t`   :math:`s \le t`  all :math:`s,t`                     all :math:`s,t`
+real(\ :math:`s`)                                       :math:`s \le t`                     :math:`s \le t/2`
+imag(\ :math:`s`)                                                         :math:`s \le t`   :math:`s \le t/2`
+complex(\ :math:`s`)                                                                        :math:`s \le t`
+==================== ================= ================ ================= ================= ====================
 
-Here, :math:`mant(i)` is the number of bits in the (unsigned) mantissa
-of the :math:`i`-bit floating-point type. [1]_ Conversions for the
-default integral and real types (``uint``, ``complex``, etc.) are the
-same as for their explicitly-sized counterparts.
 
 .. _Implicit_Compile_Time_Constant_Conversions:
 
 Implicit Compile-Time Constant Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-A parameter of numeric type can be implicitly converted to any other
-numeric type if the value of the parameter can be represented exactly by
-the target type. This rule does not allow conversions from ``real`` to
-``imag``, or from ``complex`` to a non-complex type. It does allow
-conversions from ``real`` or ``imag`` to ``complex``.
+A ``param`` of numeric type can be implicitly converted to another numeric
+type in some cases if the ``param`` value can be represented exactly by
+the target type. In particular:
+
+ * ``param`` ``int(s)`` and ``uint(s)`` values that are exactly
+   representable in the target type can implicit convert to ``int(t)``
+   and ``uint(t)`` regardless of the values of ``s`` and ``t``.
+ * ``param`` ``real(s)`` that is exactly representable in the target
+   type can implicitly convert to ``real(t)`` or to ``complex(t)``
+   regardless of the values of ``s`` and ``t``.
+ * ``param`` ``imag(s)`` that is exactly representable in the target
+   type can implicitly convert to ``imag(t)`` or to ``complex(t)``
+   regardless of the values of ``s`` and ``t``.
+ * ``param`` ``complex(s)`` that is exactly representable in the target
+   type can implicitly convert to ``complex(t)``.
+
+As with the implicit numeric conversions, integral ``param`` values can
+implicitly convert:
+
+ * to ``uint`` of matching or greater size or to ``real``
+ * or, to ``complex`` of any size.
 
 .. _Implicit_Class_Conversions:
 
@@ -181,7 +225,7 @@ subtype of a type ``T2`` if:
 
  * ``T2`` is a generic type (:ref:`Generic_Types`) and ``T1`` is an
    instantiation that type
- * ``T1`` is a class type that inherits from the the class ``T2``
+ * ``T1`` is a class type that inherits from the class ``T2``
    (:ref:`Inheritance`)
  * ``T1`` is a non-nilable class type (e.g. ``borrowed C``) and ``T2`` is
    the nilable version of the same class type (e.g. ``borrowed C?``)
@@ -529,14 +573,17 @@ type. Such a conversion does not change the value of the expression.
 Explicit Numeric Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Explicit conversions are allowed from any numeric type or boolean to
-bytes or string, and vice-versa.
+Explicit conversions are allowed from ``bool`` or any numeric type to
+``bytes`` or ``string``, and vice-versa.  When converting to ``bytes``
+or ``string`` the result will hold the string ``true`` or ``false``
+for a ``bool``, or a representation of the expression's numerical
+value in other cases.  When converting from a ``string`` or ``bytes``,
+the reverse occurs, converting the represented value into a numerical
+or ``bool`` value.  If the ``string``/``bytes`` does not represent a
+legal value of the given type, an ``IllegalArgumentError`` is thrown.
 
-When a ``bool`` is converted to a ``bool``, ``int`` or ``uint`` of equal
-or larger size, its value is zero-extended to fit the new
-representation. When a ``bool`` is converted to a smaller ``bool``,
-``int`` or ``uint``, its most significant bits are truncated (as
-appropriate) to fit the new representation.
+When a ``bool`` is converted to an ``int`` or ``uint``, ``false``
+converts to the value 0 and ``true`` to 1.
 
 When a ``int``, ``uint``, or ``real`` is converted to a ``bool``, the
 result is ``false`` if the number was equal to 0 and ``true`` otherwise.
@@ -582,7 +629,7 @@ truncated to fit the new representation.
 When converting from a ``real`` type to a larger ``real`` type, the
 represented value is preserved. When converting from a ``real`` type to
 a smaller ``real`` type, the closest representation in the target type
-is chosen. [2]_
+is chosen. [1]_
 
 When converting to a ``real`` type from an integer type, integer types
 smaller than ``int`` are first converted to ``int``. Then, the closest
@@ -647,7 +694,7 @@ When converting from an enum to a real, imaginary, or complex type,
 the value is first converted to the enum's underlying integer type and
 then to the target type.
 
-When converting from an enum to a boolean type, the value is first
+When converting from an enum to a ``bool``, the value is first
 converted to the enum's underlying integer type. If the result is
 zero, the value of the ``bool`` is ``false``; otherwise, it is
 ``true``.
@@ -815,9 +862,6 @@ arguments: the value to convert and the type to convert it to.
 
 
 .. [1]
-   For the IEEE 754 format, :math:`mant(32)=24` and :math:`mant(64)=53`.
-
-.. [2]
    When converting to a smaller real type, a loss of precision is
    *expected*. Therefore, there is no reason to produce a run-time
    diagnostic.

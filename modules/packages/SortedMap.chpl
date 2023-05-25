@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,9 +18,7 @@
  * limitations under the License.
  */
 
-/*
-  This module contains the implementation of the sortedMap type
-  which is a container that stores key-value associations.
+/* Provides the 'sortedMap' type for storing sorted key-value associations.
 
   sortedMaps are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any sortedMap constructor. When
@@ -36,11 +34,11 @@ module SortedMap {
   private use IO;
   public use Sort only defaultComparator;
 
-  // Lock code lifted from modules/standard/Lists.chpl.
-  pragma "no doc"
+  // Lock code lifted from modules/standard/List.chpl.
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
     var lock$ = new _lockType();
 
@@ -53,25 +51,25 @@ module SortedMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkKeyType(type keyType) {
     if isGenericType(keyType) {
       compilerWarning("creating a sortedMap with key type " +
                       keyType:string);
-      if isClassType(keyType) && !isGenericType(borrowed keyType) {
-        compilerWarning("which now means class type with generic management");
+      if isClassType(keyType) && !isGenericType(keyType:borrowed) {
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("sortedMap key type cannot currently be generic");
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkValType(type valType) {
     if isGenericType(valType) {
       compilerWarning("creating a sortedMap with value type " +
                       valType:string);
-      if isClassType(valType) && !isGenericType(borrowed valType) {
-        compilerWarning("which now means class type with generic management");
+      if isClassType(valType) && !isGenericType(valType:borrowed) {
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("sortedMap value type cannot currently be generic");
     }
@@ -83,7 +81,7 @@ module SortedMap {
     and without specifying the value
     See `contains`
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class _valueWrapper {
     var val;
   }
@@ -101,31 +99,31 @@ module SortedMap {
     var comparator: record = defaultComparator;
 
     // TODO: Maybe we want something like record optional for this?
-    pragma "no doc"
+    @chpldoc.nodoc
     type _eltType = (keyType, shared _valueWrapper?);
 
     /* The underlying implementation */
-    pragma "no doc"
+    @chpldoc.nodoc
     var _set: sortedSet;
 
 
     //TODO: Maybe we should use the lock from the underlying implementation
-    pragma "no doc"
+    @chpldoc.nodoc
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
         _lock$.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
         _lock$.unlock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _keyComparator {
       var comparator: record;
       proc compare(a, b) {
@@ -200,7 +198,7 @@ module SortedMap {
     }
 
     // Return size without acquiring the lock
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _size {
       return _set.size;
     }
@@ -271,7 +269,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -283,7 +281,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const ref
     where !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -295,7 +293,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       compilerError("Cannot access non-nilable class directly. Use an",
@@ -390,10 +388,10 @@ module SortedMap {
     /*
       Iterates over the key-value pairs of this sortedMap.
 
-      :yields: A tuple of references to one of the key-value pairs contained in
-               this sortedMap.
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
     */
-    iter items() const ref {
+    iter items() {
       foreach kv in _set {
         yield (kv[0], kv[1]!.val);
       }
@@ -411,27 +409,28 @@ module SortedMap {
     }
 
     /*
-      Writes the contents of this sortedMap to a channel. The format looks like:
+      Writes the contents of this sortedMap to a fileWriter.
+      The format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> "{";
+      ch.write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch <~> ", ";
+          ch.write(", ");
         }
-        ch <~> kv[0] <~> ": " <~> kv[1]!.val;
+        ch.write(kv[0], ": ", kv[1]!.val);
       }
-      ch <~> "}";
+      ch.write("}");
     }
 
     /*

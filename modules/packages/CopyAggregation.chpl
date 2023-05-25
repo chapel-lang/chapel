@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Provides support for aggregated copies/assignments for trivial types.
+
    .. warning::
      This module represents work in progress. The API is unstable and likely to
      change over time.
@@ -104,7 +105,7 @@ module CopyAggregation {
    */
   record DstAggregator {
     type elemType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var agg: if aggregate then DstAggregatorImpl(elemType) else nothing;
     inline proc copy(ref dst: elemType, const in srcVal: elemType) {
       if aggregate then agg.copy(dst, srcVal);
@@ -122,7 +123,7 @@ module CopyAggregation {
    */
   record SrcAggregator {
     type elemType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var agg: if aggregate then SrcAggregatorImpl(elemType) else nothing;
     inline proc copy(ref dst: elemType, const ref src: elemType) {
       if aggregate then agg.copy(dst, src);
@@ -133,22 +134,23 @@ module CopyAggregation {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record DstAggregatorImpl {
     type elemType;
     type aggType = (c_ptr(elemType), elemType);
     const bufferSize = dstBuffSize;
     const myLocaleSpace = 0..<numLocales;
+    var lastLocale: int;
     var opsUntilYield = yieldFrequency;
     var lBuffers: c_ptr(c_ptr(aggType));
     var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
     var bufferIdxs: c_ptr(int);
 
     proc postinit() {
-      lBuffers = c_malloc(c_ptr(aggType), numLocales);
+      lBuffers = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
-        lBuffers[loc] = c_malloc(aggType, bufferSize);
+        lBuffers[loc] = allocate(aggType, bufferSize);
         bufferIdxs[loc] = 0;
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
@@ -157,14 +159,15 @@ module CopyAggregation {
     proc deinit() {
       flush();
       for loc in myLocaleSpace {
-        c_free(lBuffers[loc]);
+        deallocate(lBuffers[loc]);
       }
-      c_free(lBuffers);
-      c_free(bufferIdxs);
+      deallocate(lBuffers);
+      deallocate(bufferIdxs);
     }
 
     proc flush() {
-      for loc in myLocaleSpace {
+      for offsetLoc in myLocaleSpace + lastLocale {
+        const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
@@ -175,6 +178,7 @@ module CopyAggregation {
       }
       // Get the locale of dst and the local address on that locale
       const loc = dst.locale.id;
+      lastLocale = loc;
       const dstAddr = getAddr(dst);
 
       // Get our current index into the buffer for dst's locale
@@ -225,28 +229,28 @@ module CopyAggregation {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   record SrcAggregatorImpl {
     type elemType;
     type aggType = c_ptr(elemType);
     const bufferSize = srcBuffSize;
     const myLocaleSpace = 0..<numLocales;
+    var lastLocale: int;
     var opsUntilYield = yieldFrequency;
     var dstAddrs: c_ptr(c_ptr(aggType));
     var lSrcAddrs: c_ptr(c_ptr(aggType));
     var lSrcVals: [myLocaleSpace][0..#bufferSize] elemType;
     var rSrcAddrs: [myLocaleSpace] remoteBuffer(aggType);
     var rSrcVals: [myLocaleSpace] remoteBuffer(elemType);
-
     var bufferIdxs: c_ptr(int);
 
     proc postinit() {
-      dstAddrs = c_malloc(c_ptr(aggType), numLocales);
-      lSrcAddrs = c_malloc(c_ptr(aggType), numLocales);
+      dstAddrs = allocate(c_ptr(aggType), numLocales);
+      lSrcAddrs = allocate(c_ptr(aggType), numLocales);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
-        dstAddrs[loc] = c_malloc(aggType, bufferSize);
-        lSrcAddrs[loc] = c_malloc(aggType, bufferSize);
+        dstAddrs[loc] = allocate(aggType, bufferSize);
+        lSrcAddrs[loc] = allocate(aggType, bufferSize);
         bufferIdxs[loc] = 0;
         rSrcAddrs[loc] = new remoteBuffer(aggType, bufferSize, loc);
         rSrcVals[loc] = new remoteBuffer(elemType, bufferSize, loc);
@@ -256,16 +260,17 @@ module CopyAggregation {
     proc deinit() {
       flush();
       for loc in myLocaleSpace {
-        c_free(dstAddrs[loc]);
-        c_free(lSrcAddrs[loc]);
+        deallocate(dstAddrs[loc]);
+        deallocate(lSrcAddrs[loc]);
       }
-      c_free(dstAddrs);
-      c_free(lSrcAddrs);
-      c_free(bufferIdxs);
+      deallocate(dstAddrs);
+      deallocate(lSrcAddrs);
+      deallocate(bufferIdxs);
     }
 
     proc flush() {
-      for loc in myLocaleSpace {
+      for offsetLoc in myLocaleSpace + lastLocale {
+        const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
@@ -280,6 +285,7 @@ module CopyAggregation {
       const dstAddr = getAddr(dst);
 
       const loc = src.locale.id;
+      lastLocale = loc;
       const srcAddr = getAddr(src);
 
       ref bufferIdx = bufferIdxs[loc];
@@ -331,8 +337,8 @@ module CopyAggregation {
       myRSrcVals.GET(myLSrcVals, myBufferIdx);
 
       // Assign the srcVal to the dstAddrs
-      var dstAddrPtr = c_ptrTo(dstAddrs[loc][0]);
-      var srcValPtr = c_ptrTo(myLSrcVals[0]);
+      var dstAddrPtr = c_addrOf(dstAddrs[loc][0]);
+      var srcValPtr = c_addrOf(myLSrcVals[0]);
       for i in 0..<myBufferIdx {
         dstAddrPtr[i].deref() = srcValPtr[i];
       }
@@ -343,27 +349,22 @@ module CopyAggregation {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 module AggregationPrimitives {
   use CTypes;
+  use Communication;
+  public import Communication.get as GET;
+  public import Communication.put as PUT;
 
   inline proc getAddr(const ref p): c_ptr(p.type) {
     // TODO can this use c_ptrTo?
     return __primitive("_wide_get_addr", p): c_ptr(p.type);
   }
 
-  inline proc GET(addr, node, rAddr, size) {
-    __primitive("chpl_comm_get", addr, node, rAddr, size);
-  }
-
-  inline proc PUT(addr, node, rAddr, size) {
-    __primitive("chpl_comm_put", addr, node, rAddr, size);
-  }
-
   // Cacheline aligned and padded allocation to avoid false-sharing
   inline proc bufferIdxAlloc() {
     const cachePaddedLocales = (numLocales + 7) & ~7;
-    return c_aligned_alloc(int, 64, cachePaddedLocales);
+    return allocate(int, cachePaddedLocales, alignment=64);
   }
 
   proc getEnvInt(name: string, default: int): int {
@@ -386,7 +387,7 @@ module AggregationPrimitives {
       if data == c_nil {
         const rvf_size = size;
         on Locales[loc] do {
-          data = c_malloc(elemType, rvf_size);
+          data = allocate(elemType, rvf_size);
         }
       }
       return data;
@@ -415,7 +416,7 @@ module AggregationPrimitives {
         assert(this.data == data);
         assert(data != c_nil);
       }
-      c_free(data);
+      deallocate(data);
     }
 
     // After free'ing the data, need to nil out the records copy of the pointer
@@ -433,11 +434,11 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);
-        assert(lArr.domain.low == 0);
+        assert(lArr.domain.lowBound == 0);
         assert(lArr.locale.id == here.id);
       }
       const byte_size = size:c_size_t * c_sizeof(elemType);
-      AggregationPrimitives.PUT(c_ptrTo(lArr[0]), loc, data, byte_size);
+      AggregationPrimitives.PUT(data, c_ptrTo(lArr[0]), loc, byte_size);
     }
 
     proc PUT(lArr: c_ptr(elemType), size: int) {
@@ -445,18 +446,18 @@ module AggregationPrimitives {
         assert(size <= this.size);
       }
       const byte_size = size:c_size_t * c_sizeof(elemType);
-      AggregationPrimitives.PUT(lArr, loc, data, byte_size);
+      AggregationPrimitives.PUT(data, lArr, loc, byte_size);
     }
 
     proc GET(lArr: [] elemType, size: int) where lArr.isDefaultRectangular() {
       if boundsChecking {
         assert(size <= this.size);
         assert(this.size == lArr.size);
-        assert(lArr.domain.low == 0);
+        assert(lArr.domain.lowBound == 0);
         assert(lArr.locale.id == here.id);
       }
       const byte_size = size:c_size_t * c_sizeof(elemType);
-      AggregationPrimitives.GET(c_ptrTo(lArr[0]), loc, data, byte_size);
+      AggregationPrimitives.GET(c_ptrTo(lArr[0]), data, loc, byte_size);
     }
 
     proc deinit() {

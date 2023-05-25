@@ -6,14 +6,25 @@ set(BUILDVARIABLES_OBJPATH ${CMAKE_CURRENT_BINARY_DIR}/BuildVariables.inc)
 # Add the llvm-config tool.
 add_llvm_tool(llvm-config
   llvm-config.cpp
+  # This utility doesn't use much of LLVM, so linking a shared library for the
+  # entire thing is overkill. Avoiding that especially saves on build time when cross
+  # compiling LLVM and building both cross and native `llvm-config`s. We don't
+  # want to build an entire native libLLVM.so in addition to the cross one just
+  # for the native `llvm-config`!
+  DISABLE_LLVM_LINK_LLVM_DYLIB
   )
 
 # Compute the substitution values for various items.
 get_property(SUPPORT_SYSTEM_LIBS TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS)
 get_property(WINDOWSMANIFEST_SYSTEM_LIBS TARGET LLVMWindowsManifest PROPERTY LLVM_SYSTEM_LIBS)
+
 foreach(l ${SUPPORT_SYSTEM_LIBS} ${WINDOWSMANIFEST_SYSTEM_LIBS})
   if(MSVC)
-    set(SYSTEM_LIBS ${SYSTEM_LIBS} "${l}.lib")
+    if(IS_ABSOLUTE ${l})
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} "${l}")
+    else()
+      set(SYSTEM_LIBS ${SYSTEM_LIBS} "${l}.lib")
+    endif()
   else()
     if (l MATCHES "^-")
       # If it's an option, pass it without changes.
@@ -28,6 +39,7 @@ foreach(l ${SUPPORT_SYSTEM_LIBS} ${WINDOWSMANIFEST_SYSTEM_LIBS})
     endif()
   endif()
 endforeach()
+
 string(REPLACE ";" " " SYSTEM_LIBS "${SYSTEM_LIBS}")
 
 # Fetch target specific compile options, e.g. RTTI option

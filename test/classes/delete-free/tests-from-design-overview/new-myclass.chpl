@@ -11,8 +11,10 @@ class MyClass {
 
 proc test1() {
   var a = new MyClass(1);
-  var b: borrowed MyClass = new MyClass(2); 
-  var c: borrowed MyClass = new owned MyClass(3); 
+  var myClass2 = new MyClass(2);
+  var b: borrowed MyClass = myClass2;
+  var myClass3 = new MyClass(3);
+  var c: borrowed MyClass = myClass3;
   var d = (new owned MyClass(4)): borrowed MyClass; 
   var e = (new owned MyClass(5)): borrowed MyClass; 
   var f = (new owned MyClass(6)).borrow();

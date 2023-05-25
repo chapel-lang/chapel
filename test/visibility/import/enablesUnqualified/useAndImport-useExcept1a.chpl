@@ -8,7 +8,7 @@ module A {
   }
 }
 module B {
-  public use A except x;
+  public use A as A except x;
 }
 
 module C {

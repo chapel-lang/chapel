@@ -72,7 +72,7 @@ void dump_args(int argc, char **argv)  {
 #define HAVE_MPI_QUERY_THREAD (MPI_VERSION >= 2)
 #endif
 
-/* called by a single thread before gasnet_init */
+// called by a single thread either before or after gex_Client_Init
 void init_test_mpi(int *argc, char ***argv) {
     int initialized = 0;
 

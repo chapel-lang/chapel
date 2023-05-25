@@ -3,7 +3,7 @@ class foo {
   var f : real;
 }
 
-var x : borrowed foo = new borrowed foo(2, 3.2);
+var x : borrowed foo = (new owned foo(2, 3.2)).borrow();
 
 x.i = -1;
 x.f = 3.1415;

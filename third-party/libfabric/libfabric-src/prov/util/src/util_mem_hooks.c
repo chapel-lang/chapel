@@ -160,7 +160,7 @@ static struct ofi_intercept intercepts[] = {
 extern void *__curbrk; /* in libc */
 #endif
 
-#if HAVE___CLEAR_CACHE
+#ifdef HAVE___CLEAR_CACHE
 /*
  * Used on ARM64 platforms, see https://github.com/open-mpi/ompi/issues/5631
  */
@@ -276,6 +276,25 @@ static int ofi_patch_function(struct ofi_intercept *intercept)
 
 	return ofi_apply_patch(intercept);
 }
+
+/*
+ * Check to see if there exists at the specified intercept location the
+ * pattern of bytes used in ofi_patch_function() to patch in our own
+ * monitoring function. These bytes (roughly) represent opcodes to load
+ * a supplied address into a register and execute a jump to that location.
+ * If they do already exist, then we've almost certainly already patched.
+ * Note that we are explicitly ignoring the target address in these checks
+ * as that is a transient value and not invarient as the other values are.
+ */
+static bool ofi_is_function_patched(struct ofi_intercept *intercept)
+{
+	return (
+		(*(unsigned short*)((uintptr_t)intercept->orig_func + 0) == 0xbb49) &&
+		(*(unsigned char* )((uintptr_t)intercept->orig_func +10) == 0x41  ) &&
+		(*(unsigned char* )((uintptr_t)intercept->orig_func +11) == 0xff  ) &&
+		(*(unsigned char* )((uintptr_t)intercept->orig_func +12) == 0xe3  )
+	);
+}
 #elif defined(__aarch64__)
 /**
  * @brief Generate a mov immediate instruction
@@ -333,6 +352,27 @@ static int ofi_patch_function(struct ofi_intercept *intercept)
 
 	return ofi_apply_patch(intercept);
 }
+
+/*
+ * Please see comments at other ofi_is_function_patched() function
+ */
+static bool ofi_is_function_patched(struct ofi_intercept *intercept)
+{
+    uint32_t mov_mask=~((0xFFFF << 5) | 0x1F);
+    uint32_t br_mask=~(0x1F << 5);
+    uintptr_t addr = (uintptr_t) intercept->orig_func;
+    /*
+     * Register 15 is used in our patching code, but for checking here let's
+     * ignore the register value and instead focus on the surrounding bytes.
+     */
+    return (
+        ((*(uint32_t *) (addr +  0)) & mov_mask) == mov(0, 3, 0) &&
+        ((*(uint32_t *) (addr +  4)) & mov_mask) == movk(0, 2, 0) &&
+        ((*(uint32_t *) (addr +  8)) & mov_mask) == movk(0, 1, 0) &&
+        ((*(uint32_t *) (addr + 12)) & mov_mask) == movk(0, 0, 0) &&
+        ((*(uint32_t *) (addr + 16)) & br_mask) == br(0)
+	);
+}
 #endif
 
 /*
@@ -362,7 +402,14 @@ static int ofi_intercept_symbol(struct ofi_intercept *intercept)
 
 	intercept->orig_func = func_addr;
 
-	ret = ofi_patch_function(intercept);
+	if (ofi_is_function_patched(intercept)) {
+		FI_DBG(&core_prov, FI_LOG_MR,
+				"function %s is already patched; stopping further patching\n",
+				intercept->symbol);
+		ret = -FI_EALREADY;
+	} else {
+		ret = ofi_patch_function(intercept);
+	}
 
 	if (!ret)
 		dlist_insert_tail(&intercept->entry, &memhooks.intercept_list);
@@ -531,8 +578,8 @@ static void ofi_memhooks_unsubscribe(struct ofi_mem_monitor *monitor,
 }
 
 static bool ofi_memhooks_valid(struct ofi_mem_monitor *monitor,
-			       const void *addr, size_t len,
-			       union ofi_mr_hmem_info *hmem_info)
+			       const struct ofi_mr_info *info,
+			       struct ofi_mr_entry *entry)
 {
 	/* no-op */
 	return true;
@@ -553,56 +600,25 @@ static int ofi_memhooks_start(struct ofi_mem_monitor *monitor)
 	for (i = 0; i < OFI_INTERCEPT_MAX; ++i)
 		dlist_init(&intercepts[i].dl_intercept_list);
 
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MMAP]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept mmap failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MUNMAP]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept munmap failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MREMAP]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept mremap failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_MADVISE]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept madvise failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMAT]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept shmat failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_SHMDT]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept shmdt failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
-	}
-
-	ret = ofi_intercept_symbol(&intercepts[OFI_INTERCEPT_BRK]);
-	if (ret) {
-		FI_WARN(&core_prov, FI_LOG_MR,
-		       "intercept brk failed %d %s\n", ret, fi_strerror(ret));
-		return ret;
+	for (i = 0; i < OFI_INTERCEPT_MAX; ++i) {
+		ret = ofi_intercept_symbol(&intercepts[i]);
+		if (ret != 0) {
+			FI_DBG(&core_prov, FI_LOG_MR,
+				"intercept %s failed %d %s\n", intercepts[i].symbol,
+					ret, fi_strerror(ret));
+			goto err_intercept_failed;
+		}
 	}
 
 	return 0;
+
+err_intercept_failed:
+	while (--i >= 0)
+		ofi_remove_patch(&intercepts[i]);
+	memhooks_monitor->subscribe = NULL;
+	memhooks_monitor->unsubscribe = NULL;
+
+	return ret;
 }
 
 static void ofi_memhooks_stop(struct ofi_mem_monitor *monitor)

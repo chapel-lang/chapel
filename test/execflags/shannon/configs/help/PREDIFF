@@ -33,11 +33,18 @@ fh = open(execout, 'r')
 myLines = fh.readlines()
 fh.close()
 
+skippingCmdLineFlags = True
 inBuiltIns = False
 fh = open(execout, 'w')
 for line in myLines:
     # ignore blank lines
     if not line.strip(): continue
+    # ignore --help output other than config var stuff
+    if skippingCmdLineFlags:
+        if line == "CONFIG VAR FLAGS:\n":
+            skippingCmdLineFlags = False
+        else:
+            continue
     if inBuiltIns:
         if line.strip().find(' config vars:') != -1:
             inBuiltIns = False

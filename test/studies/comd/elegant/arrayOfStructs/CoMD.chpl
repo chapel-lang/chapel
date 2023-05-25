@@ -16,7 +16,7 @@ proc main() {
   writeln("#                                                                                         Performance");
   writeln("#  Loop   Time(fs)       Total Energy   Potential Energy     Kinetic Energy  Temperature   (us/atom)     # Atoms");
 
-  var progressTimer : Timer;
+  var progressTimer : stopwatch;
 
   proc getProgress() {
     const ret = progressTimer.elapsed();
@@ -60,6 +60,8 @@ proc printProgress(step : int, elapsed : real) {
 }
 
 proc printSystemInfo() {
+  use ChplConfig;
+
   proc uname(cmd : string) {
     // Spawn doesn't work correctly under ugni or gn-ibv:
     //  - https://github.com/chapel-lang/chapel/issues/7550
@@ -74,7 +76,7 @@ proc printSystemInfo() {
 
     if sub.exitCode == 0 {
       var ret, buf : string;
-      while sub.stdout.readline(buf) do ret += buf;
+      while sub.stdout.readLine(buf) do ret += buf;
       return ret.strip();
     } else {
       return "unknown";

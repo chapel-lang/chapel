@@ -1,0 +1,1 @@
+tooBigStride.chpl:4: error: halt reached - the step argument of the 'by' operator is too large and cannot be represented within the range's stride type int(8)

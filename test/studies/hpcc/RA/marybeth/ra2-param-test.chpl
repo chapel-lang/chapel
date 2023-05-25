@@ -13,7 +13,9 @@
  *  will be made to make it a true Chapel program.
  *
  *  last revised 9/18/2008 by marybeth
- */  
+ */
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 
@@ -49,9 +51,9 @@ proc main() {
 
   InitRandomSteps();
 
-  RealTime = Timer();
+  RealTime = stopwatch();
   RandomAccessUpdate();
-  RealTime = Timer() - RealTime;
+  RealTime = stopwatch() - RealTime;
 
 
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
@@ -130,7 +132,7 @@ proc VerifyResults() {
   }
 }
 
-proc Timer():real {
+proc stopwatch():real {
   return 1.0;
 }
 

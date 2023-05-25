@@ -1,3 +1,4 @@
+use FileSystem;
 use Subprocess;
 
 {
@@ -12,5 +13,5 @@ use Subprocess;
   assert(runit.exitCode == 0);
 }
 
-unlink("mutate-args");
+FileSystem.remove("mutate-args");
 

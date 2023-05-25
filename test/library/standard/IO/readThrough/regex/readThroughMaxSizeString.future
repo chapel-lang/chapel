@@ -1,0 +1,1 @@
+Regex._findSeparator is miscalculating the number of codepoints read.

@@ -1,6 +1,5 @@
 sync-direct-access.chpl:4: In function 'test1':
 sync-direct-access.chpl:9: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
-sync-direct-access.chpl:9: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
 sync-direct-access.chpl:15: In function 'test2':
 sync-direct-access.chpl:19: warning: 'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one
 sync-direct-access.chpl:33: In function 'test3':

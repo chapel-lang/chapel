@@ -8,7 +8,7 @@ module w {
   type RT = Locales.type;
 
   type tbb = borrowed CC(RT);
-  // it would work if 'tbb' were defined as: var tbb = new borrowed CC(RT);
+  // it would work if 'tbb' were defined as: var tbb = (new owned CC(RT)).borrow();
   var abb: tbb.tField;
   assert(abb.dom == Locales.dom);
 

@@ -299,7 +299,7 @@ proc test6()
   // now local_dom "aliases" globalR
   test6_part2(makeAlias(globalR.c)); // does argument passing create a copy?
   // 2019-03 - Chapel and C++ do not make a copy here
-  // (note that the the default argument passing in Chapel corresponds
+  // (note that the default argument passing in Chapel corresponds
   // to 'const ref' in C++).
 }
 

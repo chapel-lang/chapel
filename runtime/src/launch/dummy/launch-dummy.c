@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,12 +32,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char baseCommand[256];
   char* command;
   if (numLocales != 1) {
-    chpl_error("dummy launcher only supports numLocales==1", 0, "<command-line>");
+    chpl_error("dummy launcher only supports numLocales==1", 0, 0);
   }
 
   chpl_compute_real_binary_name(argv[0]);
 
-  sprintf(baseCommand, "%s", chpl_get_real_binary_name());
+  snprintf(baseCommand, sizeof(baseCommand), "%s",
+           chpl_get_real_binary_name());
 
   size = strlen(baseCommand) + 1;
 
@@ -47,7 +48,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
 
-  sprintf(command, "%s", baseCommand);
+  snprintf(command, size * sizeof(char), "%s", baseCommand);
   for (i=1; i<argc; i++) {
     strcat(command, " '");
     strcat(command, argv[i]);
@@ -84,5 +85,6 @@ int chpl_launch_handle_arg(int argc, char* argv[], int argNum,
 }
 
 
-void chpl_launch_print_help(void) {
+const argDescTuple_t* chpl_launch_get_help(void) {
+  return NULL;
 }

@@ -32,7 +32,7 @@ proc contains(teststring, seekstring) {
 }
 
 iter getDigitsOutputs() {
-  while readline(line) {
+  while readLine(line) {
     //  writeln("Got: ", line);
     var parts: [1..2] string = line.split(" | ");
     //  writeln("Got: ", (parts[1], parts[2]));
@@ -98,7 +98,7 @@ iter getDigitsOutputs() {
     var answer: int;
     for digit in outdigits {
       answer *= 10;
-      answer += key.getValue(digit);
+      answer += key[digit];
     }
     yield answer;
   }

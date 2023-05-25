@@ -135,7 +135,7 @@ operator +(ref lhs: owned Node?, ref rhs: owned Node?) {
 
 proc readNormalizedSnailfish(): Node? throws {
   var line: string;
-  if readline(line) {
+  if readLine(line) {
     var pos = 0;
     var tree = lineToTree(line, pos); // TODO: See following TODO
     tree!.process();
@@ -191,5 +191,3 @@ proc lineToTree(line: string, ref pos): owned Node {
     halt("Unhandled case: ", ch);
   }
 }
-
-

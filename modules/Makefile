@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -68,16 +68,18 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
+	standard/AutoMath.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
+	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
-	standard/CPtr.chpl \
+	standard/Communication.chpl \
+	standard/GpuDiagnostics.chpl \
+	standard/GPU.chpl \
 	standard/CTypes.chpl \
-	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/Errors.chpl \
 	standard/FileSystem.chpl \
@@ -88,20 +90,20 @@ MODULES_TO_DOCUMENT = \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
+	standard/MemMove.chpl \
 	standard/Memory.chpl \
+	standard/MemDiagnostics.chpl \
 	standard/Memory/Diagnostics.chpl \
 	standard/Memory/Initialization.chpl \
+	standard/OS.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
-	standard/Spawn.chpl \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
-	standard/SysCTypes.chpl \
-	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
@@ -135,6 +137,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -169,24 +172,30 @@ DISTS_TO_DOCUMENT = \
 	layouts/LayoutCS.chpl \
 
 
-INTERNAL_MODULES_TO_DOCUMENT =                \
-	internal/Atomics.chpl                 \
-	internal/Bytes.chpl                   \
-	internal/ChapelArray.chpl             \
-	internal/ChapelDomain.chpl            \
-	internal/ChapelLocale.chpl            \
-	internal/ChapelRange.chpl             \
-	internal/ChapelSyncvar.chpl           \
-	internal/ChapelTuple.chpl             \
-	internal/OwnedObject.chpl             \
-	internal/SharedObject.chpl            \
-	internal/String.chpl                  \
+#
+# use absolute paths for internal modules so that the compiler can
+# determine that they're internal (and not just modules that happen to
+# live in a path named 'modules/internal/' so that they don't get
+# indexed like the user-facing modules.
+#
+INTERNAL_MODULES_TO_DOCUMENT =                        \
+	$(CHPL_MAKE_HOME)/modules/internal/Atomics.chpl       \
+	$(CHPL_MAKE_HOME)/modules/internal/Bytes.chpl         \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelArray.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelDomain.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelLocale.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelRange.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelSyncvar.chpl \
+	$(CHPL_MAKE_HOME)/modules/internal/ChapelTuple.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/OwnedObject.chpl   \
+	$(CHPL_MAKE_HOME)/modules/internal/SharedObject.chpl  \
+	$(CHPL_MAKE_HOME)/modules/internal/String.chpl        \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
 	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
-	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
+	  $(CHPLDOC) --home $(CHPL_MAKE_HOME) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT) $(SYS_CTYPES_MODULE_DOC)
 	@echo "Running post-processing scripts"
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}
@@ -201,7 +210,6 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
 	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
-	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
 	@echo "Updating generated module documentation in ${DOC_RST}"
 	@mkdir -p ${DOC_RST}/modules
 	@mkdir -p ${DOC_RST}/builtins

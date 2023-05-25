@@ -10,7 +10,5 @@ proc main() {
   var TomlData = parseToml(str);
   var dob = TomlData["owner"]!["dob"];
   writeln(dob!.toString());
-
-  delete TomlData;
 }
 

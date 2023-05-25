@@ -1,0 +1,5 @@
+DateTimeSymbols.chpl:14: warning: 'TZInfo' is deprecated, please use 'Timezone' instead
+DateTimeSymbols.chpl:4: warning: 'tzinfo' is deprecated, please use 'timezone' instead
+DateTimeSymbols.chpl:8: warning: 'tzinfo' is deprecated, please use 'timezone' instead
+DateTimeSymbols.chpl:11: warning: 'isoweekday' is deprecated, please use 'isoWeekday' instead
+DateTimeSymbols.chpl:12: warning: 'isocalendar' is deprecated, please use 'isoCalendar' instead

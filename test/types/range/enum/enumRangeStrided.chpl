@@ -16,10 +16,10 @@ proc testRange(r) {
   writeln("size = ", r.size);
   writeln("first = ", r.first);
   writeln("last = ", r.last);
+  writeln("lowBound = ", r.lowBound);
+  writeln("highBound = ", r.highBound);
   writeln("low = ", r.low);
   writeln("high = ", r.high);
-  writeln("alignedLow = ", r.alignedLow);
-  writeln("alignedHigh = ", r.alignedHigh);
   writeln("isEmpty = ", r.isEmpty());
   writeln("hasFirst = ", r.hasFirst());
   writeln("hasLast = ", r.hasLast());

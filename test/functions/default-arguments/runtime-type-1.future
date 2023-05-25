@@ -1,0 +1,18 @@
+design: the runtime type of a defaulted formal - should it matter?
+
+Given an argument with a default value that's an array,
+should the actual argument, when present, be bounds-checked against
+the domain of that default value?
+
+In other words, whereas the actual-argument array is bounds-checked
+when calling this function:
+
+    proc nonD(arg: [1..7] int) {}
+
+should the actual-argument array also be bounds-checked when calling:
+
+    proc DA(arg = fn()) {}
+    // where
+    proc fn() { var A: [1..7] int; return A; }
+
+Currently this latter check is not done.

@@ -1,6 +1,6 @@
 use BlockDist;
 
-var distArr = newBlockArr(0..9, int);
+var distArr = Block.createArray(0..9, int);
 var localArr: [0..9] int;
 
 distArr = 3;

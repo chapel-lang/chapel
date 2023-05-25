@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* A file utilities library, specifically related to path operations
+/* A file utilities library focusing on path operations.
 
    The Path module focuses on manipulation of the path to a file or directory.
    Also provided are constant values representing common idioms that may vary
@@ -66,8 +66,8 @@
 module Path {
 
 use List;
-use SysError, IO;
-use Sys, SysBasic;
+use IO;
+use OS, OS.POSIX;
 use CTypes;
 
 /*
@@ -163,7 +163,8 @@ proc absPath(path: string): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc absPath(f: file): string throws {
-  return try absPath(f.path);
+  // switch this to "return try f.path" after relative path deprecation is removed
+  return try f._abspath;
 }
 
 /* Returns the file name portion of the path provided.  For instance:
@@ -210,7 +211,7 @@ proc commonPath(paths: string ...?n): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(pathSep, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
 
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
@@ -219,7 +220,7 @@ proc commonPath(paths: string ...?n): string {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
 
     var minimum = min(prefixList.size, tempList.size);
 
@@ -290,7 +291,7 @@ proc commonPath(paths: []): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(delimiter, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
   // array of resultant prefix string
 
   var pos = prefixList.size;   // rightmost index of common prefix
@@ -300,7 +301,7 @@ proc commonPath(paths: []): string {
 
     var tempList = new list(string);
     for x in paths[i].split(delimiter, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
     // temporary array storing the current path under consideration
 
     var minimum = min(prefixList.size, tempList.size);
@@ -362,6 +363,8 @@ proc dirname(path: string): string {
    :rtype: `string`
 */
  proc expandVars(path: string): string {
+  extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
+
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
    var res: string = "";
@@ -390,7 +393,7 @@ proc dirname(path: string): string {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c,
+               value = string.createCopyingBuffer(value_c,
                                                  policy=decodePolicy.escape);
              }
            }
@@ -411,7 +414,7 @@ proc dirname(path: string): string {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c,
+             value = string.createCopyingBuffer(value_c,
                                                policy=decodePolicy.escape);
            }
          }
@@ -558,9 +561,9 @@ proc normPath(path: string): string {
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
         (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
-      outComps.append(comp);
+      outComps.pushBack(comp);
     else if !outComps.isEmpty() then
-      try! outComps.pop();
+      try! outComps.popBack();
   }
 
   var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
@@ -584,12 +587,13 @@ proc normPath(path: string): string {
    :throws SystemError: If one occurs.
 */
 proc realPath(path: string): string throws {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
+  import OS.errorCode;
+  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): errorCode;
 
   var res: c_string;
   var err = chpl_fs_realpath(unescape(path).c_str(), res);
   if err then try ioerror(err, "realPath", path);
-  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
+  const ret = string.createCopyingBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret;
@@ -609,15 +613,16 @@ proc realPath(path: string): string throws {
    :throws SystemError: If one occurs.
 */
 proc realPath(f: file): string throws {
-  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
+  import OS.errorCode;
+  extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): errorCode;
 
   if (is_c_nil(f._file_internal)) then
-    try ioerror(EBADF:syserr, "in realPath with a file argument");
+    try ioerror(EBADF:errorCode, "in realPath with a file argument");
 
   var res: c_string;
   var err = chpl_fs_realpath_file(f._file_internal, res);
   if err then try ioerror(err, "in realPath with a file argument");
-  return createStringWithOwnedBuffer(res);
+  return string.createAdoptingBuffer(res);
 }
 
 /* Compute the common prefix length between two lists of path components. */
@@ -678,12 +683,12 @@ proc relPath(path: string, start:string=curDir): string throws {
   // Append up-levels until we reach the point where the paths diverge.
   var outComps = new list(string);
   for i in 1..(startComps.size - prefixLen) do
-    outComps.append(parentDir);
+    outComps.pushBack(parentDir);
 
   // Append the portion of path following the common prefix.
   if !pathComps.isEmpty() then
     for x in pathComps[prefixLen..<pathComps.size] do
-      outComps.append(x);
+      outComps.pushBack(x);
 
   if outComps.isEmpty() then
     return curDir;
@@ -837,7 +842,7 @@ proc splitExt(path:string): (string, string) {
     }
     else break;
   }
-  return (path[..(lastIdx - 1)], path[lastIdx..]);
+  return try! (path[..(lastIdx - 1)], path[lastIdx..]);
 }
 
 /* Split path into a tuple that is equivalent to (:proc:`dirname`,
@@ -876,26 +881,28 @@ proc splitPath(path: string): (string, string) {
      lLoc = path.rfind(pathSep, 0:byteIndex..prev-1);
    } while (lLoc + 1 == prev && lLoc > 0);
 
-   if (prev == 0) {
-     // This happens when the only instance of pathSep in the string is
-     // the first character
-     return (path[prev..rLoc], path[rLoc+1..]);
-   } else if (lLoc == 0 && prev == 1) {
-     // This happens when there is a line of pathSep instances at the
-     // start of the string
-     return (path[..rLoc], path[rLoc+1..]);
-   } else if (prev != rLoc) {
-     // If prev wasn't the first character, then we want to skip all those
-     // duplicate pathSeps
-     return (path[..prev-1], path[rLoc+1..]);
-   } else {
-     // The last instance of pathSep in the string was on its own, so just
-     // snip it out.
-     return (path[..rLoc-1], path[rLoc+1..]);
+   // slice operations here are safe as long as `pathSep` is a 1-byte string.
+   try! {
+     if (prev == 0) {
+       // This happens when the only instance of pathSep in the string is
+       // the first character
+       return (path[prev..rLoc], path[rLoc+1..]);
+     } else if (lLoc == 0 && prev == 1) {
+       // This happens when there is a line of pathSep instances at the
+       // start of the string
+       return (path[..rLoc], path[rLoc+1..]);
+     } else if (prev != rLoc) {
+       // If prev wasn't the first character, then we want to skip all those
+       // duplicate pathSeps
+       return (path[..prev-1], path[rLoc+1..]);
+     } else {
+       // The last instance of pathSep in the string was on its own, so just
+       // snip it out.
+       return (path[..rLoc-1], path[rLoc+1..]);
+     }
    }
  } else {
    return ("", path);
  }
 }
 } // end module Path
-

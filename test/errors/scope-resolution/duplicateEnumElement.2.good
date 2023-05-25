@@ -1,0 +1,25 @@
+─── error in duplicateEnumElement.chpl:1 [MultipleEnumElems] ───
+  Enum 'languagesILike' has multiple elements named 'chapel'.
+      |
+    1 | enum languagesILike {
+    2 |   chapel, cpp, haskell,
+    3 |   chapel, chapel
+    4 | }
+      |
+  One instance occurs here:
+      |
+    2 |   chapel, cpp, haskell,
+      |   ⎺⎺⎺⎺⎺⎺
+      |
+  Another instance occurs here:
+      |
+    3 |   chapel, chapel
+      |   ⎺⎺⎺⎺⎺⎺
+      |
+  Another instance occurs here:
+      |
+    3 |   chapel, chapel
+      |           ⎺⎺⎺⎺⎺⎺
+      |
+  An enum cannot have repeated elements of the same name.
+

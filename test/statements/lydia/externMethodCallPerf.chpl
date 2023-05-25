@@ -14,7 +14,7 @@ proc blah1(num) {
 }
 
 proc main() {
-  var t1, t2, t3: Timer;
+  var t1, t2, t3: stopwatch;
   var res1, res2, res3: int;
   
   t1.start();
@@ -42,11 +42,8 @@ proc main() {
   }
   
   if (printStuff) {
-    writeln("Chapel method call took ", t1.elapsed(TimeUnits.milliseconds)/1000,
-            " seconds");
-    writeln("Chapel extern C method call took ",
-            t2.elapsed(TimeUnits.milliseconds)/1000, " seconds");
-    writeln("Chapel extern method call took ",
-            t3.elapsed(TimeUnits.milliseconds)/1000, " seconds");
+    writeln("Chapel method call took ", t1.elapsed(), " seconds");
+    writeln("Chapel extern C method call took ", t2.elapsed(), " seconds");
+    writeln("Chapel extern method call took ", t3.elapsed(), " seconds");
   }
 }

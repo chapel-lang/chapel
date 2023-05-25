@@ -1,3 +1,5 @@
+bfTest2.chpl:3: In function 'main':
+bfTest2.chpl:6: warning: Blowfish is deprecated, please use another algorithm
 Generated Key: c1 75 99 d8 24 84 cd a5 3f 23 a1 9a ba 6c 05 0f
 Generated IV: 69 76 31 32 33 34 35 36
 Original Message: 74 65 73 74 20 73 74 72 69 6e 67

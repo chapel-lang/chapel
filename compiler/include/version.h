@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +23,8 @@
 
 #include <string>
 
-void get_version(char * buf);
-void get_major_minor_version(char * buf);
+void get_version(char * buf, size_t bufsize);
+void get_major_minor_version(char * buf, size_t bufsize);
 const char* get_configured_prefix();
 
 int get_major_version();

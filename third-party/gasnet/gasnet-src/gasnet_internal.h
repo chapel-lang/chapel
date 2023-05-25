@@ -59,8 +59,6 @@ GASNETI_BEGIN_NOWARN
 extern int gasneti_init_done; /*  true after init */
 extern int gasneti_attach_done; /*  true after attach */
 
-extern char gasneti_exename[PATH_MAX];
-
 /* conduit-independent sanity checks */
 extern void gasneti_check_config_preinit(void);
 extern void gasneti_check_config_postattach(void);
@@ -91,6 +89,10 @@ extern double gasneti_get_exittimeout(double dflt_max, double dflt_min, double d
 // String append with safe-memory dynamic allocation
 GASNETI_FORMAT_PRINTF(gasneti_sappendf,2,3,
 extern char *gasneti_sappendf(char *s, const char *fmt, ...));
+
+// Version of str[n]casecmp() available even w/o POSIX.1-2001
+extern int gasneti_strcasecmp(const char *s1, const char *s2);
+extern int gasneti_strncasecmp(const char *s1, const char *s2, size_t n);
 
 #if GASNET_DEBUGMALLOC
   extern void *_gasneti_malloc(size_t nbytes, const char *curloc) GASNETI_MALLOC;
@@ -186,6 +188,17 @@ GASNETI_MALLOCP(_gasneti_calloc)
 #define gasneti_free_error    ERROR__GASNet_conduit_code_must_use_gasneti_free
 #define free(p)               gasneti_free_error
 
+#ifdef strcasecmp
+#undef strcasecmp
+#endif
+#define gasneti_strcasecmp_error     ERROR__GASNet_conduit_code_must_use_gasneti_strcasecmp
+#define strcasecmp(s1,s2)            gasneti_strcasecmp_error
+#ifdef strncasecmp
+#undef strncasecmp
+#endif
+#define gasneti_strncasecmp_error    ERROR__GASNet_conduit_code_must_use_gasneti_strncasecmp
+#define strncasecmp(s1,s2,n)         gasneti_strncasecmp_error
+
 #include <assert.h>
 #undef assert
 #define gasneti_assert_error  ERROR__GASNet_conduit_code_should_use_gasneti_assert
@@ -278,7 +291,7 @@ GASNETI_MALLOCP(_gasneti_strndup)
 
 extern void gasneti_freezeForDebugger(void);
 
-#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+#if PLATFORM_OS_LINUX
   // dynamic check for Linux flavor, to detect binary porting
   // return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
   extern int gasneti_platform_isWSL(void);
@@ -346,6 +359,7 @@ extern gasneti_Segment_t gasneti_alloc_segment(
                        void *addr,
                        uintptr_t len,
                        gex_MK_t kind,
+                       int client_allocated,
                        gex_Flags_t flags);
 void gasneti_free_segment(gasneti_Segment_t segment);
 
@@ -433,6 +447,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
                                   const char *force_spawner,
                                   gex_Rank_t *nodes_p, gex_Rank_t *mynode_p);
 
+extern int gasneti_spawn_verbose;
+
 /* ------------------------------------------------------------------------------------ */
 /* memory segment registration and management */
 
@@ -440,7 +456,7 @@ GASNETI_COLD
 extern void gasneti_defaultSignalHandler(int sig);
 
 /* gasneti_max_segsize() is the user-selected limit for the max mmap size, as gleaned from several sources */
-uintptr_t gasneti_max_segsize();
+uintptr_t gasneti_max_segsize(void);
 #if defined(HAVE_MMAP) || GASNET_PSHM
   #define GASNETI_MMAP_OR_PSHM 1
   extern gasnet_seginfo_t gasneti_mmap_segment_search(uintptr_t maxsz);
@@ -450,6 +466,7 @@ uintptr_t gasneti_max_segsize();
   extern void gasneti_munmap(void *segbase, uintptr_t segsize);
  #endif
  #if defined(GASNETI_USE_HUGETLBFS)
+  extern size_t gasneti_hugepagesize(void);
   extern void *gasneti_huge_mmap(void *addr, uintptr_t size);
   extern void gasneti_huge_munmap(void *addr, uintptr_t size);
  #endif
@@ -470,6 +487,10 @@ int gasneti_segment_map(gasnet_seginfo_t *segment_p,
                         uintptr_t segsize,
                         int pshm_compat,
                         gex_Flags_t flags);
+// Undo gasneti_segment_map()
+int gasneti_segment_unmap(
+                        gasnet_seginfo_t *segment_p,
+                        int pshm_compat);
 
 #ifndef GASNETI_USE_HIGHSEGMENT
 #define GASNETI_USE_HIGHSEGMENT 1  /* use the high end of mmap segments */
@@ -583,6 +604,19 @@ extern int gasnetc_segment_create_hook(gex_Segment_t e_segment);
 // The hook may assume that a prior gasnetc_segment_create_hook() (if any)
 // has returned GASNET_OK.
 extern void gasnetc_segment_destroy_hook(gasneti_Segment_t i_segment);
+#endif
+
+#if GASNETC_EP_BINDSEGMENT_HOOK
+// Called by gex_EP_BindSegment() after argument checking, but before any
+// conduit-independent segment binding steps.
+// Use of this hook may include per-EP memory registration.
+//
+// Arguments provided to gex_EP_BindSegment() are also provided to this
+// hook, but with their internal types.
+extern int gasnetc_ep_bindsegment_hook(
+                gasneti_EP_t        i_ep,
+                gasneti_Segment_t   i_segment,
+                gex_Flags_t         flags);
 #endif
 
 #if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
@@ -866,6 +900,8 @@ extern int gasneti_VerboseErrors;
 /* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
 
+extern const char *gasneti_format_host_detect(void);
+
 extern uint64_t gasneti_hosthash(void);
 extern uint32_t gasneti_gethostid(void);
 
@@ -918,13 +954,42 @@ void gasneti_blockingExchange(gex_TM_t tm, void *src, size_t len, void *dst);
 //
 // "Rotated" because it does NOT generate the data in normal rank order.
 // See comments in extended-ref/coll/gasnet_team.c for details.
-size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, const void *src, size_t len, void **dst_p, size_t **len_p);
+#if PLATFORM_COMPILER_GNU && PLATFORM_COMPILER_VERSION_GE(11,0,0)
+#define GASNETI_BUG4227_CONST /*const*/
+#else 
+#define GASNETI_BUG4227_CONST const
+#endif
+size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, GASNETI_BUG4227_CONST void *src, size_t len, void **dst_p, size_t **len_p);
 
 // An AM-based host-scoped barrier
 extern void gasneti_host_barrier(void);
 extern void gasnetc_hbarr_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+
+// An AM-based host-scoped sum of uint64_t
+extern uint64_t gasneti_host_sumu64(uint64_t);
+extern void gasnetc_hsumu64_reqh(gex_Token_t token, gex_AM_Arg_t arg0, gex_AM_Arg_t arg1);
+
+// AM-based bootstrap (job-scoped) collectives
+extern void gasneti_bootstrapBarrier_am(void);
+extern void gasnetc_am_barrier_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+extern void gasneti_bootstrapExchange_am(void *src, size_t len, void *dest);
+extern void gasnetc_am_exchange_reqh(gex_Token_t token, void *buf, size_t nbytes,
+                                     uint32_t arg0, uint32_t arg1);
+
 #define GASNETC_COMMON_HANDLERS() \
-    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0)
+    gasneti_handler_tableentry_no_bits(gasnetc_am_exchange_reqh,2,REQUEST,MEDIUM,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_am_barrier_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hsumu64_reqh,2,REQUEST,SHORT,0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETE_HANDLER_BASE-1)
+#define _hidx_gasnetc_hsumu64_reqh            (GASNETE_HANDLER_BASE-2)
+#define _hidx_gasnetc_am_barrier_reqh         (GASNETE_HANDLER_BASE-3)
+#define _hidx_gasnetc_am_exchange_reqh        (GASNETE_HANDLER_BASE-4)
+
+extern gex_Rank_t gasneti_get_dissem_peers(const gex_Rank_t **out_p);
+#if GASNET_PSHM
+extern gex_Rank_t gasneti_get_dissem_peers_pshm(const gex_Rank_t **out_p);
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 // Helpers for debug checks
@@ -968,6 +1033,7 @@ typedef struct _gasneti_threaddata_t {
 
   gasnete_thread_cleanup_t *thread_cleanup; /* thread cleanup function LIFO */
   int thread_cleanup_delay;
+  int is_undead; // marks leaked threaddata for a thread which has exited
 
   //
   // Active Message fields
@@ -1009,6 +1075,7 @@ typedef struct _gasneti_threaddata_t {
   // For use by conduit-independent logic desiring fire-and-forget implict ops.
   // This includes, at least, the RDMADISSEM barrier.
   gasneti_aop_t *nbi_ff_aop;
+  unsigned int nbi_ff_depth;
 
   //
   // Conduit-specific data
@@ -1022,23 +1089,61 @@ typedef struct _gasneti_threaddata_t {
 /* ------------------------------------------------------------------------------------ */
 // A "NBI fire-and-forget" facility using aops is provided for convenience of
 // conduit-independent logic with no need to test or wait for completions.
+// As long as this aop remains the current iop, nesting of gasneti_begin_nbi_ff() is
+// supported.  One can use gasneti_nbi_ff_ok() to determine if a subsequent call
+// to gasneti_begin_nbi_ff() is permitted.
 
 GASNETI_INLINE(gasneti_begin_nbi_ff)
 void gasneti_begin_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
-  gasneti_aop_t *aop = GASNETI_MYTHREAD->nbi_ff_aop;
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  if (mythread->nbi_ff_depth++) { // already active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
+  gasneti_aop_t *aop = mythread->nbi_ff_aop;
   if_pf (aop == NULL) {
     aop = gasneti_aop_create(GASNETI_THREAD_PASS_ALONE);
-    GASNETI_MYTHREAD->nbi_ff_aop = aop;
+    mythread->nbi_ff_aop = aop;
   }
   gasneti_aop_push(aop GASNETI_THREAD_PASS);
 }
 GASNETI_INLINE(gasneti_end_nbi_ff)
 void gasneti_end_nbi_ff(GASNETI_THREAD_FARG_ALONE)
 {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  gasneti_assert(mythread->nbi_ff_depth > 0);
+  if (--mythread->nbi_ff_depth) { // still active
+    gasneti_assert(mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+    return;
+  }
   gasneti_aop_t *aop = gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE);
-  gasneti_assert(aop == GASNETI_MYTHREAD->nbi_ff_aop);
+  gasneti_assert(aop == mythread->nbi_ff_aop);
 }
+// Non-zero if the nbi_ff aop is either
+// + not on iop stack (thus safe to push)
+// + or is at the top of the iop stack (thus safe to increment its depth)
+GASNETI_INLINE(gasneti_nbi_ff_ok)
+int gasneti_nbi_ff_ok(GASNETI_THREAD_FARG_ALONE)
+{
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  return !mythread->nbi_ff_depth ||
+         (mythread->current_iop == (gasnete_iop_t*)mythread->nbi_ff_aop);
+}
+
+
+// Sets the nbi_ff_aop of all threads to NULL and returns (via reference
+// arguments) an array of events and its length.  This array, contains all of
+// the aops which were found to be non-NULL.  The array and count are suitable
+// for calls to gex_Event_{Try,Wait}{All,Some}().
+//
+// The caller is responsible for freeing the array, which may be non-NULL
+// even when the count is zero.
+//
+// NOTE: this does NOT adjust `iop_num` in other threads when stealing their
+// nbi_ff_aop.  This may force the threaddata to leak.  However, this should
+// not be a real issue at process exit (the main intended use of this call).
+extern void gasneti_finalize_all_nbi_ff(gex_Event_t **events_p, size_t *count_p GASNETI_THREAD_FARG);
 
 // DO NOT USE THIS!
 // This exists only to permit "safe" testing in gasnet_diagnostic.c.

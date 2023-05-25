@@ -1,5 +1,5 @@
 class C1 { var x = 0; }
-class C2 : C1 { var x = 0; }
+class C2 : C1 { var y = 0; }
 
 proc print(val: shared C1) {
   writeln(val);

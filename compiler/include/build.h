@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,6 @@
 #include <set>
 #include <vector>
 
-#include "bison-chapel.h"
 #include "flags.h"
 #include "stmt.h"
 #include "vec.h"
@@ -35,9 +34,18 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForwardingStmt;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
+
+struct PotentialRename {
+  enum { SINGLE, DOUBLE } tag;
+  union {
+    Expr* elem;
+    std::pair<Expr*, Expr*>* renamed;
+  };
+};
 
 Expr* lookupConfigVal(VarSymbol* var);
 
@@ -71,6 +79,11 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg);
 BlockStmt* buildDeprecated(BlockStmt* block);
 BlockStmt* buildDeprecated(BlockStmt* block, const char* msg);
 
+DefExpr* buildUnstable(DefExpr* def);
+DefExpr* buildUnstable(DefExpr* def, const char* msg);
+BlockStmt* buildUnstable(BlockStmt* block);
+BlockStmt* buildUnstable(BlockStmt* block, const char* msg);
+
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
 BlockStmt* buildUseStmt(Expr* mod, const char* rename,
                         std::vector<PotentialRename*>* names, bool except,
@@ -96,19 +109,13 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
-                          bool        prototype,
-                          const char* docs);
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype,
-                              const char* docs);
+                          bool        prototype);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
-void       checkControlFlow(Expr* expr, const char* context);
 void       checkIndices(BaseAST* indices);
 void       destructureIndices(BlockStmt* block,
                               BaseAST*   indices,
@@ -136,7 +143,7 @@ Expr* buildForallLoopExpr(Expr* indices,
                           bool zippered = false);
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrRTTypeCall,
                                            bool recursiveCall = false);
-BlockStmt* buildParamForLoopStmt(const char* index, Expr* range, BlockStmt* block);
+BlockStmt* buildParamForLoopStmt(VarSymbol* indexVar, Expr* range, BlockStmt* block);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, const char* op);
 BlockStmt* buildAssignment(Expr* lhs, Expr* rhs, PrimitiveTag op);
 BlockStmt* buildLAndAssignment(Expr* lhs, Expr* rhs);
@@ -149,7 +156,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
                                   Flag flag2 = FLAG_UNKNOWN);
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs = NULL,
+BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
 
 DefExpr*  buildClassDefExpr(const char*   name,
@@ -157,35 +164,40 @@ DefExpr*  buildClassDefExpr(const char*   name,
                             AggregateTag  tag,
                             Expr*         inherit,
                             BlockStmt*    decls,
-                            Flag          isExtern,
-                            const char*   docs);
+                            Flag          isExtern);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
-FnSymbol* buildLambda(FnSymbol* fn);
+
+void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
+                                   FnSymbol* fn);
 
 BlockStmt* buildExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr, BlockStmt* blockFnDef);
 
-FnSymbol* buildFunctionSymbol(FnSymbol*   fn,
-                              const char* name,
-                              IntentTag   thisTag,
-                              Expr*       receiver);
+void setupFunctionDecl(FnSymbol*   fn,
+                       RetTag      optRetTag,
+                       Expr*       optRetType,
+                       bool        optThrowsError,
+                       Expr*       optWhere,
+                       Expr*       optLifetimeConstraints,
+                       BlockStmt*  optFnBody);
+
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
                              Expr*       optRetType,
                              bool        optThrowsError,
                              Expr*       optWhere,
                              Expr*       optLifetimeConstraints,
-                             BlockStmt*  optFnBody,
-                             const char* docs);
+                             BlockStmt*  optFnBody);
 void applyPrivateToBlock(BlockStmt* block);
-BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
-BlockStmt* buildForwardingDeclStmt(BlockStmt*);
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except);
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);

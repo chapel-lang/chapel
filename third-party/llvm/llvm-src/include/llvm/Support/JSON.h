@@ -49,6 +49,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/FormatVariadic.h"
 #include "llvm/Support/raw_ostream.h"
@@ -168,44 +169,36 @@ public:
       emplace_back(V);
   }
 
-  Value &operator[](size_t I) { return V[I]; }
-  const Value &operator[](size_t I) const { return V[I]; }
-  Value &front() { return V.front(); }
-  const Value &front() const { return V.front(); }
-  Value &back() { return V.back(); }
-  const Value &back() const { return V.back(); }
-  Value *data() { return V.data(); }
-  const Value *data() const { return V.data(); }
+  Value &operator[](size_t I);
+  const Value &operator[](size_t I) const;
+  Value &front();
+  const Value &front() const;
+  Value &back();
+  const Value &back() const;
+  Value *data();
+  const Value *data() const;
 
-  iterator begin() { return V.begin(); }
-  const_iterator begin() const { return V.begin(); }
-  iterator end() { return V.end(); }
-  const_iterator end() const { return V.end(); }
+  iterator begin();
+  const_iterator begin() const;
+  iterator end();
+  const_iterator end() const;
 
-  bool empty() const { return V.empty(); }
-  size_t size() const { return V.size(); }
-  void reserve(size_t S) { V.reserve(S); }
+  bool empty() const;
+  size_t size() const;
+  void reserve(size_t S);
 
-  void clear() { V.clear(); }
-  void push_back(const Value &E) { V.push_back(E); }
-  void push_back(Value &&E) { V.push_back(std::move(E)); }
-  template <typename... Args> void emplace_back(Args &&... A) {
-    V.emplace_back(std::forward<Args>(A)...);
-  }
-  void pop_back() { V.pop_back(); }
+  void clear();
+  void push_back(const Value &E);
+  void push_back(Value &&E);
+  template <typename... Args> void emplace_back(Args &&...A);
+  void pop_back();
   // FIXME: insert() takes const_iterator since C++11, old libstdc++ disagrees.
-  iterator insert(iterator P, const Value &E) { return V.insert(P, E); }
-  iterator insert(iterator P, Value &&E) {
-    return V.insert(P, std::move(E));
-  }
-  template <typename It> iterator insert(iterator P, It A, It Z) {
-    return V.insert(P, A, Z);
-  }
-  template <typename... Args> iterator emplace(const_iterator P, Args &&... A) {
-    return V.emplace(P, std::forward<Args>(A)...);
-  }
+  iterator insert(iterator P, const Value &E);
+  iterator insert(iterator P, Value &&E);
+  template <typename It> iterator insert(iterator P, It A, It Z);
+  template <typename... Args> iterator emplace(const_iterator P, Args &&...A);
 
-  friend bool operator==(const Array &L, const Array &R) { return L.V == R.V; }
+  friend bool operator==(const Array &L, const Array &R);
 };
 inline bool operator!=(const Array &L, const Array &R) { return !(L == R); }
 
@@ -234,7 +227,7 @@ inline bool operator!=(const Array &L, const Array &R) { return !(L == R); }
 /// Each Value is one of the JSON kinds:
 ///   null    (nullptr_t)
 ///   boolean (bool)
-///   number  (double or int64)
+///   number  (double, int64 or uint64)
 ///   string  (StringRef)
 ///   array   (json::Array)
 ///   object  (json::Object)
@@ -342,9 +335,20 @@ public:
   Value(T B) : Type(T_Boolean) {
     create<bool>(B);
   }
-  // Integers (except boolean). Must be non-narrowing convertible to int64_t.
+
+  // Unsigned 64-bit long integers.
+  template <typename T,
+            typename = std::enable_if_t<std::is_same<T, uint64_t>::value>,
+            bool = false, bool = false>
+  Value(T V) : Type(T_UINT64) {
+    create<uint64_t>(uint64_t{V});
+  }
+
+  // Integers (except boolean and uint64_t).
+  // Must be non-narrowing convertible to int64_t.
   template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>,
-            typename = std::enable_if_t<!std::is_same<T, bool>::value>>
+            typename = std::enable_if_t<!std::is_same<T, bool>::value>,
+            typename = std::enable_if_t<!std::is_same<T, uint64_t>::value>>
   Value(T I) : Type(T_Integer) {
     create<int64_t>(int64_t{I});
   }
@@ -382,6 +386,7 @@ public:
       return Boolean;
     case T_Double:
     case T_Integer:
+    case T_UINT64:
       return Number;
     case T_String:
     case T_StringRef:
@@ -410,6 +415,8 @@ public:
       return as<double>();
     if (LLVM_LIKELY(Type == T_Integer))
       return as<int64_t>();
+    if (LLVM_LIKELY(Type == T_UINT64))
+      return as<uint64_t>();
     return llvm::None;
   }
   // Succeeds if the Value is a Number, and exactly representable as int64_t.
@@ -422,6 +429,16 @@ public:
                       D >= double(std::numeric_limits<int64_t>::min()) &&
                       D <= double(std::numeric_limits<int64_t>::max())))
         return D;
+    }
+    return llvm::None;
+  }
+  llvm::Optional<uint64_t> getAsUINT64() const {
+    if (Type == T_UINT64)
+      return as<uint64_t>();
+    else if (Type == T_Integer) {
+      int64_t N = as<int64_t>();
+      if (N >= 0)
+        return as<uint64_t>();
     }
     return llvm::None;
   }
@@ -467,11 +484,12 @@ private:
 
   friend class OStream;
 
-  enum ValueType : char {
+  enum ValueType : char16_t {
     T_Null,
     T_Boolean,
     T_Double,
     T_Integer,
+    T_UINT64,
     T_StringRef,
     T_String,
     T_Object,
@@ -479,14 +497,57 @@ private:
   };
   // All members mutable, see moveFrom().
   mutable ValueType Type;
-  mutable llvm::AlignedCharArrayUnion<bool, double, int64_t, llvm::StringRef,
-                                      std::string, json::Array, json::Object>
+  mutable llvm::AlignedCharArrayUnion<bool, double, int64_t, uint64_t,
+                                      llvm::StringRef, std::string, json::Array,
+                                      json::Object>
       Union;
   friend bool operator==(const Value &, const Value &);
 };
 
 bool operator==(const Value &, const Value &);
 inline bool operator!=(const Value &L, const Value &R) { return !(L == R); }
+
+// Array Methods
+inline Value &Array::operator[](size_t I) { return V[I]; }
+inline const Value &Array::operator[](size_t I) const { return V[I]; }
+inline Value &Array::front() { return V.front(); }
+inline const Value &Array::front() const { return V.front(); }
+inline Value &Array::back() { return V.back(); }
+inline const Value &Array::back() const { return V.back(); }
+inline Value *Array::data() { return V.data(); }
+inline const Value *Array::data() const { return V.data(); }
+
+inline typename Array::iterator Array::begin() { return V.begin(); }
+inline typename Array::const_iterator Array::begin() const { return V.begin(); }
+inline typename Array::iterator Array::end() { return V.end(); }
+inline typename Array::const_iterator Array::end() const { return V.end(); }
+
+inline bool Array::empty() const { return V.empty(); }
+inline size_t Array::size() const { return V.size(); }
+inline void Array::reserve(size_t S) { V.reserve(S); }
+
+inline void Array::clear() { V.clear(); }
+inline void Array::push_back(const Value &E) { V.push_back(E); }
+inline void Array::push_back(Value &&E) { V.push_back(std::move(E)); }
+template <typename... Args> inline void Array::emplace_back(Args &&...A) {
+  V.emplace_back(std::forward<Args>(A)...);
+}
+inline void Array::pop_back() { V.pop_back(); }
+inline typename Array::iterator Array::insert(iterator P, const Value &E) {
+  return V.insert(P, E);
+}
+inline typename Array::iterator Array::insert(iterator P, Value &&E) {
+  return V.insert(P, std::move(E));
+}
+template <typename It>
+inline typename Array::iterator Array::insert(iterator P, It A, It Z) {
+  return V.insert(P, A, Z);
+}
+template <typename... Args>
+inline typename Array::iterator Array::emplace(const_iterator P, Args &&...A) {
+  return V.emplace(P, std::forward<Args>(A)...);
+}
+inline bool operator==(const Array &L, const Array &R) { return L.V == R.V; }
 
 /// ObjectKey is a used to capture keys in Object. Like Value but:
 ///   - only strings are allowed
@@ -681,6 +742,14 @@ inline bool fromJSON(const Value &E, bool &Out, Path P) {
     return true;
   }
   P.report("expected boolean");
+  return false;
+}
+inline bool fromJSON(const Value &E, uint64_t &Out, Path P) {
+  if (auto S = E.getAsUINT64()) {
+    Out = *S;
+    return true;
+  }
+  P.report("expected uint64_t");
   return false;
 }
 inline bool fromJSON(const Value &E, std::nullptr_t &Out, Path P) {

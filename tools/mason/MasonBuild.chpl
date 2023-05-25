@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,7 @@ use MasonExample;
 use Subprocess;
 use TOML;
 
-proc masonBuild(args: [] string) throws {
+proc masonBuild(args: [] string, checkProj=true) throws {
 
   var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
@@ -49,6 +49,12 @@ proc masonBuild(args: [] string) throws {
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");
+  }
+
+  if checkProj {
+    const projectType = getProjectType();
+    if projectType == "light" then
+      throw new owned MasonError("Mason light projects do not currently support 'mason build'");
   }
 
   var show = showFlag.valueAsBool();
@@ -68,25 +74,25 @@ proc masonBuild(args: [] string) throws {
 
   if example {
     // compopts become example names. Build never runs examples
-    for val in exampleOpts.values() do compopts.append(val);
-    compopts.append("--no-run");
-    if skipUpdate then compopts.append('--no-update');
-                  else compopts.append('--update');
-    if show then compopts.append("--show");
-    if release then compopts.append("--release");
-    if force then compopts.append("--force");
+    for val in exampleOpts.values() do compopts.pushBack(val);
+    compopts.pushBack("--no-run");
+    if skipUpdate then compopts.pushBack('--no-update');
+                  else compopts.pushBack('--update');
+    if show then compopts.pushBack("--show");
+    if release then compopts.pushBack("--release");
+    if force then compopts.pushBack("--force");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
-    masonExample(compopts.toArray());
+    masonExample(compopts.toArray(), checkProj=checkProj);
   }
   else {
     if passArgs.hasValue() {
-      for val in passArgs.values() do compopts.append(val);
+      for val in passArgs.values() do compopts.pushBack(val);
     }
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
-    buildProgram(release, show, force, compopts, tomlName, lockName);
+    buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
 
@@ -100,15 +106,16 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 }
 
 
-proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
-                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
+                  ref cmdLineCompopts: list(string), tomlName="Mason.toml",
+                  lockName="Mason.lock") throws {
 
   try! {
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
-    const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = owned.create(parseToml(toParse));
+    const toParse = open(projectHome + "/" + lockName, ioMode.r);
+    var lockFile = parseToml(toParse);
     const projectName = lockFile["root"]!["name"]!.s;
 
     // --fast
@@ -131,7 +138,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         }
 
         // generate list of dependencies and get src code
-        var sourceList = genSourceList(lockFile);
+        var (sourceList, gitList) = genSourceList(lockFile);
 
         if lockFile.pathExists('external') {
           spackInstalled();
@@ -141,7 +148,9 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         // support parallel iteration, which the `getSrcCode` method _must_
         // have for good performance.
         //
-        getSrcCode(sourceList, show);
+        getSrcCode(sourceList, skipUpdate, show);
+
+        getGitCode(gitList, show);
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
@@ -177,8 +186,9 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
                 release: bool, compopts: list(string), projectHome: string) : bool throws {
 
-  const sourceList = genSourceList(lockFile);
+  const (sourceList, gitList) = genSourceList(lockFile);
   const depPath = MASON_HOME + '/src/';
+  const gitDepPath = MASON_HOME + '/git/';
   const project = lockFile["root"]!["name"]!.s;
   const pathToProj = projectHome + '/src/'+ project + '.chpl';
   const moveTo = ' -o ' + projectHome + '/target/'+ binLoc +'/'+ project;
@@ -192,8 +202,16 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
     if sourceList.size > 0 then command += " --main-module " + project;
 
     for (_, name, version) in sourceList {
-      var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
-      command += depSrc;
+      // version of -1 specifies a git dep
+      if version != "-1" {
+        var depSrc = ' ' + depPath + name + "-" + version + '/src/' + name + ".chpl";
+        command += depSrc;
+      }
+    }
+
+    for (_, name, branch, _) in gitList {
+      var gitDepSrc = ' ' + gitDepPath + name + "-" + branch + '/src/' + name + ".chpl";
+      command += gitDepSrc;
     }
 
     // Verbosity control
@@ -222,36 +240,40 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
    url and the name for local mason dependency pool */
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
-  for (name, package) in lockFile.A.items() {
+  var gitList: list((string, string, string, string));
+  for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
         var toml = lockFile[name]!;
         var version = toml["version"]!.s;
-        var source = toml["source"]!.s;
-        sourceList.append((source, name, version));
+
+        if toml.pathExists("rev") {
+          var url = toml["source"]!.s;
+          var revision = toml["rev"]!.s;
+
+          var branch: string;
+          // use branch if specified, else default to HEAD
+          if toml["branch"] != nil {
+            branch = toml["branch"]!.s;
+          } else {
+            branch = "HEAD";
+          }
+          gitList.pushBack((url, name, branch, revision));
+        } else if toml.pathExists("source") {
+          var source = toml["source"]!.s;
+          sourceList.pushBack((source, name, version));
+        }
       }
     }
   }
-  return sourceList;
+  return (sourceList, gitList);
 }
 
-
-/* Checks to see if dependency has already been
-   downloaded previously */
-proc depExists(dependency: string) {
-  var repos = MASON_HOME +'/src/';
-  var exists = false;
-  for dir in listdir(repos) {
-    if dir == dependency then
-      exists = true;
-  }
-  return exists;
-}
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceListArg: list(3*string), show) {
+proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -262,18 +284,61 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
 
   var baseDir = MASON_HOME +'/src/';
   forall (srcURL, name, version) in sourceList {
-    const nameVers = name + "-" + version;
+    // version of -1 specifies a git dep
+    if version != "-1" {
+      const nameVers = name + "-" + version;
+      const destination = baseDir + nameVers;
+      if !depExists(nameVers) {
+        if skipUpdate then
+          throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
+        writeln("Downloading dependency: " + nameVers);
+        var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
+        var checkout = "git checkout -q v" + version;
+        if show {
+          getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
+          checkout = "git checkout v" + version;
+        }
+        runCommand(getDependency);
+        gitC(destination, checkout);
+      }
+    }
+  }
+}
+
+proc getGitCode(gitListArg: list(4*string), show) {
+  if !isDir(MASON_HOME + '/git/') {
+    mkdir(MASON_HOME + '/git/', parents=true);
+  }
+
+  //
+  // TODO: Temporarily use `toArray` here because `list` does not yet
+  // support parallel iteration, which the `getSrcCode` method _must_
+  // have for good performance.
+  //
+  var gitList = gitListArg.toArray();
+
+  var baseDir = MASON_HOME +'/git/';
+  forall (srcURL, name, branch, revision) in gitList {
+    const nameVers = name + "-" + branch;
     const destination = baseDir + nameVers;
-    if !depExists(nameVers) {
+    if !depExists(nameVers, '/git/') {
       writeln("Downloading dependency: " + nameVers);
       var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
-      var checkout = "git checkout -q v" + version;
+      var checkout = "git checkout -q " + revision;
       if show {
         getDependency = "git clone -n " + srcURL + ' ' + destination + '/';
-        checkout = "git checkout v" + version;
+        checkout = "git checkout " + revision;
       }
       runCommand(getDependency);
       gitC(destination, checkout);
+    } else {
+      writeln("Checking out specified revision for " + nameVers + "...");
+
+      var checkoutBranch = "git checkout -q " + revision;
+      if show {
+        checkoutBranch = "git checkout " + revision;
+      }
+      gitC(destination, checkoutBranch);
     }
   }
 }
@@ -284,18 +349,18 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
     const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.append(cmpFlags);
+    compopts.pushBack(cmpFlags);
   }
 
   if lock.pathExists('external') {
     const exDeps = lock['external']!;
-    for (name, depInfo) in exDeps.A.items() {
+    for (name, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + val.s);
-            when "include" do compopts.append("-I" + val.s);
-            when "other" do compopts.append("-I" + val.s);
+            when "libs" do compopts.pushBack("-L" + val.s);
+            when "include" do compopts.pushBack("-I" + val.s);
+            when "other" do compopts.pushBack("-I" + val.s);
             otherwise continue;
           }
       }
@@ -303,10 +368,10 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   }
   if lock.pathExists('system') {
     const pkgDeps = lock['system']!;
-    for (name, dep) in pkgDeps.A.items() {
+    for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
-      compopts.append(depInfo["libs"]!.s);
-      compopts.append("-I" + depInfo["include"]!.s);
+      compopts.pushBack(depInfo["libs"]!.s);
+      compopts.pushBack("-I" + depInfo["include"]!.s);
     }
   }
   return compopts;

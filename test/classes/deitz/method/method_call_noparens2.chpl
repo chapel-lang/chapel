@@ -1,9 +1,9 @@
 class C {
   var x = 2;
-  proc foo return 3;
-  proc bar return foo;
+  proc foo do return 3;
+  proc bar do return foo;
 }
 
-var c = new borrowed C(4);
+var c = (new owned C(4)).borrow();
 
 writeln(c.bar);

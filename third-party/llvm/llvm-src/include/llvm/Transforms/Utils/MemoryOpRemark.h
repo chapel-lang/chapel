@@ -1,9 +1,8 @@
 //===- MemoryOpRemark.h - Memory operation remark analysis -*- C++ ------*-===//
 //
-//                      The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -28,8 +27,6 @@ class Instruction;
 class IntrinsicInst;
 class Value;
 class OptimizationRemarkEmitter;
-class OptimizationRemarkMissed;
-class OptimizationRemarkAnalysis;
 class StoreInst;
 
 // FIXME: Once we get to more remarks like this one, we need to re-evaluate how
@@ -105,9 +102,9 @@ struct AutoInitRemark : public MemoryOpRemark {
   static bool canHandle(const Instruction *I);
 
 protected:
-  virtual std::string explainSource(StringRef Type) const override;
-  virtual StringRef remarkName(RemarkKind RK) const override;
-  virtual DiagnosticKind diagnosticKind() const override {
+  std::string explainSource(StringRef Type) const override;
+  StringRef remarkName(RemarkKind RK) const override;
+  DiagnosticKind diagnosticKind() const override {
     return DK_OptimizationRemarkMissed;
   }
 };

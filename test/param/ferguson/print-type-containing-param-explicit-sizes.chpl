@@ -23,8 +23,4 @@ proc main() {
   test("uint(64)", uint(64), 1);
 
   test("bool",     bool,     true);
-  test("bool(8)",  bool(8),  true);
-  test("bool(16)", bool(16), true);
-  test("bool(32)", bool(32), true);
-  test("bool(64)", bool(64), true);
 }

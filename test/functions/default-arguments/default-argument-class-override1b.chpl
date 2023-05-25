@@ -12,32 +12,32 @@ class E : D {
   override iter foo(x = 30) { yield x; }
 }  
 
-var d = new borrowed D();
+var d = (new owned D()).borrow();
 for i in d.foo() do
   write(i, " ");
 writeln();
 
-var c: borrowed C = new borrowed D();
+var c: borrowed C = (new owned D()).borrow();
 for i in c.foo() do
   write(i, " ");
 writeln();
 
-var c2: borrowed C = new borrowed C();
+var c2: borrowed C = (new owned C()).borrow();
 for i in c2.foo() do
   write(i, " ");
 writeln();
 
-var e = new borrowed E();
+var e = (new owned E()).borrow();
 for i in e.foo() do
   write(i, " ");
 writeln();
 
-var e2: borrowed D = new borrowed E();
+var e2: borrowed D = (new owned E()).borrow();
 for i in e2.foo() do
   write(i, " ");
 writeln();
 
-var e3: borrowed C = new borrowed E();
+var e3: borrowed C = (new owned E()).borrow();
 for i in e3.foo() do
   write(i, " ");
 writeln();

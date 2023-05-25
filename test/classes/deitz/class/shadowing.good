@@ -1,1 +1,2 @@
-0
+shadowing.chpl:6: error: field 'x' has same name as parent class field
+shadowing.chpl:2: note: parent class field declared here

@@ -233,14 +233,14 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 
 #define GASNETE_PUT_INDIV(tm, rank, dstaddr, srcaddr, nbytes, lc_opt) do { \
     gasneti_assert((nbytes) > 0);                                       \
-    gasneti_boundscheck_allowoutseg((tm), (rank), (dstaddr), (nbytes)); \
+    gasneti_boundscheck((tm), (rank), (dstaddr), (nbytes));             \
     gasnete_put_nbi((tm), (rank), (dstaddr), (srcaddr), (nbytes),       \
                          (lc_opt), 0 GASNETI_THREAD_PASS);              \
   } while (0)
 
 #define GASNETE_GET_INDIV(tm, rank, dstaddr, srcaddr, nbytes) do {      \
     gasneti_assert((nbytes) > 0);                                       \
-    gasneti_boundscheck_allowoutseg((tm), (rank), (srcaddr), (nbytes)); \
+    gasneti_boundscheck((tm), (rank), (srcaddr), (nbytes));             \
     gasnete_get_nbi((tm), (dstaddr), (rank), (srcaddr), (nbytes),       \
                          0 GASNETI_THREAD_PASS);                        \
   } while (0)
@@ -252,7 +252,7 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 
 #define GASNETE_PUT_DEGEN(retval, synctype, tm, rank, dstaddr, srcaddr, nbytes, flags) do { \
     gasneti_assert((nbytes) > 0);                                                   \
-    gasneti_boundscheck_allowoutseg((tm), (rank), (dstaddr), (nbytes));             \
+    gasneti_boundscheck((tm), (rank), (dstaddr), (nbytes));                         \
     switch (synctype) {                                                             \
       case gasnete_synctype_nb: {                                                   \
         gex_Event_t _lc_dummy;                                                      \
@@ -277,7 +277,7 @@ gasnete_vis_threaddata_t *gasnete_vis_new_threaddata(void) {
 
 #define GASNETE_GET_DEGEN(retval, synctype, tm, dstaddr, rank, srcaddr, nbytes, flags) do { \
     gasneti_assert((nbytes) > 0);                                                   \
-    gasneti_boundscheck_allowoutseg((tm), (rank), (srcaddr), (nbytes));             \
+    gasneti_boundscheck((tm), (rank), (srcaddr), (nbytes));                         \
     switch (synctype) {                                                             \
       case gasnete_synctype_nb:                                                     \
         (retval) = gex_RMA_GetNB ((tm), (dstaddr), (rank), (srcaddr), (nbytes),     \

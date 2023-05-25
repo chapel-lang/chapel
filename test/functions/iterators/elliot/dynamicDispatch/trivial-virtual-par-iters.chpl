@@ -12,7 +12,7 @@ class Child: Parent {
   override iter these(param tag: iterKind, followThis): int where tag == iterKind.follower { yield 4; }
 }
 
-var child: borrowed Parent = new borrowed Child();
+var child: borrowed Parent = (new owned Child()).borrow();
 
 for c in child do writeln(c);
 forall c in child do writeln(c);

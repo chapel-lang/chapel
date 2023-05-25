@@ -14,10 +14,10 @@ proc main(args:[] string)
 
   for arg in args[1..] {
     if isFile(arg) then
-      paths.append(arg);
+      paths.pushBack(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
-        paths.append(path);
+      for path in findFiles(arg, recursive=true) do
+        paths.pushBack(path);
   }
 
   // Create an array of hashes and file ids
@@ -75,7 +75,7 @@ proc stringToHash(s:string): Hash {
   //  * loop over characters in a string
   //  * equivalent of sscanf
   //  * readf for integers with a maximum field width
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
   w.write(s[1..16], " ");
   w.write(s[17..32], " ");
@@ -87,6 +87,3 @@ proc stringToHash(s:string): Hash {
   r.close();
   return hash;
 }
-
-
-

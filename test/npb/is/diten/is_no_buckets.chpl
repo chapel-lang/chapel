@@ -42,7 +42,7 @@ var buffer:  [D] int;
 var passedVerifications = 0;
 
 proc main() {
-  var time = new Timer();
+  var time = new stopwatch();
   var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = Bmax / 4;
@@ -78,9 +78,9 @@ proc main() {
   writeln(" Size            = ", probSize);
   writeln(" Iterations      = ", Imax);
   if printTime {
-    writeln(" Time in seconds = ", time.elapsed(TimeUnits.seconds));
+    writeln(" Time in seconds = ", time.elapsed());
     writeln(" Mop/s total     = ",
-            (Imax*probSize)/time.elapsed(TimeUnits.seconds)/1000000);
+            (Imax*probSize)/time.elapsed()/1000000);
   }
   if (passedVerifications == (Imax+1) * 5 + 1) then
     writeln(" Verification    = SUCCESSFUL");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -140,7 +140,7 @@ static Symbol* findNewIterLF(Expr* ref);
    we can extract information from.
  */
 static Symbol* findNewIterLF(Symbol* chpl_iter) {
-  INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterPAR"));
+  INT_ASSERT(chpl_iter, !strcmp(chpl_iter->name, "chpl__iterPAR"));
   return findNewIterLF(chpl_iter->defPoint);
 }
 
@@ -148,7 +148,7 @@ static Symbol* findNewIterLF(Expr* ref) {
   Symbol* chpl_iter = findPrecedingChplIter(ref);
 
   if (chpl_iter) {
-    INT_ASSERT(!strcmp(chpl_iter->name, "chpl__iterLF"));
+    INT_ASSERT(ref, !strcmp(chpl_iter->name, "chpl__iterLF"));
   }
 
   return chpl_iter;
@@ -169,7 +169,7 @@ Symbol* collapseIndexVarReferences(Symbol* index)
         if (move->isPrimitive(PRIM_MOVE)) {
           SymExpr* lhs = toSymExpr(move->get(1));
           SymExpr* rhs = toSymExpr(move->get(2));
-          INT_ASSERT(lhs && rhs); // or not normalized
+          INT_ASSERT(index, lhs && rhs); // or not normalized
           if (lhs->symbol()->hasFlag(FLAG_INDEX_VAR) &&
               rhs->symbol() == index) {
             changed = true;
@@ -189,6 +189,7 @@ Symbol* collapseIndexVarReferences(Symbol* index)
    If it was the result of a call, return that call
    If it was the result of a simple PRIM_MOVE from a user variable,
      return a SymExpr for that user variable
+   If the result of a tuple cast, skip to the source of the cast
 
    This function handles the post-ReturnByRef variants of
    call returns.
@@ -216,9 +217,14 @@ static Expr* findExprProducing(Symbol* iterator) {
           return rhsSe;
         }
       }
-    } else if (initCall->resolvedOrVirtualFunction()) {
-      // Handle the initializer / ReturnByRef RETARG case
+    } else if (initCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
       return initCall;
+
+    } else if (FnSymbol* initFn = initCall->resolvedFunction()) {
+      if (initFn->hasFlag(FLAG_TUPLE_CAST_FN))
+        return findExprProducing(toSymExpr(initCall->get(1))->symbol());
+      else
+        return initCall;
     }
   }
 
@@ -257,7 +263,7 @@ void findZipperedIndexVariables(Symbol* index, std::vector<IteratorDetails>&
                 if (gottenFieldSe->symbol() == field) {
                   // setting .index twice probably means we are working
                   // with some new & different AST
-                  INT_ASSERT(!detailsVector[i].index);
+                  INT_ASSERT(index, !detailsVector[i].index);
                   detailsVector[i].index = lhsSe->symbol();
                 }
                 i++;
@@ -328,7 +334,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       }
       inExpr = inExpr->parentExpr;
     }
-    INT_ASSERT(false); // couldn't find leader ForLoop or ForallStmt
+    INT_ASSERT(forLoop, false); // couldn't find leader ForLoop or ForallStmt
   }
 
 
@@ -369,9 +375,9 @@ void gatherLoopDetails(ForLoop*  forLoop,
       Expr* iterable = NULL;
       if (def) {
         CallExpr* move = toCallExpr(def->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(forLoop, move && move->isPrimitive(PRIM_MOVE));
         CallExpr* getIteratorCall = toCallExpr(move->get(2));
-        INT_ASSERT(getIteratorCall);
+        INT_ASSERT(forLoop, getIteratorCall);
         if (getIteratorCall->numActuals() >= 1)
           iterable = getIteratorCall->get(1);
       }
@@ -419,7 +425,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
         // expecting call is e.g. _getIteratorZip
         SymExpr* otherSe = toSymExpr(call->get(1));
-        INT_ASSERT(otherSe);
+        INT_ASSERT(forLoop, otherSe);
         CallExpr* otherCall = toCallExpr(findExprProducing(otherSe->symbol()));
         if (otherCall) {
           call = otherCall;
@@ -427,7 +433,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           if (calledFn && !calledFn->hasFlag(FLAG_BUILD_TUPLE)) {
             // expecting call is e.g. _toFollowerZip
             SymExpr* anotherSe = toSymExpr(call->get(1));
-            INT_ASSERT(anotherSe);
+            INT_ASSERT(forLoop, anotherSe);
             CallExpr* anotherCall =
               toCallExpr(findExprProducing(anotherSe->symbol()));
             if (anotherCall) {
@@ -459,7 +465,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
             continue;
 
           SymExpr* actualSe = toSymExpr(actual);
-          INT_ASSERT(actualSe); // otherwise not normalized
+          INT_ASSERT(forLoop, actualSe); // otherwise not normalized
           // Find the single definition of actualSe->var to find
           // the call to _getIterator.
           Expr* iterable = actualSe;
@@ -484,7 +490,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
           detailsVector.push_back(details);
         }
       } else {
-        INT_ASSERT(tupleIterator);
+        INT_ASSERT(forLoop, tupleIterator);
         // Can't find build_tuple call, so fall back on
         // storing tuple elements in iterator details.
         AggregateType* tupleItType = toAggregateType(tupleIterator->typeInfo());
@@ -537,7 +543,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // ie forall using standalone iterator
       // Find the call setting iterator
       Expr* iterable = findExprProducing(chpl_iter);
-      INT_ASSERT(iterable);
+      INT_ASSERT(forLoop, iterable);
 
       // Collapse compiler-introduced copies of references
       // to variables marked "index var"
@@ -562,7 +568,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       // Find the iterables
 
       Expr* iterable = findExprProducing(newIterLF ? newIterLF : chpl_iter);
-      INT_ASSERT(iterable);
+      INT_ASSERT(forLoop, iterable);
 
       if (!zippered) {
         // this is for non-zippered leader-follower iteration
@@ -572,7 +578,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
         detailsVector.push_back(details);
       } else {
         CallExpr* buildTupleCall = toCallExpr(iterable);
-        INT_ASSERT(buildTupleCall && buildTupleCall->resolvedOrVirtualFunction());
+        INT_ASSERT(forLoop, buildTupleCall && buildTupleCall->resolvedOrVirtualFunction());
         // build up the detailsVector
         for_formals_actuals(formal, actual, buildTupleCall) {
           // Ignore the RETARG
@@ -580,7 +586,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
             continue;
 
           SymExpr* actualSe = toSymExpr(actual);
-          INT_ASSERT(actualSe); // otherwise not normalized
+          INT_ASSERT(forLoop, actualSe); // otherwise not normalized
           // actualSe is the iterable in this case
           IteratorDetails details;
           details.iterable = actualSe;
@@ -595,7 +601,7 @@ void gatherLoopDetails(ForLoop*  forLoop,
       leaderDetails.iterator = getTheIteratorFn(leaderDetails.iteratorClass);
 
       ForLoop* followerFor = findFollowerForLoop(forLoop);
-      INT_ASSERT(followerFor);
+      INT_ASSERT(forLoop, followerFor);
       followerForLoop = followerFor;
 
       // Set the detailsVector based upon the follower loop
@@ -668,7 +674,7 @@ void gatherLoopDetails(ForallStmt* fs,
     }
   }
 
-  INT_ASSERT(isLeader ==
+  INT_ASSERT(fs, isLeader ==
              !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
 
   isForall = true;
@@ -704,9 +710,9 @@ void gatherLoopDetails(ForallStmt* fs,
       if (!zippered) {
         SymExpr* def = newIterLF->getSingleDef();
         CallExpr* move = toCallExpr(def->parentExpr);
-        INT_ASSERT(move && move->isPrimitive(PRIM_MOVE));
+        INT_ASSERT(fs, move && move->isPrimitive(PRIM_MOVE));
         Expr* iterable = move->get(2);
-        INT_ASSERT(iterable);
+        INT_ASSERT(fs, iterable);
         // Comes up in non-zippered leader-follower iteration
         IteratorDetails details;
         details.iterable = iterable;
@@ -732,7 +738,7 @@ void gatherLoopDetails(ForallStmt* fs,
             fs->iteratedExpressions().head)->resolvedFunction();
 
       ForLoop* followerFor = findFollowerForLoop(fs->loopBody());
-      INT_ASSERT(followerFor);
+      INT_ASSERT(fs, followerFor);
       followerForLoop = followerFor;
 
       // Set the detailsVector based upon the follower loop

@@ -1,2 +1,4 @@
 # This test assumes we're running on multiple locales
 CHPL_COMM == none
+# fifo can lead to too many concurrent threads for gasnet
+CHPL_TASKS == fifo

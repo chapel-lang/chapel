@@ -9,9 +9,9 @@ class Foo {
   }
 }
 
-var foo1 = new borrowed Foo(true); // specifies a different value (of a different type)
-var foo2 = new borrowed Foo(); // relies on the default value
-var foo3 = new borrowed Foo(3); // specifies the same value as the default
+var foo1 = (new owned Foo(true)).borrow(); // specifies a different value (of a different type)
+var foo2 = (new owned Foo()).borrow(); // relies on the default value
+var foo3 = (new owned Foo(3)).borrow(); // specifies the same value as the default
 
 writeln(foo1);
 // We expect v to be 1 in this case, as the default value for the argument

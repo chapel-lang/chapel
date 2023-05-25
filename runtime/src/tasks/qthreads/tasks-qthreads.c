@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,6 +65,24 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
+
+#ifdef DEBUG
+// note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,  \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
+        } while (0)
+#endif
+#else
+#define _DBG_P(f, ...)
+#endif
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
@@ -124,7 +142,7 @@ static void profile_print(void)
 // Startup and shutdown control.  The mutex is used just for the side
 // effect of its (very portable) memory fence.
 //
-volatile int chpl_qthread_done_initializing;
+volatile int chpl_qthread_initialized;
 static aligned_t canexit = 0;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -282,7 +300,7 @@ static void *initializer(void *junk)
     qthread_initialize();
     qthread_purge(&canexit);
     (void) pthread_mutex_lock(&init_mutex);
-    chpl_qthread_done_initializing = 1;
+    chpl_qthread_initialized = 1;
     (void) pthread_mutex_unlock(&init_mutex);
 
     qthread_readFF(NULL, &canexit);
@@ -427,6 +445,7 @@ static int32_t chpl_qt_getenv_num_workers(void) {
 static void setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
+    chpl_bool noMultithread;
     int32_t   hwpar;
     char      newenv_workers[QT_ENV_S] = { 0 };
 
@@ -436,6 +455,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     // vars, we override the default.
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
     qtEnvThreads = chpl_qt_getenv_num_workers();
+    noMultithread = chpl_env_rt_get_bool("NO_MULTITHREAD", false);
     hwpar = 0;
 
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
@@ -445,10 +465,14 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        if (noMultithread) {
+            numPUsPerLocale = chpl_topo_getNumCPUsPhysical(true);
+        } else {
+            numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        }
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             char msg[256];
-            sprintf(msg,
+            snprintf(msg, sizeof(msg),
                     "QTHREADS: Reduced numThreadsPerLocale=%d to %d "
                     "to prevent oversubscription of the system.",
                     hwpar, numPUsPerLocale);
@@ -593,7 +617,8 @@ static void setupCallStacks(void) {
 
         stackSize = (reservedPages + 1) * pagesize;
 
-        sprintf(msg, "Stack size was too small, increasing to %zu bytes (which"
+        snprintf(msg, sizeof(msg),
+                     "Stack size was too small, increasing to %zu bytes (which"
                      " may still not be enough).\n  Note: guard pages use %zu"
                      " bytes and qthread task data structures use %zu bytes.",
                      stackSize, guardSize, rtdsSize);
@@ -645,7 +670,7 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (chpl_get_oversubscribed()) {
+  if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
@@ -653,13 +678,55 @@ static void setupSpinWaiting(void) {
 }
 
 static void setupAffinity(void) {
-  if (chpl_get_oversubscribed()) {
+  if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("AFFINITY", "no", 0);
   }
 
-  // For the binders topo spread threads across sockets instead of packing.
-  // Only impacts binders, but it doesn't hurt to set it for other configs.
-  chpl_qt_setenv("LAYOUT", "BALANCED", 0);
+  // Explicitly bind shepherd threads to cores/PUs when using the
+  // binders topology.
+  if (CHPL_QTHREAD_TOPOLOGY_BINDERS) {
+    int *cpus = NULL;
+    int numCpus;
+    chpl_bool physical;
+    char *unit = chpl_qt_getenv_str("WORKER_UNIT");
+    _DBG_P("QT_WORKER_UNIT: %s", unit);
+    if ((unit != NULL) && !strcmp(unit, "pu")) {
+        physical = false;
+        numCpus = chpl_topo_getNumCPUsLogical(true);
+    } else {
+        physical = true;
+        numCpus = chpl_topo_getNumCPUsPhysical(true);
+    }
+    int numShepherds = (int) chpl_qt_getenv_num("NUM_SHEPHERDS", numCpus);
+    if (numShepherds < numCpus) {
+        numCpus = numShepherds;
+    }
+    cpus = (int *) chpl_malloc(numCpus * sizeof(*cpus));
+    numCpus = chpl_topo_getCPUs(physical, cpus, numCpus);
+    if (numCpus > 0) {
+      // Determine how much space we need for the string of CPU IDs.
+      // Note: last ':' will be replaced with NULL.
+      int bufSize = 0;
+      for (int i = 0; i < numCpus; i++) {
+        bufSize +=  snprintf(NULL, 0, "%d:", cpus[i]);
+      }
+      char *buf = chpl_malloc(bufSize);
+      int offset = 0;
+      buf[0] = '\0';
+      for (int i = 0; i < numCpus; i++) {
+          offset += snprintf(buf+offset, bufSize - offset, "%d:", cpus[i]);
+      }
+      if (offset > 0) {
+          // remove trailing ':'
+          buf[offset-1] = '\0';
+      }
+      // tell binders which PUs to use
+      _DBG_P("QT_CPUBIND: %s (%d)", buf, numCpus);
+      chpl_qt_setenv("CPUBIND", buf, 1);
+      chpl_free(buf);
+    }
+    chpl_free(cpus);
+  }
 }
 
 void chpl_task_init(void)
@@ -680,11 +747,16 @@ void chpl_task_init(void)
     setupSpinWaiting();
     setupAffinity();
 
-    if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
+    if (verbosity >= 2) {
+        chpl_qt_setenv("INFO", "1", 0);
+        if (chpl_nodeID == 0) {
+            printf("oversubscribed = %s\n", chpl_topo_isOversubscribed() ? "True" : "False");
+        }
+    }
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
-    while (chpl_qthread_done_initializing == 0)
+    while (chpl_qthread_initialized == 0)
         sched_yield();
 
     // Now that Qthreads is up and running, do a sanity check and make sure
@@ -704,7 +776,10 @@ void chpl_task_exit(void)
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
-        if (chpl_qthread_done_initializing == 1) {
+        if (chpl_qthread_initialized == 1) {
+            (void) pthread_mutex_lock(&init_mutex);
+            chpl_qthread_initialized = 0;
+            (void) pthread_mutex_unlock(&init_mutex);
             qthread_fill(&canexit);
             pthread_join(initer, NULL);
         }
@@ -748,11 +823,22 @@ static aligned_t chapel_wrapper(void *arg)
 typedef struct {
     chpl_fn_p fn;
     void *arg;
+    int cpu;
 } comm_task_wrapper_info_t;
 
 static void *comm_task_wrapper(void *arg)
 {
     comm_task_wrapper_info_t *rarg = arg;
+    if (rarg->cpu >= 0) {
+        int rc = chpl_topo_bindCPU(rarg->cpu);
+        if (rc) {
+            char msg[100];
+            snprintf(msg, sizeof(msg),
+                     "binding comm task to CPU %d failed", rarg->cpu);
+            chpl_warning(msg, 0, 0);
+        }
+        _DBG_P("comm task bound to CPU %d", rarg->cpu);
+    }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
 }
@@ -786,7 +872,8 @@ void chpl_task_stdModulesInitialized(void)
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
-                             void     *arg)
+                             void     *arg,
+                             int      cpu)
 {
     //
     // The wrapper info must be static because it won't be referred to
@@ -797,6 +884,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     static comm_task_wrapper_info_t wrapper_info;
     wrapper_info.fn = fn;
     wrapper_info.arg = arg;
+    wrapper_info.cpu = cpu;
     return pthread_create(&chpl_qthread_comm_pthread,
                           NULL, comm_task_wrapper, &wrapper_info);
 }
@@ -810,7 +898,10 @@ void chpl_task_addTask(chpl_fn_int_t       fid,
 {
     chpl_fn_p requested_fn = chpl_ftable[fid];
 
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
+    // We allow using c_sublocid_none to represent the CPU in the gpu locale
+    // model. This isn't currently used by the numa (or other locale) models.
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+        !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     PROFILE_INCR(profile_task_addTask,1);
 
@@ -1004,8 +1095,14 @@ chpl_bool chpl_task_guardPagesInUse(void)
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
-    assert(chpl_qthread_done_initializing);
+    assert(chpl_qthread_initialized);
     return (uint32_t)qthread_num_workers();
 }
+
+chpl_bool chpl_task_impl_hasFixedNumThreads(void)
+{
+  return true;
+}
+
 
 /* vim:set expandtab: */

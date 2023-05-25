@@ -17,6 +17,7 @@ class ChildClass: BaseClass {
 { // didn't compile with `use BaseModule only BaseClass`
   var c: unmanaged ChildClass? = new unmanaged ChildClass();
   writeln(c!.baseField);  // could not resolve this
+  delete c;
 }
 
 { // always compiled
@@ -32,4 +33,5 @@ class ChildClass: BaseClass {
 { // didn't compile with `use BaseModule only BaseClass`
   var c: unmanaged ChildClass = new unmanaged ChildClass();
   writeln(c.baseField);   // could not resolve this
+  delete c;
 }

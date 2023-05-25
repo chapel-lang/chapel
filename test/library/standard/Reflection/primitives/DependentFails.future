@@ -1,0 +1,5 @@
+design: Should errors in dependent functions terminate the compiler?
+
+When a subexpression is a function call, failing to resolve the body
+of that function will terminate the compiler instance. Is this the
+correct behavior?

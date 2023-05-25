@@ -56,7 +56,7 @@ if !correctness {
 const refChecksum = (iterations+1) *
     (0.25*order*order*order*(order-1.0)*(order-1.0));
 
-var t = new Timer();
+var t = new stopwatch();
 
 private iter block(indexes, window : int) {
   var lowVal = indexes.low;

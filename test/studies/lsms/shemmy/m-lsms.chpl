@@ -40,7 +40,7 @@ class Cache {
 }
 
 proc main() {
-	var t: Timer;
+	var t: stopwatch;
 
 	writeln("[[ LSMS ]]");
 	writeln("Problem size = [", span_x, ", ", span_y, ", ", span_z, "]");

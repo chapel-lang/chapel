@@ -28,7 +28,6 @@
 #include <functional>
 #include <map>
 #include <numeric>
-#include <set>
 #include <vector>
 
 namespace llvm {
@@ -102,6 +101,8 @@ struct MachineValueTypeSet {
   void erase(MVT T) {
     Words[T.SimpleTy / WordWidth] &= ~(WordType(1) << (T.SimpleTy % WordWidth));
   }
+
+  void writeToStream(raw_ostream &OS) const;
 
   struct const_iterator {
     // Some implementations of the C++ library require these traits to be
@@ -186,6 +187,8 @@ private:
   std::array<WordType,NumWords> Words;
 };
 
+raw_ostream &operator<<(raw_ostream &OS, const MachineValueTypeSet &T);
+
 struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
   using SetType = MachineValueTypeSet;
   SmallVector<unsigned, 16> AddrSpaces;
@@ -240,7 +243,6 @@ struct TypeSetByHwMode : public InfoByHwMode<MachineValueTypeSet> {
   bool assign_if(const TypeSetByHwMode &VTS, Predicate P);
 
   void writeToStream(raw_ostream &OS) const;
-  static void writeToStream(const SetType &S, raw_ostream &OS);
 
   bool operator==(const TypeSetByHwMode &VTS) const;
   bool operator!=(const TypeSetByHwMode &VTS) const { return !(*this == VTS); }
@@ -298,8 +300,11 @@ struct TypeInfer {
   /// unchanged.
   bool EnforceAny(TypeSetByHwMode &Out);
   /// Make sure that for each type in \p Small, there exists a larger type
-  /// in \p Big.
-  bool EnforceSmallerThan(TypeSetByHwMode &Small, TypeSetByHwMode &Big);
+  /// in \p Big. \p SmallIsVT indicates that this is being called for
+  /// SDTCisVTSmallerThanOp. In that case the TypeSetByHwMode is re-created for
+  /// each call and needs special consideration in how we detect changes.
+  bool EnforceSmallerThan(TypeSetByHwMode &Small, TypeSetByHwMode &Big,
+                          bool SmallIsVT = false);
   /// 1. Ensure that for each type T in \p Vec, T is a vector type, and that
   ///    for each type U in \p Elem, U is a scalar type.
   /// 2. Ensure that for each (scalar) type U in \p Elem, there exists a
@@ -535,6 +540,9 @@ public:
 
   // Predicate code uses the PatFrag's captured operands.
   bool usesOperands() const;
+
+  // Check if the HasNoUse predicate is set.
+  bool hasNoUse() const;
 
   // Is the desired predefined predicate for a load?
   bool isLoad() const;

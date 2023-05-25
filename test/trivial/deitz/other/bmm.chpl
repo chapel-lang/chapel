@@ -78,7 +78,7 @@ proc newBitMatMultOr(x: uint(64), y: uint(64)): uint(64) {
 
 proc main() {
   var D = {0..1000:uint(64), 0..1000:uint(64)};
-  var time = new Timer();
+  var time = new stopwatch();
   var x: uint(64);
 
   for (i,j) in D do
@@ -90,14 +90,14 @@ proc main() {
     x |= oldBitMatMultOr(i, j);
   }
   time.stop();
-  if printTiming then writeln("old: ", time.elapsed(TimeUnits.milliseconds));
+  if printTiming then writeln("old: ", time.elapsed() * 1000.0);
   time.clear();
   time.start();
   for (i, j) in D {
     x |= newBitMatMultOr(i, j);
   }
   time.stop();
-  if printTiming then writeln("new: ", time.elapsed(TimeUnits.milliseconds));
+  if printTiming then writeln("new: ", time.elapsed()  * 1000.0);
   writeln(x);
   writeln((newBitMatMultOr(987151324, 234907813), oldBitMatMultOr(987151324, 234907813)));
 }

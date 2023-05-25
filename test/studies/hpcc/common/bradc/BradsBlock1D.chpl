@@ -107,7 +107,7 @@ proc computeMyChunk(type glbIdxType, locid, dist) {
   //
   // a helper function for mapping processors to indices
   //
-  proc procToData(x, lo)
+  proc procToData(x, lo) do
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
   const lo = dist.bbox.low;

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+ccflags=$(pkg-config --cflags libzmq)
+ldflags=$(pkg-config --libs libzmq)
+
+echo "${ccflags:+--ccflags '$ccflags'} ${ldflags:+--ldflags '$ldflags'}"

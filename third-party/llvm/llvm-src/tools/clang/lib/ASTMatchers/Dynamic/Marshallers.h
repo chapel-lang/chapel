@@ -174,7 +174,7 @@ public:
     return Value.isString();
   }
   static bool hasCorrectValue(const VariantValue& Value) {
-    return getAttrKind(Value.getString()).hasValue();
+    return getAttrKind(Value.getString()).has_value();
   }
 
   static attr::Kind get(const VariantValue &Value) {
@@ -204,7 +204,7 @@ public:
     return Value.isString();
   }
   static bool hasCorrectValue(const VariantValue& Value) {
-    return getCastKind(Value.getString()).hasValue();
+    return getCastKind(Value.getString()).has_value();
   }
 
   static CastKind get(const VariantValue &Value) {
@@ -227,7 +227,7 @@ public:
     return Value.isString();
   }
   static bool hasCorrectValue(const VariantValue& Value) {
-    return getFlags(Value.getString()).hasValue();
+    return getFlags(Value.getString()).has_value();
   }
 
   static llvm::Regex::RegexFlags get(const VariantValue &Value) {
@@ -254,7 +254,7 @@ public:
     return Value.isString();
   }
   static bool hasCorrectValue(const VariantValue& Value) {
-    return getClauseKind(Value.getString()).hasValue();
+    return getClauseKind(Value.getString()).has_value();
   }
 
   static OpenMPClauseKind get(const VariantValue &Value) {
@@ -285,7 +285,7 @@ public:
     return Value.isString();
   }
   static bool hasCorrectValue(const VariantValue& Value) {
-    return getUnaryOrTypeTraitKind(Value.getString()).hasValue();
+    return getUnaryOrTypeTraitKind(Value.getString()).has_value();
   }
 
   static UnaryExprOrTypeTrait get(const VariantValue &Value) {
@@ -524,8 +524,9 @@ variadicMatcherDescriptor(StringRef MatcherName, SourceRange NameRange,
       }
       return {};
     }
-    InnerArgs.set_size(i + 1);
-    InnerArgsPtr[i] = new (&InnerArgs[i]) ArgT(ArgTraits::get(Value));
+    assert(InnerArgs.size() < InnerArgs.capacity());
+    InnerArgs.emplace_back(ArgTraits::get(Value));
+    InnerArgsPtr[i] = &InnerArgs[i];
   }
   return outvalueToVariantMatcher(Func(InnerArgsPtr));
 }
@@ -1035,7 +1036,6 @@ public:
   void getArgKinds(ASTNodeKind ThisKind, unsigned,
                    std::vector<ArgKind> &ArgKinds) const override {
     ArgKinds.push_back(ArgKind::MakeNodeArg(ThisKind));
-    return;
   }
   bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity = nullptr,
                        ASTNodeKind *LeastDerivedKind = nullptr) const override {
@@ -1167,4 +1167,4 @@ std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
 } // namespace ast_matchers
 } // namespace clang
 
-#endif // LLVM_CLANG_AST_MATCHERS_DYNAMIC_MARSHALLERS_H
+#endif // LLVM_CLANG_LIB_ASTMATCHERS_DYNAMIC_MARSHALLERS_H

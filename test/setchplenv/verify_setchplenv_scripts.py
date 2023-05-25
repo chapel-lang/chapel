@@ -151,11 +151,12 @@ class SetChplEnvTests(unittest.TestCase):
         self.assertEqual(os.stat(self.chpl_home), os.stat(actual_chpl_home))
 
         if 'quickstart' in os.path.relpath(setchplenv_script, self.util_dir):
+            got_llvm = get_var('CHPL_LLVM')
             self.assertEqual('none', get_var('CHPL_COMM'))
             self.assertEqual('fifo', get_var('CHPL_TASKS'))
             self.assertEqual('none', get_var('CHPL_GMP'))
             self.assertEqual('none', get_var('CHPL_RE2'))
-            self.assertEqual('none', get_var('CHPL_LLVM'))
+            self.assertTrue('none' == got_llvm or 'system' == got_llvm)
             self.assertEqual('cstdlib', get_var('CHPL_MEM'))
 
     def check_scripts(self, shell, source_cmd, path_sep,

@@ -81,6 +81,11 @@ def get_mac_os_version():
     release, version, machine = platform.mac_ver()
     return release
 
+@memoize
+def is_arch_linux():
+    arch_file = "/etc/arch-release"
+    return os.path.exists(arch_file)
+
 # if running on a system with homebrew, return the homebrew prefix
 # if not, return None
 @memoize

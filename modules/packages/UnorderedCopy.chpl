@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for unordered copies/assignments for trivial types.
+
    .. warning::
      This module represents work in progress. The API is unstable and likely to
      change over time.
@@ -93,12 +94,12 @@ module UnorderedCopy {
     compilerError("unorderedCopy is only supported between identical trivially copyable types");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc unorderedCopy(ref dst:chpl_anyPOD, const ref src:chpl_anyPOD): void {
     unorderedCopyPrim(dst, src);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc unorderedCopy(ref dst:chpl_anyPOD, param src:chpl_anyPOD): void {
     const refSrc = src;
     unorderedCopyPrim(dst, refSrc);

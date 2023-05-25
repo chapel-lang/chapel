@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -87,6 +87,7 @@ DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
   retval->copyInnerShare(*this, map);
+  retval->userLabel = this->userLabel;
 
   return retval;
 }

@@ -37,7 +37,7 @@ if (!tiled) then tileSize = 1;
 const    Dom = {0.. # order, 0.. # order};
 var tiledDom = {0.. # order by tileSize, 0.. # order by tileSize};
 
-var timer: Timer,
+var timer: stopwatch,
     nBytes = 2.0 * numBytes(real) * order * order,
     A, B : [Dom] real;
 

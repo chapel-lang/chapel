@@ -345,13 +345,12 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 - ``.comm-none.good``: used with CHPL_COMM=none (the unqualified ``.good`` file
   will then apply for CHPL_COMM != none)
 - ``.no-local.good``: used with ``--no-local`` testing
-- ``.lm-numa.good``: used with CHPL_LOCALE_MODEL=numa
 - ``.na-none.good``: used with CHPL_NETWORK_ATOMICS=none
 - ``.tasks-fifo.good``: used with CHPL_TASKS=fifo
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
 Note that ``.comm-``, ``.na-``, and ``lm-`` can be combined, in that order.
-For instance ``mytest.comm-none.lm-numa.good``.
+For instance ``mytest.comm-none.tasks-fifo.good``.
 
 Requests can be made for supporting additional formats if a common format
 does not appear to be covered automatically.
@@ -738,7 +737,7 @@ GitHub Issues
 +++++++++++++
 
 Currently, it is mandatory to include a GitHub issue number with any new
-futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
+futures. That said, futures that pre-date Chapel's adoption of GitHub issues may
 have a description instead of an issue number.
 
 When filing a bug report as an issue, it is considered good practice to

@@ -4,12 +4,12 @@ config type t = string;
 
 writeln("Compile/Delete");
 {
-  var r = compile("[a-z]+":t);
+  var r = new regex("[a-z]+":t);
 }
 
 writeln("Search 1");
 {
-  var r = compile("[a-z]+":t);
+  var r = new regex("[a-z]+":t);
 
   var str = " test ":t;
   {
@@ -20,17 +20,16 @@ writeln("Search 1");
     writeln(str[match]);
   }
   {
-    var match = str.search(r);
+    var match = str.find(r);
 
     writeln(match);
 
-    writeln(str[match]);
   }
 }
 
 writeln("Search 2");
 {
-  var r = compile("(t)[a-z]+":t);
+  var r = new regex("(t)[a-z]+":t);
 
   var str = " test ":t;
   var cap:t;
@@ -43,18 +42,15 @@ writeln("Search 2");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Search 3");
 {
-  var r = compile("(t)[a-z]+":t);
+  var r = new regex("(t)[a-z]+":t);
 
   var str = " test ":t;
   var cap:regexMatch;
@@ -67,18 +63,15 @@ writeln("Search 3");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Search 4");
 {
-  var r = compile("([a-z]+)":t);
+  var r = new regex("([a-z]+)":t);
 
   var str = " test ":t;
   var cap:regexMatch;
@@ -90,18 +83,15 @@ writeln("Search 4");
 
     writeln(str[match]);
   }{
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Search 5");
 {
-  var r = compile("([0-9]+)":t);
+  var r = new regex("([0-9]+)":t);
 
   var str = " 57 ":t;
   var cap:int;
@@ -114,18 +104,15 @@ writeln("Search 5");
     writeln(str[match]);
   }
   {
-    var match = str.search(r, cap);
+    var match = str.find(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Match 1");
 {
-  var r = compile("[a-z]+":t);
+  var r = new regex("[a-z]+":t);
 
   var str = "test ":t;
   {
@@ -136,17 +123,15 @@ writeln("Match 1");
     writeln(str[match]);
   }
   {
-    var match = str.match(r);
+    var match = str.startsWith(r);
 
     writeln(match);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Match 2");
 {
-  var r = compile("(t)[a-z]+":t);
+  var r = new regex("(t)[a-z]+":t);
 
   var str = "test ":t;
   var cap:t;
@@ -159,18 +144,15 @@ writeln("Match 2");
     writeln(str[match]);
   }
   {
-    var match = str.match(r, cap);
+    var match = str.startsWith(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Match 3");
 {
-  var r = compile("(t)[a-z]+":t);
+  var r = new regex("(t)[a-z]+":t);
 
   var str = " test ":t;
   var cap:t;
@@ -183,18 +165,15 @@ writeln("Match 3");
     writeln(str[match]);
   }
   {
-    var match = str.match(r, cap);
+    var match = str.startsWith(r);
 
     writeln(match);
-    writeln(cap);
-
-    writeln(str[match]);
   }
 }
 
 writeln("Split 1");
 {
-  var split = compile("\\W+":t);
+  var split = new regex("\\W+":t);
   var str = "Words, words, words.":t;
   for s in split.split(str) {
     writeln(s);
@@ -206,7 +185,7 @@ writeln("Split 1");
 
 writeln("Split 2");
 {
-  var split = compile("(\\W+)":t);
+  var split = new regex("(\\W+)":t);
   var str = "Words, words, words.":t ;
   for s in split.split(str) {
     writeln(s);
@@ -218,7 +197,7 @@ writeln("Split 2");
 
 writeln("Split 3");
 {
-  var split = compile("\\W+":t);
+  var split = new regex("\\W+":t);
   var str = "...words, words...":t;
   for s in split.split(str) {
     writeln(s);
@@ -230,7 +209,7 @@ writeln("Split 3");
 
 writeln("Split 4");
 {
-  var split = compile("(\\W+)":t);
+  var split = new regex("(\\W+)":t);
   var str = "...words, words...":t;
   for s in split.split(str) {
     writeln(s);
@@ -242,7 +221,7 @@ writeln("Split 4");
 
 writeln("Split 5");
 {
-  var split = compile("\\W+":t);
+  var split = new regex("\\W+":t);
   var str = "Words, words, words.":t;
   for s in split.split(str, 1) {
     writeln(s);
@@ -254,7 +233,7 @@ writeln("Split 5");
 
 writeln("Split 6");
 {
-  var split = compile("\\W+":t);
+  var split = new regex("\\W+":t);
   var str = "Words, words, words.":t;
   for s in split.split(str, 2) {
     writeln(s);
@@ -264,51 +243,23 @@ writeln("Split 6");
   }
 }
 
-
-writeln("Matches 1");
+writeln("Replace 1");
 {
-  var re = compile("\\w+":t);
+  var re = new regex("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  for s in re.matches(str, 0) {
-    writeln(str[s[0]]);
-  }
-  for s in str.matches(re, 0) {
-    writeln(str[s[0]]);
-  }
-}
-writeln("Matches 2");
-{
-  var re = compile("(w)(\\w+)":t);
-  var str = "Words, words, word.":t;
-  for s in re.matches(str, 2) {
-    writeln(str[s[0]]);
-    writeln(str[s[1]]);
-    writeln(str[s[2]]);
-  }
-  for s in str.matches(re, 2) {
-    writeln(str[s[0]]);
-    writeln(str[s[1]]);
-    writeln(str[s[2]]);
-  }
+  writeln(str.replace(re, "\\1-\\2":t, count=-1));
 }
 
-writeln("sub 1");
+writeln("Replace 2");
 {
-  var re = compile("(w)(\\w+)":t);
+  var re = new regex("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  writeln(re.sub("\\1-\\2":t, str, true));
+  writeln(str.replaceAndCount(re, "\\1-\\2":t, count=-1));
 }
 
-writeln("sub 2");
+writeln("Replace 3");
 {
-  var re = compile("(w)(\\w+)":t);
+  var re = new regex("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  writeln(re.subn("\\1-\\2":t, str, true));
-}
-
-writeln("sub 3");
-{
-  var re = compile("(w)(\\w+)":t);
-  var str = "Words, words, word.":t;
-  writeln(re.sub("\\1-\\2":t, str, false));
+  writeln(str.replace(re, "\\1-\\2":t, count=1));
 }

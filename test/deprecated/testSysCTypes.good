@@ -1,2 +1,0 @@
-testSysCTypes.chpl:1: warning: 'SysCTypes' is deprecated; please use the 'CTypes' module instead
-0

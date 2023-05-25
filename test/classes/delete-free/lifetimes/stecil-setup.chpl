@@ -14,10 +14,12 @@ config const branch = true;
 
 proc MyStencilDom.setup() {
   ref elem = A[1];
-  if branch then
-    elem = new unmanaged MyLocDom(1);
-  else
+  if branch {
+    var myUnmanaged = new unmanaged MyLocDom(1);
+    elem = myUnmanaged;
+  } else {
     elem!.x += 1;
+  }
 }
 
 proc test() {

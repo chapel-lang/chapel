@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,10 +23,16 @@
 
 #include "stmt.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
+
 class ResolveScope;
 
 class UseStmt final : public VisibilityStmt {
-public:
+
+  template <typename T, size_t N = 8> using PtrSet = llvm::SmallPtrSet<T, N>;
+
+ public:
   UseStmt(BaseAST* source, const char* modRename, bool isPrivate);
 
   UseStmt(BaseAST*                            source,
@@ -53,6 +59,8 @@ public:
 
   bool            hasOnlyList()                                          const;
 
+  bool            hasOnlyNothing()                                       const;
+
   bool            hasExceptList()                                        const;
 
   void            scopeResolve(ResolveScope* scope);
@@ -60,8 +68,8 @@ public:
   UseStmt*        applyOuterUse(const UseStmt* outer);
   ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
-  std::set<const char*> typeWasNamed(Type* t) const override;
-  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
+  PtrSet<const char*> typeWasNamed(Type* t) const override;
+  void typeWasNamed(Type* t, PtrSet<const char*>* namedTypes) const;
 
   bool            skipSymbolSearch(const char* name)            const override;
 

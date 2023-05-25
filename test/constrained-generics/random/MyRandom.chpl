@@ -91,7 +91,7 @@ module MyRandom {
   //
 
   private
-  proc isSupportedNumericType(type t) param
+  proc isSupportedNumericType(type t) param do
     return isNumericType(t) || isBoolType(t);
 
   /*
@@ -127,7 +127,7 @@ module MyRandom {
     randNums.fillRandom(arr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc fillRandom(arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
       algorithm=defaultRNG) {
     compilerError("Random.fillRandom is only defined for numeric arrays");
@@ -175,7 +175,7 @@ module MyRandom {
     randNums.permutation(arr);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc makeRandomStream(type eltType,
                         seed: int(64) = SeedGenerator.oddCurrentTime,
                         param parSafe: bool = true,
@@ -227,7 +227,7 @@ module MyRandom {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Actual implementation of choice() */
   proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
@@ -276,12 +276,12 @@ module MyRandom {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* _choice branch for uniform distribution */
   proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
 
     if isNothingType(sizeType) {
@@ -338,21 +338,21 @@ module MyRandom {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* _choice branch for distribution defined by probabilities array */
   proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
-    
+
     if prob.size != X.size {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
-    
+
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
     ref P = prob.reindex(0..<X.size);
 
@@ -546,7 +546,7 @@ module MyRandom {
       compilerError("RandomStreamInterface.fillRandom called");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc fillRandom(arr: []) {
       compilerError("RandomStreamInterface.fillRandom called");
     }
@@ -611,7 +611,7 @@ module MyRandom {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
+                                   if ``x`` does not have both bounds
      */
      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
@@ -671,15 +671,15 @@ module MyRandom {
       compilerError("RandomStreamInterface.iterate called");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(f) throws {
-      f <~> "RandomStreamInterface(eltType=";
-      f <~> eltType:string;
-      f <~> ", parSafe=";
-      f <~> parSafe;
-      f <~> ", seed=";
-      f <~> seed;
-      f <~> ")";
+      f.write("RandomStreamInterface(eltType=");
+      f.write(eltType:string);
+      f.write(", parSafe=");
+      f.write(parSafe);
+      f.write(", seed=");
+      f.write(seed);
+      f.write(")");
     }
   }
 
@@ -713,23 +713,23 @@ module MyRandom {
     record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is not
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         return seed;
 
       }
       /*
         Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is suitable
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
@@ -764,7 +764,7 @@ module MyRandom {
   module PCGRandom {
 
     use super.RandomSupport;
-    private use Random, IO;
+    private use MyRandom, IO;
     private use PCGRandomLib;
     use ChapelLocks;
 
@@ -902,12 +902,12 @@ module MyRandom {
         PCGRandomStreamPrivate_count = 1;
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc PCGRandomStreamPrivate_getNext_noLock(type resultType) {
         PCGRandomStreamPrivate_count += 1;
         return randlc(resultType, PCGRandomStreamPrivate_rngs);
       }
-      pragma "no doc"
+      @chpldoc.nodoc
       proc PCGRandomStreamPrivate_getNext_noLock(type resultType,
                                                  min:resultType,
                                                  max:resultType) {
@@ -919,7 +919,7 @@ module MyRandom {
       }
 
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
         PCGRandomStreamPrivate_count = n+1;
         PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
@@ -1109,14 +1109,14 @@ module MyRandom {
                                    if ``prob`` has no non-zero values,
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
-                                   if ``isBoundedRange(x) == false``
+                                   if ``x`` does not have both bounds
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
-      { 
+      {
         var dom: domain(1,stridable=true);
 
-        if !isBoundedRange(x) {
+        if x.boundedType != BoundedRangeType.bounded {
           throw new owned IllegalArgumentError('input range must be bounded');
           dom = {1..2}; // this is a workaround for issue #15691
         } else {
@@ -1168,7 +1168,7 @@ module MyRandom {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
+        const low = D.low,
               stride = abs(D.stride);
 
         _lock();
@@ -1234,7 +1234,7 @@ module MyRandom {
       }
 
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc fillRandom(arr: []) {
         compilerError("PCGRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
@@ -1266,8 +1266,8 @@ module MyRandom {
       }
 
       // Forward the leader iterator as well.
-      pragma "no doc"
       pragma "fn returns iterator"
+      @chpldoc.nodoc
       proc iterate(D: domain, type resultType=eltType, param tag)
         where tag == iterKind.leader
       {
@@ -1278,15 +1278,15 @@ module MyRandom {
         return PCGRandomPrivate_iterate(resultType, D, seed, start, tag);
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       override proc writeThis(f) throws {
-        f <~> "PCGRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("PCGRandomStream(eltType=");
+        f.write(eltType:string);
+        f.write(", parSafe=");
+        f.write(parSafe);
+        f.write(", seed=");
+        f.write(seed);
+        f.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -1297,20 +1297,20 @@ module MyRandom {
       //
 
 
-      pragma "no doc"
+      @chpldoc.nodoc
       var _l: if parSafe then chpl_LocalSpinlock else nothing;
-      pragma "no doc"
+      @chpldoc.nodoc
       inline proc _lock() {
         if parSafe then _l.lock();
       }
-      pragma "no doc"
+      @chpldoc.nodoc
       inline proc _unlock() {
         if parSafe then _l.unlock();
       }
       // up to 4 RNGs
-      pragma "no doc"
+      @chpldoc.nodoc
       var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
-      pragma "no doc"
+      @chpldoc.nodoc
       var PCGRandomStreamPrivate_count: int(64) = 1;
     }
 
@@ -1564,8 +1564,8 @@ module MyRandom {
     //
     // PCGRandomStream iterator implementation
     //
-    pragma "no doc"
     pragma "not order independent yielding loops"
+    @chpldoc.nodoc
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1573,7 +1573,7 @@ module MyRandom {
         yield randlc(resultType, cursor);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
@@ -1581,8 +1581,8 @@ module MyRandom {
         yield block;
     }
 
-    pragma "no doc"
     pragma "not order independent yielding loops"
+    @chpldoc.nodoc
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
@@ -1713,6 +1713,8 @@ module MyRandom {
     proc pcg_rotr_32(value:uint(32), rot:uint(32)):uint(32)
     {
       // having trouble using BitOps...
+      pragma "fn synchronization free"
+      pragma "codegen for CPU and GPU"
       extern proc chpl_bitops_rotr_32(x: uint(32), n: uint(32)) : uint(32);
 
       var ret = chpl_bitops_rotr_32(value, rot);
@@ -2290,7 +2292,7 @@ module MyRandom {
       var state:uint;
 
       // zero all but the bottom N bits of state
-      pragma "no doc"
+      @chpldoc.nodoc
       inline
       proc mask_state() {
         state = normalize(N, state);
@@ -2391,10 +2393,10 @@ module MyRandom {
        This function arranges for that to be the case given any input.
      */
     inline
-    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) return (initseq<<1) | 1;
-    pragma "no doc" // documented in the not param version
+    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) do return (initseq<<1) | 1;
+    @chpldoc.nodoc // documented in the not param version
     inline
-    proc pcg_getvalid_inc(param initseq:uint(64)) param return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(param initseq:uint(64)) param do return (initseq<<1) | 1;
 
 
     // pcg_advance_lcg_8/16/32/64
@@ -2553,7 +2555,7 @@ module MyRandom {
         }
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc NPBRandomStreamPrivate_getNext_noLock() {
         if (eltType == complex) {
           NPBRandomStreamPrivate_count += 2;
@@ -2563,7 +2565,7 @@ module MyRandom {
         return randlc(eltType, NPBRandomStreamPrivate_cursor);
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc NPBRandomStreamPrivate_skipToNth_noLock(in n: integral) {
         n += 1;
         if eltType == complex then n = n*2 - 1;
@@ -2619,7 +2621,7 @@ module MyRandom {
       proc getNth(n: integral): eltType throws {
         if (n < 0) then
           throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock(); 
+        _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
         _unlock();
@@ -2644,27 +2646,27 @@ module MyRandom {
           x = r;
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc fillRandom(arr: []) {
         compilerError("NPBRandomStream(eltType=", eltType:string,
                       ") can only be used to fill arrays of ", eltType:string);
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc choice(x: [], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
@@ -2697,8 +2699,8 @@ module MyRandom {
       }
 
       // Forward the leader iterator as well.
-      pragma "no doc"
       pragma "fn returns iterator"
+      @chpldoc.nodoc
       proc iterate(D: domain, type resultType=real, param tag)
         where tag == iterKind.leader
       {
@@ -2709,15 +2711,15 @@ module MyRandom {
         return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
       }
 
-      pragma "no doc"
+      @chpldoc.nodoc
       override proc writeThis(f) throws {
-        f <~> "NPBRandomStream(eltType=";
-        f <~> eltType:string;
-        f <~> ", parSafe=";
-        f <~> parSafe;
-        f <~> ", seed=";
-        f <~> seed;
-        f <~> ")";
+        f.write("NPBRandomStream(eltType=");
+        f.write(eltType:string);
+        f.write(", parSafe=");
+        f.write(parSafe);
+        f.write(", seed=");
+        f.write(seed);
+        f.write(")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2727,19 +2729,19 @@ module MyRandom {
       // be made private to this class.
       //
 
-      pragma "no doc"
+      @chpldoc.nodoc
       var _l: if parSafe then chpl_LocalSpinlock else nothing;
-      pragma "no doc"
+      @chpldoc.nodoc
       inline proc _lock() {
         if parSafe then _l.lock();
       }
-      pragma "no doc"
+      @chpldoc.nodoc
       inline proc _unlock() {
         if parSafe then _l.unlock();
       }
-      pragma "no doc"
+      @chpldoc.nodoc
       var NPBRandomStreamPrivate_cursor: real = seed;
-      pragma "no doc"
+      @chpldoc.nodoc
       var NPBRandomStreamPrivate_count: int(64) = 1;
     }
 
@@ -2839,8 +2841,8 @@ module MyRandom {
     //
     // RandomStream iterator implementation
     //
-    pragma "no doc"
     pragma "not order independent yielding loops"
+    @chpldoc.nodoc
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2848,7 +2850,7 @@ module MyRandom {
         yield randlc(resultType, cursor);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64), param tag: iterKind)
           where tag == iterKind.leader {
@@ -2857,8 +2859,8 @@ module MyRandom {
         yield block;
     }
 
-    pragma "no doc"
     pragma "not order independent yielding loops"
+    @chpldoc.nodoc
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {

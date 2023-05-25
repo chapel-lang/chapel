@@ -5,6 +5,7 @@
 /* System Headers */
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 /* Internal Headers */
 #include "qthread_innards.h"           /* for qlib */

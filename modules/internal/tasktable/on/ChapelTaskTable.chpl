@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,7 +166,7 @@ module ChapelTaskTable {
     for taskID in chpldev_taskTable!.dom {
       try! stderr.writeln(
              "- ",
-             createStringWithNewBuffer(chpl_lookupFilename(
+             string.createCopyingBuffer(chpl_lookupFilename(
                                         chpldev_taskTable!.map[taskID].filename)),
              ":",  chpldev_taskTable!.map[taskID].lineno,
              " is ", chpldev_taskTable!.map[taskID].state);

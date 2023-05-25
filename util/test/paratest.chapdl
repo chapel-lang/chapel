@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+CWD=$(cd $(dirname $0) ; pwd)
+
+CHPL_TEST_PARTITION=chapdl CHPL_TEST_NODEPARA=8 $CWD/paratest.chapcs $@

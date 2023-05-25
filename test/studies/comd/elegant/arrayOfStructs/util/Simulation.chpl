@@ -160,7 +160,7 @@ proc createFccLattice(lat : real) {
                                 (T, Q, T),
                                 (T, T, Q)];
   var end : vec3int;
-  for i in 0..2 do end(i) = Math.ceil(globalExtent(i) / lat):int;
+  for i in 0..2 do end(i) = AutoMath.ceil(globalExtent(i) / lat):int;
 
   const latticeDom = {0..#end(0), 0..#end(1), 0..#end(2)};
 
@@ -214,7 +214,7 @@ proc setTemperature(temperature) {
   kineticEnergy();
 
   const t     = eKinetic / numAtoms / kB_eV / 1.5;
-  const scale = Math.sqrt(temperature/t);
+  const scale = AutoMath.sqrt(temperature/t);
 
   forall a in allAtoms() {
     a.p *= scale;
@@ -295,7 +295,7 @@ iter allAtoms() ref {
   }
 }
 
-iter allAtoms(param tag : iterKind) ref where tag == iterKind.leader {
+iter allAtoms(param tag : iterKind) where tag == iterKind.leader {
   for follow in Boxes.these(iterKind.leader) {
     yield follow;
   }

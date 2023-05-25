@@ -1,26 +1,5 @@
 use common;
 
-var thisCalls: atomic int;
-var localAccessCalls: atomic int;
-// hijack these two methods to provide some output
-inline proc _array.this(i: int) ref {
-  //writeln("Custom this was called");
-  thisCalls.add(1);
-  return this._value.dsiAccess((i:int,));
-}
-
-inline proc _array.this(i: int, j: int) ref {
-  //writeln("Custom this was called");
-  thisCalls.add(1);
-  return this._value.dsiAccess((i:int,j:int));
-}
-
-inline proc _array.localAccess(i: int) ref {
-  //writeln("Custom localAccess was called");
-  localAccessCalls.add(1);
-  return this._value.dsiLocalAccess((i:int,));
-}
-
 writeln();
 writeln("Starting");
 
@@ -111,7 +90,3 @@ writeln("Starting");
   writeln(A);
   writeln();
 }
-
-
-writeln("`this` was called ", thisCalls , " times");
-writeln("`localAccess` was called ", localAccessCalls, " times");

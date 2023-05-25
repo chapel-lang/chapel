@@ -33,11 +33,11 @@ module test_elemental_explicitly_strided_cholesky {
 		               index_base .. by stride #n };
 
     const strided_mat_dom : domain (2, stridable = true) 
-          dmapped Cyclic ( startIdx = strided_MatIdx.low )
+          dmapped Cyclic ( startIdx = strided_MatIdx.lowBound )
       =   strided_MatIdx;
 
     const unstrided_mat_dom : domain (2, stridable = false) 
-          dmapped Cyclic ( startIdx = unstrided_MatIdx.low )
+          dmapped Cyclic ( startIdx = unstrided_MatIdx.lowBound )
       =   unstrided_MatIdx;
 
     const distribution_type = "cyclic";
@@ -90,7 +90,7 @@ module test_elemental_explicitly_strided_cholesky {
       print_lower_triangle ( L_unstrided );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("elemental cholesky factorization symmetric index range code\n " + 

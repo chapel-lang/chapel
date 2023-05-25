@@ -6,7 +6,7 @@ module CheckHttpSetOpt {
   use RunServer;
   use URL;
   use Curl;
-  use DateTime;
+  use Time;
 
   extern const CURLOPT_VERBOSE: CURLoption;
   extern const CURLOPT_FILETIME: CURLoption;
@@ -23,7 +23,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_VERBOSE, true);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -42,7 +42,7 @@ module CheckHttpSetOpt {
 	              (CURLOPT_FILETIME, true));
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -51,7 +51,7 @@ module CheckHttpSetOpt {
     curl_easy_getinfo(getCurlHandle(urlreader), CURLINFO_FILETIME,
 		      c_ptrTo(time));
 
-    writeln("Remote Time ", datetime.utcfromtimestamp(time));
+    writeln("Remote Time ", dateTime.createUtcFromTimestamp(time));
 
     stderr.flush();
     stdout.flush();
@@ -68,7 +68,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -87,7 +87,7 @@ module CheckHttpSetOpt {
     setopt(urlreader, CURLOPT_URL, url:bytes);
 
     var str: string;
-    while urlreader.readline(str) {
+    while urlreader.readLine(str) {
       writeln(str);
     }
 
@@ -99,7 +99,7 @@ module CheckHttpSetOpt {
   proc write_callback(ptr: c_ptr(c_char), size: c_size_t,
 		      nmemb: c_size_t, userdata: c_void_ptr) {
     writeln("callback called");
-    var str = try! createStringWithBorrowedBuffer(ptr:c_string,
+    var str = try! string.createBorrowingBuffer(ptr:c_string,
                                                   (size * nmemb):int);
     write(str);
     return size * nmemb;

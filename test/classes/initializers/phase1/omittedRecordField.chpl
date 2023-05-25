@@ -14,5 +14,5 @@ record Bar {
   var y = 17;
 }
 
-var testit: borrowed Foo = new borrowed Foo(11);
+var testit: borrowed Foo = (new owned Foo(11)).borrow();
 writeln(testit);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -79,14 +79,6 @@ public:
   void                    moduleUseAdd(ModuleSymbol* module);
   void                    deadCodeModuleUseRemove(ModuleSymbol* module);
 
-  void                    printDocs(std::ostream* file,
-                                    unsigned int  tabs,
-                                    std::string   parentName);
-
-  void                    printTableOfContents(std::ostream* file);
-
-  std::string             docsName()                                     const;
-
   std::string             path()                                         const;
 
   ModTag                  modTag;
@@ -114,8 +106,6 @@ private:
                                              std::vector<VarSymbol*>* contain,
                                              Expr*            expr,
                                              bool             config);
-
-  bool                    hasTopLevelModule();
 };
 
 extern BlockStmt*         rootBlock;

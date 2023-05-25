@@ -1,4 +1,4 @@
-use BitOps, Random, Time;
+use Math, BitOps, Random, Time;
 
 use HPCCProblemSize;
 
@@ -34,13 +34,13 @@ proc main() {
 
   initVectors(Twiddles, z);
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
   Z = conjg(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(z, Z, Twiddles);
   printResults(validAnswer, execTime);
@@ -145,7 +145,7 @@ iter genDFTPhases(numElements, radix) {
 
 
 proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
-  const i1 = D.low,
+  const i1 = D.lowBound,
     i2 = i1 + D.stride,
     i3 = i2 + D.stride,
     i4 = i3 + D.stride;
@@ -164,7 +164,7 @@ proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
 }
 
 
-proc log4(x) return logBasePow2(x, 2);
+proc log4(x) do return logBasePow2(x, 2);
 
 
 proc verifyResults(z, Z, Twiddles) {

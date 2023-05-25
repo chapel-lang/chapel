@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -136,7 +136,7 @@ module ExternalArray {
     if (arr.domain.rank != 1) {
       compilerError("cannot return an array with rank != 1");
     }
-    if (arr.domain.low != 0) {
+    if (arr.domain.lowBound != 0) {
       halt("cannot return an array when the lower bounds is not 0");
     }
 

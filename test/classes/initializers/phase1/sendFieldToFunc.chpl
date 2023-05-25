@@ -12,5 +12,5 @@ proc bar(val) {
   return !val;
 }
 
-var foo = new borrowed Foo(true);
+var foo = (new owned Foo(true)).borrow();
 writeln(foo);

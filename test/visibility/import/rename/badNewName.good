@@ -1,1 +1,1 @@
-badNewName.chpl:5: error: incorrect expression in 'import' list rename, identifier expected
+badNewName.chpl:5: syntax error: incorrect expression in 'import' list rename, identifier expected

@@ -1,1 +1,0 @@
-../../release/examples/primers/locales.chpl

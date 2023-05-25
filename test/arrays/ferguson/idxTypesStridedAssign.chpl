@@ -5,8 +5,8 @@ var bb: [0:uint(64)..4:uint(64) by 2] real;
 bb = b;
 writeln("bb is: ", bb);
 
-var c:  [2:uint(64)..6:uint(64) by -2] real = (1.1, 3.3, 5.5);
-var cc: [2:uint(64)..6:uint(64) by -2] real;
+var c:  [2:uint(64)..6:uint(64) by -2] real = (1.1, 3.3, 5.5);  // neg-stride
+var cc: [2:uint(64)..6:uint(64) by -2] real;                    // neg-stride
 cc = c;
 writeln("cc is: ", cc);
 

@@ -7,7 +7,7 @@ config var printAllCounts = false;
 // this is a config param just so it can be in COMPOPTS
 config param checkMaxAttained = false;
 
-var timer:Timer;
+var timer:stopwatch;
 
 proc start() {
   resetCommDiagnostics();
@@ -79,7 +79,8 @@ proc totalOns(D:[LocaleSpace] commDiagnostics) : int {
 // Checks anything with a passed maximum != max(int) is below the maximum.
 // Prints out counts if the passed maximum == max(int) (or is not passed).
 // Prints out all counts if called with no arguments.
-proc report(maxGets=max(int), maxPuts=max(int), maxOns=max(int)) {
+proc report(maxGets=max(int), maxPuts=max(int), maxOns=max(int),
+            maxGetsToAdjust = maxGets) {
   var counts = getCommDiagnostics();
 
   if printAllCounts || printCounts then
@@ -100,7 +101,7 @@ proc report(maxGets=max(int), maxPuts=max(int), maxOns=max(int)) {
     writeln("GETs: ", gets);
   if gets > maxGets then
     writeln("ERROR -- TOO MANY GETs, ", gets, " EXCEEDS MAX OF ", maxGets);
-  if checkMaxAttained && maxGets!=max(int) && gets < maxGets then
+  if checkMaxAttained && maxGets!=max(int) && gets < maxGetsToAdjust then
     fixGets = true;
 
   if (printCounts && maxPuts==max(int)) || printAllCounts  then

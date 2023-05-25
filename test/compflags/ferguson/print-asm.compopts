@@ -1,0 +1,1 @@
+--llvm-print-ir foo,bar --llvm-print-ir-stage asm

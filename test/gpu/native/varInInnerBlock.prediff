@@ -1,0 +1,4 @@
+#!/bin/sh
+
+awk '/NumArgs/ { print $NF; }' $2 > $2.awked
+tail -n1 $2.awked >$2  # only report the last launch

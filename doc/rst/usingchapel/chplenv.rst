@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.26.0
+        export CHPL_HOME=~/chapel-1.30.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -102,7 +102,6 @@ CHPL_HOST_PLATFORM
         netbsd32     32-bit NetBSD platforms
         netbsd64     64-bit NetBSD platforms
         pwr6         IBM Power6 SMP cluster
-        sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
         hpe-cray-ex  HPE Cray EX
@@ -295,7 +294,6 @@ CHPL_TARGET_CPU
         haswell         bdver3
         broadwell       bdver4
         skylake
-        knl
         =========== ================ ================
 
    These values are defined to be the same as in GCC 7:
@@ -386,8 +384,8 @@ CHPL_LOCALE_MODEL
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
 
-   See :ref:`readme-localeModels` for more information about
-   locale models.
+   .. warning:: The NUMA locale model is deprecated and will be removed
+      in a future release.
 
 
 .. _readme-chplenv.CHPL_TASKS:
@@ -490,7 +488,8 @@ CHPL_HOST_MEM
         jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
-   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+   If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
+   for Cygwin and MacOS. On those systems, it defaults to ``cstdlib``.
 
 .. _readme-chplenv.CHPL_HOST_JEMALLOC:
 
@@ -755,9 +754,11 @@ CHPL_LLVM
        Value          Description
        ============== ======================================================
        bundled        use the llvm/clang distribution in third-party
-       system         find a compatible LLVM in system libraries;
-                      note: the LLVM must be a version supported by Chapel
+       system         find a compatible LLVM and clang in system libraries;
+                      but note that it must be a version supported by Chapel
        none           do not support llvm/clang-related features
+                      (but note that the LLVM Support library will still
+                      be used -- see ``CHPL_LLVM_SUPPORT`` below)
        unset          indicates that no reasonable default has been
                       inferred, requiring the user to intentionally select
                       another option
@@ -768,32 +769,74 @@ CHPL_LLVM
      * ``none`` on linux32 where Chapel LLVM support is not yet implemented
      * ``bundled`` if you've already built the bundled llvm in
        `third-party/llvm`
-     *  ``system`` if a compatible system-wide installation of LLVM is detected
+     *  ``system`` if a compatible system-wide installation of LLVM and
+        clang is detected
      * ``unset`` otherwise
 
    If CHPL_LLVM is ``unset`` you will need to either add a system-wide
    installation of LLVM or set ``CHPL_LLVM`` to ``bundled`` or ``none``.
 
    See :ref:`readme-prereqs` for more information about currently
-   supported LLVM versions.
+   supported LLVM versions and how to install them. If you are having
+   trouble getting the build system to recognize your system install of
+   LLVM, try setting ``CHPL_LLVM=system`` and set ``CHPL_LLVM_CONFIG`` to
+   the ``llvm-config`` command from the LLVM version you have installed.
+   Temporarily setting these can help produce a different error message
+   that may may help you to diagnose the problem.
 
-   **CHPL_LLVM_CONFIG**
+.. _readme-chplenv.CHPL_LLVM_SUPPORT:
+
+CHPL_LLVM_SUPPORT
+~~~~~~~~~~~~~~~~~
+
+   This variable indicates where to find the LLVM support library. The
+   LLVM support library is required to build the ``chpl`` compiler. It
+   can only have two values:
+
+       ============== ======================================================
+       Value          Description
+       ============== ======================================================
+       bundled        build the LLVM support library from source using
+                      the bundled version in third-party
+       system         use a system-wide install of LLVM to get the
+                      LLVM support library
+       ============== ======================================================
+
+   If unset, ``CHPL_LLVM_SUPPORT`` defaults to the same value as
+   ``CHPL_LLVM`` if ``CHPL_LLVM=system`` or ``CHPL_LLVM=bundled``.
+   Otherwise:
+
+     * ``system`` if a compatible system-wide installation of LLVM is detected
+     * ``bundled`` otherwise
+
+.. _readme-chplenv.CHPL_LLVM_CONFIG:
+
+CHPL_LLVM_CONFIG
+~~~~~~~~~~~~~~~~
 
    In some cases, it is useful to be able to select a particular LLVM
-   installation for use with ``CHPL_LLVM=system``. In that event, in
-   addition to setting ``CHPL_LLVM=system``, you can set
-   ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
-   installation you wish to use.
+   installation for use with ``CHPL_LLVM=system`` or with
+   ``CHPL_LLVM_SUPPORT=system``. In that event, in addition to setting
+   one of those variables, you can set ``CHPL_LLVM_CONFIG`` to the
+   llvm-config command from the LLVM installation you wish to use.
 
-   **CHPL_LLVM_GCC_PREFIX**
+   Inspecting the value of this variable from ``printchplenv --all`` can
+   also help to identify problems with detection of a system install of
+   LLVM and clang.
 
-   Additionally, in some cases, the configured ``clang`` will not work
-   correctly without a ``--gcc-toolchain`` flag. The Chapel compiler
-   tries to infer this flag but it does not always do so correctly. As a
-   result, it is sometimes necessary to override it.  You can set
-   ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
-   ``--gcc-toolchain`` flag; or you can set it to a directory to pass to
-   ``clang`` with the ``--gcc-toolchain`` flag.
+.. _readme-chplenv.CHPL_LLVM_GCC_PREFIX:
+
+CHPL_LLVM_GCC_PREFIX
+~~~~~~~~~~~~~~~~~~~~
+
+   In some cases, the configured ``clang`` will not work correctly
+   without a ``--gcc-toolchain`` flag. The Chapel compiler tries to infer
+   this flag based upon the ``gcc`` currently available in your ``PATH``
+   but sometimes that strategy does not work. As a result, it is
+   sometimes necessary to indicate the path to the GCC libraries.  You
+   can set ``CHPL_LLVM_GCC_PREFIX`` to ``none`` to  disable passing the
+   ``--gcc-toolchain`` flag; or you can set it to a particular directory
+   to pass to ``clang`` with the ``--gcc-toolchain`` flag.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -825,7 +868,8 @@ CHPL_LIB_PIC
        Value Description
        ===== ================================
        pic   build position independent code
-       none  build position dependent code
+       none  use the system default, which might be
+             position independent or position dependent
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``

@@ -33,7 +33,7 @@ proc checkOutput(cmd: string) {
   var p = spawn(splitCmd,stdout=pipeStyle.pipe);
   writeln("$ " + cmd);
   var line:string;
-  while p.stdout.readline(line) {
+  while p.stdout.readLine(line) {
     write(line);
   }
   writeln("*"*80);
@@ -42,5 +42,3 @@ proc checkOutput(cmd: string) {
     writeln("Failed to run cmd: '%s'".format(cmd));
   }
 }
-
-

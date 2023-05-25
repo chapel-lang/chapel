@@ -1,3 +1,5 @@
+// cannot pass an iterable to a 'ref' or 'const ref' formal of an array type
+
 proc writeArr(const X: [] real) {
   writeln(X);
 }

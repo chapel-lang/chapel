@@ -1,0 +1,2 @@
+labeledLoopContinueWithoutOnStatement.chpl:7: error: 'continue' to label 'outerer' outside of an 'on' statement is not allowed
+labeledLoopContinueWithoutOnStatement.chpl:2: note: cannot 'continue' out of an 'on' statement

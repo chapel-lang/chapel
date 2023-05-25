@@ -25,7 +25,7 @@ proc f() {
   cvar = new unmanaged MyClass();
   return cvar;
   // Look for an access of the class pointer, and remember its TBAA access tag.
-  // CHECK: store %chpl_MyClass_chpl{{[0-9]*}}_object*
+  // CHECK: store {{(ptr|%chpl_MyClass_chpl[0-9]*_object\*)}}
   // CHECK-SAME: !tbaa ![[CLSPTRACC:[0-9]+]]
 }
 

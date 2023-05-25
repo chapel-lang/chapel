@@ -31,8 +31,8 @@ proc main {
 // this function writes a square array out to a file
 //
 proc writeSquareArray(n, X, filename) {
-  // Create an output file with the specified filename in write (iomode.cw) mode
-  var outfile = open(filename, iomode.cw);
+  // Create an output file with the specified filename in write (ioMode.cw) mode
+  var outfile = open(filename, ioMode.cw);
   var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file
@@ -51,8 +51,8 @@ proc writeSquareArray(n, X, filename) {
 // This function reads a new array out of a file and returns it
 //
 proc readArray(filename) {
-  // Create an input file with the specified filename in read (iomode.r) mode
-  var infile = open(filename, iomode.r);
+  // Create an input file with the specified filename in read (ioMode.r) mode
+  var infile = open(filename, ioMode.r);
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file

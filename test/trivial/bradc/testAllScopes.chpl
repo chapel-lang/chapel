@@ -32,7 +32,7 @@ proc main() {
 
   writeln("b(3) is: ", myB);
 
-  var myE: borrowed e = new borrowed e();
+  var myE: borrowed e = (new owned e()).borrow();
   var myG: int;
 
   myG = myE.g(8);

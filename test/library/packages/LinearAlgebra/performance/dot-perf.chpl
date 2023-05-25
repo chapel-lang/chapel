@@ -23,7 +23,7 @@ proc main() {
   
   var BA : [dom] real = [(i,j) in dom] (j / (1000000));
 
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('============================');

@@ -51,8 +51,8 @@ proc n(arg : borrowed object) {
 
 
 proc test() {
-  var a = new borrowed MyClass(new borrowed OtherClass(1));
-  var b = new borrowed Concrete();
+  var a = (new owned MyClass((new owned OtherClass(1)).borrow())).borrow();
+  var b = (new owned Concrete()).borrow();
   g(a);
   h(a);
   i(a);

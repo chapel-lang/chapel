@@ -1,7 +1,7 @@
 use IO;
 
 proc main() {
-  var tmp = opentmp();
+  var tmp = openTempFile();
 
   var A = ["one"=>1, "two"=>2, "three"=>3];
   var B:[A.domain] int;

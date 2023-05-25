@@ -3,7 +3,7 @@
 class MyClass {  var x: int;  }
 
 var lhs: shared MyClass? = nil;
-var rhs = new borrowed MyClass();
+var rhs = (new owned MyClass()).borrow();
 
 lhs = rhs;
 

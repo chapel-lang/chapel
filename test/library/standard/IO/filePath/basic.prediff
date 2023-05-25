@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+# swaps occurences of $CHPL_HOME in the output with the string: "{CHPL_HOME}"
+
+tmpfile=$2
+
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+regex="s~$CHPL_HOME~{CHPL_HOME}~g"
+sed -e "$regex" $tmpfile > $tmptmp
+
+# also use realpath to work with absolute paths
+#  the 'realpath' command isn't avilible on Mac OS by default, so this step is skipped on Mac
+#  if absolute $CHPL_HOME paths become necessary on Mac, this script could be replaced by a Python script
+if [ -x "$(command -v realpath)" ]; then
+    realhome=`realpath $CHPL_HOME`
+    regex="s~$realhome~{CHPL_HOME}~g"
+    sed -e "$regex" $tmpfile > $tmptmp
+fi
+
+mv $tmptmp $tmpfile

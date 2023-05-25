@@ -8,8 +8,8 @@ use Random;
 
 var rng = createRandomStream(eltType=int, seed=0, parSafe=false, algorithm=RNG.PCG);
 
-//var t2 = new Timer();
-//var t3 = new Timer();
+//var t2 = new stopwatch();
+//var t3 = new stopwatch();
 //var size1, size2, size3 = 0;
 
 // iters, size, num_domains
@@ -45,7 +45,7 @@ for (cfg,idx) in zip(configs, 1..) {
 
   if correctness then iters = 1;
 
-  var t1 = new Timer();
+  var t1 = new stopwatch();
 
   t1.start();
 

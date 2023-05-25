@@ -52,14 +52,8 @@ enum Linkage : unsigned char;
 class LinkageSpecDecl;
 class Module;
 class NamedDecl;
-class ObjCCategoryDecl;
-class ObjCCategoryImplDecl;
 class ObjCContainerDecl;
-class ObjCImplDecl;
-class ObjCImplementationDecl;
-class ObjCInterfaceDecl;
 class ObjCMethodDecl;
-class ObjCProtocolDecl;
 struct PrintingPolicy;
 class RecordDecl;
 class SourceManager;
@@ -231,8 +225,15 @@ public:
     /// module is imported.
     VisibleWhenImported,
 
+    /// This declaration has an owning module, and is visible to lookups
+    /// that occurs within that module. And it is reachable in other module
+    /// when the owning module is transitively imported.
+    ReachableWhenImported,
+
     /// This declaration has an owning module, but is only visible to
     /// lookups that occur within that module.
+    /// The discarded declarations in global module fragment belongs
+    /// to this group too.
     ModulePrivate
   };
 
@@ -241,8 +242,8 @@ protected:
   /// DeclContext. These pointers form the linked list that is
   /// traversed via DeclContext's decls_begin()/decls_end().
   ///
-  /// The extra two bits are used for the ModuleOwnershipKind.
-  llvm::PointerIntPair<Decl *, 2, ModuleOwnershipKind> NextInContextAndBits;
+  /// The extra three bits are used for the ModuleOwnershipKind.
+  llvm::PointerIntPair<Decl *, 3, ModuleOwnershipKind> NextInContextAndBits;
 
 private:
   friend class DeclContext;
@@ -319,6 +320,7 @@ protected:
   friend class ASTReader;
   friend class CXXClassMemberWrapper;
   friend class LinkageComputer;
+  friend class RecordDecl;
   template<typename decl_type> friend class Redeclarable;
 
   /// Access - Used by C++ decls for the access specifier.
@@ -352,7 +354,7 @@ protected:
                      DeclContext *Parent, std::size_t Extra = 0);
 
 private:
-  bool AccessDeclContextSanity() const;
+  bool AccessDeclContextCheck() const;
 
   /// Get the module ownership kind to use for a local lexical child of \p DC,
   /// which may be either a local or (rarely) an imported declaration.
@@ -472,11 +474,11 @@ public:
 
   void setAccess(AccessSpecifier AS) {
     Access = AS;
-    assert(AccessDeclContextSanity());
+    assert(AccessDeclContextCheck());
   }
 
   AccessSpecifier getAccess() const {
-    assert(AccessDeclContextSanity());
+    assert(AccessDeclContextCheck());
     return AccessSpecifier(Access);
   }
 
@@ -612,6 +614,28 @@ public:
   bool isModulePrivate() const {
     return getModuleOwnershipKind() == ModuleOwnershipKind::ModulePrivate;
   }
+
+  /// Whether this declaration was exported in a lexical context.
+  /// e.g.:
+  ///
+  ///   export namespace A {
+  ///      void f1();        // isInExportDeclContext() == true
+  ///   }
+  ///   void A::f1();        // isInExportDeclContext() == false
+  ///
+  ///   namespace B {
+  ///      void f2();        // isInExportDeclContext() == false
+  ///   }
+  ///   export void B::f2(); // isInExportDeclContext() == true
+  bool isInExportDeclContext() const;
+
+  bool isInvisibleOutsideTheOwningModule() const {
+    return getModuleOwnershipKind() > ModuleOwnershipKind::VisibleWhenImported;
+  }
+
+  /// FIXME: Implement discarding declarations actually in global module
+  /// fragment. See [module.global.frag]p3,4 for details.
+  bool isDiscardedInGlobalModuleFragment() const { return false; }
 
   /// Return true if this declaration has an attribute which acts as
   /// definition of the entity, such as 'alias' or 'ifunc'.
@@ -790,6 +814,11 @@ public:
     return (int)getModuleOwnershipKind() <= (int)ModuleOwnershipKind::Visible;
   }
 
+  bool isReachable() const {
+    return (int)getModuleOwnershipKind() <=
+           (int)ModuleOwnershipKind::ReachableWhenImported;
+  }
+
   /// Set that this declaration is globally visible, even if it came from a
   /// module that is not visible.
   void setVisibleDespiteOwningModule() {
@@ -891,10 +920,12 @@ public:
 
   /// If this decl is defined inside a function/method/block it returns
   /// the corresponding DeclContext, otherwise it returns null.
-  const DeclContext *getParentFunctionOrMethod() const;
-  DeclContext *getParentFunctionOrMethod() {
-    return const_cast<DeclContext*>(
-                    const_cast<const Decl*>(this)->getParentFunctionOrMethod());
+  const DeclContext *
+  getParentFunctionOrMethod(bool LexicalParent = false) const;
+  DeclContext *getParentFunctionOrMethod(bool LexicalParent = false) {
+    return const_cast<DeclContext *>(
+        const_cast<const Decl *>(this)->getParentFunctionOrMethod(
+            LexicalParent));
   }
 
   /// Retrieves the "canonical" declaration of the given declaration.
@@ -1435,10 +1466,14 @@ class DeclContext {
     /// Has the full definition of this type been required by a use somewhere in
     /// the TU.
     uint64_t IsCompleteDefinitionRequired : 1;
+
+    /// Whether this tag is a definition which was demoted due to
+    /// a module merge.
+    uint64_t IsThisDeclarationADemotedDefinition : 1;
   };
 
   /// Number of non-inherited bits in TagDeclBitfields.
-  enum { NumTagDeclBits = 9 };
+  enum { NumTagDeclBits = 10 };
 
   /// Stores the bits used by EnumDecl.
   /// If modified NumEnumDeclBit and the accessor
@@ -1528,10 +1563,13 @@ class DeclContext {
 
     /// Represents the way this type is passed to a function.
     uint64_t ArgPassingRestrictions : 2;
+
+    /// Indicates whether this struct has had its field layout randomized.
+    uint64_t IsRandomized : 1;
   };
 
   /// Number of non-inherited bits in RecordDeclBitfields.
-  enum { NumRecordDeclBits = 14 };
+  enum { NumRecordDeclBits = 15 };
 
   /// Stores the bits used by OMPDeclareReductionDecl.
   /// If modified NumOMPDeclareReductionDeclBits and the accessor
@@ -1580,6 +1618,12 @@ class DeclContext {
     uint64_t IsDefaulted : 1;
     uint64_t IsExplicitlyDefaulted : 1;
     uint64_t HasDefaultedFunctionInfo : 1;
+
+    /// For member functions of complete types, whether this is an ineligible
+    /// special member function or an unselected destructor. See
+    /// [class.mem.special].
+    uint64_t IsIneligibleOrNotSelected : 1;
+
     uint64_t HasImplicitReturnZero : 1;
     uint64_t IsLateTemplateParsed : 1;
 
@@ -1615,7 +1659,7 @@ class DeclContext {
   };
 
   /// Number of non-inherited bits in FunctionDeclBitfields.
-  enum { NumFunctionDeclBits = 27 };
+  enum { NumFunctionDeclBits = 28 };
 
   /// Stores the bits used by CXXConstructorDecl. If modified
   /// NumCXXConstructorDeclBits and the accessor
@@ -1627,12 +1671,12 @@ class DeclContext {
     /// For the bits in FunctionDeclBitfields.
     uint64_t : NumFunctionDeclBits;
 
-    /// 24 bits to fit in the remaining available space.
+    /// 23 bits to fit in the remaining available space.
     /// Note that this makes CXXConstructorDeclBitfields take
     /// exactly 64 bits and thus the width of NumCtorInitializers
     /// will need to be shrunk if some bit is added to NumDeclContextBitfields,
     /// NumFunctionDeclBitfields or CXXConstructorDeclBitfields.
-    uint64_t NumCtorInitializers : 21;
+    uint64_t NumCtorInitializers : 20;
     uint64_t IsInheritingConstructor : 1;
 
     /// Whether this constructor has a trail-allocated explicit specifier.
@@ -1995,6 +2039,12 @@ public:
   Decl *getNonClosureAncestor();
   const Decl *getNonClosureAncestor() const {
     return const_cast<DeclContext*>(this)->getNonClosureAncestor();
+  }
+
+  // Retrieve the nearest context that is not a transparent context.
+  DeclContext *getNonTransparentContext();
+  const DeclContext *getNonTransparentContext() const {
+    return const_cast<DeclContext *>(this)->getNonTransparentContext();
   }
 
   /// getPrimaryContext - There may be many different

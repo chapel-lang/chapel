@@ -48,7 +48,7 @@ var at:[mydom]int = {1..n2};
 var bt:[mydom]int;
 var still_correct = true;
 
-var timer:Timer;
+var timer:stopwatch;
 
 if messages {
   resetCommDiagnostics();
@@ -56,7 +56,7 @@ if messages {
 }
 
 if timeit {
-  timer = new Timer();
+  timer = new stopwatch();
   timer.start();
 }
 

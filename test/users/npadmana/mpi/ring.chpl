@@ -1,7 +1,7 @@
 use MPI;
 use C_MPI;
 use Time;
-use Barriers;
+use Collectives;
 
 enum BarrierType {None, Chapel, MPI};
 
@@ -20,7 +20,7 @@ proc main() {
 }
 
 proc send() {
-  var sendBarrier = new Barrier(numLocales);
+  var sendBarrier = new barrier(numLocales);
   coforall loc in Locales do on loc {
     var rank = here.id : c_int,
     size = numLocales : c_int;
@@ -42,7 +42,7 @@ proc send() {
 }
 
 proc recv() {
-  var recvBarrier = new Barrier(numLocales);
+  var recvBarrier = new barrier(numLocales);
   coforall loc in Locales do on loc {
     var rank = here.id : c_int,
     size = numLocales : c_int;

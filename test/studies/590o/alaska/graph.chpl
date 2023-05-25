@@ -1,4 +1,4 @@
-
+use Sort;
 use LinkedLists;
 
 config var filename="graph.dat";
@@ -528,8 +528,8 @@ proc DFS(G){
 proc readGraph(filename) {
   use IO;
 
-  // Create and open  an input file with the specified filename in read (iomode.r) mode
-  var infile = open(filename, iomode.r);
+  // Create and open  an input file with the specified filename in read (ioMode.r) mode
+  var infile = open(filename, ioMode.r);
   var reader = infile.reader();
 
   // Read the number of nodes and edges
@@ -580,14 +580,14 @@ proc readGraph(filename) {
   var N: domain(1) = {1..ND.size};
   var E: domain(1) = {1..ED.size};
 
-  var X: [N] unmanaged Node? = NameMap.sorted();
-  var Y: [E] unmanaged Edge? = EdgeMap.sorted();
+  var X: [N] unmanaged Node? = sorted(NameMap);
+  var Y: [E] unmanaged Edge? = sorted(EdgeMap);
 
   [ i in N ] X(i)!.id = i;
   [ i in E ] Y(i)!.id = i;
 
-  writeln(ND.sorted());
-  writeln(NameMap.sorted());
+  writeln(sorted(ND));
+  writeln(sorted(NameMap));
   writeln("Y = ",Y);
 
   reader.close();

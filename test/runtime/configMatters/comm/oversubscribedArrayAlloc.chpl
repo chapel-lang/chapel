@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 config const oversubscription = 4;
 const desiredTasks = oversubscription * here.maxTaskPar;
@@ -23,7 +23,7 @@ const n = arrSize / numBytes(elemType);
 
 
 config const showPerf = false;
-var timer: Timer;
+var timer: stopwatch;
 
 timer.start();
 coforall loc in Locales do on loc {

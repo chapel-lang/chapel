@@ -18,8 +18,8 @@ type shapeType = void;
 
 proc testParen1a() {
 
-  proc standinType() type  where shapeType == void  return R("p1a-yes");
-  proc standinType() type  where shapeType != void  return R("p1a-no");
+  proc standinType() type  where shapeType == void do  return R("p1a-yes");
+  proc standinType() type  where shapeType != void do  return R("p1a-no");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -27,8 +27,8 @@ proc testParen1a() {
 
 proc testParen1b() {
 
-  proc standinType() type  where shapeType != void  return R("p1b-no");
-  proc standinType() type  where shapeType == void  return R("p1b-yes");
+  proc standinType() type  where shapeType != void do  return R("p1b-no");
+  proc standinType() type  where shapeType == void do  return R("p1b-yes");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -36,8 +36,8 @@ proc testParen1b() {
 
 proc testParen2a() {
 
-  proc standinType() type  where shapeType == void  return R("p2a-yes");
-  proc standinType() type                           return R("p2a-no");
+  proc standinType() type  where shapeType == void do  return R("p2a-yes");
+  proc standinType() type                          do  return R("p2a-no");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -45,8 +45,8 @@ proc testParen2a() {
 
 proc testParen2b() {
 
-  proc standinType() type                           return R("p2b-no");
-  proc standinType() type  where shapeType == void  return R("p2b-yes");
+  proc standinType() type                          do  return R("p2b-no");
+  proc standinType() type  where shapeType == void do  return R("p2b-yes");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -54,8 +54,8 @@ proc testParen2b() {
 
 proc testParen3a() {
 
-  proc standinType() type                           return R("p3a-yes");
-  proc standinType() type  where shapeType != void  return R("p3a-no");
+  proc standinType() type                          do  return R("p3a-yes");
+  proc standinType() type  where shapeType != void do  return R("p3a-no");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -63,8 +63,8 @@ proc testParen3a() {
 
 proc testParen3b() {
 
-  proc standinType() type  where shapeType != void  return R("p3b-no");
-  proc standinType() type                           return R("p3b-yes");
+  proc standinType() type  where shapeType != void do  return R("p3b-no");
+  proc standinType() type                          do  return R("p3b-yes");
 
   type ttt = standinType();
   compilerWarning(ttt:string, 0);
@@ -74,8 +74,8 @@ proc testParen3b() {
 
 proc testNops1a {
 
-  proc standinType type  where shapeType == void  return R("n1a-yes");
-  proc standinType type  where shapeType != void  return R("n1a-no");
+  proc standinType type  where shapeType == void do  return R("n1a-yes");
+  proc standinType type  where shapeType != void do  return R("n1a-no");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);
@@ -83,8 +83,8 @@ proc testNops1a {
 
 proc testNops1b {
 
-  proc standinType type  where shapeType != void  return R("n1b-no");
-  proc standinType type  where shapeType == void  return R("n1b-yes");
+  proc standinType type  where shapeType != void do  return R("n1b-no");
+  proc standinType type  where shapeType == void do  return R("n1b-yes");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);
@@ -92,8 +92,8 @@ proc testNops1b {
 
 proc testNops2a {
 
-  proc standinType type  where shapeType == void  return R("n2a-yes");
-  proc standinType type                           return R("n2a-no");
+  proc standinType type  where shapeType == void do  return R("n2a-yes");
+  proc standinType type                          do  return R("n2a-no");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);
@@ -101,8 +101,8 @@ proc testNops2a {
 
 proc testNops2b {
 
-  proc standinType type                           return R("n2b-no");
-  proc standinType type  where shapeType == void  return R("n2b-yes");
+  proc standinType type                          do  return R("n2b-no");
+  proc standinType type  where shapeType == void do  return R("n2b-yes");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);
@@ -110,8 +110,8 @@ proc testNops2b {
 
 proc testNops3a {
 
-  proc standinType type                           return R("n3a-yes");
-  proc standinType type  where shapeType != void  return R("n3a-no");
+  proc standinType type                          do  return R("n3a-yes");
+  proc standinType type  where shapeType != void do  return R("n3a-no");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);
@@ -119,8 +119,8 @@ proc testNops3a {
 
 proc testNops3b {
 
-  proc standinType type  where shapeType != void  return R("n3b-no");
-  proc standinType type                           return R("n3b-yes");
+  proc standinType type  where shapeType != void do  return R("n3b-no");
+  proc standinType type                          do  return R("n3b-yes");
 
   type ttt = standinType;
   compilerWarning(ttt:string, 0);

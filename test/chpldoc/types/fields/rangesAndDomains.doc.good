@@ -63,3 +63,7 @@ or
 
    .. attribute:: var bounded1DDomainByAlign = {1..10 by 2 align 1}
 
+   .. attribute:: var lSrcVals: [myLocaleSpace] [0..#bufferSize] elemType
+
+   .. attribute:: var openHighBound: [myLocaleSpace] [0..<bufferSize] elemType
+

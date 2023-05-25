@@ -14,6 +14,6 @@ class Child : Parent {
   }
 }
 
-var obj = new borrowed Derived();
-var x = new borrowed Child(obj);
+var obj = (new owned Derived()).borrow();
+var x = (new owned Child(obj)).borrow();
 writeln(x);

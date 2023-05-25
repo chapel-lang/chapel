@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -293,19 +293,16 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
   for( int64_t i = 0; i < nsubmatch; i++ ) {
-    if( !ret || spPtr[i].data() == NULL ) {
+    if( !ret ) {
       submatch[i].offset = -1;
       submatch[i].len = 0;
     } else {
-      intptr_t diff = 0;
-      if( spPtr[i].empty() ) {
-        diff = startpos;
-      } else {
-        diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
-        assert( diff >= startpos && diff <= endpos );
-      }
+      intptr_t diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
+      assert( diff >= startpos && diff <= endpos );
+      int64_t length = spPtr[i].length();
+
       submatch[i].offset = diff;
-      submatch[i].len = spPtr[i].length();
+      submatch[i].len = length;
     }
   }
 
@@ -352,6 +349,9 @@ int qio_regex_channel_read_byte(qio_channel_s* ch)
   return ret;
 }
 
+// cur: what the search process believes to be the current offset
+// min: what the search process believes to be the minimum offset
+//      that we cannot discard
 void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 {
   int64_t buf;
@@ -367,7 +367,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   if( min < buf ) min = buf;
 
   // advance to target.
-  //printf("DISCARD CALLED: advance to %i\n", (int) target);
+  //printf("DISCARD CALLED: advance to %i\n", (int) min);
   qio_channel_advance_unlocked(ch, min - buf);
   //printf("DISCARD CALLED: mark\n");
   qio_channel_mark(false, ch);
@@ -399,6 +399,7 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   int i;
   int use_captures = ncaptures;
   bool atEOF = false;
+  int old_gFileStringAllowBufferSearch;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
   if( ncaptures > INT_MAX || ncaptures < 0 )
@@ -481,7 +482,14 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   MAYBE_STACK_ALLOC(FilePiece, use_captures, locs, caps_onstack);
   memset((void*)locs, 0, sizeof(FilePiece) * use_captures);
 
+  // if we allow MatchFile to search the buffer, given the string "xy", it will
+  // incorrectly match "^y". This seems to be an issue with RE2 rather than our
+  // shim. As a TODO: we should either fix this (buffer would be faster) or
+  // remove the unneeded buffer setup code
+  old_gFileStringAllowBufferSearch = gFileStringAllowBufferSearch;
+  gFileStringAllowBufferSearch = 0;
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
+  gFileStringAllowBufferSearch = old_gFileStringAllowBufferSearch;
 
   // Copy capture groups if we found something
   if( found ) {

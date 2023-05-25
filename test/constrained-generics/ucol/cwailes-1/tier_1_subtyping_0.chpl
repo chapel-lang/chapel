@@ -18,4 +18,4 @@ proc f(x:?T):int where implements I(T) {
 
 // Infers 'implements I(borrowed D);'
 // Prints 42
-writeln(f(new borrowed D(42)));
+writeln(f((new owned D(42)).borrow()));

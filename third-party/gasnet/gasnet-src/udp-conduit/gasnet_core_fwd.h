@@ -37,13 +37,12 @@
   #endif
 #endif
 
-  /* define to 1 if conduit allows internal GASNet fns to issue put/get for remote
-     addrs out of segment - not true when PSHM is used */
-#if !GASNET_PSHM
-#define GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET 1
-#endif
-
 #define GASNET_MAXNODES AMUDP_MAX_NUMTRANSLATIONS
+
+  // If this conduit is considered a "portable conduit" only *conditionally*,
+  // uncomment to enable calls to gasnetc_check_portable_conduit(void) as
+  // described in gasnet_internal.c.
+//#define GASNETC_CHECK_PORTABLE_CONDUIT_HOOK 1
 
   // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
 //#define GASNET_HAVE_MK_CLASS_CUDA_UVA GASNETI_MK_CLASS_CUDA_UVA_ENABLED
@@ -143,7 +142,13 @@
 //#define GASNETC_SEGMENT_ATTACH_HOOK 1
 //#define GASNETC_SEGMENT_CREATE_HOOK 1
 //#define GASNETC_SEGMENT_DESTROY_HOOK 1
+//#define GASNETC_EP_BINDSEGMENT_HOOK 1
 //#define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See other/kinds/gasnet_kinds_internal.h for prototypes and brief descriptions.
+//#define GASNETC_MK_CREATE_HOOK 1
+//#define GASNETC_MK_DESTROY_HOOK 1
 
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
 // Leaving GASNETC_MAXEPS_DFLT unset will result in GASNET_MAXEPS=1, independent
@@ -171,5 +176,11 @@ extern void _gasnetc_set_waitmode(int _wait_mode);
 #define GASNETC_DEFAULT_NODEMAP_EXACT 1
 
 /* Configure gasnet_handle.[ch] */
+
+// No validated support for hugetlbfs w/ or w/o PSHM at this time and risk of
+// issues if auto-enabled on an HPE Cray EX system (e.g. bug 4473).
+#if GASNETI_ARCH_CRAYEX
+#undef GASNETI_USE_HUGETLBFS
+#endif
 
 #endif

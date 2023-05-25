@@ -1,7 +1,7 @@
 config param case = 1, aligned=false;
 
 proc testit(r) {
-  if !aligned then writeln(r.low, "..", r.high); else writeln(r.alignedLow, "..", r.alignedHigh);
+  if !aligned then writeln(r.low, "..", r.high); else writeln(r.low, "..", r.high);
 }
 
 var r = 1..;

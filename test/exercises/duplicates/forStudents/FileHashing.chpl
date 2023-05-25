@@ -14,7 +14,7 @@ module FileHashing {
     proc writeThis(f) throws {
       for component in hashVal {
         var s = try! "%08xu".format(component);
-        f <~> s;
+        f.write(s);
       }
     }
 
@@ -82,16 +82,16 @@ module FileHashing {
 
   /*
      Returns the SHA256Hash for the file stored at `path`.
-     May throw an error if the file could not be openned, for example.
+     May throw an error if the file could not be opened, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
     use IO;
     use SHA256Implementation;
 
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
-                     start=0, end=len);
+                     region=0..#len);
 
 
     var msg:16*uint(32); // aka 64 bytes

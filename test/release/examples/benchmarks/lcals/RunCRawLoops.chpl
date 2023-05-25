@@ -1,6 +1,7 @@
 module RunCRawLoops {
   use LCALSDataTypes;
   use Timer;
+  import Math.exp;
 
   proc runCRawLoops(loop_stats:[] shared LoopStat, run_loop:[] bool, ilength: LoopLength) {
     var loop_suite_run_info = getLoopSuiteRunInfo();

@@ -3,10 +3,8 @@ trivial enum range
 red..red
 idxType          = color
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -14,10 +12,10 @@ alignment        = red
 aligned          = true
 first            = red
 last             = red
+lowBound         = red
+highBound        = red
 low              = red
 high             = red
-alignedLow       = red
-alignedHigh      = red
 isEmpty()        = false
 size             = 1
 sizeAs(uint)     = 1
@@ -49,10 +47,8 @@ default trivial enum range
 red..<red
 idxType          = color
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -60,10 +56,10 @@ alignment        = red
 aligned          = true
 first            = undefined
 last             = undefined
+lowBound         = red
+highBound        = red
 low              = red
 high             = red
-alignedLow       = red
-alignedHigh      = red
 isEmpty()        = true
 size             = 0
 sizeAs(uint)     = 0
@@ -92,10 +88,8 @@ trivial strided enum range
 red..red
 idxType          = color
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -103,10 +97,10 @@ alignment        = red
 aligned          = true
 first            = red
 last             = red
+lowBound         = red
+highBound        = red
 low              = red
 high             = red
-alignedLow       = red
-alignedHigh      = red
 isEmpty()        = false
 size             = 1
 sizeAs(uint)     = 1
@@ -138,10 +132,8 @@ default trivial strided enum range
 red..<red
 idxType          = color
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -149,10 +141,10 @@ alignment        = red
 aligned          = true
 first            = undefined
 last             = undefined
+lowBound         = red
+highBound        = red
 low              = red
 high             = red
-alignedLow       = red
-alignedHigh      = red
 isEmpty()        = true
 size             = 0
 sizeAs(uint)     = 0
@@ -176,7 +168,7 @@ r[subr] == subr[r]= true
 r:string          = red..<red
 Copying...        = red..<red
 
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
-./rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:21: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy
+rangeAPItest.chpl:23: warning: This range is empty and has a single-value idxType, so its high bound isn't trustworthy

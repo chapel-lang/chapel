@@ -189,17 +189,6 @@ unexport $(addprefix chpl_flags_,$(HPCC))
 ISX = isx-strong isx-weak isx-weakISO
 $(ISX): force; $(MAKE) alt_test TEST_EXE=$@ REAL_EXE=isx TEST_DIR=examples/benchmarks/isx
 
-# directory examples/benchmarks/ssca2
-SSCA2 = ssca2_rmat ssca2_1d ssca2_2d ssca2_3d ssca2_4d
-$(SSCA2): force; $(MAKE) alt_test TEST_EXE=$@ REAL_EXE=SSCA2_main TEST_DIR=examples/benchmarks/ssca2
-chpl_flags_ssca2_common = -M SSCA2_Modules SSCA2_Modules/SSCA2_kernels.chpl SSCA2_Modules/analyze_torus_graphs_stencil_rep_v1.chpl -sREPRODUCIBLE_PROBLEMS=true -sPRINT_TIMING_STATISTICS=true -sVALIDATE_BC=true
-chpl_flags_ssca2_rmat = $(chpl_flags_ssca2_common) -sDEBUG_NEIGHBOR_HISTOGRAM -sBUILD_RMAT_VERSION=true -sBUILD_1D_TORUS_VERSION=false -sBUILD_2D_TORUS_VERSION=false -sBUILD_3D_TORUS_VERSION=false -sBUILD_4D_TORUS_VERSION=false
-chpl_flags_ssca2_1d   = $(chpl_flags_ssca2_common) -sBUILD_RMAT_VERSION=false -sBUILD_1D_TORUS_VERSION=true -sBUILD_2D_TORUS_VERSION=false -sBUILD_3D_TORUS_VERSION=false -sBUILD_4D_TORUS_VERSION=false
-chpl_flags_ssca2_2d   = $(chpl_flags_ssca2_common) -sBUILD_RMAT_VERSION=false -sBUILD_1D_TORUS_VERSION=false -sBUILD_2D_TORUS_VERSION=true -sBUILD_3D_TORUS_VERSION=false -sBUILD_4D_TORUS_VERSION=false
-chpl_flags_ssca2_3d   = $(chpl_flags_ssca2_common) -sBUILD_RMAT_VERSION=false -sBUILD_1D_TORUS_VERSION=false -sBUILD_2D_TORUS_VERSION=false -sBUILD_3D_TORUS_VERSION=true -sBUILD_4D_TORUS_VERSION=false
-chpl_flags_ssca2_4d   = $(chpl_flags_ssca2_common) -sBUILD_RMAT_VERSION=false -sBUILD_1D_TORUS_VERSION=false -sBUILD_2D_TORUS_VERSION=false -sBUILD_3D_TORUS_VERSION=false -sBUILD_4D_TORUS_VERSION=true
-unexport $(addprefix chpl_flags_,$(SSCA2) ssca2_common)
-
 # directory examples/primers
 PRIMERS = \
         arrays arrayVectorOps associative atomics chpldoc.doc classes         \

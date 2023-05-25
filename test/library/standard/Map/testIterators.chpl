@@ -1,3 +1,4 @@
+use Sort;
 use Map;
 
 record FacInt {
@@ -40,25 +41,19 @@ for i in 1..15 {
 }
 
 var A: [1..fac.size] (int, FacInt);
-for key in fac {
-  A[key] = (key, fac[key]);
+for item in zip(fac.keys(), fac.values()) {
+  A[item(0)] = item;
 }
-writeln(A.sorted());
+writeln(sorted(A));
 
-var B: [1..fac.size] (int, FacInt);
-for item in fac.items() {
-  B[item(0)] = item;
-}
-writeln(B.sorted());
-
-var C: [1..fac.size] FacInt;
+var B: [1..fac.size] FacInt;
 for (val, i) in zip(fac.values(), 1..) {
-  C[i] = val;
+  B[i] = val;
 }
-writeln(C.sorted());
+writeln(sorted(B));
 
-var D: [1..fac.size] (int, FacInt);
+var C: [1..fac.size] (int, FacInt);
 for key in fac.keys() {
-  D[key] = (key, fac[key]);
+  C[key] = (key, fac[key]);
 }
-writeln(D.sorted());
+writeln(sorted(C));

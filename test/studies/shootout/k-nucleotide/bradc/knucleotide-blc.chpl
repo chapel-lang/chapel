@@ -13,7 +13,7 @@ config param tableSize = 2**16,
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const consoleIn = openfd(0),
+  const consoleIn = new file(0),
         fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
@@ -22,16 +22,21 @@ proc main(args: [] string) {
       lineSize = 0,
       numRead = 0;
 
-  while stdinNoLock.readline(buff, lineSize) && !startsWithThree(buff) do
+  lineSize = stdinNoLock.readLine(buff);
+  while lineSize>0 && !startsWithThree(buff) {
     numRead += lineSize;
-
+    lineSize = stdinNoLock.readLine(buff);
+  }
   // Read in the rest of the file
   var dataDom = {1..fileLen-numRead},
       data: [dataDom] uint(8),
       idx = 1;
 
-  while stdinNoLock.readline(data, lineSize, idx) do
+  lineSize = stdinNoLock.readLine(data[idx..]);
+  while lineSize>0 {
     idx += lineSize - 1;
+    lineSize = stdinNoLock.readLine(data[idx..]);
+  }
   
   // Resize our array to the amount actually read
   dataDom = {1..idx};
@@ -54,10 +59,10 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (k,v) in freqs.items() do (v,k);
+  var arr = for (k,v) in zip(freqs.keys(), freqs.values()) do (v,k);
 
   // print the array, sorted by decreasing frequency
-  for (f, s) in arr.sorted(reverseComparator) do
+  for (f, s) in sorted(arr, reverseComparator) do
    writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();
@@ -90,7 +95,7 @@ proc calculate(data, param nclSize) {
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock$.readFE();        // acquire lock
-    for (k,v) in myFreqs.items() do
+    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
       freqs[k] += v;
     lock$.writeEF(true)  ; // release lock
   }
@@ -138,4 +143,3 @@ inline proc startsWithThree(data) {
          data[2] == "T".toByte() &&
          data[3] == "H".toByte();
 }
-

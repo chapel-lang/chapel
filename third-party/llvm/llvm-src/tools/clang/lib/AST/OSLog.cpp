@@ -56,8 +56,8 @@ public:
   }
 
   bool HandlePrintfSpecifier(const analyze_printf::PrintfSpecifier &FS,
-                             const char *StartSpecifier,
-                             unsigned SpecifierLen) override {
+                             const char *StartSpecifier, unsigned SpecifierLen,
+                             const TargetInfo &) override {
     if (!FS.consumesDataArgument() &&
         FS.getConversionSpecifier().getKind() !=
             clang::analyze_format_string::ConversionSpecifier::PrintErrno)
@@ -201,7 +201,7 @@ bool clang::analyze_os_log::computeOSLogBufferLayout(
   }
 
   const StringLiteral *Lit = cast<StringLiteral>(StringArg->IgnoreParenCasts());
-  assert(Lit && (Lit->isAscii() || Lit->isUTF8()));
+  assert(Lit && (Lit->isOrdinary() || Lit->isUTF8()));
   StringRef Data = Lit->getString();
   OSLogFormatStringHandler H(VarArgs);
   ParsePrintfString(H, Data.begin(), Data.end(), Ctx.getLangOpts(),

@@ -1,0 +1,3 @@
+ # unstable_initializer.unset.good
+--no-warn-unstable # unstable_initializer.unset.good
+--warn-unstable # unstable_initializer.set.good

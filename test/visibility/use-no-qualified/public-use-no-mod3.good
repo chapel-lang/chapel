@@ -1,0 +1,2 @@
+public-use-no-mod3.chpl:12: In function 'main':
+public-use-no-mod3.chpl:14: error: cannot find 'A' in module 'C'

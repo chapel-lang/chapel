@@ -1,0 +1,3 @@
+unstable_const.chpl:4: In function 'main':
+unstable_const.chpl:5: warning: use y
+false

@@ -1,0 +1,4 @@
+bug: capturing a const reference to a non-const ref should be an error
+#19614
+The function `bar` should probably generate an error message because it captures
+a non-const ref to a const-ref.

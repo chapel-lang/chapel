@@ -1,0 +1,3 @@
+#! /usr/bin/env bash
+touch chmod.file-1 && chmod u=rw,go= chmod.file-1
+touch chmod.file-2 && chmod u=rw,go= chmod.file-2

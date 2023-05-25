@@ -7,7 +7,7 @@ Writing JSON:
 got is false
 Read: (a = 0, b = 0)
 Writing JSON: {"c":3}
-error is bad format
+bad format error
 got is false
 Read: (a = 0, b = 0)
 Writing JSON: {"a":1, "b":2}

@@ -5,6 +5,7 @@ Downloading dependency: _MasonTest1-0.2.0
 ERROR compileerror.chpl: compileerror
 ----------------------------------------------------------------------
 compileerror.chpl failed to compile
+Try running 'mason test --show' for more details
 ======================================================================
 FAIL shallnotpass.chpl: shallnotpass
 ----------------------------------------------------------------------

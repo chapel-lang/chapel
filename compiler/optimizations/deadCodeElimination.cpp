@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,6 +91,8 @@ void deadVariableElimination(FnSymbol* fn) {
   collectSymbolSet(fn, symSet);
 
   // Use 'symSet' and 'todo' together for a unique queue of symbols to process
+  // Note: this code is sensitive to traversal order.
+  // Currently, symSet is iterated in Symbol::id order.
   std::queue<Symbol*> todo;
   for_set(Symbol, sym, symSet) {
     todo.push(sym);
@@ -457,8 +459,6 @@ void deadCodeElimination() {
     cleanupAfterTypeRemoval();
   }
 
-  gpuTransforms();
-
   // Emit string literals. This too could be its own pass but
   // for now it is convenient to do it here. It could happen any time
   // after dead string literal elimination and code generation.
@@ -469,11 +469,9 @@ void deadBlockElimination()
 {
   deadBlockCount = 0;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (!isAlive(fn))
-      continue;
-    deadBlockElimination(fn);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!isAlive(fn)) continue;
+    if (!fn->hasFlag(FLAG_NO_FN_BODY)) deadBlockElimination(fn);
   }
 
   if (fReportDeadBlocks)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,11 +80,12 @@ static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
       // This keyword is for a TPV.
       // Whereas the user provided neither a type nor an init.
       USR_FATAL_CONT(ovar, "a task private variable '%s'"
-                     "requires a type and/or initializing expression", name);
+                     " requires a type and/or initializing expression", name);
       break;
   }
 
   ShadowVarSymbol* result = new ShadowVarSymbol(intent, name, NULL);
+  result->svExplicit = true;
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -147,6 +148,7 @@ static ShadowVarSymbol* buildTaskPrivateVariable(ShadowVarPrefix prefix,
 
   // We will call autoDestroy from deinitBlock() explicitly.
   result->addFlag(FLAG_NO_AUTO_DESTROY);
+  result->svExplicit = true;
 
   new DefExpr(result, init, type); // set result->defPoint
 
@@ -167,9 +169,13 @@ ShadowVarSymbol* ShadowVarSymbol::buildForPrefix(ShadowVarPrefix prefix,
               nameSE->symbol()->name);
   }
 
-  const char* nameString = toUnresolvedSymExpr(nameExp)->unresolved;
-  if (nameString == astrThis)
-    USR_FATAL_CONT(nameExp, "cannot currently apply a forall or task intent to 'this'");
+  const char* nameString = nullptr;
+  if (auto urse = toUnresolvedSymExpr(nameExp))
+    nameString = urse->unresolved;
+  else if (auto se = toSymExpr(nameExp))
+    nameString = se->symbol()->name;
+  else
+    INT_FATAL("case not handled");
 
   if (type == NULL && init == NULL)
     // non-TPV forall intent
@@ -182,8 +188,16 @@ ShadowVarSymbol* ShadowVarSymbol::buildFromReduceIntent(Expr* ovar,
                                                         Expr* riExpr)
 {
   INT_ASSERT(riExpr != NULL);
-  const char* name = toUnresolvedSymExpr(ovar)->unresolved;
+  const char* name = nullptr;
+  if (auto urse = toUnresolvedSymExpr(ovar))
+    name = urse->unresolved;
+  else if (auto se = toSymExpr(ovar))
+    name = se->symbol()->name;
+  else
+    INT_FATAL("case not handled");
+
   ShadowVarSymbol* result = new ShadowVarSymbol(TFI_REDUCE, name, NULL, riExpr);
+  result->svExplicit = true;
   new DefExpr(result); // set result->defPoint
   return result;
 }
@@ -641,17 +655,19 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
 static FnSymbol* trivialLeader          = NULL;
 static Type*     trivialLeaderYieldType = NULL;
 
-// Return a _build_tuple of fs's index variables.
+// Return a DefExpr or _build_tuple of DefExpr of fs's index variables.
+// Removes the DefExprs from fs->inductionVariables()
 static Expr* hzsMakeIndices(ForallStmt* fs) {
   if (fs->numInductionVars() == 1) {
     INT_ASSERT(fs->overTupleExpand());
-    return new SymExpr(fs->firstInductionVarDef()->sym);
+    return fs->firstInductionVarDef()->remove();
   }
 
   CallExpr* indices = new CallExpr("_build_tuple");
 
-  for_alist(inddef, fs->inductionVariables())
-    indices->insertAtTail(toDefExpr(inddef)->sym);
+  // Move the index variables' DefExprs to 'forLoop'.
+  while (Expr* inddef = fs->inductionVariables().tail)
+    indices->insertAtHead(inddef->remove());
 
   // Todo detect the case where the forall loop in the source code
   // had a single index variable. We can tell that by checking whether

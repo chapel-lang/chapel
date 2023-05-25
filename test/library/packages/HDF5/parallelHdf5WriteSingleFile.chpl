@@ -6,7 +6,7 @@ proc main {
   use Hdf5PathHelp;
 
   const pathPrefix = readPrefixEnv();
-  var A = newBlockArr({1..100, 1..100}, c_int);
+  var A = Block.createArray({1..100, 1..100}, c_int);
 
   for (i,j) in A.domain {
     A[i,j] = (i*1000+j): c_int;
@@ -16,7 +16,7 @@ proc main {
   hdf5WriteDistributedArray(A, pathPrefix + fileName, dsetName);
   writeln("Wrote array");
 
-  var B = newBlockArr({1..100, 1..100}, c_int);
+  var B = Block.createArray({1..100, 1..100}, c_int);
   writeln("Reading array");
   hdf5ReadDistributedArray(B, pathPrefix + fileName, dsetName);
   writeln("Read array");

@@ -86,9 +86,8 @@ def get_link_args():
     args = ([ ], [ ])
     libfabric_val = get()
     if libfabric_val == 'bundled':
-        args = third_party_utils.get_bundled_link_args('libfabric',
-                                                       ucp=get_uniq_cfg_path(),
-                                                       libs=['libfabric.la'])
+        args = third_party_utils.pkgconfig_get_bundled_link_args(
+                                          'libfabric', ucp=get_uniq_cfg_path())
     elif libfabric_val == 'system':
         libs = [ ]
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms

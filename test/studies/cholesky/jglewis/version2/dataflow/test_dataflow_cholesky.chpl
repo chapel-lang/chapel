@@ -84,7 +84,7 @@ module test_dataflow_cholesky {
 
   proc main {
 
-    var Rand = new borrowed RandomStream ( real, seed = 314159) ;
+    var Rand = (new owned RandomStream ( real, seed = 314159) ).borrow();
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -128,7 +128,7 @@ module test_dataflow_cholesky {
       print_lower_triangle ( L );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("scalar inner product cholesky factorization ");

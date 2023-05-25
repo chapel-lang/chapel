@@ -10,6 +10,7 @@
 use Time;
 use BlockDist;
 use CyclicDist;
+use Math;
 
 //Problem Dimension
 config const n:int=16;
@@ -58,7 +59,7 @@ proc main(){
     exit(0);
   }
 
-  if timer then t1=getCurrentTime();
+  if timer then t1=timeSinceEpoch().totalSeconds();
 
 /*********************/
 /* Elimination Phase */
@@ -82,10 +83,10 @@ proc main(){
 /********************************************/    
 /* Change from Block to Cyclic Distribution */
 /********************************************/
-  if timer then t5=getCurrentTime();
+  if timer then t5=timeSinceEpoch().totalSeconds();
   if (RedistStage&1) then {P=AA;Q=BB;R=CC;S=DD;}
   else {P=A;Q=B;R=C;S=D;}
-  if timer then t6=getCurrentTime(); 
+  if timer then t6=timeSinceEpoch().totalSeconds(); 
 
 /********************************************/    
 /*          Cyclic Distribution             */
@@ -111,7 +112,7 @@ proc main(){
     forall (x,s,q) in zip(X,S,Q) do x=s/q;
   }
 
- if timer then t2=getCurrentTime();
+ if timer then t2=timeSinceEpoch().totalSeconds();
 	
   //writeln("Tridiagonal System Solution:");
   //PrintV(X);
@@ -154,7 +155,7 @@ proc Check()
 proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
-  // if timer then t3=getCurrentTime();
+  // if timer then t3=timeSinceEpoch().totalSeconds();
   const TtS:int=1<<(j-1); //// TtS stand for "Two to the Stage (minus 1)" which is = 2**(j-1)
   forall i in Dom do{
     //writeln("i ",i, " j ",j);
@@ -190,7 +191,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
     }//if
   }//for all i
   //if timer then {
-  //  t4=getCurrentTime();
+  //  t4=timeSinceEpoch().totalSeconds();
   //  CalcTime[j]=t4-t3;
   //  TotCalcTime+=CalcTime[j];
   //}

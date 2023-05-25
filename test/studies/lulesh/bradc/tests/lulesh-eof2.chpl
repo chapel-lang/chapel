@@ -103,7 +103,7 @@ param ZETA_P_SYMM = 0x400;
 param ZETA_P_FREE = 0x800;
 
 config const filename = "sedov15oct.lmesh";
-var infile = open(filename, iomode.r);
+var infile = open(filename, ioMode.r);
 var reader = infile.reader();
 
 if debug then writeln("Reading problem size...");

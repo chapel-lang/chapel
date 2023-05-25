@@ -924,7 +924,7 @@ void gasnete_rexchgv_reqh(
 
 size_t gasneti_blockingRotatedExchangeV(
                 gex_TM_t    tm,
-                const void *src,
+                GASNETI_BUG4227_CONST void *src,
                 size_t      len,
                 void      **dst_p,
                 size_t    **len_p)

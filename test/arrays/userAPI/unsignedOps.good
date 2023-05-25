@@ -2,6 +2,7 @@ Array with unsigned domain
 ----------------
 eltType is: real(64)
 idxType is: uint(64)
+fullIdxType is: 2*uint(64)
 rank is: 2
 
 size is: 16
@@ -76,9 +77,8 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
-find last: (true, (4, 4))
+find last: (4, 4)
+find last again: true: (4, 4)
 count last: 1
 equals same: true
 equals diff: false
@@ -109,6 +109,7 @@ Slice of array with unsigned domain
 ----------------
 eltType is: real(64)
 idxType is: uint(64)
+fullIdxType is: 2*uint(64)
 rank is: 2
 
 size is: 16
@@ -183,9 +184,8 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
-find last: (true, (4, 4))
+find last: (4, 4)
+find last again: true: (4, 4)
 count last: 1
 equals same: true
 equals diff: false
@@ -216,6 +216,7 @@ Reindex of array with unsigned domain
 ----------------
 eltType is: real(64)
 idxType is: uint(64)
+fullIdxType is: 2*uint(64)
 rank is: 2
 
 size is: 16
@@ -290,9 +291,8 @@ local subdomains:
 {0..3, 2..8 by 2}
 
 is empty: false
-head: 1.8
-tail: 16.8
-find last: (true, (3, 8))
+find last: (3, 8)
+find last again: true: (3, 8)
 count last: 1
 equals same: true
 equals diff: false
@@ -323,6 +323,7 @@ RankChange of array with unsigned domain
 ----------------
 eltType is: real(64)
 idxType is: uint(64)
+fullIdxType is: 2*uint(64)
 rank is: 2
 
 size is: 16
@@ -397,9 +398,8 @@ local subdomains:
 {1..4, 1..4}
 
 is empty: false
-head: 1.8
-tail: 16.8
-find last: (true, (4, 4))
+find last: (4, 4)
+find last again: true: (4, 4)
 count last: 1
 equals same: true
 equals diff: false

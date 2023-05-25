@@ -38,7 +38,7 @@ proc show(cgName: string, cgArg, atName: string, atArg) {
 record RT1 {
   var  xx: int;
   type GT;
-  proc AT type return int;
+  proc AT type do return int;
 }
 proc reqFun(cgArg: RT1)            : void { show("RT1", cgArg); }
 proc reqFun(cgArg: RT1, atArg: int): void { show("RT1", cgArg,
@@ -67,7 +67,7 @@ cgFun(rt2, true);
 record RT3 {
   var  xx: int;
   type GT;
-  proc AT type return GT;
+  proc AT type do return GT;
 }
 proc reqFun(cgArg: RT3)                 : void { show("RT3", cgArg); }
 proc reqFun(cgArg: RT3, atArg: cgArg.GT): void { show("RT3", cgArg,
@@ -82,7 +82,7 @@ cgFun(rt3, "rt03");
 record RT4 {
   var  xx: int;
   type GT;
-  proc AT type return this.type;
+  proc AT type do return this.type;
 }
 proc reqFun(cgArg: RT4)                   : void { show("RT4", cgArg); }
 proc reqFun(cgArg: RT4, atArg: cgArg.type): void { show("RT4", cgArg,
@@ -98,7 +98,7 @@ cgFun(rt4, rt4);
 // RV1: associated type is concrete
 record RV1 {
   var  xx;
-  proc AT type return int;
+  proc AT type do return int;
 }
 proc reqFun(cgArg: RV1)            : void { show("RV1", cgArg); }
 proc reqFun(cgArg: RV1, atArg: int): void { show("RV1", cgArg,
@@ -112,7 +112,7 @@ cgFun(rv1, 21);
 // RV3: like RV1, assoc type is computed to be the type of the generic var field
 record RV3 {
   var  xx;
-  proc AT type return xx.type;
+  proc AT type do return xx.type;
 }
 proc reqFun(cgArg: RV3)                 : void { show("RV3", cgArg); }
 proc reqFun(cgArg: RV3, atArg: cgArg.AT): void { show("RV3", cgArg,
@@ -126,7 +126,7 @@ cgFun(rv3, "bis03");
 // RV4: like RV1, assoc type is this.type
 record RV4 {
   var  xx;
-  proc AT type return this.type;
+  proc AT type do return this.type;
 }
 proc reqFun(cgArg: RV4)                   : void { show("RV4", cgArg); }
 proc reqFun(cgArg: RV4, atArg: cgArg.type): void { show("RV4", cgArg,
@@ -144,7 +144,7 @@ cgFun(rv4, rv4);
 record RTX1 {
   var  xx: int;
   type GT;
-  proc AT type return int;
+  proc AT type do return int;
   param PP;
 }
 proc reqFun(cgArg: RTX1)            : void { show("RTX1", cgArg); }
@@ -175,7 +175,7 @@ cgFun(rtx2, true);
 record RTX3 {
   var  xx: int;
   type GT;
-  proc AT type return GT;
+  proc AT type do return GT;
   param PP;
 }
 proc reqFun(cgArg: RTX3)                 : void { show("RTX3", cgArg); }
@@ -191,7 +191,7 @@ cgFun(rtx3, "rtx03");
 record RTX4 {
   var  xx: int;
   type GT;
-  proc AT type return this.type;
+  proc AT type do return this.type;
   param PP;
 }
 proc reqFun(cgArg: RTX4)                   : void { show("RTX4", cgArg); }
@@ -206,7 +206,7 @@ cgFun(rtx4, rtx4);
 // RVX1: associated type is concrete
 record RVX1 {
   var  xx;
-  proc AT type return int;
+  proc AT type do return int;
   param PP;
 }
 proc reqFun(cgArg: RVX1)            : void { show("RVX1", cgArg); }
@@ -221,7 +221,7 @@ cgFun(rvx1, 41);
 // RVX3: like RVX1, assoc type is computed to be the type of the generic var field
 record RVX3 {
   var  xx;
-  proc AT type return xx.type;
+  proc AT type do return xx.type;
   param PP;
 }
 proc reqFun(cgArg: RVX3)                 : void { show("RVX3", cgArg); }
@@ -235,7 +235,7 @@ cgFun(rvx3, "bis03");
 // RVX4: like RVX1, assoc type is this.type
 record RVX4 {
   var  xx;
-  proc AT type return this.type;
+  proc AT type do return this.type;
   param PP;
 }
 proc reqFun(cgArg: RVX4)                   : void { show("RVX4", cgArg); }

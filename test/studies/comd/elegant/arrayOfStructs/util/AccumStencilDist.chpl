@@ -676,7 +676,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).low:strType):idxType;
     var high = (stride * followThis(i).high:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -687,7 +687,7 @@ iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKin
 // output domain
 //
 proc AccumStencilDom.dsiSerialWrite(x) {
-  x <~> whole;
+  x.write(whole);
 }
 
 //
@@ -907,7 +907,7 @@ override proc AccumStencilArr.dsiDestroyArr(deinitElts:bool) {
           // fluff is always deinited in the LocArr deinit
           param needsDestroy = __primitive("needs auto destroy", eltType);
           if needsDestroy {
-            if _deinitElementsIsParallel(eltType) {
+            if _deinitElementsIsParallel(eltType, arr.locDom.myBlock.size) {
               forall i in arr.locDom.myBlock {
                 chpl__autoDestroy(arr.myElems[i]);
               }
@@ -1082,7 +1082,7 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).low * abs(stride):idxType;
     var high = followThis(i).high * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).low;
   }
 
@@ -1134,16 +1134,16 @@ proc AccumStencilArr.dsiSerialWrite(f) {
   for dim in 0..#rank do
     i(dim) = dom.dsiDim(dim).low;
   label next while true {
-    f <~> dsiAccess(i);
+    f.write(dsiAccess(i));
     if i(rank) <= (dom.dsiDim(rank).high - dom.dsiDim(rank).stride:strType) {
-      if ! binary then f <~> " ";
+      if ! binary then f.write(" ");
       i(rank) += dom.dsiDim(rank).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
         if i(dim) <= (dom.dsiDim(dim).high - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
-            f <~> "\n";
+            f.write("\n");
             i(dim2) = dom.dsiDim(dim2).low;
           }
           continue next;
@@ -1205,14 +1205,17 @@ private inline proc isZeroTuple(t) {
   return true;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries() {
   for d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter AccumStencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     const LSA      = locArr[i];
@@ -1283,6 +1286,7 @@ iter AccumStencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the AccumStencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
+pragma "do not unref for yields"
 iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom do on dom.dist.targetLocales(i) {
     const LSA      = locArr[i];
@@ -1527,7 +1531,7 @@ proc AccumStencilArr.dsiUpdateFluff() {
   }
 }
 
-override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, BoundedRangeType.bounded, stridable)) {
+override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, boundKind.both, stridable)) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default

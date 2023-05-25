@@ -1,0 +1,5 @@
+#!/bin/bash
+mkdir build
+make test > $2 2>&1
+tail -n1 $2 > $2.tmp
+mv $2.tmp $2

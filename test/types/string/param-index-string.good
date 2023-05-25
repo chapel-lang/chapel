@@ -1,0 +1,12 @@
+param-index.chpl:4: warning: Received c.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:4: warning: Received h.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:4: warning: Received a.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:4: warning: Received p.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:4: warning: Received e.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:4: warning: Received l.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:5: warning: Received T.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:5: warning: Received ü.	Its type: string. Its size: 1. Its numBytes: 2
+param-index.chpl:5: warning: Received r.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:5: warning: Received k.	Its type: string. Its size: 1. Its numBytes: 1
+param-index.chpl:5: warning: Received ç.	Its type: string. Its size: 1. Its numBytes: 2
+param-index.chpl:5: warning: Received e.	Its type: string. Its size: 1. Its numBytes: 1

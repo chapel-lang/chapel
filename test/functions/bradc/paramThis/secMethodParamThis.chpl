@@ -6,11 +6,11 @@ proc foo(x: int) {
   writeln("Got into non-param foo with value ", x);
 }
 
-proc param int.bar param return 3;
+proc param int.bar param do return 3;
 
-proc int.bar param return 4;
+proc int.bar param do return 4;
 
-proc int.baz return 5;
+proc int.baz do return 5;
 
 foo(77.bar);
 foo(77.baz);

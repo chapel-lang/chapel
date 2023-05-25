@@ -13,6 +13,7 @@ Major Platforms
    cray
    cygwin
    aws
+   raspberrypi
 
 
 Networks
@@ -23,6 +24,7 @@ Networks
 
    infiniband
    libfabric
+   omnipath
    udp
 
 

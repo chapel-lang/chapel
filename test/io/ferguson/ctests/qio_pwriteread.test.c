@@ -9,7 +9,7 @@ int main(int argc, char** argv)
   int fd = fileno(f);
   int i;
   unsigned char byte;
-  err_t err;
+  qio_err_t err;
   ssize_t got_num;
 
   for( i = 0; i < 256; i++ ) {

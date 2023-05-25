@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,7 +178,7 @@ string_index(c_string x, int i, int32_t lineno, int32_t filename) {
   }
   buffer = chpl_mem_allocMany(1, 2, CHPL_RT_MD_STR_COPY_DATA,
                               lineno, filename);
-  sprintf(buffer, "%c", x[i-1]);
+  snprintf(buffer, (size_t) 2, "%c", x[i-1]);
   return buffer;
 }
 

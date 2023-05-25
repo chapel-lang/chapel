@@ -1,8 +1,8 @@
 use typesTest;
 use IO;
 
-var messageObj = new Types();
-var file = open("out", iomode.r);
+var messageObj = new typesTest.Types();
+var file = open("out", ioMode.r);
 var readingChannel = file.reader();
 
 messageObj.deserialize(readingChannel);

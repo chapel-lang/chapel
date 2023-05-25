@@ -44,7 +44,7 @@ foldSheet(Sheet);
 iter readDots() {
   var line: string;
   do {
-    readline(line);
+    readLine(line);
     var A = line.strip().split(",");
     if A.size == 2 then
       yield (A[0]:int, A[1]:int);

@@ -1,6 +1,6 @@
 var x: int;
 
-proc foo() return x;
+proc foo() do return x;
 
 foo() = 2;
 

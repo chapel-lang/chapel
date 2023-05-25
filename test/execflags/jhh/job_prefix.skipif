@@ -1,0 +1,6 @@
+#! /usr/bin/env python3
+
+import os
+from helper import skipLauncherTest
+
+print(skipLauncherTest(os.getenv('CHPL_LAUNCHER')))

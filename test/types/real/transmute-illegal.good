@@ -1,0 +1,8 @@
+transmute-illegal.chpl:14: error: Cannot (currently) transmute from real(64) to uint(32)
+transmute-illegal.chpl:15: error: Cannot (currently) transmute from real(32) to uint(64)
+transmute-illegal.chpl:16: error: Cannot (currently) transmute from real(64) to uint(32)
+transmute-illegal.chpl:17: error: Cannot (currently) transmute from real(32) to uint(64)
+transmute-illegal.chpl:18: error: Cannot (currently) transmute from uint(64) to real(32)
+transmute-illegal.chpl:19: error: Cannot (currently) transmute from uint(32) to real(64)
+transmute-illegal.chpl:20: error: Cannot (currently) transmute from uint(64) to real(32)
+transmute-illegal.chpl:21: error: Cannot (currently) transmute from uint(32) to real(64)

@@ -10,7 +10,7 @@ use Time;
 
 // To keep track of line numbers and speed parallel speedup
 var lineNum: int = 1;
-var clock: Timer;
+var clock: stopwatch;
 
 // Main
 proc main(args: [] string) {
@@ -36,7 +36,7 @@ proc fileGrep(toFind: string, fname: string) throws {
 
   var toRead: file;
   try! {
-    toRead = open(fname, iomode.r);
+    toRead = open(fname, ioMode.r);
   }
   var r = toRead.reader();
   defer {
@@ -44,13 +44,13 @@ proc fileGrep(toFind: string, fname: string) throws {
   }
 
   // Use regex library to compile into searchable regex
-  var regEx = compile(toFind);
+  var regEx = new regex(toFind);
   var line:string;
   var lineNum = 1;
 
   // Search while handling errors, throwing if readline encounters an error.
-  while (r.readline(line)) {
-    if line.search(regEx) {
+  while (r.readLine(line)) {
+    if (line.find(regEx) != -1) {
       writeln("Found ", toFind, " at ", lineNum, " in ", fname);
     }
     lineNum += 1;
@@ -68,7 +68,7 @@ proc parallelGrep(tofind: string) throws {
 
   // Seaches current working directory ignoring anthing but UTF-8
   // encoded characters
-  var files = FileSystem.findfiles(Path.curDir);
+  var files = FileSystem.findFiles(Path.curDir);
   forall file in files {
     fileGrep(tofind, file);
   }

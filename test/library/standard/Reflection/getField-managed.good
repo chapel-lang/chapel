@@ -1,0 +1,99 @@
+===== owned CCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== owned CCon?
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== shared CCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== shared CCon?
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== borrowed CCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== borrowed CCon?
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== unmanaged CCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== unmanaged CCon?
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== borrowed CCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== borrowed CCon?
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true
+===== RCon
+  numFields       6
+  getFieldName    f6
+  getField        17
+  getFieldRef     17
+  hasField        true
+  getFieldIndex   5
+  isFieldBound 5  true
+  isFieldBound f6 true

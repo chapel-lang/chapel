@@ -23,7 +23,5 @@ proc main() {
   writeln(ts3!.toString());
   writeln(ts4!.toString());
   writeln(ts5!.toString());
-
-  delete TomlData;
 }
 

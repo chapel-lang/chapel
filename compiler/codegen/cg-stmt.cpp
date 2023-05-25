@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -237,7 +237,22 @@ CondStmt::codegen() {
 
     if (elseStmt) {
       info->cStatements.push_back(" else ");
-      elseStmt->codegen();
+
+      // If the first statement is the only statement and itself a
+      // conditional, just dive in and codegen it to avoid a potential
+      // cascade of curly brackets, striving instead for:
+      //
+      // ...
+      // } else if (...) {
+      // } else if (...) {
+      // ...
+      //
+      Expr* firstStmt = elseStmt->body.head;
+      if (elseStmt->length() == 1 && isCondStmt(firstStmt)) {
+        firstStmt->codegen();
+      } else {
+        elseStmt->codegen();
+      }
     }
 
   } else {

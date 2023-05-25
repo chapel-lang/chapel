@@ -439,22 +439,33 @@ llvm::Constant *ConstantAggregateBuilder::buildFrom(
     // Can't emit as an array, carry on to emit as a struct.
   }
 
+  // The size of the constant we plan to generate.  This is usually just
+  // the size of the initialized type, but in AllowOversized mode (i.e.
+  // flexible array init), it can be larger.
   CharUnits DesiredSize = Utils.getSize(DesiredTy);
+  if (Size > DesiredSize) {
+    assert(AllowOversized && "Elems are oversized");
+    DesiredSize = Size;
+  }
+
+  // The natural alignment of an unpacked LLVM struct with the given elements.
   CharUnits Align = CharUnits::One();
   for (llvm::Constant *C : Elems)
     Align = std::max(Align, Utils.getAlignment(C));
+
+  // The natural size of an unpacked LLVM struct with the given elements.
   CharUnits AlignedSize = Size.alignTo(Align);
 
   bool Packed = false;
   ArrayRef<llvm::Constant*> UnpackedElems = Elems;
   llvm::SmallVector<llvm::Constant*, 32> UnpackedElemStorage;
-  if ((DesiredSize < AlignedSize && !AllowOversized) ||
-      DesiredSize.alignTo(Align) != DesiredSize) {
-    // The natural layout would be the wrong size; force use of a packed layout.
+  if (DesiredSize < AlignedSize || DesiredSize.alignTo(Align) != DesiredSize) {
+    // The natural layout would be too big; force use of a packed layout.
     NaturalLayout = false;
     Packed = true;
   } else if (DesiredSize > AlignedSize) {
-    // The constant would be too small. Add padding to fix it.
+    // The natural layout would be too small. Add padding to fix it. (This
+    // is ignored if we choose a packed layout.)
     UnpackedElemStorage.assign(Elems.begin(), Elems.end());
     UnpackedElemStorage.push_back(Utils.getPadding(DesiredSize - Size));
     UnpackedElems = UnpackedElemStorage;
@@ -482,7 +493,7 @@ llvm::Constant *ConstantAggregateBuilder::buildFrom(
     // If we're using the packed layout, pad it out to the desired size if
     // necessary.
     if (Packed) {
-      assert((SizeSoFar <= DesiredSize || AllowOversized) &&
+      assert(SizeSoFar <= DesiredSize &&
              "requested size is too small for contents");
       if (SizeSoFar < DesiredSize)
         PackedElems.push_back(Utils.getPadding(DesiredSize - SizeSoFar));
@@ -692,8 +703,8 @@ bool ConstStructBuilder::Build(InitListExpr *ILE, bool AllowOverwrite) {
         !declaresSameEntity(ILE->getInitializedFieldInUnion(), Field))
       continue;
 
-    // Don't emit anonymous bitfields or zero-sized fields.
-    if (Field->isUnnamedBitfield() || Field->isZeroSize(CGM.getContext()))
+    // Don't emit anonymous bitfields.
+    if (Field->isUnnamedBitfield())
       continue;
 
     // Get the initializer.  A struct can include fields without initializers,
@@ -703,6 +714,14 @@ bool ConstStructBuilder::Build(InitListExpr *ILE, bool AllowOverwrite) {
       Init = ILE->getInit(ElementNo++);
     if (Init && isa<NoInitExpr>(Init))
       continue;
+
+    // Zero-sized fields are not emitted, but their initializers may still
+    // prevent emission of this struct as a constant.
+    if (Field->isZeroSize(CGM.getContext())) {
+      if (Init->HasSideEffects(CGM.getContext()))
+        return false;
+      continue;
+    }
 
     // When emitting a DesignatedInitUpdateExpr, a nested InitListExpr
     // represents additional overwriting of our current constant value, and not
@@ -851,6 +870,7 @@ bool ConstStructBuilder::Build(const APValue &Val, const RecordDecl *RD,
 }
 
 llvm::Constant *ConstStructBuilder::Finalize(QualType Type) {
+  Type = Type.getNonReferenceType();
   RecordDecl *RD = Type->castAs<RecordType>()->getDecl();
   llvm::Type *ValTy = CGM.getTypes().ConvertType(Type);
   return Builder.build(ValTy, RD->hasFlexibleArrayMember());
@@ -899,7 +919,7 @@ static ConstantAddress tryEmitGlobalCompoundLiteral(CodeGenModule &CGM,
   CharUnits Align = CGM.getContext().getTypeAlignInChars(E->getType());
   if (llvm::GlobalVariable *Addr =
           CGM.getAddrOfConstantCompoundLiteralIfEmitted(E))
-    return ConstantAddress(Addr, Align);
+    return ConstantAddress(Addr, Addr->getValueType(), Align);
 
   LangAS addressSpace = E->getType().getAddressSpace();
 
@@ -921,7 +941,7 @@ static ConstantAddress tryEmitGlobalCompoundLiteral(CodeGenModule &CGM,
   emitter.finalize(GV);
   GV->setAlignment(Align.getAsAlign());
   CGM.setAddrOfConstantCompoundLiteral(E, GV);
-  return ConstantAddress(GV, Align);
+  return ConstantAddress(GV, GV->getValueType(), Align);
 }
 
 static llvm::Constant *
@@ -1091,7 +1111,16 @@ public:
                                                              destAS, destTy);
     }
 
-    case CK_LValueToRValue:
+    case CK_LValueToRValue: {
+      // We don't really support doing lvalue-to-rvalue conversions here; any
+      // interesting conversions should be done in Evaluate().  But as a
+      // special case, allow compound literals to support the gcc extension
+      // allowing "struct x {int x;} x = (struct x) {};".
+      if (auto *E = dyn_cast<CompoundLiteralExpr>(subExpr->IgnoreParens()))
+        return Visit(E->getInitializer(), destType);
+      return nullptr;
+    }
+
     case CK_AtomicToNonAtomic:
     case CK_NonAtomicToAtomic:
     case CK_NoOp:
@@ -1369,7 +1398,7 @@ llvm::Constant *ConstantEmitter::tryEmitConstantExpr(const ConstantExpr *CE) {
   const Expr *Inner = CE->getSubExpr()->IgnoreImplicit();
   QualType RetType;
   if (auto *Call = dyn_cast<CallExpr>(Inner))
-    RetType = Call->getCallReturnType(CGF->getContext());
+    RetType = Call->getCallReturnType(CGM.getContext());
   else if (auto *Ctor = dyn_cast<CXXConstructExpr>(Inner))
     RetType = Ctor->getType();
   llvm::Constant *Res =
@@ -1714,6 +1743,8 @@ llvm::Constant *ConstantEmitter::emitForMemory(CodeGenModule &CGM,
 
 llvm::Constant *ConstantEmitter::tryEmitPrivate(const Expr *E,
                                                 QualType destType) {
+  assert(!destType->isVoidType() && "can't emit a void constant");
+
   Expr::EvalResult Result;
 
   bool Success = false;
@@ -1906,6 +1937,9 @@ ConstantLValueEmitter::tryEmitBase(const APValue::LValueBase &base) {
     if (auto *GD = dyn_cast<MSGuidDecl>(D))
       return CGM.GetAddrOfMSGuidDecl(GD);
 
+    if (auto *GCD = dyn_cast<UnnamedGlobalConstantDecl>(D))
+      return CGM.GetAddrOfUnnamedGlobalConstantDecl(GCD);
+
     if (auto *TPO = dyn_cast<TemplateParamObjectDecl>(D))
       return CGM.GetAddrOfTemplateParamObject(TPO);
 
@@ -1986,6 +2020,9 @@ ConstantLValueEmitter::VisitAddrLabelExpr(const AddrLabelExpr *E) {
 ConstantLValue
 ConstantLValueEmitter::VisitCallExpr(const CallExpr *E) {
   unsigned builtin = E->getBuiltinCallee();
+  if (builtin == Builtin::BI__builtin_function_start)
+    return CGM.GetFunctionStart(
+        E->getArg(0)->getAsBuiltinConstantDeclRef(CGM.getContext()));
   if (builtin != Builtin::BI__builtin___CFStringMakeConstantString &&
       builtin != Builtin::BI__builtin___NSStringMakeConstantString)
     return nullptr;

@@ -3,7 +3,7 @@ module NewTypeMod {
         var x: int;
 
         proc writeThis(f) throws {
-            f <~> "NewType with " <~> x;
+            f.write("NewType with ", x);
         }
     }
 }

@@ -1,1 +1,2 @@
-Some value
+class-override.chpl:13: error: field 'a' has same name as parent class field
+class-override.chpl:3: note: parent class field declared here

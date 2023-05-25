@@ -1,0 +1,5 @@
+zipUnbounded.chpl:1: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+01
+12
+23
+zipUnbounded.chpl:1: error: zippered iterations have non-equal lengths

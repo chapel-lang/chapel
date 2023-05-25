@@ -6,7 +6,7 @@ class Child : Parent {
   var y:int;
 }
 
-var globalParent = new borrowed Parent(1);
+var globalParent = (new owned Parent(1)).borrow();
 var got = f();
 writeln(got);
 

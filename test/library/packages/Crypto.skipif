@@ -2,8 +2,6 @@
 
 import os
 import subprocess
-from pkg_resources import parse_version
-
 
 platform = os.getenv('CHPL_TARGET_PLATFORM')
 
@@ -12,14 +10,8 @@ Ok = False
 if platform != 'linux64':
     Ok = False  # not linux
 else:
-
-    v = subprocess.check_output(['pkg-config', '--modversion', 'libcrypto'])
-    v = v.rstrip()
-    v = str(v, encoding='utf-8', errors='surrogateescape')
-
-    if parse_version(v) >= parse_version('1.1'):
-        # OK, version is compatible.
+    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto >= 1.1'])
+    if sub.returncode == 0:
         Ok = True
-
 
 print(not Ok)

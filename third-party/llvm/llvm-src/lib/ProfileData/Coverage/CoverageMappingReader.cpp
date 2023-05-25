@@ -19,6 +19,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Triple.h"
+#include "llvm/Object/Archive.h"
 #include "llvm/Object/Binary.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Object/Error.h"
@@ -83,7 +84,6 @@ Error RawCoverageReader::readIntMax(uint64_t &Result, uint64_t MaxPlus1) {
 Error RawCoverageReader::readSize(uint64_t &Result) {
   if (auto Err = readULEB128(Result))
     return Err;
-  // Sanity check the number.
   if (Result > Data.size())
     return make_error<CoverageMapError>(coveragemap_error::malformed);
   return Error::success();
@@ -119,26 +119,26 @@ Error RawCoverageFilenamesReader::read(CovMapVersion Version) {
     return Err;
 
   if (CompressedLen > 0) {
-    if (!zlib::isAvailable())
+    if (!compression::zlib::isAvailable())
       return make_error<CoverageMapError>(
           coveragemap_error::decompression_failed);
 
     // Allocate memory for the decompressed filenames.
-    SmallVector<char, 0> StorageBuf;
+    SmallVector<uint8_t, 0> StorageBuf;
 
     // Read compressed filenames.
     StringRef CompressedFilenames = Data.substr(0, CompressedLen);
     Data = Data.substr(CompressedLen);
-    auto Err =
-        zlib::uncompress(CompressedFilenames, StorageBuf, UncompressedLen);
+    auto Err = compression::zlib::uncompress(
+        arrayRefFromStringRef(CompressedFilenames), StorageBuf,
+        UncompressedLen);
     if (Err) {
       consumeError(std::move(Err));
       return make_error<CoverageMapError>(
           coveragemap_error::decompression_failed);
     }
 
-    StringRef UncompressedFilenames(StorageBuf.data(), StorageBuf.size());
-    RawCoverageFilenamesReader Delegate(UncompressedFilenames, Filenames,
+    RawCoverageFilenamesReader Delegate(toStringRef(StorageBuf), Filenames,
                                         CompilationDir);
     return Delegate.readUncompressed(Version, NumFilenames);
   }
@@ -175,7 +175,8 @@ Error RawCoverageFilenamesReader::readUncompressed(CovMapVersion Version,
         else
           P.assign(CWD);
         llvm::sys::path::append(P, Filename);
-        Filenames.push_back(static_cast<std::string>(P));
+        sys::path::remove_dots(P, /*remove_dot_dot=*/true);
+        Filenames.push_back(static_cast<std::string>(P.str()));
       }
     }
   }
@@ -567,7 +568,8 @@ class VersionedCovMapFuncRecordReader : public CovMapFuncRecordReader {
       if (Error Err = CFR->template getFuncName<Endian>(ProfileNames, FuncName))
         return Err;
       if (FuncName.empty())
-        return make_error<InstrProfError>(instrprof_error::malformed);
+        return make_error<InstrProfError>(instrprof_error::malformed,
+                                          "function name is empty");
       ++CovMapNumUsedRecords;
       Records.emplace_back(Version, FuncName, FuncHash, Mapping,
                            FileRange.StartingIndex, FileRange.Length);

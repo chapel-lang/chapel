@@ -27,10 +27,15 @@ if [ -f /data/cf/chapel/setup_cmake_nightly.bash ] ; then
   source /data/cf/chapel/setup_cmake_nightly.bash
 elif [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
   source /cray/css/users/chapelu/setup_cmake_nightly.bash
+elif [ -f /cy/users/chapelu/setup_cmake_nightly.bash ] ; then
+  source /cy/users/chapelu/setup_cmake_nightly.bash
 fi
 
 log_info "gcc version: $(which gcc)"
 gcc --version
+
+log_info "python3 version: $(which python3)"
+python3 --version
 
 SCRIPT_NAME=$0
 start_time=$(date '+%s')
@@ -101,11 +106,11 @@ export CHPL_TARGET_CPU=none
 
 explicit_prefix=${CHPL_NIGHTLY_LOG_PREFIX}
 default_prefix=${TMPDIR:-/tmp}/chapel_logs
-sea_prefix=/data/sea/chapel
+css_prefix=/cray/css/users/chapelu
 if [ -n "$explicit_prefix" ]; then
     LOGDIR_PREFIX=$explicit_prefix
-elif [ -d $sea_prefix ] ; then
-    LOGDIR_PREFIX=$sea_prefix
+elif [ -d $css_prefix ] ; then
+    LOGDIR_PREFIX=$css_prefix
 else
     LOGDIR_PREFIX=$default_prefix
     if [ ! -d $LOGDIR_PREFIX ] ; then

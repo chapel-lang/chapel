@@ -1,4 +1,4 @@
-use Barriers;
+use Collectives;
 use AllLocalesBarriers;
 use BlockDist;
 use CommDiagnostics;
@@ -27,7 +27,7 @@ proc remoteTestBasic(b, numRemoteTasks) {
   }
 }
 
-proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
+proc remoteTestSplitPhase(b: barrier, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   const hi = barSpace.high;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
@@ -60,21 +60,13 @@ proc remoteTestSplitPhase(b: Barrier, numRemoteTasks) {
   }
 }
 
-var b = new Barrier(numRemoteTasks);
+var b = new barrier(numRemoteTasks);
 writeln("atomic remote test basic");
 remoteTestBasic(b, numRemoteTasks);
 
 b.reset(numRemoteTasks);
 writeln("atomic remote test split phase");
 remoteTestSplitPhase(b, numRemoteTasks);
-
-var sb = new Barrier(numRemoteTasks, BarrierType.Sync);
-writeln("sync remote test basic");
-remoteTestBasic(sb, numRemoteTasks);
-
-sb.reset(numRemoteTasks);
-writeln("sync remote test split phase");
-remoteTestSplitPhase(sb, numRemoteTasks);
 
 writeln("allLocalesBarrier test basic");
 remoteTestBasic(allLocalesBarrier, numRemoteTasks);

@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,7 +50,7 @@ extern
 #ifdef __cplusplus
 "C"
 #endif
-volatile int chpl_qthread_done_initializing;
+volatile int chpl_qthread_initialized;
 
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
 void chpl_task_stdModulesInitialized(void);
@@ -86,7 +86,7 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
 {
     chpl_qthread_tls_t* tls;
 
-    if (chpl_qthread_done_initializing) {
+    if (chpl_qthread_initialized) {
         tls = (chpl_qthread_tls_t*)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {
@@ -173,7 +173,10 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 {
     qthread_shepherd_id_t curr_shep;
 
-    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any);
+    // We allow using c_sublocid_none to represent the CPU in the gpu locale
+    // model. This isn't currently used by the numa (or other locale) models.
+    assert(isActualSublocID(full_subloc) || full_subloc == c_sublocid_any ||
+        !strcmp(CHPL_LOCALE_MODEL, "gpu"));
 
     // Only change sublocales if the caller asked for a particular one,
     // which is not the current one, and we're a (movable) task.
@@ -206,6 +209,10 @@ void chpl_task_setSubloc(c_sublocid_t full_subloc)
 #define CHPL_TASK_IMPL_GET_FIXED_NUM_THREADS() \
     chpl_task_impl_getFixedNumThreads()
 uint32_t chpl_task_impl_getFixedNumThreads(void);
+
+#define CHPL_TASK_IMPL_HAS_FIXED_NUM_THREADS() \
+    chpl_task_impl_hasFixedNumThreads()
+chpl_bool chpl_task_impl_hasFixedNumThreads(void);
 
 #define CHPL_TASK_IMPL_IS_FIXED_THREAD() (qthread_shep() != NO_SHEPHERD)
 

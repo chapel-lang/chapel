@@ -46,11 +46,11 @@ For HPE Apollo:
 Configuring a Launcher
 ----------------------
 
-A ``gasnetrun_ibv`` based launcher should be used to launch jobs and
-generally speaking native launchers like ``srun`` will not work.
-Most InfiniBand clusters use a workload manager or queueing system
-such a Slurm, LSF, or PBS. To select an appropriate Chapel launcher
-you can set ``CHPL_LAUNCHER`` to one of the following values:
+A ``gasnetrun_ibv``-based launcher should be used to launch jobs and
+native launchers like ``srun`` will not work. Most InfiniBand
+clusters use a workload manager or queueing system such as Slurm,
+LSF, or PBS. To select an appropriate Chapel launcher you can set
+``CHPL_LAUNCHER`` to one of the following values:
 
 ===================  ======================================
 Launcher Name        Description
@@ -114,7 +114,7 @@ GASNet suggests.
 Selecting a Spawner
 -------------------
 
-Under the covers ``gasnetrun_ibv`` based launchers must figure out
+Under the covers ``gasnetrun_ibv``-based launchers must figure out
 how to spawn jobs and get them up and running on the compute nodes.
 GASNet's two primary means of doing this on InfiniBand clusters are
 ``ssh`` and ``mpi``. GASNet will default to ``mpi`` if MPI support
@@ -175,12 +175,12 @@ configuration output.
 Verifying Job Launch
 --------------------
 
-Once the above configuration has been done, checking that job
-launching is happening properly is recommended. The following Chapel
-program will print out the locale names and how much parallelism is
-available per locale. Ideally each locale is running on a unique
-node (not oversubscribed) and the amount of parallelism matches the
-number of physical cores on each node.
+Once the above configuration has been done, checking that jobs are
+launching properly is recommended. The following Chapel program will
+print out the locale names and how much parallelism is available per
+locale. Ideally each locale is running on a unique node (not
+oversubscribed) and the amount of parallelism matches the number of
+physical cores on each node.
 
 .. code-block:: chapel
 

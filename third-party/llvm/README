@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 13.0.0 is being released with Chapel for
+This copy of LLVM 15.0.7 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -46,6 +46,12 @@ following patch necessary.
   llvm-src/CMakeLists.txt looks like the following:
 option(LLVM_INCLUDE_TESTS "Generate build targets for the LLVM unit tests." OFF)
 
+* The llvm-src/CMakeLists.txt file was also edited to set
+  LLVM_INCLUDE_BENCHMARKS to OFF by default instead of ON.
+  With this change made, the appropriate line in
+  llvm-src/CMakeLists.txt looks like the following:
+option(LLVM_INCLUDE_BENCHMARKS "Generate benchmark targets. If OFF, benchmarks can't be built." OFF)
+
 Upgrading LLVM versions
 =======================
 
@@ -53,20 +59,29 @@ The directory $CHPL_HOME/third-party/llvm/llvm-src/ contains the
 un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
-1.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-13.0.0.src
-2.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-13.0.0.src
-3.  mv clang-13.0.0.src llvm-13.0.0.src/tools/clang
-4.  git rm -r llvm-src
-5.  mv llvm-13.0.0.src llvm-src
-6.  rm -r llvm-src/test llvm-src/tools/clang/test
-7.  git add --force llvm-src
+1.  download the new release and signature and verify them with e.g.
+    gpg --verify llvm-15.0.7.src.tar.xz.sig
+2.  git rm -r llvm-src cmake
+3.  un-tarball the new LLVM version into the directory it specifies,
+    for example llvm-15.0.7.src
+4.  un-tarball the new Clang version into the directory it specifies,
+    for example clang-15.0.7.src
+5.  un-tarball the cmake support tarball into the directory it specifies,
+    for example cmake-15.0.7.src
+6.  mv clang-15.0.7.src llvm-15.0.7.src/tools/clang
+7.  mv llvm-15.0.7.src llvm-src
+8.  mv cmake-15.0.7.src cmake
+9.  rm -r llvm-src/test llvm-src/tools/clang/test
+10. git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
-8.  update the util/chplenv/chpl_llvm.py preferred_versions function
+11. commit these changes
+12. edit llvm-src/CMakeLists.txt to set LLVM_INCLUDE_TESTS to OFF,
+    set LLVM_INCLUDE_BENCHMARKS to OFF, and check above for any
+    additional patches to apply 
+13. commit the CMakeLists.txt changes
+14. update the util/chplenv/chpl_llvm.py llvm_versions function
     to record that the new version is available.
-9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
-10. commit
-11. update the new sources by re-applying any needed patches (see above)
-    and commit
-12. PR, merge, etc.
+15. update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
+16. update this README file
+17. commit the docs and chplenv changes
+18. PR, test, merge, etc.

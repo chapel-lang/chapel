@@ -1,4 +1,10 @@
+#!/usr/bin/env python3
+
+import os
+import shutil
+
 # GASNet can run gdb but can't send a stdin file to each window
-# Darwin now only supports lldb
-CHPL_COMM == gasnet
-CHPL_TARGET_PLATFORM==darwin
+gasnet = os.getenv('CHPL_COMM') == 'gasnet'
+missing_gdb = shutil.which("gdb") is None
+
+print(gasnet or missing_gdb)

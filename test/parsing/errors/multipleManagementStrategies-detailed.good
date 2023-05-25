@@ -1,0 +1,8 @@
+─── error in multipleManagementStrategies.chpl:2 [MultipleManagementStrategies] ───
+  Type expression uses multiple memory management strategies ('owned' and 'owned').
+  Multiple class kinds used in type expression here:
+      |
+    2 | var a : Foo = new owned owned Foo();
+      |
+  The same strategy is listed twice; one instance should be removed.
+

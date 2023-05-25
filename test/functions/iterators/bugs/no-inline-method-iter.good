@@ -1,0 +1,18 @@
+Calling standalone foo()
+0
+1
+Calling range.baz()
+0
+1
+Calling range.bar()
+0
+1
+Calling range.foo()
+0
+1
+Calling range.iterator()
+false
+true
+Calling range.foo() on a bounded range
+0
+1

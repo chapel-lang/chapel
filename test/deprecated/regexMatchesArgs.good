@@ -1,2 +1,2 @@
 regexMatchesArgs.chpl:7: warning: regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.
-((matched = true, byteOffset = 4, numBytes = 3))
+((matched = true, byteOffset = 4, numBytes = 3),)

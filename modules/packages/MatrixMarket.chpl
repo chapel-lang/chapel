@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,15 +88,15 @@ module MatrixMarket {
       var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
-      var fout:channel(true, iokind.dynamic, true);
+      var fout:fileWriter(kind=iokind.dynamic, locking=true);
 
       var headers_written:bool;
       var last_rowno:int;
 
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
-         fd = open(fname, iomode.cw);
-         fout = fd.writer(start=0);
+         fd = open(fname, ioMode.cw);
+         fout = fd.writer(region=0..);
          headers_written=false;
       }
 
@@ -129,8 +129,9 @@ module MatrixMarket {
         // before we try to update it with a separate channel.
         fout.flush();
 
-         var tfout = fd.writer(start=HEADER_LINE.numBytes);
+         var tfout = fd.writer(region=HEADER_LINE.numBytes..);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
+
          tfout.close();
       }
 
@@ -198,17 +199,17 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
 
 class MMReader {
    var fd:file;
-   var fin:channel(false, iokind.dynamic, true);
+   var fin:fileReader(kind=iokind.dynamic, locking=true);
    var finfo:MMInfo;
 
    proc init(const fname:string) {
-      fd = open(fname, iomode.r, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
-      fin = fd.reader(start=0, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+      fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
    }
 
    proc read_header() {
      var header:string;
-     assert(fin.readline(header) == true, "MMReader I/O error!");
+     assert(fin.readLine(header) == true, "MMReader I/O error!");
 
      var headerfields = [ s in header.split(" ") ] s;
      this.finfo = initMMInfo(headerfields);
@@ -217,13 +218,13 @@ class MMReader {
      var pctflag = false;
      while !pctflag {
        var percentfound:string;
-       var offset = fin._offset();
-       fin.readline(percentfound);
+       var offset = fin.chpl_offset();
+       fin.readLine(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...
        if percentfound.find("%") == -1 {
          fin.close();
-         fin = fd.reader(start=offset, hints=IOHINT_SEQUENTIAL|IOHINT_CACHED);
+         fin = fd.reader(region=offset.., hints=ioHintSet.sequential|ioHintSet.prefetch);
          pctflag = true;
        }
      }

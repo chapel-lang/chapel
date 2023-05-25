@@ -15,6 +15,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
+#include "llvm/Analysis/VectorUtils.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Function.h"
@@ -23,13 +24,11 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Intrinsics.h"
-#include "llvm/IR/Module.h"
 #include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/Support/MathExtras.h"
 
 using namespace llvm;
 
@@ -84,8 +83,11 @@ STATISTIC(NumLoweredVPOps, "Number of folded vector predication operations");
 
 /// \returns Whether the vector mask \p MaskVal has all lane bits set.
 static bool isAllTrueMask(Value *MaskVal) {
-  auto *ConstVec = dyn_cast<ConstantVector>(MaskVal);
-  return ConstVec && ConstVec->isAllOnesValue();
+  if (Value *SplattedVal = getSplatValue(MaskVal))
+    if (auto *ConstValue = dyn_cast<Constant>(SplattedVal))
+      return ConstValue->isAllOnesValue();
+
+  return false;
 }
 
 /// \returns A non-excepting divisor constant for this type.
@@ -113,6 +115,16 @@ static void replaceOperation(Value &NewOp, VPIntrinsic &OldOp) {
   transferDecorations(NewOp, OldOp);
   OldOp.replaceAllUsesWith(&NewOp);
   OldOp.eraseFromParent();
+}
+
+static bool maySpeculateLanes(VPIntrinsic &VPI) {
+  // The result of VP reductions depends on the mask and evl.
+  if (isa<VPReductionIntrinsic>(VPI))
+    return false;
+  // Fallback to whether the intrinsic is speculatable.
+  Optional<unsigned> OpcOpt = VPI.getFunctionalOpcode();
+  unsigned FunctionalOpc = OpcOpt.value_or((unsigned)Instruction::Call);
+  return isSafeToSpeculativelyExecuteWithOpcode(FunctionalOpc, &VPI);
 }
 
 //// } Helpers
@@ -157,6 +169,15 @@ struct CachingVPExpander {
   /// \brief Lower this VP binary operator to a unpredicated binary operator.
   Value *expandPredicationInBinaryOperator(IRBuilder<> &Builder,
                                            VPIntrinsic &PI);
+
+  /// \brief Lower this VP reduction to a call to an unpredicated reduction
+  /// intrinsic.
+  Value *expandPredicationInReduction(IRBuilder<> &Builder,
+                                      VPReductionIntrinsic &PI);
+
+  /// \brief Lower this VP memory operation to a non-VP intrinsic.
+  Value *expandPredicationInMemoryIntrinsic(IRBuilder<> &Builder,
+                                            VPIntrinsic &VPI);
 
   /// \brief Query TTI and expand the vector predication in \p P accordingly.
   Value *expandPredication(VPIntrinsic &PI);
@@ -213,8 +234,7 @@ Value *CachingVPExpander::convertEVLToMask(IRBuilder<> &Builder,
 Value *
 CachingVPExpander::expandPredicationInBinaryOperator(IRBuilder<> &Builder,
                                                      VPIntrinsic &VPI) {
-  assert((isSafeToSpeculativelyExecute(&VPI) ||
-          VPI.canIgnoreVectorLengthParam()) &&
+  assert((maySpeculateLanes(VPI) || VPI.canIgnoreVectorLengthParam()) &&
          "Implicitly dropping %evl in non-speculatable operator!");
 
   auto OC = static_cast<Instruction::BinaryOps>(*VPI.getFunctionalOpcode());
@@ -246,6 +266,200 @@ CachingVPExpander::expandPredicationInBinaryOperator(IRBuilder<> &Builder,
 
   replaceOperation(*NewBinOp, VPI);
   return NewBinOp;
+}
+
+static Value *getNeutralReductionElement(const VPReductionIntrinsic &VPI,
+                                         Type *EltTy) {
+  bool Negative = false;
+  unsigned EltBits = EltTy->getScalarSizeInBits();
+  switch (VPI.getIntrinsicID()) {
+  default:
+    llvm_unreachable("Expecting a VP reduction intrinsic");
+  case Intrinsic::vp_reduce_add:
+  case Intrinsic::vp_reduce_or:
+  case Intrinsic::vp_reduce_xor:
+  case Intrinsic::vp_reduce_umax:
+    return Constant::getNullValue(EltTy);
+  case Intrinsic::vp_reduce_mul:
+    return ConstantInt::get(EltTy, 1, /*IsSigned*/ false);
+  case Intrinsic::vp_reduce_and:
+  case Intrinsic::vp_reduce_umin:
+    return ConstantInt::getAllOnesValue(EltTy);
+  case Intrinsic::vp_reduce_smin:
+    return ConstantInt::get(EltTy->getContext(),
+                            APInt::getSignedMaxValue(EltBits));
+  case Intrinsic::vp_reduce_smax:
+    return ConstantInt::get(EltTy->getContext(),
+                            APInt::getSignedMinValue(EltBits));
+  case Intrinsic::vp_reduce_fmax:
+    Negative = true;
+    LLVM_FALLTHROUGH;
+  case Intrinsic::vp_reduce_fmin: {
+    FastMathFlags Flags = VPI.getFastMathFlags();
+    const fltSemantics &Semantics = EltTy->getFltSemantics();
+    return !Flags.noNaNs() ? ConstantFP::getQNaN(EltTy, Negative)
+           : !Flags.noInfs()
+               ? ConstantFP::getInfinity(EltTy, Negative)
+               : ConstantFP::get(EltTy,
+                                 APFloat::getLargest(Semantics, Negative));
+  }
+  case Intrinsic::vp_reduce_fadd:
+    return ConstantFP::getNegativeZero(EltTy);
+  case Intrinsic::vp_reduce_fmul:
+    return ConstantFP::get(EltTy, 1.0);
+  }
+}
+
+Value *
+CachingVPExpander::expandPredicationInReduction(IRBuilder<> &Builder,
+                                                VPReductionIntrinsic &VPI) {
+  assert((maySpeculateLanes(VPI) || VPI.canIgnoreVectorLengthParam()) &&
+         "Implicitly dropping %evl in non-speculatable operator!");
+
+  Value *Mask = VPI.getMaskParam();
+  Value *RedOp = VPI.getOperand(VPI.getVectorParamPos());
+
+  // Insert neutral element in masked-out positions
+  if (Mask && !isAllTrueMask(Mask)) {
+    auto *NeutralElt = getNeutralReductionElement(VPI, VPI.getType());
+    auto *NeutralVector = Builder.CreateVectorSplat(
+        cast<VectorType>(RedOp->getType())->getElementCount(), NeutralElt);
+    RedOp = Builder.CreateSelect(Mask, RedOp, NeutralVector);
+  }
+
+  Value *Reduction;
+  Value *Start = VPI.getOperand(VPI.getStartParamPos());
+
+  switch (VPI.getIntrinsicID()) {
+  default:
+    llvm_unreachable("Impossible reduction kind");
+  case Intrinsic::vp_reduce_add:
+    Reduction = Builder.CreateAddReduce(RedOp);
+    Reduction = Builder.CreateAdd(Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_mul:
+    Reduction = Builder.CreateMulReduce(RedOp);
+    Reduction = Builder.CreateMul(Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_and:
+    Reduction = Builder.CreateAndReduce(RedOp);
+    Reduction = Builder.CreateAnd(Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_or:
+    Reduction = Builder.CreateOrReduce(RedOp);
+    Reduction = Builder.CreateOr(Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_xor:
+    Reduction = Builder.CreateXorReduce(RedOp);
+    Reduction = Builder.CreateXor(Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_smax:
+    Reduction = Builder.CreateIntMaxReduce(RedOp, /*IsSigned*/ true);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::smax, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_smin:
+    Reduction = Builder.CreateIntMinReduce(RedOp, /*IsSigned*/ true);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::smin, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_umax:
+    Reduction = Builder.CreateIntMaxReduce(RedOp, /*IsSigned*/ false);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::umax, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_umin:
+    Reduction = Builder.CreateIntMinReduce(RedOp, /*IsSigned*/ false);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::umin, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_fmax:
+    Reduction = Builder.CreateFPMaxReduce(RedOp);
+    transferDecorations(*Reduction, VPI);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::maxnum, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_fmin:
+    Reduction = Builder.CreateFPMinReduce(RedOp);
+    transferDecorations(*Reduction, VPI);
+    Reduction =
+        Builder.CreateBinaryIntrinsic(Intrinsic::minnum, Reduction, Start);
+    break;
+  case Intrinsic::vp_reduce_fadd:
+    Reduction = Builder.CreateFAddReduce(Start, RedOp);
+    break;
+  case Intrinsic::vp_reduce_fmul:
+    Reduction = Builder.CreateFMulReduce(Start, RedOp);
+    break;
+  }
+
+  replaceOperation(*Reduction, VPI);
+  return Reduction;
+}
+
+Value *
+CachingVPExpander::expandPredicationInMemoryIntrinsic(IRBuilder<> &Builder,
+                                                      VPIntrinsic &VPI) {
+  assert(VPI.canIgnoreVectorLengthParam());
+
+  const auto &DL = F.getParent()->getDataLayout();
+
+  Value *MaskParam = VPI.getMaskParam();
+  Value *PtrParam = VPI.getMemoryPointerParam();
+  Value *DataParam = VPI.getMemoryDataParam();
+  bool IsUnmasked = isAllTrueMask(MaskParam);
+
+  MaybeAlign AlignOpt = VPI.getPointerAlignment();
+
+  Value *NewMemoryInst = nullptr;
+  switch (VPI.getIntrinsicID()) {
+  default:
+    llvm_unreachable("Not a VP memory intrinsic");
+  case Intrinsic::vp_store:
+    if (IsUnmasked) {
+      StoreInst *NewStore =
+          Builder.CreateStore(DataParam, PtrParam, /*IsVolatile*/ false);
+      if (AlignOpt.has_value())
+        NewStore->setAlignment(AlignOpt.value());
+      NewMemoryInst = NewStore;
+    } else
+      NewMemoryInst = Builder.CreateMaskedStore(
+          DataParam, PtrParam, AlignOpt.valueOrOne(), MaskParam);
+
+    break;
+  case Intrinsic::vp_load:
+    if (IsUnmasked) {
+      LoadInst *NewLoad =
+          Builder.CreateLoad(VPI.getType(), PtrParam, /*IsVolatile*/ false);
+      if (AlignOpt.has_value())
+        NewLoad->setAlignment(AlignOpt.value());
+      NewMemoryInst = NewLoad;
+    } else
+      NewMemoryInst = Builder.CreateMaskedLoad(
+          VPI.getType(), PtrParam, AlignOpt.valueOrOne(), MaskParam);
+
+    break;
+  case Intrinsic::vp_scatter: {
+    auto *ElementType =
+        cast<VectorType>(DataParam->getType())->getElementType();
+    NewMemoryInst = Builder.CreateMaskedScatter(
+        DataParam, PtrParam,
+        AlignOpt.value_or(DL.getPrefTypeAlign(ElementType)), MaskParam);
+    break;
+  }
+  case Intrinsic::vp_gather: {
+    auto *ElementType = cast<VectorType>(VPI.getType())->getElementType();
+    NewMemoryInst = Builder.CreateMaskedGather(
+        VPI.getType(), PtrParam,
+        AlignOpt.value_or(DL.getPrefTypeAlign(ElementType)), MaskParam, nullptr,
+        VPI.getName());
+    break;
+  }
+  }
+
+  assert(NewMemoryInst);
+  replaceOperation(*NewMemoryInst, VPI);
+  return NewMemoryInst;
 }
 
 void CachingVPExpander::discardEVLParameter(VPIntrinsic &VPI) {
@@ -321,6 +535,19 @@ Value *CachingVPExpander::expandPredication(VPIntrinsic &VPI) {
   if (OC && Instruction::isBinaryOp(*OC))
     return expandPredicationInBinaryOperator(Builder, VPI);
 
+  if (auto *VPRI = dyn_cast<VPReductionIntrinsic>(&VPI))
+    return expandPredicationInReduction(Builder, *VPRI);
+
+  switch (VPI.getIntrinsicID()) {
+  default:
+    break;
+  case Intrinsic::vp_load:
+  case Intrinsic::vp_store:
+  case Intrinsic::vp_gather:
+  case Intrinsic::vp_scatter:
+    return expandPredicationInMemoryIntrinsic(Builder, VPI);
+  }
+
   return &VPI;
 }
 
@@ -335,9 +562,9 @@ struct TransformJob {
   bool isDone() const { return Strategy.shouldDoNothing(); }
 };
 
-void sanitizeStrategy(Instruction &I, VPLegalization &LegalizeStrat) {
-  // Speculatable instructions do not strictly need predication.
-  if (isSafeToSpeculativelyExecute(&I)) {
+void sanitizeStrategy(VPIntrinsic &VPI, VPLegalization &LegalizeStrat) {
+  // Operations with speculatable lanes do not strictly need predication.
+  if (maySpeculateLanes(VPI)) {
     // Converting a speculatable VP intrinsic means dropping %mask and %evl.
     // No need to expand %evl into the %mask only to ignore that code.
     if (LegalizeStrat.OpStrategy == VPLegalization::Convert)
@@ -382,7 +609,7 @@ bool CachingVPExpander::expandVectorPredication() {
     if (!VPI)
       continue;
     auto VPStrat = getVPLegalizationStrategy(*VPI);
-    sanitizeStrategy(I, VPStrat);
+    sanitizeStrategy(*VPI, VPStrat);
     if (!VPStrat.shouldDoNothing())
       Worklist.emplace_back(VPI, VPStrat);
   }

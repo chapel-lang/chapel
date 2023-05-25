@@ -1,4 +1,4 @@
-foo unmodified
-Modified foo
-Modified foo
-foo unmodified
+resolution-nested-method.chpl:10: In function 'modifyIt':
+resolution-nested-method.chpl:14: error: ambiguous call 'foo.bar()'
+resolution-nested-method.chpl:5: note: candidates are: foo.bar()
+resolution-nested-method.chpl:15: note:                 foo.bar()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -93,7 +93,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   chpl_executionCommand =
     (char*)chpl_mem_allocMany(length+1, sizeof(char),
                               CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
-  sprintf(chpl_executionCommand, "%s", argv[0]);
+  snprintf(chpl_executionCommand, (length+1) * sizeof(char), "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");
     strcat(chpl_executionCommand, argv[i]);
@@ -226,8 +226,10 @@ void chpl_rt_init(int argc, char* argv[]) {
   parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
+  chpl_comm_pre_topo_init();
   chpl_topo_init();
   chpl_comm_init(&argc, &argv);
+  chpl_comm_pre_mem_init();
   chpl_mem_init();
   chpl_comm_post_mem_init();
 
@@ -240,6 +242,8 @@ void chpl_rt_init(int argc, char* argv[]) {
   chpl_gen_main_arg.return_value = 0;
   parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
+
+  chpl_topo_post_args_init();
 
   //
   // If the user specified a number of locales, have the comm layer
@@ -326,10 +330,11 @@ void chpl_std_module_init(void) {
     // Initialize the internal modules.
     chpl__init_PrintModuleInitOrder(0, myFilename);
     chpl__init_ChapelStandard(0, myFilename);
+
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
     // chpl_comm_startPollingTask().
-
+    //
     //
     // Permit the tasking layer to do anything it would like to now that
     // the standard modules are initialized.
@@ -343,7 +348,6 @@ void chpl_std_module_init(void) {
     chpl_rt_preUserCodeHook();
     chpl_rt_postUserCodeHook();
   }
-
 }
 
 //

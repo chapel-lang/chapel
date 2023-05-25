@@ -3,11 +3,11 @@ proc doInd(D, i) {
 }
 
 proc doRange(D) {
-  doInd(D, D.low-1);
+  doInd(D, D.lowBound-1);
   for i in D {
     doInd(D, i);
   }
-  doInd(D, D.high+1);
+  doInd(D, D.highBound+1);
   writeln();
 }
 

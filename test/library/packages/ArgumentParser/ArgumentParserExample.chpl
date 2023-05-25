@@ -17,7 +17,7 @@ proc main(args: []string) throws {
   }
   // create a parser for the main entry point
   var parser = new argumentParser(exitOnError=false,
-                                  helpHandler=new CustomHelpHandler());
+                                  helpHandler=new shared CustomHelpHandler());
 
   // add a string option that accepts between 1 and 10 values
   var strArg = parser.addOption(name="strArg1",

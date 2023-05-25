@@ -1,0 +1,7 @@
+vectorizingModule.chpl:1: warning: The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead
+1
+1
+(1, 1)
+1
+1
+(1, 1)

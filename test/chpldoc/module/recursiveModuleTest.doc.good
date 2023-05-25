@@ -1,0 +1,38 @@
+.. default-domain:: chpl
+
+.. module:: ModuleA
+
+ModuleA
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use ModuleA;
+
+
+or
+
+.. code-block:: chapel
+
+   import ModuleA;
+
+.. default-domain:: chpl
+
+.. module:: ModuleB
+
+ModuleB
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use ModuleB;
+
+
+or
+
+.. code-block:: chapel
+
+   import ModuleB;
+

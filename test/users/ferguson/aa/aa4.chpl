@@ -22,8 +22,8 @@ proc foo(n:int, ref p:borrowed CC, ref q:borrowed C)
 }
 
 proc doit() {
-  var p  = new borrowed CC(0.0, 0);
-  var q  = new borrowed C(1.0);
+  var p  = (new owned CC(0.0, 0)).borrow();
+  var q  = (new owned C(1.0)).borrow();
   var pC = p:borrowed C;
 
   foo(10, p, q);

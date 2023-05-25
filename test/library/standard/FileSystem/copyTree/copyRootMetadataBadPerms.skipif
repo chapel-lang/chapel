@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# This test depends on a root-owned directory containing a file existing
+FILE='/usr/include/curses/curses.h'
+
+if [ -f "$FILE" ]; then
+    # don't skip
+    echo 0
+else
+    # skip
+    echo 1
+fi

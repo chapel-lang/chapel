@@ -13,7 +13,8 @@ with open(tmp_file, 'w') as tf:
         if not (line.startswith("[+]")
                 or line.startswith("==>")
                 or 'compilers.yaml' in line
-                or '@' in line):
+                or '@' in line
+                or 'Fetch:' in line):
           tf.write(line)
 
 shutil.move(tmp_file, out_file)

@@ -1,0 +1,6 @@
+recursive-generic-declared-type.chpl:13: warning: RR(int(64))
+recursive-generic-declared-type.chpl:17: In iterator 'recIter':
+recursive-generic-declared-type.chpl:18: error: cannot default-initialize a variable with generic type
+recursive-generic-declared-type.chpl:18: note: '<temporary>' has generic type 'RR'
+recursive-generic-declared-type.chpl:18: note: cannot find initialization point to split-init this variable
+recursive-generic-declared-type.chpl:18: note: '<temporary>' is used here before it is initialized

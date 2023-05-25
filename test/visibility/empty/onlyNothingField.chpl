@@ -1,13 +1,16 @@
-proc main() {
-  use bash only;
+module Program {
+  proc main() {
+    use bash only;
 
-  var p = bash.ls();
+    var p = bash.ls();
 
-  writeln(p.x);
+    writeln(p.x);
+  }
 }
 
 module bash {
-  public use super.Other;
+  public use Other; // does not bring in Other
+  use Other; // does bring in Other but only for local use
 
   proc ls(args='') {
     var p = Other.makeFoo();

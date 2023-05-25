@@ -1,0 +1,4 @@
+init
+parseAndConvertUast
+checkUast
+driverCleanup

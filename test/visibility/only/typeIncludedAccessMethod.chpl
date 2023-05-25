@@ -3,7 +3,7 @@ use typeToExcept only foo;
 // This test verifies the behavior when specifying a type in your 'only' list,
 // and then calling a method on that type
 proc main() {
-  var a = new borrowed foo(2);
+  var a = (new owned foo(2)).borrow();
 
   writeln(a.someMethod(3));
 

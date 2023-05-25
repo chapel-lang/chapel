@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,10 +52,11 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "view.h"
+#include "llvm/ADT/DenseMap.h"
 
 ResolveScope* rootScope;
 
-static std::map<BaseAST*, ResolveScope*> sScopeMap;
+static llvm::DenseMap<BaseAST*, ResolveScope*> sScopeMap;
 
 ResolveScope* ResolveScope::getRootModule() {
   ResolveScope* retval = new ResolveScope(theProgram, NULL);
@@ -102,10 +103,9 @@ ResolveScope* ResolveScope::findOrCreateScopeFor(DefExpr* def) {
 }
 
 ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
   ResolveScope*                               retval = NULL;
 
-  it = sScopeMap.find(ast);
+  auto it = sScopeMap.find(ast);
 
   if (it != sScopeMap.end()) {
     retval = it->second;
@@ -115,9 +115,7 @@ ResolveScope* ResolveScope::getScopeFor(BaseAST* ast) {
 }
 
 void ResolveScope::destroyAstMap() {
-  std::map<BaseAST*, ResolveScope*>::iterator it;
-
-  for (it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
+  for (auto it = sScopeMap.begin(); it != sScopeMap.end(); it++) {
     delete it->second;
   }
 
@@ -230,8 +228,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
-  extend(dtFile->symbol);
-
   extend(dtOpaque->symbol);
   extend(gOpaque);
 
@@ -286,6 +282,7 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -312,7 +309,7 @@ std::string ResolveScope::name() const {
   } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
     char buff[1024];
 
-    sprintf(buff, "BlockStmt %9d", block->id);
+    snprintf(buff, sizeof(buff), "BlockStmt %9d", block->id);
 
     retval = buff;
 
@@ -382,6 +379,13 @@ ModuleSymbol* ResolveScope::enclosingModule() const {
 bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   const char* name   = newSym->name;
   bool        retval = false;
+
+  // This symbol has no name. It may be attached to something else that
+  // has a name, but we'll end up visiting that entity later.
+  if (newSym->hasFlag(FLAG_ANONYMOUS_FORMAL) ||
+      newSym->hasFlag(FLAG_ANONYMOUS_FN)) {
+    return true;
+  }
 
   // If this is a top-level module, we look up the symbol's name as
   // though we were resolving a 'use' in order to take module symbols
@@ -484,6 +488,8 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
               mMethodsOnTypeName.insert(typeName->unresolved);
+            } else if (SymExpr* typeName = toSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->symbol()->name);
             }
           }
         } else {
@@ -825,8 +831,9 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-      outerMod->generateDeprecationWarning(call);
+    if (!fDynoScopeResolve) {
+      outerMod->maybeGenerateDeprecationWarning(call);
+      outerMod->maybeGenerateUnstableWarning(call);
     }
 
     const char* rhsName = getNameFrom(call->get(2));
@@ -1206,7 +1213,7 @@ ResolveScope::lookupPublicUnqualAccessSyms(const char* name,
               bool followUses) {
   if (!this->canReexport) return NULL;
 
-  std::vector<Symbol *> symbols;
+  llvm::SmallVector<Symbol *, 4> symbols;
 
   bool traversedRenames = false;
   bool hasPublicVisStmt = false;

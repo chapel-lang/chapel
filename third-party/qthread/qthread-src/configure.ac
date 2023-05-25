@@ -342,7 +342,7 @@ AC_ARG_WITH([scheduler],
                              single-threaded shepherds are: nemesis (default),
                              lifo, mdlifo, mutexfifo, and mtsfifo. Options 
                              when using multi-threaded shepherds are: sherwood 
-                             (default), nottingham, and loxley. Details on 
+                             (default), distrib and nottingham. Details on 
                              these options are in the SCHEDULING file.])])
 
 AC_ARG_WITH([sinc],
@@ -764,7 +764,7 @@ AS_IF([test "x$with_scheduler" != "x"],
          default)
            [with_scheduler="sherwood"]
            ;;
-         sherwood|loxley|nemesis|lifo|mutexfifo|mtsfifo|distrib)
+         sherwood|nemesis|lifo|mutexfifo|mtsfifo|distrib)
            # all valid options that require no additional configuration
            ;;
          mdlifo)

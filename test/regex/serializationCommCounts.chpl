@@ -10,7 +10,7 @@ proc serialize(type t, numChars) {
   writef("serialize(%s, %n)\n", t:string, numChars);
   resetCommDiagnostics();
 
-  var r = compile(("x":t)*numChars);
+  var r = new regex(("x":t)*numChars);
   startCommDiagnostics();
   on Locales[1] {
     var r2 = r;
@@ -24,7 +24,7 @@ proc remoteMatch(type t, numChars) {
   writef("match(%s, %n)\n", t:string, numChars);
   resetCommDiagnostics();
 
-  var r = compile(("x":t)*numChars);
+  var r = new regex(("x":t)*numChars);
   on Locales[1] {
     preventRvf(r);
     startCommDiagnostics();

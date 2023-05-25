@@ -1,0 +1,25 @@
+─── warning in fullUsePath.chpl:1 [ImplicitFileModule] ───
+  An implicit module named 'fullUsePath' is being introduced to contain file-scope code.
+  The following is the first file-scope statement:
+      |
+    1 | param ToLookFor = "??";
+      |
+  The implicit module 'fullUsePath' is being created because the above code is outside of any module declarations (e.g., 'module M1').
+  Note that all of the file's contents -- including module 'M1' -- will be placed into the new 'fullUsePath' module.
+
+─── error in fullUsePath.chpl:9 [UseImportUnknownMod] ───
+  Cannot find module or enum named 'ToLookFor'.
+  In the following 'use' statement:
+      |
+    9 |                 use ToLookFor;
+      |                     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The following declarations are not covered by the 'use' statement but seem similar to what you meant.
+  
+  A declaration of 'ToLookFor' is here:
+      |
+    1 | param ToLookFor = "??";
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  However, 'use' statements can only be used with modules or enums (and this 'ToLookFor' is not a module or enum).
+

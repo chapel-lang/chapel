@@ -24,7 +24,7 @@ class C {
 //
 // ensure iterators are correctly idenified as val iters
 //
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 writeln(isRefIter(c.these()));
 
 writeln(isRefIter(c.these(tag=iterKind.standalone)));

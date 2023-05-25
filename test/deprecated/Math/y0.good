@@ -1,0 +1,32 @@
+y0.chpl:10: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:12: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:14: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:16: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:18: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:30: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:32: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:34: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:36: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+y0.chpl:38: warning: y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it
+For 64-bit reals: 
+a = 10.0
+y0(a) = 0.0556712
+b = 31.0
+y0(b) = -0.133833
+c = 110.0
+y0(c) = 0.0514242
+d = 0.05
+y0(d) = -1.97931
+e = 100.0
+y0(e) = -0.0772443
+For 32-bit reals: 
+a = 10.0
+y0(a) = 0.0556712
+b = 31.0
+y0(b) = -0.133833
+c = 110.0
+y0(c) = 0.0514242
+d = 0.05
+y0(d) = -1.97931
+e = 100.0
+y0(e) = -0.0772443

@@ -1,0 +1,1 @@
+anonAssocArrNoBrackets.chpl:1: error: Arrays with anonymous domains must either be defined using a list of ranges or use curly brackets.  If you were trying to create an array over a set of 'int(64)' indices, please use curly brackets.

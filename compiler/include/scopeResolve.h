@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,13 +21,17 @@
 #ifndef _SCOPE_RESOLVE_H_
 #define _SCOPE_RESOLVE_H_
 
+#include "llvm/ADT/SmallVector.h"
+
 class astlocT;
 class BaseAST;
 class CallExpr;
 class DefExpr;
 class FnSymbol;
+class ModuleSymbol;
 class Symbol;
 class VisibilityStmt;
+class astlocT;
 
 #include <cstddef>
 #include <map>
@@ -41,7 +45,7 @@ Symbol*  lookup(const char*           name,
 
 void     lookup(const char*           name,
                 BaseAST*              context,
-                std::vector<Symbol*>& symbols,
+                llvm::SmallVectorImpl<Symbol*>& symbols,
                 std::map<Symbol*, astlocT*>& renameLocs,
                 std::map<Symbol*, VisibilityStmt*>& reexportPts,
                 bool storeRenames = false);
@@ -53,7 +57,13 @@ Symbol*  lookupAndCount(const char*           name,
                         astlocT** renameLoc = NULL,
                         bool issueErrors = true);
 
-void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+// Lookup a name while ignoring extern blocks.
+// Also considers modules used/imported and the root module for builtins.
+// For use by externCResolve.
+Symbol* lookupInModuleOrBuiltins(ModuleSymbol* mod, const char* name,
+                                int& nSymbolsFound);
+
+void checkConflictingSymbols(llvm::SmallVectorImpl<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
@@ -64,7 +74,5 @@ BaseAST* getScope(BaseAST* ast);
 
 void resolveUnresolvedSymExprs(BaseAST* ast);
 void resolveUnmanagedBorrows(CallExpr* call);
-
-void destroyModuleUsesCaches();
 
 #endif

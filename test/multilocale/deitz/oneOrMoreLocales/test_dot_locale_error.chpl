@@ -9,7 +9,7 @@ proc bar() {
 
 writeln(bar().locale.id);
 
-proc foo() return 1;
+proc foo() do return 1;
 
 on foo() {
   writeln("hi");

@@ -71,7 +71,7 @@ proc main(args:[] string) {
   for arg in files {
     if isDir(arg) {
       // Go through files in directories.
-      for f in findfiles(arg, true) {
+      for f in findFiles(arg, true) {
         todo.append(f);
       }
     } else {
@@ -94,7 +94,7 @@ proc main(args:[] string) {
 
 
 proc run(ref todo:LinkedList(string), ref Pairs) {
-  var t:Timer;
+  var t:stopwatch;
   t.start();
 
   const FilesSpace = {1..todo.size};
@@ -107,7 +107,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   todo.destroy();
 
-  var parseAndMakeSetTime:Timer;
+  var parseAndMakeSetTime:stopwatch;
   parseAndMakeSetTime.start();
 
 
@@ -145,7 +145,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
   create_and_analyze_graph(Pairs);
 
   t.stop();
-  var days = t.elapsed(TimeUnits.hours) / 24.0;
+  var days = t.elapsed() / (60.0 * 60.0 * 24.0);
   var m = 1000000.0;
   if timing {
     writeln("processed ", nlines, " lines in ", t.elapsed(), " s ");
@@ -177,7 +177,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string, ref Pairs) {
+proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var got:bool;
@@ -194,16 +194,23 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
       try {
         got = logfile.readf("%~jt", tweet);
       } catch e: BadFormatError {
-        if verbose then
+        if verbose {
+            try! logfile.lock();
+            var off = logfile.offset();
+            logfile.unlock();
             stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", errorToString(e.err));
+              off, " : ", e._msg);
+        }
 
         // read over something else
         got = logfile.readf("%~jt", empty);
       }
     } catch e: SystemError {
+      try! logfile.lock();
+      var off = logfile.offset();
+      logfile.unlock();
       stderr.writeln("severe error reading tweets ", fname, " offset ",
-          logfile.offset(), " : ", errorToString(e.err));
+          off, " : ", errorToString(e.err));
 
       // advance to the next line.
       logfile.readln();
@@ -255,7 +262,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openreader(fname);
+    var logfile = openReader(fname);
     process_json(logfile, fname, Pairs);
   }
 }
@@ -264,7 +271,7 @@ proc process_json(fname: string, ref Pairs)
 record Triple {
   var from: int(32);
   var to: int(32);
-  proc weight return 1:int(32);
+  proc weight do return 1:int(32);
 }
 
 
@@ -278,7 +285,7 @@ proc create_and_analyze_graph(ref Pairs)
             total_lines_processed.read(), " lines");
   }
 
-  var createGraphTime:Timer;
+  var createGraphTime:stopwatch;
   createGraphTime.start();
 
   var nmutual = 0;
@@ -384,7 +391,7 @@ proc create_and_analyze_graph(ref Pairs)
   if progress then
     writeln("label propagation");
 
-  var graphAlgorithmTime:Timer;
+  var graphAlgorithmTime:stopwatch;
   graphAlgorithmTime.start();
 
   // start with a different label for each node
@@ -534,5 +541,3 @@ proc create_and_analyze_graph(ref Pairs)
 
   delete G;
 }
-
-

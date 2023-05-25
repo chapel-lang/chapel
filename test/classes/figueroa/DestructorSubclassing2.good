@@ -1,3 +1,1 @@
-Inside ~C
-Inside ~C2
-Inside ~C1
+DestructorSubclassing2.chpl:11: error: only single inheritance is supported

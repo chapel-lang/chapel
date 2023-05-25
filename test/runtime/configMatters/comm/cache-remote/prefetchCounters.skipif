@@ -1,0 +1,5 @@
+# This test relies on the comm layer actually prefetching
+# and reporting the prefetch. With CHPL_GASNET_SEGMENT=fast
+# or with ugni it does not seem to do so.
+CHPL_COMM!=gasnet
+CHPL_GASNET_SEGMENT!=everything

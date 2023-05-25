@@ -3,7 +3,8 @@
  * or not.
  */
 
-public use Sort;
+public use Sort except isSorted;
+
 //
 // BLC: For some of the reasons noted below in comments, I don't
 // believe this test behaves as expected (nor do I think it could,

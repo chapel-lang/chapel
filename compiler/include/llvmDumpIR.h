@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,9 +26,46 @@
 #include "llvmUtil.h"
 #include "symbol.h"
 
+#include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
-llvm::FunctionPass *createDumpIrPass(llvmStageNum_t stage);
+// helper that can run with either pass manager
+struct DumpIR {
+  llvmStageNum_t stage; // which stage we dump from
+
+  // Default constructor for creating this pass on command line
+  // (doesn't get the right pass name)
+  DumpIR() : stage(llvmStageNum::NOPRINT) {}
+
+  explicit DumpIR(llvmStageNum_t stage) : stage(stage) { }
+
+  void run(llvm::Function &F);
+};
+// new pass manager version
+struct DumpIRPass : public llvm::PassInfoMixin<DumpIRPass> {
+  DumpIR pass;
+
+  DumpIRPass() : pass() { }
+  explicit DumpIRPass(llvmStageNum_t stage) : pass(stage) { }
+  llvm::PreservedAnalyses run(llvm::Function& function,
+                              llvm::FunctionAnalysisManager& analysisManager);
+};
+// old pass manager version
+struct LegacyDumpIRPass : public llvm::FunctionPass {
+  static char ID; // Pass identification, replacement for typeid
+  DumpIR pass;
+
+  LegacyDumpIRPass() : llvm::FunctionPass(ID), pass() { }
+  explicit LegacyDumpIRPass(llvmStageNum_t stage)
+    : llvm::FunctionPass(ID), pass(stage) { }
+
+  bool runOnFunction(llvm::Function& function) override;
+
+  // We don't modify the program, so we preserve all analyses.
+  void getAnalysisUsage(llvm::AnalysisUsage &AU) const override;
+};
+
+llvm::FunctionPass* createLegacyDumpIrPass(llvmStageNum_t stage);
 
 #endif
 

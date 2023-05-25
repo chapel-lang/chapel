@@ -1,0 +1,8 @@
+─── error in unsupportedAsIdent1.chpl:6 [UnsupportedAsIdent] ───
+  This form of 'as' is not yet supported.
+  'as' requires the new name to be a simple identifier, but instead got the following:
+      |
+    6 |   use M as b.a;
+      |            ⎺⎺⎺
+      |
+

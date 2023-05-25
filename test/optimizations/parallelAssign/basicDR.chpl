@@ -26,7 +26,7 @@ proc timerWrite(name, ref t) {
 
 // Warmup (and correctness)
 A = B;
-var t: Timer;
+var t: stopwatch;
 
 t.start();
 select mode {

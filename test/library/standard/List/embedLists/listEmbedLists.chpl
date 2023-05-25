@@ -23,10 +23,8 @@ record outerList {
 var outer = new outerList();
 
 var inner = new innerList();
-inner.lst.append(0);
+inner.lst.pushBack(0);
 
 for i in 1..testIters {
-  outer.lst.append(inner);
+  outer.lst.pushBack(inner);
 }
-
-

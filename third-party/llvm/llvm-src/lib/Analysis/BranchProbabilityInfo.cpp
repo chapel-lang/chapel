@@ -15,6 +15,7 @@
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Analysis/ConstantFolding.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
@@ -42,6 +43,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iterator>
+#include <map>
 #include <utility>
 
 using namespace llvm;
@@ -104,12 +106,67 @@ static const uint32_t LBH_NONTAKEN_WEIGHT = 4;
 /// All reachable probability will proportionally share the remaining part.
 static const BranchProbability UR_TAKEN_PROB = BranchProbability::getRaw(1);
 
+/// Heuristics and lookup tables for non-loop branches:
+/// Pointer Heuristics (PH)
 static const uint32_t PH_TAKEN_WEIGHT = 20;
 static const uint32_t PH_NONTAKEN_WEIGHT = 12;
+static const BranchProbability
+    PtrTakenProb(PH_TAKEN_WEIGHT, PH_TAKEN_WEIGHT + PH_NONTAKEN_WEIGHT);
+static const BranchProbability
+    PtrUntakenProb(PH_NONTAKEN_WEIGHT, PH_TAKEN_WEIGHT + PH_NONTAKEN_WEIGHT);
 
+using ProbabilityList = SmallVector<BranchProbability>;
+using ProbabilityTable = std::map<CmpInst::Predicate, ProbabilityList>;
+
+/// Pointer comparisons:
+static const ProbabilityTable PointerTable{
+    {ICmpInst::ICMP_NE, {PtrTakenProb, PtrUntakenProb}}, /// p != q -> Likely
+    {ICmpInst::ICMP_EQ, {PtrUntakenProb, PtrTakenProb}}, /// p == q -> Unlikely
+};
+
+/// Zero Heuristics (ZH)
 static const uint32_t ZH_TAKEN_WEIGHT = 20;
 static const uint32_t ZH_NONTAKEN_WEIGHT = 12;
+static const BranchProbability
+    ZeroTakenProb(ZH_TAKEN_WEIGHT, ZH_TAKEN_WEIGHT + ZH_NONTAKEN_WEIGHT);
+static const BranchProbability
+    ZeroUntakenProb(ZH_NONTAKEN_WEIGHT, ZH_TAKEN_WEIGHT + ZH_NONTAKEN_WEIGHT);
 
+/// Integer compares with 0:
+static const ProbabilityTable ICmpWithZeroTable{
+    {CmpInst::ICMP_EQ, {ZeroUntakenProb, ZeroTakenProb}},  /// X == 0 -> Unlikely
+    {CmpInst::ICMP_NE, {ZeroTakenProb, ZeroUntakenProb}},  /// X != 0 -> Likely
+    {CmpInst::ICMP_SLT, {ZeroUntakenProb, ZeroTakenProb}}, /// X < 0  -> Unlikely
+    {CmpInst::ICMP_SGT, {ZeroTakenProb, ZeroUntakenProb}}, /// X > 0  -> Likely
+};
+
+/// Integer compares with -1:
+static const ProbabilityTable ICmpWithMinusOneTable{
+    {CmpInst::ICMP_EQ, {ZeroUntakenProb, ZeroTakenProb}},  /// X == -1 -> Unlikely
+    {CmpInst::ICMP_NE, {ZeroTakenProb, ZeroUntakenProb}},  /// X != -1 -> Likely
+    // InstCombine canonicalizes X >= 0 into X > -1
+    {CmpInst::ICMP_SGT, {ZeroTakenProb, ZeroUntakenProb}}, /// X >= 0  -> Likely
+};
+
+/// Integer compares with 1:
+static const ProbabilityTable ICmpWithOneTable{
+    // InstCombine canonicalizes X <= 0 into X < 1
+    {CmpInst::ICMP_SLT, {ZeroUntakenProb, ZeroTakenProb}}, /// X <= 0 -> Unlikely
+};
+
+/// strcmp and similar functions return zero, negative, or positive, if the
+/// first string is equal, less, or greater than the second. We consider it
+/// likely that the strings are not equal, so a comparison with zero is
+/// probably false, but also a comparison with any other number is also
+/// probably false given that what exactly is returned for nonzero values is
+/// not specified. Any kind of comparison other than equality we know
+/// nothing about.
+static const ProbabilityTable ICmpWithLibCallTable{
+    {CmpInst::ICMP_EQ, {ZeroUntakenProb, ZeroTakenProb}},
+    {CmpInst::ICMP_NE, {ZeroTakenProb, ZeroUntakenProb}},
+};
+
+// Floating-Point Heuristics (FPH)
 static const uint32_t FPH_TAKEN_WEIGHT = 20;
 static const uint32_t FPH_NONTAKEN_WEIGHT = 12;
 
@@ -119,6 +176,21 @@ static const uint32_t FPH_ORD_WEIGHT = 1024 * 1024 - 1;
 /// one or two of the operands are NaN. Usually it is used to test for an
 /// exceptional case, so the result is unlikely.
 static const uint32_t FPH_UNO_WEIGHT = 1;
+
+static const BranchProbability FPOrdTakenProb(FPH_ORD_WEIGHT,
+                                              FPH_ORD_WEIGHT + FPH_UNO_WEIGHT);
+static const BranchProbability
+    FPOrdUntakenProb(FPH_UNO_WEIGHT, FPH_ORD_WEIGHT + FPH_UNO_WEIGHT);
+static const BranchProbability
+    FPTakenProb(FPH_TAKEN_WEIGHT, FPH_TAKEN_WEIGHT + FPH_NONTAKEN_WEIGHT);
+static const BranchProbability
+    FPUntakenProb(FPH_NONTAKEN_WEIGHT, FPH_TAKEN_WEIGHT + FPH_NONTAKEN_WEIGHT);
+
+/// Floating-Point compares:
+static const ProbabilityTable FCmpTable{
+    {FCmpInst::FCMP_ORD, {FPOrdTakenProb, FPOrdUntakenProb}}, /// !isnan -> Likely
+    {FCmpInst::FCMP_UNO, {FPOrdUntakenProb, FPOrdTakenProb}}, /// isnan -> Unlikely
+};
 
 /// Set of dedicated "absolute" execution weights for a block. These weights are
 /// meaningful relative to each other and their derivatives only.
@@ -190,7 +262,7 @@ void BranchProbabilityInfo::SccInfo::getSccExitBlocks(
     if (isSCCExitingBlock(BB, SccNum))
       for (const auto *Succ : successors(BB))
         if (getSCCNum(Succ) != SccNum)
-          Exits.push_back(const_cast<BasicBlock *>(BB));
+          Exits.push_back(const_cast<BasicBlock *>(Succ));
   }
 }
 
@@ -343,8 +415,7 @@ bool BranchProbabilityInfo::calcMetadataWeights(const BasicBlock *BB) {
     const LoopBlock DstLoopBB = getLoopBlock(TI->getSuccessor(I - 1));
     auto EstimatedWeight = getEstimatedEdgeWeight({SrcLoopBB, DstLoopBB});
     if (EstimatedWeight &&
-        EstimatedWeight.getValue() <=
-            static_cast<uint32_t>(BlockExecWeight::UNREACHABLE))
+        *EstimatedWeight <= static_cast<uint32_t>(BlockExecWeight::UNREACHABLE))
       UnreachableIdxs.push_back(I - 1);
     else
       ReachableIdxs.push_back(I - 1);
@@ -468,21 +539,10 @@ bool BranchProbabilityInfo::calcPointerHeuristics(const BasicBlock *BB) {
 
   assert(CI->getOperand(1)->getType()->isPointerTy());
 
-  BranchProbability TakenProb(PH_TAKEN_WEIGHT,
-                              PH_TAKEN_WEIGHT + PH_NONTAKEN_WEIGHT);
-  BranchProbability UntakenProb(PH_NONTAKEN_WEIGHT,
-                                PH_TAKEN_WEIGHT + PH_NONTAKEN_WEIGHT);
-
-  // p != 0   ->   isProb = true
-  // p == 0   ->   isProb = false
-  // p != q   ->   isProb = true
-  // p == q   ->   isProb = false;
-  bool isProb = CI->getPredicate() == ICmpInst::ICMP_NE;
-  if (!isProb)
-    std::swap(TakenProb, UntakenProb);
-
-  setEdgeProbability(
-      BB, SmallVector<BranchProbability, 2>({TakenProb, UntakenProb}));
+  auto Search = PointerTable.find(CI->getPredicate());
+  if (Search == PointerTable.end())
+    return false;
+  setEdgeProbability(BB, Search->second);
   return true;
 }
 
@@ -570,9 +630,10 @@ computeUnlikelySuccessors(const BasicBlock *BB, Loop *L,
       if (!CmpLHSConst || !llvm::is_contained(successors(BB), B))
         continue;
       // First collapse InstChain
+      const DataLayout &DL = BB->getModule()->getDataLayout();
       for (Instruction *I : llvm::reverse(InstChain)) {
-        CmpLHSConst = ConstantExpr::get(I->getOpcode(), CmpLHSConst,
-                                        cast<Constant>(I->getOperand(1)), true);
+        CmpLHSConst = ConstantFoldBinaryOpOperands(
+            I->getOpcode(), CmpLHSConst, cast<Constant>(I->getOperand(1)), DL);
         if (!CmpLHSConst)
           break;
       }
@@ -628,7 +689,7 @@ Optional<uint32_t> BranchProbabilityInfo::getMaxEstimatedEdgeWeight(
     if (!Weight)
       return None;
 
-    if (!MaxWeight || MaxWeight.getValue() < Weight.getValue())
+    if (!MaxWeight || *MaxWeight < *Weight)
       MaxWeight = Weight;
   }
 
@@ -767,9 +828,8 @@ void BranchProbabilityInfo::computeEestimateBlockWeight(
     if (auto BBWeight = getInitialEstimatedBlockWeight(BB))
       // If we were able to find estimated weight for the block set it to this
       // block and propagate up the IR.
-      propagateEstimatedBlockWeight(getLoopBlock(BB), DT, PDT,
-                                    BBWeight.getValue(), BlockWorkList,
-                                    LoopWorkList);
+      propagateEstimatedBlockWeight(getLoopBlock(BB), DT, PDT, BBWeight.value(),
+                                    BlockWorkList, LoopWorkList);
 
   // BlockWorklist/LoopWorkList contains blocks/loops with at least one
   // successor/exit having estimated weight. Try to propagate weight to such
@@ -792,8 +852,7 @@ void BranchProbabilityInfo::computeEestimateBlockWeight(
         if (LoopWeight <= static_cast<uint32_t>(BlockExecWeight::UNREACHABLE))
           LoopWeight = static_cast<uint32_t>(BlockExecWeight::LOWEST_NON_ZERO);
 
-        EstimatedLoopWeight.insert(
-            {LoopBB.getLoopData(), LoopWeight.getValue()});
+        EstimatedLoopWeight.insert({LoopBB.getLoopData(), *LoopWeight});
         // Add all blocks entering the loop into working list.
         getLoopEnterBlocks(LoopBB, BlockWorkList);
       }
@@ -815,7 +874,7 @@ void BranchProbabilityInfo::computeEestimateBlockWeight(
       auto MaxWeight = getMaxEstimatedEdgeWeight(LoopBB, successors(BB));
 
       if (MaxWeight)
-        propagateEstimatedBlockWeight(LoopBB, DT, PDT, MaxWeight.getValue(),
+        propagateEstimatedBlockWeight(LoopBB, DT, PDT, *MaxWeight,
                                       BlockWorkList, LoopWorkList);
     }
   } while (!BlockWorkList.empty() || !LoopWorkList.empty());
@@ -853,7 +912,7 @@ bool BranchProbabilityInfo::calcEstimatedHeuristics(const BasicBlock *BB) {
       // Scale down loop exiting weight by trip count.
       Weight = std::max(
           static_cast<uint32_t>(BlockExecWeight::LOWEST_NON_ZERO),
-          Weight.getValueOr(static_cast<uint32_t>(BlockExecWeight::DEFAULT)) /
+          Weight.value_or(static_cast<uint32_t>(BlockExecWeight::DEFAULT)) /
               TC);
     }
     bool IsUnlikelyEdge = LoopBB.getLoop() && UnlikelyBlocks.contains(SuccBB);
@@ -863,15 +922,14 @@ bool BranchProbabilityInfo::calcEstimatedHeuristics(const BasicBlock *BB) {
       // 'Unlikely' blocks have twice lower weight.
       Weight = std::max(
           static_cast<uint32_t>(BlockExecWeight::LOWEST_NON_ZERO),
-          Weight.getValueOr(static_cast<uint32_t>(BlockExecWeight::DEFAULT)) /
-              2);
+          Weight.value_or(static_cast<uint32_t>(BlockExecWeight::DEFAULT)) / 2);
     }
 
     if (Weight)
       FoundEstimatedWeight = true;
 
     auto WeightVal =
-        Weight.getValueOr(static_cast<uint32_t>(BlockExecWeight::DEFAULT));
+        Weight.value_or(static_cast<uint32_t>(BlockExecWeight::DEFAULT));
     TotalWeight += WeightVal;
     SuccWeights.push_back(WeightVal);
   }
@@ -949,86 +1007,33 @@ bool BranchProbabilityInfo::calcZeroHeuristics(const BasicBlock *BB,
       if (Function *CalledFn = Call->getCalledFunction())
         TLI->getLibFunc(*CalledFn, Func);
 
-  bool isProb;
+  ProbabilityTable::const_iterator Search;
   if (Func == LibFunc_strcasecmp ||
       Func == LibFunc_strcmp ||
       Func == LibFunc_strncasecmp ||
       Func == LibFunc_strncmp ||
       Func == LibFunc_memcmp ||
       Func == LibFunc_bcmp) {
-    // strcmp and similar functions return zero, negative, or positive, if the
-    // first string is equal, less, or greater than the second. We consider it
-    // likely that the strings are not equal, so a comparison with zero is
-    // probably false, but also a comparison with any other number is also
-    // probably false given that what exactly is returned for nonzero values is
-    // not specified. Any kind of comparison other than equality we know
-    // nothing about.
-    switch (CI->getPredicate()) {
-    case CmpInst::ICMP_EQ:
-      isProb = false;
-      break;
-    case CmpInst::ICMP_NE:
-      isProb = true;
-      break;
-    default:
+    Search = ICmpWithLibCallTable.find(CI->getPredicate());
+    if (Search == ICmpWithLibCallTable.end())
       return false;
-    }
   } else if (CV->isZero()) {
-    switch (CI->getPredicate()) {
-    case CmpInst::ICMP_EQ:
-      // X == 0   ->  Unlikely
-      isProb = false;
-      break;
-    case CmpInst::ICMP_NE:
-      // X != 0   ->  Likely
-      isProb = true;
-      break;
-    case CmpInst::ICMP_SLT:
-      // X < 0   ->  Unlikely
-      isProb = false;
-      break;
-    case CmpInst::ICMP_SGT:
-      // X > 0   ->  Likely
-      isProb = true;
-      break;
-    default:
+    Search = ICmpWithZeroTable.find(CI->getPredicate());
+    if (Search == ICmpWithZeroTable.end())
       return false;
-    }
-  } else if (CV->isOne() && CI->getPredicate() == CmpInst::ICMP_SLT) {
-    // InstCombine canonicalizes X <= 0 into X < 1.
-    // X <= 0   ->  Unlikely
-    isProb = false;
+  } else if (CV->isOne()) {
+    Search = ICmpWithOneTable.find(CI->getPredicate());
+    if (Search == ICmpWithOneTable.end())
+      return false;
   } else if (CV->isMinusOne()) {
-    switch (CI->getPredicate()) {
-    case CmpInst::ICMP_EQ:
-      // X == -1  ->  Unlikely
-      isProb = false;
-      break;
-    case CmpInst::ICMP_NE:
-      // X != -1  ->  Likely
-      isProb = true;
-      break;
-    case CmpInst::ICMP_SGT:
-      // InstCombine canonicalizes X >= 0 into X > -1.
-      // X >= 0   ->  Likely
-      isProb = true;
-      break;
-    default:
+    Search = ICmpWithMinusOneTable.find(CI->getPredicate());
+    if (Search == ICmpWithMinusOneTable.end())
       return false;
-    }
   } else {
     return false;
   }
 
-  BranchProbability TakenProb(ZH_TAKEN_WEIGHT,
-                              ZH_TAKEN_WEIGHT + ZH_NONTAKEN_WEIGHT);
-  BranchProbability UntakenProb(ZH_NONTAKEN_WEIGHT,
-                                ZH_TAKEN_WEIGHT + ZH_NONTAKEN_WEIGHT);
-  if (!isProb)
-    std::swap(TakenProb, UntakenProb);
-
-  setEdgeProbability(
-      BB, SmallVector<BranchProbability, 2>({TakenProb, UntakenProb}));
+  setEdgeProbability(BB, Search->second);
   return true;
 }
 
@@ -1042,34 +1047,21 @@ bool BranchProbabilityInfo::calcFloatingPointHeuristics(const BasicBlock *BB) {
   if (!FCmp)
     return false;
 
-  uint32_t TakenWeight = FPH_TAKEN_WEIGHT;
-  uint32_t NontakenWeight = FPH_NONTAKEN_WEIGHT;
-  bool isProb;
+  ProbabilityList ProbList;
   if (FCmp->isEquality()) {
-    // f1 == f2 -> Unlikely
-    // f1 != f2 -> Likely
-    isProb = !FCmp->isTrueWhenEqual();
-  } else if (FCmp->getPredicate() == FCmpInst::FCMP_ORD) {
-    // !isnan -> Likely
-    isProb = true;
-    TakenWeight = FPH_ORD_WEIGHT;
-    NontakenWeight = FPH_UNO_WEIGHT;
-  } else if (FCmp->getPredicate() == FCmpInst::FCMP_UNO) {
-    // isnan -> Unlikely
-    isProb = false;
-    TakenWeight = FPH_ORD_WEIGHT;
-    NontakenWeight = FPH_UNO_WEIGHT;
+    ProbList = !FCmp->isTrueWhenEqual() ?
+      // f1 == f2 -> Unlikely
+      ProbabilityList({FPTakenProb, FPUntakenProb}) :
+      // f1 != f2 -> Likely
+      ProbabilityList({FPUntakenProb, FPTakenProb});
   } else {
-    return false;
+    auto Search = FCmpTable.find(FCmp->getPredicate());
+    if (Search == FCmpTable.end())
+      return false;
+    ProbList = Search->second;
   }
 
-  BranchProbability TakenProb(TakenWeight, TakenWeight + NontakenWeight);
-  BranchProbability UntakenProb(NontakenWeight, TakenWeight + NontakenWeight);
-  if (!isProb)
-    std::swap(TakenProb, UntakenProb);
-
-  setEdgeProbability(
-      BB, SmallVector<BranchProbability, 2>({TakenProb, UntakenProb}));
+  setEdgeProbability(BB, ProbList);
   return true;
 }
 
@@ -1258,7 +1250,7 @@ void BranchProbabilityInfo::calculate(const Function &F, const LoopInfo &LoopI,
 
   // Walk the basic blocks in post-order so that we can build up state about
   // the successors of a block iteratively.
-  for (auto BB : post_order(&F.getEntryBlock())) {
+  for (const auto *BB : post_order(&F.getEntryBlock())) {
     LLVM_DEBUG(dbgs() << "Computing probabilities for " << BB->getName()
                       << "\n");
     // If there is no at least two successors, no sense to set probability.

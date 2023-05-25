@@ -8,4 +8,4 @@ proc foo(c : borrowed C(?u)) {
   writeln("foo of ", c, " with y = ", y);
 }
 
-foo(new borrowed C(int, 2));
+foo((new owned C(int, 2)).borrow());

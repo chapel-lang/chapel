@@ -50,9 +50,7 @@ def get_compile_args():
 def get_link_args():
     re2_val = get()
     if re2_val == 'bundled':
-        return third_party_utils.get_bundled_link_args('re2',
-                                                       libs=['-lre2',
-                                                             '-lpthread'])
+        return third_party_utils.pkgconfig_get_bundled_link_args('re2')
     return ([ ], [ ])
 
 

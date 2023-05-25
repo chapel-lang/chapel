@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,8 +39,8 @@ module DefaultSparse {
     pragma "local field"
     var _indices: [nnzDom] index(rank, idxType);
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
@@ -149,13 +149,15 @@ module DefaultSparse {
       return found;
     }
 
-    proc dsiFirst {
+    proc parSafe param { dnsError("parSafe"); }
+
+    override proc dsiFirst {
       if boundsChecking && _indices.isEmpty() then
         halt("'first' is invoked on an empty sparse domain");
       return _indices[_indices.domain.first];
     }
 
-    proc dsiLast {
+    override proc dsiLast {
       if boundsChecking && _indices.isEmpty() then
         halt("'last' is invoked on an empty sparse domain");
       return _indices[_nnz-1];
@@ -284,11 +286,11 @@ module DefaultSparse {
         _nnz += inds.size-dupCount;
         _bulkGrow();
 
-        var indIdx = _indices.domain.low;
-        var prevIdx = parentDom.low-1;
+        var indIdx = _indices.domain.lowBound;
+        var prevIdx = parentDom.lowBound-1;
 
         if isUnique {
-          _indices[_indices.domain.low..#inds.size]=inds;
+          _indices[_indices.domain.lowBound..#inds.size]=inds;
           return inds.size;
         }
         else {
@@ -313,12 +315,12 @@ module DefaultSparse {
       _bulkGrow();
 
       //linearly fill the new colIdx from backwards
-      var newIndIdx = indsDom.high; //index into new indices
+      var newIndIdx = indsDom.highBound; //index into new indices
       var oldIndIdx = oldnnz-1; //index into old indices
       var newLoc = actualInsertPts[newIndIdx]; //its position-to-be in new dom
       while newLoc == -1 {
         newIndIdx -= 1;
-        if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+        if newIndIdx == indsDom.lowBound-1 then break; //there were duplicates -- now done
         newLoc = actualInsertPts[newIndIdx];
       }
       var arrShiftMap: [0..#oldnnz] int; //to map where data goes
@@ -330,17 +332,17 @@ module DefaultSparse {
           arrShiftMap[oldIndIdx] = i;
           oldIndIdx -= 1;
         }
-        else if newIndIdx >= indsDom.low && i == newLoc {
+        else if newIndIdx >= indsDom.lowBound && i == newLoc {
           //put the new guy in
           _indices[i] = inds[newIndIdx];
           newIndIdx -= 1;
-          if newIndIdx >= indsDom.low then
+          if newIndIdx >= indsDom.lowBound then
             newLoc = actualInsertPts[newIndIdx];
           else
             newLoc = -2; //finished new set
           while newLoc == -1 {
             newIndIdx -= 1;
-            if newIndIdx == indsDom.low-1 then break; //there were duplicates -- now done
+            if newIndIdx == indsDom.lowBound-1 then break; //there were duplicates -- now done
             newLoc = actualInsertPts[newIndIdx];
           }
         }
@@ -394,7 +396,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -556,7 +558,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -570,29 +572,29 @@ module DefaultSparse {
 
   proc DefaultSparseDom.dsiSerialWrite(f, printBrackets=true) throws {
     if (rank == 1) {
-      if printBrackets then f <~> "{";
+      if printBrackets then f.write("{");
       if (_nnz >= 1) {
-        f <~> _indices(0);
+        f.write(_indices(0));
         for i in 1.._nnz-1 {
-          f <~> " " <~> _indices(i);
+          f.write(" ", _indices(i));
         }
       }
-      if printBrackets then f <~> "}";
+      if printBrackets then f.write("}");
     } else {
-      if printBrackets then f <~> "{\n";
+      if printBrackets then f.write("{\n");
       if (_nnz >= 1) {
         var prevInd = _indices(0);
-        f <~> " " <~> prevInd;
+        f.write(" ", prevInd);
         for i in 1.._nnz-1 {
           if (prevInd(0) != _indices(i)(0)) {
-            f <~> "\n";
+            f.write("\n");
           }
           prevInd = _indices(i);
-          f <~> " " <~> prevInd;
+          f.write(" ", prevInd);
         }
-        f <~> "\n";
+        f.write("\n");
       }
-      if printBrackets then f <~> "}\n";
+      if printBrackets then f.write("}\n");
     }
   }
 
@@ -600,25 +602,25 @@ module DefaultSparse {
   proc DefaultSparseArr.dsiSerialWrite(f) throws {
     if (rank == 1) {
       if (dom._nnz >= 1) {
-        f <~> data(0);
+        f.write(data(0));
         for i in 1..dom._nnz-1 {
-          f <~> " " <~> data(i);
+          f.write(" ", data(i));
         }
       }
     } else {
       if (dom._nnz >= 1) {
         var prevInd = dom._indices(0);
-        f <~> data(0);
+        f.write(data(0));
         for i in 1..dom._nnz-1 {
           if (prevInd(0) != dom._indices(i)(0)) {
-            f <~> "\n";
+            f.write("\n");
           } else {
-            f <~> " ";
+            f.write(" ");
           }
           prevInd = dom._indices(i);
-          f <~> data(i);
+          f.write(data(i));
         }
-        f <~> "\n";
+        f.write("\n");
       }
     }
   }

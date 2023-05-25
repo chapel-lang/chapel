@@ -1,0 +1,4 @@
+listExtend.chpl:12: warning: list.extend is deprecated, please use list.append
+listExtend.chpl:13: warning: list.extend is deprecated, please use list.append
+listExtend.chpl:14: warning: list.extend is deprecated, please use list.append
+[1, 2, 3, 0, 0, 0, 1, 2, 3]

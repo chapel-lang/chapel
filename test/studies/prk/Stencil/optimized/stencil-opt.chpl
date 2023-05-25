@@ -39,7 +39,7 @@ const activePoints = (order-2*R)*(order-2*R),
       coefx : dtype = 1.0,
       coefy : dtype = 1.0;
 
-var timer: Timer;
+var timer: stopwatch;
 
 /* Parallel Research Kernel - Stencil */
 proc main() {
@@ -130,7 +130,7 @@ proc main() {
   }
 
   var stenTime, incTime, commTime : real;
-  var subTimer : Timer;
+  var subTimer : stopwatch;
 
   //
   // Main loop of Stencil

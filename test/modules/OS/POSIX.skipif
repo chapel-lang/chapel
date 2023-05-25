@@ -1,0 +1,7 @@
+#! /usr/bin/env bash
+os=$( uname -s 2> /dev/null )
+if [[ "$os" != Linux && "$os" != Darwin ]] ; then
+  echo 1
+else
+  echo 0
+fi

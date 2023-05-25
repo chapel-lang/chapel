@@ -55,7 +55,7 @@ var error : real = 0;
 var counts: [1..k] int = 0;
 var c1:[1..k] m*int;
 
-proc AccumState type
+proc AccumState type do
     return (error, counts, c1).type;
 
 proc identity
@@ -141,9 +141,9 @@ proc clone()
 
     //used to identify where should we insert a timer.
     writeln("start reduce");
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     var (error, counts, c1)  = kmeansReduction reduce data1;
-    const endTime = getCurrentTime() - startTime;
+    const endTime = timeSinceEpoch().totalSeconds() - startTime;
     
     write("finish reduce");
     if printTiming then

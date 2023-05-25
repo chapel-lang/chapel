@@ -1,0 +1,5 @@
+error: tertiary methods give access to type's module's symbols
+
+This program shows an unexpected behavior I ran into in which defining
+a tertiary method gave me access to the symbols visible from the
+module in which the type was originally defined.

@@ -59,7 +59,7 @@ MULFUNC_PROLOGUE(mpn_rsh1add_n mpn_rsh1sub_n)
 
 ASM_START()
 PROLOGUE(func_n)
-	lsr	x18, n, #2
+	lsr	x6, n, #2
 
 	tbz	n, #0, L(bx0)
 
@@ -69,7 +69,7 @@ L(bx1):	ldr	x5, [up],#8
 
 L(b01):	ADDSUB	x13, x5, x9
 	and	x10, x13, #1
-	cbz	x18, L(1)
+	cbz	x6, L(1)
 	ldp	x4, x5, [up],#48
 	ldp	x8, x9, [vp],#48
 	ADDSUBC	x14, x4, x8
@@ -80,8 +80,8 @@ L(b01):	ADDSUB	x13, x5, x9
 	ADDSUBC	x12, x4, x8
 	ADDSUBC	x13, x5, x9
 	str	x17, [rp], #24
-	sub	x18, x18, #1
-	cbz	x18, L(end)
+	sub	x6, x6, #1
+	cbz	x6, L(end)
 	b	L(top)
 
 L(1):	cset	x14, COND
@@ -97,7 +97,7 @@ L(b11):	ADDSUB	x15, x5, x9
 	ldp	x8, x9, [vp],#32
 	ADDSUBC	x12, x4, x8
 	ADDSUBC	x13, x5, x9
-	cbz	x18, L(3)
+	cbz	x6, L(3)
 	ldp	x4, x5, [up,#-16]
 	ldp	x8, x9, [vp,#-16]
 	extr	x17, x12, x15, #1
@@ -117,7 +117,7 @@ L(b10):	ldp	x4, x5, [up],#32
 	ADDSUB	x12, x4, x8
 	ADDSUBC	x13, x5, x9
 	and	x10, x12, #1
-	cbz	x18, L(2)
+	cbz	x6, L(2)
 	ldp	x4, x5, [up,#-16]
 	ldp	x8, x9, [vp,#-16]
 	ADDSUBC	x14, x4, x8
@@ -134,8 +134,8 @@ L(b00):	ldp	x4, x5, [up],#48
 	ADDSUBC	x12, x4, x8
 	ADDSUBC	x13, x5, x9
 	add	rp, rp, #16
-	sub	x18, x18, #1
-	cbz	x18, L(end)
+	sub	x6, x6, #1
+	cbz	x6, L(end)
 
 	ALIGN(16)
 L(top):	ldp	x4, x5, [up,#-16]
@@ -152,8 +152,8 @@ L(mid):	ldp	x4, x5, [up],#32
 	ADDSUBC	x12, x4, x8
 	ADDSUBC	x13, x5, x9
 	stp	x16, x17, [rp],#32
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x6, x6, #1
+	cbnz	x6, L(top)
 
 L(end):	extr	x16, x15, x14, #1
 	extr	x17, x12, x15, #1

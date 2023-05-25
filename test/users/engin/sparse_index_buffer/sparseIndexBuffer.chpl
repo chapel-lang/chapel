@@ -26,7 +26,7 @@ iter indexGen(d) {
 }
 
 proc test(d) {
-  var spsIndexBuffer = d.makeIndexBuffer(size=4);
+  var spsIndexBuffer = d.createIndexBuffer(size=4);
   for i in indexGen(d) do
     spsIndexBuffer.add(i);
   spsIndexBuffer.commit();
@@ -36,7 +36,7 @@ proc test(d) {
 proc printDomain(d) {
   var indexList: list(if d.rank==1 then d.idxType else d.rank*d.idxType);
   for i in d do
-    indexList.append(i);
+    indexList.pushBack(i);
   indexList.sort();
   writeln(indexList);
 }

@@ -9,7 +9,7 @@ class Child : Parent {
 }
 
 proc main() {
-  var c = new borrowed Child(2, 4);
+  var c = (new owned Child(2, 4)).borrow();
   // Note: the order of arguments in the default case is parent first, then
   // child.  This reflects the order in which fields are initialized in a
   // user-defined initializer.

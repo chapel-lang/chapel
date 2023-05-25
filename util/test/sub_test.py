@@ -289,7 +289,7 @@ def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT'
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
 # Returns a list of string, one per line in the file.
-def ReadFileWithComments(f, ignoreLeadingSpace=True):
+def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
     mylines = ""
     # if the file is executable, run it and grab the output. If we get an
     # OSError while trying to run, report it and try to keep going
@@ -301,7 +301,10 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
             file_env.update(chpl_env)
 
             # execute the file and grab its output
-            cmd = py3_compat.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
+            tmp_args = [os.path.abspath(f)]
+            if args != None:
+                tmp_args += args
+            cmd = py3_compat.Popen(tmp_args, stdout=subprocess.PIPE, env=file_env)
             mylines = cmd.communicate()[0].splitlines()
 
         except OSError as e:
@@ -595,7 +598,9 @@ def translateOutput(output_in):
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
-               'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
+              ('qstat: cannot connect to server sdb',
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
                'Jira 260 -- Failed to recv data from background qsub for'),
               (r'\d+ Killed /var/spool/PBS/mom_priv/jobs',
@@ -642,7 +647,7 @@ def filter_compiler_errors(compiler_output):
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            error_msg = '(private issue #398) '
+            error_msg = '(private issue #398)'
             break
 
     return error_msg
@@ -688,7 +693,7 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
-            extra_msg = '(private issue #398) '
+            extra_msg = '(private issue #398)'
             break
 
     err_strings = ['=* Memory Leaks =*']
@@ -1122,14 +1127,6 @@ else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
 
 #
-# Global EXECENV
-#
-if os.access('./EXECENV',os.R_OK):
-    globalExecenv=ReadFileWithComments('./EXECENV')
-else:
-    globalExecenv=list()
-
-#
 # Global COMPENV
 #
 if os.access('./COMPENV',os.R_OK):
@@ -1509,22 +1506,10 @@ for testname in testsrc:
             usecompoptslist += [usearg]
     compoptslist = usecompoptslist
 
-    # The test environment is that of this process, augmented as specified
-    if os.access(test_filename+execenvsuffix, os.R_OK):
-        execenv = ReadFileWithComments(test_filename+execenvsuffix)
-    else:
-        execenv = list()
-
     if os.access(test_filename+compenvsuffix, os.R_OK):
         compenv = ReadFileWithComments(test_filename+compenvsuffix)
     else:
         compenv = list()
-
-    testenv = {}
-    for var, val in [env.split('=', 1) for env in globalExecenv]:
-        testenv[var.strip()] = val.strip()
-    for var, val in [env.split('=', 1) for env in execenv]:
-        testenv[var.strip()] = val.strip()
 
     testcompenv = {}
     for var, val in [env.split('=', 1) for env in globalCompenv]:
@@ -1552,9 +1537,12 @@ for testname in testsrc:
     clist = list()
     curFileTestStart = time.time()
 
+    redirectin_original_value = redirectin
+
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
+        redirectin = redirectin_original_value
         sys.stdout.flush()
         del clist
         # use the remaining portion as a .good file for executing tests
@@ -1796,15 +1784,18 @@ for testname in testsrc:
 
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
-            # explicitname.<configuration>.good. It's not currently setup to
-            # handle testname.<configuration>.<compoptsnum>.good, but that
-            # would be easy to add. 
+            # explicitname.<configuration>.good or
+            # testname.<configuration>.<compoptsnum>.good.
             basename = test_filename 
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
 
-            goodfile = FindGoodFile(basename)
+            compOptNum = ['']
+            if len(compoptslist) > 1:
+                compOptNum.insert(0,'.'+str(compoptsnum))
+
+            goodfile = FindGoodFile(basename, compOptNum)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
             error_msg = filter_compiler_errors(origoutput)
             if error_msg != '':
@@ -1971,7 +1962,6 @@ for testname in testsrc:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
         redirectin_set_in_loop = False
-        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
 
@@ -2026,6 +2016,35 @@ for testname in testsrc:
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
+
+            #
+            # Global EXECENV
+            #
+            if os.access('./EXECENV',os.R_OK):
+                args = [execname, execlog, compiler] + envCompopts + \
+                        shlex.split(compopts) + globalExecopts + \
+                        shlex.split(execopts)
+                globalExecenv=ReadFileWithComments('./EXECENV',
+                                                   args=args)
+            else:
+                globalExecenv=list()
+
+            testenv = {}
+            for var, val in [env.split('=', 1) for env in globalExecenv]:
+                testenv[var.strip()] = val.strip()
+
+            # The test environment is that of this process, 
+            # augmented as specified
+            if os.access(test_filename+execenvsuffix, os.R_OK):
+                args = [execname, execlog, compiler] + envCompopts + \
+                        shlex.split(compopts) + globalExecopts + \
+                        shlex.split(execopts)
+                execenv = ReadFileWithComments(test_filename+execenvsuffix,
+                                                args=args)
+            else:
+                execenv = list()
+            for var, val in [env.split('=', 1) for env in execenv]:
+                testenv[var.strip()] = val.strip()
 
             pre_exec_output = ''
             if os.path.exists(execlog):
@@ -2289,6 +2308,7 @@ for testname in testsrc:
                             sys.stdout.flush()
                             p = py3_compat.Popen([sprediff, execname, execlog, compiler,
                                                   ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                                 env=dict(list(os.environ.items()) + list(testenv.items())),
                                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                             sys.stdout.write(p.communicate()[0])
 
@@ -2297,6 +2317,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         p = py3_compat.Popen(['./PREDIFF', execname, execlog, compiler,
                                              ' '.join(envCompopts)+ ' '+compopts, ' '.join(args)],
+                                             env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                         sys.stdout.write(p.communicate()[0])
 
@@ -2305,6 +2326,7 @@ for testname in testsrc:
                         sys.stdout.flush()
                         p = py3_compat.Popen(['./'+prediff, execname, execlog, compiler,
                                              ' '.join(envCompopts)+' '+compopts, ' '.join(args)],
+                                             env=dict(list(os.environ.items()) + list(testenv.items())),
                                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                         sys.stdout.write(p.communicate()[0])
 

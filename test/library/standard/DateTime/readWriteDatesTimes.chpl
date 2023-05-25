@@ -1,8 +1,8 @@
-use DateTime, IO;
+use Time, IO;
 
 proc testReadWrite(dt) {
   var dt2: dt.type;
-  var mem = openmem();
+  var mem = openMemFile();
   var writer = mem.writer();
   writer.writef("%jt", dt);
   var reader = mem.reader();
@@ -12,7 +12,7 @@ proc testReadWrite(dt) {
   writeln(dt.type:string, ": ", dt == dt2);
 }
 
-var dt = datetime.now();
+var dt = dateTime.now();
 testReadWrite(dt);
-testReadWrite(dt.getdate());
-testReadWrite(dt.gettime());
+testReadWrite(dt.getDate());
+testReadWrite(dt.getTime());

@@ -17,6 +17,12 @@ or
 
    import functionArgDefaultOneTuple.doc;
 
+.. data:: var x: int
+
+.. data:: var y: x.type
+
+.. data:: var z: y.type
+
 .. function:: proc tuple1Default(arg = (x,))
 
 .. function:: proc tuple2Default(arg = (x, y))

@@ -1,0 +1,8 @@
+─── warning in noParens.chpl:1 [ParenlessAttributeArgDeprecated] ───
+  Attribute arguments without parentheses are deprecated; please wrap the argument in parentheses '()'.
+  For this attribute:
+      |
+    1 | @unstable "foo is unstable and may change"
+      |            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

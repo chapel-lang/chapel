@@ -31,7 +31,7 @@ class MyClass
 
   proc run()
   {
-    var bar : borrowed Foo = new borrowed Bar();
+    var bar : borrowed Foo = (new owned Bar()).borrow();
 
     writeln("run:\t myList.size = ", myList.size);
 

@@ -1,0 +1,1 @@
+fileCheck.chpl:5: warning: 'file.check()' is deprecated, please use file.isOpen instead

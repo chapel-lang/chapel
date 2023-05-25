@@ -162,7 +162,7 @@ proc test_scatter() {
     MPI_Type_commit(rowtype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize {
+      for irank in 0..<worldSize {
         if irank == 0 {
           recbuf = arr[0,..];
         } else {
@@ -187,7 +187,7 @@ proc test_scatter() {
     MPI_Type_commit(coltype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize {
+      for irank in 0..<worldSize {
         if irank == 0 {
           recbuf = arr[..,0];
         } else {
@@ -216,7 +216,7 @@ proc test_scatter() {
     MPI_Type_commit(indextype);
 
     if worldRank==0 {
-      for irank in 0.. #worldSize {
+      for irank in 0..<worldSize {
         if irank == 0 {
           recbuf[0.. #2] = arr2[5.. #2];
           recbuf[2.. #2] = arr2[12.. #2];
@@ -263,7 +263,7 @@ proc test_structure() {
 
   var a : [0.. #10] Particle;
   if worldRank==0 {
-    for (i1, p1) in zip(0.. , a) {
+    for (p1, i1) in zip(a, 0..) {
       p1.x = i1;
       p1.y = -i1;
       p1.z = i1;
@@ -287,7 +287,7 @@ proc test_structure() {
 proc test_allgather() {
   var worldRank = commRank(),
       worldSize = commSize();
-  var ranks : [0.. #worldSize]c_int;
+  var ranks : [0..<worldSize]c_int;
 
   MPI_Allgather(worldRank, 1, MPI_INT, ranks[0], 1, MPI_INT, MPI_COMM_WORLD);
   writeln("ALLGATHER : Rank ", worldRank, " : ", ranks);

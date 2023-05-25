@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,8 +18,11 @@
  * limitations under the License.
  */
 
-/*  A cryptographic library based on `OpenSSL <https://www.openssl.org/>`_, targeted at
-    flexible encryption purposes.
+/*  A cryptographic library based on 'OpenSSL'.
+
+    This module provides a cryptographic library based on `OpenSSL
+    <https://www.openssl.org/>`_, targeted at flexible encryption
+    purposes.
 
     The Crypto module focuses on providing various cryptographic utilities such as
 
@@ -82,12 +85,12 @@
 module Crypto {
 
   use C_OpenSSL;
-  use SysError;
+  use OS;
 
   private use IO;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc generateKeys(bits: int) {
    var localKeyPair: EVP_PKEY_PTR;
    var keyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA: c_int,
@@ -109,11 +112,11 @@ module Crypto {
 
   */
   class CryptoBuffer {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _len: int = 0;
-    pragma "no doc"
+    @chpldoc.nodoc
     var buffDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var buff: [buffDomain] uint(8);
 
     /* The `CryptoBuffer` class initializer that initializes the buffer
@@ -133,8 +136,29 @@ module Crypto {
         halt("Enter a string with length greater than 0 in order to create a buffer");
       }
       this.buffDomain = {0..<this._len};
-      for i in this.buffDomain do {
-        this.buff[i] = s.byte(i);
+      for (elt, b) in zip(this.buff, s.bytes()) {
+        elt = b;
+      }
+    }
+    /* The `CryptoBuffer` class initializer that initializes the buffer
+       when a `bytes` is supplied to it.
+
+       :arg s: `bytes` input for buffer conversion.
+       :type s: `bytes`
+
+       :return: An object of class `CryptoBuffer`.
+       :rtype: `CryptoBuffer`
+
+    */
+    proc init(s: bytes) {
+      this.complete();
+      this._len = s.numBytes;
+      if (this._len == 0) {
+        halt("Enter a string with length greater than 0 in order to create a buffer");
+      }
+      this.buffDomain = {0..<this._len};
+      for (elt, b) in zip(this.buff, s.bytes()) {
+        elt = b;
       }
     }
 
@@ -234,9 +258,9 @@ module Crypto {
 
   */
   class RSAKey {
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyObj: EVP_PKEY_PTR;
 
     /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
@@ -261,7 +285,7 @@ module Crypto {
       this.keyObj = generateKeys(this.keyLen);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getKeyPair() {
       return this.keyObj;
     }
@@ -278,13 +302,13 @@ module Crypto {
 
   */
   class Envelope {
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var keys: [keyDomain] owned CryptoBuffer;
-    pragma "no doc"
+    @chpldoc.nodoc
     var iv: owned CryptoBuffer;
-    pragma "no doc"
+    @chpldoc.nodoc
     var value: owned CryptoBuffer;
 
     /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
@@ -365,7 +389,7 @@ module Crypto {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc digestPrimitives(digestName: string, hashLen: int, inputBuffer: CryptoBuffer) {
 
     CHPL_OpenSSL_add_all_digests();
@@ -400,13 +424,13 @@ module Crypto {
 
   */
   class Hash {
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var digestName: string;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashSpace: [hashDomain] uint(8);
 
     /* The `Hash` class initializer that initializes the hashing function
@@ -475,7 +499,7 @@ module Crypto {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -483,10 +507,10 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize(): c_int;
 
-    var ciphertextLen = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
-    var cipherDomain: domain(1) = {0..ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
+    var cipherDomain: domain(1) = {0..ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
@@ -499,7 +523,7 @@ module Crypto {
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext): c_ptr(c_uchar),
                         c_ptrTo(updatedCipherLen): c_ptr(c_int));
@@ -510,7 +534,7 @@ module Crypto {
     return ciphertext;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -518,11 +542,11 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -534,7 +558,7 @@ module Crypto {
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
@@ -569,9 +593,9 @@ module Crypto {
 
   */
   class AES {
-    pragma "no doc"
+    @chpldoc.nodoc
     var cipher: CONST_EVP_CIPHER_PTR;
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
 
     /* The `AES` class initializer that initializes the AES encryption
@@ -678,7 +702,7 @@ module Crypto {
     }
   }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -686,10 +710,10 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize():c_int;
 
-    var ciphertextLen = plaintextLen + 8;
-    var cipherDomain: domain(1) = {0..#ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 8;
+    var cipherDomain: domain(1) = {0..#ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
@@ -703,7 +727,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
 
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
@@ -714,7 +738,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     return ciphertext;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc bfDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -722,11 +746,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -738,7 +762,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext[plaintextLen..]): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
@@ -771,11 +795,17 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
      - ``ofb`` or `Output Feedback`
 
+     .. note:
+
+       This cipher is removed in OpenSSL 3 and therefore deprecated here as
+       well. The deprecated Blowfish support here does not function with OpenSSL
+       3.
   */
+  @deprecated(notes="Blowfish is deprecated, please use another algorithm")
   class Blowfish {
-    pragma "no doc"
+    @chpldoc.nodoc
     var cipher: CONST_EVP_CIPHER_PTR;
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
 
     /* The `Blowfish` class initializer that initializes the Blowfish encryption
@@ -869,13 +899,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc createRandomBuffer(buffLen: int) throws {
     var buff: [0..#buffLen] uint(8);
     var retErrCode: c_int;
     retErrCode = RAND_bytes(c_ptrTo(buff): c_ptr(c_uchar), buffLen: c_int);
     if (!retErrCode) {
-      throw SystemError.fromSyserr(retErrCode);
+      throw createSystemError(retErrCode);
     }
     return buff;
   }
@@ -916,7 +946,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc PBKDF2(userKey: string, saltBuff: CryptoBuffer, byteLen: int, iterCount: int, digestName: string) {
 
     CHPL_OpenSSL_add_all_digests();
@@ -944,11 +974,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
   */
   class KDF {
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var iterCount: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashName: string;
 
     /* The `KDF` class initializer that initializes the common data used by most
@@ -1000,7 +1030,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc rsaEncrypt(keys: [] RSAKey, plaintext: CryptoBuffer, ref iv: [] uint(8), ref encSymmKeys: [] CryptoBuffer) {
 
       var ctx: EVP_CIPHER_CTX;
@@ -1049,7 +1079,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       return ciphertext;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) throws {
 
       var ctx: EVP_CIPHER_CTX;
@@ -1180,7 +1210,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   }
 
   /*
-      Support for low-level native C_OpenSSL bindings.
+      Support for low-level native OpenSSL bindings in C.
       This submodule wraps the C_OpenSSL implementation, providing access to
       most of the C_OpenSSL calls.
 

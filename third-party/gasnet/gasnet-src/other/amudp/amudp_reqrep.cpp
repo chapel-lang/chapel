@@ -48,7 +48,7 @@ static amx_tick_t retryToticks[STATIC_RETRIES];
     retryToticks[(retrycnt)] :                                         \
     retryToticks[0] * intpow(AMUDP_RequestTimeoutBackoff,(retrycnt)))  \
   )
-extern void AMUDP_InitRetryCache() {
+extern void AMUDP_InitRetryCache(void) {
   AMX_assert(!retryToticks[0]);
   if (AMUDP_InitialRequestTimeout_us == AMUDP_TIMEOUT_INFINITE) return;
   amx_tick_t tickout = AMX_us2ticks(AMUDP_InitialRequestTimeout_us);
@@ -146,6 +146,17 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
     en_t const name = pinfo[i].remoteName;
     if (enEqual(name, sourceAddr)) return i;
   }
+  #if AMX_DEBUG_VERBOSE
+    AMX_DEBUG_WARN(("sourceAddrToId(%s,%i) failed to find a match in the endpoint table",
+                    AMUDP_enStr(sourceAddr,0), (int)hint));
+    AMX_Info("Endpoint table (nproc=%i):", ep->P);
+    for (amudp_node_t j=0; j < ep->P; j++) {
+      char temp1[80], temp2[80];
+      AMX_Info(" P#%i:\t%s\ttag: %s", j,
+                 AMUDP_enStr(pinfo[j].remoteName, temp1),
+                 AMUDP_tagStr(pinfo[j].tag, temp2));
+    }
+  #endif
   return INVALID_NODE;
 }
 /* ------------------------------------------------------------------------------------ */
@@ -156,12 +167,12 @@ static amudp_node_t sourceAddrToId(ep_t ep, en_t sourceAddr, amudp_node_t hint) 
  * Linux (FIONREAD) and Solaris (I_NREAD) get this right, 
  * but all other systems seem to get it wrong, one way or another.
  * Cygwin: (bug 3284) not implemented
- * WSL (4/8/17) returns raw byte count, which can over or under-report
+ * WSL1 (4/8/17) returns raw byte count, which can over or under-report
  * FreeBSD: (bug 2827) returns raw byte count, which can over or under-report
  * others: over-report by returning total bytes in all messages waiting
  */
 #ifndef IOCTL_WORKS
- #if PLATFORM_OS_LINUX || PLATFORM_OS_SOLARIS || PLATFORM_OS_DARWIN
+ #if (PLATFORM_OS_LINUX && !PLATFORM_OS_SUBFAMILY_WSL) || PLATFORM_OS_SOLARIS || PLATFORM_OS_DARWIN
   #define IOCTL_WORKS 1
  #else
   #define IOCTL_WORKS 0
@@ -282,8 +293,8 @@ static int AMUDP_DrainNetwork(ep_t ep) {
            */
           int newsize = 2 * ep->socketRecvBufferSize;
 
-          if (newsize > AMUDP_SOCKETBUFFER_MAX) { /* create a semi-sane upper bound */
-            newsize = AMUDP_SOCKETBUFFER_MAX;
+          if (newsize <= 0 || newsize > (int)AMUDP_SocketBuffer_max) { /* create a semi-sane upper bound */
+            newsize = AMUDP_SocketBuffer_max;
             ep->socketRecvBufferMaxedOut = 1;
           }
           ep->socketRecvBufferMaxedOut += AMUDP_growSocketBufferSize(ep, newsize, SO_RCVBUF, "SO_RCVBUF");
@@ -554,9 +565,11 @@ extern int AMUDP_Block(eb_t eb) {
 }
 /* ------------------------------------------------------------------------------------ */
 #if AMX_DEBUG
-  #define REFUSE_NOTICE(reason) AMX_Err("I just refused a message and returned to sender. Reason: %s", reason)
+  #define REFUSE_NOTICE(reason,addr) \
+    AMX_Err("I just refused a message and returned to sender (%s). Reason: %s", \
+            AMUDP_enStr(addr,0), reason)
 #else
-  #define REFUSE_NOTICE(reason) (void)0
+  #define REFUSE_NOTICE(reason,addr) (void)0
 #endif
 
 /* this is a local-use-only macro for AMUDP_processPacket */
@@ -569,8 +582,9 @@ extern int AMUDP_Block(eb_t eb) {
       int retval = sendPacket(ep, msg, GET_MSG_SZ(msg),                         \
                         buf->status.rx.sourceAddr, REFUSAL_PACKET);             \
        /* ignore errors sending this */                                         \
-      if (retval != AM_OK) AMX_Err("failed to sendPacket to refuse message");   \
-      else REFUSE_NOTICE(#errcode);                                             \
+      if (retval != AM_OK) AMX_Err("failed to sendPacket(%s) to refuse message",\
+                                   AMUDP_enStr(buf->status.rx.sourceAddr,0));   \
+      else REFUSE_NOTICE(#errcode, buf->status.rx.sourceAddr);                  \
     }                                                                           \
     return;                                                                     \
   } while(0)

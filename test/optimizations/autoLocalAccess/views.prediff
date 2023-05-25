@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# count 'local _array accessor was called' lines and
+# count 'default _array accessor was called'
+nonloc=`grep 'default _array accessor was called' $2 | wc -l`
+loc=`grep 'local _array accessor was called' $2 | wc -l`
+
+grep -v '_array accessor was called' $2 >$2.tmp
+echo this was called $nonloc times >> $2.tmp
+echo localAccess was called $loc times >> $2.tmp
+mv $2.tmp $2

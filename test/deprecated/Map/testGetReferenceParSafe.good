@@ -1,0 +1,3 @@
+testGetReferenceParSafe.chpl:3: In function 'test':
+testGetReferenceParSafe.chpl:6: warning: 'Map.getReference' is deprecated. Please rely on '[]' accessors instead.
+testGetReferenceParSafe.chpl:6: error: cannot call `getReference()` on maps initialized with `parSafe=true`

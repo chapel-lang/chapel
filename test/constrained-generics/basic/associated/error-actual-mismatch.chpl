@@ -18,8 +18,8 @@ proc cgFun(cgArg: ?Q, arg1: Q.AT3, arg2: Q.AT2, arg3: cgArg.AT1)
 
 record RR {
   type AT1;
-  proc AT2 type return AT1;
-  proc AT3 type return bool;
+  proc AT2 type do return AT1;
+  proc AT3 type do return bool;
 }
 
 // RR implements IFC implicitly, thanks to this fn.

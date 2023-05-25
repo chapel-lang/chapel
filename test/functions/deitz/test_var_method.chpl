@@ -5,7 +5,7 @@ class C {
   }
 }
 
-var c : borrowed C = new borrowed C();
+var c : borrowed C = (new owned C()).borrow();
 c.i = 2;
 writeln(c);
 writeln(c.foo());

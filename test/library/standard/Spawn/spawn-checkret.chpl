@@ -1,3 +1,4 @@
+use FileSystem;
 use Subprocess;
 
 {
@@ -12,5 +13,5 @@ use Subprocess;
   assert(runit.exitCode == 10);
 }
 
-unlink("return-10");
+FileSystem.remove("return-10");
 

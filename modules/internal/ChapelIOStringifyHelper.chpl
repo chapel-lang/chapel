@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,7 +25,7 @@ module ChapelIOStringifyHelper {
   private use ChapelStandard;
   private use BytesStringCommon only decodePolicy;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _can_stringify_direct(t) param : bool {
     if (t.type == string ||
         t.type == bytes ||
@@ -48,7 +48,7 @@ module ChapelIOStringifyHelper {
   // to report an out of bounds access for a halt. A normal
   // call to halt might not be possible because of module
   // order issues.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _stringify_tuple(tup:?t) where isTuple(t){
     var str = "(";
 
@@ -56,7 +56,7 @@ module ChapelIOStringifyHelper {
       if i != 0 then str += ", ";
       if (tup[i].type == c_string) {
         try! {
-          str += createStringWithNewBuffer(tup[i]);
+          str += string.createCopyingBuffer(tup[i]);
         }
       }
       else {
@@ -69,7 +69,7 @@ module ChapelIOStringifyHelper {
     return str;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
     proc stringify_simple(const args ...?k): string {
     // As an optimization, use string concatenation for
     // all primitive type stringify...
@@ -84,7 +84,7 @@ module ChapelIOStringifyHelper {
       } else if (args[i].type == c_string) {
         //decodePolicy.replace never throws
         try! {
-          str += createStringWithNewBuffer(args[i],
+          str += string.createCopyingBuffer(args[i],
                                            policy=decodePolicy.replace);
         }
       } else if (args[i].type == bytes) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,10 @@ extern size_t chpl_rt_priv_bcast_lens[];
   MACRO(chpl_comm_diagnostics)               \
   MACRO(chpl_comm_diags_print_unstable)      \
   MACRO(chpl_verbose_comm_stacktrace)        \
+  MACRO(chpl_verbose_gpu)                   \
+  MACRO(chpl_gpu_diagnostics)               \
+  MACRO(chpl_gpu_diags_print_unstable)      \
+  MACRO(chpl_verbose_gpu_stacktrace)        \
   MACRO(chpl_verbose_mem)
 
 #define _RT_PRV_BCAST_M(sym)  chpl_rt_prv_tab_ ## sym ## _idx,

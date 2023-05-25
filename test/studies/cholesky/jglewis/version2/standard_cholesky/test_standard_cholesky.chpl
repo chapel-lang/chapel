@@ -138,7 +138,7 @@ module standard_cholesky_test {
     writeln ("\n\n");
     writeln ("scalar outer product cholesky factorization ");
 
-    var clock : Timer;
+    var clock : stopwatch;
 
     clock.clear ();
     clock.start ();
@@ -366,7 +366,7 @@ module standard_cholesky_test {
     proc run_one_cholesky_algorithm ( header : string, cholesky_fun ) {
 
       // --------------------------------------------
-      // Timer version assumes one process per locale
+      // stopwatch version assumes one process per locale
       // --------------------------------------------
       //
       // draft of a procedure to encapsulate the test process.  Unused at this
@@ -374,7 +374,7 @@ module standard_cholesky_test {
       // arguments. The cholesky codes all are written generically because they
       // can be.
 
-      var clock : Timer;
+      var clock : stopwatch;
 
       writeln ("\n\n");
       writeln (header);

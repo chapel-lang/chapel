@@ -9,6 +9,7 @@ var A: [{1..10} dmapped Block({1..10})] int = [i in 1..10] i;
 
 scanArr(A);
 scanArr(A[3..5]);
+scanArr(A[1..10 by 2]);
 scanArr(A.reindex(0..9));
 scanArr(A[3..5].reindex(-1..1));
 scanArr(A.reindex(0..9)[0..2]);

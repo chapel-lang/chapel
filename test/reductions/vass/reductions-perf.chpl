@@ -6,7 +6,7 @@ See runTest() calls for what the number of reps and
 the arrays' domains being measured.
 */
 
-use BlockDist, Time, Memory.Diagnostics, ChplConfig;
+use BlockDist, Time, MemDiagnostics, ChplConfig;
 
 config param useBlockDist = CHPL_COMM != "none";
 config const perf = false; // performance or --fast mode
@@ -33,7 +33,7 @@ config const n00 = numLocales * n00perLocale;
 config const elemsPerCore = 1024; // or 65536
 config const numCores = if perf then here.maxTaskPar else 4;
 
-proc myRound(arg) return (arg+0.5):int;
+proc myRound(arg) do return (arg+0.5):int;
 
 config const n11 = numLocales * numCores * elemsPerCore;
 config const n22 = myRound(sqrt(n11));
@@ -45,7 +45,7 @@ config const M = if perf then 10000 else 10;
 ////// time and error reporting //////
 
 var testName: string;
-var timer: Timer;
+var timer: stopwatch;
 timer.start();
 var numFailures = 0;
 

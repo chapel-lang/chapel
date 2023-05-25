@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo --target-cpu=$CHPL_TARGET_CPU

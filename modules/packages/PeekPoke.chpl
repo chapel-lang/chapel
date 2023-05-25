@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for directly accessing an 'atomic' variable's value.
+
    .. warning::
      This module is unstable and the API is likely to change over time.
 
@@ -49,7 +50,7 @@ module PeekPoke {
   inline proc const AtomicBool.peek(): bool {
     return this.read(order=memoryOrder.relaxed);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc const RAtomicBool.peek(): bool {
     return _v:bool;
   }
@@ -60,7 +61,7 @@ module PeekPoke {
   inline proc AtomicBool.poke(value:bool): void {
     this.write(value, order=memoryOrder.relaxed);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicBool.poke(value:bool): void {
     _v = value:int(64);
   }
@@ -72,7 +73,7 @@ module PeekPoke {
   inline proc const AtomicT.peek(): T {
     return this.read(order=memoryOrder.relaxed);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc const RAtomicT.peek(): T {
     return _v;
   }
@@ -84,7 +85,7 @@ module PeekPoke {
   inline proc AtomicT.poke(value:T): void {
     this.write(value, order=memoryOrder.relaxed);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc RAtomicT.poke(value:T): void {
     _v = value;
   }

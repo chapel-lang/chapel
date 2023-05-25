@@ -1,0 +1,12 @@
+---------------
+writing: (x = 5)
+file contents: (x = 5)
+read: (x = 5)
+---------------
+writing: (y = 42.0)
+file contents: (y = 42.0)
+read: (y = 42.0)
+---------------
+writing: (z = 12.0 + 34.0i)
+file contents: (z = 12.0 + 34.0i)
+read: (z = 12.0 + 34.0i)

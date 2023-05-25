@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,10 +39,9 @@ struct PassInfo {
   char        logTag;
 };
 
-// These entries should be kept in the same order as the entries in passlist.h.
-#define LOG_parse                              'p'
-#define LOG_checkParsed                        LOG_NEVER
-#define LOG_docs                               LOG_NEVER
+// These entries should be kept in the same order as those in the pass list
+#define LOG_parseAndConvertUast                'p'
+#define LOG_checkUast                          LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -90,11 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parse),                   // parse files and create AST
-  RUN(checkParsed),             // checks semantics of parsed AST
-  RUN(docs),                    // if fDocs is set, this will generate docs.
-                                // if the executable is named "chpldoc" then
-                                // the application will stop after this phase
+  RUN(parseAndConvertUast),     // parse files and create AST
+  RUN(checkUast),               // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -155,10 +151,37 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
-static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc);
+static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
-void runPasses(PhaseTracker& tracker, bool isChpldoc) {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+static void runPass(PhaseTracker& tracker, size_t passIndex);
+
+// Set up and validate flags-specified pass to stop after.
+static void setupStopAfterPass() {
+  // --parse-only conflicts with otherwise specified pass to stop after
+  if (fParseOnly) {
+    if (stopAfterPass[0]) {
+      USR_FATAL("cannot provide both parse-only and stop after pass flags");
+    }
+    strcpy(stopAfterPass, "checkUast");
+  }
+
+  // ensure pass to stop after exists
+  if (stopAfterPass[0]) {
+    bool stopAfterPassValid = false;
+    for (size_t i = 0; i < passListSize; i++) {
+      if (strcmp(sPassList[i].name, stopAfterPass) == 0) {
+        stopAfterPassValid = true;
+        break;
+      }
+    }
+    if (!stopAfterPassValid) {
+      USR_FATAL("Requested to stop after pass '%s', but no such pass exists",
+                stopAfterPass);
+    }
+  }
+}
+
+void runPasses(PhaseTracker& tracker) {
 
   setupLogfiles();
 
@@ -166,8 +189,10 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
     tracker.ReportPass();
   }
 
+  setupStopAfterPass();
+
   for (size_t i = 0; i < passListSize; i++) {
-    runPass(tracker, i, isChpldoc);
+    runPass(tracker, i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
@@ -182,18 +207,13 @@ void runPasses(PhaseTracker& tracker, bool isChpldoc) {
     if (stopAfterPass[0] != '\0' && strcmp(sPassList[i].name, stopAfterPass) == 0) {
       break;
     }
-
-    // Break early if this is a chpl doc run
-    if (isChpldoc == true && strcmp(sPassList[i].name, "docs") == 0) {
-      break;
-    }
   }
 
   destroyAst();
   teardownLogfiles();
 }
 
-static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
+static void runPass(PhaseTracker& tracker, size_t passIndex) {
   PassInfo* info = &sPassList[passIndex];
 
   //
@@ -225,15 +245,10 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
   (*(info->checkFunction))(); // Run per-pass check function.
 
   //
-  // Clean up the global pointers to AST.  If we're running chpldoc,
-  // there's no real reason to run this step (and at the time of this
-  // writing, it didn't work if we hadn't parsed all the 'use'd
-  // modules.
+  // Clean up the global pointers to AST.
   //
-  if (!isChpldoc) {
-    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-    cleanAst();
-  }
+  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+  cleanAst();
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();
@@ -250,8 +265,6 @@ static void runPass(PhaseTracker& tracker, size_t passIndex, bool isChpldoc) {
 // This routine also verifies that each non-NUL flag is unique.
 
 void initPassesForLogging() {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
   for (size_t i = 0; i < passListSize; i++) {
     PassInfo* pass = &sPassList[i];
 

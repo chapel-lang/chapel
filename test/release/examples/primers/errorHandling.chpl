@@ -25,10 +25,10 @@ const f2 = "backup_input.txt";
 var f: file;
 
   // halts on error
-  // f = try! open(f1, iomode.r);
+  // f = try! open(f1, ioMode.r);
 
 try {
-  f = open(f1, iomode.r);
+  f = open(f1, ioMode.r);
   // if open() raises an error, jump to the catch block
   writeln("everything is fine");
 } catch {
@@ -37,13 +37,13 @@ try {
 }
 
 try {
-  f = open(f1, iomode.r);
+  f = open(f1, ioMode.r);
 } catch e: FileNotFoundError {
   // catch block can be directed to only handle certain errors
   // the error caught will be `owned FileNotFoundError` in this case
   writeln("Warning: ", f1, " does not exist");
   try! {
-    f = open(f2, iomode.r);
+    f = open(f2, ioMode.r);
   } catch e: FileNotFoundError {
     writeln("Warning: ", f2, " does not exist");
   }
@@ -60,7 +60,7 @@ try {
   ---------------
 
   Developers can also write their own throwing functions, throwing and
-  consuming errors. While there are built-in :class:`SysError.SystemError`
+  consuming errors. While there are built-in :class:`OS.SystemError`
   types, developers can also create their own hierarchies.
 
   Only ``owned`` instances that are subtypes of ``Error`` can be thrown.
@@ -80,7 +80,7 @@ proc openFilename(f_name: string) throws {
   var f: file;
 
   try {
-    f = open(f, iomode.r);
+    f = open(f, ioMode.r);
   } catch e: FileNotFoundError {
     writeln("Warning: ", f, " does not exist");
   } // throws all other errors

@@ -1,0 +1,3 @@
+ # unstable_record.unset.good
+--no-warn-unstable # unstable_record.unset.good
+--warn-unstable # unstable_record.set.good

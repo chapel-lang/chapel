@@ -10,6 +10,6 @@ class C {
   }
 }
 
-var x = [i in 1..3] new borrowed C(i);
+var x = [i in 1..3] (new owned C(i)).borrow();
 
 writeln(x);

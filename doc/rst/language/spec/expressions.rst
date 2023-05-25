@@ -451,9 +451,10 @@ precedence than those listed later.
    division, and modulus as in Fortran. We have found very few cases
    that distinguish between these cases. An interesting one is:
 
-   ::
-     const minint = min(int(32));``
-     ...-minint/2...``
+   .. code-block:: chapel
+
+     const minint = min(int(32));
+     ...-minint/2...
 
    Intuitively, this should result in a positive value, yet C’s
    precedence rules results in a negative value due to asymmetry in
@@ -616,9 +617,8 @@ corresponds to subtracting the value from zero. For real and imaginary
 types, this corresponds to inverting the sign. For complex types, this
 corresponds to inverting the signs of both the real and imaginary parts.
 
-It is an error to try to negate a value of type ``uint(64)``. Note that
-negating a value of type ``uint(32)`` first converts the type to
-``int(64)`` using an implicit conversion.
+Negating a value of type ``uint`` or ``uint(w)`` for any width will
+result in a compilation error.
 
 .. _Addition_Operators:
 
@@ -666,8 +666,9 @@ The addition operators are predefined as follows:
 For each of these definitions that return a value, the result is the sum
 of the two operands.
 
-It is a compile-time error to add a value of type ``uint(64)`` and a
-value of type ``int(64)``.
+When adding signed and unsigned types of the same width (e.g. ``myInt32 +
+myUint32``), the addition will be done with the unsigned type (e.g.
+``uint(32)``).
 
 Addition over a value of real type and a value of imaginary type
 produces a value of complex type. Addition of values of complex type and
@@ -719,9 +720,6 @@ The subtraction operators are predefined as follows:
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first operand.
 
-It is a compile-time error to subtract a value of type ``uint(64)`` from
-a value of type ``int(64)``, and vice versa.
-
 Subtraction of a value of real type from a value of imaginary type, and
 vice versa, produces a value of complex type. Subtraction of values of
 complex type from either real or imaginary types, and vice versa, also
@@ -772,9 +770,6 @@ The multiplication operators are predefined as follows:
 
 For each of these definitions that return a value, the result is the
 product of the two operands.
-
-It is a compile-time error to multiply a value of type ``uint(64)`` and
-a value of type ``int(64)``.
 
 Multiplication of values of imaginary type produces a value of real
 type. Multiplication over a value of real type and a value of imaginary
@@ -828,9 +823,6 @@ The division operators are predefined as follows:
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
 
-It is a compile-time error to divide a value of type ``uint(64)`` by a
-value of type ``int(64)``, and vice versa.
-
 Division of values of imaginary type produces a value of real type.
 Division over a value of real type and a value of imaginary type
 produces a value of imaginary type. Division of values of complex type
@@ -876,9 +868,6 @@ related by the following identity:
    var r = a % b;
    writeln(q * b + r == a);    // true
 
-It is a compile-time error to take the remainder of a value of type
-``uint(64)`` and a value of type ``int(64)``, and vice versa.
-
 There is an expectation that the predefined modulus operators will be
 extended to handle real, imaginary, and complex types in the future.
 
@@ -906,9 +895,6 @@ The exponentiation operators are predefined as follows:
 
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
-
-It is a compile-time error to take the exponent of a value of type
-``uint(64)`` by a value of type ``int(64)``, and vice versa.
 
 There is an expectation that the predefined exponentiation operators
 will be extended to handle imaginary and complex types in the future.
@@ -1136,7 +1122,7 @@ The function ``isTrue`` is predefined over bool type as follows:
 
 .. code-block:: chapel
 
-   proc isTrue(a:bool) return a; 
+   proc isTrue(a:bool) do return a;
 
 Overloading the logical and operator over other types is accomplished by
 overloading the ``isTrue`` function over other types.
@@ -1599,7 +1585,7 @@ When a for expression is used to initialize a variable, such as
 the variable will be inferred to have an array type. The array’s domain
 is defined by the ``iterable-expression`` following the same rules as
 for promotion, both in the regular case :ref:`Promotion` and in
-the zipper case :ref:`Zipper_Promotion`.
+the zippered case :ref:`Zippered_Promotion`.
 
 .. _Filtering_Predicates_For:
 

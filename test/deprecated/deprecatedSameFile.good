@@ -1,0 +1,2 @@
+deprecatedSameFile.chpl:4: warning: 'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead
+true

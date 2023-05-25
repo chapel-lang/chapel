@@ -1,5 +1,5 @@
-// Verifies we currently don't allow initializers to be declared as throws
-// We hope to eventually allow it.
+// Verifies we allow initializers to be declared as throws, regardless of what
+// they contain in their body
 class Foo {
   var x: int;
 

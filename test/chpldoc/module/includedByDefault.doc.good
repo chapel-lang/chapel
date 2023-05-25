@@ -1,0 +1,16 @@
+.. default-domain:: chpl
+
+.. module:: DefaultIncludedModule
+   :synopsis: This module is used to test the that default included modules print a note
+
+DefaultIncludedModule
+=====================
+.. note::
+
+   All Chapel programs automatically ``use`` this module by default.
+   An explicit ``use`` statement is not necessary.
+
+
+This module is used to test the that default included modules print a note
+instead of the typical header.
+

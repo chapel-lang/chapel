@@ -22,7 +22,7 @@
 pragma "error mode fatal"
 module vertexColoring {
 
-  use Random, IO;
+    use Random, IO, Math;
     use VisualDebug;
 
     config const inputFile = "input/inputvertexColoring_64_-rn.txt";
@@ -79,7 +79,7 @@ module vertexColoring {
     */
     proc main() {
 
-        var inFile = open(inputFile, iomode.r);
+        var inFile = open(inputFile, ioMode.r);
         var reader = inFile.reader();
 
         nodes = reader.read(int);
@@ -281,7 +281,7 @@ module vertexColoring {
     }
 
     proc printOutput() {
-        var outfile = open(outputFile, iomode.cw);
+        var outfile = open(outputFile, ioMode.cw);
         var writer = outfile.writer();
         for (q, node) in zip(D, nodeSet!) {
             writer.writeln("Node ", q, ": \t Color ", node.color);

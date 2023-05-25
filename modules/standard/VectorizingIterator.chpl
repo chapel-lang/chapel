@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +39,7 @@
  */
 pragma "error mode fatal"
 pragma "unsafe"
-pragma "module included by default"
+@deprecated(notes="The 'VectorizingIterator' module has been deprecated; please use 'foreach' loops instead")
 module VectorizingIterator {
   private use ChapelStandard;
 
@@ -72,7 +72,7 @@ module VectorizingIterator {
   /*
      .. warning::
 
-        The :iter:`vectorizeOnly()` iterator is deprecated.
+        This module and its :iter:`vectorizeOnly()` iterator are deprecated.
         Please use ``foreach`` loops instead.
 
      Vectorize only "wrapper" iterator:
@@ -135,14 +135,14 @@ module VectorizingIterator {
     for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(iterables...) ref where singleRefIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(iterables...?numiterables) where numiterables > 1 {
     for i in zip((...iterables)) do yield i;
   }
@@ -151,22 +151,22 @@ module VectorizingIterator {
   //
   // standalone versions
   //
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.standalone && singleValIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.standalone && singleRefIter(iterables) {
     for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.standalone && numiterables > 1  {
     for i in zip((...iterables)) do yield i;
@@ -176,19 +176,19 @@ module VectorizingIterator {
   //
   // leader versions
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...)
     where tag == iterKind.leader && singleValIter(iterables) {
       yield iterables(0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...) ref
     where tag == iterKind.leader && singleRefIter(iterables) {
       yield iterables(0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, iterables...?numiterables)
     where tag == iterKind.leader && numiterables > 1  {
       yield iterables;
@@ -198,22 +198,22 @@ module VectorizingIterator {
   //
   // follower versions
   //
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...)
     where tag == iterKind.follower && singleValIter(iterables) {
       for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...) ref
     where tag == iterKind.follower && singleRefIter(iterables) {
       for i in iterables(0) do yield i;
   }
 
-  pragma "no doc"
   pragma "vectorize yielding loops"
+  @chpldoc.nodoc
   iter vectorizeOnly(param tag: iterKind, followThis, iterables...?numiterables)
     where tag == iterKind.follower && numiterables > 1 {
     for i in zip((...iterables)) do yield i;

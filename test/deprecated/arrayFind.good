@@ -1,0 +1,2 @@
+arrayFind.chpl:5: warning: The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use.
+Finding 3 in A = (true, 3)

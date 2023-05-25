@@ -1,0 +1,3 @@
+nonparam-and-false.chpl:9: In function 'CyclicArr_dsiAccess':
+nonparam-and-false.chpl:10: warning: in doRADOpt
+nonparam-and-false.chpl:16: error: success

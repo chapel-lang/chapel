@@ -214,7 +214,7 @@ Rectangular Domain Values
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Each dimension of a rectangular domain is a range of type
-``range(idxType, BoundedRangeType.bounded, stridable)``. The index set
+``range(idxType, boundKind.both, stridable)``. The index set
 for a rank 1 domain is the set of indices described by its singleton
 range. The index set for a rank \ :math:`n` domain is the set of all
 ``n*idxType`` tuples described by the tensor product of its ranges. When
@@ -283,7 +283,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 The default value of a domain type is the ``rank`` default range values
 for type:
 
-   ``range(idxType, BoundedRangeType.bounded, stridable)``
+   ``range(idxType, boundKind.both, stridable)``
 
 ..
 
@@ -883,9 +883,9 @@ Count Operator
 
 The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
-an integer in the case of a 1D domain). The operator is equivalent to
-applying the ``#`` operator to the component ranges of the domain and
-then using them to slice the domain as in Section :ref:`Range_Based_Slicing`.
+an integer in the case of a 1D domain). The operator produces a new domain
+obtained by applying the ``#`` operator to each of the component ranges
+of the argument domain, with the same domain map as the argument.
 
 .. _Adding_and_Removing_Domain_Indices:
 
@@ -924,11 +924,10 @@ set manipulations.  The supported set operators are:
   =======  ====================
 
 
-Predefined Methods on Domains
------------------------------
+Predefined Routines on Domains
+------------------------------
 
 .. include:: ../../builtins/ChapelDomain.rst
 
 .. [3]
    This is also known as row-major ordering.
-

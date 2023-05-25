@@ -1,5 +1,5 @@
-perfkeys: real, real
-graphkeys: release, submitted
-files: spectralnorm-release.dat, spectralnorm-submitted.dat
+perfkeys: real, real, real
+graphkeys: release, submitted, submitted (2)
+files: spectralnorm-release.dat, spectralnorm-submitted.dat, spectralnorm2.dat
 graphtitle: Submitted Spectral Norm Shootout Benchmark
 ylabel: Time (seconds)

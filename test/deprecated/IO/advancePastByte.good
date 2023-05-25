@@ -1,0 +1,3 @@
+advancePastByte.chpl:4: warning: `advancePastByte` is deprecated; please use `advanceThrough` instead
+".toByte());
+write(r.readAll());

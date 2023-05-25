@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,9 +26,9 @@
       This module is expected to change in the future.
  */
 module LinkedLists {
-  use SysBasic;
 
-pragma "no doc"
+
+@chpldoc.nodoc
 class listNode {
   type eltType;
   var data: eltType;
@@ -36,7 +36,7 @@ class listNode {
 }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator LinkedList.=(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
@@ -58,25 +58,25 @@ record LinkedList {
     The type of the data stored in every node.
    */
   type eltType;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _first: unmanaged listNode(eltType)?;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
   var size: int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this._first = first;
     this._last = last;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
     this.complete();
@@ -268,12 +268,12 @@ record LinkedList {
   /*
     Destructor
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc deinit(){
     destroy();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
     var binary = f.binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -283,32 +283,32 @@ record LinkedList {
 
     if binary {
       // Write the number of elements.
-      f <~> size;
+      f.write(size);
     }
     if isjson || ischpl {
-      f <~> new ioLiteral("[");
+      f._writeLiteral("[");
     }
 
     var first = true;
     for e in this {
       if first then first = false;
       else {
-        if isspace then f <~> new ioLiteral(" ");
-        else if isjson || ischpl then f <~> new ioLiteral(", ");
+        if isspace then f._writeLiteral(" ");
+        else if isjson || ischpl then f._writeLiteral(", ");
       }
 
-      f <~> e;
+      f.write(e);
     }
 
     if isjson || ischpl {
-      f <~> new ioLiteral("]");
+      f._writeLiteral("]");
     }
 
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc readThis(f) throws {
-    use SysError;
+    use OS;
 
     //
     // Special handling for reading in order to handle reading an arbitrary
@@ -321,11 +321,9 @@ record LinkedList {
     const isChpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !isBinary;
 
     // How many elements should we read (for binary mode)?
-    var num = 0;
+    const num : int = if isBinary then f.read(int) else 0;
 
-    if isBinary then f <~> num;
-
-    if isJson || isChpl then f <~> new ioLiteral("[");
+    if isJson || isChpl then f._readLiteral("[");
 
     // Clear out existing elements in the list.
     destroy();
@@ -346,9 +344,9 @@ record LinkedList {
         // Try reading an end bracket. If we don't, then continue on.
         try {
           if isJson || isChpl {
-            f <~> new ioLiteral("]");
+            f._readLiteral("]");
           } else if isSpace {
-            f <~> new ioNewline(skipWhitespaceOnly=true);
+            f._readNewline();
           }
 
           hasReadEnd = true;
@@ -361,23 +359,28 @@ record LinkedList {
         // Try to read a space or a comma. Break if we don't.
         try {
           if isSpace {
-            f <~> new ioLiteral(" ");
+            f._readLiteral(" ");
           } else if isJson || isChpl {
-            f <~> new ioLiteral(",");
+            f._readLiteral(",");
           }
         } catch err: BadFormatError {
           break;
         }
       }
 
-      var elt: eltType;
-      f <~> elt;
-      append(elt);
+      append(f.read(eltType));
       i += 1;
     }
 
     if !hasReadEnd then
-      if isJson || isChpl then f <~> new ioLiteral("]");
+      if isJson || isChpl then f._readLiteral("]");
+  }
+
+  // TODO: temporary implementation to get some tests passing, but needs to
+  // go through the formatter eventually.
+  proc init(type eltType, r: fileReader) throws {
+    this.init(eltType);
+    readThis(r);
   }
 }
 

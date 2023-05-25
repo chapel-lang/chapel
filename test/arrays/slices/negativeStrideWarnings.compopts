@@ -1,0 +1,6 @@
+# As these options become obsolete, their .good files can be simply discarded.
+
+-snewSliceRule=false  -snoNegativeStrideWarnings=true   # negativeStrideWarnings.oldR.warn-.good
+-snewSliceRule=false  -snoNegativeStrideWarnings=false  # negativeStrideWarnings.oldR.warn+.good
+-snewSliceRule=true   -snoNegativeStrideWarnings=true   # negativeStrideWarnings.newR.warn-.good
+-snewSliceRule=true   -snoNegativeStrideWarnings=false  # negativeStrideWarnings.newR.warn+.good

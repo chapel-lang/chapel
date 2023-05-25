@@ -1,1 +1,6 @@
-CHPL_HOST_PLATFORM==darwin
+#!/usr/bin/env python3
+
+import shutil
+
+missing_gdb = shutil.which("gdb") is None
+print(missing_gdb)

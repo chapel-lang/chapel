@@ -49,7 +49,7 @@ proc testit(mode: Mode, param explicit, printStats) {
 
   tmp = -1;
 
-  var t: Timer; t.start();
+  var t: stopwatch; t.start();
   select mode {
     when Mode.directIndexLocal {
       forall i in D2 {

@@ -1,2 +1,0 @@
-anonAssocDoms.chpl:1: warning: Anonymous associative domain literals without curly brackets are deprecated; please use curly brackets to create an associative domain of 'real(64)' indices
-0.0

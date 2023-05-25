@@ -478,8 +478,9 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
   #define GASNETI_PRAGMA(x) _Pragma ( #x )
 #endif
 
-#if GASNETI_COMPILER_HAS(PRAGMA_GCC_DIAGNOSTIC)
-  #define GASNETI_USE_PRAGMA_GCC_DIAGNOSTIC 1
+#if (!defined(GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC) && GASNETI_COMPILER_HAS(PRAGMA_GCC_DIAGNOSTIC)) || \
+              GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC
+  #define     GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC 1
   #if defined(__cplusplus)
     #define _GASNETI_NOWARN_IGNORES_C_ONLY
   #else
@@ -670,7 +671,7 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
   #define GASNETI_PURE 
 #endif
 /* pragma version of GASNETI_PURE */
-#if PLATFORM_COMPILER_XLC && \
+#if PLATFORM_COMPILER_XLC && PLATFORM_ARCH_BIG_ENDIAN && \
    !(PLATFORM_OS_DARWIN && __xlC__ <= 0x0600) /* bug 1542 */
   #define GASNETI_PUREP(fnname) GASNETI_PRAGMA(isolated_call(fnname))
 #else

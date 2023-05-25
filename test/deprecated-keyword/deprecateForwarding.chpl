@@ -2,7 +2,7 @@
 class C {
   var x: Other;
 
-  deprecated "don't forward any more" forwarding x;
+  @deprecated(notes="don't forward any more") forwarding x;
 }
 
 record Other {

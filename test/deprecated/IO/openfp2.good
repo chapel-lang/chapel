@@ -1,0 +1,1 @@
+openfp2.chpl:4: warning: openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead

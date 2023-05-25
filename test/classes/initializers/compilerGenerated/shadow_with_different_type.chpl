@@ -8,9 +8,9 @@ class Sub: Base {
 }
 
 proc main() {
-  var sub         = new borrowed Sub();
+  var sub         = (new owned Sub()).borrow();
   var base:borrowed Base() = sub;
-  var base2       = new borrowed Base();
+  var base2       = (new owned Base()).borrow();
 
   base.s = "Base";
 

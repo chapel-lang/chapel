@@ -1,0 +1,5 @@
+targetLocales = LOCALE0
+locDom = {0..0}
+tables and locks locales
+tables[0] is on locale LOCALE0
+locks[0] is also on locale LOCALE0

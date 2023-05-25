@@ -559,8 +559,8 @@ fh_update_priv(firehose_private_t *priv, const firehose_region_t *reg)
 #if 0
     bucket = fh_bucket_lookup(node, new_start);
     if (bucket && (fh_bucket_end(bucket) == new_end)) {
-	fprintf(stderr, "%d> exact match %p %p (%d, %p, %dk)\n",
-		gasneti_mynode, bucket->priv, priv, node, (void *)reg->addr, (int)(reg->len)/1024);
+	gasneti_console_message("FH INFO","exact match %p %p (%d, %p, %dk)",
+		bucket->priv, priv, node, (void *)reg->addr, (int)(reg->len)/1024);
     }
 #endif
 
@@ -1714,8 +1714,8 @@ fh_priv_print_fn(void *val, void *arg)
 	int lref = FH_IS_LOCAL_FIFO(priv) ? 0 : FH_BUCKET_REFC(priv)->refc_l;
 	int rref = FH_IS_LOCAL_FIFO(priv) ? 0 : FH_BUCKET_REFC(priv)->refc_r;
 
-	fprintf(stderr, "[n%d] %p - %p (%4d of %4d pages visible) refc=(%4dL, %4dR)\n",
-			(int)gasneti_mynode, (void*)FH_BADDR(priv), (void*)fh_priv_end(priv),
+	gasneti_console_message("FH INFO","%p - %p (%4d of %4d pages visible) refc=(%4dL, %4dR)\n",
+			(void*)FH_BADDR(priv), (void*)fh_priv_end(priv),
 			priv->visible, (int)(priv->len>>FH_BUCKET_SHIFT),
 			lref, rref);
 }
@@ -1732,8 +1732,8 @@ fh_priv_check_fn(void *val, void *arg)
 
 	if_pf (live && !priv->prepinned) {
 		/* XXX: promote to fatalerror? */
-		fprintf(stderr, "WARNING: firehose leak detected on node %d - %d:%p %4d pages (%4d pages visible)\n",
-			(int)gasneti_mynode, (int)FH_NODE(bucket), (void*)FH_BADDR(priv), 
+		gasneti_console_message("WARNING","firehose leak detected - %d:%p %4d pages (%4d pages visible)\n",
+			(int)FH_NODE(bucket), (void*)FH_BADDR(priv), 
 			(int)(priv->len>>FH_BUCKET_SHIFT), priv->visible);
 		priv->prepinned = 1; /* Avoids duplicates in output */
 	}
@@ -1766,7 +1766,7 @@ fh_fini_plugin(void)
 
 	if (fh_verbose) {
 		/* Dump the local table, unsorted */
-		fprintf(stderr, "[n%d] Final local firehose table:\n", gasneti_mynode);
+		gasneti_console_message("FH INFO","Final local firehose table:");
 		fh_hash_apply(fh_PrivTable, &fh_priv_print_fn, NULL);
 	}
 
@@ -1879,9 +1879,8 @@ void _fhi_debug_local_table(const char *func, int line)  {
   fifo_count = 0;
   for (priv = FH_TAILQ_FIRST(&fh_LocalFifo); priv; priv = FH_TAILQ_NEXT(priv)) { ++fifo_count; }
   if (fifo_count != fhc_LocalVictimFifoBuckets) {
-    fprintf(stderr, "[%d] %s:%d fhc_LocalVictimFifoBuckets (%d) != FIFO entries (%d)\n",
-		    gasneti_mynode, func, line, fhc_LocalVictimFifoBuckets, fifo_count);
-    fflush(NULL);
+    gasneti_console_message("FH INFO","%s:%d fhc_LocalVictimFifoBuckets (%d) != FIFO entries (%d)",
+		    func, line, fhc_LocalVictimFifoBuckets, fifo_count);
     ++err;
   }
 
@@ -1889,9 +1888,8 @@ void _fhi_debug_local_table(const char *func, int line)  {
   fifo_count = 0;
   fh_hash_apply(fh_PrivTable, &_fhi_acct_fifo_fn, &fifo_count);
   if (fifo_count != fhc_LocalVictimFifoBuckets) {
-    fprintf(stderr, "[%d] %s:%d fhc_LocalVictimFifoBuckets (%d) != in-FIFO hash entries (%d)\n",
-		    gasneti_mynode, func, line, fhc_LocalVictimFifoBuckets, fifo_count);
-    fflush(NULL);
+    gasneti_console_message("FH INFO","%s:%d fhc_LocalVictimFifoBuckets (%d) != in-FIFO hash entries (%d)",
+		    func, line, fhc_LocalVictimFifoBuckets, fifo_count);
     ++err;
   }
 
@@ -1900,10 +1898,9 @@ void _fhi_debug_local_table(const char *func, int line)  {
   fh_hash_apply(fh_PrivTable, &_fhi_acct_lref_fn, &lref_count);
   lonly = fhc_LocalReserved + fifo_count + lref_count;
   if (lonly != fhc_LocalOnlyBucketsPinned) {
-    fprintf(stderr, "[%d] %s:%d fhc_LocalOnlyBucketsPinned (%d) != FIFO + local-ref'd + resv'd (%d + %d + %d = %d)\n",
-		    gasneti_mynode, func, line, fhc_LocalOnlyBucketsPinned,
+    gasneti_console_message("FH INFO","%s:%d fhc_LocalOnlyBucketsPinned (%d) != FIFO + local-ref'd + resv'd (%d + %d + %d = %d)",
+		    func, line, fhc_LocalOnlyBucketsPinned,
 		    fifo_count, lref_count, fhc_LocalReserved, lonly);
-    fflush(NULL);
     ++err;
   }
 

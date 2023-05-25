@@ -43,7 +43,6 @@
 #include "ofi_list.h"
 
 
-extern int ofi_init;
 extern void fi_ini(void);
 
 struct fi_param_entry {
@@ -87,8 +86,7 @@ int DEFAULT_SYMVER_PRE(fi_getparams)(struct fi_param **params, int *count)
 	int cnt, i;
 	char *tmp;
 
-	if (!ofi_init)
-		fi_ini();
+	fi_ini();
 
 	for (entry = param_list.next, cnt = 0; entry != &param_list;
 	     entry = entry->next)

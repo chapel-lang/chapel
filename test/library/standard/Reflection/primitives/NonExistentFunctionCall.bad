@@ -1,0 +1,2 @@
+NonExistentFunctionCall.chpl:2: In function 'test':
+NonExistentFunctionCall.chpl:3: error: 'foo' undeclared (first use this function)

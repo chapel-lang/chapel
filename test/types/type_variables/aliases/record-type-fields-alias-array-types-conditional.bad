@@ -1,0 +1,2 @@
+record-type-fields-alias-array-types-conditional.chpl:8: error: error while resolving type 'R1()'
+record-type-fields-alias-array-types-conditional.chpl:5: note: type expression of field 'field' resolves to a value, not a type

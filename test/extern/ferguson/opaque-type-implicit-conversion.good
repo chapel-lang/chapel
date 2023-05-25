@@ -1,0 +1,2 @@
+opaque-type-implicit-conversion.chpl:4: In function 'foo':
+opaque-type-implicit-conversion.chpl:5: error: could not find a copy initializer ('init=') for type 'int' from type 'myint'

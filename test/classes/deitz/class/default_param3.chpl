@@ -5,8 +5,8 @@ class C {
   var x: int;
 }
 
-var c = new borrowed C();
+var c = (new owned C()).borrow();
 writeln("{color = ", c.color, ", x = ", c.x, "}");
 
-var cc = new borrowed C(Colors.Blue);
+var cc = (new owned C(Colors.Blue)).borrow();
 writeln("{color = ", cc.color, ", x = ", cc.x, "}");

@@ -1,0 +1,2 @@
+bug: runtime type memory is not managed correctly
+#7772 

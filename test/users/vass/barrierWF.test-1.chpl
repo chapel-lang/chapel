@@ -13,7 +13,7 @@ var cur: atomic int;
 writeln("starting");
 
 // create it
-const b = new borrowed BarrierWF(tk);
+const b = (new owned BarrierWF(tk)).borrow();
 
 // use it
 coforall task in 1..tk {

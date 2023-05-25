@@ -42,7 +42,7 @@ proc main() {
     startCommDiagnostics();
   }
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   coforall locIdx in 0..#numLocales {

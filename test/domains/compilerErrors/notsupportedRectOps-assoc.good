@@ -1,3 +1,3 @@
 notsupportedRectOps-assoc.chpl:3: In function 'test':
-notsupportedRectOps-assoc.chpl:5: error: this domain type does not support 'low'
+notsupportedRectOps-assoc.chpl:5: error: associative domains do not support '.low'
   notsupportedRectOps-assoc.chpl:16: called as test(dom: DefaultAssociativeDom(int(64),true))

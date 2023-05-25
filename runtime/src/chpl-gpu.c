@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,329 +17,305 @@
  * limitations under the License.
  */
 
-#include "sys_basic.h"
-#include "chplrt.h"
-#include "chpl-linefile-support.h"
-#include "chpl-mem.h"
-#include "chpl-gpu.h"
-#include "chpl-tasks.h"
-#include "error.h"
-#include "chplcgfns.h"
+// We need to define this variable outside of the commented out HAS_GPU_LOCALE
+// section due to the fact that GpuDiagnostics module accesses it (and this
+// module can be used despite what locale model you're using).
+#include <stdbool.h>
+bool chpl_gpu_debug = false;
+bool chpl_gpu_no_cpu_mode_warning = false;
+int chpl_gpu_num_devices = -1;
 
 #ifdef HAS_GPU_LOCALE
 
+#include "chplrt.h"
+#include "chpl-gpu.h"
+#include "chpl-gpu-impl.h"
+#include "chpl-gpu-diags.h"
+#include "chpl-tasks.h"
+#include "error.h"
+#include "chplcgfns.h"
+#include "chpl-linefile-support.h"
+#include "chpl-env-gen.h"
+#include "chpl-env.h"
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <assert.h>
+void chpl_gpu_init(void) {
+  chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
-static void CHPL_GPU_LOG(const char *str, ...) {
-  if (verbosity >= 2) {
-    va_list args;
-    va_start(args, str);
-    vfprintf(stdout, str, args);
-    va_end(args);
-    fflush(stdout);
-  }
-}
+  assert(chpl_gpu_num_devices >= 0);
 
-static void chpl_gpu_cuda_check(int err, const char* file, int line) {
-  if(err != CUDA_SUCCESS) {
-    const int msg_len = 80;
-    char msg[msg_len];
-
-    snprintf(msg, msg_len,
-             "%s:%d: Error calling CUDA function. (Code: %d)",
-             file, line, err);
-
-    chpl_internal_error(msg);
-  }
-}
-
-#define CUDA_CALL(call) do {\
-  chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
-} while(0);
-
-CUcontext *chpl_gpu_primary_ctx;
-
-void chpl_gpu_init() {
-  int         num_devices;
-
-  // CUDA initialization
-  CUDA_CALL(cuInit(0));
-
-  CUDA_CALL(cuDeviceGetCount(&num_devices));
-
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
-
-  int i;
-  for (i=0 ; i<num_devices ; i++) {
-    CUdevice device;
-    CUcontext context;
-
-    CUDA_CALL(cuDeviceGet(&device, i));
-    CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
-    CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
-
-    chpl_gpu_primary_ctx[i] = context;
-  }
-}
-
-static void chpl_gpu_ensure_context() {
-  CUcontext next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()-1];
-
-  if (!chpl_gpu_has_context()) {
-    CUDA_CALL(cuCtxPushCurrent(next_context));
-  }
-  else {
-    CUcontext cur_context = NULL;
-    cuCtxGetCurrent(&cur_context);
-    if (cur_context == NULL) {
-      chpl_internal_error("Unexpected GPU context error");
+  // override number of devices if applicable
+  const char* env;
+  int32_t num = -1;
+  if ((env = chpl_env_rt_get("NUM_GPUS_PER_LOCALE", NULL)) != NULL) {
+    if (sscanf(env, "%" SCNi32, &num) != 1) {
+      chpl_error("Cannot parse CHPL_RT_NUM_GPUS_PER_LOCALE environment "
+                 "variable", 0, 0);
     }
 
-    if (cur_context != next_context) {
-      CUcontext popped;
-      CUDA_CALL(cuCtxPopCurrent(&popped));
-      CUDA_CALL(cuCtxPushCurrent(next_context));
+    if (num < 0) {
+      chpl_error("CHPL_RT_NUM_GPUS_PER_LOCALE must be >= 0", 0, 0);
     }
-  }
-}
 
-static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
-  chpl_gpu_ensure_context();
-
-  CUmodule    cudaModule;
-  CUfunction  function;
-
-  // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
-
-  // Get kernel function
-  CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
-
-  return (void*)function;
-}
-
-bool chpl_gpu_is_device_ptr(void* ptr) {
-  //chpl_gpu_ensure_context();
-
-  unsigned int res;
-
-  // We call CUDA_CALL later, because we want to treat some error codes
-  // separately
-  CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-                                           (CUdeviceptr)ptr);
-
-  if (ret_val == CUDA_SUCCESS) {
-    return res == CU_MEMORYTYPE_DEVICE || res == CU_MEMORYTYPE_UNIFIED;
-  }
-  else if (ret_val == CUDA_ERROR_INVALID_VALUE ||
-           ret_val == CUDA_ERROR_NOT_INITIALIZED ||
-           ret_val == CUDA_ERROR_DEINITIALIZED) {
-    return false;  // this is a cpu pointer that CUDA doesn't even know about
-  }
-
-  // there must have been an error in calling the cuda function. report that.
-  CUDA_CALL(ret_val);
-
-  return false;
-}
-
-size_t chpl_gpu_get_alloc_size(void* ptr) {
-  chpl_gpu_ensure_context();
-
-  CUdeviceptr base;
-  size_t size;
-  CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
-
-  return size;
-}
-
-bool chpl_gpu_running_on_gpu_locale() {
-  return chpl_task_getRequestedSubloc()>0;
-}
-
-static void chpl_gpu_launch_kernel_help(const char* fatbinData,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        int nargs,
-                                        va_list args) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_LOG("Kernel launcher called. (subloc %d)\n"
-               "\tKernel: %s\n"
-               "\tGrid: %d,%d,%d\n"
-               "\tBlock: %d,%d,%d\n"
-               "\tNumArgs: %d\n",
-               chpl_task_getRequestedSubloc(),
-               name,
-               grd_dim_x, grd_dim_y, grd_dim_z,
-               blk_dim_x, blk_dim_y, blk_dim_z,
-               nargs);
-
-  int i;
-  void* function = chpl_gpu_getKernel(fatbinData, name);
-  // TODO: this should use chpl_mem_alloc
-  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
-
-  assert(function);
-  assert(kernel_params);
-
-  CHPL_GPU_LOG("Creating kernel parameters\n");
-
-  for (i=0 ; i<nargs ; i++) {
-    void* cur_arg = va_arg(args, void*);
-    size_t cur_arg_size = va_arg(args, size_t);
-
-    if (cur_arg_size > 0) {
-      // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
-      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
-
-      // TODO pass the location info to this function and use a proper mem
-      // desc
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
-
-      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
-
-      CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
-                   i, *kernel_params[i]);
+#ifndef GPU_RUNTIME_CPU
+    if (chpl_gpu_num_devices > 0 && num > chpl_gpu_num_devices) {
+      char msg[200];
+      snprintf(msg, sizeof(msg),
+          "CHPL_RT_NUM_GPUS_PER_LOCALE = %" PRIi32 " is too large; "
+          "it must be less than or equal to the number of GPUs per node. "
+          "Detected %" PRIi32 " GPUs in node %" PRIi32 ". "
+          "Ignoring this environment variable.",
+          num, chpl_gpu_num_devices, chpl_nodeID);
+      chpl_warning(msg, 0, 0);
     }
     else {
-      kernel_params[i] = cur_arg;
-      CHPL_GPU_LOG("\tKernel parameter %d: %p\n",
-                   i, kernel_params[i]);
+#endif
+      assert(num!=-1);
+      chpl_gpu_num_devices = num;
+#ifndef GPU_RUNTIME_CPU
     }
+#endif
   }
-
-  CHPL_GPU_LOG("Calling gpu function named %s\n", name);
-
-  CUDA_CALL(cuLaunchKernel((CUfunction)function,
-                           grd_dim_x, grd_dim_y, grd_dim_z,
-                           blk_dim_x, blk_dim_y, blk_dim_z,
-                           0,  // shared memory in bytes
-                           0,  // stream ID
-                           (void**)kernel_params,
-                           NULL));  // extra options
-
-  CHPL_GPU_LOG("Call returned %s\n", name);
-
-  CUDA_CALL(cudaDeviceSynchronize());
-
-  CHPL_GPU_LOG("Synchronization complete %s\n", name);
-
-  // TODO: this should use chpl_mem_free
-  chpl_free(kernel_params);
 }
 
-void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
-  chpl_gpu_ensure_context();
+void chpl_gpu_support_module_finished_initializing(void) {
+  // The standard module has some memory that we allocate when we  are "on" a
+  // GPU sublocale when in fact we want to allocate it on the device. (As of
+  // the writing of this comment this is in `helpSetupLocaleGPU` in
+  // `LocaleModelHelpSetup`).
+  //
+  // Basically during the setup of the locale model we need to be "on" a given
+  // sublocale when we instantiate the object for it (the expectation is that
+  // the wide pointer for a sublocale appears to be on that sublocale),
+  // but in practice we don't actually want the data for the GPU sublocale
+  // object to be on the GPU).
+  //
+  // It's a bit of a hack but to handle this we start off setting
+  // `chpl_gpu_device_alloc` to false indicating that we shouldn't actually
+  // do any allocations on the device. Once the standard modules have finished
+  // loading this callback function
+  // (`chpl_gpu_impl_on_std_modules_finished_initializing`) gets called and we
+  // flip the flag.
+  chpl_gpu_impl_support_module_finished_initializing();
 
-  assert(chpl_gpu_is_device_ptr(src));
-
-  CHPL_GPU_LOG("Copying %zu bytes from device to host\n", n);
-
-  CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
+  // this function is something that we're not proud of already. The following
+  // adds the function more meaning and I am not happy about it. It looks like
+  // when we call chpl_gpu_init during runtime initialization, chpl_gpu_debug
+  // isn't setup properly yet. So, even if you use --debugGpu, you don't see the
+  // output from these. On a quick look at the runtime initialization
+  // code, I can't explain why that's the case. But moving these here makes the
+  // output show up as expected.
+  CHPL_GPU_DEBUG("GPU layer initialized.\n");
+  CHPL_GPU_DEBUG("  Memory allocation strategy for ---\n");
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+    CHPL_GPU_DEBUG("    array data: device memory\n");
+    CHPL_GPU_DEBUG("         other: page-locked host memory\n");
+  #else
+    CHPL_GPU_DEBUG("    array data: unified memory\n");
+    CHPL_GPU_DEBUG("         other: unified memory\n");
+  #endif
 }
 
-void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
-  chpl_gpu_ensure_context();
+inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
+                                   const char* name,
+                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                   int nargs, ...) {
+  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tKernel: %s\n"
+                 "\tNumArgs: %d\n",
+                 chpl_task_getRequestedSubloc(),
+                 name,
+                 nargs);
 
-  assert(chpl_gpu_is_device_ptr(dst));
-
-  CHPL_GPU_LOG("Copying %zu bytes from host to device\n", n);
-
-  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
-}
-
-void chpl_gpu_launch_kernel(const char* fatbinData, const char* name,
-                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...) {
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinData, name,
+
+  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+                                blk_dim_x, blk_dim_y, blk_dim_z);
+  chpl_gpu_diags_incr(kernel_launch);
+
+  chpl_gpu_impl_launch_kernel(ln, fn,
+                              name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
   va_end(args);
+
+  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
+                 "\tKernel: %s\n",
+                 chpl_task_getRequestedSubloc(),
+                 name);
 }
 
-void chpl_gpu_launch_kernel_flat(const char* fatbinData, const char* name,
-                                 int num_threads, int blk_dim, int nargs, ...) {
-  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
+inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
+                                        const char* name,
+                                        int64_t num_threads, int blk_dim, int nargs,
+                                        ...) {
+
+  CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tKernel: %s\n"
+                 "\tNumArgs: %d\n"
+                 "\tNumThreads: %lld\n",
+                 chpl_task_getRequestedSubloc(),
+                 name,
+                 nargs,
+                 num_threads);
 
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinData, name,
-                              grd_dim, 1, 1,
-                              blk_dim, 1, 1,
-                              nargs, args);
+
+  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+      blk_dim, 1, 1);
+  chpl_gpu_diags_incr(kernel_launch);
+
+  chpl_gpu_impl_launch_kernel_flat(ln, fn,
+                                   name,
+                                   num_threads, blk_dim,
+                                   nargs, args);
   va_end(args);
+
+  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
+                 "\tKernel: %s\n",
+                 chpl_task_getRequestedSubloc(),
+                 name);
 }
 
-bool chpl_gpu_has_context() {
-  CUcontext cuda_context = NULL;
+void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
+  // CHPL_GPU_DEBUG output here is too much. So, I'm commenting for now.
 
-  CUresult ret = cuCtxGetCurrent(&cuda_context);
+  // CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
 
-  if (ret == CUDA_ERROR_NOT_INITIALIZED || ret == CUDA_ERROR_DEINITIALIZED) {
-    return false;
-  }
-  else {
-    return cuda_context != NULL;
-  }
+  void* ret = chpl_gpu_impl_memmove(dst, src, n);
+
+  // CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
+  return ret;
+}
+
+void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
+  CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
+                 val);
+
+  void* ret = chpl_gpu_impl_memset(addr, val, n);
+
+  CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
+  return ret;
+}
+
+void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(src));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from device to host\n", n);
+
+  chpl_gpu_impl_copy_device_to_host(dst, src, n);
+
+  CHPL_GPU_DEBUG("Copy successful\n");
+}
+
+void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes from host to device\n", n);
+
+  chpl_gpu_impl_copy_host_to_device(dst, src, n);
+
+  CHPL_GPU_DEBUG("Copy successful\n");
+}
+
+void* chpl_gpu_comm_async(void *dst, void *src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst) || chpl_gpu_is_device_ptr(src));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes asynchronously between host and device\n", n);
+
+  return chpl_gpu_impl_comm_async(dst, src, n);
+}
+
+void chpl_gpu_comm_wait(void *stream) {
+  chpl_gpu_impl_comm_wait(stream);
+}
+
+size_t chpl_gpu_get_alloc_size(void* ptr) {
+  return chpl_gpu_impl_get_alloc_size(ptr);
 }
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
+  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
-  CUdeviceptr ptr = 0;
+  void *ptr = NULL;
   if (size > 0) {
-    CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
+    chpl_memhook_malloc_pre(1, size, description, lineno, filename);
+    ptr = chpl_gpu_impl_mem_alloc(size);
+    chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
+
+    CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
   }
   else {
-    CHPL_GPU_LOG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
+    CHPL_GPU_DEBUG("chpl_gpu_mem_alloc returning NULL (size was 0)\n");
   }
 
-
-  return (void*)ptr;
-
+  return ptr;
 }
+
+void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
+  CHPL_GPU_DEBUG("chpl_gpu_mem_free is called. Ptr %p\n", memAlloc);
+
+  chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
+  chpl_gpu_impl_mem_free(memAlloc);
+
+  CHPL_GPU_DEBUG("chpl_gpu_mem_free is returning\n");
+}
+
 
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           chpl_mem_descInt_t description,
                           int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("chpl_gpu_mem_calloc called. Size:%d\n", size);
+  CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%d file:%s line:%d\n", size,
+               chpl_lookupFilename(filename), lineno);
 
-  CUdeviceptr ptr;
-  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-  CUDA_CALL(cuMemsetD8(ptr, 0, size));
-  return (void*)ptr;
+  void *ptr = NULL;
+
+  if (size > 0) {
+    // TODO this is a really poor implementation -- CUDA has memset, that can
+    // help a bit, but omp doesn't expose it. I don't know whether performance
+    // here matters.
+    const size_t total_size = number*size;
+
+    void *host_mem = chpl_mem_calloc(number, size, description, lineno,
+                                     filename);
+
+    chpl_memhook_malloc_pre(1, total_size, description, lineno, filename);
+    ptr = chpl_gpu_impl_mem_alloc(total_size);
+    chpl_memhook_malloc_post((void*)ptr, 1, total_size, description, lineno, filename);
+
+    chpl_gpu_impl_copy_host_to_device(ptr, host_mem, total_size);
+
+    chpl_mem_free(host_mem, lineno, filename);
+
+    CHPL_GPU_DEBUG("chpl_gpu_mem_calloc returning %p\n", (void*)ptr);
+  }
+  else {
+    CHPL_GPU_DEBUG("chpl_gpu_mem_calloc returning NULL (size was 0)\n");
+  }
+
+  return ptr;
 }
 
 void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
 
-  CHPL_GPU_LOG("chpl_gpu_mem_realloc called. Size:%d\n", size);
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
+#ifdef GPU_RUNTIME_CPU
+    return chpl_mem_realloc(memAlloc, size, description, lineno, filename);
+#else
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
+  assert(cur_size >= 0);
 
   if (size == cur_size) {
     return memAlloc;
@@ -347,44 +323,48 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   // TODO we could probably do something smarter, especially for the case where
   // the new allocation size is smaller than the original allocation size.
+  void* new_alloc = chpl_gpu_mem_alloc(size, description, lineno, filename);
 
-  CUdeviceptr ptr;
-  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
-  CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));
-  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+  const size_t copy_size = size < cur_size ? size : cur_size;
+  chpl_gpu_impl_copy_device_to_device(new_alloc, memAlloc, copy_size);
+  chpl_gpu_mem_free(memAlloc, lineno, filename);
 
-  return (void*)ptr;
+  return new_alloc;
+#endif
 }
 
 void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
                             int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_LOG("chpl_gpu_mem_memalign called. Size:%d\n", size);
-  chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");
-
   // ENGIN: I don't know if it is possible to allocate memory with custom
   // alignment on GPU. It looks like GPUs typically have a default alignment
   // (512?) that cannot be changed. I don't think we'd need more than that
   // today, and if we want, we can play some pointer games to return something
   // with a larger alignment here.
 
+  chpl_internal_error("Allocating aligned GPU memory is not supported yet");
   return NULL;
 }
 
-void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  chpl_gpu_ensure_context();
-
-  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr:%p file:%s line:%d\n", memAlloc,
-               chpl_lookupFilename(filename), lineno);
-
-  if (memAlloc != NULL) {
-    assert(chpl_gpu_is_device_ptr(memAlloc));
-
-    CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
-  }
+void chpl_gpu_hostmem_register(void *memAlloc, size_t size) {
+  CHPL_GPU_DEBUG("chpl_gpu_hostmem_register is called. Ptr %p, size: %d\n", memAlloc, size);
+  chpl_gpu_impl_hostmem_register(memAlloc, size);
 }
 
-#endif // HAS_GPU_LOCALE
+bool chpl_gpu_is_device_ptr(const void* ptr) {
+  return chpl_gpu_impl_is_device_ptr(ptr);
+}
 
+bool chpl_gpu_is_host_ptr(const void* ptr) {
+  return chpl_gpu_impl_is_host_ptr(ptr);
+}
+
+bool chpl_gpu_can_access_peer(int dev1, int dev2) {
+  return chpl_gpu_impl_can_access_peer(dev1, dev2);
+}
+
+void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
+  chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
+}
+
+#endif

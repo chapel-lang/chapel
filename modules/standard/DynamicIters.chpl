@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-/*
+/* Support for dynamic distribution of a 'forall' loop's iterations.
+
   This module contains several iterators that can be used to drive a `forall`
   loop by performing dynamic and adaptive splitting of a range's iterations.
 
@@ -27,6 +28,7 @@
   Angeles Navarro. *PGAS 2011: Fifth Conference on Partitioned Global
   Address Space Programming Models*, October 2011.
 */
+@unstable("The 'DynamicIters' module is unstable")
 module DynamicIters {
 
   use ChapelLocks, DSIUtil;
@@ -75,7 +77,7 @@ iter dynamic(c:range(?), chunkSize:int=1, numTasks:int=0) {
 }
 
 // Parallel iterator
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int=0)
 where tag == iterKind.leader
 {
@@ -124,7 +126,7 @@ where tag == iterKind.leader
       while moreWork.read() {
         // There is local work in remain
         const chunkIdx = curChunkIdx.fetchAdd(1);
-        const low = chunkIdx * chunkSize; /* remain.low is 0, stride is 1 */
+        const low = chunkIdx * chunkSize; /* remain.lowBound is 0, stride is 1 */
         const high: low.type;
 
         if chunkSize >= max(low.type) - low then
@@ -139,7 +141,7 @@ where tag == iterKind.leader
            * that grabbed the final chunk just break.
            */
           break;
-        } else if high >= remain.high {
+        } else if high >= remain.highBound {
           moreWork.write(false);
         }
 
@@ -154,7 +156,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:range(?), chunkSize:int=1, numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -207,7 +209,7 @@ iter dynamic(c:domain, chunkSize:int=1, numTasks:int=0, parDim:int=0)
 }
 
 //Leader
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parDim : int = 0)
   where tag == iterKind.leader
   {
@@ -222,7 +224,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
     assert(parDim >= 0, "parDim must be a non-negative integer");
 
     var parDimDim = c.dim(parDim);
-    var parDimOffset = c.dim(parDim).low;
+    var parDimOffset = c.dim(parDim).lowBound;
 
     for i in dynamic(tag=iterKind.leader, parDimDim, chunkSize, numTasks) {
       //Set the new range based on the tuple the dynamic 1d iterator yields
@@ -243,7 +245,7 @@ iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int=0, parD
   }
 
 //Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter dynamic(param tag:iterKind, c:domain, chunkSize:int=1, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
@@ -284,7 +286,7 @@ iter guided(c:range(?), numTasks:int=0) {
   for i in c do yield i;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 {
@@ -319,7 +321,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 
@@ -373,7 +375,7 @@ iter guided(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -405,7 +407,7 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter guided(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {
@@ -483,7 +485,7 @@ enum Method {
 */
 config param methodStealing = Method.Whole;
 
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 
@@ -610,7 +612,7 @@ where tag == iterKind.leader
 }
 
 // Follower
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:range(?), numTasks:int, followThis)
 where tag == iterKind.follower
 {
@@ -664,7 +666,7 @@ iter adaptive(c:domain, numTasks:int=0, parDim:int=0)
 }
 
 // Leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int=0, parDim:int=0)
 where tag == iterKind.leader
 {
@@ -696,7 +698,7 @@ where tag == iterKind.leader
 }
 
 // Follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter adaptive(param tag:iterKind, c:domain, numTasks:int, parDim:int, followThis)
 where tag == iterKind.follower
 {

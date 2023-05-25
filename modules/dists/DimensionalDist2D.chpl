@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -242,7 +242,7 @@ class DimensionalDist2D : BaseDist {
   // must be a [domain(2, locIdT, false)] locale
   const targetLocales;
   // "IDs" are indices into targetLocales
-  proc targetIds return targetLocales.domain;
+  proc targetIds do return targetLocales.domain;
 
   // the dimension specifiers - ones being combined
   var di1, di2;
@@ -254,14 +254,14 @@ class DimensionalDist2D : BaseDist {
   type idxType = int;
   // the type of the corresponding domain/array indices
   // todo: it does not really apply to dsiIndexToLocale()
-  proc indexT type  return if rank == 1 then idxType else rank * idxType;
+  proc indexT type do  return if rank == 1 then idxType else rank * idxType;
 
   // the count and size of each dimension of targetLocales
   // implementation note: 'rank' is not a real param; it's just that having
-  // 'proc rank param return targetLocales.rank' did not work
+  // 'proc rank param do return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(0).sizeAs(locCntT);
-  proc numLocs2: locCntT  return targetIds.dim(1).sizeAs(locCntT);
+  proc numLocs1: locCntT do  return targetIds.dim(0).sizeAs(locCntT);
+  proc numLocs2: locCntT do  return targetIds.dim(1).sizeAs(locCntT);
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -300,10 +300,10 @@ class DimensionalDom : BaseRectangularDom {
   const dist; // not reprivatized
 
   // convenience
-  proc targetIds return localDdescs.domain;
-  proc rangeT  type  return range(idxType, BoundedRangeType.bounded, stridable);
-  proc domainT type  return domain(rank, idxType, stridable);
-  proc indexT  type  return dist.indexT;
+  proc targetIds do return localDdescs.domain;
+  proc rangeT  type do  return range(idxType, boundKind.both, stridable);
+  proc domainT type do  return domain(rank, idxType, stridable);
+  proc indexT  type do  return dist.indexT;
 
   // subordinate 1-d global domain descriptors
   var dom1, dom2;
@@ -316,15 +316,15 @@ class DimensionalDom : BaseRectangularDom {
   // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
   // and 'idxType' is the easiest choice (although not the most general).
   // NB it's also computed in DimensionalDist2D.dsiNewRectangularDom().
-  proc stoIndexT type  return idxType;
+  proc stoIndexT type do  return idxType;
 
   // replace this with 'this.stridable' for simplicity?
-  proc stoStridable param  return stoStridableDom(stoIndexT, dom1, dom2);
-  proc stoRangeT type  return range(stoIndexT, stridable = stoStridable);
-  proc stoDomainT type  return domain(rank, stoIndexT, stoStridable);
+  proc stoStridable param do  return stoStridableDom(stoIndexT, dom1, dom2);
+  proc stoRangeT type do  return range(stoIndexT, stridable = stoStridable);
+  proc stoDomainT type do  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom
-  proc locDdescType type  return unmanaged LocDimensionalDom(stoDomainT,
+  proc locDdescType type do  return unmanaged LocDimensionalDom(stoDomainT,
                                          dom1.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type,
                                          dom2.dsiNewLocalDom1d(stoIndexT, 0:locIdT).type);
 
@@ -358,8 +358,9 @@ class DimensionalArr : BaseRectangularArr {
   // same as 'dom'; for an alias (e.g. a slice), 'dom' of the original array
   const allocDom: dom.type; // must be a DimensionalDom
 
-  proc rank param return dom.rank;
-  proc targetIds return localAdescs.domain;
+  override proc rank param do return dom.rank;
+
+  proc targetIds do return localAdescs.domain;
 
   // no subordinate 1-d array descriptors - we handle storage ourselves
 
@@ -431,7 +432,7 @@ proc DimensionalDist2D.init(
   checkInvariants();
 
   _passLocalLocIDsDist(this.di1, true, this.di2, true,
-                     this.targetLocales, true, this.targetLocales.domain.low);
+                     this.targetLocales, true, this.targetLocales.domain.lowBound);
 }
 
 //
@@ -492,12 +493,12 @@ proc DimensionalDist2D.dsiClone(): _to_unmanaged(this.type) {
 
 //== targetLocales, localSubdomain
 
-proc DimensionalDist2D.dsiTargetLocales() const ref return targetLocales;
-proc DimensionalDom.dsiTargetLocales()    const ref return dist.targetLocales;
-proc DimensionalArr.dsiTargetLocales()    const ref return dom.dist.targetLocales;
+proc DimensionalDist2D.dsiTargetLocales() const ref do return targetLocales;
+proc DimensionalDom.dsiTargetLocales()    const ref do return dist.targetLocales;
+proc DimensionalArr.dsiTargetLocales()    const ref do return dom.dist.targetLocales;
 
-proc DimensionalDom.dsiHasSingleLocalSubdomain() param return true;
-proc DimensionalArr.dsiHasSingleLocalSubdomain() param return true;
+proc DimensionalDom.dsiHasSingleLocalSubdomain() param do return true;
+proc DimensionalArr.dsiHasSingleLocalSubdomain() param do return true;
 
 proc DimensionalDom.dsiLocalSubdomain(loc: locale) {
   import ChplConfig;
@@ -517,7 +518,7 @@ proc DimensionalArr.dsiLocalSubdomain(loc: locale) {
 
 //== privatization
 
-override proc DimensionalDist2D.dsiSupportsPrivatization() param return true;
+override proc DimensionalDist2D.dsiSupportsPrivatization() param do return true;
 
 proc DimensionalDist2D.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");
@@ -541,7 +542,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
 
   var di1new = di1.type.dsiPrivatize1d(privatizeData(5));
   var di2new = di2.type.dsiPrivatize1d(privatizeData(6));
-  const plliddDummy: privTargetLocales.domain.low.type;
+  const plliddDummy: privTargetLocales.domain.lowBound.type;
   _passLocalLocIDsDist(di1new, true, di2new, true,
                        privTargetLocales, false, plliddDummy);
 
@@ -702,7 +703,7 @@ proc LocDimensionalDom.deinit() {
 
 //== privatization
 
-override proc DimensionalDom.dsiSupportsPrivatization() param return true;
+override proc DimensionalDom.dsiSupportsPrivatization() param do return true;
 
 proc DimensionalDom.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");
@@ -844,25 +845,25 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 }
 
 // common redirects
-proc DimensionalDom.dsiLow           return whole.low;
-proc DimensionalDom.dsiHigh          return whole.high;
-proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
-proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
-proc DimensionalDom.dsiFirst         return whole.first;
-proc DimensionalDom.dsiLast          return whole.last;
-proc DimensionalDom.dsiStride        return whole.stride;
-proc DimensionalDom.dsiAlignment     return whole.alignment;
-proc DimensionalDom.dsiNumIndices    return whole.sizeAs(uint);
-proc DimensionalDom.dsiDim(d)        return whole.dim(d);
-proc DimensionalDom.dsiDim(param d)  return whole.dim(d);
-proc DimensionalDom.dsiDims()        return whole.dims();
-//proc DimensionalDom.dsiGetIndices()  return whole.getIndices();
-proc DimensionalDom.dsiMember(i)     return whole.contains(i);
-proc DimensionalDom.doiToString()    return whole:string;
-proc DimensionalDom.dsiSerialWrite(x) { x.write(whole); }
-proc DimensionalDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
-override proc DimensionalDom.dsiIndexOrder(i)              return whole.indexOrder(i);
-override proc DimensionalDom.dsiMyDist()                   return dist;
+override proc DimensionalDom.dsiLow do           return whole.lowBound;
+override proc DimensionalDom.dsiHigh do          return whole.highBound;
+override proc DimensionalDom.dsiAlignedLow do    return whole.low;
+override proc DimensionalDom.dsiAlignedHigh do   return whole.high;
+override proc DimensionalDom.dsiFirst do         return whole.first;
+override proc DimensionalDom.dsiLast do          return whole.last;
+override proc DimensionalDom.dsiStride do        return whole.stride;
+override proc DimensionalDom.dsiAlignment do     return whole.alignment;
+proc DimensionalDom.dsiNumIndices do    return whole.sizeAs(uint);
+proc DimensionalDom.dsiDim(d) do        return whole.dim(d);
+proc DimensionalDom.dsiDim(param d) do  return whole.dim(d);
+proc DimensionalDom.dsiDims() do        return whole.dims();
+//proc DimensionalDom.dsiGetIndices() do  return whole.getIndices();
+proc DimensionalDom.dsiMember(i) do     return whole.contains(i);
+proc DimensionalDom.doiToString() do    return whole:string;
+proc DimensionalDom.dsiSerialWrite(x) do { x.write(whole); }
+proc DimensionalDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+override proc DimensionalDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
+override proc DimensionalDom.dsiMyDist() do                   return dist;
 
 proc DimensionalDom.dsiSetIndices(newIndices: domainT): void {
   whole = newIndices;
@@ -916,7 +917,7 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
 }
 
 proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
-                                                 BoundedRangeType.bounded,
+                                                 boundKind.both,
                                                  stridable) {
   _traceddd(this, ".dsiGetIndices");
   return whole.dims();
@@ -928,7 +929,7 @@ proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
 
 //== privatization
 
-override proc DimensionalArr.dsiSupportsPrivatization() param return true;
+override proc DimensionalArr.dsiSupportsPrivatization() param do return true;
 
 proc DimensionalArr.dsiGetPrivatizeData() {
   _traceddd(this, ".dsiGetPrivatizeData");
@@ -966,18 +967,18 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
 //== miscellanea
 
-proc DimensionalArr.idxType type return dom.idxType; // (could be a field)
+override proc DimensionalArr.idxType type do return dom.idxType; // (could be a field)
 
-override proc DimensionalArr.dsiGetBaseDom() return dom;
+override proc DimensionalArr.dsiGetBaseDom() do return dom;
 
 proc DimensionalArr.dimSpecifier(param dim: int) {
   return dom.dimSpecifier(dim);
 }
 
-proc DimensionalArr.mustbeAlias param
+proc DimensionalArr.mustbeAlias param do
   return this.dom.type != this.allocDom.type;
 
-proc DimensionalArr.isAlias
+proc DimensionalArr.isAlias do
   return this.dom != this.allocDom;
 
 
@@ -1103,8 +1104,8 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   // todo: cache (l1, l2) in privatized copies when possible
   // (i.e. if privatization is supported and there is no oversubscription)
   // Assuming dsiLocalSlice is guaranteed to be local to 'here'.
-  const l1 = dist.di1.dsiIndexToLocale1d(if sliceDim1.hasLowBound() then sliceDim1.low else chpl__intToIdx(sliceDim1.idxType, 1)),
-        l2 = dist.di2.dsiIndexToLocale1d(if sliceDim2.hasLowBound() then sliceDim2.low else chpl__intToIdx(sliceDim2.idxType, 1)),
+  const l1 = dist.di1.dsiIndexToLocale1d(if sliceDim1.hasLowBound() then sliceDim1.lowBound else chpl__intToIdx(sliceDim1.idxType, 1)),
+        l2 = dist.di2.dsiIndexToLocale1d(if sliceDim2.hasLowBound() then sliceDim2.lowBound else chpl__intToIdx(sliceDim2.idxType, 1)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
              then dom.whole.dim(0)(sliceDim1)

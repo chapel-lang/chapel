@@ -8,7 +8,7 @@ sub.stdin.writeln("World");
 sub.communicate();
 
 var line:string;
-while sub.stdout.readline(line) {
+while sub.stdout.readLine(line) {
   write("Got line: ", line);
 }
 
@@ -16,4 +16,3 @@ assert(sub.running == false);
 assert(sub.exitCode == 0);
 
 sub.close();
-

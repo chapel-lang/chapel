@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-/* HDF5 bindings for Chapel
+/* HDF5 bindings for Chapel.
 
 This module implements the C-API for HDF5 version 1.10.1, as well as some
 functionality for reading and writing HDF5 files built on top of the C-API.
@@ -69,13 +69,14 @@ module HDF5 {
     C_HDF5.H5open();
   }
 
-  /* The C_HDF5 module defines the interface to the HDF5 library.
+  /* Defines the C interface to the HDF5 library.
      Documentation for its functions, types, and constants can be found
      at the official HDF5 web site:
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use CTypes, Sys;
+    public use CTypes;
+    public use OS.POSIX only off_t;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
@@ -1037,7 +1038,7 @@ module HDF5 {
 
     extern proc H5Epop(err_stack : hid_t, count : c_size_t) : herr_t;
 
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : _file) : herr_t;
+    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_FILE) : herr_t;
 
     extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_void_ptr) : herr_t;
 
@@ -1059,7 +1060,7 @@ module HDF5 {
 
     extern proc H5Epush1(file : c_string, func : c_string, line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_string) : herr_t;
 
-    extern proc H5Eprint1(ref stream : _file) : herr_t;
+    extern proc H5Eprint1(ref stream : c_FILE) : herr_t;
 
     extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_void_ptr) : herr_t;
 
@@ -3464,7 +3465,7 @@ module HDF5 {
        makes difficult/impossible to use otherwise. The workaround wrappers are
        named the same thing as the original HDF5 name, but with a `_WAR` suffix.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
       use HDF5.C_HDF5;
@@ -3532,10 +3533,10 @@ module HDF5 {
     use FileSystem, List;
 
     var filenames: list(string);
-    for f in findfiles(dirName) {
+    for f in findFiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
-        filenames.append(f);
+        filenames.pushBack(f);
       }
     }
     var fArray: [1..filenames.size] string;
@@ -3901,7 +3902,9 @@ module HDF5 {
     var A: [D] eltType;
   }
 
-  /* A module to encapsulate functions that use the MPI module so that it
+  /* HDF5 routines that rely on MPI.
+
+     A module to encapsulate functions that use the MPI module so that it
      is not initialized unless these functions are actually used.
    */
   module IOusingMPI {
@@ -3925,8 +3928,8 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
         use Reflection;
@@ -3987,7 +3990,7 @@ module HDF5 {
         for i in 0..#A.rank {
           stride[i] = 1;
           count[i] = locDom.dim(i).size: uint;
-          start[i] = (locDom.dim(i).low - A.domain.dim(i).low): uint;
+          start[i] = (locDom.dim(i).lowBound - A.domain.dim(i).lowBound): uint;
         }
 
         ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
@@ -4049,10 +4052,10 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
-      proc isCyclic(D: Cyclic) param return true;
-      proc isCyclic(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
+      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");
 
@@ -4082,7 +4085,7 @@ module HDF5 {
                                    c_ptrTo(dims), nil, nil);
         }
 
-        const wholeLow = A.domain.whole.low;
+        const wholeLow = A.domain.whole.lowBound;
         for dom in A.localSubdomains() {
           // The dataset is 0-based, so unTranslate each block
           const dsetBlock = dom.chpl__unTranslate(wholeLow);
@@ -4096,7 +4099,7 @@ module HDF5 {
               memStrideArr: [0..#dom.rank] C_HDF5.hsize_t;
 
           for param i in 0..dom.rank-1 {
-            dsetOffsetArr[i] = dsetBlock.dim(i).low: C_HDF5.hsize_t;
+            dsetOffsetArr[i] = dsetBlock.dim(i).lowBound: C_HDF5.hsize_t;
             dsetCountArr[i]  = dsetBlock.dim(i).size: C_HDF5.hsize_t;
             dsetStrideArr[i] = dsetBlock.dim(i).stride: C_HDF5.hsize_t;
 

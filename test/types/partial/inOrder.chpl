@@ -18,8 +18,8 @@ proc makeRIS(type X, param x : int) {
 }
 
 proc testAliases() {
-  type RI = R(int);
-  type RIS = RI(string);
+  type RI = R(int, ?);
+  type RIS = RI(string, ?);
   type RIS5 = RIS(5);
 
   writeln("RI = ", RI:string);
@@ -40,11 +40,11 @@ proc testFunctions() {
   writeln(A.type:string);
   writeln(A);
 
-  var B = makeRI(R(int), string, 5);
+  var B = makeRI(R(int, ?), string, 5);
   writeln(B.type:string);
   writeln(B);
 
-  var C = makeRIS(R(int, string), 5);
+  var C = makeRIS(R(int, string, ?), 5);
   writeln(C.type:string);
   writeln(C);
 }

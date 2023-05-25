@@ -1,8 +1,0 @@
-#!/bin/bash
-
-grep "Array:" $2 > $2.new
-grep "In DefaultRectangular._simpleTransfer():" $2 >> $2.new
-echo -n "Number of kernel launches: " >> $2.new
-grep "Kernel launcher called" $2 | wc -l >> $2.new
-
-mv $2.new $2

@@ -8,14 +8,14 @@ class GenericClass {
 }
 
 proc main() {
-  var c1 = new borrowed GenericClass(bool, 5, 3.0, 2);
+  var c1 = (new owned GenericClass(bool, 5, 3.0, 2)).borrow();
   writeln(c1.type:string);
   writeln(c1);
 
   var c2: borrowed GenericClass(int, 2, bool)?;
   writeln(c2.type:string);
 
-  var c3: borrowed GenericClass(real, 5, real) = new borrowed GenericClass(real, 5, 2.4, 8);
+  var c3: borrowed GenericClass(real, 5, real) = (new owned GenericClass(real, 5, 2.4, 8)).borrow();
   writeln(c3.type:string);
   writeln(c3);
 }

@@ -7,7 +7,7 @@ proc test(byteRange) {
   const byteRange = 0..255;
   const reverseRange = byteRange by -byteRange.stride;
   const nBytes = (byteRange.size + reverseRange.size)*nRepeat;
-  var buf = c_malloc(uint(8), nBytes+1);
+  var buf = allocate(uint(8), nBytes+1);
 
   var i = 0;
   for r in 0..#nRepeat {
@@ -22,14 +22,14 @@ proc test(byteRange) {
   }
   buf[nBytes] = 0;
 
-  const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+  const randomBytes = bytes.createAdoptingBuffer(buf, length=nBytes,
                                                       size=nBytes+1);
 
   if randomBytes.size != nBytes {
     halt("Error creating bytes object with correct length");
   }
 
-  var bytesChannel = opentmp();
+  var bytesChannel = openTempFile();
 
   {
     // write them to a channel

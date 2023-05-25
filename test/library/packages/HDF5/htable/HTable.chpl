@@ -26,9 +26,9 @@ module HTable {
   use IO;
   use Reflection;
 
-  /* Create an HDF5 table out of an array of records `arr`. 
+  /* Create an HDF5 table out of an array of records `arr`.
 
-     :arg arr:  Array to create the HDF5 table from. 
+     :arg arr:  Array to create the HDF5 table from.
      :type arr: [] R
      :arg loc: Location to create the table (as an HDF5 identifier)
      :type loc: hid_t
@@ -50,8 +50,8 @@ module HTable {
     where isRecord(R)
   {
     // This is defined in C_HDF5, but the definition there was causing isseus with
-    // field_names, field_offset, field_types, so I define an overload there. 
-    // It's more than likely I was doing something silly 
+    // field_names, field_offset, field_types, so I define an overload there.
+    // It's more than likely I was doing something silly
     extern proc H5TBmake_table(table_title : c_string, file_id : hid_t, dset_name: c_string,
                                numFields : hsize_t, numRecords : hsize_t, type_size : hsize_t,
                                field_names : c_array(c_string), field_offset : c_array(hsize_t),
@@ -220,7 +220,7 @@ module HTable {
         if (fieldtype==string) then halt("String types not supported in HDF5 tables currently");
         // Arrays
         if (is_c_array(ifield)) {
-          var dim : hsize_t = ifield.size : hsize_t; 
+          var dim : hsize_t = ifield.size : hsize_t;
           types[ii] = H5Tarray_create2(getHDF5Type(ifield.eltType), 1, c_ptrTo(dim));
           ownedtypes[ii] = true;
           sizes[ii] = (c_sizeof(ifield.eltType)*dim):c_size_t;
@@ -239,7 +239,7 @@ module HTable {
     */
     proc writeThis(f) {
       for ii in 1..nFields {
-        f <~> names[ii]:string <~> new ioLiteral(" ") <~> offsets[ii] <~> new ioNewline();
+        f.write(names[ii]:string, new ioLiteral(" "), offsets[ii], new ioNewline());
       }
     }
 
@@ -253,11 +253,11 @@ module HTable {
 
 
 
-  
+
   // From David Iten -- thanks!
-  pragma "no doc"
+  @chpldoc.nodoc
   proc is_c_array(x: c_array(?)) param return true;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc is_c_array(x) param return false;
 
 

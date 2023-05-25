@@ -1,0 +1,6 @@
+bug: User definition of a class operator= not detected when unused in its module
+#14740
+
+When the definition of the = operator is moved out into Main, or
+the contents of Main are moved into Mod, the compiler detects the
+error.

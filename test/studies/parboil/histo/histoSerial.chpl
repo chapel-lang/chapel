@@ -7,7 +7,7 @@ proc main(args: [] string) {
   use Time;
   var inputFilename: string;
   var outputFilename: string;
-  var inputTime, outputTime, computeTime, totalTime: Timer;
+  var inputTime, outputTime, computeTime, totalTime: stopwatch;
   if args.size == 4 {
     inputFilename = args[1];
     outputFilename = args[2];
@@ -21,7 +21,7 @@ proc main(args: [] string) {
   var imgWidth, imgHeight, histoWidth, histoHeight: uint(32);
   totalTime.start();
   inputTime.start();
-  var f = open(inputFilename, iomode.r);
+  var f = open(inputFilename, ioMode.r);
   var r = f.reader(kind=ionative);
 
   r.read(imgWidth);
@@ -162,7 +162,7 @@ proc createBMP(bitmap:[] RGB, height: uint(32), width: uint(32), filename: strin
   image.dibHeader.ncolors = 0;
   image.dibHeader.nimpcolors = 0;
 
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var w = f.writer(kind=ionative);
 
   w.write(image.magic(0));

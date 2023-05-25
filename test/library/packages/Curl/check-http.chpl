@@ -18,8 +18,8 @@ module CheckHttp {
 
     writeln("checking served files match");
 
-    /* for f in findfiles() but for #18218 */
-    var files = findfiles();
+    /* for f in findFiles() but for #18218 */
+    var files = findFiles();
     for f in files {
       if f.endsWith(".txt") ||
         f.endsWith(".htm") || f.endsWith(".html") ||
@@ -28,7 +28,7 @@ module CheckHttp {
         if verbose then
           writeln("Testing with file ", f);
 
-        var filereader = open(f, iomode.r).reader();
+        var filereader = open(f, ioMode.r).reader();
 
         var url = "http://" + host + ":" + port + "/" + f;
         var urlreader = openUrlReader(url);
@@ -37,8 +37,8 @@ module CheckHttp {
         var str1: string;
         var str2: string;
         while true {
-          var got1 = filereader.readline(str1);
-          var got2 = urlreader.readline(str2);
+          var got1 = filereader.readLine(str1);
+          var got2 = urlreader.readLine(str2);
           if got1 == false && got2 == false then
             break;
           if got1 != got2 then

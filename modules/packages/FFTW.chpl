@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,7 +38,7 @@
 //
 
 /*
-  FFT computations via key routines from FFTW (version 3)
+  FFT computations via key routines from FFTW (version 3).
 
   This module defines Chapel wrappers for key 64-bit
   routines from FFTW (http://www.fftw.org), version 3. The routines
@@ -332,14 +332,14 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_r2c(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(real),
-                                    c_ptrTo(arr) : c_ptr(complex), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex), flags);
   }
 
   //
   // Error overload
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_r2c(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_r2c() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -409,11 +409,11 @@ module FFTW {
       dims(i) = realDom.dim(i).size: c_int;
 
     return C_FFTW.fftw_plan_dft_c2r(rank, dims,
-                                    c_ptrTo(arr) : c_ptr(complex),
-                                    c_ptrTo(arr) : c_ptr(real), flags);
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(complex),
+                                    c_ptrTo(arr) : c_void_ptr : c_ptr(real), flags);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc plan_dft_c2r(realDom : domain, arr: [] ?t, flags : FFTW_Flag) : fftw_plan {
     compilerError("plan_dft_c2r() is only supported for arrays of type real(64) and complex(128)");
   }
@@ -812,9 +812,9 @@ module FFTW {
 
     extern proc fftw_import_wisdom(read_char : fftw_read_char_func, data : c_void_ptr) : c_int;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : _file) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, ref output_file : c_FILE) : void;
 
-    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(_file)) : void;
+    extern proc fftw_fprint_plan(p : fftw_plan, output_file : c_ptr(c_FILE)) : void;
 
     extern proc fftw_print_plan(p : fftw_plan) : void;
 

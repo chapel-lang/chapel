@@ -1,26 +1,24 @@
-./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),bounded,false), idx: int(64), subr: range(int(64),bounded,false), offset: int(64), count: int(64))
+rangeAPItest.chpl:3: In function 'testRangeAPI':
+rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,false), idx: int(64), subr: range(int(64),both,false), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
 idxType          = int(64)
 stridable        = false
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = 10
+lowBound         = 1
+highBound        = 10
 low              = 1
 high             = 10
-alignedLow       = 1
-alignedHigh      = 10
 isEmpty()        = false
 size             = 10
 sizeAs(uint)     = 10
@@ -58,10 +56,8 @@ strided range
 1..20 by 2
 idxType          = int(64)
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 2
@@ -69,10 +65,10 @@ alignment        = 1
 aligned          = true
 first            = 1
 last             = 19
+lowBound         = 1
+highBound        = 20
 low              = 1
-high             = 20
-alignedLow       = 1
-alignedHigh      = 19
+high             = 19
 isEmpty()        = false
 size             = 10
 sizeAs(uint)     = 10
@@ -110,21 +106,19 @@ neg. str. range
 1..20 by -2
 idxType          = int(64)
 stridable        = true
-boundedType      = bounded
+bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = -2
-alignment        = 20
+alignment        = 0
 aligned          = true
 first            = 20
 last             = 2
-low              = 1
+lowBound         = 1
+highBound        = 20
+low              = 2
 high             = 20
-alignedLow       = 2
-alignedHigh      = 20
 isEmpty()        = false
 size             = 10
 sizeAs(uint)     = 10
@@ -152,7 +146,7 @@ r#2               = 17..20 by -2
 r#-2              = 1..4 by -2
 r == subr         = false
 r != subr         = true
-r[subr]           = 16..8 by -2
+r[subr]           = 16..8 by 2
 r[subr] == subr[r]= true
 r:string          = 1..20 by -2
 Copying...        = 1..20 by -2
@@ -162,21 +156,19 @@ unbounded range
 1..
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedLow
+bounds           = low
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = true
 hasHighBound()   = false
 stride           = 1
-alignment        = 1
+alignment        = 0
 aligned          = true
 first            = 1
 last             = undefined
+lowBound         = 1
+highBound        = undefined
 low              = 1
 high             = undefined
-alignedLow       = 1
-alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -209,25 +201,23 @@ upper unbnd range
 ..10
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedHigh
+bounds           = high
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = 10
+lowBound         = undefined
+highBound        = 10
 low              = undefined
 high             = 10
-alignedLow       = undefined
-alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = true
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true
@@ -252,21 +242,19 @@ neg upper unbnd range
 ..10 by -1
 idxType          = int(64)
 stridable        = true
-boundedType      = boundedHigh
+bounds           = high
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = -1
-alignment        = 10
+alignment        = 0
 aligned          = true
 first            = 10
 last             = undefined
+lowBound         = undefined
+highBound        = 10
 low              = undefined
 high             = 10
-alignedLow       = undefined
-alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -289,7 +277,7 @@ serial iteration =
 r#2               = 9..10 by -1
 r == subr         = false
 r != subr         = true
-r[subr]           = 3..6 by -1
+r[subr]           = 3..6
 r[subr] == subr[r]= true
 r:string          = ..10 by -1
 Copying...        = ..10 by -1
@@ -299,25 +287,23 @@ unbounded range
 ..
 idxType          = int(64)
 stridable        = false
-boundedType      = boundedNone
+bounds           = neither
 isRangeType()    = true
-isBoundedRange() = false
-isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = false
 stride           = 1
 alignment        = 0
-aligned          = false
+aligned          = true
 first            = undefined
 last             = undefined
+lowBound         = undefined
+highBound        = undefined
 low              = undefined
 high             = undefined
-alignedLow       = undefined
-alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = false
 hasLast()        = false
-isNat.Algned()   = false
+isNat.Algned()   = true
 isAmbiguous      = false
 contains(4) = true
 contains(3..6) = true

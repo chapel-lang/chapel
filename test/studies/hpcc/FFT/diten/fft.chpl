@@ -1,7 +1,8 @@
 //
-// Use standard modules for Bit operations, Random numbers, and Timing
+// Use standard modules for less common Math functions, Bit operations, Random
+// numbers, and Timing
 //
-use BitOps, Random, Time, BlockDist, CyclicDist;
+use Math, BitOps, Random, Time, BlockDist, CyclicDist;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -86,7 +87,7 @@ proc main() {
 
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
 
-  const startTime = getCurrentTime();  // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
   Z = conjg(z);                        // store the conjugate of z in Z
   bitReverseShuffle(Z);                // permute Z
@@ -97,7 +98,7 @@ proc main() {
   forall (b, c) in zip(Z, Zcyc) do
     b = c;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;     // store the elapsed time
 
   const validAnswer = verifyResults(z, Z, Zcyc, Twiddles); // validate the answer
   printResults(validAnswer, execTime);               // print the results
@@ -191,7 +192,7 @@ proc dfft(A: [?ADom], W, phase) {
 // wk2, and wk3 and a 4-element array (slice) A.
 //
 proc butterfly(wk1, wk2, wk3, X:[?D]) {
-  const i0 = D.low,
+  const i0 = D.lowBound,
         i1 = i0 + D.stride,
         i2 = i1 + D.stride,
         i3 = i2 + D.stride;
@@ -309,7 +310,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);
+proc log4(x) do return logBasePow2(x, 2);
 
 //
 // verify that the results are correct by reapplying the dfft and then
