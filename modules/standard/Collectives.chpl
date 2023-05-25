@@ -189,7 +189,7 @@ module Collectives {
       return !bar.check();
     }
 
-    @deprecated(notes="'barrier.check()' is deprecated, please use 'barrier.pending()' instead")
+    @deprecated(notes="'barrier.check()' is deprecated, please use '!barrier.pending()' instead")
     inline proc check(): bool {
       return bar.check();
     }
