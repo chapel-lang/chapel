@@ -5,6 +5,8 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 
+export CHPL_LLVM=none
+
 source /data/cf/chapel/setup_gcc91.bash     # host-specific setup for target compiler
 
 gcc_version=$(gcc -dumpversion)
