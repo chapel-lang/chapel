@@ -1,11 +1,11 @@
 use CTypes;
 use Random, IO;
 
-config const nBytes : c_size_t = 1024;
+config const nBytes = 1024;
 
 // create bytes with random bytes
 var randomStream = createRandomStream(eltType=uint(8));
-var buf = allocate(uint(8), nBytes+1);
+var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 for i in 0..#nBytes {
   buf[i] = randomStream.getNext();
 }

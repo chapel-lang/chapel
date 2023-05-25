@@ -11146,7 +11146,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     } catch { /* ignore deferred close error */ }
   }
 
-  var offset:c_size_t = 0;
+  var offset:int = 0;
   {
     var w = try f.writer(locking=false);
     defer {
@@ -11163,7 +11163,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     try w.close();
   }
 
-  var buf = allocate(uint(8), offset+1);
+  var buf = allocate(uint(8), (offset+1).safeCast(c_size_t));
   var r = try f.reader(locking=false);
   defer {
     try {
