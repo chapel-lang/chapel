@@ -2354,9 +2354,19 @@ module AutoMath {
     return truncf(x);
   }
 
+  // When removing this deprecated function, be sure to remove chpl_gcd and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the greatest common divisor of the integer argument `a` and
      `b`. */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'gcd' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc gcd(in a: int,in b: int): int {
+    return chpl_gcd(a, b);
+  }
+
+  @chpldoc.nodoc
+  proc chpl_gcd(in a: int,in b: int): int {
      a = abs(a);
      b = abs(b);
      var r: int;

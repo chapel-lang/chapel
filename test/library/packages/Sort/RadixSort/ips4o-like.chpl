@@ -4,6 +4,7 @@ use Sort;
 use Time;
 use Collectives;
 use PeekPoke;
+use CTypes, OS.POSIX;
 
 config const seed = SeedGenerator.oddCurrentTime;
 config const skew = false;
@@ -276,11 +277,11 @@ proc shallowCopy(ref A, dst, src, nElts) {
   //A[dst..#nElts] = A[src..#nElts];
 
     var size = (nElts:c_size_t)*c_sizeof(A.eltType);
-    c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
+    memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size.safeCast(c_size_t));
     /*
   if A._instance.isDefaultRectangular() {
     var size = (nElts:c_size_t)*c_sizeof(A.eltType);
-    c_memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size);
+    memcpy(c_ptrTo(A[dst]), c_ptrTo(A[src]), size.safeCast(c_size_t));
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ A._instance, {dst..#nElts},
                                      /*src*/ A._instance, {src..#nElts});
@@ -295,11 +296,11 @@ proc shallowCopy(ref DstA, dst, ref SrcA, src, nElts) {
   //DstA[dst..#nElts] = SrcA[src..#nElts];
 
     var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
-    c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
+    memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size.safeCast(c_size_t));
     /*
   if DstA._instance.isDefaultRectangular() && SrcA._instance.isDefaultRectangular() {
     var size = (nElts:c_size_t)*c_sizeof(DstA.eltType);
-    c_memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size);
+    memcpy(c_ptrTo(DstA[dst]), c_ptrTo(SrcA[src]), size.safeCast(c_size_t));
   } else {
     var ok = chpl__bulkTransferArray(/*dst*/ DstA._instance, {dst..#nElts},
                                      /*src*/ SrcA._instance, {src..#nElts});

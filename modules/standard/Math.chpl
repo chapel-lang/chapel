@@ -580,6 +580,12 @@ module Math {
     return chpl_tgamma(x);
   }
 
+  /* Returns the greatest common divisor of the integer argument `a` and
+     `b`. */
+  proc gcd(in a: int,in b: int): int {
+    return chpl_gcd(a, b);
+  }
+
   /* Returns the Bessel function of the first kind of order `0` of `x`. */
   inline proc j0(x: real(32)): real(32) {
     return chpl_j0(x);

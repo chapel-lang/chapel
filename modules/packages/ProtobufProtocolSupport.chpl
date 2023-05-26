@@ -46,6 +46,7 @@ module ProtobufProtocolSupport {
 
     use IO;
     use CTypes;
+    use OS.POSIX;
 
     type writingChannel = fileWriter(iokind.little,false);
     type readingChannel = fileReader(iokind.little,false);
@@ -214,56 +215,56 @@ module ProtobufProtocolSupport {
     proc floatAppendBase(val: real(32), ch: writingChannel) throws {
       var a = val;
       var b: uint(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed32AppendBase(b, ch);
     }
 
     proc floatConsumeBase(ch: readingChannel): real(32) throws {
       var a = fixed32ConsumeBase(ch);
       var b: real(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc doubleAppendBase(val: real(64), ch: writingChannel) throws {
       var a = val;
       var b: uint(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed64AppendBase(b, ch);
     }
 
     proc doubleConsumeBase(ch: readingChannel): real(64) throws {
       var a = fixed64ConsumeBase(ch);
       var b: real(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc sfixed64AppendBase(val: int(64), ch: writingChannel) throws {
       var a = val;
       var b: uint(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed64AppendBase(b, ch);
     }
 
     proc sfixed64ConsumeBase(ch: readingChannel): int(64) throws {
       var a = fixed64ConsumeBase(ch);
       var b: int(64);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
     proc sfixed32AppendBase(val: int(32), ch: writingChannel) throws {
       var a = val;
       var b: uint(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       fixed32AppendBase(b, ch);
     }
 
     proc sfixed32ConsumeBase(ch: readingChannel): int(32) throws {
       var a = fixed32ConsumeBase(ch);
       var b: int(32);
-      c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+      memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
       return b;
     }
 
