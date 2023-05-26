@@ -844,6 +844,10 @@ def compute_host_link_settings():
     llvm_val = get()
     llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
+
+    if llvm_config == "" or llvm_config is None:
+        return ('', '', None)
+
     clang_static_libs = ['-lclangFrontend',
                          '-lclangSerialization',
                          '-lclangDriver',
