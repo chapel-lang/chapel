@@ -1241,8 +1241,8 @@ operator :(r: range(?), type t: range(?)) {
     tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
     tmp._aligned = r.aligned;
   }
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound) else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound) else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:tmp.idxType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:tmp.idxType) else r._high): tmp.intIdxType;
   return tmp;
 }
 
