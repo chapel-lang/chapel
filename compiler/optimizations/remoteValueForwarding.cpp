@@ -221,7 +221,8 @@ static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
   Type* argType = arg->getValType();
 
-  if (!argType->isSerializable()) {
+  if (!argType->isSerializable() ||
+      arg->hasFlag(FLAG_TYPE_VARIABLE)) {
     retval = false;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
@@ -274,8 +275,7 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             ArgSymbol*                    arg) {
   bool retval = false;
 
-  if (arg->hasFlag(FLAG_NO_RVF) ||
-      arg->hasFlag(FLAG_TYPE_VARIABLE)) {
+  if (arg->hasFlag(FLAG_NO_RVF)) {
     retval = false;
   } else if (arg->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
     retval = true;
