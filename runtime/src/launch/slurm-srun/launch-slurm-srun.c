@@ -59,6 +59,7 @@ static const char* getTmpDir(void) {
 }
 
 // Check what version of slurm is on the system
+// Returns 0 on success, 1 and prints an error message on failure
 static int checkSlurmVersion(void) {
   const int buflen = 256;
   char version[buflen];
