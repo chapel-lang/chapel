@@ -1225,6 +1225,12 @@ proc range.safeCast(type t: range(?)) {
 operator :(r: range(?), type t: range(?)) {
   var tmp: t;
 
+  // Generate a warning when casting between ranges and one of them is an
+  // enum type (and they're not both the same enum type); see #22406 for
+  // more information
+  if badIdxTypeCombo(r.idxType, t.idxType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually");
+
   if tmp.bounds != r.bounds {
     compilerError("cannot cast range from boundKind.",
                   r.bounds:string, " to boundKind.", tmp.bounds:string);
@@ -1239,6 +1245,11 @@ operator :(r: range(?), type t: range(?)) {
   tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound) else r._high): tmp.intIdxType;
   return tmp;
 }
+
+private proc badIdxTypeCombo(type t1, type t2) param {
+  return (isEnumType(t1) || isEnumType(t2)) && t1 != t2;
+}
+
 
 
   //////////////////////////////////////////////////////////////////////////////////
