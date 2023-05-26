@@ -8,6 +8,7 @@ on:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
+  CMAKE_VERBOSE_MAKEFILE: ON
 
 # NOTE: each job has to specify the container section in its entirety, which is
 # certainly repetetive, but the `defaults` section can't be applied and the `env`
@@ -39,7 +40,7 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
     steps:
-    - uses: actions/checkout@v3 
+    - uses: actions/checkout@v3
     - name: make frontend-docs
       run: |
         make frontend-docs
@@ -109,7 +110,7 @@ jobs:
         fetch-depth: 100000
     - name: Set ownership
       run: |
-        chown -R $(id -u):$(id -g) $PWD   
+        chown -R $(id -u):$(id -g) $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
