@@ -2151,7 +2151,7 @@ module ChapelBase {
 
   // casting to unmanaged?, no class downcast
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged?' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
@@ -2164,7 +2164,7 @@ module ChapelBase {
   }
 
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged?' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
@@ -2178,7 +2178,7 @@ module ChapelBase {
 
   // casting to unmanaged, no class downcast
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
@@ -2213,7 +2213,7 @@ module ChapelBase {
 
   // casting away nilability, no class downcast
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
@@ -2260,7 +2260,7 @@ module ChapelBase {
 
   // this version handles downcast to non-nil unmanaged
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
@@ -2290,7 +2290,7 @@ module ChapelBase {
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged?' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
@@ -2312,7 +2312,7 @@ module ChapelBase {
 
   // this version handles downcast to nilable unmanaged
   pragma "last resort"
-  @deprecated("casting from ' ' to 'unmanaged?' is deprecated")
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
