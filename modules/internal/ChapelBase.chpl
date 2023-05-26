@@ -2077,10 +2077,6 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  @deprecated(notes="'%=' is deprecated for 'real' values for the time being because it does not work")
-  inline operator %=(ref lhs:real(?w), rhs:real(w)) {
-    __primitive("%=", lhs, rhs);
-  }
   inline operator %=(ref lhs, rhs)
   where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs % rhs;
