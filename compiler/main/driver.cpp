@@ -1684,7 +1684,7 @@ static void setGPUFlags() {
     if (strlen(fGpuArch) > 0) {
       // using memcpy and setting the null byte to avoid errors from older GCCs
       memcpy(gpuArch, fGpuArch, gpuArchNameLen);
-      gpuArch[gpuArchNameLen-1] = 0;
+      gpuArch[gpuArchNameLen] = 0;
     }
     else {
       if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
@@ -1696,7 +1696,7 @@ static void setGPUFlags() {
         // using memcpy and setting the null byte to avoid errors from older
         // GCCs
         memcpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
-        gpuArch[gpuArchNameLen-1] = 0;
+        gpuArch[gpuArchNameLen] = 0;
       }
     }
   }
