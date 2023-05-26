@@ -845,6 +845,11 @@ def compute_host_link_settings():
     llvm_support_val = get_llvm_support()
     llvm_config = get_llvm_config()
 
+    # If llvm_config is not discoverable (e.g. we're configured to use a system
+    # LLVM and LLVM is not installed or we have an incompatible version
+    # installed) return a dummy value. If necessary, elsewhere in printchplenv
+    # (validate_llvm_config) we will recognize this and present an error to the
+    # user.
     if llvm_config == "" or llvm_config is None:
         return ('', '', None)
 
