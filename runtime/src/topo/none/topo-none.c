@@ -30,9 +30,12 @@
 
 #include <stdint.h>
 
-
+#ifdef NOTDEF
 void chpl_topo_init(char *accessbilePUsMask) { }
+#endif
 
+void chpl_topo_pre_comm_init(void) { }
+void chpl_topo_post_comm_init(void) { }
 void chpl_topo_post_args_init(void) { }
 
 void chpl_topo_exit(void) { }

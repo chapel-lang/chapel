@@ -33,6 +33,10 @@ extern "C" {
 
 
 //
+// See chpl-init.c for details
+//
+#ifdef NOTDEF
+//
 // chpl_topo_init() must be called before anything else here, to
 // initialize the topology support.
 //
@@ -40,6 +44,10 @@ extern "C" {
 // unit testing. It should be NULL in production code.
 //
 void chpl_topo_init(char *accessiblePUsMask);
+
+#endif
+void chpl_topo_pre_comm_init(void);
+void chpl_topo_post_comm_init(void);
 void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 

@@ -824,8 +824,17 @@ static void set_max_segsize() {
 
 static void set_num_comm_domains() {
 #if defined(GASNET_CONDUIT_ARIES)
-  const int num_cpus = chpl_topo_getNumCPUsPhysical(true) + 1;
-  chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus, 0);
+  // aries requires setting GASNET_DOMAIN_COUNT which we would like to set to
+  // the number of accessible cores. At this point during initialization we
+  // don't know that because there may be other co-locales on the node that
+  // we don't know about, so instead we use an upper limit on the number of
+  // accessible cores.
+  int num_cpus = chpl_topo_getNumCPUsPhysical(false);
+  int maxLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
+  if (maxLocalesOnNode > 0) {
+    num_cpus = (num_cpus + maxLocalesOnNode - 1) / maxLocalesOnNode;
+  }
+  chpl_env_set_uint("GASNET_DOMAIN_COUNT", num_cpus + 1, 0);
   chpl_env_set("GASNET_AM_DOMAIN_POLL_MASK", "0", 0);
 
   // GASNET_DOMAIN_COUNT increases the shutdown time. Work around this for now.
@@ -836,7 +845,7 @@ static void set_num_comm_domains() {
 #endif
 }
 
-void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p) {
+void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Initialize gasnet so that we can call gex_System_QueryHostInfo and
   // set the number of locales on our node which allows the rest of the
   // runtime to determine which cores this locale will use. gasnet_attach
@@ -853,7 +862,6 @@ void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p) {
   gasnet_client_attach_hook = &chpl_comm_regMemHeapTouch;
 #endif
 #endif
-
 
   set_max_segsize();
   set_num_comm_domains();
@@ -872,8 +880,7 @@ void chpl_comm_pre_topo_init(int *argc_p, char ***argv_p) {
   chpl_set_local_rank(myIndex);
 }
 
-void chpl_comm_init(void) {
-
+void chpl_comm_pre_mem_init(void) {
   //  int status; // Some compilers complain about unused variable 'status'.
 
   GASNET_Safe(gasnet_attach(ftable,
@@ -949,8 +956,6 @@ void chpl_comm_init(void) {
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 }
-
-void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();
