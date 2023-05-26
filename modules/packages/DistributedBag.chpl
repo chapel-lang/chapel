@@ -478,7 +478,7 @@ module DistributedBag {
 
         // Allocate buffer, which holds the 'excess' elements for redistribution.
         // Then fill it.
-        var buffer = allocate(eltType, excess);
+        var buffer = allocate(eltType, excess.safeCast(c_size_t));
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
@@ -596,7 +596,7 @@ module DistributedBag {
             // Create a snapshot...
             var block = segment.headBlock;
             var bufferSz = segment.nElems.read() : int;
-            var buffer = allocate(eltType, bufferSz);
+            var buffer = allocate(eltType, bufferSz.safeCast(c_size_t));
             var bufferOffset = 0;
 
             while block != nil {
@@ -688,7 +688,7 @@ module DistributedBag {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      this.elems = allocate(eltType, capacity);
+      this.elems = allocate(eltType, capacity.safeCast(c_size_t));
       this.cap = capacity;
     }
 
@@ -1191,7 +1191,7 @@ module DistributedBag {
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;
 
                                 // Allocate storage...
-                                on stolenWork do stolenWork[loc.id] = (toSteal, allocate(eltType, toSteal));
+                                on stolenWork do stolenWork[loc.id] = (toSteal, allocate(eltType, toSteal.safeCast(c_size_t)));
                                 var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
