@@ -4679,7 +4679,7 @@ module BigInteger {
   record __serializeHelper {
     var buff: mpz_t;
     var localeId: chpl_nodeID_t;
-    
+
     proc init(const ref otherBuff, const ref otherLocaleId) {
       this.complete();
       mpz_init_set(this.buff, otherBuff);
