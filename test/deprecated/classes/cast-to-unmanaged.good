@@ -1,0 +1,48 @@
+flat casting
+casting from 'owned' to 'unmanaged' is deprecated
+casting from 'owned?' to 'unmanaged' is deprecated
+casting from 'owned' to 'unmanaged?' is deprecated
+casting from 'owned?' to 'unmanaged?' is deprecated
+
+casting from 'borrowed' to 'unmanaged' is deprecated
+casting from 'borrowed?' to 'unmanaged' is deprecated
+casting from 'borrowed' to 'unmanaged?' is deprecated
+casting from 'borrowed?' to 'unmanaged?' is deprecated
+
+casting from 'shared' to 'unmanaged' is deprecated
+casting from 'shared?' to 'unmanaged' is deprecated
+casting from 'shared' to 'unmanaged?' is deprecated
+casting from 'shared?' to 'unmanaged?' is deprecated
+
+upcasting
+casting from 'owned' to 'unmanaged' is deprecated
+casting from 'owned?' to 'unmanaged' is deprecated
+casting from 'owned' to 'unmanaged?' is deprecated
+casting from 'owned?' to 'unmanaged?' is deprecated
+
+casting from 'borrowed' to 'unmanaged' is deprecated
+casting from 'borrowed?' to 'unmanaged' is deprecated
+casting from 'borrowed' to 'unmanaged?' is deprecated
+casting from 'borrowed?' to 'unmanaged?' is deprecated
+
+casting from 'shared' to 'unmanaged' is deprecated
+casting from 'shared?' to 'unmanaged' is deprecated
+casting from 'shared' to 'unmanaged?' is deprecated
+casting from 'shared?' to 'unmanaged?' is deprecated
+
+downcasting
+casting from 'owned' to 'unmanaged' is deprecated
+casting from 'owned?' to 'unmanaged' is deprecated
+casting from 'owned' to 'unmanaged?' is deprecated
+casting from 'owned?' to 'unmanaged?' is deprecated
+
+casting from 'borrowed' to 'unmanaged' is deprecated
+casting from 'borrowed?' to 'unmanaged' is deprecated
+casting from 'borrowed' to 'unmanaged?' is deprecated
+casting from 'borrowed?' to 'unmanaged?' is deprecated
+
+casting from 'shared' to 'unmanaged' is deprecated
+casting from 'shared?' to 'unmanaged' is deprecated
+casting from 'shared' to 'unmanaged?' is deprecated
+casting from 'shared?' to 'unmanaged?' is deprecated
+
