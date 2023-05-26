@@ -2,3 +2,4 @@
 -sformat=FormatKind.json # lists.json.good
 -sformat=FormatKind.little # lists.little.good
 -sformat=FormatKind.syntax # lists.syntax.good
+-sformat=FormatKind.yaml -scPtrToStringBytesBufferAddress=true # lists.yaml.good

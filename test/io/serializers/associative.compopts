@@ -2,3 +2,4 @@
 -sformat=FormatKind.json # associative.json.good
 -sformat=FormatKind.little # associative.little.good
 -sformat=FormatKind.syntax # associative.syntax.good
+-sformat=FormatKind.yaml -scPtrToStringBytesBufferAddress=true # associative.yaml.good

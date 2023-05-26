@@ -14,7 +14,7 @@ proc main() {
     cur += 1;
   }
 
-  var f = openMemFile();
+  var f = openTempFile();
   {
     f.writer(serializer=FormatWriter).writeln(B);
   }

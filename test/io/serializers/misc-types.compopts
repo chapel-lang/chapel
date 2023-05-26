@@ -2,3 +2,4 @@
 -sformat=FormatKind.json # misc-types.json.good
 -sformat=FormatKind.little # misc-types.little.good
 -sformat=FormatKind.syntax # misc-types.syntax.good
+-sformat=FormatKind.yaml -scPtrToStringBytesBufferAddress=true # maps.yaml.good

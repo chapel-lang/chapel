@@ -11,7 +11,7 @@ record R {
 proc test(m: map) {
   printDebugFmt(m);
 
-  var f = openMemFile();
+  var f = openTempFile();
   {
     f.writer().withSerializer(FormatWriter).writeln(m);
   }

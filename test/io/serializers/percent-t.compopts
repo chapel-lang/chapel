@@ -2,3 +2,4 @@
 -sformat=FormatKind.json # percent-t.json.good
 -sformat=FormatKind.little # percent-t.little.good
 -sformat=FormatKind.syntax # percent-t.syntax.good
+-sformat=FormatKind.yaml -scPtrToStringBytesBufferAddress=true # percent-t.yaml.good

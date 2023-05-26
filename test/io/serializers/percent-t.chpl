@@ -10,7 +10,7 @@ record R {
 
 proc test(val) {
   printDebugFmt(val);
-  var f = openMemFile();
+  var f = openTempFile();
   {
     var w = f.writer(serializer=FormatWriter);
     w.writef("%t\n", val);

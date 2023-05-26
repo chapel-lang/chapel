@@ -2,3 +2,4 @@
 -sformat=FormatKind.json # arrays.json.good
 -sformat=FormatKind.little # arrays.little.good
 -sformat=FormatKind.syntax # arrays.syntax.good
+-sformat=FormatKind.yaml -scPtrToStringBytesBufferAddress=true # arrays.yaml.good

@@ -7,7 +7,7 @@ use List;
 proc test(A) {
   writeln("--- ", A.type:string, " ---");
   printDebugFmt(A);
-  var f = openMemFile();
+  var f = openTempFile();
   try {
     f.writer().withSerializer(FormatWriter).write(A);
   } catch e {

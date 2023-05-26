@@ -19,7 +19,7 @@ proc makeND(param rank : int) {
 
 proc test(A) {
   printDebugFmt(A);
-  var f = openMemFile();
+  var f = openTempFile();
   try {
     f.writer().withSerializer(FormatWriter).write(A);
   } catch e {
