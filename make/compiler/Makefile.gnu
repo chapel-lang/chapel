@@ -318,6 +318,7 @@ endif
 # that occur in GCC 12.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-use-after-free
 WARN_CXXFLAGS += -Wno-use-after-free
 endif
 
