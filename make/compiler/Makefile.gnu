@@ -324,6 +324,7 @@ endif
 
 #
 # Avoid a GCC bug when combining -fsanitize=address -Wmaybe-uninitialized
+# As of May 2023, GCC 12 and 13 both had this bug.
 #
 ifneq ($(CHPL_MAKE_SANITIZE), none)
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
