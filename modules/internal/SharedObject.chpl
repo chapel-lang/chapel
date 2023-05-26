@@ -782,7 +782,7 @@ module WeakPointer {
     */
     @unstable("The `weak` type is experimental; expect this API to change in the future.")
     proc init(c : shared) {
-        var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
+        var ptr = _to_unmanaged(c.chpl_p): _to_nilable(_to_unmanaged(c.chpl_t));
         var count = c.chpl_pn;
 
         // increment the weak reference count (or store nil if the class is nil)
