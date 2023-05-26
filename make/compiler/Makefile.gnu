@@ -323,6 +323,15 @@ WARN_CXXFLAGS += -Wno-use-after-free
 endif
 
 #
+# Avoid a GCC bug when combining -fsanitize=address -Wmaybe-uninitialized
+#
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-maybe-uninitialized
+endif
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
 # compiled with gcc 5.X.
