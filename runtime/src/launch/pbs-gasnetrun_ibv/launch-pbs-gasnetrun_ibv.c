@@ -95,23 +95,15 @@ static int getNumCoresPerLocale(void) {
   return numCores;
 }
 
-static int32_t genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
+static void genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
                                  int32_t numLocales,
-                                 int32_t numCoresPerLocale) {
+                                 int32_t numCoresPerLocale,
+                                 int32_t localesPerNode,
+                                 int32_t numNodes) {
   char* queue = getenv("CHPL_LAUNCHER_QUEUE");
   if (!walltime) {
     walltime = getenv("CHPL_LAUNCHER_WALLTIME");
   }
-
-  int localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
-  if (localesPerNode <= 0) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
-    chpl_warning(msg, 0, 0);
-    localesPerNode = 1;
-  }
-
-  int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
 
   if (queue)
     fprintf(pbsFile, "#PBS -q %s\n", queue);
@@ -145,11 +137,11 @@ static int32_t genNumLocalesOptions(FILE* pbsFile, qsubVersion qsub,
         fprintf(pbsFile, "#PBS -l nodes=%d\n", numNodes);
       break;
   }
-  return numNodes;
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
   int i;
   FILE* pbsFile, *expectFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -168,6 +160,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   chpl_compute_real_binary_name(argv[0]);
 
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
+
 #ifndef DEBUG_LAUNCH
   mypid = getpid();
 #else
@@ -181,8 +175,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");
   fprintf(pbsFile, "#PBS -N %s\n", jobName);
-  int32_t numNodes = genNumLocalesOptions(pbsFile, determineQsubVersion(),
-                                          numLocales, getNumCoresPerLocale());
+  genNumLocalesOptions(pbsFile, determineQsubVersion(), numLocales,
+                       getNumCoresPerLocale(), numLocalesPerNode, numNodes);
   if (projectString && strlen(projectString) > 0)
     fprintf(pbsFile, "#PBS -A %s\n", projectString);
   fclose(pbsFile);
@@ -263,9 +257,13 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
+
   int retcode =
-    chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+    chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+                                                        numLocales,
+                                                        numLocalesPerNode),
                              argv[0]);
   chpl_launch_cleanup();
   return retcode;

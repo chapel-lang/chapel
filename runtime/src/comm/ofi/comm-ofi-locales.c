@@ -45,3 +45,7 @@ void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
   }
 #endif
 }
+
+
+void chpl_comm_verify_supports_colocales(int64_t numColocales) { }
+

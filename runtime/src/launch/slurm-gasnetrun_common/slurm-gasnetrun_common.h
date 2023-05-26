@@ -199,7 +199,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
       basenamePtr++;
   }
-
   chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
 
   chpl_compute_real_binary_name(argv[0]);
@@ -366,12 +365,18 @@ static void chpl_launch_cleanup(void) {
 }
 
 
-int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+int chpl_launch(int argc, char* argv[], int32_t numLocales,
+                int32_t numLocalesPerNode) {
   int retcode;
 
   debug = getenv("CHPL_LAUNCHER_DEBUG");
 
-  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
+  if (numLocalesPerNode > 1) {
+    chpl_launcher_no_colocales_error(NULL);
+  }
+
+  retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
+                                          numLocales),
             argv[0]);
   chpl_launch_cleanup();
   return retcode;
