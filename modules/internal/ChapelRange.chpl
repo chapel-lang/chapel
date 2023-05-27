@@ -1228,13 +1228,9 @@ operator :(r: range(?), type t: range(?)) {
   // signatures handled by this overload should never throw when using
   // the ':' operators in 'rangeCastHelper()'.  If we find cases where
   // this is incorrect, the where clause should be expanded to handle
-  // them
-  try {
+  // them.
+  try! {
     return rangeCastHelper(r, t);
-  } catch e {
-    halt("Unexpected error thrown in casting from ", r.type:string, " to ",
-         t:string, ":\n",
-         e.message());
   }
 }
 
