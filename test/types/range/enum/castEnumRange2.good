@@ -1,1 +1,2 @@
+castEnumRange2.chpl:4: warning: Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually
 castEnumRange2.chpl:4: error: can't cast from an abstract enum ('color') to int(64)

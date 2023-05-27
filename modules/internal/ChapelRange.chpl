@@ -1241,8 +1241,35 @@ operator :(r: range(?), type t: range(?)) {
     tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
     tmp._aligned = r.aligned;
   }
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound) else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound) else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:tmp.idxType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:tmp.idxType) else r._high): tmp.intIdxType;
+  return tmp;
+}
+
+// This is an overload that throws due to the use of the ':' in the low/high
+// computations
+@chpldoc.nodoc
+  operator :(r: range(?), type t: range(?)) throws where isEnumType(t.idxType) || (isBoolType(t.idxType) && isEnumType(r.idxType)) {
+  var tmp: t;
+
+  // Generate a warning when casting between ranges and one of them is an
+  // enum type (and they're not both the same enum type); see #22406 for
+  // more information
+  if badIdxTypeCombo(r.idxType, t.idxType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually");
+
+  if tmp.bounds != r.bounds {
+    compilerError("cannot cast range from boundKind.",
+                  r.bounds:string, " to boundKind.", tmp.bounds:string);
+  }
+
+  if tmp.stridable {
+    tmp._stride = r.stride: tmp._stride.type;
+    tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
+    tmp._aligned = r.aligned;
+  }
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:tmp.idxType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:tmp.idxType) else r._high): tmp.intIdxType;
   return tmp;
 }
 
