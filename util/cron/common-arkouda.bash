@@ -53,12 +53,13 @@ if [ -f "$SETUP_PYTHON" ]; then
   source $SETUP_PYTHON
 fi
 
-# test against Chapel release (checking our current test/cron directories)
+export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.30.0"
+# test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.30.0
+  git checkout $CHPL_WHICH_RELEASE_FOR_ARKOUDA
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
