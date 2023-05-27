@@ -1233,7 +1233,7 @@ operator :(r: range(?), type t: range(?)) {
     return rangeCastHelper(r, t);
   } catch e {
     halt("Unexpected error thrown in casting from ", r.type:string, " to ",
-         t:string, ":\n", 
+         t:string, ":\n",
          e.message());
   }
 }
