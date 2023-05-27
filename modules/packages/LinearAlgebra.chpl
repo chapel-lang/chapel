@@ -2250,10 +2250,10 @@ proc svd(A: [?Adom] ?t) throws
 
   // Stores singular values, sorted
   var s: [0..<min((...A.shape))] realType;
-  // Unitary matrix, U
-  var u: [0..<m, 0..<m] t;
-  // Unitary matrix V^T (or V^H)
-  var vt: [0..<n, 0..<n] t;
+  // Unitary matrix, U, asssumes row offset of A
+  var u: [A.dom.ranges(0).first..A.dom.ranges(0).last, 0..<m] t;
+  // Unitary matrix V^T (or V^H), assumes column offset of A
+  var vt: [0..<n, A.dom.ranges(1).first..A.dom.ranges(1).last] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.

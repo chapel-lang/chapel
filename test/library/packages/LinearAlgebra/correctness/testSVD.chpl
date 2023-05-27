@@ -48,3 +48,15 @@ use TestUtils;
   var A2 = u.dot(diag(sComplex)).dot(vt);
   assertAlmostEqual(A, A2, 'svd - complex(128)');
 }
+
+// ensure u, vt take on offset indexing of A where appropriate
+{
+  var A = Matrix(2..3,2..4,real);
+  A[2,2] = 1.0;
+  A[3,3] = 2.0;
+
+  var (u, s, vt) = svd(A);
+
+  assertEqual(u.dom.ranges(0),  A.dom.ranges(0), 'svd - index offset of u');
+  assertEqual(vt.dom.ranges(1), A.dom.ranges(1), 'svd - index offset of vt');
+}
