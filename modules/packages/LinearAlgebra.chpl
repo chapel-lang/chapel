@@ -2250,9 +2250,9 @@ proc svd(A: [?Adom] ?t) throws
 
   // Stores singular values, sorted
   var s: [0..<min((...A.shape))] realType;
-  // Unitary matrix, U, asssumes row offset of A
+  // Unitary matrix, U, inherits row offset of A
   var u: [A.dom.ranges(0), 0..<m] t;
-  // Unitary matrix V^T (or V^H), assumes column offset of A
+  // Unitary matrix V^T (or V^H), inherits column offset of A
   var vt: [0..<n, A.dom.ranges(1)] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
