@@ -1,0 +1,7 @@
+castEnumRange4a.chpl:3: warning: Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually
+castEnumRange4a.chpl:5: warning: Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually
+42..56
+red..orange
+uncaught IllegalArgumentError: illegal argument 'bad cast from int '0' to enum 'color': '
+  castEnumRange4a.chpl:7: thrown here
+  castEnumRange4a.chpl:7: uncaught here
