@@ -1223,39 +1223,42 @@ proc range.safeCast(type t: range(?)) {
  */
 @chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
-  var tmp: t;
-
-  // Generate a warning when casting between ranges and one of them is an
-  // enum type (and they're not both the same enum type); see #22406 for
-  // more information
-  if badIdxTypeCombo(r.idxType, t.idxType) then
-    compilerWarning("Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually");
-
-  if tmp.bounds != r.bounds {
-    compilerError("cannot cast range from boundKind.",
-                  r.bounds:string, " to boundKind.", tmp.bounds:string);
+  // If the 'where' clause on the 'throw'ing overload just below is
+  // correct, we should never catch an error here, because the type
+  // signatures handled by this overload should never throw when using
+  // the ':' operators in 'rangeCastHelper()'.  If we find cases where
+  // this is incorrect, the where clause should be expanded to handle
+  // them
+  try {
+    return rangeCastHelper(r, t);
+  } catch e {
+    halt("Unexpected error thrown in casting from ", r.type:string, " to ",
+         t:string, ":\n", 
+         e.message());
   }
-
-  if tmp.stridable {
-    tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
-    tmp._aligned = r.aligned;
-  }
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:tmp.idxType) else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:tmp.idxType) else r._high): tmp.intIdxType;
-  return tmp;
 }
 
-// This is an overload that throws due to the use of the ':' in the low/high
-// computations
+// This is an overload that throws due to the use of the ':' in the
+// low/high computations of rangeCastHelper()
 @chpldoc.nodoc
-  operator :(r: range(?), type t: range(?)) throws where isEnumType(t.idxType) || (isBoolType(t.idxType) && isEnumType(r.idxType)) {
+operator :(r: range(?), type t: range(?)) throws
+  where isEnumType(t.idxType) ||
+    (isBoolType(t.idxType) && isEnumType(r.idxType))
+{
+  return rangeCastHelper(r, t);
+}
+
+// This is a helper routine to avoid duplicating the code in each of
+// the ':' overloads just above
+private inline proc rangeCastHelper(r, type t) throws {
   var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType;
 
   // Generate a warning when casting between ranges and one of them is an
   // enum type (and they're not both the same enum type); see #22406 for
   // more information
-  if badIdxTypeCombo(r.idxType, t.idxType) then
+  if (isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType then
     compilerWarning("Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually");
 
   if tmp.bounds != r.bounds {
@@ -1268,15 +1271,10 @@ operator :(r: range(?), type t: range(?)) {
     tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
     tmp._aligned = r.aligned;
   }
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:tmp.idxType) else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:tmp.idxType) else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.intIdxType;
   return tmp;
 }
-
-private proc badIdxTypeCombo(type t1, type t2) param {
-  return (isEnumType(t1) || isEnumType(t2)) && t1 != t2;
-}
-
 
 
   //////////////////////////////////////////////////////////////////////////////////
