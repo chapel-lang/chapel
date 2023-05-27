@@ -51,14 +51,6 @@ static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
 
-
-typedef enum {
-  slurmpro,
-  uma,
-  slurm,
-  unknown
-} sbatchVersion;
-
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
 // look for the ISO/IEC 9945 env var options first, then P_tmpdir, then "/tmp"
@@ -67,7 +59,8 @@ static const char* getTmpDir(void) {
 }
 
 // Check what version of slurm is on the system
-static sbatchVersion determineSlurmVersion(void) {
+// Returns 0 on success, 1 and prints an error message on failure
+static int checkSlurmVersion(void) {
   const int buflen = 256;
   char version[buflen];
   char *argv[3];
@@ -80,15 +73,12 @@ static sbatchVersion determineSlurmVersion(void) {
     chpl_error("Error trying to determine slurm version", 0, 0);
   }
 
-  if (strstr(version, "SBATCHPro")) {
-    return slurmpro;
-  } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0")) {
-    return uma;
-  } else if (strstr(version, "slurm")) {
-    return slurm;
-  } else {
-    return unknown;
+  if (!strstr(version, "slurm")) {
+    printf("Error: This launcher is only compatible with native slurm\n");
+    printf("Output of \"sbatch --version\" was: %s\n", version);
+    return 1;
   }
+  return 0;
 }
 
 static int nomultithread(int batch) {
@@ -610,10 +600,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;
 
   // check the slurm version before continuing
-  sbatchVersion sVersion = determineSlurmVersion();
-  if (sVersion != slurm) {
-    printf("Error: This launcher is only compatible with native slurm\n");
-    printf("Slurm version was %d\n", sVersion);
+  if (checkSlurmVersion()) {
     return 1;
   }
 

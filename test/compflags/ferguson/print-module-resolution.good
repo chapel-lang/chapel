@@ -8,6 +8,10 @@ AutoMath
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math.AutoMath
 Math
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math
+OS
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX.OS
+POSIX
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 Communication
@@ -16,10 +20,6 @@ ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
 NVStringFactory
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.NVStringFactory
-POSIX
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS.POSIX
-OS
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS
 BytesCasts
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes.BytesCasts
 Bytes

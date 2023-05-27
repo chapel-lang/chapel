@@ -260,10 +260,11 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-extern char fGpuArch[16];
+const int gpuArchNameLen = 16;
+extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
-extern char gpuArch[16];
+extern char gpuArch[gpuArchNameLen+1];
 
 extern char stopAfterPass[128];
 

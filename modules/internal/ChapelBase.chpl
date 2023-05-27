@@ -1098,13 +1098,14 @@ module ChapelBase {
                           lo: integral,
                           hi: integral,
                           fill: int(8)=0) {
+    import OS.POSIX.memset;
     if hi > lo {
       const elemWidthInBytes: uint  = _ddata_sizeof_element(ddata);
       const numElems = (hi - lo).safeCast(uint);
       if safeMul(numElems, elemWidthInBytes) {
         const numBytes = numElems * elemWidthInBytes;
         const shiftedPtr = _ddata_shift(eltType, ddata, lo);
-        c_memset(shiftedPtr:c_void_ptr, fill, numBytes);
+        memset(shiftedPtr:c_void_ptr, fill, numBytes.safeCast(c_size_t));
       } else {
         halt('internal error: Unsigned integer overflow during ' +
              'memset of dynamic block');
@@ -1522,6 +1523,7 @@ module ChapelBase {
   @unstable("This routine may change names / signatures")
   inline proc (real(?w)).transmute(type t): t {
     use CTypes;
+    import OS.POSIX.memcpy;
 
     if t != uint(w) {
       compilerError("Cannot (currently) transmute from " + this.type:string +
@@ -1529,7 +1531,7 @@ module ChapelBase {
     } else {
       var src = this,
           dst: uint(w);
-      c_memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
       return dst;
     }
   }
@@ -1559,6 +1561,7 @@ module ChapelBase {
   @unstable("This routine may change names / signatures")
   inline proc (uint(?w)).transmute(type t): t {
     use CTypes;
+    import OS.POSIX.memcpy;
 
     if t != real(w) {
       compilerError("Cannot (currently) transmute from " + this.type:string +
@@ -1566,7 +1569,7 @@ module ChapelBase {
     } else {
       var src = this,
           dst: real(w);
-      c_memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t));
+      memcpy(c_ptrTo(dst), c_ptrTo(src), numBytes(t).safeCast(c_size_t));
       return dst;
     }
   }

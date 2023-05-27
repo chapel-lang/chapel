@@ -953,6 +953,75 @@ module OS {
     extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
     extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
 
+    /*
+      Copies n potentially overlapping bytes from memory area src to memory
+      area dest.
+
+      This is a simple wrapper over the C ``memmove()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memmove(dest:c_void_ptr, const src:c_void_ptr, n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+      memmove(dest, src, n);
+    }
+
+    /*
+      Copies n non-overlapping bytes from memory area src to memory
+      area dest. Use :proc:`memmove` if memory areas do overlap.
+
+      This is a simple wrapper over the C ``memcpy()`` function.
+
+      :arg dest: the destination memory area to copy to
+      :arg src: the source memory area to copy from
+      :arg n: the number of bytes from src to copy to dest
+    */
+    pragma "fn synchronization free"
+    inline proc memcpy(dest:c_void_ptr, const src:c_void_ptr, n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memcpy(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+      memcpy(dest, src, n);
+    }
+
+    /*
+      Compares the first n bytes of memory areas s1 and s2
+
+      This is a simple wrapper over the C ``memcmp()`` function.
+
+      :returns: returns an integer less than, equal to, or greater than zero if
+                the first n bytes of s1 are found, respectively, to be less than,
+                to match, or be greater than the first n bytes of s2.
+    */
+    pragma "fn synchronization free"
+    inline proc memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: c_size_t): int {
+      pragma "fn synchronization free"
+      extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t): c_int;
+      return memcmp(s1, s2, n).safeCast(int);
+    }
+
+    /*
+      Fill bytes of memory with a particular byte value.
+
+      This is a simple wrapper over the C ``memset()`` function.
+
+      :arg s: the destination memory area to fill
+      :arg c: the byte value to use
+      :arg n: the number of bytes of s to fill
+
+      :returns: s
+    */
+    pragma "fn synchronization free"
+    inline proc memset(s:c_void_ptr, c:integral, n: c_size_t) {
+      pragma "fn synchronization free"
+      extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t): c_void_ptr;
+      memset(s, c.safeCast(c_int), n);
+      return s;
+    }
+
   } // end POSIX
 
 /* A type storing an error code or an error message.
@@ -1579,6 +1648,5 @@ module OS {
       return string.createAdoptingBuffer(errstr);
     }
   }
-
 
 }

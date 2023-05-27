@@ -916,7 +916,8 @@ record regex {
     var last:byteIndex;
     var localText = text.localize();
 
-    var matches = allocate(qio_regex_string_piece_t, nmatches);
+    var matches = allocate(qio_regex_string_piece_t,
+                           nmatches.safeCast(c_size_t));
     defer deallocate(matches);
 
     pos = 0;

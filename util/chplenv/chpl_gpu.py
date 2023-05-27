@@ -98,7 +98,7 @@ def get_arch():
     gpu_type = get()
 
     # No arch if GPU is not being used.
-    if gpu_type == 'none':
+    if gpu_type == 'none' or gpu_type == 'cpu':
         return 'none'
 
     # Check if user is overriding the arch.

@@ -81,11 +81,22 @@ module Collectives {
     /* Construct a new barrier object.
 
        :arg numTasks: The number of tasks that will use this barrier
-       :arg barrierType: The barrier implementation to use
+
+    */
+    proc init(numTasks: int) {
+      bar = new unmanaged aBarrier(numTasks, reusable=true);
+      isowned = true;
+    }
+
+
+    /* Construct a new barrier object.
+
+       :arg numTasks: The number of tasks that will use this barrier
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    proc init(numTasks: int, reusable: bool = true) {
+    @deprecated(notes="non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call")
+    proc init(numTasks: int, reusable: bool) {
       if reusable {
         bar = new unmanaged aBarrier(numTasks, reusable=true);
       } else {
@@ -172,8 +183,13 @@ module Collectives {
       bar.wait();
     }
 
-    /* Return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if fewer than `n` tasks have called :proc:`notify`
      */
+    inline proc pending(): bool {
+      return !bar.check();
+    }
+
+    @deprecated(notes="'barrier.check()' is deprecated, please use '!barrier.pending()' instead")
     inline proc check(): bool {
       return bar.check();
     }

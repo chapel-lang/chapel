@@ -772,11 +772,16 @@ void Context::report(owned<ErrorBase> error) {
   // error collection).
 
   if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
+    bool isSilencing =
+      errorCollectionStack.back().collectingQuery() == queryStack.back();
+
     errorCollectionStack.back().storeError(error->clone());
-    queryStack.back()->errors.push_back(std::move(error));
+    queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
   } else if (queryStack.size() > 0) {
-    queryStack.back()->errors.push_back(std::move(error));
-    reportError(this, queryStack.back()->errors.back().get());
+    bool isSilencing = false;
+
+    queryStack.back()->errors.push_back(std::make_pair(std::move(error), isSilencing));
+    reportError(this, queryStack.back()->errors.back().first.get());
   } else if (errorCollectionStack.size() > 0) {
     errorCollectionStack.back().storeError(std::move(error));
   } else {
@@ -930,7 +935,10 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   // Only re-report errors if they are not being silenced.
   if (errorCollectionStack.empty()) {
     for (auto& err: resultEntry->errors) {
-      reportError(this, err.get());
+      if (!err.second) {
+        // Only report an error if it wasn't silenced in the original run
+        reportError(this, err.first.get());
+      }
     }
   }
 }
@@ -1007,7 +1015,7 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
 void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result) {
   CHPL_ASSERT(!result->emittedErrors);
   for (auto& error : result->errors) {
-    reportError(this, error.get());
+    reportError(this, error.first.get());
   }
   result->emittedErrors = true;
   for (auto& dependency : result->dependencies) {
@@ -1023,7 +1031,7 @@ static void storeErrorsForHelp(const querydetail::QueryMapResultBase* result,
   auto insertResult = visited.insert(result);
   if (!insertResult.second) return;
   for (auto& error : result->errors) {
-    into.storeError(error->clone());
+    into.storeError(error.first->clone());
   }
   for (auto& dependency : result->dependencies) {
     if (!dependency.errorCollectionRoot) {

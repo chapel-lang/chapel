@@ -385,7 +385,7 @@ module AggregationPrimitives {
     // remote locales buffer
     proc cachedAlloc(): c_ptr(elemType) {
       if data == c_nil {
-        const rvf_size = size;
+        const rvf_size = size.safeCast(c_size_t);
         on Locales[loc] do {
           data = allocate(elemType, rvf_size);
         }
