@@ -14,6 +14,7 @@ use GPU only syncThreads, createSharedArray, setBlockSize;
 
 config const noisy = false;
 config const gpuDiags = false;
+config const verboseGpu = false;
 config const output = true;
 config const perftest = false;
 config const sz = 4;
@@ -40,11 +41,13 @@ var parityDb = new ResultDatabase("Sort Parity", "N", atts="", attsSuffix=" item
 
 proc main() {
   if gpuDiags then startGpuDiagnostics();
+  if verboseGpu then startVerboseGpu();
   runSort();
   if gpuDiags {
     stopGpuDiagnostics();
     writeln(getGpuDiagnostics());
   }
+  if verboseGpu then stopVerboseGpu();
 
   if(output) {
     sortDb.printDatabaseStats();
@@ -119,7 +122,6 @@ proc runSort(){
     const iterations = passes;
     // They do timing using cudaEvent, ig we will just use our timer.
     for it in 0..#iterations:uint(32){
-        writeln(100);
         // Initialize the host memory to some pattern
         on host {
           for i in 0..<size:uint(32) {
@@ -128,7 +130,6 @@ proc runSort(){
           }
         }
 
-        writeln(200);
         // Copy inputs to GPU
         var transferTime = 0.0;
         // CudaEvent Record use replaced with timer
@@ -136,7 +137,6 @@ proc runSort(){
         dKeys = hKeys;
         dVals = hVals;
         timer.stop();
-        writeln(300);
         transferTime += timer.elapsed();
         timer.clear();
 
@@ -158,7 +158,6 @@ proc runSort(){
             dCounters, dCounterSums, dBlockOffsets, scanBlockSums, size);
         }
         timer.stop();
-        writeln(400);
         var kernelTime = timer.elapsed();
         timer.clear();
 
