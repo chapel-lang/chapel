@@ -79,6 +79,10 @@ __device__ static inline c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc
   return loc.node;
 }
 
+__device__ static inline c_nodeid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
+  return loc.subloc;
+}
+
 __device__ static inline void chpl_gen_comm_get(void *addr, c_nodeid_t node,
   void* raddr, size_t size, int32_t commID, int ln, int32_t fn)
 {
@@ -201,6 +205,17 @@ GPU_3OP_ATOMIC(unsigned long long int, chpl_gpu_atomic_CAS_ulonglong, atomicCAS)
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 700)
 GPU_3OP_ATOMIC(unsigned short int,     chpl_gpu_atomic_CAS_ushort, atomicCAS);
 #endif
+
+__device__ static inline
+void chpl_gen_comm_get_gpu(void *addr, c_nodeid_t src_node,
+                           c_sublocid_t src_subloc, void* raddr, size_t size,
+                           int32_t commID, int ln, int32_t fn) { }
+
+__device__ static inline
+void chpl_gen_comm_put_gpu(void* addr,
+                           c_nodeid_t dst_node, c_sublocid_t dst_subloc,
+                           void* raddr, size_t size, int32_t commID, int ln,
+                           int32_t fn) { }
 
 #endif // HAS_GPU_LOCALE
 
