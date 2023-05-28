@@ -259,8 +259,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   chpl_free(kernel_params);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
-  CHPL_GPU_PRINT_TIMERS("<%20s> Context: %Lf, "
-                               "Load: %Lf, "
+  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
                                "Prep: %Lf, "
                                "Kernel: %Lf, "
                                "Teardown: %Lf\n",
