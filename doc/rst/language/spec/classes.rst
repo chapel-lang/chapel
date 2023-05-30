@@ -83,17 +83,15 @@ its deletion. It is legal to access the class fields or methods only
 during its lifetime.
 
 Each allocation of a class instance specifies a *memory management
-strategy*. Four memory management strategies are available: ``owned``,
-``shared``, ``borrowed``, and ``unmanaged``.
+strategy*. Three memory management strategies are available: ``owned``,
+``shared``, and ``unmanaged``.
 
 ``owned`` and ``shared`` class instances always have their lifetime
 managed by the compiler. In other words, the compiler automatically calls
 ``delete`` on these instances to reclaim their memory. For these
 instances, ``=`` and copy initialization can result in the transfer or
 sharing of ownership. See the :ref:`Owned_Objects` and :ref:`Shared_Objects`
-sections for more details.  When ``borrowed`` is used as a memory management
-strategy in a ``new-expression``, it also creates an instance that has its
-lifetime managed by the compiler (:ref:`Class_New`).
+sections for more details.
 
 Class instances that are ``unmanaged`` have their lifetime managed
 explicitly by the programmer. The ``delete`` keyword must be used to
@@ -691,8 +689,7 @@ An initializer for a given class is called by placing the ``new``
 operator in front of a type expression. Any initializer arguments follow
 the class name in a parenthesized list.
 
-Syntactically, the ``type-expression`` includes ``owned``, ``shared``,
-``borrowed``, and ``unmanaged``. However these have important
+Syntactically, the ``type-expression`` includes ``owned``, ``shared``, and ``unmanaged``. However these have important
 consequences for class new expressions. In particular, suppose ``C`` is
 a ``type-expression`` that results in a class type. Then:
 
