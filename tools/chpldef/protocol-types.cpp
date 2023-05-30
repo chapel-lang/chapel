@@ -22,10 +22,22 @@
 #include "./misc.h"
 #include "llvm/Support/JSON.h"
 
+/** Helper to make populating JSON object fields less painful. */
+#define FIELD_(name__) { #name__, name__ }
+
 namespace chpldef {
 
 std::string ProtocolType::toString() const {
   auto ret = jsonToString(toJson());
+  return ret;
+}
+
+bool EmptyProtocolType::fromJson(const JsonValue& j, JsonPath p) {
+  return true;
+}
+
+JsonValue EmptyProtocolType::toJson() const {
+  JsonValue ret(nullptr);
   return ret;
 }
 
@@ -87,8 +99,8 @@ bool InitializeResult::fromJson(const JsonValue& j, JsonPath p) {
 
 JsonValue InitializeResult::toJson() const {
   JsonObject ret {
-    { "capabilities", capabilities },
-    { "serverInfo", serverInfo }
+    FIELD_(capabilities),
+    FIELD_(serverInfo)
   };
   return ret;
 }
@@ -130,7 +142,7 @@ bool ServerInfo::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue ServerInfo::toJson() const {
-  JsonObject ret {{ "name", name }, { "version", version }};
+  JsonObject ret { FIELD_(name), FIELD_(version) };
   return ret;
 }
 
@@ -140,7 +152,43 @@ bool ServerCapabilities::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue ServerCapabilities::toJson() const {
-  JsonValue ret(nullptr);
+  JsonObject ret {
+    FIELD_(positionEncoding),
+    FIELD_(textDocumentSync),
+    FIELD_(notebookDocumentSync),
+    FIELD_(completionProvider),
+    FIELD_(hoverProvider),
+    FIELD_(signatureHelpProvider),
+    FIELD_(declarationProvider),
+    FIELD_(definitionProvider),
+    FIELD_(typeDefinitionProvider),
+    FIELD_(implementationProvider),
+    FIELD_(referencesProvider),
+    FIELD_(documentHighlightProvider),
+    FIELD_(documentSymbolProvider),
+    FIELD_(codeActionProvider),
+    FIELD_(codeLensProvider),
+    FIELD_(documentLinkProvider),
+    FIELD_(colorProvider),
+    FIELD_(documentFormattingProvider),
+    FIELD_(documentRangeFormattingProvider),
+    FIELD_(documentOnTypeFormattingProvider),
+    FIELD_(renameProvider),
+    FIELD_(foldingRangeProvider),
+    FIELD_(executeCommandProvider),
+    FIELD_(selectionRangeProvider),
+    FIELD_(linkEditingRangeProvider),
+    FIELD_(callHierarchyProvider),
+    FIELD_(semanticTokensProvider),
+    FIELD_(monikerProvider),
+    FIELD_(typeHierarchyProvider),
+    FIELD_(inlineValueProvider),
+    FIELD_(inlayHintProvider),
+    FIELD_(diagnosticProvider),
+    FIELD_(workspaceSymbolProvider),
+    FIELD_(workspace),
+    FIELD_(experimental)
+  };
   return ret;
 }
 

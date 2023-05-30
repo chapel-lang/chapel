@@ -26,12 +26,87 @@
     source file with a name that matches the message name. */
 namespace chpldef {
 
-/** TODO: Fill in 'InitializeResult', turning most fields off. */
-Initialize::ComputedResult Initialize::compute(Server* ctx) {
-  if (auto trace = p.trace) ctx->logger().setLevel(trace->level);
-  ctx->message("In the body of Initialize!\n");
-  Result ret;
+static void
+doConfigureStaticCapabilities(Server* ctx, ServerCapabilities& x) {
+  x.positionEncoding = "utf-16";
+  x.hoverProvider = false;
+  x.declarationProvider = false;
+  x.definitionProvider = false;
+  x.typeDefinitionProvider = false;
+  x.implementationProvider = false;
+  x.referencesProvider = false;
+  x.documentHighlightProvider = false;
+  x.documentSymbolProvider = false;
+  x.codeActionProvider = false;
+  x.colorProvider = false;
+  x.documentFormattingProvider = false;
+  x.documentRangeFormattingProvider = false;
+  x.renameProvider = false;
+  x.foldingRangeProvider = false;
+  x.selectionRangeProvider = false;
+  x.linkEditingRangeProvider = false;
+  x.callHierarchyProvider = false;
+  x.monikerProvider = false;
+  x.typeHierarchyProvider = false;
+  x.inlineValueProvider = false;
+  x.inlayHintProvider = false;
+  x.workspaceSymbolProvider = false;
+}
+
+static ServerInfo configureServerInfo(Server* ctx) {
+  ServerInfo ret;
+  ret.name = "chpldef";
+  ret.version = "0.0.0";
   return ret;
+}
+
+Initialize::ComputedResult
+Initialize::compute(Server* ctx, const Params& p) {
+
+  // Set the log verbosity level if it was requested.
+  if (auto trace = p.trace) {
+    auto level = trace->level;
+    ctx->message("Client requested log level: '%s'\n",
+                 Logger::levelToString(level));
+    auto &logger = ctx->logger();
+    if (level < logger.level()) {
+      ctx->message("Ignoring as level is '%s'\n", logger.levelToString());
+    } else {
+      ctx->logger().setLevel(level);
+    }
+  }
+
+  // Set the server to the 'INIT' state.
+  CHPL_ASSERT(ctx->state() == Server::UNINIT);
+  ctx->setState(Server::INIT);
+
+  Result ret;
+
+  doConfigureStaticCapabilities(ctx, ret.capabilities);
+
+  ret.serverInfo = configureServerInfo(ctx);
+
+  return ret;
+}
+
+Initialized::ComputedResult
+Initialized::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::INIT);
+  ctx->setState(Server::READY);
+  return {};
+}
+
+Shutdown::ComputedResult
+Shutdown::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::READY);
+  ctx->setState(Server::SHUTDOWN);
+  return {};
+}
+
+Exit::ComputedResult
+Exit::compute(Server* ctx, const Params& p) {
+  CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
+  return {};
 }
 
 } // end namespace 'chpldef'

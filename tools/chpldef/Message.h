@@ -101,6 +101,7 @@ protected:
         error_(error),
         note_(std::move(note)) {
     CHPL_ASSERT(isIdValid(id_));
+    if (id.kind() == JsonValue::Null) CHPL_ASSERT(isNotification());
   }
 
   inline void markProgressing() { status_ = Message::PROGRESSING; }
@@ -142,7 +143,7 @@ public:
   static const char* errorToString(Error error);
 
   /** Print this message's error code as a string. */
-  inline const char* errorToString() const  { return errorToString(error_); }
+  inline const char* errorToString() const { return errorToString(error_); }
 
   /** Get the numeric value of an error code. */
   static inline int64_t errorToInt(Error e) {
@@ -167,8 +168,11 @@ public:
   /** If 'true', the server is sending this message to the client. */
   bool isOutbound() const;
 
+  /** If 'true', then the Tag 'tag' does not need a response. */
+  static bool isNotification(Tag tag);
+
   /** If 'true', then this message does not need a response. */
-  bool isNotification() const;
+  inline bool isNotification() const { return isNotification(tag_); }
 
   /** Returns the expected JSON-RPC method name for this message. */
   const char* jsonRpcMethodName() const;
@@ -217,10 +221,7 @@ public:
 
     /** Default visitor body is trivial enough that we define it here. */
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-      virtual T visit(const class name__* req) { \
-        T ret; \
-        return ret; \
-      }
+      virtual T visit(const class name__* req) { T ret; return ret; }
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
 
@@ -232,8 +233,8 @@ public:
   };
 
   /** Dispatch a visitor using a message as the receiver. */
-  template <typename T, typename U>
-  inline T accept(Message::Visitor<U>& v) { return v.dispatch(*this); }
+  template <typename T>
+  inline T accept(Message::Visitor<T>& v) { return v.dispatch(*this); }
 
   /** Some messages can defer, but not sure which at this moment. */
   virtual bool defer() const { return false; }
@@ -298,13 +299,13 @@ protected:
                                std::string* note);
 
   /** Use in message handlers to return failure. */
-  inline ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
-                             std::string note=std::string()) const {
+  static ComputedResult fail(Error error=Message::ERR_REQUEST_FAILED,
+                             std::string note=std::string()) {
     return { false, error, std::move(note), {} };
   }
 
   /** Use in message handlers to delay. */
-  inline ComputedResult delay() const {
+  static ComputedResult delay() {
     return { true, Message::OK, {}, {} };
   }
 
@@ -317,11 +318,11 @@ public:
       requests from server to client. */
   virtual JsonValue pack() const override;
 
-  /** Compute the answer to this request, doing meaningful work. */
-  virtual ComputedResult compute(Server* ctx) = 0;
-
   /** Compute results and save for later use. */
   virtual void handle(Server* ctx) override = 0;
+
+  /** Get the parameters of this request if they were deserialized. */
+  const Params* params() const;
 
   /** If computed, get the result of this request. */
   inline const Result* result() const {
@@ -361,7 +362,7 @@ public:
     static chpl::owned<BaseRequest> \
     create(JsonValue id, const JsonValue& j); \
     virtual void handle(Server* ctx) override; \
-    virtual ComputedResult compute(Server* ctx) override; \
+    static ComputedResult compute(Server* ctx, const Params& p); \
   };
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
