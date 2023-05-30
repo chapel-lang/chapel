@@ -8,7 +8,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 source $CWD/common-perf.bash
 
 # Load LLVM Spack install to get clang in PATH
-eval `$CHPL_DEPS_SPACK_ROOT/bin/spack load --sh   llvm`
+eval `$CHPL_DEPS_SPACK_ROOT/bin/spack --env chpl-base-deps load --sh llvm`
 unset CC
 unset CXX
 
