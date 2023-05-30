@@ -1254,8 +1254,9 @@ private inline proc rangeCastHelper(r, type t) throws {
   // Generate a warning when casting between ranges and one of them is an
   // enum type (and they're not both the same enum type); see #22406 for
   // more information
-  if (isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType then
-    compilerWarning("Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually");
+  if chpl_warnUnstable &&
+     ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
 
   if tmp.bounds != r.bounds {
     compilerError("cannot cast range from boundKind.",

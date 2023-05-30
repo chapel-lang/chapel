@@ -1,2 +1,2 @@
-castEnumRange.chpl:4: warning: Casts between ranges involving 'enum' indices are currently not well-defined; please perform the conversion manually
+castEnumRange.chpl:4: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 1..3
