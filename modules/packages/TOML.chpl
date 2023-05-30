@@ -1277,7 +1277,7 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(0);
+          tokenlist.getAndRemove(0);
           currentLine = tokenlist[0];
           delete ptrhold;
           return true;
@@ -1327,11 +1327,11 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(0);
+      A.getAndRemove(0);
     }
 
     proc next() {
-      var toke = A.pop(0);
+      var toke = A.getAndRemove(0);
       return toke;
     }
 
