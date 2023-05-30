@@ -106,22 +106,96 @@ class ColocaleArgs(unittest.TestCase):
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=6', output)
 
-    def test_03_1x(self):
+    def test_03_1xd1(self):
         """One node, locales-per-node defaults to 1"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = '1'
         output = self.runCmd("./hello -nl 1x -v --dry-run")
         self.assertTrue('--nodes=1' in output or '-N 1' in output)
         self.assertIn('--ntasks=1', output)
 
-    def test_04_3x(self):
+    def test_04_3xd1(self):
         """Three nodes, locales-per-node defaults to 1"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = '1'
         output = self.runCmd("./hello -nl 3x -v --dry-run")
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=3', output)
 
-    def test_05_3x(self):
+    def test_05_3xd2(self):
         """Three nodes, locales-per-node defaults to 2"""
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         output = self.runCmd("./hello -nl 3x -v --dry-run")
+        self.assertTrue('--nodes=3' in output or '-N 3' in output)
+        self.assertIn('--ntasks=6', output)
+
+    def test_06_3xd_1(self):
+        """Three nodes, locales-per-node is negative"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 3x-1 -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: Number of locales per node must be > 0.")
+
+    def test_07_3xd0(self):
+        """Three nodes, locales-per-node is zero"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 3x0 -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: Number of locales per node must be > 0.")
+
+    def test_08_3xZ(self):
+        """Three nodes, locales-per-node is not a number"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 3xZ -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "Z" is not a valid number of locales per node.')
+
+    def test_09_no_default(self):
+        """Three nodes, no locales-per-node default"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 3x -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: CHPL_RT_LOCALES_PER_NODE must be set.")
+
+    def test_10_negative_default(self):
+        """Three nodes, locales-per-node default is negative"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = '-2'
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 3x -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: CHPL_RT_LOCALES_PER_NODE must be > 0.")
+
+    def test_11_bogus_default(self):
+        """Three nodes, locales-per-node default is bogus"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = 'bogus'
+        output = self.runCmd("./hello -nl 3x -v --dry-run")
+        self.assertIn('warning: CHPL_RT_LOCALES_PER_NODE improper int value "bogus", assuming 1',
+                      output)
+
+    def test_12__3x2(self):
+        """Negative 3 nodes"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl -3x2 -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: Number of nodes must be > 0.")
+
+    def test_13_0x2(self):
+        """Zero nodes"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl 0x2 -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            "<command-line arg>:1: error: Number of nodes must be > 0.")
+
+    def test_14_Zx2(self):
+        """Bogus nodes"""
+        with self.assertRaises(subprocess.CalledProcessError) as cm:
+            output = self.runCmd("./hello -nl Zx2 -v --dry-run")
+        self.assertEqual(cm.exception.stdout.strip(),
+            '<command-line arg>:1: error: "Z" is not a valid number of nodes.')
+
+    def test_15_env_override(self):
+        """Arg overrides CHPL_RT_LOCALES_PER_NODE"""
+        self.env['CHPL_RT_LOCALES_PER_NODE'] = '4'
+        output = self.runCmd("./hello -nl 3x2 -v --dry-run")
+        print(output)
         self.assertTrue('--nodes=3' in output or '-N 3' in output)
         self.assertIn('--ntasks=6', output)
 

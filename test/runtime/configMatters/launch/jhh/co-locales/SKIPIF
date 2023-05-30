@@ -2,5 +2,5 @@
 
 import os
 
-print(os.getenv('CHPL_TEST_PERF') == 'on' or not os.getenv('CHPL_LAUNCHER').startswith('slurm'))
+print(os.getenv('CHPL_TEST_PERF') == 'on' or os.getenv('CHPL_LAUNCHER') != 'slurm-srun')
 
