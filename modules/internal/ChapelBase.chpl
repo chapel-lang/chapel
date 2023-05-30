@@ -61,10 +61,13 @@ module ChapelBase {
   pragma "no object"
   class _object { }
 
-  proc object.encodeTo(f) throws {
+  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
+  class object { }
+
+  proc RootClass.encodeTo(f) throws {
     ref fmt = f.formatter;
-    fmt.writeTypeStart(f, object);
-    fmt.writeTypeEnd(f, object);
+    fmt.writeTypeStart(f, RootClass);
+    fmt.writeTypeEnd(f, RootClass);
   }
 
 
@@ -126,7 +129,7 @@ module ChapelBase {
   inline operator ==(a: real(?w), b: real(w)) do return __primitive("==", a, b);
   inline operator ==(a: imag(?w), b: imag(w)) do return __primitive("==", a, b);
   inline operator ==(a: complex(?w), b: complex(w)) do return a.re == b.re && a.im == b.im;
-  inline operator ==(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_eq", a, b);
+  inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -143,7 +146,7 @@ module ChapelBase {
   inline operator !=(a: real(?w), b: real(w)) do return __primitive("!=", a, b);
   inline operator !=(a: imag(?w), b: imag(w)) do return __primitive("!=", a, b);
   inline operator !=(a: complex(?w), b: complex(w)) do return a.re != b.re || a.im != b.im;
-  inline operator !=(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_neq", a, b);
+  inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -779,7 +782,7 @@ module ChapelBase {
     } else if isSubtype(t, single(?)) {
       compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
       return _cond_test(x.readFF());
-    } else if isCoercible(t, borrowed object?) {
+    } else if isCoercible(t, borrowed RootClass?) {
       return x != nil;
     } else if isCoercible(t, bool) {
       return x;
@@ -801,7 +804,7 @@ module ChapelBase {
     }
   }
 
-  proc _cond_invalid(x: borrowed object?) param do return false;
+  proc _cond_invalid(x: borrowed RootClass?) param do return false;
   proc _cond_invalid(x: bool) param do return false;
   proc _cond_invalid(x: int) param do return false;
   proc _cond_invalid(x: uint) param do return false;
@@ -1869,7 +1872,7 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: borrowed object) { }
+  inline proc chpl__autoDestroy(x: borrowed RootClass) { }
 
   pragma "compiler generated"
   pragma "last resort"

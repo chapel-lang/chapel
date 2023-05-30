@@ -125,12 +125,12 @@ module ChapelArray {
 
   // original is the value this method shouldn't free, because it's the
   // canonical version. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original:object) : void  {
+  proc _freePrivatizedClass(pid:int, original:RootClass) : void  {
     // Do nothing for null pids.
     if pid == nullPid then return;
 
     coforall loc in Locales do on loc {
-      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged RootClass, pid);
       if prv != original then
         delete prv;
 
@@ -2283,7 +2283,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: locale) param do return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param do return true;
   // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed RootClass) param do return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
