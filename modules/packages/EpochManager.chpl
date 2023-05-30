@@ -91,13 +91,13 @@
   After registering, the task must then ``pin`` to enter the current epoch, and ``unpin``
   once they are finished. This token can also be used to mark objects for reclamation
   via ``deferDelete``. The ``EpochManager`` takes any type of ``unmanaged`` class and treats
-  them as ``object``, so no generics are required.
+  them as ``RootClass``, so no generics are required.
 
   .. code-block:: chpl
 
     forall i in 1..N with (var token = manager.register()) {
       token.pin();
-      token.deferDelete(new unmanaged object());
+      token.deferDelete(new unmanaged RootClass());
       token.unpin();
     }
 
@@ -353,10 +353,10 @@ module EpochManager {
     use AtomicObjects;
 
     class Node {
-      var val : unmanaged object?;
+      var val : unmanaged RootClass?;
       var next : unmanaged Node?;
 
-      proc init(val : unmanaged object?) {
+      proc init(val : unmanaged RootClass?) {
         this.val = val;
       }
     }
@@ -365,13 +365,13 @@ module EpochManager {
       var _head : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
       var _freeListHead : AtomicObject(unmanaged Node?, hasABASupport=true, hasGlobalSupport=true);
 
-      proc push(obj : unmanaged object?) {
+      proc push(obj : unmanaged RootClass?) {
         var node = recycleNode(obj);
         var oldHead = _head.exchange(node);
         node.next = oldHead;
       }
 
-      proc recycleNode(obj : unmanaged object?) : unmanaged Node {
+      proc recycleNode(obj : unmanaged RootClass?) : unmanaged Node {
         var oldTop : ABA(unmanaged Node?);
         var n : unmanaged Node?;
         do {
@@ -650,7 +650,7 @@ module EpochManager {
     }
 
     @chpldoc.nodoc
-    proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged RootClass?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -752,7 +752,7 @@ module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc deferDelete(x : unmanaged object?) {
+    proc deferDelete(x : unmanaged RootClass?) {
       manager.deferDelete(this._tok!, x);
     }
 
@@ -857,7 +857,7 @@ module EpochManager {
     //  Vector for bulk transfer of remote objects marked deleted on current
     //  locale
     @chpldoc.nodoc
-    var objsToDelete : [LocaleSpace] unmanaged Vector(unmanaged object?);
+    var objsToDelete : [LocaleSpace] unmanaged Vector(unmanaged RootClass?);
 
     //  Initializer for master locale
     @chpldoc.nodoc
@@ -866,7 +866,7 @@ module EpochManager {
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
       this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
-      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged object?);
+      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged RootClass?);
 
       this.complete();
       this.pid = _newPrivatizedClass(this);
@@ -882,7 +882,7 @@ module EpochManager {
       this.allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
       this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
-      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged object?);
+      this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged RootClass?);
       this.complete();
 
       this.initializeMembers();
@@ -949,7 +949,7 @@ module EpochManager {
     }
 
     @chpldoc.nodoc
-    proc deferDelete(tok : unmanaged _token, x : unmanaged object?) {
+    proc deferDelete(tok : unmanaged _token, x : unmanaged RootClass?) {
       var del_epoch = tok.local_epoch.read();
       if (del_epoch == 0) {
         writeln("Bad local epoch! Please pin! Using global epoch!");
@@ -1133,7 +1133,7 @@ module EpochManager {
 
       :arg x: The class instance to be deleted. Must be of unmanaged class type
     */
-    proc deferDelete(x:unmanaged object?) {
+    proc deferDelete(x:unmanaged RootClass?) {
       manager.deferDelete(this._tok!, x);
     }
 
