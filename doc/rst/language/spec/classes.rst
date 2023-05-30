@@ -707,22 +707,6 @@ a ``type-expression`` that results in a class type. Then:
    be deleted when the last ``shared`` variable referring to it goes out
    of scope. Results in something of type ``shared C``.
 
--  ``new borrowed C()`` allocates and initializes an instance that will
-   be automatically deleted at the end of the current block. This
-   process is managed by an ``owned`` temporary. Unlike
-   ``new owned C()``, this results in a value of type ``borrowed C`` and
-   ownership of the instance cannot be transferred out of the block. In
-   other words, ``new borrowed C()`` is equivalent to 
-
-   .. code-block:: chapel
-
-            (new owned C()).borrow()
-
-  .. warning::
-
-    ``new borrowed C()`` has been deprecated - use ``(new owned C()).borrow()``
-    instead
-
 -  ``new unmanaged C()`` allocates and initializes an instance that must
    have ``delete`` called on it explicitly to avoid a memory leak. It
    results in something of type ``unmanaged C``.
