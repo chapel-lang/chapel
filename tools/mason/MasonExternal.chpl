@@ -499,7 +499,7 @@ proc getSpkgInfo(spec: string, ref dependencies: list(string)): shared Toml thro
         spkgInfo.set(name, getSpkgInfo(dep, depsOfDep));
 
         // remove dep for recursion
-        dependencies.pop(0);
+        dependencies.getAndRemove(0);
       }
       if depList.size > 0 {
         // Temporarily use toArray here to avoid supporting list.
