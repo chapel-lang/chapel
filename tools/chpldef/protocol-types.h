@@ -71,7 +71,6 @@ struct ProtocolType : BaseProtocolType {
 
 struct ClientInfo : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-
   std::string name;
   opt<std::string> version;
 };
@@ -96,20 +95,17 @@ struct ClientCapabilities : ProtocolTypeRecv {
 
 struct WorkspaceFolder : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-
   std::string uri;
   std::string name;
 };
 
 struct TraceLevel : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-
   Logger::Level level;
 };
 
 struct InitializeParams : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-
   opt<int64_t> processId;
   opt<ClientInfo> clientInfo;
   opt<std::string> locale;
@@ -121,25 +117,30 @@ struct InitializeParams : ProtocolTypeRecv {
   opt<std::vector<WorkspaceFolder>> workspaceFolders;
 };
 
+struct SaveOptions : ProtocolTypeSend {
+  virtual JsonValue toJson() const override;
+  opt<bool> includeText;
+};
+
 struct TextDocumentSyncOptions : ProtocolTypeSend {
   virtual JsonValue toJson() const override;
-
   /** Valid 'change' values. */
   enum Change {
     None          = 0,
     Full          = 1,
     Incremental   = 2
   };
-
   opt<bool> openClose;
   opt<Change> change;
+  opt<bool> willSave;
+  opt<bool> willSaveWaitUntil;
+  opt<SaveOptions> save;
 };
 
 /** Some of the 'provider' queries have more advanced types we can swap
     in to configure further -- see 'DeclarationRegistrationOptions'. */
 struct ServerCapabilities : ProtocolTypeSend {
   virtual JsonValue toJson() const override;
-
   opt<std::string> positionEncoding;
   opt<TextDocumentSyncOptions> textDocumentSync;
   OPT_TODO_TYPE notebookDocumentSync;
@@ -179,7 +180,6 @@ struct ServerCapabilities : ProtocolTypeSend {
 
 struct ServerInfo : ProtocolTypeSend {
   virtual JsonValue toJson() const override;
-
   std::string name;
   opt<std::string> version;
 };
@@ -192,27 +192,35 @@ struct InitializeResult : ProtocolTypeSend {
 };
 
 struct InitializedParams : EmptyProtocolType {};
-struct InitializedResult : EmptyProtocolType {};
-
 struct ShutdownParams : EmptyProtocolType {};
 struct ShutdownResult : EmptyProtocolType {};
-
 struct ExitParams : EmptyProtocolType {};
-struct ExitResult : EmptyProtocolType {};
 
 struct TextDocumentItem : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-
   std::string uri;
   std::string languageId;
   int64_t version;
   std::string text;
 };
 
-struct DidOpenResult : EmptyProtocolType {};
 struct DidOpenParams : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  TextDocumentItem textDocument;
+};
 
+struct DidChangeParams : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  TextDocumentItem textDocument;
+};
+
+struct DidSaveParams : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  TextDocumentItem textDocument;
+};
+
+struct DidCloseParams : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
   TextDocumentItem textDocument;
 };
 

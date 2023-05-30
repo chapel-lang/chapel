@@ -19,6 +19,8 @@
  */
 
 #include "./Message.h"
+#include "./Server.h"
+#include "chpl/parsing/parsing-queries.h"
 
 /** This is one file where message handlers can be implemented. However, if
     a particular message's handler grows to be very large in size (e.g.,
@@ -31,6 +33,10 @@ configureTextDocumentSyncOptions(Server* ctx) {
   TextDocumentSyncOptions ret;
   ret.openClose = true;
   ret.change = TextDocumentSyncOptions::Full;   /** TODO: Incremental? */
+  ret.willSave = true;
+  ret.willSaveWaitUntil = true;
+  ret.save = SaveOptions();
+  ret.save->includeText = true;
   return ret;
 }
 
@@ -64,8 +70,8 @@ doConfigureStaticCapabilities(Server* ctx, ServerCapabilities& x) {
 
 static ServerInfo configureServerInfo(Server* ctx) {
   ServerInfo ret;
-  ret.name = "chpldef";
-  ret.version = "0.0.0";
+  ret.name = Server::NAME;
+  ret.version = Server::VERSION;
   return ret;
 }
 
@@ -120,6 +126,50 @@ Exit::compute(Server* ctx, const Params& p) {
 
 DidOpen::ComputedResult
 DidOpen::compute(Server* ctx, const Params& p) {
+  auto& tdi = p.textDocument;
+  auto& e = ctx->textRegistry()[tdi.uri];
+
+  if (e.isOpen) {
+    CHPLDEF_TODO();
+    return fail();
+  }
+
+  CHPL_ASSERT(tdi.version > e.version);
+
+  // NOTE: I think we always have to bump the revision here. This is
+  // because this file may have been implicitly parsed from disk as
+  // as result of resolving a use/import. The contents are considered
+  // to have changed and the "truth of the file's contents" are determined
+  // by the client as long as it has the file open. Cannot implicitly
+  // read from disk, so have to bump the revision to ensure correctness.
+  ctx->withChapelContext(Server::CHPL_BUMP_REVISION,
+  [&](auto chapel) {
+    chpl::parsing::setFileText(chapel, tdi.uri, tdi.text);
+    auto& fc = chpl::parsing::fileText(chapel, tdi.uri);
+    CHPL_ASSERT(!fc.error());
+    CHPL_ASSERT(fc.text() == tdi.text);
+    e.version = tdi.version;
+    e.lastRevisionContentsUpdated = ctx->revision();
+    e.isOpen = true;
+  });
+
+  return {};
+}
+
+DidChange::ComputedResult
+DidChange::compute(Server* ctx, const Params& p) {
+  CHPLDEF_TODO();
+  return {};
+}
+
+DidSave::ComputedResult
+DidSave::compute(Server* ctx, const Params& p) {
+  CHPLDEF_TODO();
+  return {};
+}
+
+DidClose::ComputedResult
+DidClose::compute(Server* ctx, const Params& p) {
   CHPLDEF_TODO();
   return {};
 }

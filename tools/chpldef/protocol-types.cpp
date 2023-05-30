@@ -185,4 +185,24 @@ bool DidOpenParams::fromJson(const JsonValue& j, JsonPath p) {
   return m && MAP_(m, textDocument);
 }
 
+bool DidSaveParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+bool DidCloseParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+bool DidChangeParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument);
+}
+
+JsonValue SaveOptions::toJson() const {
+  JsonObject ret { FIELD_(includeText) };
+  return ret;
+}
+
 } // end namespace 'chpldef'

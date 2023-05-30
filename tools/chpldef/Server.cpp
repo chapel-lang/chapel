@@ -44,8 +44,6 @@
 
 namespace chpldef {
 
-Server::Server() {}
-
 void Server::setLogger(Logger&& logger) {
   this->logger_ = std::move(logger);
 }
@@ -65,6 +63,44 @@ void Server::verbose(const char* fmt, ...) {
 
 void Server::trace(const char* fmt, ...) {
   VPRINTF_FORWARD_(fmt, logger_.vtrace);
+}
+
+Server::Server(Server::Configuration config) : config_(std::move(config)) {
+  chapel_ = createCompilerContext();
+
+  Logger logger;
+  if (!config_.logFile.empty()) {
+    logger = Logger::createForFile(config_.logFile);
+    if (!logger.isLogging()) {
+      std::cerr << "Failed to open log file!" << std::endl;
+      logger = Logger();
+      std::cerr << "Using '" << logger.filePath() << "'" << std::endl;
+    }
+  }
+
+  // Set the logger verbosity level.
+  logger.setLevel(config_.logLevel);
+
+  this->setLogger(std::move(logger));
+}
+
+chpl::owned<chpl::Context> Server::createCompilerContext() {
+  chpl::Context::Configuration chplConfig;
+  chplConfig.chplHome = config_.chplHome;
+  auto ret = chpl::toOwned(new chpl::Context(std::move(chplConfig)));
+  return ret;
+}
+
+bool Server::shouldGarbageCollect() {
+  auto f = config_.garbageCollectionFrequency;
+  if (f == 0) return false;
+  return (revision_ % f) == 0;
+}
+
+bool Server::shouldPrepareToGarbageCollect() {
+  auto f = config_.garbageCollectionFrequency;
+  if (f == 0) return false;
+  return (revision_ % f) == 1;
 }
 
 } // end namespace 'chpldef'

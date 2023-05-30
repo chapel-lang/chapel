@@ -37,9 +37,9 @@ CHPLDEF_MESSAGE(Exit, 0, 1, exit)
     open notification must not be sent more than once without a close
     notification having been sent before. */
 CHPLDEF_MESSAGE(DidOpen, 0, 1, textDocument/didOpen)
-// CHPLDEF_MESSAGE(DidChange, 0, 1, textDocument/didChange)
-// CHPLDEF_MESSAGE(DidSave, 0, 1, textDocument/didSave)
-// CHPLDEF_MESSAGE(DidClose, 0, 1, textDocument/didClose)
+CHPLDEF_MESSAGE(DidChange, 0, 1, textDocument/didChange)
+CHPLDEF_MESSAGE(DidSave, 0, 1, textDocument/didSave)
+CHPLDEF_MESSAGE(DidClose, 0, 1, textDocument/didClose)
 
 
 /*

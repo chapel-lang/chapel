@@ -354,7 +354,7 @@ doHandleRequest(Server* ctx, M* msg, const P& p, CR& cr) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
   if (msg->status() != Message::PENDING) return false;
 
-  ctx->message("Handling request '%s' with ID %s\n",
+  ctx->message("Handling request '%s' with ID '%s'\n",
                msg->tagToString(),
                msg->idToString().c_str());
 
