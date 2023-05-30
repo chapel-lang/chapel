@@ -14,7 +14,7 @@ writeln("b: ", b);
 
 writeln("setting b[0] to 3...");
 b[0] = 3;
-writeln("and comparing a and b: ", c_memcmp(c_ptrTo(a), c_ptrTo(b), 10 * c_sizeof(int)));
+writeln("and comparing a and b: ", c_memcmp(c_ptrTo(a), c_ptrTo(b), 10 * c_sizeof(int)) < 0);
 
 writeln("copying b to a...");
 c_memcpy(c_ptrTo(a), c_ptrTo(b), 10 * c_sizeof(int));
