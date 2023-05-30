@@ -229,7 +229,9 @@ endif
 # haven't seen problems in practice and run testing with asan, I'm
 # squashing as in the previous case.
 #
-ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 13; echo "$$?"),0)
+# Also skip this warning for GCC 12 since we saw the issue there in
+# some configurations.
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 12; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overread
 endif
 
@@ -320,6 +322,7 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
 RUNTIME_CFLAGS += -Wno-use-after-free
 WARN_CXXFLAGS += -Wno-use-after-free
+SQUASH_WARN_GEN_CFLAGS += -Wno-use-after-free
 endif
 
 #
