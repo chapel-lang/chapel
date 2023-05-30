@@ -26,32 +26,42 @@
 
 using namespace chpldef;
 
-int main(int argc, char** argv) {
-  Server context;
-  Server* ctx = &context;
+static Server::Configuration prepareServerConfig(int argc, char** argv) {
+  Server::Configuration ret;
 
-  cmd::doParseOptions(ctx, argc, argv);
+  cmd::doParseOptions(argc, argv);
 
-  // Configure the logger instance that the context will use.
-  auto setupLogger = !cmd::logFile.empty()
-      ? Logger::createForFile(cmd::logFile)
-      : Logger();
-  if (!setupLogger.isLogging()) {
-    std::cerr << "Failed to open log file!" << std::endl;
+  if (!cmd::chplHome.empty()) {
+    ret.chplHome = cmd::chplHome;
+  } else if (const char* chplHomeEnv = getenv("CHPL_HOME")) {
+    ret.chplHome = chplHomeEnv;
   } else {
-    ctx->setLogger(std::move(setupLogger));
+    std::cerr << "No value for '$CHPL_HOME'!" << std::endl;
   }
 
-  // Get the logger and set the verbosity level.
-  auto& logger = ctx->logger();
-  logger.setLevel(cmd::logLevel);
+  // TODO: Wire these up to command-line flags.
+  ret.logFile = cmd::logFile;
+  ret.logLevel = cmd::logLevel;
+  ret.garbageCollectionFrequency = 0;
+  ret.warnUnstable = false;
+  ret.enableStandardLibrary = false;
+  ret.compilerDebugTrace = false;
+
+  return ret;
+}
+
+int main(int argc, char** argv) {
+  auto config = prepareServerConfig(argc, argv);
+  Server context(std::move(config));
+  Server* ctx = &context;
 
   // Flush every log message immediately to avoid losing info on crash.
-  logger.setFlushImmediately(true);
+  auto& log = ctx->logger();
+  log.setFlushImmediately(true);
 
   ctx->message("Logging to '%s' with level '%s'\n",
-               logger.filePath().c_str(),
-               logger.levelToString());
+               log.filePath().c_str(),
+               log.levelToString());
 
   int run = 1;
   int ret = 0;
@@ -59,7 +69,7 @@ int main(int argc, char** argv) {
   while (run) {
     ctx->message("Server awaiting message...\n");
 
-    auto json = JsonValue(nullptr);
+    JsonValue json(nullptr);
 
     // TODO: This operation blocks. We'd like non-blocking IO. There are a
     // few ways to accomplish this. Ideally we find some sort of high-level,
@@ -77,7 +87,7 @@ int main(int argc, char** argv) {
     bool ok = Transport::readJsonBlocking(ctx, std::cin, json);
     CHPL_ASSERT(ok);
 
-    if (logger.level() == Logger::TRACE) {
+    if (log.level() == Logger::TRACE) {
       ctx->trace("Incoming JSON is %s\n", jsonToString(json).c_str());
     }
 
@@ -101,7 +111,7 @@ int main(int argc, char** argv) {
     // We have an immediate response, so send it.
     if (auto optRsp = Message::handle(ctx, msg.get())) {
       auto pack = optRsp->pack();
-      if (logger.level() == Logger::TRACE) {
+      if (log.level() == Logger::TRACE) {
         auto str = jsonToString(pack);
         ctx->trace("Outgoing JSON is %s\n", str.c_str());
       }
@@ -117,11 +127,11 @@ int main(int argc, char** argv) {
     }
 
     // Flush the log in case something goes wrong.
-    logger.flush();
+    log.flush();
   }
 
   ctx->message("Server exiting with code '%d'\n", ret);
-  logger.flush();
+  log.flush();
 
   return ret;
 }

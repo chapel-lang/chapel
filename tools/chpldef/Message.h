@@ -24,10 +24,8 @@
 #include "./misc.h"
 #include "./protocol-types.h"
 #include "./Server.h"
-
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
-
 #include <cstdint>
 #include <iostream>
 #include <fstream>
@@ -40,7 +38,10 @@ template <typename P, typename R> class Request;
 class Response;
 
 /** Forward declare requests. */
-#define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) class name__;
+#define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
+  struct name__##Params; \
+  struct name__##Result; \
+  class name__;
 #include "./message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 
@@ -282,6 +283,14 @@ public:
           error(Message::OK),
           result(r) {}
 
+    ComputedResult(bool isProgressingCallAgain, Message::Error error,
+                   std::string note,
+                   Result result)
+        : isProgressingCallAgain(isProgressingCallAgain),
+          error(error),
+          note(std::move(note)),
+          result(std::move(result)) {}
+
     ComputedResult() = default;
   };
 
@@ -341,10 +350,16 @@ public:
     to look up the message, as that is unambiguous.
 */
 #define CHPLDEF_MESSAGE(name__, outbound__, notification__, rpc__) \
-  class name__ : public Request<name__##Params, name__##Result> { \
+  namespace name__##Impl { \
+    constexpr bool notify = notification__; \
+    using E = EmptyProtocolType; \
+    using P = name__##Params; \
+    using R = std::conditional<notify, E, name__##Result>::type; \
+  } \
+  class name__ : public Request<name__##Impl::P, name__##Impl::R> { \
   public: \
-    using Params = name__##Params; \
-    using Result = name__##Result; \
+    using Params = name__##Impl::P; \
+    using Result = name__##Impl::R; \
     using ComputedResult = Request<Params, Result>::ComputedResult; \
   private: \
     name__(JsonValue id, Message::Error error, std::string note, \
@@ -354,7 +369,8 @@ public:
                   std::move(p)) { \
       static_assert(std::is_base_of<BaseProtocolType, Params>::value, \
                     "Must be derived from 'BaseProtocolType'"); \
-      static_assert(std::is_base_of<BaseProtocolType, Result>::value, \
+      static_assert(std::is_same<name__##Impl::E, Result>::value || \
+                    std::is_base_of<BaseProtocolType, Result>::value, \
                     "Must be derived from 'BaseProtocolType'"); \
     } \
   public: \
