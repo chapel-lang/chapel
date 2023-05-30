@@ -2925,34 +2925,14 @@ module ChapelBase {
 
   // non-param/non-param
 
-  inline operator ==(a: uint(8), b: int(8)) {
-    //
-    // If b's negative, these obviously aren't equal; if it's not
-    // negative, it can be cast to an int
-    //
-    return !(b < 0) && (a == b:uint(8));
-  }
-  inline operator ==(a: uint(16), b: int(16)) {
-    //
-    // If b's negative, these obviously aren't equal; if it's not
-    // negative, it can be cast to an int
-    //
-    return !(b < 0) && (a == b:uint(16));
-  }
-  inline operator ==(a: uint(32), b: int(32)) {
-    //
-    // If b's negative, these obviously aren't equal; if it's not
-    // negative, it can be cast to an int
-    //
-    return !(b < 0) && (a == b:uint(32));
-  }
-  inline operator ==(a: uint(64), b: int(64)) {
-    //
-    // If b's negative, these obviously aren't equal; if it's not
-    // negative, it can be cast to an int
-    //
-    return !(b < 0) && (a == b:uint(64));
-  }
+  //
+  // If b's negative, these obviously aren't equal; if it's not
+  // negative, it can be cast to an int
+  //
+  inline operator ==(a: uint(8), b: int(8)) do return !(b < 0) && (a == b:uint(8));
+  inline operator ==(a: uint(16), b: int(16)) do return !(b < 0) && (a == b:uint(16));
+  inline operator ==(a: uint(32), b: int(32)) do return !(b < 0) && (a == b:uint(32));
+  inline operator ==(a: uint(64), b: int(64)) do return !(b < 0) && (a == b:uint(64));
 
   //
   // the dual of the above

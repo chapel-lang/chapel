@@ -1927,8 +1927,6 @@ module AutoMath {
 
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
-
-     The return value has the same type as `x`.
   */
   proc mod(x: real(32), y: real(32)): real(32) {
     // This codes up the standard definition, according to Wikipedia.
@@ -1937,8 +1935,6 @@ module AutoMath {
   }
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
-
-     The return value has the same type as `x`.
   */
   proc mod(x: real(64), y: real(64)): real(64) {
     // This codes up the standard definition, according to Wikipedia.
