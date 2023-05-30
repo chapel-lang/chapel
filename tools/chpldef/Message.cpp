@@ -70,14 +70,16 @@ chpl::owned<BaseRequest> Message::request(Server* ctx, const JsonValue& j) {
     if (Message::isIdValid(*idPtr)) id = *idPtr;
   }
 
-  // Failed to get the ID.
-  if (!Message::isIdValid(id)) {
-    auto k = id.kind();
-    if (k != JsonValue::Null || !isNotification(tag)) {
-      ctx->verbose("Invalid message ID type '%s'\n",
-                   jsonKindToString(k));
-      return nullptr;
-    }
+  auto k = id.kind();
+  bool ok = true;
+  ok &= !isNotification(tag) || k == JsonValue::Null;
+  ok &= Message::isIdValid(id);
+
+  // Error if we failed to get the ID.
+  if (!ok) {
+    ctx->verbose("Invalid message ID type '%s'\n",
+                 jsonKindToString(k));
+    return nullptr;
   }
 
   // Before building a specific request, get the params.
@@ -329,26 +331,26 @@ const char* Message::errorToString(Error error) {
   return nullptr;
 }
 
-template <typename M, typename P, typename R>
+template <typename M, typename P, typename CR>
 static bool
-doHandleNotification(Server* ctx, M* msg, const P& p, R& r) {
+doHandleNotification(Server* ctx, M* msg, const P& p, CR& cr) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
   if (msg->status() != Message::PENDING) return false;
 
   ctx->message("Handling notification '%s'\n", msg->tagToString());
 
-  r = M::compute(ctx, p);
+  cr = M::compute(ctx, p);
 
-  if (r.isProgressingCallAgain) CHPLDEF_TODO();
+  if (cr.isProgressingCallAgain) CHPLDEF_TODO();
 
   ctx->message("Notification complete...\n");
 
   return true;
 }
 
-template <typename M, typename P, typename R>
+template <typename M, typename P, typename CR>
 static bool
-doHandleRequest(Server* ctx, M* msg, const P& p, R& r) {
+doHandleRequest(Server* ctx, M* msg, const P& p, CR& cr) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
   if (msg->status() != Message::PENDING) return false;
 
@@ -356,12 +358,12 @@ doHandleRequest(Server* ctx, M* msg, const P& p, R& r) {
                msg->tagToString(),
                msg->idToString().c_str());
 
-  r = M::compute(ctx, p);
+  cr = M::compute(ctx, p);
 
-  if (r.isProgressingCallAgain) CHPLDEF_TODO();
+  if (cr.isProgressingCallAgain) CHPLDEF_TODO();
 
-  if (r.error != Message::OK) {
-    auto cstr = Message::errorToString(r.error);
+  if (cr.error != Message::OK) {
+    auto cstr = Message::errorToString(cr.error);
     ctx->message("Request failed with code '%s'\n", cstr);
     return false;
   }
