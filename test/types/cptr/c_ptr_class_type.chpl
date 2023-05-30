@@ -36,3 +36,4 @@ writeln(c_ptrTo(mynilableunmanaged):string == (mynilableunmanaged:c_void_ptr):st
 
 
 delete myunmanaged;
+delete mynilableunmanaged;
