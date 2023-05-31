@@ -64,9 +64,9 @@ module HTable {
     var nrecords = arr.size: hsize_t;
     var type_size = meta.Rsize : hsize_t;
     var chunk_size = chunkSize:hsize_t;
-    var fill_data = c_nil;
+    var fill_data = nil;
     var compress = (if compressTable then 1 else 0):c_int;
-    var data = if (nrecords==0) then c_nil else c_ptrTo(arr);
+    var data = if (nrecords==0) then nil else c_ptrTo(arr);
 
     H5TBmake_table(cname, loc, cname, nfields, nrecords, type_size,
                    meta.names, meta.offsets, meta.types, chunk_size, fill_data,
@@ -108,7 +108,7 @@ module HTable {
     var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
     var nrecords = arr.size: hsize_t;
-    var data = if (nrecords==0) then c_nil else c_ptrTo(arr);
+    var data = if (nrecords==0) then nil else c_ptrTo(arr);
 
     H5TBappend_records(loc, cname, nrecords, type_size,
                        meta.offsets, meta.sizes, data);
