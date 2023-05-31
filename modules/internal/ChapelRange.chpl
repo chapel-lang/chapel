@@ -1219,7 +1219,9 @@ proc range.safeCast(type t: range(?)) {
 }
 
 /* Cast a range to a new range type.  If the old type was stridable and the
-   new type is not stridable, then force the new stride to be 1.
+   new type is not stridable, then force the new stride to be 1.  This cast
+   will throw if casts from the original ``idxType`` to the new one do
+   (for devs: using the overload just below).
  */
 @chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
