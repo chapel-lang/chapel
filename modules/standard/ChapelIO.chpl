@@ -286,29 +286,79 @@ module ChapelIO {
       }
     }
 
+    private proc __numIOFields(type t) : int {
+      param n = __primitive("num fields", t);
+      var ret = 0;
+      pragma "no init"
+      var dummy : t;
+      for param i in 1..n {
+        if isIoField(dummy, i) then
+          ret += 1;
+      }
+      return ret;
+    }
+
     //
     // Called by the compiler to implement the default behavior for
-    // the compiler-generated 'encodeTo' method.
+    // the compiler-generated 'serialize' method.
     //
     // TODO: would any formats want to print type or param fields?
+    // - more useful for param fields, e.g., an enum
     //
-    proc encodeToDefaultImpl(writer:fileWriter, const x:?t) throws {
-      writer.formatter.writeTypeStart(writer, t);
+    @chpldoc.nodoc
+    proc serializeDefaultImpl(writer:fileWriter, ref serializer,
+                              const x:?t, name: string) throws {
+      const numIO = __numIOFields(t);
+      if isClassType(t) then
+        serializer.startClass(writer, name, numIO);
+      else
+        serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed object {
-        encodeToDefaultImpl(writer, x.super);
+        serializeDefaultImpl(writer, serializer, x.super, "super");
       }
 
       param num_fields = __primitive("num fields", t);
       for param i in 1..num_fields {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
-          writer.formatter.writeField(writer, name,
-                                      __primitive("field by num", x, i));
+          serializer.serializeField(writer, name,
+                                    __primitive("field by num", x, i));
         }
       }
 
-      writer.formatter.writeTypeEnd(writer, t);
+      if isClassType(t) then
+        serializer.endClass(writer);
+      else
+        serializer.endRecord(writer);
+    }
+
+    @chpldoc.nodoc
+    proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
+                                ref x:?t, name:string) throws {
+      if isClassType(t) then
+        deserializer.startClass(reader, name);
+      else
+        deserializer.startRecord(reader, name);
+
+      if isClassType(t) && _to_borrowed(t) != borrowed object {
+        deserializeDefaultImpl(reader, deserializer, x.super, "super");
+      }
+
+      param num_fields = __primitive("num fields", t);
+      for param i in 1..num_fields {
+        if isIoField(x, i) {
+          param name : string = __primitive("field num to name", x, i);
+          ref field = __primitive("field by num", x, i);
+          field = deserializer.deserializeField(reader, name,
+                                                __primitive("field by num", x, i).type);
+        }
+      }
+
+      if isClassType(t) then
+        deserializer.endClass(reader);
+      else
+        deserializer.endRecord(reader);
     }
 
     //
