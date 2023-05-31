@@ -2831,10 +2831,13 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
+    if lhs._deserializer != nil then delete lhs._deserializer;
   }
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
+  if rhs._deserializer != nil then
+    lhs._deserializer = new unmanaged _serializeWrapper(rhs.deserializerType, rhs.deserializer);
 }
 
 @chpldoc.nodoc
@@ -2846,39 +2849,27 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
+    if lhs._serializer != nil then delete lhs._serializer;
   }
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
+  if rhs._serializer != nil then
+    lhs._serializer = new unmanaged _serializeWrapper(rhs.serializerType, rhs._serializer!.member);
 }
 
 @chpldoc.nodoc
-proc fileReader.init(param kind:iokind, param locking:bool, type fmtType) {
-  var default : fmtType;
-  this.init(kind, locking, default);
-}
-
-@chpldoc.nodoc
-proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?) {
+proc fileReader.init(param kind:iokind, param locking:bool, type deserializerType) {
   this.kind = kind;
   this.locking = locking;
-  this.fmtType = formatter.type;
-  this._fmt = formatter;
+  this.deserializerType = deserializerType;
 }
 
 @chpldoc.nodoc
-proc fileWriter.init(param kind:iokind, param locking:bool, type fmtType) {
-  var default : fmtType;
-  this.init(kind, locking, default);
-}
-
-
-@chpldoc.nodoc
-proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
+proc fileWriter.init(param kind:iokind, param locking:bool, type serializerType) {
   this.kind = kind;
   this.locking = locking;
-  this.fmtType = formatter.type;
-  this._fmt = formatter;
+  this.serializerType = serializerType;
 }
 
 @chpldoc.nodoc
@@ -2889,10 +2880,10 @@ proc fileReader.init=(x: fileReader) {
                  then this.type.locking
                  else x.locking;
 
-  this.fmtType = x.fmtType;
+  this.deserializerType = x.deserializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._fmt = x._fmt;
+  this._deserializer = new unmanaged _serializeWrapper(deserializerType, x._deserializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -2908,10 +2899,10 @@ proc fileWriter.init=(x: fileWriter) {
                  then this.type.locking
                  else x.locking;
 
-  this.fmtType = x.fmtType;
+  this.serializerType = x.serializerType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
-  this._fmt = x._fmt;
+  this._serializer = new unmanaged _serializeWrapper(serializerType, x._serializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -2935,23 +2926,24 @@ operator :(rhs: fileWriter, type t: fileWriter) {
 proc fileReader.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     in formatter:?) {
+                     _deserializer: unmanaged _serializeWrapper?(?dt)) {
   this.kind = kind;
   this.locking = locking;
-  this.fmtType = formatter.type;
+  this.deserializerType = dt;
   this._home = home;
   this._channel_internal = _channel_internal;
-  this._fmt = formatter;
+  this._deserializer = _deserializer;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
 @chpldoc.nodoc
-proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?,
+proc fileReader.init(param kind:iokind, param locking:bool, in deserializer:?,
                      f:file, out error:errorCode, hints: ioHintSet,
                      start:int(64), end:int(64),
                      in local_style:iostyleInternal) {
-  this.init(kind, locking, formatter);
+  this.init(kind, locking, deserializer.type);
   on f._home {
+    this._deserializer = new unmanaged _serializeWrapper(deserializer.type, deserializer);
     this._home = f._home;
     if kind != iokind.dynamic {
       local_style.binary = true;
@@ -2965,27 +2957,29 @@ proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?,
   }
 }
 
+// Used to create a non-locking alias of an existing channel
 @chpldoc.nodoc
 proc fileWriter.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
-                     in formatter:?) {
+                     _serializer: unmanaged _serializeWrapper(?st)?) {
   this.kind = kind;
   this.locking = locking;
-  this.fmtType = formatter.type;
+  this.serializerType = st;
   this._home = home;
   this._channel_internal = _channel_internal;
-  this._fmt = formatter;
+  this._serializer = _serializer;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
 @chpldoc.nodoc
-proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?,
+proc fileWriter.init(param kind:iokind, param locking:bool, in serializer:?,
                      f:file, out error:errorCode, hints: ioHintSet,
                      start:int(64), end:int(64),
                      in local_style:iostyleInternal) {
-  this.init(kind, locking, formatter);
+  this.init(kind, locking, serializer.type);
   on f._home {
+    this._serializer = new unmanaged _serializeWrapper(serializer.type, serializer);
     this._home = f._home;
     if kind != iokind.dynamic {
       local_style.binary = true;
@@ -3004,6 +2998,7 @@ proc ref fileReader.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
+    if _deserializer != nil then delete _deserializer;
   }
 }
 
@@ -3012,19 +3007,22 @@ proc ref fileWriter.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
+    if _serializer != nil then delete _serializer;
   }
 }
 
-// Convenience for forms like 'r.withFormatter(DefaultReader)`
+// Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
 @chpldoc.nodoc
-proc fileReader.withFormatter(type fmtType) {
-  var fmt : fmtType;
-  return withFormatter(fmt);
+proc fileReader.withDeserializer(type deserializerType) :
+  fileReader(this.kind, this.locking, deserializerType) {
+  var des : deserializerType;
+  return withDeserializer(des);
 }
 
 @chpldoc.nodoc
-proc fileReader.withFormatter(f: ?) {
-  var ret = new fileReader(this.kind, this.locking, f);
+proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this.kind, this.locking, dt) {
+  var ret = new fileReader(this.kind, this.locking, dt);
+  ret._deserializer = new unmanaged _serializeWrapper(dt, deserializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -3033,16 +3031,19 @@ proc fileReader.withFormatter(f: ?) {
   }
   return ret;
 }
-// Convenience for forms like 'w.withFormatter(DefaultWriter)`
+
+// Convenience for forms like 'w.withSerializer(DefaultSerializer)`
 @chpldoc.nodoc
-proc fileWriter.withFormatter(type fmtType) {
-  var fmt : fmtType;
-  return withFormatter(fmt);
+proc fileWriter.withSerializer(type serializerType) :
+  fileWriter(this.kind, this.locking, serializerType) {
+  var ser : serializerType;
+  return withSerializer(ser);
 }
 
 @chpldoc.nodoc
-proc fileWriter.withFormatter(f: ?) {
-  var ret = new fileWriter(this.kind, this.locking, f);
+proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this.kind, this.locking, st) {
+  var ret = new fileWriter(this.kind, this.locking, st);
+  ret._serializer = new unmanaged _serializeWrapper(st, serializer);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -4208,7 +4209,7 @@ proc openReader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileReader(kind, locking) throws {
+    : fileReader(kind, locking, defaultSerializeType(false)) throws {
   return openReaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
@@ -4266,7 +4267,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+    : fileReader(kind, locking, defaultSerializeType(false)) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -4311,17 +4312,18 @@ This function is equivalent to calling :proc:`open` and then
  */
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                region: range(?) = 0.., hints=ioHintSet.empty,
+                in deserializer: ?dt = defaultSerializeVal(false))
+    : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
-  return openReaderHelper(path, kind, locking, region, hints);
+  return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
 }
 
 @deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReader(path, kind, locking, region, hints);
 }
@@ -4330,7 +4332,7 @@ proc openreader(path:string,
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
                                               !useNewOpenReaderRegionBounds) {
   return openReaderHelper(path, kind, locking, region, hints);
 }
@@ -4339,12 +4341,14 @@ private proc openReaderHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
-                              style:iostyleInternal = defaultIOStyleInternal())
-  : fileReader(kind, locking) throws {
+                              style:iostyleInternal = defaultIOStyleInternal(),
+                              in deserializer: ?dt = defaultSerializeVal(false))
+  : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
-                             fromOpenReader=true);
+                             fromOpenReader=true,
+                             deserializer=deserializer);
 }
 
 @deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
@@ -4353,7 +4357,7 @@ proc openwriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
@@ -4363,7 +4367,7 @@ proc openWriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
   return openWriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
 }
@@ -4402,7 +4406,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
-    : fileWriter(kind, locking) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
   return openWriter(path, kind, locking, hints);
 }
 
@@ -4437,20 +4441,22 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 */
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
-                hints = ioHintSet.empty)
-    : fileWriter(kind, locking) throws {
-  return openWriterHelper(path, kind, locking, hints=hints);
+                hints = ioHintSet.empty,
+                in serializer: ?st = defaultSerializeVal(true))
+    : fileWriter(kind, locking, st) throws {
+  return openWriterHelper(path, kind, locking, hints=hints, serializer=serializer);
 }
 
 private proc openWriterHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
-                              style:iostyleInternal = defaultIOStyleInternal())
-  : fileWriter(kind, locking) throws {
+                              style:iostyleInternal = defaultIOStyleInternal(),
+                              in serializer: ?st = defaultSerializeVal(true))
+  : fileWriter(kind, locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
-  return try fl.writerHelper(kind, locking, start..end, hints, style);
+  return try fl.writerHelper(kind, locking, start..end, hints, style, serializer=serializer);
 }
 
 @unstable("reader with a style argument is unstable")
@@ -4511,10 +4517,12 @@ config param useNewFileReaderRegionBounds = false;
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty)
-  : fileReader(kind, locking) throws where (!region.hasHighBound() ||
-                                            useNewFileReaderRegionBounds) {
-  return this.readerHelper(kind, locking, region, hints);
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in deserializer: ?dt = defaultSerializeVal(false))
+  : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
+                                                useNewFileReaderRegionBounds) {
+  return this.readerHelper(kind, locking, region, hints,
+                           deserializer=deserializer);
 }
 
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
@@ -4531,8 +4539,9 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenReader=false, fromOpenUrlReader=false)
-  : fileReader(kind, locking) throws {
+                       fromOpenReader=false, fromOpenUrlReader=false,
+                       in deserializer: ?dt = defaultSerializeVal(false))
+  : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -4540,7 +4549,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // It is the responsibility of the caller to release the returned fileReader
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
-  var ret : fileReader(kind, locking);
+  var ret : fileReader(kind, locking, dt);
   var err:errorCode = 0;
   on this._home {
     var start : region.idxType;
@@ -4593,7 +4602,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
       end = max(region.idxType);
     }
 
-    ret = new fileReader(kind, locking, defaultFmtVal(false), this, err, hints,
+    ret = new fileReader(kind, locking, deserializer, this, err, hints,
                         start, end, style);
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
@@ -4645,7 +4654,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
 
-  var ret:itemReaderInternal(string, kind, locking, defaultFmtType(false));
+  var ret:itemReaderInternal(string, kind, locking, defaultSerializeType(false));
   var err:errorCode = 0;
   on this._home {
     var start : region.idxType;
@@ -4679,9 +4688,9 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
       start = 0;
       end = max(region.idxType);
     }
-    var ch = new fileReader(kind, locking, defaultFmtVal(false), this, err,
+    var ch = new fileReader(kind, locking, defaultSerializeVal(false), this, err,
                             hints, start, end, local_style);
-    ret = new itemReaderInternal(string, kind, locking, defaultFmtType(false), ch);
+    ret = new itemReaderInternal(string, kind, locking, defaultSerializeType(false), ch);
   }
   if err then try ioerror(err, "in file.lines", this._tryGetPath());
 
@@ -4752,10 +4761,11 @@ config param useNewFileWriterRegionBounds = false;
                                  byte 0.
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty):
-                 fileWriter(kind,locking) throws where (!region.hasHighBound() ||
+                 region: range(?) = 0.., hints = ioHintSet.empty,
+                 in serializer:?st = defaultSerializeVal(true)):
+                 fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
                                                         useNewFileWriterRegionBounds) {
-  return this.writerHelper(kind, locking, region, hints);
+  return this.writerHelper(kind, locking, region, hints, serializer=serializer);
 }
 
 @deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
@@ -4770,8 +4780,9 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenUrlWriter = false):
-  fileWriter(kind,locking) throws {
+                       fromOpenUrlWriter = false,
+                       in serializer:?st = defaultSerializeVal(true)):
+  fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
@@ -4781,7 +4792,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // fileWriter.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
-  var ret : fileWriter(kind, locking);
+  var ret : fileWriter(kind, locking, st);
   var err:errorCode = 0;
   on this._home {
     var start : region.idxType;
@@ -4816,7 +4827,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
       end = max(region.idxType);
     }
 
-    ret = new fileWriter(kind, locking, defaultFmtVal(true), this, err, hints,
+    ret = new fileWriter(kind, locking, serializer, this, err, hints,
                          start, end, style);
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
@@ -5366,8 +5377,9 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileReader that borrows the pointer in the
   // existing fileReader so we can avoid locking (because we
   // already have the lock)
+  var temp : unmanaged _serializeWrapper?(nothing);
   var reader = new fileReader(iokind.dynamic, locking=false,
-                              formatter=defaultFmtVal(false),
+                              _deserializer=temp,
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -5418,8 +5430,9 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // Create a new fileWriter that borrows the pointer in the
   // existing fileWriter so we can avoid locking (because we
   // already have the lock)
+  var temp : unmanaged _serializeWrapper?(nothing);
   var writer = new fileWriter(iokind.dynamic, locking=false,
-                              formatter=defaultFmtVal(true),
+                              _serializer=temp,
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -5942,7 +5955,7 @@ iter fileReader.lines(stripNewline = false) {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, kind, locking, fmtType, this);
+  var itemReader = new itemReaderInternal(string, kind, locking, deserializerType, this);
   for line in itemReader {
     if !stripNewline then yield line;
     else {
@@ -8599,10 +8612,10 @@ record itemReaderInternal {
   param kind:iokind;
   /* the locking field for our fileReader */
   param locking:bool;
-  /* the decoder for this fileReader */
-  type fmtType;
+  /* the deserializer for this fileReader */
+  type deserializerType;
   /* our fileReader */
-  var ch:fileReader(kind,locking,fmtType);
+  var ch:fileReader(kind,locking,deserializerType);
 
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
