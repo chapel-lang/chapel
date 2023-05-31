@@ -61,12 +61,6 @@ module ChapelBase {
   pragma "no object"
   class _object { }
 
-  proc object.encodeTo(f) throws {
-    ref fmt = f.formatter;
-    fmt.writeTypeStart(f, object);
-    fmt.writeTypeEnd(f, object);
-  }
-
 
   enum iterKind {leader, follower, standalone};
 
