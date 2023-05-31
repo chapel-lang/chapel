@@ -97,7 +97,7 @@ class IdAndFlags {
           equivalent to the single contained Flags value f.
 
       Inserting into the FlagSet automatically tries to perform basic
-      simplificaton to avoid growing the size. */
+      simplification to avoid growing the size. */
   class FlagSet {
    private:
      llvm::SmallVector<Flags, 4> flagVec;

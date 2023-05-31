@@ -2834,7 +2834,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
 
-      // advance the ptr, start of aviliabe data, etc.
+      // advance the ptr, start of available data, etc.
       ptr = qio_ptr_add(ptr, gotlen);
       _set_right_mark_start(ch, end.offset);
       ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);

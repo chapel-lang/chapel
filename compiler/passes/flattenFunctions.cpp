@@ -126,7 +126,7 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
 
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) &&
       !sym->hasFlag(FLAG_HAS_RUNTIME_TYPE))
-    // don't propogate type variables
+    // don't propagate type variables
     return false;
 
   if (shouldAddArgForAlwaysRvf(sym, parentFn))

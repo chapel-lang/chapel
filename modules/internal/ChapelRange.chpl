@@ -3185,8 +3185,8 @@ operator :(r: range(?), type t: range(?)) {
   {
     type t = modulus.type;
     var m = modulus;
-    // The extra check for `m != min(t)` is requird to avoid an optimizer
-    // (specially LLVM) determin that `-min(t)` is undefined and inserting
+    // The extra check for `m != min(t)` is required to avoid an optimizer
+    // (especially LLVM) determining that `-min(t)` is undefined and inserting
     // `poison`.
     if isIntType(t) && m < 0 && m != min(t) then m = -m;
 
