@@ -148,7 +148,7 @@ static QualifiedType primFieldNumToName(Context* context, const CallInfo& ci) {
   return type;
 }
 
-static QualifiedType primFieldNametoNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
@@ -327,7 +327,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_FIELD_NAME_TO_NUM:
-      type = primFieldNametoNum(context, ci);
+      type = primFieldNameToNum(context, ci);
       break;
 
     case PRIM_FIELD_BY_NUM:
