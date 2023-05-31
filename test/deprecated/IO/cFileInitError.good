@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/IO.chpl:1756: In initializer:
+$CHPL_HOME/modules/standard/IO.chpl:1761: error: Cannot initialize a `file` with a `c_FILE` object. Please pass a pointer to the `c_FILE` object instead.
+  cFileInitError.chpl:8: called as file.init(fp: chpl_cFile, hints: ioHintSet, own: bool)

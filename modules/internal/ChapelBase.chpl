@@ -33,7 +33,7 @@ module ChapelBase {
 
   @chpldoc.nodoc
   @deprecated(notes="the '_file' type is deprecated; please use 'CTypes.c_FILE' instead")
-  type _file = c_FILE;
+  type _file = c_FILE_internal;
 
   config param enablePostfixBangChecks = false;
 
