@@ -661,14 +661,14 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _ddata.encodeTo(f) throws { writeThis(f); }
+  proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
 
   @chpldoc.nodoc
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
   @chpldoc.nodoc
-  proc chpl_taskID_t.encodeTo(f) throws { writeThis(f); }
+  proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
   @chpldoc.nodoc
   proc chpl_taskID_t.readThis(f) throws {
@@ -676,16 +676,16 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc type chpl_taskID_t.decodeFrom(f) throws {
+  proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
-    ret.readThis(f);
+    ret.readThis(reader);
     return ret;
   }
 
   @chpldoc.nodoc
   proc nothing.writeThis(f) {}
   @chpldoc.nodoc
-  proc nothing.encodeTo(f) {}
+  proc nothing.serialize(writer, ref serializer) {}
 
   @chpldoc.nodoc
   proc _tuple.readThis(f) throws {
@@ -841,10 +841,12 @@ module ChapelIO {
     }
   }
 
+  @chpldoc.nodoc
   proc range.init(type idxType = int,
                   param bounds : boundKind = boundKind.both,
                   param strides : strideKind = strideKind.one,
-                  reader: fileReader(?)) {
+                  reader: fileReader(?),
+                  ref deserializer) {
     this.init(idxType, bounds, strides);
 
     // TODO:
@@ -894,6 +896,11 @@ module ChapelIO {
   @chpldoc.nodoc
   override proc Error.writeThis(f) throws {
     f.write(chpl_describe_error(this));
+  }
+
+  @chpldoc.nodoc
+  override proc Error.serialize(writer, ref serializer) throws {
+    writer.write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */

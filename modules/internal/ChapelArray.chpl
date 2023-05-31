@@ -836,9 +836,9 @@ module ChapelArray {
 
     // TODO: Can't this be an initializer?
     @chpldoc.nodoc
-    proc type decodeFrom(f) throws {
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
@@ -846,8 +846,8 @@ module ChapelArray {
       f.write(_value);
     }
     @chpldoc.nodoc
-    proc encodeTo(f) throws {
-      f.write(_value);
+    proc serialize(writer, ref serializer) throws {
+      writer.write(_value);
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -1656,13 +1656,13 @@ module ChapelArray {
       _value.dsiSerialWrite(f);
     }
 
-    // Note: This 'encodeTo' is required at the moment because the compiler
-    // generated 'encodeTo', like 'writeThis' is considered to be a last
+    // Note: This 'serialize' is required at the moment because the compiler
+    // generated 'serialize', like 'writeThis' is considered to be a last
     // resort. Without this method we would incur promotion when trying
     // to print arrays.
     @chpldoc.nodoc
-    proc encodeTo(f) throws {
-      writeThis(f);
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     @chpldoc.nodoc
@@ -1676,12 +1676,17 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
     @chpldoc.nodoc
-    proc type decodeFrom(f) throws {
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 

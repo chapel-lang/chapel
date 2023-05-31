@@ -1358,12 +1358,13 @@ module TomlReader {
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc init(r: fileReader) {
+    @chpldoc.nodoc
+    proc init(reader: fileReader, ref deserializer) {
       this.complete();
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc writeThis(f) throws {
+    override proc writeThis(f) throws {
       f.write(this.A.toArray());
     }
   }

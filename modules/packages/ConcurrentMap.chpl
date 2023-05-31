@@ -1047,7 +1047,8 @@ module ConcurrentMap {
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 
-    proc init(type keyType, type valType, r: fileReader) {
+    @chpldoc.nodoc
+    proc init(type keyType, type valType, reader: fileReader, ref deserializer) {
       this.init(keyType, valType);
       compilerWarning("Reading a ConcurrentMap is not supported");
     }

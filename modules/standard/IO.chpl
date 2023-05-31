@@ -3302,8 +3302,8 @@ record ioNewline {
   }
 
   @chpldoc.nodoc
-  proc encodeTo(w) throws {
-    w.writeNewline();
+  proc serialize(writer: fileWriter, ref serializer: writer.serializerType) throws {
+    writer.writeNewline();
   }
 }
 
@@ -10141,8 +10141,8 @@ class _channel_regex_info {
     f.write(", ... capturei = " + capturei: string);
     f.write(", ncaptures = " + ncaptures: string + "}");
   }
-  override proc encodeTo(f) throws {
-    writeThis(f);
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 

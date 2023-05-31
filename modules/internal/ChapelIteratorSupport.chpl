@@ -365,8 +365,8 @@ module ChapelIteratorSupport {
   }
 
   @chpldoc.nodoc
-  proc _iteratorRecord.encodeTo(f) throws {
-    writeThis(f);
+  proc _iteratorRecord.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   operator =(ref ic: _iteratorRecord, xs) {

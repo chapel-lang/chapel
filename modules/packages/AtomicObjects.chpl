@@ -393,7 +393,8 @@ prototype module AtomicObjects {
       compilerWarning("Reading an ABA is not supported");
     }
 
-    proc init(type __ABA_objType, r: fileReader) {
+    @chpldoc.nodoc
+    proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
       this.init(__ABA_objType);
       compilerWarning("Reading an ABA is not supported");
     }
@@ -636,10 +637,12 @@ prototype module AtomicObjects {
       compilerWarning("Reading an AtomicObject is not supported");
     }
 
+    @chpldoc.nodoc
     proc init(type objType,
               param hasABASupport: bool,
               param hasGlobalSupport: bool,
-              r: fileReader) {
+              reader: fileReader,
+              ref deserializer) {
       init(objType, hasABASupport, hasGlobalSupport);
       compilerWarning("Reading an AtomicObject is not supported");
     }
