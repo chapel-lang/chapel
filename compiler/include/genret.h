@@ -121,15 +121,6 @@ public:
   void* noalias;
 #endif
 
-  // Used to mark variables as const after they are stored
-  // Specifically: use "llvm.invariant.start"
-  bool canBeMarkedAsConstAfterStore;
-
-  // Mark pointers we already stored to, used to assert
-  // the assumption that store to const memory
-  // is the only store to that memory
-  bool alreadyStored;
-
   // Used for generating LLVM parallel_loop_accesses metadata.
   // Loads/stores to/from loop local stack variables should not be considered
   // for this, so this variable tracks if a pointer must point to something
@@ -161,7 +152,6 @@ public:
   GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL),
              fieldOffset(0), fieldTbaaTypeDescriptor(NULL),
              aliasScope(NULL), noalias(NULL),
-             canBeMarkedAsConstAfterStore(false), alreadyStored(false),
              mustPointOutsideOrderIndependentLoop(false),
              chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
 
