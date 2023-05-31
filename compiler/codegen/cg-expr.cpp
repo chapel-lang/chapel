@@ -534,7 +534,7 @@ llvm::Type* computePointerElementType(llvm::Value* ptr, Type* chplType) {
   }
 
   // otherwise, try to compute it from the pointer element type.
-  // Note that while this works in simple cases, it is innaccurate for
+  // Note that while this works in simple cases, it is inaccurate for
   // more complex cases like e.g. a GEP of the 1st element in a global
   // of struct type -- that can return the global since the opaque pointer
   // value is the same as an opaque pointer pointing to the 1st field.
