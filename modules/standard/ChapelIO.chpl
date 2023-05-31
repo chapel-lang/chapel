@@ -671,11 +671,11 @@ module ChapelIO {
 
     const (start, comma, comma1tup, end) = getLiterals();
 
-    proc helper(const ref arg) throws where f.writing { f.write(arg); }
-    proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
+    proc helper(const ref arg) throws where f._writing { f.write(arg); }
+    proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if !binary {

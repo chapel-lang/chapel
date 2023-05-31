@@ -1728,7 +1728,7 @@ module DefaultRectangular {
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     proc rwSpaces(dim:int) throws {
@@ -1757,13 +1757,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f.write(arr.dsiAccess(idx));
+          if f._writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
