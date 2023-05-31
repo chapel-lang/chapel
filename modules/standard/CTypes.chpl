@@ -42,14 +42,6 @@ module CTypes {
   use HaltWrappers;
   public use ChapelSysCTypes;
 
-  @chpldoc.nodoc
-  proc chpl_typeMoveWarning(param name: string, param mod: string,
-                            param newmod: string = "CTypes") {
-    compilerWarning("type '" + name + "' has moved from '" + mod +
-                    "' to '" + newmod + "'; please update your " +
-                    "'use'/'import' statements accordingly.", errorDepth=2);
-  }
-
   /* The Chapel type corresponding to the C 'float' type */
   extern type c_float = real(32);
 
@@ -58,8 +50,6 @@ module CTypes {
 
   /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
   extern "_cfile" type c_FILE;
-
-  // Former CPtr contents start here
 
   /*
 
