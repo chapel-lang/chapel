@@ -8480,6 +8480,11 @@ proc fileReader.readlnHelper(ref args ...?k,
 proc fileReader.read(type t) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
+  if isGenericType(t) then
+    compilerError("reading generic types is not supported: '" + t:string + "'");
+  if isBorrowedClass(t) then
+    compilerError("reading borrowed class types is not supported: '" + t:string + "'");
+
   pragma "no init"
   var ret : t;
 
