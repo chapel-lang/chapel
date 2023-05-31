@@ -1,7 +1,0 @@
-#!/bin/sh
-
-if grep "may not be used in a new-expression" $2; then
-  echo "Found new-expression error." > $2
-else
-  echo "Found unexpected error." > $2
-fi

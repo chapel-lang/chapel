@@ -1,4 +1,0 @@
-(z = hello,, x = 5, y = 42.0)
-uncaught BadFormatError: bad format: missing expected literal (while reading string literal "x" with path "unknown" offset 1)
-  out-of-order.chpl:50: thrown here
-  out-of-order.chpl:50: uncaught here
