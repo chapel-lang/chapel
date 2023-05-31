@@ -1013,13 +1013,13 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  extern proc mpf_out_str(stream: c_FILE,
+  extern proc mpf_out_str(stream: c_ptr(chpl_cFile),
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: c_FILE,
+                          stream: c_ptr(chpl_cFile),
                           base: c_int);
 
   //
