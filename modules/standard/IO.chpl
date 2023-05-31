@@ -4106,6 +4106,7 @@ proc fileReader.readWriteThisFromLocale() {
    that is the formal argument to a `writeThis` method.
 
  */
+@unstable("'readWriteThisFromLocale' may be removed or modified in a future release")
 inline
 proc fileWriter.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
