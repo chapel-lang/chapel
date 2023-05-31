@@ -276,6 +276,7 @@ class InsertLineNumbers : public PassTU<FnSymbol*, CallExpr*> {
   LineAndFile getLineAndFileForFn(FnSymbol *fn);
 
   std::unordered_map<FnSymbol*, LineAndFile> lineAndFilenameMap;
+  std::unordered_set<CallExpr*> fixedCalls;
 };
 
 #endif
