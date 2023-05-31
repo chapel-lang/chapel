@@ -751,29 +751,34 @@ module ChapelIO {
     }
   }
 
-  proc type _tuple.decodeFrom(f) throws {
-    ref fmt = f.formatter;
+  @chpldoc.nodoc
+  proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
     pragma "no init"
     var ret : this;
-    fmt.readTypeStart(f, this);
-    for param i in 0..<this.size {
-      pragma "no auto destroy"
-      var elt = fmt.readField(f, "", this(i));
-      __primitive("=", ret(i), elt);
-    }
-    fmt.readTypeEnd(f, this);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 
-  proc const _tuple.encodeTo(w) throws {
-    ref fmt = w.formatter;
-    fmt.writeTypeStart(w, this.type);
+  @chpldoc.nodoc
+  proc _tuple.deserialize(reader, ref deserializer) throws {
+    ref des = deserializer;
+    des.startTuple(reader);
+    for param i in 0..<this.size {
+      pragma "no auto destroy"
+      var elt = des.deserializeField(reader, "", this(i).type);
+      __primitive("=", this(i), elt);
+    }
+    des.endTuple(reader);
+  }
+
+  @chpldoc.nodoc
+  proc const _tuple.serialize(writer, ref serializer) throws {
+    serializer.startTuple(writer, this.size);
     for param i in 0..<size {
       const ref elt = this(i);
-      // TODO: should probably have something like 'writeElement'
-      fmt.writeField(w, "", elt);
+      serializer.serializeField(writer, "", elt);
     }
-    fmt.writeTypeEnd(w, this.type);
+    serializer.endTuple(writer);
   }
 
   // Moved here to avoid circular dependencies in ChapelRange
