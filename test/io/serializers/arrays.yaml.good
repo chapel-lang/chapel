@@ -2,11 +2,9 @@
 ===== writing: =====
 0 1 2
 --------------------
----
 - 0
 - 1
 - 2
-...
 
 ====================
 SUCCESS: [domain(1,int(64),false)] int(64)
@@ -16,7 +14,6 @@ SUCCESS: [domain(1,int(64),false)] int(64)
 3 4 5
 6 7 8
 --------------------
----
 - - 0
   - 1
   - 2
@@ -26,7 +23,6 @@ SUCCESS: [domain(1,int(64),false)] int(64)
 - - 6
   - 7
   - 8
-...
 
 ====================
 SUCCESS: [domain(2,int(64),false)] int(64)
@@ -44,7 +40,6 @@ SUCCESS: [domain(2,int(64),false)] int(64)
 21 22 23
 24 25 26
 --------------------
----
 - - - 0
     - 1
     - 2
@@ -72,7 +67,6 @@ SUCCESS: [domain(2,int(64),false)] int(64)
   - - 24
     - 25
     - 26
-...
 
 ====================
 SUCCESS: [domain(3,int(64),false)] int(64)
@@ -116,7 +110,6 @@ SUCCESS: [domain(3,int(64),false)] int(64)
 75 76 77
 78 79 80
 --------------------
----
 - - - - 0
       - 1
       - 2
@@ -198,7 +191,6 @@ SUCCESS: [domain(3,int(64),false)] int(64)
     - - 78
       - 79
       - 80
-...
 
 ====================
 SUCCESS: [domain(4,int(64),false)] int(64)
@@ -322,7 +314,6 @@ SUCCESS: [domain(4,int(64),false)] int(64)
 237 238 239
 240 241 242
 --------------------
----
 - - - - - 0
         - 1
         - 2
@@ -566,7 +557,6 @@ SUCCESS: [domain(4,int(64),false)] int(64)
       - - 240
         - 241
         - 242
-...
 
 ====================
 SUCCESS: [domain(5,int(64),false)] int(64)
@@ -574,7 +564,6 @@ SUCCESS: [domain(5,int(64),false)] int(64)
 ===== writing: =====
 1 2 3 2 4 6 3 6 9
 --------------------
----
 - - 1
   - 2
   - 3
@@ -584,7 +573,6 @@ SUCCESS: [domain(5,int(64),false)] int(64)
 - - 3
   - 6
   - 9
-...
 
 ====================
 SUCCESS: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)
@@ -592,13 +580,12 @@ SUCCESS: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)
 ===== writing: =====
 (x = 1 2 3 4)
 --------------------
---- !R
+!R
 x:
 - 1
 - 2
 - 3
 - 4
-...
 
 ====================
 SUCCESS: R
