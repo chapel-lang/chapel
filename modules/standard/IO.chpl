@@ -5363,53 +5363,38 @@ proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 }
 
 @chpldoc.nodoc
-proc fileReader._decodeOne(type readType, loc:locale) throws {
-  var reader = new fileReader(iokind.dynamic, locking=false,
-                              formatter=_fmt,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
-  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+proc fileReader._deserializeOne(type readType, loc:locale) throws {
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var reader: fileReader(iokind.dynamic, locking=false, deserializerType);
+  reader._channel_internal = _channel_internal;
+  reader._deserializer = _deserializer;
+  reader._home = _home;
+  reader._readWriteThisFromLocale = loc;
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+          reader._deserializer = nil; }
 
-  if isGenericType(readType) then
-    compilerError("reading generic types is not supported: '" + readType:string + "'");
-
-  if isClassType(readType) {
-    // Save formatter authors from having to reason about 'owned' and
-    // 'shared' by converting the type to unmanaged.
-    var tmp = reader.formatter.decode(reader, _to_unmanaged(readType));
-
-    // TODO: We may also want to support user-defined management types at
-    // some point.
-    // TODO: Implement support for reading a 'borrowed' class
-    if isOwnedClassType(readType) {
-      return new _owned(tmp);
-    } else if isSharedClassType(readType) {
-      return new _shared(tmp);
-    } else {
-      return tmp;
-    }
-  } else {
-    return reader.formatter.decode(reader, readType);
-  }
+  return reader.deserializer.deserializeType(reader, readType);
 }
 
 @chpldoc.nodoc
-proc fileReader._decodeOne(ref x:?t, loc:locale) throws {
-  // _read_one_internal
-  var reader = new fileReader(iokind.dynamic, locking=false,
-                              formatter=_fmt,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
-  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var reader: fileReader(iokind.dynamic, locking=false, deserializerType);
+  reader._channel_internal = _channel_internal;
+  reader._deserializer = _deserializer;
+  reader._home = _home;
+  reader._readWriteThisFromLocale = loc;
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL;
+          reader._deserializer = nil; }
 
   if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
 
-  x = _decodeOne(t, loc);
+  reader.deserializer.deserializeValue(reader, x);
 }
 
 //
@@ -5435,21 +5420,27 @@ private proc escapedNonUTF8ErrorMessage() : string {
 }
 
 @chpldoc.nodoc
-proc fileWriter._encodeOne(const x:?t, loc:locale) throws {
-  var writer = new fileWriter(iokind.dynamic, locking=false,
-                              formatter=formatter,
-                              home=here,
-                              _channel_internal=_channel_internal,
-                              _readWriteThisFromLocale=loc);
+proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
+  // TODO: Investigate overhead of initializer when in a loop.
+  pragma "no init"
+  var writer : fileWriter(iokind.dynamic, locking=false, serializerType);
+  writer._channel_internal = _channel_internal;
+  writer._serializer = _serializer;
+  writer._home = _home;
+  writer._readWriteThisFromLocale = loc;
 
   // Set the fileWriter pointer to NULL to make the
   // destruction of the local writer record safe
   // (it shouldn't release anything since it's a local copy).
-  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
+  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL;
+          writer._serializer = nil; }
 
-  // TODO: Should this pass an unmanaged or borrowed version, to reduce
-  // the number of instantiations for a type?
-  try writer.formatter.encode(writer, x);
+  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
+    writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    return;
+  }
+
+  try writer.serializer.serializeValue(writer, x);
 }
 
 //
@@ -5665,8 +5656,8 @@ proc fileReader.readIt(ref x) throws {
   on this._home {
     try! this.lock(); defer { this.unlock(); }
 
-    if chpl_useIOFormatters {
-      _decodeOne(x, origLocale);
+    if deserializerType != nothing {
+      _deserializeOne(x, origLocale);
     } else {
       _readOne(kind, x, origLocale);
     }
@@ -6230,8 +6221,8 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      if chpl_useIOFormatters {
-        _decodeOne(args[i], origLocale);
+      if deserializerType != nothing {
+        _deserializeOne(args[i], origLocale);
       } else {
         _readOne(kind, args[i], origLocale);
       }
@@ -6284,8 +6275,8 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
       this._set_styleInternal(style);
 
       for param i in 0..k-1 {
-        if chpl_useIOFormatters {
-          _decodeOne(args[i], origLocale);
+        if deserializerType != nothing {
+          _deserializeOne(args[i], origLocale);
         } else {
           _readOne(kind, args[i], origLocale);
         }
@@ -8495,8 +8486,8 @@ proc fileReader.read(type t) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    if chpl_useIOFormatters {
-      __primitive("move", ret, _decodeOne(t, origLocale));
+    if deserializerType != nothing {
+      __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
       pragma "no auto destroy"
       var tmp : t;
@@ -8590,8 +8581,8 @@ inline proc fileWriter.write(const args ...?k) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      if chpl_useIOFormatters {
-        this._encodeOne(args(i), origLocale);
+      if serializerType != nothing {
+        this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(kind, args(i), origLocale);
       }
@@ -8619,8 +8610,8 @@ proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
     }
 
     for param i in 0..k-1 {
-      if chpl_useIOFormatters {
-        this._encodeOne(args(i), origLocale);
+      if serializerType != nothing {
+        this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(iokind.dynamic, args(i), origLocale);
       }
