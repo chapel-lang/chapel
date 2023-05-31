@@ -1111,9 +1111,9 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     var ent: direntptr = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       var filename: string;
       try! {
         filename = string.createCopyingBuffer(ent.d_name(),

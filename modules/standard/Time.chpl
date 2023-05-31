@@ -132,7 +132,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
-    var ret = gettimeofday(tv, c_nil);
+    var ret = gettimeofday(tv, nil);
     assert(ret == 0);
     return (tv.tv_sec, tv.tv_usec);
   }
