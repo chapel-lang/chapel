@@ -174,7 +174,7 @@ static void checkRangeDeprecations(ResolveScope* scope, UseStmt* use,
       USR_FATAL(use,
         "BoundedRangeType is deprecated; please use 'boundKind' instead");
     }
-    // Given the implentation below, it is hard to issue warnings
+    // Given the implementation below, it is hard to issue warnings
     // for individual naked uses of BoundedRangeType's enum constants.
     // Instead, issue a blanket warning here.
     // Note: the scope resolver has already warned about BoundedRangeType.
