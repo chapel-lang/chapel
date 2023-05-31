@@ -8485,7 +8485,11 @@ proc fileReader.read(type t) throws {
   if isBorrowedClass(t) then
     compilerError("reading borrowed class types is not supported: '" + t:string + "'");
 
+  // Need 'do not RVF' here so that 'ret' is passed by reference across the
+  // on-stmt. Otherwise it would be serialized/bit-copied and we couldn't
+  // return the value that we just read.
   pragma "no init"
+  pragma "do not RVF"
   var ret : t;
 
   on this._home {
