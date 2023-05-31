@@ -2601,165 +2601,252 @@ proc fileWriter.serializer ref : serializerType {
   return _serializer!.member;
 }
 
-//
-// Authors of FormatWriters are expected to implement the following methods:
-//
-// proc encode(writer: fileWriter, const x: ?) : void throws
-//
-// proc writeField(writer: fileWriter, name: string, const x: ?) : void throws
-//
-// proc writeTypeStart(writer: fileWriter, type T) throws
-//
-// proc writeTypeEnd(writer: fileWriter, type T) throws
-//
-// At this time, the formal names are unspecified.
-//
-// FormatWriters that can be default-initialized can be used with the version
-// of ``fileWriter.withFormatter`` method that accepts a type, rather than a
-// value.
-//
-// FormatWriters have the option of calling the ``encodeTo`` method on a type
-// in order to support user-defined writing of a given type:
-//
-//   proc MyType.encodeTo(writer: fileWriter) : void throws
-//
-// The compiler is expected to generate a default implementation of encodeTo
-// methods for records and classes.
-//
-@chpldoc.nodoc
-record DefaultWriter {
-  var firstField = true;
-  var _wroteStart, _wroteEnd : bool;
+/*
+  The default serializer used by ``fileWriter``.
+
+  Implements the 'serializeValue' method which is called by a ``fileWriter``.
+
+  Serializers can choose to invoke a user-defined method, 'serialize', on
+  class and record types. The 'serialize' method should match the formal names,
+  intents, and types of the following signature:
+
+    proc MyType.serialize(writer: fileWriter(?), ref serializer: writer.serializerType) throws
+
+  The compiler is expected to generate a default implementation of 'serialize'
+  methods for records and classes.
+*/
+record DefaultSerializer {
+  @chpldoc.nodoc
+  var _firstThing = true;
+  @chpldoc.nodoc
   var _inheritLevel = 0;
 
-  proc _encodeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
+  // Array state to track position in multidimensional arrays
+  @chpldoc.nodoc
+  var _arrayDim = 0;
+  @chpldoc.nodoc
+  var _arrayMax : int;
+
+  @chpldoc.nodoc
+  var _oneTuple : bool = false;
+
+  @chpldoc.nodoc
+  proc _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
     if x == nil {
       writer._writeLiteral("nil");
     } else if isClassType(t) {
-      x!.encodeTo(writer.withFormatter(new DefaultWriter()));
+      var alias = writer.withSerializer(new DefaultSerializer());
+      x!.serialize(writer=alias, serializer=alias.serializer);
     } else {
-      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+      var alias = writer.withSerializer(new DefaultSerializer());
+      x.serialize(writer=alias, serializer=alias.serializer);
     }
   }
 
-  // TODO: Add formatter support for unions. For now, forward to old
-  // implementation.
-  proc _encodeUnion(writer:fileWriter, x: ?t) : void throws {
-    x.writeThis(writer);
-  }
-
-  // Writes value 'x' in the Default IO format
-  proc encode(writer:fileWriter, const x: ?t) : void throws {
+  proc serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
-      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
-    } else if t == ioLiteral {
-      writer._writeLiteral(x.val);
-    } else if t == ioNewline || t == _internalIoChar {
-      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+      writer._writeOne(writer.kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
     } else if isClassType(t) || chpl_isAnyCPtr(t) {
-      _encodeClassOrPtr(writer, x);
+      _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
-      _encodeUnion(writer, x);
+      val.writeThis(writer);
     } else {
-      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+      var alias = writer.withSerializer(new DefaultSerializer());
+      val.serialize(writer=alias, serializer=alias.serializer);
     }
   }
 
-  //
-  // Writes a field name, followed by the literal string " = ", then writes
-  // the value of 'x'.
-  //
-  proc writeField(writer:fileWriter, name: string, const x: ?) : void throws {
-    if !firstField then
-      writer._writeLiteral(", ");
+  @chpldoc.nodoc
+  proc serializeField(writer:fileWriter, name: string, const val: ?) : void throws {
+    if !_firstThing then writer._writeLiteral(", ");
+    else _firstThing = false;
 
     if !name.isEmpty() {
       writer._writeLiteral(name);
       writer._writeLiteral(" = ");
     }
 
-    writer.write(x);
-    firstField = false;
+    writer.write(val);
   }
 
-  proc writeTypeStart(w: fileWriter, type T) throws {
-
-    // TODO: Arrays, and array-like things (e.g. lists)
+  // Class helpers
+  //
+  // TODO: If this is called in a nested way for inheriting classes, then we
+  // can increment 'size' internally to track the total number of fields...?
+  @chpldoc.nodoc
+  proc startClass(writer: fileWriter, name: string, size: int) throws {
     if _inheritLevel == 0 {
-      if isClassType(T) then
-        w._writeLiteral("{");
-      else if isRecordType(T) || isTupleType(T) then
-        w._writeLiteral("(");
-      else
-        throw new Error("unhandled type in writeTypeStart");
+      writer._writeLiteral("{");
     }
-
     _inheritLevel += 1;
   }
-
-  proc writeTypeEnd(w: fileWriter, type T) throws {
-
+  @chpldoc.nodoc
+  proc endClass(writer: fileWriter) throws {
     if _inheritLevel == 1 {
-      if isClassType(T) then
-        w._writeLiteral("}");
-      else if isRecordType(T) then
-        w._writeLiteral(")");
-      else if isTupleType(T) {
-        if T.size == 1 then w._writeLiteral(",)");
-        else w._writeLiteral(")");
-      } else
-        throw new Error("unhandled type in writeTypeEnd");
+      writer._writeLiteral("}");
     }
-
     _inheritLevel -= 1;
   }
+
+  // Record helpers
+  @chpldoc.nodoc
+  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("(");
+  }
+  @chpldoc.nodoc
+  proc endRecord(writer: fileWriter) throws {
+    writer._writeLiteral(")");
+  }
+
+  // Tuple helpers
+  @chpldoc.nodoc
+  proc startTuple(writer: fileWriter, size: int) throws {
+    _oneTuple = size==1;
+    writer._writeLiteral("(");
+  }
+  @chpldoc.nodoc
+  proc endTuple(writer: fileWriter) throws {
+    if _oneTuple then
+      writer._writeLiteral(",)");
+    else
+      writer._writeLiteral(")");
+  }
+
+  // List helpers
+  @chpldoc.nodoc
+  proc startList(writer: fileWriter, size: uint) throws {
+    writer._writeLiteral("[");
+    _firstThing = true;
+  }
+  @chpldoc.nodoc
+  proc writeListElement(writer: fileWriter, const val: ?) throws {
+    if !_firstThing then writer._writeLiteral(", ");
+    else _firstThing = false;
+
+    writer.write(val);
+  }
+  @chpldoc.nodoc
+  proc endList(writer: fileWriter) throws {
+    writer._writeLiteral("]");
+  }
+
+  // Array helpers
+  //
+  // BHARSH TODO: what should we do for sparse arrays? The current format is
+  // kind of weird. I'd personally lean towards writing them as a map.
+  @chpldoc.nodoc
+  proc startArray(writer: fileWriter, size: uint) throws {
+  }
+
+  @chpldoc.nodoc
+  proc startArrayDim(writer: fileWriter, size: uint) throws {
+    _arrayDim += 1;
+
+    if _arrayMax >= _arrayDim then
+      writer.writeNewline();
+    else
+      _arrayMax = _arrayDim;
+  }
+
+  @chpldoc.nodoc
+  proc endArrayDim(writer: fileWriter) throws {
+    _arrayDim -= 1;
+    _firstThing = true;
+  }
+
+  @chpldoc.nodoc
+  proc writeArrayElement(writer: fileWriter, const val: ?) throws {
+    if !_firstThing then writer._writeLiteral(" ");
+    else _firstThing = false;
+
+    writer.write(val);
+  }
+
+  @chpldoc.nodoc
+  proc endArray(writer: fileWriter) throws {
+  }
+
+  // Map helpers
+  @chpldoc.nodoc
+  proc startMap(writer: fileWriter, size: uint) throws {
+    writer._writeLiteral("{ ");
+  }
+
+  @chpldoc.nodoc
+  proc writeKey(writer: fileWriter, const key: ?) throws {
+    if !_firstThing then writer._writeLiteral(" , ");
+    else _firstThing = false;
+
+    writer.write(key);
+  }
+
+  @chpldoc.nodoc
+  proc writeValue(writer: fileWriter, const val: ?) throws {
+    writer._writeLiteral(" : ");
+    writer.write(val);
+  }
+
+  @chpldoc.nodoc
+  proc endMap(writer: fileWriter) throws {
+    writer._writeLiteral(" }");
+  }
+
+  // TODO: How should we handle types that don't have a format-specific
+  // representation, like domains or ranges? Is there a way we can determine
+  // that such types should just be printed inside a string for compatibility?
 }
 
 
-//
-// Authors of FormatReaders are expected to implement the following methods:
-//
-// proc decode(reader: fileReader, type readType) : readType throws
-//
-// proc readField(reader: fileReader, name: string, type T) : void throws
-//
-// proc readTypeStart(reader: fileReader, type T) throws
-//
-// proc readTypeEnd(reader: fileReader, type T) throws
-//
-// At this time, the formal names are unspecified.
-//
-// FormatReaders that can be default-initialized can be used with the version
-// of ``fileReader.withFormatter`` method that accepts a type, rather than a
-// value.
-//
-// FormatReaders have the option of initializing a type with a "reader
-// initializer", which accepts a ``fileReader`` as an argument. These
-// reader initializers might be user-defined, or might be generated by the
-// compiler. Generic types will have type and param arguments for the reader
-// initializer that precede the ``fileReader`` argument in the initializer
-// signature. The compiler is expected to generate these reader-initializers
-// for records and classes, provided that none of the fields are fully or
-// partially generic (e.g. "var x;", or "var x : integral;").
-//
-// FormatReaders may also attempt to invoke the type method 'decodeFrom',
-// which allows user-defined types to initialize a type in some other way
-// that might not involve an initializer (e.g. for extern types). 'decodeFrom'
-// is not generated by the compiler by default. The 'decodeFrom' type method
-// may be invoked with a ``fileReader``:
-//
-//   proc type MyType.decodeFrom(reader: fileReader) throws
-//
-@chpldoc.nodoc
-record DefaultReader {
-  var firstField = true;
-  var _inheritLevel = 0;
-  var _readStart, _readEnd : bool;
+/*
+  The default deserializer used by ``fileReader``.
 
-  proc decode(reader:fileReader, type readType) : readType throws {
+  Implements the 'deserializeType' and 'deserializeValue' methods which are
+  called by a ``fileReader``.
+
+  Deserializers may choose to invoke certain user-defined methods or
+  initializers on class and record types. When deserializing a type,
+  deserializers should first attempt to invoke an initializer on the type:
+
+    proc MyType.init(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
+
+  If this initializer is not available or cannot be resolved, the deserializer
+  may then attempt to invoke a user-defined type method 'deserializeFrom' as a
+  factory method that will produce the type:
+
+    proc type MyType.deserializeFrom(reader: fileReader(?)
+                                     ref deserializer: reader.deserializerType) : MyType throws
+
+  If neither of these methods are available, the deserializer may attempt to
+  default-initialize the desired type and invoke the value-reading form of
+  deserialization. If the value-reading form of deserialization cannot be
+  resolved, then either a compiler error may be issued.
+
+  The value-reading form of deserialization may attempt to invoke a
+  user-defined 'deserialize' method on classes and records:
+
+    proc MyType.deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
+
+  If this method is unavailable, the value-reading form of deserialization may
+  attempt to invoke the type-reading form of deserialization, and assign the
+  result into the original value.
+
+  The compiler is expected to generate a default implementation of
+  'deserialize' methods and deserializing initializers for records and classes.
+*/
+record DefaultDeserializer {
+  @chpldoc.nodoc
+  var _firstThing = true;
+  @chpldoc.nodoc
+  var _inheritLevel = 0;
+  @chpldoc.nodoc
+  var _arrayDim = 0;
+  @chpldoc.nodoc
+  var _arrayMax : int;
+
+  proc deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
         return nil:readType;
@@ -2771,54 +2858,155 @@ record DefaultReader {
       var x : readType;
       reader._readOne(reader.kind, x, here);
       return x;
-    } else if canResolveTypeMethod(readType, "decodeFrom", reader) {
-      return readType.decodeFrom(reader.withFormatter(new DefaultReader()));
+    } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
+              isArrayType(readType) {
+      // Always run 'deserializeFrom' on arrays, for now, to work around issues
+      // where a compilerError might cause 'canResolveTypeMethod' to return
+      // false.
+      var alias = reader.withDeserializer(new DefaultDeserializer());
+      return readType.deserializeFrom(reader=alias, deserializer=alias.deserializer);
     } else {
-      return new readType(reader.withFormatter(new DefaultReader()));
+      var alias = reader.withDeserializer(new DefaultDeserializer());
+      return new readType(reader=alias, deserializer=alias.deserializer);
     }
   }
 
-  proc readField(r:fileReader, key: string, type T) throws {
-    if !key.isEmpty() {
-      r.readLiteral(key);
-      r.readLiteral("=");
+  proc deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
+    if Reflection.canResolveMethod(val, "deserialize", reader, this) {
+      var alias = reader.withDeserializer(new DefaultDeserializer());
+      val.deserialize(reader=alias, deserializer=alias.deserializer);
+    } else {
+      val = deserializeType(reader, readType);
+    }
+  }
+
+  @chpldoc.nodoc
+  proc deserializeField(reader:fileReader, name: string, type T) throws {
+    if !name.isEmpty() {
+      reader.readLiteral(name);
+      reader.readLiteral("=");
     }
 
-    var ret = r.read(T);
-    r.matchLiteral(",");
+    var ret = reader.read(T);
+    reader.matchLiteral(",");
     return ret;
   }
 
-  proc readTypeStart(r: fileReader, type T) throws {
+  // Class helpers
+  @chpldoc.nodoc
+  proc startClass(reader: fileReader, name: string) throws {
     if _inheritLevel == 0 {
-      if isClassType(T) then
-        r.readLiteral("{");
-      else if isRecordType(T) then
-        r.readLiteral("(");
-      else if isTupleType(T) {
-        r.readLiteral("(");
-      } else
-        throw new Error("unhandled type in readTypeStart");
+      reader.readLiteral("{");
     }
     _inheritLevel += 1;
   }
-
-  proc readTypeEnd(r: fileReader, type T) throws {
-    // This format doesn't do any special nesting for super classes
+  @chpldoc.nodoc
+  proc endClass(reader: fileReader) throws {
     if _inheritLevel == 1 {
-      if isClassType(T) then
-        r.readLiteral("}");
-      else if isRecordType(T) then
-        r.readLiteral(")");
-      else if isTupleType(T) {
-        // Currently we always try to 'matchLiteral' against ',', so no
-        // need to special case 1-tuples
-        r.readLiteral(")");
-      } else
-        throw new Error("unhandled type in readTypeEnd");
+      reader.readLiteral("}");
     }
-
     _inheritLevel -= 1;
+  }
+
+  // Record helpers
+  @chpldoc.nodoc
+  proc startRecord(reader: fileReader, name: string) throws {
+    reader.readLiteral("(");
+  }
+  @chpldoc.nodoc
+  proc endRecord(reader: fileReader) throws {
+    reader.readLiteral(")");
+  }
+
+  // Tuple helpers
+  @chpldoc.nodoc
+  proc startTuple(reader: fileReader) throws {
+    reader.readLiteral("(");
+  }
+  @chpldoc.nodoc
+  proc endTuple(reader: fileReader) throws {
+    reader.readLiteral(")");
+  }
+
+  // List helpers
+  @chpldoc.nodoc
+  proc startList(reader: fileReader) throws {
+    reader._readLiteral("[");
+    _firstThing = true;
+  }
+  @chpldoc.nodoc
+  proc readListElement(reader: fileReader, type eltType) throws {
+    if !_firstThing then reader._readLiteral(",");
+    else _firstThing = false;
+
+    return reader.read(eltType);
+  }
+  @chpldoc.nodoc
+  proc endList(reader: fileReader) throws {
+    reader._readLiteral("]");
+  }
+
+  // Array helpers
+  @chpldoc.nodoc
+  proc startArray(reader: fileReader) throws {
+  }
+
+  @chpldoc.nodoc
+  proc startArrayDim(reader: fileReader) throws {
+    _arrayDim += 1;
+
+    if _arrayMax >= _arrayDim {
+      // use 'match' rather than 'read' to allow for reading in a non-shaped
+      // sequence of numbers into an N-D array...
+      reader.matchNewline();
+    } else {
+      _arrayMax = _arrayDim;
+    }
+  }
+
+  @chpldoc.nodoc
+  proc endArrayDim(reader: fileReader) throws {
+    _arrayDim -= 1;
+
+    _firstThing = true;
+  }
+
+  @chpldoc.nodoc
+  proc readArrayElement(reader: fileReader, type eltType) throws {
+    if !_firstThing then reader._readLiteral(" ");
+    else _firstThing = false;
+
+    return reader.read(eltType);
+  }
+
+  @chpldoc.nodoc
+  proc endArray(reader: fileReader) throws {
+  }
+
+  // Map helpers
+  @chpldoc.nodoc
+  proc startMap(reader: fileReader) throws {
+    reader._readLiteral("{");
+  }
+
+  @chpldoc.nodoc
+  proc readKey(reader: fileReader, type keyType) : keyType throws {
+    if !_firstThing then reader._readLiteral(", ");
+    else _firstThing = false;
+
+    return reader.read(keyType);
+  }
+
+  @chpldoc.nodoc
+  proc readValue(reader: fileReader, type valType) throws {
+    reader._readLiteral(": ");
+
+    return reader.read(valType);
+  }
+
+  @chpldoc.nodoc
+  proc endMap(reader: fileReader) throws {
+    reader._readLiteral("}");
   }
 }
 
