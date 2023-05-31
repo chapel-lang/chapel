@@ -48,9 +48,9 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
   var dir: DIRptr;
   var ent: direntptr;
   dir = opendir(path.c_str());
-  if (dir != nil) {
+  if (__primitive("cast", c_void_ptr, dir) != nil) {
     ent = readdir(dir);
-    while (ent != nil) {
+    while (__primitive("cast", c_void_ptr, ent) != nil) {
       const filename = string.createCopyingBuffer(ent.d_name());
       if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
