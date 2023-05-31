@@ -54,6 +54,13 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/Remarks/RemarkSerializer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Remarks/RemarkStreamer.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -2508,6 +2515,69 @@ static void codegenGpuGlobals() {
 }
 #endif
 
+#ifdef HAVE_LLVM
+struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
+  ChapelRemarkSerializer(llvm::raw_ostream &OS)
+      : llvm::remarks::RemarkSerializer(
+            llvm::remarks::Format::Unknown, OS,
+            llvm::remarks::SerializerMode::Standalone) {}
+
+  void emit(const llvm::remarks::Remark &Remark) override {
+
+    // if not developer, skip all non user functions
+    if (!developer) {
+      auto funcName = Remark.FunctionName; 
+      auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr(funcName.str()));
+      if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
+        auto mod = funcIt->second->getModule();
+        if(mod == nullptr || mod->modTag != MOD_USER)
+        return;
+      }
+    }
+
+    OS << "From '" << Remark.PassName << "'";
+    OS << " at ";
+    if (auto Loc = Remark.Loc) {
+      OS << "'" << Loc->SourceFilePath << ":" << Loc->SourceLine << ":"
+         << Loc->SourceColumn << "'";
+    } else {
+      // no file location available, use generated LLVM function name
+      OS << "function '" << Remark.FunctionName << "'";
+    }
+    OS << ": " << Remark.getArgsAsMsg() << "\n";
+  }
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream &OS,
+      chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+};
+
+// based on `llvm::setupLLVMOptimizationRemarks`
+static llvm::Error setupRemarks(llvm::LLVMContext &Context,
+                                llvm::raw_ostream &OS,
+                                llvm::StringRef RemarksPasses) {
+  std::unique_ptr<llvm::remarks::RemarkSerializer> RemarkSerializer =
+      std::make_unique<ChapelRemarkSerializer>(OS);
+
+  Context.setMainRemarkStreamer(std::make_unique<llvm::remarks::RemarkStreamer>(
+      std::move(RemarkSerializer)));
+
+  // Create LLVM's optimization remarks streamer.
+  Context.setLLVMRemarkStreamer(std::make_unique<llvm::LLVMRemarkStreamer>(
+      *Context.getMainRemarkStreamer()));
+
+  if (!RemarksPasses.empty())
+    if (llvm::Error E =
+            Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+      return llvm::make_error<llvm::LLVMRemarkSetupPatternError>(std::move(E));
+
+  return llvm::Error::success();
+}
+#endif
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
   // Initialize the global gGenInfo for C code generation.
@@ -2516,6 +2586,17 @@ static void codegenPartTwo() {
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
   }
+
+#ifdef HAVE_LLVM
+  if (fLlvmCodegen) {
+    if(*llvmRemarksFilters != 0) {
+      auto err = setupRemarks(gGenInfo->llvmContext, llvm::errs(), llvmRemarksFilters);
+      if (err) {
+        USR_FATAL("failed to add optimization remarks reporting");
+      }
+    }
+  }
+#endif
 
   if (fLlvmCodegen) {
 #ifndef HAVE_LLVM

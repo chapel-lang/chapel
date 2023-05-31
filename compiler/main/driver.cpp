@@ -275,6 +275,7 @@ bool fReportBlocking = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
+bool fReportMissedVectorization = false;
 bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
@@ -329,6 +330,7 @@ static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
 
 std::string llvmFlags;
+char llvmRemarksFilters[128];
 
 bool fPrintAdditionalErrors;
 
@@ -727,6 +729,20 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
   llvmFlags += arg;
 }
+
+// static void setLLVMRemarks(const ArgumentDescription* desc, const char* arg) {
+//   // Append arg to the end of llvmFlags.
+
+//   // add a space if there are already arguments here
+//   std::cout << std::string(arg) << "\n";
+// }
+
+// static void setLLVMRemarksFilter(const ArgumentDescription* desc, const char* arg) {
+//   // Append arg to the end of llvmFlags.
+
+//   // add a space if there are already arguments here
+//   std::cout << std::string(arg) << "\n";
+// }
 
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
@@ -1142,6 +1158,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
+ {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S128", &llvmRemarksFilters, NULL, NULL},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
