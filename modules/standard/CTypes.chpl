@@ -1212,7 +1212,7 @@ module CTypes {
 
 
   // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
-  // the deprecated warning is not propogated across our internal modules by
+  // the deprecated warning is not propagated across our internal modules by
   // using the internal name.
   // After the deprecated function is removed, we can remove the extra
   // definition and just have `isAnyCPtr` as a private nodoc function
