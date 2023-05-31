@@ -11,5 +11,5 @@ if f == nil {
 }
 
 var s = "Hello, World!\n";
-fwrite(c_ptrToConst(s), 1, s.numBytes, f);
+fwrite(c_ptrToConst(s), 1:c_size_t, s.numBytes:c_size_t, f);
 fclose(f);

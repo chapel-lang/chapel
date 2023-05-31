@@ -6,5 +6,5 @@ extern proc fclose(stream: c_FILE): c_int;
 
 var f = fopen(c_ptrToConst("./filePtrTest.txt"), c_ptrToConst("w+"));
 var s = "Hello, World!\n";
-fwrite(c_ptrToConst(s), 1, s.numBytes, f);
+fwrite(c_ptrToConst(s), 1:c_size_t, s.numBytes:c_size_t, f);
 fclose(f);
