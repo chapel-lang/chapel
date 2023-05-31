@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+sed 's/Json.chpl:[0-9]*:/Json.chpl:nnnn:/' $2 > $2.tmp
+mv $2.tmp $2
