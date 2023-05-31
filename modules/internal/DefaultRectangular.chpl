@@ -1662,7 +1662,7 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     rwLiteral("{");
@@ -1671,7 +1671,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f.write(ranges(i));
+      if f._writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1807,7 +1807,7 @@ module DefaultRectangular {
       // byte order is set to native or its equivalent.
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
-        var rw = if f.writing then "write" else "read";
+        var rw = if f._writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
                "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
@@ -1817,7 +1817,7 @@ module DefaultRectangular {
       const idx = arr.getDataIndex(dom.dsiLow);
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
-        if f.writing {
+        if f._writing {
           f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f._readBytes(_ddata_shift(arr.eltType, src, idx), size);

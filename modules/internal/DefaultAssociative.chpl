@@ -648,7 +648,7 @@ module DefaultAssociative {
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-      if !f.writing && ischpl {
+      if !f._writing && ischpl {
         this.readChapelStyleAssocArray(f);
         return;
       }
@@ -656,7 +656,7 @@ module DefaultAssociative {
       printBraces &&= (isjson || ischpl);
 
       inline proc rwLiteral(lit:string) throws {
-        if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+        if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
       }
 
       if printBraces then rwLiteral("[");
@@ -666,12 +666,12 @@ module DefaultAssociative {
         else if isspace then rwLiteral(" ");
         else if isjson || ischpl then rwLiteral(", ");
 
-        if f.writing && ischpl {
+        if f._writing && ischpl {
           f.write(key);
           f._writeLiteral(" => ");
         }
 
-        if f.writing then f.write(val);
+        if f._writing then f.write(val);
         else val = f.read(eltType);
       }
 
@@ -855,13 +855,13 @@ module DefaultAssociative {
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-    if !f.writing && ischpl {
+    if !f._writing && ischpl {
       halt("This form of I/O on a default array slice is not yet supported");
       return;
     }
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if isjson || ischpl then rwLiteral("[");
@@ -873,12 +873,12 @@ module DefaultAssociative {
       else if isspace then rwLiteral(" ");
       else if isjson || ischpl then rwLiteral(", ");
 
-      if f.writing && ischpl {
+      if f._writing && ischpl {
         f.write(key);
         f._writeLiteral(" => ");
       }
 
-      if f.writing then f.write(arr.dsiAccess(key));
+      if f._writing then f.write(arr.dsiAccess(key));
       else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 
