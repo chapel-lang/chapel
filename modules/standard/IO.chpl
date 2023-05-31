@@ -1682,15 +1682,9 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-private proc initHelper(ref f: file, fp: ?t, hints=ioHintSet.empty,
+private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal(),
                         own=false) throws {
-
-  // check if the user passed in a c_FILE rather than a c_ptr(c_FILE)
-  // (this can be removed when deprecation is complete)
-  if !cFileTypeHasPointer && t == chpl_cFile
-    then compilerError("Cannot initialize a `file` with a `c_FILE` object. ",
-                         "Please pass a pointer to the `c_FILE` object instead.");
 
   var local_style = style;
   f._home = here;
@@ -1715,10 +1709,11 @@ private proc initHelper(ref f: file, fp: ?t, hints=ioHintSet.empty,
 }
 
 @unstable("initializing a file with a style argument is unstable")
-  proc file.init(fp, hints=ioHintSet.empty, style:iostyle,
-                 own=false) throws {
+  proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
+                 own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
   // the ':c_FILE' type annotation should be put back on the 'fp' argument.
+  // and the where clause should be removed.
   this.init();
 
   initHelper(this, fp, hints, style: iostyleInternal, own);
@@ -1753,9 +1748,10 @@ operations on the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
-proc file.init(fp, hints=ioHintSet.empty, own=false) throws {
+proc file.init(fp: ?t, hints=ioHintSet.empty, own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
   // the ':c_FILE' type annotation should be put back on the 'fp' argument.
+  // and the where clause should be removed.
   this.init();
 
   initHelper(this, fp, hints, own=own);
@@ -1790,7 +1786,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 
 @unstable("initializing a file with a style argument is unstable")
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
-               style:iostyle, own=false) throws {
+               style:iostyle, own=false) throws  {
   this.init();
 
   initHelper2(this, fileDescriptor.safeCast(c_int), hints, style, own);
