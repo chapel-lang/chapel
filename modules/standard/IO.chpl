@@ -537,7 +537,7 @@ import OS.POSIX.{EBADF};
 import OS.{errorCode};
 use CTypes;
 public use OS;
-use Reflection;
+private use Reflection;
 
 /*
 
@@ -940,7 +940,7 @@ The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
 It replaces the now unstable `iostyle` type, and will eventually
-be migrated into a new strategy, likely involving encoders/decoders
+be migrated into a new strategy, likely involving serializers/deserializers
 */
 @chpldoc.nodoc
 extern record iostyleInternal { // aka qio_style_t
@@ -2444,16 +2444,27 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
-private proc defaultFmtType(param writing : bool) type {
-  if !chpl_useIOFormatters then return nothing;
-  if writing then return DefaultWriter;
-  else return DefaultReader;
+config param useIOSerializers = false;
+
+private proc defaultSerializeType(param writing : bool) type {
+  if !useIOSerializers then return nothing;
+  if writing then return DefaultSerializer;
+  else return DefaultDeserializer;
 }
 
-private proc defaultFmtVal(param writing : bool) {
-  if !chpl_useIOFormatters then return none;
-  if writing then return new DefaultWriter();
-  else return new DefaultReader();
+private proc defaultSerializeVal(param writing : bool) {
+  if !useIOSerializers then return none;
+  if writing then return new DefaultSerializer();
+  else return new DefaultDeserializer();
+}
+
+@chpldoc.nodoc
+class _serializeWrapper {
+  type T;
+  var member: T;
+
+  override proc serialize(writer, ref serializer) throws {
+  }
 }
 
 /*
@@ -2488,7 +2499,7 @@ record fileReader {
   param locking:bool;
 
   @chpldoc.nodoc
-  type fmtType = defaultFmtType(/* writing= */ false);
+  type deserializerType = defaultSerializeType(/* writing= */ false);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2496,7 +2507,7 @@ record fileReader {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _fmt : fmtType;
+  var _deserializer : unmanaged _serializeWrapper?(deserializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2515,9 +2526,11 @@ proc fileReader.writing param: bool {
   return false;
 }
 
-@chpldoc.nodoc
-proc fileReader.formatter const ref {
-  return _fmt;
+/*
+  Return a mutable reference to this fileReader's deserializer.
+*/
+proc fileReader.deserializer ref : deserializerType {
+  return _deserializer!.member;
 }
 
 /*
@@ -2553,7 +2566,7 @@ record fileWriter {
   param locking:bool;
 
   @chpldoc.nodoc
-  type fmtType = defaultFmtType(/* writing */ true);
+  type serializerType = defaultSerializeType(/* writing */ true);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2561,7 +2574,7 @@ record fileWriter {
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
   @chpldoc.nodoc
-  var _fmt : fmtType;
+  var _serializer : unmanaged _serializeWrapper?(serializerType);
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2581,9 +2594,11 @@ proc fileWriter.writing param: bool {
 }
 
 
-@chpldoc.nodoc
-proc fileWriter.formatter const ref {
-  return _fmt;
+/*
+  Return a mutable reference to this fileWriter's serializer.
+*/
+proc fileWriter.serializer ref : serializerType {
+  return _serializer!.member;
 }
 
 //
