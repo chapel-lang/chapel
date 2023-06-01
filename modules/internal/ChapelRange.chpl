@@ -1209,7 +1209,7 @@ proc range.safeCast(type t: range(?)) {
 
   if tmp.stridable {
     tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = if this._alignment == none then 0
+    tmp._alignment = if isNothingValue(this._alignment) then 0
                                      else this._alignment.safeCast(intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
@@ -1271,8 +1271,8 @@ private inline proc rangeCastHelper(r, type t) throws {
 
   if tmp.stridable {
     tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = if r._alignment == none then 0
-                                             else r._alignment: tmp.intIdxType;
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                                                else r._alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
   tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
