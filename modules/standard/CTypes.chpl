@@ -56,8 +56,42 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
-  extern "_cfile" type c_FILE;
+  @chpldoc.nodoc
+  extern "_cfile" type chpl_cFilePtr; // can be removed when deprecation is complete
+  @chpldoc.nodoc
+  extern "_cfiletype" type chpl_cFile; // direct uses of this type in the IO module
+                                      // can be replaced with c_FILE when deprecation is complete
+
+  /* Controls whether :type:`c_FILE` represents a ``FILE*`` or a ``FILE``.
+
+    - If true, ``c_FILE`` represents a ``FILE*``. This behavior is deprecated
+      and will be removed in an upcoming release.
+    - If false, ``c_FILE`` represents a ``FILE``. A ``FILE*`` can still be
+      represented with ``c_ptr(c_FILE)``.
+
+    The deprecated behavior is on by default. To opt-in to the new behavior,
+    recompile your program with ``-scFileTypeHasPointer=false``.
+
+  */
+  config param cFileTypeHasPointer = true;
+
+  /* Chapel type alias for a C ``FILE`` */
+  proc c_FILE type {
+    if cFileTypeHasPointer {
+      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
+      return chpl_cFilePtr;
+    } else {
+      return chpl_cFile;
+    }
+  }
+  // post deprecation, all the above type-proc can be replaced with the following:
+  // extern "_cfiletype" type c_FILE;
+
+  // type c_FILE = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
+
+  // all uses of this type should be replaced with c_FILE when deprecation is complete
+  @chpldoc.nodoc
+  type c_FILE_internal = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
 
   // Former CPtr contents start here
 

@@ -1204,7 +1204,8 @@ private extern proc qio_style_init_default(ref s: iostyleInternal);
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp: c_FILE, fd:c_int, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
+private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp: c_ptr(chpl_cFile), fd:c_int, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode;
+private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp: chpl_cFilePtr, fd:c_int, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):errorCode; // can be removed when chpl_cFilePtr is removed
 private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyleInternal):errorCode;
 private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyleInternal):errorCode;
@@ -1294,7 +1295,8 @@ private extern proc qio_get_chunk(fl:qio_file_ptr_t, ref len:int(64)):errorCode;
 private extern proc qio_get_fs_type(fl:qio_file_ptr_t, ref tp:c_int):errorCode;
 
 private extern proc qio_file_path_for_fd(fd:c_int, ref path:c_string):errorCode;
-private extern proc qio_file_path_for_fp(fp:c_FILE, ref path:c_string):errorCode;
+private extern proc qio_file_path_for_fp(fp: c_ptr(chpl_cFile), ref path:c_string):errorCode;
+private extern proc qio_file_path_for_fp(pf: chpl_cFilePtr, ref path:c_string):errorCode; // can be removed when chpl_cFilePtr is removed
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):errorCode;
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):errorCode;
 
@@ -1680,9 +1682,12 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
+// TODO: post c_FILE behavior deprecation:
+// add a ':c_ptr(c_FILE)' annotation to the 'fp' argument
+private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal(),
                         own=false) throws {
+
   var local_style = style;
   f._home = here;
   var internalHints = hints._internal;
@@ -1706,8 +1711,11 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
 }
 
 @unstable("initializing a file with a style argument is unstable")
-  proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
-                 own=false) throws {
+  proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
+                 own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
+  // TODO: when the c_FILE behavior-change deprecation is complete,
+  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
+  // and the where clause should be removed.
   this.init();
 
   initHelper(this, fp, hints, style: iostyleInternal, own);
@@ -1742,7 +1750,10 @@ operations on the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
-proc file.init(fp: c_FILE, hints=ioHintSet.empty, own=false) throws {
+proc file.init(fp: ?t, hints=ioHintSet.empty, own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
+  // TODO: when the c_FILE behavior-change deprecation is complete,
+  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
+  // and the where clause should be removed.
   this.init();
 
   initHelper(this, fp, hints, own=own);
@@ -1754,7 +1765,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 
   var local_style = style;
   f._home = here;
-  extern proc chpl_cnullfile():c_FILE;
+  extern proc chpl_cnullfile():c_ptr(chpl_cFile);
   var internalHints = hints._internal;
   if (own) {
     internalHints |= QIO_HINT_OWNED;
@@ -2253,7 +2264,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   var local_style = style;
   var ret:file;
   ret._home = here;
-  extern proc chpl_cnullfile():c_FILE;
+  extern proc chpl_cnullfile():c_ptr(chpl_cFile);
   var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
 
   // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
@@ -2270,7 +2281,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
 }
 
 @deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
+proc openfp(fp, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
 
@@ -2300,7 +2311,7 @@ operations on the C file.
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
 @deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
+proc openfp(fp, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
@@ -2310,8 +2321,15 @@ proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
-private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
+private proc openfpHelper(fp: ?t, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
+
+  // check if the user passed in a c_FILE rather than a c_ptr(c_FILE)
+  // (TODO: this can be removed when deprecation is complete (along with the type query))
+  if !cFileTypeHasPointer && t == chpl_cFile
+    then compilerError("Cannot initialize a `file` with a `c_FILE` object. ",
+                         "Please pass a pointer to the `c_FILE` object instead.");
+
   var local_style = style;
   var ret:file;
   ret._home = here;
@@ -8597,14 +8615,14 @@ const stdin:fileReader(iokind.dynamic, true);
 stdin = try! (new file(0)).reader();
 
 @chpldoc.nodoc
-extern proc chpl_cstdout():c_FILE;
+extern proc chpl_cstdout():chpl_cFilePtr;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
 @chpldoc.nodoc
-extern proc chpl_cstderr():c_FILE;
+extern proc chpl_cstderr():chpl_cFilePtr;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! (new file(chpl_cstderr())).writer();
