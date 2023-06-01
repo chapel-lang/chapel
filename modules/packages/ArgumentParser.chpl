@@ -1675,7 +1675,7 @@ module ArgumentParser {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
           var idx = argsList.find(arrElt);
-          argsList.pop(idx);
+          argsList.getAndRemove(idx);
           argsList.insert(idx, elems.toArray());
         }
       }

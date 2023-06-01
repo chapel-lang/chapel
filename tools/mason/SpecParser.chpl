@@ -134,7 +134,7 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
     throw new owned MasonError("Empty spec in Mason.toml");
   }
   while tokenList.size > 0 {
-    var toke = tokenList.pop(0);
+    var toke = tokenList.getAndRemove(0);
 
     // Package should be first token
     if package == '' {
