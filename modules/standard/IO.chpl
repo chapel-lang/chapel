@@ -4093,7 +4093,7 @@ proc fileWriter._set_styleInternal(style: iostyleInternal) {
    that is the formal argument to a `readThis` method.
 
  */
-@unstable("'readWriteThisFromLocale' may be removed or modified in a future release")
+@unstable("'readWriteThisFromLocale' is unstable and may be removed or modified in a future release")
 inline
 proc fileReader.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
@@ -4106,7 +4106,7 @@ proc fileReader.readWriteThisFromLocale() {
    that is the formal argument to a `writeThis` method.
 
  */
-@unstable("'readWriteThisFromLocale' may be removed or modified in a future release")
+@unstable("'readWriteThisFromLocale' is unstable and may be removed or modified in a future release")
 inline
 proc fileWriter.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
@@ -4121,7 +4121,7 @@ proc fileWriter.readWriteThisFromLocale() {
 @chpldoc.nodoc
 inline
 proc fileReader.getLocaleOfIoRequest() {
-  var ret = this.readWriteThisFromLocale();
+  var ret = this._readWriteThisFromLocale;
   if ret == nilLocale then
     ret = here;
   return ret;
@@ -4136,7 +4136,7 @@ proc fileReader.getLocaleOfIoRequest() {
 @chpldoc.nodoc
 inline
 proc fileWriter.getLocaleOfIoRequest() {
-  var ret = this.readWriteThisFromLocale();
+  var ret = this._readWriteThisFromLocale;
   if ret == nilLocale then
     ret = here;
   return ret;
@@ -8219,7 +8219,7 @@ proc fileReader.readln():bool throws {
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
-
+z
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``

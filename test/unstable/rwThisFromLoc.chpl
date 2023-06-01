@@ -1,4 +1,4 @@
 use IO;
 
-var r = openReader("rwThisFromLoc.chpl");
-writeln(r.readWriteThisFromLocale());
+writeln(stdin.readWriteThisFromLocale());
+writeln(stdout.readWriteThisFromLocale());
