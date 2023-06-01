@@ -2927,7 +2927,7 @@ module ChapelBase {
 
   //
   // If b's negative, these obviously aren't equal; if it's not
-  // negative, it can be cast to an int
+  // negative, it can be cast to a uint
   //
   inline operator ==(a: uint(8), b: int(8)) do return !(b < 0) && (a == b:uint(8));
   inline operator ==(a: uint(16), b: int(16)) do return !(b < 0) && (a == b:uint(16));
