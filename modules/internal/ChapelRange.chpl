@@ -1219,26 +1219,65 @@ proc range.safeCast(type t: range(?)) {
                   this.bounds:string, " to boundKind.", tmp.bounds:string);
   }
 
+  if isEnumType(t.idxType) then
+    compilerError("safeCast() on ranges does not yet support enum ranges");
+
   if tmp.stridable {
     tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
+    tmp._alignment = if isNothingValue(this._alignment) then 0
+                                     else this._alignment.safeCast(intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     HaltWrappers.safeCastCheckHalt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
-  tmp._low = this._low.safeCast(tmp.intIdxType);
-  tmp._high = this._high.safeCast(tmp.intIdxType);
+  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.intIdxType);
+  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.intIdxType);
 
   return tmp;
 }
 
 /* Cast a range to a new range type.  If the old type was stridable and the
-   new type is not stridable, then force the new stride to be 1.
+   new type is not stridable, then force the new stride to be 1.  This cast
+   will throw if casts from the original ``idxType`` to the new one do
+   (for devs: using the overload just below).
  */
 @chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
+  // If the 'where' clause on the 'throw'ing overload just below is
+  // correct, we should never catch an error here, because the type
+  // signatures handled by this overload should never throw when using
+  // the ':' operators in 'rangeCastHelper()'.  If we find cases where
+  // this is incorrect, the where clause should be expanded to handle
+  // them.
+  try! {
+    return rangeCastHelper(r, t);
+  }
+}
+
+// This is an overload that throws due to the use of the ':' in the
+// low/high computations of rangeCastHelper()
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) throws
+  where isEnumType(t.idxType) ||
+    (isBoolType(t.idxType) && isEnumType(r.idxType))
+{
+  return rangeCastHelper(r, t);
+}
+
+// This is a helper routine to avoid duplicating the code in each of
+// the ':' overloads just above
+private inline proc rangeCastHelper(r, type t) throws {
   var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType;
+
+  // Generate a warning when casting between ranges and one of them is an
+  // enum type (and they're not both the same enum type); see #22406 for
+  // more information
+  if chpl_warnUnstable &&
+     ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
 
   if tmp.bounds != r.bounds {
     compilerError("cannot cast range from boundKind.",
@@ -1247,12 +1286,12 @@ operator :(r: range(?), type t: range(?)) {
 
   if tmp.stridable {
     tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = r.alignment: tmp.intIdxType;
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                                                else r._alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
-
-  tmp._low = (if r.hasLowBound() then r.lowBound else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then r.highBound else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.intIdxType;
   return tmp;
 }
 

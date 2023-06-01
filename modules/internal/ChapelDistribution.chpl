@@ -1187,8 +1187,11 @@ module ChapelDistribution {
         // set tmp = inds with some error checking
         for param i in 0..rank-1 {
           var from = inds(i);
-          tmp(i) =
-            from.safeCast(range(idxType,boundKind.both,stridable));
+          if tmp(i).type == from.type then
+            tmp(i) = from;
+          else
+            tmp(i) =
+              from.safeCast(range(idxType,boundKind.both,stridable));
         }
 
         eCast.dsiReallocate(tmp);
