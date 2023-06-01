@@ -24,9 +24,9 @@ proc tryCasts(r) {
 proc safe(r, type t) {
   if t == bool && ((r.low != 0 && r.low != 1) || (r.high != 0 && r.high != 1)) then
     return false;
-  if isUintType(t) && r.low < 0 || r.high < 0 then
+  if isUintType(t) && isIntType(r.idxType) &&  (r.low < 0 || r.high < 0) then
     return false;
-  if isIntType(t) && r.low > max(t) || r.high > max(t) then
+  if isIntegralType(t) && r.idxType != bool && (r.low > max(t) || r.high > max(t)) then
     return false;
   return true;
 }
