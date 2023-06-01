@@ -635,13 +635,13 @@ module Yaml {
 
   @chpldoc.nodoc
   proc emitYamlValue(emitter: borrowed LibYamlEmitter, value: borrowed YamlValue) throws {
-    select value.valueType {
+    select value.valueType() {
       when YamlValueType.Mapping {
         emitter.startMapping();
         const x = value: borrowed YamlMapping;
-        for (key, val) in x {
-          emitYamlValue(emitter, key);
-          emitYamlValue(emitter, val);
+        for k in x.keys() {
+          emitYamlValue(emitter, k);
+          emitYamlValue(emitter, x[k]);
         }
         emitter.endMapping();
       }
@@ -703,29 +703,19 @@ module Yaml {
         }
         when EventType.Alias {
           try! reader.seek(start:int..);
-          yield new YamlScalar(try! reader.readString((end - start):int));
+          yield new YamlAlias(try! reader.readString((end - start):int));
         }
         when EventType.Scalar {
           try! reader.seek(start:int..);
           yield new YamlScalar(try! reader.readString((end - start):int));
         }
         when EventType.MappingStart {
-          var mapping = new YamlMapping(),
-              nextKey = new owned YamlValue(),
-              key = true;
+          var mapping = new owned YamlMapping();
 
           for e in parseUntilEvent(parser, EventType.MappingEnd, reader) {
-            // TODO: is there a better way to do this without using unmanaged?
-            // should this pattern be allowed for cpy:owned?
-            var cpy: unmanaged = owned.release(e);
-            if key {
-              nextKey = owned.adopt(cpy);
-              key = false;
-            } else {
-              mapping._add(nextKey, owned.adopt(cpy));
-              key = true;
-            }
+            mapping._append(e);
           }
+
           yield mapping;
         }
         when EventType.MappingEnd {
@@ -733,10 +723,12 @@ module Yaml {
           break;
         }
         when EventType.SequenceStart {
-          var sequence = new YamlSequence();
+          var sequence = new owned YamlSequence();
 
           for e in parseUntilEvent(parser, EventType.SequenceEnd, reader) do
             sequence._push(e);
+
+          yield sequence;
         }
         when EventType.SequenceEnd {
           assert(event == EventType.SequenceEnd);
@@ -747,15 +739,21 @@ module Yaml {
     }
   }
 
+  @chpldoc.nodoc
+  var _dummy_yaml_value = new owned YamlValue();
+
   class YamlValue {
+    @chpldoc.nodoc
+
     /* index into a YAML mapping by string */
     proc this(key: string): borrowed YamlValue throws {
       throw new YamlIndexError("indexing not supported");
     }
 
     /* index into a YAML mapping by YAML value */
-    proc this(key: owned YamlValue): borrowed YamlValue throws {
+    proc this(ref key: owned YamlValue) ref : owned YamlValue throws {
       throw new YamlIndexError("indexing not supported");
+      return _dummy_yaml_value;
     }
 
     /* index into a YAML sequence */
@@ -773,7 +771,7 @@ module Yaml {
       return "";
     }
 
-    proc valueType: YamlValueType {
+    proc valueType(): YamlValueType {
       return YamlValueType.None;
     }
 
@@ -813,37 +811,52 @@ module Yaml {
   class YamlMapping: YamlValue {
     @chpldoc.nodoc
     var _map: map(owned YamlValue, owned YamlValue);
+    @chpldoc.nodoc
+    var _x: owned YamlValue = new YamlValue();
+    @chpldoc.nodoc
+    var isKey: bool = true;
 
     proc init() {
       this._map = new map(owned YamlValue, owned YamlValue);
     }
 
+    pragma "unsafe"
     @chpldoc.nodoc
-    proc _add(in key: owned YamlValue, in val: owned YamlValue) {
-      this._map.add(key, val);
+    proc _append(in kv: owned YamlValue) {
+      if this.isKey {
+        this._x = owned.adopt(owned.release(kv));
+        this.isKey = false;
+      } else {
+        this._map.add(
+          owned.adopt(owned.release(this._x)),
+          kv
+        );
+        this.isKey = true;
+      }
     }
 
+    /* index into a YAML mapping by string */
     override proc this(key: string): borrowed YamlValue throws {
       var yamlKey = new YamlScalar(key);
-      return this[yamlKey: owned YamlValue];
+      return this._map[(yamlKey: owned YamlValue)].borrow();
     }
 
-    override proc this(key: owned YamlValue): borrowed YamlValue throws {
-      return this(key);
+    /* index into a YAML mapping by YAML value */
+    override proc this(ref key: owned YamlValue) ref : owned YamlValue throws {
+      return this._map[key];
     }
 
     override proc size(): int {
       return this._map.size;
     }
 
-    override proc valueType: YamlValueType {
+    override proc valueType(): YamlValueType {
       return YamlValueType.Mapping;
     }
 
-    iter these(): (YamlValue, YamlValue) {
-      var keys = this._map.keys();
-      for k in keys do
-        yield (k.borrow(), try! _map[k].borrow());
+    iter keys() const ref {
+      for k in this._map.keys() do
+        yield k;
     }
 
     proc asMapOf(type kt, type vt): map(kt, vt) throws {
@@ -863,12 +876,12 @@ module Yaml {
     override proc writeThis(fw) throws {
       var first = true;
       fw.writeLiteral("{");
-      for (k, v) in this.these() {
+      for k in this._map.keys() {
         if first then first = false;
                  else fw.writeLiteral(", ");
         fw.write(k);
         fw.writeLiteral(": ");
-        fw.write(v);
+        fw.write(this._map[k]);
       }
       fw.writeLiteral("}");
     }
@@ -896,7 +909,7 @@ module Yaml {
       return this._map.size;
     }
 
-    override proc valueType: YamlValueType {
+    override proc valueType(): YamlValueType {
       return YamlValueType.Sequence;
     }
 
@@ -923,7 +936,7 @@ module Yaml {
     override proc writeThis(fw) throws {
       var first = true;
       fw.writeLiteral("[");
-      for v in this {
+      for v in this._seq {
         if first then first = false;
                  else fw.writeLiteral(", ");
         fw.write(v);
@@ -1039,6 +1052,12 @@ module Yaml {
       if this.yamlType == YamlScalarType.UserDefined
         then fw.write(this.tag, " ", this.value);
         else fw.write(this.value);
+    }
+
+    // ensures that types are not considered when using a scalar as a key
+    @chpldoc.nodoc
+    override proc hash(): uint {
+      return this.value.hash();
     }
   }
 
