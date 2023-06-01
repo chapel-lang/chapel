@@ -34,9 +34,12 @@ extern "C" {
 
 //
 // chpl_topo_init() must be called before anything else here, to
-// initialize the topology support
+// initialize the topology support.
 //
-void chpl_topo_init(void);
+// accessiblePUsMask masks the accessible PUs and is used by runtime
+// unit testing. It should be NULL in production code.
+//
+void chpl_topo_init(char *accessiblePUsMask);
 void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 

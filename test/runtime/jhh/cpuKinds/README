@@ -1,0 +1,9 @@
+This directory contains unit tests for heterogenious processing unit support.
+The tests are based on Python's unittest and are contained in cpuKinds.py.
+The tests invoke the "cpuKind" executable, which is created by compiling
+cpuKind.chpl with the "--library" argument to produce a library that is
+linked against the cpuKind.c test harness. The sub_test script simply runs
+all *.py files in this directory. The *.xml files contain hwloc descriptions
+of the machine topologies used in the tests; alderLake.xml has heterogeneous
+cores while milan.xml does not. As a result, these tests may be run on any
+machine.
