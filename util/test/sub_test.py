@@ -879,7 +879,7 @@ chpltasksstr='.tasks-'+chpltasks
 #
 
 #
-# Global PRETEST
+# directory-wide PRETEST
 # must be run first, in case is generates any of the following files
 #
 if os.access('./PRETEST', os.R_OK|os.X_OK):
