@@ -1204,16 +1204,20 @@ proc range.safeCast(type t: range(?)) {
                   this.bounds:string, " to boundKind.", tmp.bounds:string);
   }
 
+  if isEnumType(t.idxType) then
+    compilerError("safeCast() on ranges does not yet support enum ranges");
+
   if tmp.stridable {
     tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
+    tmp._alignment = if this._alignment == none then 0
+                                     else this._alignment.safeCast(intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     HaltWrappers.safeCastCheckHalt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
-  tmp._low = this._low.safeCast(tmp.intIdxType);
-  tmp._high = this._high.safeCast(tmp.intIdxType);
+  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.intIdxType);
+  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.intIdxType);
 
   return tmp;
 }
@@ -1267,7 +1271,8 @@ private inline proc rangeCastHelper(r, type t) throws {
 
   if tmp.stridable {
     tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = chpl__idxToInt(r.alignment).safeCast(tmp.intIdxType);;
+    tmp._alignment = if r._alignment == none then 0
+                                             else r._alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
   tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
