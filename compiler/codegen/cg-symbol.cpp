@@ -1478,7 +1478,7 @@ void TypeSymbol::codegenMetadata() {
       ty = this->codegen().type;
     }
     if (ty && llvm::isa<llvm::PointerType>(ty)) {
-      parent = dtCVoidPtr->symbol->llvmTbaaTypeDescriptor;
+      parent = dtStringC->symbol->llvmTbaaTypeDescriptor;
     }
   }
   INT_ASSERT(parent && parent != info->tbaaRootNode);

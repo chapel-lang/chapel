@@ -1530,12 +1530,10 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
-  // coerce c_ptr to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
-    return true;
-
   // coerce c_array to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
+      (formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+       getDataClassType(formalType->symbol) == dtVoid))
     return true;
 
   // coerce c_array to c_ptr
@@ -8955,7 +8953,6 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 
   } else if (rhsType == dtNil) {
     bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
-                        lhsType == dtCVoidPtr ||
                         lhsType == dtCFnPtr;
 
     if (lhsType != dtNil && !lhsIsPointer) {
