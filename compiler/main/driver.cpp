@@ -1912,6 +1912,21 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static chpl::Context::CompilationGlobals dynoBuildCompilationGlobals() {
+  return {
+    .boundsChecking = !fNoBoundsChecks,
+    .castChecking = !fNoCastChecks,
+    .nilDerefChecking = !fNoNilChecks,
+    .overloadSetsChecking = fOverloadSetsChecks,
+    .divByZeroChecking = !fNoDivZeroChecks,
+    .cacheRemote = fCacheRemote,
+    .privatization = !(fNoPrivatization || fLocal),
+    .local = fLocal,
+    .warnUnstable = fWarnUnstable,
+    .useIoFormatters = fUseIOFormatters
+  };
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
 
@@ -1927,6 +1942,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.keepTmpDir = true;
   }
   config.toolName = "chpl";
+  config.compilationGlobals = dynoBuildCompilationGlobals();
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;

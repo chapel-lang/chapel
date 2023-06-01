@@ -3577,6 +3577,31 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
 }
 
 
+template <typename T>
+QualifiedType paramTypeFromValue(Context* context, T value);
+
+template <>
+QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context, 0),
+                       BoolParam::get(context, value));
+}
+
+const std::unordered_map<UniqueString, QualifiedType>&
+getCompilerGeneratedGlobals(Context* context) {
+  QUERY_BEGIN(getCompilerGeneratedGlobals, context);
+
+  std::unordered_map<UniqueString, QualifiedType> result;
+  #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)\
+    result[UniqueString::get(context, IDENT__)] = \
+      paramTypeFromValue<TYPE__>(context, \
+                                 context->configuration().compilationGlobals.NAME__);
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+
+  return QUERY_END(result);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl
