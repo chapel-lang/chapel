@@ -302,24 +302,21 @@ static void cpuInfoInit(void) {
   }
   hwloc_bitmap_and(logAccSet, logAccSet,
                    hwloc_topology_get_online_cpuset(topology));
-  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-  CHK_ERR(numCPUsLogAcc > 0);
-  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
   //
   // all PUs. The online set doesn't include PUs that cannot be
   // used, e.g., if hyperthreading is turned off
   //
-  hwloc_const_cpuset_t onlineSet = hwloc_topology_get_online_cpuset(
-                                                              topology);
-  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
-  CHK_ERR(numCPUsLogAll > 0);
-  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
-
+  hwloc_cpuset_t onlineSet = hwloc_bitmap_dup(
+                               hwloc_topology_get_online_cpuset(topology));
 
   // accessible cores
 
-  int pusPerCore = 0;
+int maxPusPerAccCore = 0;
+int minPusPerCore = chpl_env_rt_get_int("MIN_THREADS_PER_CORE", 1);
+if (minPusPerCore < 1) {
+  chpl_error("CHPL_RT_MIN_THREADS_PER_CORE must be > 0.", 0, 0);
+}
 #define NEXT_PU(pu)                                                \
   hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,    \
                                            HWLOC_OBJ_PU, pu)
@@ -330,31 +327,49 @@ static void cpuInfoInit(void) {
                                                          HWLOC_OBJ_CORE,
                                                          pu));
     int numPus = hwloc_bitmap_weight(core->cpuset);
-    CHK_ERR((pusPerCore == 0) || (pusPerCore == numPus));
-    pusPerCore = numPus;
-    // Use the smallest PU to represent the core.
-    int smallest = hwloc_bitmap_first(core->cpuset);
-    CHK_ERR(smallest != -1);
-    hwloc_bitmap_set(physAccSet, smallest);
+    if (numPus > maxPusPerAccCore) {
+      maxPusPerAccCore = numPus;
+    }
+    if (numPus >= minPusPerCore) {
+      // Only use cores that have at least the specified number of PUs.
+      int smallest = hwloc_bitmap_first(core->cpuset);
+      CHK_ERR(smallest != -1);
+      hwloc_bitmap_set(physAccSet, smallest);
+    } else {
+      // Remove their PUs from all and accessible PUs.
+      hwloc_bitmap_andnot(onlineSet, onlineSet, core->cpuset);
+      hwloc_bitmap_andnot(logAccSet, logAccSet, core->cpuset);
+    }
   }
 
 #undef NEXT_PU
 
+
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
-  CHK_ERR(numCPUsPhysAcc > 0);
-  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
+  if (numCPUsPhysAcc == 0) {
+    chpl_error("No useable cores.", 0, 0);
+  }
+
+  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
+  CHK_ERR(numCPUsLogAll > 0);
+  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
+
+  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+  CHK_ERR(numCPUsLogAcc > 0);
+  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
   //
   // all cores
   //
   // Note: hwloc_get_nbobjs_inside_cpuset_by_type cannot be called on
-  // onlineSet because inaccessible PUs and their cores do not have
-  // objects in the topology. pusPerCore might vary by core, but that is
-  // checked above.
+  // onlineSet because inaccessible PUs and their cores do not have objects
+  // in the topology. We estimate the number of inaccessible cores by
+  // assuming they all have the maximum number of PUs.
 
-  numCPUsPhysAll = numCPUsLogAll / pusPerCore;
+  numCPUsPhysAll = numCPUsLogAll / maxPusPerAccCore;
   CHK_ERR(numCPUsPhysAll > 0);
   _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
+  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
 
   numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
                       root->cpuset, HWLOC_OBJ_PACKAGE);
@@ -467,6 +482,7 @@ static void cpuInfoInit(void) {
     _DBG_P("topology cpuset: %s", buf);
 
   }
+  hwloc_bitmap_free(onlineSet);
 }
 
 
