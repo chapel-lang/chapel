@@ -616,7 +616,7 @@ proc realPath(f: file): string throws {
   import OS.errorCode;
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): errorCode;
 
-  if (IO.is_qio_file_ptr_nil(f._file_internal)) then
+  if (f._file_internal == nil) then
     try ioerror(EBADF:errorCode, "in realPath with a file argument");
 
   var res: c_string;

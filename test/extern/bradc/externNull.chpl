@@ -1,5 +1,5 @@
 use CTypes;
-extern type sPtr;
+extern type sPtr = c_ptr(opaque);
 extern proc getNullSPtr(): sPtr;
 extern proc getNonNullSPtr(): sPtr;
 
