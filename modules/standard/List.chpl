@@ -1185,13 +1185,13 @@ module List {
       if boundsChecking && _size <= 0 {
         if unlockBeforeHalt then
           _leave();
-        boundsCheckHalt("Called \"list.pop\" on an empty list.");
+        boundsCheckHalt("Called \"list.getAndRemove\" on an empty list.");
       }
 
       if boundsChecking && !_withinBounds(idx) {
         if unlockBeforeHalt then
           _leave();
-        const msg = "Index for \"list.pop\" out of bounds: " + idx:string;
+        const msg = "Index for \"list.getAndRemove\" out of bounds: " + idx:string;
         boundsCheckHalt(msg);
       }
 
@@ -1237,6 +1237,11 @@ module List {
       return this.popBack();
     }
 
+    @deprecated(notes="list.pop(idx) is deprecated; please use :proc:`list.getAndRemove` instead.")
+    proc ref pop(idx: int): eltType {
+      return this.getAndRemove(idx);
+    }
+
     /*
       Remove the element at the index `idx` from this list and return it. The
       elements at indices after `idx` are shifted one to the left in memory,
@@ -1244,7 +1249,7 @@ module List {
 
       .. warning::
 
-        Popping an element from this list will invalidate any reference to
+        Removing an element from this list will invalidate any reference to
         the element taken while it was contained in this list.
 
       .. warning::
@@ -1259,7 +1264,7 @@ module List {
       :return: The element popped.
       :rtype: `eltType`
     */
-    proc ref pop(idx: int): eltType {
+    proc ref getAndRemove(idx: int): eltType {
       _enter();
       var result = _popAtIndex(idx);
       _leave();

@@ -318,7 +318,7 @@ private proc createDepTrees(depTree: Toml, ref deps: list(shared Toml), name: st
       var manifests = getManifests(subDeps);
       var dependency = createDepTrees(depTree, manifests, package);
     }
-    deps.pop(0);
+    deps.getAndRemove(0);
   }
   // Use toArray here to avoid making Toml aware of `list`, for now.
   if depList.size > 0 then

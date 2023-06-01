@@ -364,10 +364,25 @@ module ChapelRange {
     type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: int(?w), high: int(w)) do
-    return new range(int(w), low=low, high=high);
-  proc chpl_build_bounded_range(low: uint(?w), high: uint(w)) do
-    return new range(uint(w), low=low, high=high);
+
+  proc chpl_build_bounded_range(low: int(8), high: int(8)) do
+    return new range(int(8), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(16), high: int(16)) do
+    return new range(int(16), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(32), high: int(32)) do
+    return new range(int(32), low = low, high = high);
+  proc chpl_build_bounded_range(low: int(64), high: int(64)) do
+    return new range(int(64), low = low, high = high);
+
+  proc chpl_build_bounded_range(low: uint(8), high: uint(8)) do
+    return new range(uint(8), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(16), high: uint(16)) do
+    return new range(uint(16), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(32), high: uint(32)) do
+    return new range(uint(32), low = low, high = high);
+  proc chpl_build_bounded_range(low: uint(64), high: uint(64)) do
+    return new range(uint(64), low = low, high = high);
+
   proc chpl_build_bounded_range(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
@@ -1204,26 +1219,65 @@ proc range.safeCast(type t: range(?)) {
                   this.bounds:string, " to boundKind.", tmp.bounds:string);
   }
 
+  if isEnumType(t.idxType) then
+    compilerError("safeCast() on ranges does not yet support enum ranges");
+
   if tmp.stridable {
     tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = chpl__idxToInt(this.alignment).safeCast(tmp.intIdxType);
+    tmp._alignment = if isNothingValue(this._alignment) then 0
+                                     else this._alignment.safeCast(intIdxType);
     tmp._aligned = this.aligned;
   } else if this.stride != 1 {
     HaltWrappers.safeCastCheckHalt("illegal safeCast from non-unit stride range to unstridable range");
   }
 
-  tmp._low = this._low.safeCast(tmp.intIdxType);
-  tmp._high = this._high.safeCast(tmp.intIdxType);
+  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.intIdxType);
+  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.intIdxType);
 
   return tmp;
 }
 
 /* Cast a range to a new range type.  If the old type was stridable and the
-   new type is not stridable, then force the new stride to be 1.
+   new type is not stridable, then force the new stride to be 1.  This cast
+   will throw if casts from the original ``idxType`` to the new one do
+   (for devs: using the overload just below).
  */
 @chpldoc.nodoc
 operator :(r: range(?), type t: range(?)) {
+  // If the 'where' clause on the 'throw'ing overload just below is
+  // correct, we should never catch an error here, because the type
+  // signatures handled by this overload should never throw when using
+  // the ':' operators in 'rangeCastHelper()'.  If we find cases where
+  // this is incorrect, the where clause should be expanded to handle
+  // them.
+  try! {
+    return rangeCastHelper(r, t);
+  }
+}
+
+// This is an overload that throws due to the use of the ':' in the
+// low/high computations of rangeCastHelper()
+@chpldoc.nodoc
+operator :(r: range(?), type t: range(?)) throws
+  where isEnumType(t.idxType) ||
+    (isBoolType(t.idxType) && isEnumType(r.idxType))
+{
+  return rangeCastHelper(r, t);
+}
+
+// This is a helper routine to avoid duplicating the code in each of
+// the ':' overloads just above
+private inline proc rangeCastHelper(r, type t) throws {
   var tmp: t;
+  type srcType = r.idxType,
+       dstType = t.idxType;
+
+  // Generate a warning when casting between ranges and one of them is an
+  // enum type (and they're not both the same enum type); see #22406 for
+  // more information
+  if chpl_warnUnstable &&
+     ((isEnumType(srcType) || isEnumType(dstType)) && srcType != dstType) then
+    compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
 
   if tmp.bounds != r.bounds {
     compilerError("cannot cast range from boundKind.",
@@ -1232,12 +1286,12 @@ operator :(r: range(?), type t: range(?)) {
 
   if tmp.stridable {
     tmp._stride = r.stride: tmp._stride.type;
-    tmp._alignment = r.alignment: tmp.intIdxType;
+    tmp._alignment = if isNothingValue(r._alignment) then 0
+                                                else r._alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
-
-  tmp._low = (if r.hasLowBound() then r.lowBound else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then r.highBound else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.intIdxType;
   return tmp;
 }
 
@@ -2304,13 +2358,37 @@ operator :(r: range(?), type t: range(?)) {
       yield i;
   }
 
-  iter chpl_direct_range_iter(low: int(?w), high: int(w)) {
-    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(w)) do
+  iter chpl_direct_range_iter(low: int(8), high: int(8)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(8)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(16), high: int(16)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(16)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(32), high: int(32)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(32)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: int(64), high: int(64)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:int(64)) do
       yield i;
   }
 
-  iter chpl_direct_range_iter(low: uint(?w), high: uint(w)) {
-    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(w)) do
+  iter chpl_direct_range_iter(low: uint(8), high: uint(8)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(8)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(16), high: uint(16)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(16)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(32), high: uint(32)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(32)) do
+      yield i;
+  }
+  iter chpl_direct_range_iter(low: uint(64), high: uint(64)) {
+    for i in chpl_direct_param_stride_range_iter(low, high, 1:uint(64)) do
       yield i;
   }
 
@@ -2354,13 +2432,43 @@ operator :(r: range(?), type t: range(?)) {
     for i in r do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w),
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64),
                                       stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w),
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32),
+                                      stride: integral) {
+    const r = low..high by stride;
+    for i in r do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64),
                                       stride: integral) {
     const r = low..high by stride;
     for i in r do yield i;
@@ -2387,11 +2495,29 @@ operator :(r: range(?), type t: range(?)) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), param stride : integral) {
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), param stride : integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), param stride : integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), param stride: integral) {
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), param stride: integral) {
+    for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), param stride: integral) {
     for i in chpl_direct_param_stride_range_iter(low, high, stride) do yield i;
   }
 
@@ -2431,26 +2557,44 @@ operator :(r: range(?), type t: range(?)) {
 
 
   // cases for when stride is a uint (we know the stride is must be positive)
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride: uint(?w2)) {
+
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride: uint(?w2)) {
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), stride: uint(?w2)) {
+    for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
+  }
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), stride: uint(?w2)) {
     for i in chpl_direct_pos_stride_range_iter(low, high, stride) do yield i;
   }
 
 
   // cases for when stride isn't valid
-  iter chpl_direct_strided_range_iter(low: int(?w), high: int(w), stride) {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  int(w):string, " using a step of type ",
-                  stride.type:string);
-  }
+  iter chpl_direct_strided_range_iter(low: int(8), high: int(8), stride) do compilerError("can't apply 'by' to a range with idxType ", int(8) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(16), high: int(16), stride) do compilerError("can't apply 'by' to a range with idxType ", int(16) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(32), high: int(32), stride) do compilerError("can't apply 'by' to a range with idxType ", int(32) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: int(64), high: int(64), stride) do compilerError("can't apply 'by' to a range with idxType ", int(64) : string, " using a step of type ", stride.type : string);
 
-  iter chpl_direct_strided_range_iter(low: uint(?w), high: uint(w), stride) {
-    compilerError("can't apply 'by' to a range with idxType ",
-                  uint(w):string, " using a step of type ",
-                  stride.type:string);
-  }
+  iter chpl_direct_strided_range_iter(low: uint(8), high: uint(8), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(8) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(16), high: uint(16), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(16) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(32), high: uint(32), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(32) : string, " using a step of type ", stride.type : string);
+  iter chpl_direct_strided_range_iter(low: uint(64), high: uint(64), stride) do compilerError("can't apply 'by' to a range with idxType ", uint(64) : string, " using a step of type ", stride.type : string);
 
   // case for when low and high aren't compatible types and can't be coerced
   iter chpl_direct_strided_range_iter(low, high, stride)
@@ -3080,8 +3224,8 @@ operator :(r: range(?), type t: range(?)) {
   {
     type t = modulus.type;
     var m = modulus;
-    // The extra check for `m != min(t)` is requird to avoid an optimizer
-    // (specially LLVM) determin that `-min(t)` is undefined and inserting
+    // The extra check for `m != min(t)` is required to avoid an optimizer
+    // (especially LLVM) determining that `-min(t)` is undefined and inserting
     // `poison`.
     if isIntType(t) && m < 0 && m != min(t) then m = -m;
 

@@ -239,10 +239,10 @@ proc commonPath(paths: string ...?n): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
@@ -321,10 +321,10 @@ proc commonPath(paths: []): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }

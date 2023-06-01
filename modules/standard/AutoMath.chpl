@@ -1743,15 +1743,45 @@ module AutoMath {
   //
 
   @chpldoc.nodoc
-  inline proc max(x: int(?w), y: int(w)) do return if x > y then x else y;
+  inline proc max(x: int(8), y: int(8)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: uint(?w), y: uint(w)) do return if x > y then x else y;
+  inline proc max(x: int(16), y: int(16)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: real(?w), y: real(w)) do return if (x > y) | isnan(x) then x else y;
+  inline proc max(x: int(32), y: int(32)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: int(?w), y: uint(w)) do return if x > y then x:uint(w) else y;
+  inline proc max(x: int(64), y: int(64)) do return if x > y then x else y;
+
   @chpldoc.nodoc
-  inline proc max(x: uint(?w), y: int(w)) do return if x > y then x else y:uint(w);
+  inline proc max(x: uint(8), y: uint(8)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(16), y: uint(16)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(32), y: uint(32)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(64), y: uint(64)) do return if x > y then x else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isnan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isnan(x) then x else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(16), y: uint(16)) do return if x > y then x : uint(16) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(32), y: uint(32)) do return if x > y then x : uint(32) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(64), y: uint(64)) do return if x > y then x : uint(64) else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: uint(8), y: int(8)) do return if x > y then x else y : uint(8);
+  @chpldoc.nodoc
+  inline proc max(x: uint(16), y: int(16)) do return if x > y then x else y : uint(16);
+  @chpldoc.nodoc
+  inline proc max(x: uint(32), y: int(32)) do return if x > y then x else y : uint(32);
+  @chpldoc.nodoc
+  inline proc max(x: uint(64), y: int(64)) do return if x > y then x else y : uint(64);
 
   pragma "last resort"
   @chpldoc.nodoc
@@ -1782,15 +1812,45 @@ module AutoMath {
   }
 
   @chpldoc.nodoc
-  inline proc min(x: int(?w), y: int(w)) do return if x < y then x else y;
+  inline proc min(x: int(8), y: int(8)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: uint(?w), y: uint(w)) do return if x < y then x else y;
+  inline proc min(x: int(16), y: int(16)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: real(?w), y: real(w)) do return if (x < y) | isnan(x) then x else y;
+  inline proc min(x: int(32), y: int(32)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: int(?w), y: uint(w)) do return if x < y then x else y:int(w);
+  inline proc min(x: int(64), y: int(64)) do return if x < y then x else y;
+
   @chpldoc.nodoc
-  inline proc min(x: uint(?w), y: int(w)) do return if x < y then x:int(w) else y;
+  inline proc min(x: uint(8), y: uint(8)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(16), y: uint(16)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(32), y: uint(32)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(64), y: uint(64)) do return if x < y then x else y;
+
+  @chpldoc.nodoc
+  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isnan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isnan(x) then x else y;
+
+  @chpldoc.nodoc
+  inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
+  @chpldoc.nodoc
+  inline proc min(x: int(16), y: uint(16)) do return if x < y then x else y : int(16);
+  @chpldoc.nodoc
+  inline proc min(x: int(32), y: uint(32)) do return if x < y then x else y : int(32);
+  @chpldoc.nodoc
+  inline proc min(x: int(64), y: uint(64)) do return if x < y then x else y : int(64);
+
+  @chpldoc.nodoc
+  inline proc min(x: uint(8), y: int(8)) do return if x < y then x : int(8) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(16), y: int(16)) do return if x < y then x : int(16) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(32), y: int(32)) do return if x < y then x : int(32) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(64), y: int(64)) do return if x < y then x : int(64) else y;
 
   pragma "last resort"
   @chpldoc.nodoc
@@ -1867,10 +1927,16 @@ module AutoMath {
 
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
-
-     The return value has the same type as `x`.
   */
-  proc mod(x: real(?w), y: real(w)): real(w) {
+  proc mod(x: real(32), y: real(32)): real(32) {
+    // This codes up the standard definition, according to Wikipedia.
+    // Is there a more efficient implementation for reals?
+    return x - y*floor(x/y);
+  }
+  /* Computes the mod operator on the two numbers, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
+  */
+  proc mod(x: real(64), y: real(64)): real(64) {
     // This codes up the standard definition, according to Wikipedia.
     // Is there a more efficient implementation for reals?
     return x - y*floor(x/y);

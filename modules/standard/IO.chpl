@@ -3344,7 +3344,7 @@ inline proc fileWriter.unlock() {
   lock internally before getting the offset)
 
   When 'true', the new behavior is used (i.e., no lock is automatically
-  aquired)
+  acquired)
 */
 config param fileOffsetWithoutLocking = false;
 
@@ -11412,7 +11412,7 @@ proc fileReader.search(re:regex(?)):regexMatch throws
 
 /*  Search for an offset in the fileReader from the current offset matching the
     passed regular expression, possibly pulling out capture groups. If there is
-    a match, leaves the fileReader offset at the begininng of the match. If
+    a match, leaves the fileReader offset at the beginning of the match. If
     there is no match, the fileReader offset will be advanced to the end of the
     fileReader (or end of the file).
 
@@ -11527,7 +11527,7 @@ iter fileReader.matches(re:regex(?), param captures=0,
   }
   commit();
   if i < maxmatches {
-    // we stopped becasuse eof, move to end
+    // we stopped because eof, move to end
     // TODO: is there a better way to get to the end?
     // seeking on an unbounded reader doesn't work
     error = qio_channel_advance_past_byte(false, _channel_internal, 0, /* consume */ false);

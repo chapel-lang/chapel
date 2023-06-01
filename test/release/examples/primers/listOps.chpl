@@ -84,15 +84,15 @@ var lst3 = lst2;
 
   .. note::
 
-    The ``list.pop(idx)`` operation is O(n) worst case. If you pop a value
-    from the front of a list, all the other values after it have to be
+    The ``list.getAndRemove(idx)`` operation is O(n) worst case. If you remove
+    a value from the front of a list, all the other values after it have to be
     shifted one to the left.
 */
 
 var count = 0;
 
 while count < 16 {
-  const elem = lst2.pop(0);
+  const elem = lst2.getAndRemove(0);
   lst3.pushBack(elem);
   count += 1;
 }
@@ -231,8 +231,8 @@ for x in lst3 {
 
   .. note::
 
-    Similar to ``list.pop(idx)``, the ``list.insert()`` operation is O(n) in
-    the worst case.
+    Similar to ``list.getAndRemove(idx)``, the ``list.insert()`` operation
+    is O(n) in the worst case.
 
   .. warning::
 
