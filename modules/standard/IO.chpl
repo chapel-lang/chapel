@@ -1712,7 +1712,7 @@ private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
   proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
                  own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
-  // the ':c_FILE' type annotation should be put back on the 'fp' argument.
+  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
   // and the where clause should be removed.
   this.init();
 
@@ -1750,7 +1750,7 @@ operations on the C file.
 */
 proc file.init(fp: ?t, hints=ioHintSet.empty, own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
   // TODO: when the c_FILE behavior-change deprecation is complete,
-  // the ':c_FILE' type annotation should be put back on the 'fp' argument.
+  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
   // and the where clause should be removed.
   this.init();
 
