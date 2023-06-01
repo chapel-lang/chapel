@@ -8219,7 +8219,7 @@ proc fileReader.readln():bool throws {
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
-z
+
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could
                                be read.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
