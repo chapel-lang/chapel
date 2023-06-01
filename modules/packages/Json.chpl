@@ -254,9 +254,9 @@ module Json {
     //
     // Write maps like so:
     // {
-    //   "east": "west", 
-    //   "hello": "goodbye", 
-    //   "north": "south", 
+    //   "east": "west",
+    //   "hello": "goodbye",
+    //   "north": "south",
     //   "day": "night"
     // }
     @chpldoc.nodoc

@@ -59,7 +59,7 @@ module BinaryIO {
       var orig = st; defer { dc._set_styleInternal(orig); }
 
       st.binary = 1;
-      st.byteorder = 1 + endian:uint(8); 
+      st.byteorder = 1 + endian:uint(8);
       st.str_style = stringStyleWithVariableLength():int(64);
 
       dc._set_styleInternal(st);
@@ -211,7 +211,7 @@ module BinaryIO {
       var orig = st; defer { dc._set_styleInternal(orig); }
 
       st.binary = 1;
-      st.byteorder = 1 + endian:uint(8); 
+      st.byteorder = 1 + endian:uint(8);
       st.str_style = stringStyleWithVariableLength():int(64);
 
       dc._set_styleInternal(st);
