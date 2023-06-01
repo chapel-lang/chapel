@@ -1682,6 +1682,8 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
+// TODO: post c_FILE behavior deprecation:
+// add a ':c_ptr(c_FILE)' annotation to the 'fp' argument
 private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal(),
                         own=false) throws {
@@ -1786,7 +1788,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 
 @unstable("initializing a file with a style argument is unstable")
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
-               style:iostyle, own=false) throws  {
+               style:iostyle, own=false) throws {
   this.init();
 
   initHelper2(this, fileDescriptor.safeCast(c_int), hints, style, own);
@@ -2323,7 +2325,7 @@ private proc openfpHelper(fp: ?t, hints=ioHintSet.empty,
                           style:iostyleInternal = defaultIOStyleInternal()):file throws {
 
   // check if the user passed in a c_FILE rather than a c_ptr(c_FILE)
-  // (this can be removed when deprecation is complete)
+  // (TODO: this can be removed when deprecation is complete (along with the type query))
   if !cFileTypeHasPointer && t == chpl_cFile
     then compilerError("Cannot initialize a `file` with a `c_FILE` object. ",
                          "Please pass a pointer to the `c_FILE` object instead.");

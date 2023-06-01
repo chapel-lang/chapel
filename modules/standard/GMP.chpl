@@ -1023,7 +1023,7 @@ module GMP {
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
-  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_FILE
+  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_ptr(c_FILE)
   extern proc mpf_inp_str(ref rop: mpf_t,
                           stream: c_ptr(chpl_cFile),
                           base: c_int);

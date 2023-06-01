@@ -84,8 +84,8 @@ module CTypes {
       return chpl_cFile;
     }
   }
-  // post deprecation, the above type-proc can be replaced with the following:
-  // type c_FILE = chpl_cFile;
+  // post deprecation, all the above type-proc can be replaced with the following:
+  // extern "_cfiletype" type c_FILE;
 
   // type c_FILE = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
 
