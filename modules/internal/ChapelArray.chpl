@@ -787,8 +787,8 @@ module ChapelArray {
         return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
       }
 
-        compilerError("rectangular domains are not supported by",
-                      " the distribution ", this.type:string);
+      compilerError("rectangular domains are not supported by",
+                    " the distribution ", this.type:string);
     }
 
     proc newRectangularDom(param rank: int, type idxType,

@@ -96,7 +96,7 @@ FnSymbol *gChplBuildLocaleId;
 void gatherIteratorTags() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (strcmp(ts->name, iterKindTypename) == 0
-        || strcmp(ts->name, "strideKind")  == 0) {
+        || strcmp(ts->name, strideKindTypename)  == 0) {
       if (EnumType* enumType = toEnumType(ts->type)) {
         for_alist(expr, enumType->constants) {
           if (DefExpr* def = toDefExpr(expr)) {
@@ -111,10 +111,10 @@ void gatherIteratorTags() {
             } else if (strcmp(name, iterKindStandaloneTagname) == 0) {
               gStandaloneTag = def->sym;
 
-            } else if (strcmp(name, "one")                     == 0) {
+            } else if (strcmp(name, strideKindOneTagname)      == 0) {
               gStrideOne     = def->sym;
 
-            } else if (strcmp(name, "any")                     == 0) {
+            } else if (strcmp(name, strideKindAnyTagname)      == 0) {
               gStrideAny     = def->sym;
             }
           }

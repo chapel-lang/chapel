@@ -764,9 +764,8 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 
-            if (replacedStridable(call, name, use))
-              ; // handled
-            else
+            if (tryReplaceStridable(call, name, use))
+              continue;
 
             // Only complain one time
             if (undeclared.find(name) == undeclared.end()) {
@@ -891,8 +890,8 @@ static bool replaceWithStridableCall(Symbol* stridesField, Expr* use) {
 // Supports deprecation by Vass in 1.31 to implement #17131.
 // chpl__buildDomainRuntimeType(..., stridable) -->
 // chpl__buildDomainRuntimeType(..., strides) if we are in a DSI class.
-bool replacedStridable(CallExpr* parentCall, const char* name,
-                       UnresolvedSymExpr* use)
+bool tryReplaceStridable(CallExpr* parentCall, const char* name,
+                         UnresolvedSymExpr* use)
 {
   if (strcmp(name, "stridable")) return false;
 

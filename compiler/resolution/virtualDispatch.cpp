@@ -1273,7 +1273,15 @@ static void checkMethodsOverride() {
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
                if (isDsiNewRectangularDom(fn)) {
-                // allow, for deprecation by Vass in 1.31 to implement #17131
+                // Allow, for deprecation by Vass in 1.31 to implement #17131.
+                // To support this deprecation, #22441 comments out
+                // BaseDist.dsiNewRectangularDom(), see an explanation in
+                // ChapelDistribution.chpl. However existing code overrides
+                // these methods and we expect to reinstate them once
+                // the deprecated features have been removed completely.
+                // To avoid forcing existing code to remove 'override'
+                // annotations then add them back, accept them for now
+                // despite that being technically incorrect.
                } else {
                 USR_FATAL_CONT(fn, "%s.%s override keyword present but "
                                     "no superclass method matches signature "

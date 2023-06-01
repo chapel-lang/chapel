@@ -923,23 +923,24 @@ static void replaceStridesWithStridableSE(SymExpr* se) {
 // `rect dom or arr class(stridable=...)` to `(strides=...)`
 static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
                                    Symbol*& field) {
-  if ((!strcmp(ne->name, "boundedType") || !strcmp(ne->name, "stridable"))
-      && at->symbol->hasFlag(FLAG_RANGE))
+  bool isBoundedType = !strcmp(ne->name, "boundedType");
+  bool isStridable   = !strcmp(ne->name, "stridable");
+  if ((isBoundedType || isStridable) && at->symbol->hasFlag(FLAG_RANGE))
   {
-   if (!strcmp(ne->name, "boundedType")) {
-    USR_WARN(ne,
-      "range.boundedType is deprecated; please use '.bounds' instead");
-    field = at->getField("bounds");
-   }
-   else { // "stridable"
+    if (isBoundedType) {
+      USR_WARN(ne,
+        "range.boundedType is deprecated; please use '.bounds' instead");
+      field = at->getField("bounds");
+    }
+    else { // "stridable"
 #if 0 //RSDW
-    USR_WARN(ne,
-      "range.stridable is deprecated; please use '.strides' instead");
+      USR_WARN(ne,
+        "range.stridable is deprecated; please use '.strides' instead");
 #endif
-    field = at->getField("strides");
-    replaceStridesWithStridableSE(toSymExpr(ne->actual));
-   }
-  } else if (!strcmp(ne->name, "stridable")) {
+      field = at->getField("strides");
+      replaceStridesWithStridableSE(toSymExpr(ne->actual));
+    }
+  } else if (isStridable) {
     if (AggregateType* base = baseRectDsiParent(at)) {
 #if 0 //RSDW
       USR_WARN(ne,
@@ -2221,9 +2222,8 @@ AggregateType* baseRectDsiParent(AggregateType* ag) {
   if (ag->aggregateTag != AGGREGATE_CLASS)
     return nullptr;
 
-  while (AggregateType* parentAG = ag->dispatchParents.n == 0 ?
-           nullptr : ag->dispatchParents.v[0])
-  {
+  while (ag->dispatchParents.n > 0) {
+    AggregateType* parentAG = ag->dispatchParents.v[0];
     TypeSymbol* psym = parentAG->symbol;
 
     if (psym->hasFlag(FLAG_OBJECT_CLASS))

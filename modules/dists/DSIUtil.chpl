@@ -265,11 +265,9 @@ private proc densiResult(arg: range(?), whole: range(?)) type
 // or with assert() (if false).
 //
 
-// would like 'whole: domain(?IT,?r,?)'
 proc densify(sub: domain, whole: domain, userErrors = true
              ) : densiResult(sub, whole)
 {
-
   type argtypes = (sub, whole).type;
   _densiCheck(sub.rank == whole.rank, argtypes);
   _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
@@ -346,6 +344,7 @@ proc densify(s: range(?,bounds=?B), w: range(?IT,?), userErrors=true
 }
 
 // w.strides==one
+// in this case densiResult(sArg,w) == range(IT,B,S)
 proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideKind.one), userErrors=true) : range(IT,B,S)
 {
   _densiEnsureBounded(sArg);

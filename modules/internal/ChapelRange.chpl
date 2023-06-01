@@ -1268,9 +1268,9 @@ module ChapelRange {
     if this.bounds == boundKind.both {
       return this.firstAsInt;
     } else {
-      if strides == strideKind.one {
+      if strides.isOne() {
         return chpl__idxToInt(lowBoundForIter(this));
-      } else if strides == strideKind.negOne {
+      } else if strides.isNegOne() {
         return chpl__idxToInt(highBoundForIter(this));
       } else {
         if hasPositiveStride() {
@@ -1323,9 +1323,9 @@ module ChapelRange {
     if bounds == boundKind.both {
       return this.lastAsInt;
     } else {
-      if strides == strideKind.one {
+      if strides.isOne() {
         return chpl__idxToInt(highBoundForIter(this));
-      } else if strides == strideKind.negOne {
+      } else if strides.isNegOne() {
         return chpl__idxToInt(lowBoundForIter(this));
       } else if hasPositiveStride() {
         return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
@@ -1690,10 +1690,10 @@ private inline proc rangeCastHelper(r, type t) throws {
       HaltWrappers.boundsCheckHalt("indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! contains(ind) then return (-1):intIdxType;
-    if strides == strideKind.one {
+    if strides.isOne() {
       if this.hasLowBound() then
         return chpl__idxToInt(ind) - _low;
-    } else if strides == strideKind.negOne {
+    } else if strides.isNegOne() {
       if this.hasHighBound() then
         return _high - chpl__idxToInt(ind);
     } else {
@@ -3513,51 +3513,51 @@ private inline proc rangeCastHelper(r, type t) throws {
       if boundsChecking && this.hasLast() then
         HaltWrappers.zipLengthHalt("zippered iteration where a bounded range follows an unbounded iterator");
 
-     if ! newStrides.isPosNegOne() {      // aka !newStrides.hasParamStride()
-      const first  = this.orderToIndex(myFollowThis.first);
-      const stride = this.stride * myFollowThis.stride;
+      if ! newStrides.isPosNegOne() {      // aka !newStrides.hasParamStride()
+        const first  = this.orderToIndex(myFollowThis.first);
+        const stride = this.stride * myFollowThis.stride;
 
-      if isPositiveStride(newStrides, stride)
-      {
-        const r = first .. by stride:strType;
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
+        if isPositiveStride(newStrides, stride)
+        {
+          const r = first .. by stride:strType;
+          if debugChapelRange then
+            chpl_debug_writeln("Expanded range = ",r);
 
-        for i in r do
-          yield i;
+          for i in r do
+            yield i;
+        }
+        else
+        {
+          const r = .. first by stride:strType;
+          if debugChapelRange then
+            chpl_debug_writeln("Expanded range = ",r);
+
+          for i in r do
+            yield i;
+        }
+      } else {  // newStrides.isPosNegOne()
+        // else-branch follows then-branch; here 'stride' is param 1 or -1
+        const first  = this.orderToIndex(myFollowThis.first);
+
+        if newStrides.isPositive()
+        {
+          const r = first ..;
+          if debugChapelRange then
+            chpl_debug_writeln("Expanded range = ",r);
+
+          for i in r do
+            yield i;
+        }
+        else
+        {
+          const r = .. first by -1;
+          if debugChapelRange then
+            chpl_debug_writeln("Expanded range = ",r);
+
+          for i in r do
+            yield i;
+        }
       }
-      else
-      {
-        const r = .. first by stride:strType;
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
-
-        for i in r do
-          yield i;
-      }
-     } else {  // newStrides.isPosNegOne()
-      // else-branch follows then-branch; here 'stride' is param 1 or -1
-      const first  = this.orderToIndex(myFollowThis.first);
-
-      if newStrides.isPositive()
-      {
-        const r = first ..;
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
-
-        for i in r do
-          yield i;
-      }
-      else
-      {
-        const r = .. first by -1;
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
-
-        for i in r do
-          yield i;
-      }
-     }
     } // if myFollowThis.hasLast()
   }
 

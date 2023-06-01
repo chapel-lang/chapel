@@ -723,9 +723,9 @@ module ChapelDomain {
 
     if a.isRectangular() && b.isRectangular() then
       if ! chpl_assignStrideIsSafe(a.strides, b.strides) then
-       compilerError("assigning to a domain with strideKind.",a.strides:string,
-                     " from a domain with strideKind.", b.strides:string,
-                     " without an explicit cast");
+        compilerError("assigning to a domain with strideKind.",a.strides:string,
+                      " from a domain with strideKind.", b.strides:string,
+                      " without an explicit cast");
 
     a._instance.dsiAssignDomain(b, lhsPrivate=false);
 
@@ -1458,13 +1458,14 @@ module ChapelDomain {
         compilerWarning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning");
        } else
 */
-       if ! this.strides.isPositive() {
-        for s in chpl__tuplify(this.stride) do
-          if s < 0 {
-            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
-            break;
+        if ! this.strides.isPositive() {
+          for s in chpl__tuplify(this.stride) {
+            if s < 0 {
+              warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
+              break;
+            }
           }
-       }
+        }
       }
     }
 
