@@ -54,6 +54,8 @@ IO module's serialization/deserialization API. For example:
 
 Yaml files can also be parsed and written directly using the YamlValue class.
 
+
+
 Dependencies
 ------------
 
@@ -64,7 +66,6 @@ To compile a program that uses the Yaml module, you will either need to set the
 ``CHPL_INCLUDE_PATH`` and ``CHPL_LIB_PATH`` environment variables with
 ``libyaml``s installation location, or use the ``-l`` and ``-L`` compiler
 flags to specify the location of the library.
-
 
 */
 
@@ -804,6 +805,9 @@ module Yaml {
       throw new YamlTypeError("cannot convert to list");
     }
 
+    proc writeThis(fw) throws {
+      fw.write("Empty YamlValue");
+    }
   }
 
   class YamlMapping: YamlValue {
@@ -855,6 +859,19 @@ module Yaml {
         }
       }
     }
+
+    override proc writeThis(fw) throws {
+      var first = true;
+      fw.writeLiteral("{");
+      for (k, v) in this.these() {
+        if first then first = false;
+                 else fw.writeLiteral(", ");
+        fw.write(k);
+        fw.writeLiteral(": ");
+        fw.write(v);
+      }
+      fw.writeLiteral("}");
+    }
   }
 
   class YamlSequence: YamlValue {
@@ -901,6 +918,17 @@ module Yaml {
       }
 
       return l;
+    }
+
+    override proc writeThis(fw) throws {
+      var first = true;
+      fw.writeLiteral("[");
+      for v in this {
+        if first then first = false;
+                 else fw.writeLiteral(", ");
+        fw.write(v);
+      }
+      fw.writeLiteral("]");
     }
   }
 
@@ -1006,6 +1034,12 @@ module Yaml {
       else
         return "";
     }
+
+    override proc writeThis(fw) throws {
+      if this.yamlType == YamlScalarType.UserDefined
+        then fw.write(this.tag, " ", this.value);
+        else fw.write(this.value);
+    }
   }
 
   class YamlAlias: YamlValue {
@@ -1026,6 +1060,10 @@ module Yaml {
 
     override proc asBytes(strict: bool = false): bytes throws {
       return this._alias : bytes;
+    }
+
+    override proc writeThis(fw) throws {
+      fw.write("*", this._alias);
     }
   }
 
@@ -1580,15 +1618,7 @@ module Yaml {
       var parser: yaml_parser_t;
       var event: yaml_event_t;
 
-      /* needed for list and map parsing:
-        For these types, the deserializer needs to throw a `BadFormatError`
-        to indicate that no more elements are available.
-        In practice, this involves expecting a Scalar (or other event),
-        but getting a Sequence/MappingEnd event instead. As such, the
-        Sequence/MappingEnd event needs to be stored so that it can be
-        consumed by the deserializer later (when list/map calls it's closing
-        method on the deserializer).
-      */
+      // used to store a peeked event
       var cachedEvent: (EventType, uint, uint);
 
       var fileIsAttached = false; // whether the current file is attached to the parser
