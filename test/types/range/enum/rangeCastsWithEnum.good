@@ -50,10 +50,10 @@ $CHPL_HOME/modules/internal/ChapelRange.chpl:282: note: add a cast :uint(64) to 
   within internal functions (use --print-callstack-on-error to see)
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,false), type t = uint(64)) from function 'tryCasts'
   rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,false))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:705: In function 'helpAlignLow':
-$CHPL_HOME/modules/internal/ChapelRange.chpl:707: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:707: note: add a cast :uint(64) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:693: called as helpAlignLow(l: uint(64), a: uint(64), s: int(64))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:720: In function 'helpAlignLow':
+$CHPL_HOME/modules/internal/ChapelRange.chpl:722: warning: int->uint implicit conversion is unstable
+$CHPL_HOME/modules/internal/ChapelRange.chpl:722: note: add a cast :uint(64) to avoid this warning
+  $CHPL_HOME/modules/internal/ChapelRange.chpl:708: called as helpAlignLow(l: uint(64), a: uint(64), s: int(64))
   within internal functions (use --print-callstack-on-error to see)
   rangeCastsWithEnum.chpl:56: called as printRange(r: range(uint(64),both,true)) from function 'tryCast'
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,false), type t = uint(64)) from function 'tryCasts'
@@ -75,10 +75,10 @@ $CHPL_HOME/modules/internal/ChapelRange.chpl:282: note: add a cast :uint(8) to a
   within internal functions (use --print-callstack-on-error to see)
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,false), type t = uint(8)) from function 'tryCasts'
   rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,false))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:705: In function 'helpAlignLow':
-$CHPL_HOME/modules/internal/ChapelRange.chpl:707: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:707: note: add a cast :uint(8) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:693: called as helpAlignLow(l: uint(8), a: uint(8), s: int(8))
+$CHPL_HOME/modules/internal/ChapelRange.chpl:720: In function 'helpAlignLow':
+$CHPL_HOME/modules/internal/ChapelRange.chpl:722: warning: int->uint implicit conversion is unstable
+$CHPL_HOME/modules/internal/ChapelRange.chpl:722: note: add a cast :uint(8) to avoid this warning
+  $CHPL_HOME/modules/internal/ChapelRange.chpl:708: called as helpAlignLow(l: uint(8), a: uint(8), s: int(8))
   within internal functions (use --print-callstack-on-error to see)
   rangeCastsWithEnum.chpl:56: called as printRange(r: range(uint(8),both,true)) from function 'tryCast'
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,false), type t = uint(8)) from function 'tryCasts'
