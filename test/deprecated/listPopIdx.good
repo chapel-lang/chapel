@@ -1,2 +1,2 @@
-listPopIdx.chpl:4: warning: list.pop is deprecated; please use list.getAndRemove instead.
+listPopIdx.chpl:4: warning: list.pop(idx) is deprecated; please use list.getAndRemove instead.
 5

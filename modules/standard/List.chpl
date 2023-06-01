@@ -1237,7 +1237,7 @@ module List {
       return this.popBack();
     }
 
-    @deprecated(notes=":proc:`list.pop` is deprecated; please use :proc:`list.getAndRemove` instead.")
+    @deprecated(notes="list.pop(idx) is deprecated; please use :proc:`list.getAndRemove` instead.")
     proc ref pop(idx: int): eltType {
       return this.getAndRemove(idx);
     }
