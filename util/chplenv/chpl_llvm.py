@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import itertools
 import optparse
 import os
 import sys
@@ -117,7 +118,7 @@ def check_llvm_packages(llvm_config):
     usr_include_clang_ok = False
 
     include_dir = run_command([llvm_config, '--includedir']).strip()
-    if "/nix/store" in include_dir:
+    if include_dir.startswith("/nix/store"):
         # Dependencies are managed by Nix, and llvm, clang, etc. are all
         # different packages. Hence, we cannot rely on clang/Basic/Version.h
         # residing in the include_dir returned by llvm-config.
@@ -333,7 +334,7 @@ def validate_llvm_config():
 
     if llvm_val == 'system':
         bindir = get_system_llvm_config_bindir()
-        if "/nix/store" not in bindir:
+        if not bindir.startswith("/nix/store"):
             if not (bindir and os.path.isdir(bindir)):
                 error("llvm-config command {0} provides missing bin dir {1}"
                       .format(llvm_config, bindir))
@@ -378,11 +379,13 @@ def get_possible_clang_installation_directories():
         paths.append(bindir)
     return paths + os.environ["PATH"].split(":")
 
-def get_possible_clang_executables(lang):
+def get_possible_clang_executables(lang, llvm_version):
     clang_name = get_llvm_clang_command_name(lang)
+    # We expect the executable to be called either clang or clang-<version>
+    clang_suffixes = ["", "-" + llvm_version.split(".")[0]]
     for folder in get_possible_clang_installation_directories():
-        for file in os.listdir(folder):
-            if clang_name in file:
+        for file, suffix in itertools.product(os.listdir(folder), clang_suffixes):
+            if file == clang_name + suffix:
                 yield os.path.join(folder, file)
 
 @memoize
@@ -390,7 +393,7 @@ def get_system_llvm_clang(lang):
     llvm_config = find_system_llvm_config()
     llvm_version = run_command([llvm_config, '--version']).strip()
 
-    for clang_path in get_possible_clang_executables(lang):
+    for clang_path in get_possible_clang_executables(lang, llvm_version):
         clang_version = run_command([clang_path, '--version']).strip()
         if llvm_version in clang_version:
             return clang_path
