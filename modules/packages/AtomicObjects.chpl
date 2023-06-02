@@ -396,7 +396,7 @@ prototype module AtomicObjects {
     @chpldoc.nodoc
     proc init(type __ABA_objType, reader: fileReader, ref deserializer) {
       this.init(__ABA_objType);
-      compilerWarning("Reading an ABA is not supported");
+      compilerWarning("Deserializing an ABA is not yet supported");
     }
 
     /* Writes an ABA */
@@ -644,7 +644,7 @@ prototype module AtomicObjects {
               reader: fileReader,
               ref deserializer) {
       init(objType, hasABASupport, hasGlobalSupport);
-      compilerWarning("Reading an AtomicObject is not supported");
+      compilerWarning("Deserializing an AtomicObject is not yet supported");
     }
 
     proc writeThis(f) throws {
