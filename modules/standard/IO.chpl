@@ -897,8 +897,11 @@ extern const QIO_HINT_NOREUSE:c_int;
 @chpldoc.nodoc
 extern const QIO_HINT_OWNED:c_int;
 
+// can be left opaque, but we need the correct C type name
 @chpldoc.nodoc
-extern type qio_file_ptr_t = c_ptr(opaque);
+extern record qio_file_t {};
+@chpldoc.nodoc
+extern type qio_file_ptr_t = c_ptr(qio_file_t);
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
 
@@ -908,8 +911,11 @@ extern record qiovec_t {
   var iov_len: c_size_t;
 }
 
+// opaque like qio_file_t
 @chpldoc.nodoc
-extern type qio_channel_ptr_t = c_ptr(opaque);
+extern record qio_channel_t {};
+@chpldoc.nodoc
+extern type qio_channel_ptr_t = c_ptr(qio_channel_t);
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
 // also the type for a buffer for qio_file_open_mem.
