@@ -113,9 +113,11 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
 	packages/ArgumentParser.chpl \
 	packages/AtomicObjects.chpl \
+	packages/BinaryIO.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
 	packages/Channel.chpl \
+	packages/ChplFormat.chpl \
 	packages/Collection.chpl \
 	packages/ConcurrentMap.chpl \
 	packages/CopyAggregation.chpl \
@@ -130,6 +132,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
+	packages/Json.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
