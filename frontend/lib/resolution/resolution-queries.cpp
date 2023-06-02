@@ -267,12 +267,14 @@ const QualifiedType& typeForBuiltin(Context* context,
 
   QualifiedType result;
 
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
 
-  auto search = map.find(name);
-  if (search != map.end()) {
-    const Type* t = search->second;
+  auto searchTypes = typeMap.find(name);
+  auto searchGlobals = globalMap.find(name);
+  if (searchTypes != typeMap.end()) {
+    const Type* t = searchTypes->second;
     CHPL_ASSERT(t);
 
     if (auto bct = t->toBasicClassType()) {
@@ -281,6 +283,8 @@ const QualifiedType& typeForBuiltin(Context* context,
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
+  } else if (searchGlobals != globalMap.end()) {
+    result = searchGlobals->second;
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();
