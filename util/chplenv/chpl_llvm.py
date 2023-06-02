@@ -372,34 +372,34 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
-def get_possible_clang_installation_directories():
-    paths = []
-    bindir = get_system_llvm_config_bindir()
-    if bindir:
-        paths.append(bindir)
-    for p in os.environ["PATH"].split(":"):
-        if os.path.isdir(p):
-            paths.append(p)
-    return paths
-
-def get_possible_clang_executables(lang, llvm_version):
-    clang_name = get_llvm_clang_command_name(lang)
-    # We expect the executable to be called either clang or clang-<version>
-    clang_suffixes = ["", "-" + llvm_version.split(".")[0]]
-    for folder in get_possible_clang_installation_directories():
-        for file, suffix in itertools.product(os.listdir(folder), clang_suffixes):
-            if file == clang_name + suffix:
-                yield os.path.join(folder, file)
-
 @memoize
 def get_system_llvm_clang(lang):
     llvm_config = find_system_llvm_config()
     llvm_version = run_command([llvm_config, '--version']).strip()
+    llvm_major = llvm_version.split(".")[0]
 
-    for clang_path in get_possible_clang_executables(lang, llvm_version):
-        clang_version = run_command([clang_path, '--version']).strip()
-        if llvm_version in clang_version:
-            return clang_path
+    def is_good_clang(command):
+        exists, returncode, out, err = try_run_command([command, '--version'])
+        return exists and returncode == 0 and llvm_version in out
+
+    # We expect the executable to be called either clang or clang-<version>
+    clang_name = get_llvm_clang_command_name(lang)
+    clang_suffixes = ["", "-" + llvm_major]
+
+    # We expect to find clang either in the bindir returned by llvm-config or on PATH
+    bindir = get_system_llvm_config_bindir()
+    clang_prefixes = []
+    if bindir is not None:
+        clang_prefixes.append(bindir)
+    clang_prefixes.append(None)
+
+    for prefix in clang_prefixes:
+        for suffix in clang_suffixes:
+            clang_path = clang_name + suffix
+            if prefix is not None:
+                clang_path = os.path.join(prefix, clang_path)
+            if is_good_clang(clang_path):
+                return clang_path
     return ''
 
 # lang should be C or CXX
