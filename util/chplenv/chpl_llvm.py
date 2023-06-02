@@ -377,7 +377,10 @@ def get_possible_clang_installation_directories():
     bindir = get_system_llvm_config_bindir()
     if bindir:
         paths.append(bindir)
-    return paths + os.environ["PATH"].split(":")
+    for p in os.environ["PATH"].split(":"):
+        if os.path.isdir(p):
+            paths.append(p)
+    return paths
 
 def get_possible_clang_executables(lang, llvm_version):
     clang_name = get_llvm_clang_command_name(lang)
