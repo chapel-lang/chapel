@@ -332,18 +332,17 @@ module DefaultRectangular {
       // reasonably.  We should switch to using the RangeChunk
       // library...
       coforall chunk in 0..#numChunks {
-        var block = ranges;
-        const len = if ranges(parDim).hasPosNegUnitStride() then ranges(parDim).sizeAs(ranges(parDim).intIdxType)
-            else ranges(parDim).sizeAs(uint) * abs(ranges(parDim).stride):uint;
+        const ranges = this.ranges;
+        const len = ranges(parDim).sizeAs(uint)
+                    * abs(ranges(parDim).stride):uint;
         const (lo,hi) = _computeBlock(len,
                                       numChunks, chunk,
                                       ranges(parDim)._high,
                                       ranges(parDim)._low,
                                       ranges(parDim)._low);
-        if ! block(parDim).hasUnitStride() then
-          block(parDim) = ( lo..hi by block(parDim).stride align chpl__idxToInt(block(parDim).alignment) ): block(parDim).type;
-        else
-          block(parDim) = lo..hi;
+        var block = ranges;
+        block(parDim)._low = lo;  // preserve stride, alignment
+        block(parDim)._high = hi;
         if debugDefaultDist {
           chpl_debug_writeln("*** DI[", chunk, "]: block = ", block);
         }
@@ -519,14 +518,14 @@ module DefaultRectangular {
             const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            block(i) = ( low..high by stride ): block(i).type;
+            block(i).chpl_setFields(low, high, stride);
 
           } else {
             const irStride = (-rStride):intIdxType;
             const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
-            block(i) = ( low..high by stride ): block(i).type;
+            block(i).chpl_setFields(low, high, stride);
           }
         }
       } else {
@@ -541,14 +540,14 @@ module DefaultRectangular {
             const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride;
             param stride = (rSignedStride * fSignedStride):strType;
-            block(i) = ( low..high by stride ): block(i).type;
+            block(i).chpl_setFields(low, high);
 
           } else {
             param irStride = (-rStride):intIdxType;
             const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride;
             param stride = (rSignedStride * fSignedStride):strType;
-            block(i) = ( low..high by stride ): block(i).type;
+            block(i).chpl_setFields(low, high);
           }
         }
       }

@@ -24,7 +24,7 @@ module ChapelRange {
 
   use ChapelBase, HaltWrappers;
 
-  use AutoMath, DSIUtil;
+  use AutoMath, DSIUtil, Reflection;
 
   private use ChapelDebugPrint only chpl_debug_writeln;
 
@@ -298,8 +298,7 @@ module ChapelRange {
         then chpl__mod(_alignment, _stride) else _alignment;
       this._aligned   = _aligned;
 
-      if boundsChecking && strides.isPositive() then assert(_stride > 0);
-      if boundsChecking && strides.isNegative() then assert(_stride < 0);
+      if boundsChecking then verifyAppropriateStide(strides, _stride);
     }
   }
 
@@ -307,17 +306,19 @@ module ChapelRange {
   //
   @chpldoc.nodoc
   proc range.init=(other : range(?i,?b,?s)) {
-    type idxType      = if this.type.idxType     == ? then i else this.type.idxType;
-    param bounds      = if this.type.bounds      == ? then b else this.type.bounds;
-    param strides     = if this.type.strides     == ? then s else this.type.strides;
+    type idxType  = if this.type.idxType == ? then i else this.type.idxType;
+    param bounds  = if this.type.bounds  == ? then b else this.type.bounds;
+    param strides = if this.type.strides == ? then s else this.type.strides;
 
-    if bounds != b {
-      compilerError("range(bounds=" + this.type.bounds:string + ") cannot be initialized from range(bounds=" + b:string + ")");
-    }
-
+    if ! assignIdxIsLegal(idxType, i, b) then
+      compilerError("initializing a range with idxType ", idxType:string,
+                           " from a range with idxType ", i:string);
+    if bounds != b then
+      compilerError("initializing a range with boundKind.", bounds:string,
+                           " from a range with boundKind.", b:string);
     if ! chpl_assignStrideIsSafe(strides, s) then
       compilerError("initializing a range with strideKind.", strides:string,
-                    " from a range with strideKind.", s:string);
+                           " from a range with strideKind.", s:string);
 
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.intIdxType;
@@ -653,6 +654,9 @@ module ChapelRange {
   @chpldoc.nodoc proc range.hasParamStrideAltvalAld() param do
     return hasPosNegUnitStride();
 
+  @chpldoc.nodoc proc type range.hasParamStrideAltvalAld() param
+    { var r: this; return r.hasParamStrideAltvalAld(); }
+
   //################################################################################
   //# Predicates
   //#
@@ -759,21 +763,35 @@ module ChapelRange {
   @chpldoc.nodoc proc param strideKind.toStridable() param
     do return this != strideKind.one;
 
-  // A cast "from" a tuple of ranges "to" another tuple-of-ranges type.
-  // "to" can also be a range type, to make a tuple out of.
-  // This cast supports deprecation of 'stridable' when stridable-based code
-  // unwittingly creates ranges with overly-general strideKind=any.
-  proc chpl_convertRangeTuple(from, type to) {
-    type too = if isRange(to) then from.size * to else to;
-    var result: too;
-    for param i in 0..from.size-1 do
-      result(i) = from(i): result(i).type;
+  // Supports deprecation by Vass in 1.31 to implement #17131,
+  // when stridable-based code unwittingly creates ranges with
+  // the overly-general strideKind=any.
+  // It simply changes 'from' ranges from strideKind.* to strideKind.any.
+  proc chpl_convertRangeTuple(from: _tuple, param stridable: bool) {
+    if from(0).strides == chpl_strideKind(stridable) then
+      return from;
+
+    param rank = from.size;
+    type idxType = from(0).idxType;
+    param bounds = from(0).bounds;
+    param strides = strideKind.any;
+
+    var result: rank * range(idxType, bounds, strides);
+    for param i in 0..rank-1 do transfer(result(i), from(i));
     return result;
+
+    inline proc transfer(ref dest, src) {
+      // It would be simpler to use a cast: dest = src: dest.type
+      // however the cast can throw, creating more code and execution cost.
+      dest._low  = src._low;
+      dest._high = src._high;
+      if ! dest.hasParamStrideAltvalAld() {
+        dest._stride    = src._stride;
+        dest._alignment = src._alignment;
+        dest._aligned   = src._aligned;
+      }
+    }
   }
-  // A common case of the above when the to-type is defined by 'stridable'.
-  proc chpl_convertRangeTuple(from, param stridable: bool) do
-    return chpl_convertRangeTuple(from,
-      range(from(0).idxType, from(0).bounds, chpl_strideKind(stridable)));
 
   // Counterparts to hasPositiveStride() and hasNegativeStride()
   // for use when there is no range.
@@ -945,6 +963,41 @@ module ChapelRange {
                                  param rhs: strideKind) param do
     return lhs.isPositive() && rhs.isNegative() ||
            lhs.isNegative() && rhs.isPositive();
+
+  private proc assignIdxIsLegal(type to, type from, param fromBounds) param {
+    if fromBounds == boundKind.neither then
+      return true; // can assign between `..` ranges of any idxType
+    var toVar: to, fromVar: from;
+    return canResolve("=", toVar, fromVar);
+  }
+
+  private proc verifyAppropriateStide(param strides, stride) {
+    if strides.isPositive() then assert(stride > 0);
+    if strides.isNegative() then assert(stride < 0);
+  }
+
+  // chpl_setFields() modifies _low, _high, _stride fields directly,
+  // to work around casting limitations in code that calculates the ordinals
+  // for low/high of a pre-allocated enum range, ex., in range/domain followers
+
+  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high, stride) {
+    this._low  = chpl__idxToInt(low):  this.intIdxType;
+    this._high = chpl__idxToInt(high): this.intIdxType;
+    if this.hasParamStrideAltvalAld() {
+      if boundsChecking then verifyAppropriateStide(this.strides, stride);
+    } else {
+      this._stride    = stride: this.strType;
+      const first     = if this.hasPositiveStride() then low else high;
+      this._alignment = chpl__mod(chpl__idxToInt(first), stride): this.strType;
+      this._aligned   = true;
+    }
+  }
+
+  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high) {
+    compilerAssert(this.hasParamStride()); // otherwise stride = ?
+    this._low  = chpl__idxToInt(low):  this.intIdxType;
+    this._high = chpl__idxToInt(high): this.intIdxType;
+  }
 
   /* Returns the range's aligned low bound. If this bound is
      undefined (e.g., ``..10 by -2``), the behavior is undefined.
@@ -1499,19 +1552,22 @@ module ChapelRange {
  */
 @chpldoc.nodoc
 proc range.safeCast(type t: range(?)) {
-  var tmp: t;
 
-  if tmp.bounds != this.bounds {
-    compilerError("cannot cast range from boundKind.",
-                  this.bounds:string, " to boundKind.", tmp.bounds:string);
-  }
+  // safeCast is used in domain assignment, so we need to support enums:
+  //   var D1: domain(1, myEnum, positive);
+  //   var D2: domain(1, myEnum, any) = D1;
 
-  if isEnumType(t.idxType) then
+  if (isEnumType(this.idxType) || isEnumType(t.idxType)) &&
+     (this.idxType != t.idxType) then
     compilerError("safeCast() on ranges does not yet support enum ranges");
 
+  if t.bounds != this.bounds then
+    compilerError("safeCast() to a range with boundKind.", t.bounds:string,
+                          " from a range with boundKind.", this.bounds:string);
+
   if chpl_assignStrideIsUnsafe(t.strides, this.strides) then
-    compilerError("cannot cast from strideKind.", this.strides:string,
-                  " to strideKind.", t.strides:string);
+    compilerError("safeCast() to a range with strideKind.", t.strides:string,
+                        " from a range with strideKind.", this.strides:string);
 
   var needHalt = false;
   select t.strides {
@@ -1523,12 +1579,22 @@ proc range.safeCast(type t: range(?)) {
   }
   if needHalt then
     HaltWrappers.safeCastCheckHalt("illegal safeCast from stride " +
-      this.stride:string + " to strideKind." + tmp.strides:string);
+      this.stride:string + " to strideKind." + t.strides:string);
+
+  if t.idxType == this.idxType then return
+    if this.hasParamStrideAltvalAld() && ! t.hasParamStrideAltvalAld()
+    then new range(t.idxType, t.bounds, t.strides,
+                   this._low, this._high, this.stride, 0, false, false)
+    else new range(t.idxType, t.bounds, t.strides,
+                   this._low, this._high, this._stride,
+                   this._alignment, this._aligned, false);
+
+  var tmp: t;
 
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = if isNothingValue(this._alignment) then 0
-                                     else this._alignment.safeCast(intIdxType);
+                     else this._alignment.safeCast(intIdxType);
     tmp._aligned = this.aligned;
   }
 
@@ -1588,7 +1654,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = r.stride: tmp._stride.type;
     tmp._alignment = if isNothingValue(r._alignment) then 0
-                                                else r._alignment: tmp.intIdxType;
+                     else r._alignment: tmp.intIdxType;
     tmp._aligned = r.aligned;
   }
 
@@ -1957,14 +2023,18 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator =(ref r1: range(?), r2: range(?))
   {
+    if ! assignIdxIsLegal(r1.idxType, r2.idxType, r2.bounds) then
+      compilerError("assigning to a range with idxType ", r1.idxType:string,
+                           " from a range with idxType ", r2.idxType:string,
+                           " without an explicit cast");
     if r1.bounds != r2.bounds then
-      compilerError("type mismatch in assignment of ranges with different bounds parameters");
-
+      compilerError("assigning to a range with boundKind.", r1.bounds:string,
+                           " from a range with boundKind.", r2.bounds:string,
+                           " without an explicit cast");
     if ! chpl_assignStrideIsSafe(r1, r2) then
       compilerError("assigning to a range with strideKind.", r1.strides:string,
-                    " from a range with strideKind.", r2.strides:string,
-                    " without an explicit cast");
-
+                           " from a range with strideKind.", r2.strides:string,
+                           " without an explicit cast");
     r1._low = r2._low;
     r1._high = r2._high;
 
@@ -2026,23 +2096,6 @@ private inline proc rangeCastHelper(r, type t) throws {
   {
     r = r - offset;
   }
-
-  // stridesOfBy() returns the strideKind for the result of `r by step`
-
-  private proc stridesOfBy(r: range(?), step) param {
-    use strideKind;
-    param ps = isUint(step); // "positive step"
-    select r.strides {
-      when one      do return if ps then positive else any;
-      when positive do return if ps then positive else any;
-      when negOne   do return if ps then negative else any;
-      when negative do return if ps then negative else any;
-      when any do return any;
-    }
-  }
-
-  private proc stridesOfBy(r: range(?), param step) param do
-    return chpl_strideProduct(r, step);
 
   inline proc chpl_check_step_integral(step) {
     if !isIntegral(step.type) then
@@ -2112,7 +2165,9 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator by(r : range(?), step) {
     chpl_range_check_stride(step, r.idxType);
-    return chpl_by_help(r, step, stridesOfBy(r, step));
+    param newStrides = if ! isUint(step) then strideKind.any
+                       else chpl_strideProduct(r.strides, strideKind.positive);
+    return chpl_by_help(r, step, newStrides);
   }
 
   // We want to warn the user at compiler time if they had an invalid param
@@ -2120,7 +2175,17 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator by(r : range(?), param step) {
     chpl_range_check_stride(step, r.idxType);
-    return chpl_by_help(r, step:r.strType, stridesOfBy(r, step));
+
+    // streamline the simple cases
+    if step == 1 then return r;
+
+    if step == -1 then return if r.hasParamStrideAltvalAld()
+      then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                 r._low, r._high, none, none, none, false)
+      else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
+                 r._low, r._high, -r._stride, r._alignment, r._aligned, false);
+
+    return chpl_by_help(r, step, chpl_strideProduct(r, step));
   }
 
   pragma "last resort"
@@ -3451,7 +3516,8 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     param newStrides = chpl_strideProduct(this, myFollowThis);
 
-    if (myFollowThis.bounds == boundKind.both && myFollowThis.hasPosNegUnitStride()) ||
+    if (myFollowThis.bounds == boundKind.both &&
+        myFollowThis.hasPosNegUnitStride()     ) ||
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
@@ -3466,46 +3532,21 @@ private inline proc rangeCastHelper(r, type t) throws {
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       }
 
-      if ! newStrides.isPosNegOne() {
-        var r: range(idxType, strides=newStrides);
+      var r: range(idxType, strides=newStrides);
 
-        if flwlen != 0 {
-          const stride = this.stride * myFollowThis.stride;
-          var low = this.orderToIndex(myFollowThis.first);
-          var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (flwlen - 1):strType);
-          assert(high == this.orderToIndex(myFollowThis.last));
-
-          if stride < 0 then low <=> high;
-          r = ( low .. high by stride ): r.type;
-        }
-
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
-
-        for i in r do
-          yield i;
-
-      } else {
-        // else-branch duplicates then-branch, except here 'stride' is a param
-        var r: range(idxType, strides=newStrides);
-
-        if flwlen != 0 {
-          param stride = r.stride;
-          compilerAssert(stride == this.stride * myFollowThis.stride);
-          var low = this.orderToIndex(myFollowThis.first);
-          var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (flwlen - 1):strType);
-          assert(high == this.orderToIndex(myFollowThis.last));
-
-          if stride < 0 then low <=> high;
-          r = low .. high by stride;
-        }
-
-        if debugChapelRange then
-          chpl_debug_writeln("Expanded range = ",r);
-
-        for i in r do
-          yield i;
+      if flwlen != 0 {
+        var low = this.orderToIndex(myFollowThis.first);
+        var high = this.orderToIndex(myFollowThis.last);
+        if isNegativeStride(newStrides, this.stride * myFollowThis.stride)
+          then low <=> high;
+        r.chpl_setFields(low, high, this.stride * myFollowThis.stride);
       }
+
+      if debugChapelRange then
+        chpl_debug_writeln("Expanded range = ",r);
+
+      for i in r do
+        yield i;
     }
     else // ! myFollowThis.hasLast()
     {
@@ -3513,50 +3554,31 @@ private inline proc rangeCastHelper(r, type t) throws {
       if boundsChecking && this.hasLast() then
         HaltWrappers.zipLengthHalt("zippered iteration where a bounded range follows an unbounded iterator");
 
-      if ! newStrides.isPosNegOne() {      // aka !newStrides.hasParamStride()
-        const first  = this.orderToIndex(myFollowThis.first);
-        const stride = this.stride * myFollowThis.stride;
+      const first  = this.orderToIndex(myFollowThis.first);
+      const stride = this.stride * myFollowThis.stride;
 
-        if isPositiveStride(newStrides, stride)
-        {
-          const r = first .. by stride:strType;
-          if debugChapelRange then
-            chpl_debug_writeln("Expanded range = ",r);
+      if isPositiveStride(newStrides, stride)
+      {
+        const r = first.. by if newStrides.isOne() then 1 else stride:uint;
 
-          for i in r do
-            yield i;
-        }
-        else
-        {
-          const r = .. first by stride:strType;
-          if debugChapelRange then
-            chpl_debug_writeln("Expanded range = ",r);
+        if debugChapelRange then
+          chpl_debug_writeln("Expanded range = ",r);
 
-          for i in r do
-            yield i;
-        }
-      } else {  // newStrides.isPosNegOne()
-        // else-branch follows then-branch; here 'stride' is param 1 or -1
-        const first  = this.orderToIndex(myFollowThis.first);
+        for i in r do
+          yield i;
+      }
+      else
+      {
+        const r = if newStrides.isNegOne() then ..first by -1
+                  else ( ..first by stride:strType )
+                       // without this cast, it would be strideKind.any
+                       : range(idxType, boundKind.high, strideKind.negative);
 
-        if newStrides.isPositive()
-        {
-          const r = first ..;
-          if debugChapelRange then
-            chpl_debug_writeln("Expanded range = ",r);
+        if debugChapelRange then
+          chpl_debug_writeln("Expanded range = ",r);
 
-          for i in r do
-            yield i;
-        }
-        else
-        {
-          const r = .. first by -1;
-          if debugChapelRange then
-            chpl_debug_writeln("Expanded range = ",r);
-
-          for i in r do
-            yield i;
-        }
+        for i in r do
+          yield i;
       }
     } // if myFollowThis.hasLast()
   }

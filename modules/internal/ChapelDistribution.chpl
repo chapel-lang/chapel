@@ -1197,8 +1197,9 @@ module ChapelDistribution {
       return from;
 
     // set result = inds with some error checking
-    var result: from.rank * resultType;
-    for param i in 0..from.rank-1 do
+    param rank = from.size;
+    var result: rank * resultType;
+    for param i in 0..rank-1 do
       result(i) = from(i).safeCast(resultType);
 
     return result;
