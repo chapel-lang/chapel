@@ -2604,7 +2604,8 @@ proc fileWriter.serializer ref : serializerType {
 /*
   The default serializer used by ``fileWriter``.
 
-  Implements the 'serializeValue' method which is called by a ``fileWriter``.
+  Implements the 'serializeValue' method which is called by a ``fileWriter``
+  to produce a serialized representation of a value.
 
   Serializers can choose to invoke a user-defined method, 'serialize', on
   class and record types. The 'serialize' method should match the formal names,
@@ -2804,7 +2805,8 @@ record DefaultSerializer {
   The default deserializer used by ``fileReader``.
 
   Implements the 'deserializeType' and 'deserializeValue' methods which are
-  called by a ``fileReader``.
+  called by a ``fileReader`` to deserialize a serialized representation of
+  a type or value.
 
   Deserializers may choose to invoke certain user-defined methods or
   initializers on class and record types. When deserializing a type,
@@ -2822,7 +2824,7 @@ record DefaultSerializer {
   If neither of these methods are available, the deserializer may attempt to
   default-initialize the desired type and invoke the value-reading form of
   deserialization. If the value-reading form of deserialization cannot be
-  resolved, then either a compiler error may be issued.
+  resolved, then a compiler error may be issued.
 
   The value-reading form of deserialization may attempt to invoke a
   user-defined 'deserialize' method on classes and records:
