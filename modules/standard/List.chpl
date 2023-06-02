@@ -1926,7 +1926,7 @@ module List {
           var elt = des.readListElement(r, eltType);
           // read an element
           _appendByRef(elt);
-        } catch {
+        } catch e: BadFormatError {
           done = true;
         }
       }
