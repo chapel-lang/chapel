@@ -4,7 +4,7 @@
 --------------------
 [0, 1, 2]
 ====================
-SUCCESS: [domain(1,int(64),false)] int(64)
+SUCCESS: [domain(1,int(64),one)] int(64)
 ----- 2D -----
 ===== writing: =====
 0 1 2
@@ -207,7 +207,7 @@ ERROR: IllegalArgumentError: ChplSerializer does not support multidimensional ar
 --------------------
 [[1, 2, 3], [2, 4, 6], [3, 6, 9]]
 ====================
-SUCCESS: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)
+SUCCESS: [domain(1,int(64),one)] [domain(1,int(64),one)] int(64)
 --- record with array field ---
 ===== writing: =====
 (x = 1 2 3 4)

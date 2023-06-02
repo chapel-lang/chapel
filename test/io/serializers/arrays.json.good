@@ -4,7 +4,7 @@
 --------------------
 [0, 1, 2]
 ====================
-SUCCESS: [domain(1,int(64),false)] int(64)
+SUCCESS: [domain(1,int(64),one)] int(64)
 ----- 2D -----
 ===== writing: =====
 0 1 2
@@ -17,7 +17,7 @@ SUCCESS: [domain(1,int(64),false)] int(64)
  [6, 7, 8]
 ]
 ====================
-SUCCESS: [domain(2,int(64),false)] int(64)
+SUCCESS: [domain(2,int(64),one)] int(64)
 ----- 3D -----
 ===== writing: =====
 0 1 2
@@ -50,7 +50,7 @@ SUCCESS: [domain(2,int(64),false)] int(64)
  ]
 ]
 ====================
-SUCCESS: [domain(3,int(64),false)] int(64)
+SUCCESS: [domain(3,int(64),one)] int(64)
 ----- 4D -----
 ===== writing: =====
 0 1 2
@@ -145,7 +145,7 @@ SUCCESS: [domain(3,int(64),false)] int(64)
  ]
 ]
 ====================
-SUCCESS: [domain(4,int(64),false)] int(64)
+SUCCESS: [domain(4,int(64),one)] int(64)
 ----- 5D -----
 ===== writing: =====
 0 1 2
@@ -428,14 +428,14 @@ SUCCESS: [domain(4,int(64),false)] int(64)
  ]
 ]
 ====================
-SUCCESS: [domain(5,int(64),false)] int(64)
+SUCCESS: [domain(5,int(64),one)] int(64)
 --- array of arrays ---
 ===== writing: =====
 1 2 3 2 4 6 3 6 9
 --------------------
 [[1, 2, 3], [2, 4, 6], [3, 6, 9]]
 ====================
-SUCCESS: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)
+SUCCESS: [domain(1,int(64),one)] [domain(1,int(64),one)] int(64)
 --- record with array field ---
 ===== writing: =====
 (x = 1 2 3 4)
