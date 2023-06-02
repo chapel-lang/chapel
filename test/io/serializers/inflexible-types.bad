@@ -3,13 +3,13 @@
 --------------------
 1..5
 ====================
-SUCCESS: range(int(64),both,false)
+SUCCESS: range(int(64),both,one)
 ===== writing: =====
 {1..10, 1..10}
 --------------------
 {1..10, 1..10}
 ====================
-SUCCESS: domain(2,int(64),false)
+SUCCESS: domain(2,int(64),one)
 ===== writing: =====
 2002-03-01
 --------------------
