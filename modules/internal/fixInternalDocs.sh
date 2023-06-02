@@ -253,7 +253,7 @@ removeUsage $file
 ## End of WeakPointer ##
 
 # Bending the rules a little to modify CTypes, which is not an internal module.
-# This is a hack that won't be necessary after #issuenum.
+# This is a hack that won't be necessary if #22461 is implemented.
 # Has to be at the end of the script due to the cd. (or cd back after)
 cd "${TEMPDIR}/source/modules/standard/"
 ## CTypes ##
