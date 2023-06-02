@@ -1,1 +1,1 @@
-range(uint(64),both,false)
+range(uint(64),both,one)

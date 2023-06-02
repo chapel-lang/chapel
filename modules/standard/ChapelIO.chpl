@@ -788,9 +788,9 @@ module ChapelIO {
 
   proc range.init(type idxType = int,
                   param bounds : boundKind = boundKind.both,
-                  param stridable : bool = false,
+                  param strides : strideKind = strideKind.one,
                   reader: fileReader(?)) {
-    this.init(idxType, bounds, stridable);
+    this.init(idxType, bounds, strides);
 
     // TODO:
     // The alignment logic here is pretty tricky, so fall back on the
@@ -805,7 +805,7 @@ module ChapelIO {
       if stridable {
         if reader.matchLiteral(" by ") {
           //_stride = reader.read(stride.type);
-          this = this by reader.read(stride.type);
+          this = ( this by reader.read(stride.type) ): this.type;
         }
       }
     }

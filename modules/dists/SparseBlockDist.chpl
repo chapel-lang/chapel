@@ -102,7 +102,8 @@ class SparseBlockDom: BaseSparseDomImpl {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
          locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
-             sparseLayoutType, dist.getChunk(whole,localeIdx));
+             // the cast to domain supports deprecation by Vass in 1.31 for #17131
+             sparseLayoutType, dist.getChunk(whole,localeIdx): domain(rank, idxType, stridable));
           //                    writeln("Back on ", here.id);
          if thisid == here.id then
            myLocDom = locDoms(localeIdx);
@@ -686,7 +687,7 @@ proc SparseBlockDom.dsiGetIndices() {
 }
 
 // dsiLocalSlice
-proc SparseBlockDom.dsiLocalSlice(param stridable: bool, ranges) {
+proc SparseBlockDom.dsiLocalSlice(param strides, ranges) {
   return whole((...ranges));
 }
 

@@ -1,4 +1,4 @@
-issue-12736-ok.chpl:33: warning: [domain(1,int(64),false)] Start
+issue-12736-ok.chpl:33: warning: [domain(1,int(64),one)] Start
 0
 
 2

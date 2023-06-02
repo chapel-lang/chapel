@@ -444,7 +444,7 @@ module ChapelArray {
         const distDom = new _domain(d.newRectangularDom(
                               dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable,
+                              dom._value.strides,
                               dom.dims(),
                               definedConst));
         return distDom;
@@ -458,7 +458,7 @@ module ChapelArray {
         var distDom = new _domain(d.newRectangularDom(
                               dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable,
+                              dom._value.strides,
                               dom.dims(),
                               definedConst));
 
@@ -559,7 +559,7 @@ module ChapelArray {
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
-                                          dom._value.stridable);
+                                          dom._value.strides);
     } else if chpl__isSparseDomType(domainType) {
       const ref parentDom = chpl__parentDomainFromDomainRuntimeType(domainType);
       return chpl__buildSparseDomainRuntimeType(d, parentDom);
@@ -755,10 +755,47 @@ module ChapelArray {
       return new _distribution(_value.dsiClone());
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, boundKind.both,stridable),
+    /* This is a workaround for an internal failure I experienced when
+       this code was part of newRectangularDom() and relied on split init:
+       var x;
+       if __prim(...) then x = ...;
+       else if __prim(...) then x = ...;
+       else compilerError(...); */
+    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
+
+      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
+      // we use "method call resolves" instead of just "resolves".
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, strides, ranges) {
+        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+      }
+
+      // The following supports deprecation by Vass in 1.31 to implement #17131
+      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
+      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
+      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
+
+      param stridable = strides.toStridable();
+      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, stridable, ranges2) {
+
+        //RSDW: compilerWarning("the domain map '", _value.type:string,
+        // " needs to be updated from stridable: bool to strides: strideKind",
+        // " because 'stridable' is deprecated");
+
+        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
+      }
+
+      compilerError("rectangular domains are not supported by",
+                    " the distribution ", this.type:string);
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
                            definedConst: bool = false) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
 
       x.definedConst = definedConst;
 
@@ -768,10 +805,11 @@ module ChapelArray {
       return x;
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
                            definedConst: bool = false) {
-      var ranges: rank*range(idxType, boundKind.both, stridable);
-      return newRectangularDom(rank, idxType, stridable, ranges, definedConst);
+      var ranges: rank*range(idxType, boundKind.both, strides);
+      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
     }
 
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
@@ -848,6 +886,22 @@ module ChapelArray {
     return false;
   }
 
+  // supports deprecation by Vass in 1.31 to implement #17131
+  // A compatibility wrapper that allows code to work with domain maps
+  // whether they have been converted from stridable to strides or not.
+  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
+                           definedConst: bool = false) {
+    if __primitive("resolves",
+                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
+    then
+      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
+    else
+      return dist.dsiNewRectangularDom(rank, idxType,
+                                       strides.toStridable(), ranges);
+  }
+
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -919,6 +973,12 @@ module ChapelArray {
 
     /* The number of dimensions in the array */
     proc rank param do return this.domain.rank;
+
+    /* The strides value of the underlying domain */
+    proc strides param do return this.domain.strides;
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     /*
       Return a dense rectangular array's indices as a default domain.
@@ -1538,8 +1598,8 @@ module ChapelArray {
         if newDims(i).sizeAs(uint) != origDims(i).sizeAs(uint) then
           halt("extent mismatch in dimension ", i+1, ": cannot reindex() from ",
                origDims(i), " to ", newDims(i));
-        if ! noNegativeStrideWarnings && origDims(i).chpl_hasPositiveStride()
-           && ! newDims(i).chpl_hasPositiveStride() then
+        if ! noNegativeStrideWarnings && origDims(i).hasPositiveStride()
+           && ! newDims(i).hasPositiveStride() then
           warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; in reindex() from ", origDims, " to ", newDims);
       }
 
@@ -1557,7 +1617,7 @@ module ChapelArray {
       pragma "no copy"
       pragma "no auto destroy"
       const newDom = new _domain(redistRec, rank, updom.idxType,
-                                 updom.stridable, updom.dims(),
+                                 updom.strides, updom.dims(),
                                  definedConst=true);
       newDom._value._free_when_no_arrs = true;
 
@@ -1708,7 +1768,7 @@ module ChapelArray {
     proc chpl__isDense1DArray() param {
       return this.isRectangular() &&
              this.rank == 1 &&
-             !this._value.stridable;
+             this._value.hasUnitStride();
     }
 
     /* The following methods are intended to provide a list or vector style
@@ -2120,24 +2180,6 @@ module ChapelArray {
   proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param do return false;
   @chpldoc.nodoc
   proc isCollapsedDimension(r) param do return true;
-
-  // computes || reduction over stridable of ranges
-  proc chpl__anyStridable(ranges) param {
-    for param i in 0..ranges.size-1 do
-      if ranges(i).stridable then
-        return true;
-    return false;
-  }
-
-  // computes || reduction over stridable of ranges, but permits some
-  // elements not to be ranges (as in a rank-change slice)
-  proc chpl__anyRankChangeStridable(args) param {
-    for param i in 0..args.size-1 do
-      if isRangeValue(args(i)) then
-        if args(i).stridable then
-          return true;
-    return false;
-  }
 
   // the following pair of routines counts the number of ranges in its
   // argument list and is used for rank-change slices
@@ -2942,7 +2984,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where rhs.isRectangular() {
 
-    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
+    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.strides,
                           rhs.dims(), definedConst=definedConst);
     return lhs;
   }
@@ -2999,7 +3041,7 @@ module ChapelArray {
       return chpl__convertRuntimeTypeToValue(dist=dist,
                                              rank=instanceType.rank,
                                              idxType=instanceType.idxType,
-                                             stridable=instanceType.stridable,
+                                             strides=instanceType.strides,
                                              isNoInit=false,
                                              definedConst=definedConst);
     }

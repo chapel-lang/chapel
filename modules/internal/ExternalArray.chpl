@@ -65,13 +65,13 @@ module ExternalArray {
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
-                                               stridable=false,
+                                               strides=strideKind.one,
                                                inds=(0..#value.num_elts,));
     dom._free_when_no_arrs = true;
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                   rank=1,
                                                   idxType=dom.idxType,
-                                                  stridable=dom.stridable,
+                                                  strides=dom.strides,
                                                   dom=dom,
                                                   data=value.elts: _ddata(eltType),
                                                   externFreeFunc=value.freer,
@@ -130,7 +130,7 @@ module ExternalArray {
       compilerError("cannot return an array with indices that are not " +
                     "integrals");
     }
-    if (arr.domain.stridable) {
+    if (! arr.domain.hasUnitStride()) {
       compilerError("cannot return a strided array");
     }
     if (arr.domain.rank != 1) {

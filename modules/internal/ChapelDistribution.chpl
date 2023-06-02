@@ -111,11 +111,27 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
+/* These methods are commented out so that __primitive("resolves")
+   in proc newRectangularDom() fails.
+   Also, the compiler is currently adjusted to forego the 'override'
+   checking so that user-defined domain maps can continue specifying
+   'override' on their implementations of dsiNewRectangularDom().
+   The second overload below needs to be restored when 'stridable'
+   is removed entirely.
+
+    // this overload supports deprecation by Vass in 1.31 to implement #17131
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
+
+    pragma "last resort" @chpldoc.nodoc
+    proc dsiNewRectangularDom(param rank: int, type idxType,
+                              param strides: strideKind, inds) {
+      compilerError("rectangular domains not supported by this distribution");
+    }
+*/
 
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
@@ -411,12 +427,21 @@ module ChapelDistribution {
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
+
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc stridable param do return strides.toStridable();
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc type stridable param do return strides.toStridable();
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     override proc isRectangular() param do return true;
 
     proc getBaseArrType() type {
-      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, strides=strides);
       return tmp.type;
     }
 
@@ -950,13 +975,22 @@ module ChapelDistribution {
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
+
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("[array].stridable is deprecated; use [array].strides instead")
+    proc stridable param do return strides.toStridable();
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc type stridable param do return strides.toStridable();
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     // the dsiReallocate to overload only uses the argument with
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,strides)) {
       halt("reallocating not supported for this array type");
     }
 
@@ -966,13 +1000,11 @@ module ChapelDistribution {
     proc deinit() {
       // this is a bug workaround
     }
-
-
   }
 
   pragma "base array"
   class BaseRectangularArr: BaseArrOverRectangularDom {
-    /* rank, idxType, stridable are from BaseArrOverRectangularDom */
+    /* rank, idxType, strides are from BaseArrOverRectangularDom */
     type eltType;
 
     proc deinit() {
@@ -1159,6 +1191,20 @@ module ChapelDistribution {
 
   // domain assignment helpers
 
+  private proc doCastIndices(from, type idxType, param strides) {
+    type resultType = range(idxType, boundKind.both, strides);
+    if from(0).type == resultType then
+      return from;
+
+    // set result = inds with some error checking
+    param rank = from.size;
+    var result: rank * resultType;
+    for param i in 0..rank-1 do
+      result(i) = from(i).safeCast(resultType);
+
+    return result;
+  }
+
   // Implement simple reallocate/set indices/post reallocate
   // for compatibility.
   // Domain implementations may supply their own dsiAssignDomain
@@ -1170,34 +1216,23 @@ module ChapelDistribution {
     type arrType = lhs.getBaseArrType();
     param rank = lhs.rank;
     type idxType = lhs.idxType;
-    param stridable = lhs.stridable;
+    param strides = lhs.strides;
+    compilerAssert(rank == rhs.rank);
 
+    const castIndices = doCastIndices(rhs.getIndices(), idxType, strides);
     for e in lhs._arrs do {
       on e {
-        var eCastQ = e:arrType?;
-        if eCastQ == nil then
+        if const eCast = e:arrType? then
+          eCast.dsiReallocate(castIndices);
+        else
           halt("internal error: ", t:string,
-               " contains an bad array type ", arrType:string);
-
-        var eCast = eCastQ!;
-
-        var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,boundKind.both,stridable);
-
-        // set tmp = inds with some error checking
-        for param i in 0..rank-1 {
-          var from = inds(i);
-          if tmp(i).type == from.type then
-            tmp(i) = from;
-          else
-            tmp(i) =
-              from.safeCast(range(idxType,boundKind.both,stridable));
-        }
-
-        eCast.dsiReallocate(tmp);
+               " contains a bad array type ", arrType:string);
       }
     }
+
+    // todo: why we cast indices for dsiReallocate and not for dsiSetIndices?
     lhs.dsiSetIndices(rhs.getIndices());
+
     for e in lhs._arrs do {
       var eCastQ = e:arrType?;
       var eCast = eCastQ!;

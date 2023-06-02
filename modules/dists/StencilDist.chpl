@@ -354,7 +354,7 @@ class LocStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, chpl_strideKind(stridable))?; // non-nil if doRADOpt=true
   pragma "local field" pragma "unsafe"
   // may be initialized separately
   var myElems: [locDom.myFluff] eltType;
@@ -772,8 +772,7 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
     var locOffset: rank*idxType;
     for param i in 0..tmpBlock.rank-1 {
       const dim = tmpBlock.dim(i);
-      const aStr = if dim.chpl_hasPositiveStride()
-                   then dim.stride else -dim.stride;
+      const aStr = if dim.hasPositiveStride() then dim.stride else -dim.stride;
       locOffset(i) = dim.low / aStr:idxType;
     }
     // Forward to defaultRectangular
@@ -809,7 +808,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     const followDim = followThis(i);
     var low  = wholeDim.orderToIndex(followDim.low);
     var high = wholeDim.orderToIndex(followDim.high);
-    if ! wholeDim.chpl_hasPositiveStride() then low <=> high;
+    if wholeDim.hasNegativeStride() then low <=> high;
     t(i) = ( low..high by (wholeDim.stride*followDim.stride)
            ).safeCast(t(i).type);
   }

@@ -1,7 +1,8 @@
 class DimensionDistributor {
   // interface
   proc indToDimInd(ind: int, localeDomain) { return 0; }
-  proc localPart(localeDomain, loc, type idxType) { return 1..0 by 1; }
+  proc localPart(localeDomain, loc, type idxType) do
+    return new range(idxType, boundKind.both, strideKind.any);
 }
 
 class Cyclic: DimensionDistributor {
@@ -81,7 +82,8 @@ class DimensionalDomain {
     for loc in dist.localeDomain {
       on dist.localeArray(loc) {
         var locDist = dist.getLocRanges(loc);
-        locDoms(loc) = new unmanaged LocDimensionalDomain(nDims, idxType, _to_unmanaged(this), whole((...locDist)));
+        // the cast to domain supports deprecation by Vass in 1.31 for #17131
+        locDoms(loc) = new unmanaged LocDimensionalDomain(nDims, idxType, _to_unmanaged(this), whole((...locDist)): domain(nDims, idxType, true));
       }
     }
   }
