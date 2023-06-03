@@ -44,16 +44,10 @@ module ChapelIOStringifyHelper {
     }
   }
 
-  // This routine is called in DefaultRectangular in order
-  // to report an out of bounds access for a halt. A normal
-  // call to halt might not be possible because of module
-  // order issues.
-  @chpldoc.nodoc
-  proc _stringify_tuple(tup:?t) where isTuple(t){
+  private proc _stringify_tuple(tup: _tuple) {
     var str = "(";
 
     for param i in 0..tup.size-1 {
-      if i != 0 then str += ", ";
       if (tup[i].type == c_string) {
         try! {
           str += string.createCopyingBuffer(tup[i]);
@@ -62,6 +56,8 @@ module ChapelIOStringifyHelper {
       else {
         str += tup[i]:string;
       }
+      if tup.size == 1 then str += ",";
+      else if i < tup.size-1 then str += ", ";
     }
 
     str += ")";
