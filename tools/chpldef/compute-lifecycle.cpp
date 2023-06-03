@@ -22,6 +22,12 @@
 #include "./Server.h"
 #include "chpl/parsing/parsing-queries.h"
 
+namespace {
+  static constexpr bool UNSUPPORTED_DELIBERATELY = false;
+  static constexpr bool UNSUPPORTED_TODO = false;
+  static constexpr bool SUPPORTED = true;
+}
+
 /** This is one file where message handlers can be implemented. However, if
     a particular message's handler grows to be very large in size (e.g.,
     perhaps 500+ lines), then we should feel free to move it to a different
@@ -29,43 +35,43 @@
 namespace chpldef {
 
 static TextDocumentSyncOptions
-configureTextDocumentSyncOptions(Server* ctx) {
+configureTextDocumentSync(Server* ctx) {
   TextDocumentSyncOptions ret;
-  ret.openClose = true;
-  ret.change = TextDocumentSyncOptions::Full;   /** TODO: Incremental? */
-  ret.willSave = true;
-  ret.willSaveWaitUntil = true;
-  ret.save = SaveOptions();
+  ret.openClose         = SUPPORTED;
+  ret.change            = TextDocumentSyncOptions::Full;
+  ret.willSave          = SUPPORTED;
+  ret.willSaveWaitUntil = SUPPORTED;
+  ret.save              = SaveOptions();
   ret.save->includeText = true;
   return ret;
 }
 
 static void
 doConfigureStaticCapabilities(Server* ctx, ServerCapabilities& x) {
-  x.positionEncoding = "utf-16";
-  x.textDocumentSync = configureTextDocumentSyncOptions(ctx);
-  x.hoverProvider = false;
-  x.declarationProvider = false;
-  x.definitionProvider = false;
-  x.typeDefinitionProvider = false;
-  x.implementationProvider = false;
-  x.referencesProvider = false;
-  x.documentHighlightProvider = false;
-  x.documentSymbolProvider = false;
-  x.codeActionProvider = false;
-  x.colorProvider = false;
-  x.documentFormattingProvider = false;
-  x.documentRangeFormattingProvider = false;
-  x.renameProvider = false;
-  x.foldingRangeProvider = false;
-  x.selectionRangeProvider = false;
-  x.linkEditingRangeProvider = false;
-  x.callHierarchyProvider = false;
-  x.monikerProvider = false;
-  x.typeHierarchyProvider = false;
-  x.inlineValueProvider = false;
-  x.inlayHintProvider = false;
-  x.workspaceSymbolProvider = false;
+  x.positionEncoding                  = "utf-16";
+  x.textDocumentSync                  = configureTextDocumentSync(ctx);
+  x.hoverProvider                     = UNSUPPORTED_TODO;
+  x.declarationProvider               = SUPPORTED;
+  x.definitionProvider                = UNSUPPORTED_DELIBERATELY;
+  x.typeDefinitionProvider            = UNSUPPORTED_TODO;
+  x.implementationProvider            = UNSUPPORTED_TODO;
+  x.referencesProvider                = UNSUPPORTED_TODO;
+  x.documentHighlightProvider         = UNSUPPORTED_TODO;
+  x.documentSymbolProvider            = UNSUPPORTED_TODO;
+  x.codeActionProvider                = UNSUPPORTED_TODO;
+  x.colorProvider                     = UNSUPPORTED_TODO;
+  x.documentFormattingProvider        = UNSUPPORTED_TODO;
+  x.documentRangeFormattingProvider   = UNSUPPORTED_TODO;
+  x.renameProvider                    = UNSUPPORTED_TODO;
+  x.foldingRangeProvider              = UNSUPPORTED_TODO;
+  x.selectionRangeProvider            = UNSUPPORTED_TODO;
+  x.linkEditingRangeProvider          = UNSUPPORTED_TODO;
+  x.callHierarchyProvider             = UNSUPPORTED_TODO;
+  x.monikerProvider                   = UNSUPPORTED_TODO;
+  x.typeHierarchyProvider             = UNSUPPORTED_TODO;
+  x.inlineValueProvider               = UNSUPPORTED_TODO;
+  x.inlayHintProvider                 = UNSUPPORTED_TODO;
+  x.workspaceSymbolProvider           = UNSUPPORTED_TODO;
 }
 
 static ServerInfo configureServerInfo(Server* ctx) {
@@ -121,56 +127,6 @@ Shutdown::compute(Server* ctx, const Params& p) {
 Exit::ComputedResult
 Exit::compute(Server* ctx, const Params& p) {
   CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
-  return {};
-}
-
-DidOpen::ComputedResult
-DidOpen::compute(Server* ctx, const Params& p) {
-  auto& tdi = p.textDocument;
-  auto& e = ctx->textRegistry()[tdi.uri];
-
-  if (e.isOpen) {
-    CHPLDEF_TODO();
-    return fail();
-  }
-
-  CHPL_ASSERT(tdi.version > e.version);
-
-  // NOTE: I think we always have to bump the revision here. This is
-  // because this file may have been implicitly parsed from disk as
-  // as result of resolving a use/import. The contents are considered
-  // to have changed and the "truth of the file's contents" are determined
-  // by the client as long as it has the file open. Cannot implicitly
-  // read from disk, so have to bump the revision to ensure correctness.
-  ctx->withChapelContext(Server::CHPL_BUMP_REVISION,
-  [&](auto chapel) {
-    chpl::parsing::setFileText(chapel, tdi.uri, tdi.text);
-    auto& fc = chpl::parsing::fileText(chapel, tdi.uri);
-    CHPL_ASSERT(!fc.error());
-    CHPL_ASSERT(fc.text() == tdi.text);
-    e.version = tdi.version;
-    e.lastRevisionContentsUpdated = ctx->revision();
-    e.isOpen = true;
-  });
-
-  return {};
-}
-
-DidChange::ComputedResult
-DidChange::compute(Server* ctx, const Params& p) {
-  CHPLDEF_TODO();
-  return {};
-}
-
-DidSave::ComputedResult
-DidSave::compute(Server* ctx, const Params& p) {
-  CHPLDEF_TODO();
-  return {};
-}
-
-DidClose::ComputedResult
-DidClose::compute(Server* ctx, const Params& p) {
-  CHPLDEF_TODO();
   return {};
 }
 

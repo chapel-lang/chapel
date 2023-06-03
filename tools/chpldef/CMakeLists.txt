@@ -18,9 +18,11 @@
 add_executable(chpldef
     chpldef.cpp
     command-line-flags.cpp
+    compute-goto-entity.cpp
+    compute-lifecycle.cpp
+    compute-synchronization.cpp
     Logger.cpp
     Message.cpp
-    message-compute.cpp
     misc.cpp
     protocol-types.cpp
     Server.cpp

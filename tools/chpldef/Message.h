@@ -375,6 +375,7 @@ public:
     } \
   public: \
     virtual ~name__() = default; \
+    static chpl::owned<BaseRequest> create(JsonValue id, const Params& p); \
     static chpl::owned<BaseRequest> \
     create(JsonValue id, const JsonValue& j); \
     virtual void handle(Server* ctx) override; \

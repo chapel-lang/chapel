@@ -41,6 +41,8 @@ CHPLDEF_MESSAGE(DidChange, 0, 1, textDocument/didChange)
 CHPLDEF_MESSAGE(DidSave, 0, 1, textDocument/didSave)
 CHPLDEF_MESSAGE(DidClose, 0, 1, textDocument/didClose)
 
+CHPLDEF_MESSAGE(Declaration, 0, 0, textDocument/declaration)
+CHPLDEF_MESSAGE(Definition, 0, 0, textDocument/definition)
 
 /*
 CHPLDEF_MESSAGE(RegisterCapability, client/registerCapability)
@@ -83,8 +85,6 @@ CHPLDEF_MESSAGE(NotebookDidClose, notebookDocument/didClose)
 //
 
 /*
-CHPLDEF_MESSAGE(GotoDeclaration, textDocument/declaration)
-CHPLDEF_MESSAGE(GotoDefinition, textDocument/definition)
 CHPLDEF_MESSAGE(GotoTypeDefinition, textDocument/typeDefinition)
 CHPLDEF_MESSAGE(GotoImplementation, textDocument/implementation)
 CHPLDEF_MESSAGE(FindReferences, textDocument/references)
