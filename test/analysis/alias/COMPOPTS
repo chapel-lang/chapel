@@ -1,2 +1,2 @@
---fast --report-aliasesA
+--fast --report-aliases
 --no-loop-invariant-code-motion
