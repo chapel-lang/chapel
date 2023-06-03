@@ -24,8 +24,21 @@
 #include <cstdlib>
 #include <iostream>
 
+template <typename T>
+static void doAddField(chpldef::JsonObject& obj, const char* name,
+                       const T& field) {
+  obj[name] = field;
+}
+
+template <typename T>
+static void doAddField(chpldef::JsonObject& obj, const char* name,
+                       const chpldef::opt<T>& field) {
+  if (field) obj[name] = field;
+}
+
 /** Helper to make populating JSON object fields less painful. */
-#define FIELD_(name__) { #name__, name__ }
+#define FIELD_(obj__, name__) \
+  do { doAddField(obj__, #name__, name__); } while (0)
 
 /** Helper to make reading JSON object fields less painful. */
 #define MAP_(m__, name__) (m__.map(#name__, name__))
@@ -89,10 +102,9 @@ bool InitializeParams::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue InitializeResult::toJson() const {
-  JsonObject ret {
-    FIELD_(capabilities),
-    FIELD_(serverInfo)
-  };
+  JsonObject ret;
+  FIELD_(ret, capabilities);
+  FIELD_(ret, serverInfo);
   return ret;
 }
 
@@ -113,59 +125,60 @@ bool TraceLevel::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 bool WorkspaceFolder::fromJson(const JsonValue& j, JsonPath p) {
-  CHPLDEF_TODO();
-  return true;
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri) && MAP_(m, name);
 }
 
 JsonValue ServerInfo::toJson() const {
-  JsonObject ret { FIELD_(name), FIELD_(version) };
+  JsonObject ret;
+  FIELD_(ret, name);
+  FIELD_(ret, version);
   return ret;
 }
 
 JsonValue ServerCapabilities::toJson() const {
-  JsonObject ret {
-    FIELD_(positionEncoding),
-    FIELD_(textDocumentSync),
-    FIELD_(notebookDocumentSync),
-    FIELD_(completionProvider),
-    FIELD_(hoverProvider),
-    FIELD_(signatureHelpProvider),
-    FIELD_(declarationProvider),
-    FIELD_(definitionProvider),
-    FIELD_(typeDefinitionProvider),
-    FIELD_(implementationProvider),
-    FIELD_(referencesProvider),
-    FIELD_(documentHighlightProvider),
-    FIELD_(documentSymbolProvider),
-    FIELD_(codeActionProvider),
-    FIELD_(codeLensProvider),
-    FIELD_(documentLinkProvider),
-    FIELD_(colorProvider),
-    FIELD_(documentFormattingProvider),
-    FIELD_(documentRangeFormattingProvider),
-    FIELD_(documentOnTypeFormattingProvider),
-    FIELD_(renameProvider),
-    FIELD_(foldingRangeProvider),
-    FIELD_(executeCommandProvider),
-    FIELD_(selectionRangeProvider),
-    FIELD_(linkEditingRangeProvider),
-    FIELD_(callHierarchyProvider),
-    FIELD_(semanticTokensProvider),
-    FIELD_(monikerProvider),
-    FIELD_(typeHierarchyProvider),
-    FIELD_(inlineValueProvider),
-    FIELD_(inlayHintProvider),
-    FIELD_(diagnosticProvider),
-    FIELD_(workspaceSymbolProvider),
-    FIELD_(workspace),
-    FIELD_(experimental)
-  };
+  JsonObject ret;
+  FIELD_(ret, positionEncoding);
+  FIELD_(ret, textDocumentSync);
+  FIELD_(ret, notebookDocumentSync);
+  FIELD_(ret, completionProvider);
+  FIELD_(ret, hoverProvider);
+  FIELD_(ret, signatureHelpProvider);
+  FIELD_(ret, declarationProvider);
+  FIELD_(ret, definitionProvider);
+  FIELD_(ret, typeDefinitionProvider);
+  FIELD_(ret, implementationProvider);
+  FIELD_(ret, referencesProvider);
+  FIELD_(ret, documentHighlightProvider);
+  FIELD_(ret, documentSymbolProvider);
+  FIELD_(ret, codeActionProvider);
+  FIELD_(ret, codeLensProvider);
+  FIELD_(ret, documentLinkProvider);
+  FIELD_(ret, colorProvider);
+  FIELD_(ret, documentFormattingProvider);
+  FIELD_(ret, documentRangeFormattingProvider);
+  FIELD_(ret, documentOnTypeFormattingProvider);
+  FIELD_(ret, renameProvider);
+  FIELD_(ret, foldingRangeProvider);
+  FIELD_(ret, executeCommandProvider);
+  FIELD_(ret, selectionRangeProvider);
+  FIELD_(ret, linkEditingRangeProvider);
+  FIELD_(ret, callHierarchyProvider);
+  FIELD_(ret, semanticTokensProvider);
+  FIELD_(ret, monikerProvider);
+  FIELD_(ret, typeHierarchyProvider);
+  FIELD_(ret, inlineValueProvider);
+  FIELD_(ret, inlayHintProvider);
+  FIELD_(ret, diagnosticProvider);
+  FIELD_(ret, workspaceSymbolProvider);
+  FIELD_(ret, workspace);
+  FIELD_(ret, experimental);
   return ret;
 }
 
 JsonValue TextDocumentSyncOptions::toJson() const {
   JsonObject ret;
-  if (openClose) ret["openClose"] = *openClose;
+  FIELD_(ret, openClose);
   if (change) ret["change"] = static_cast<int>(*change);
   return ret;
 }
@@ -201,8 +214,86 @@ bool DidChangeParams::fromJson(const JsonValue& j, JsonPath p) {
 }
 
 JsonValue SaveOptions::toJson() const {
-  JsonObject ret { FIELD_(includeText) };
+  JsonObject ret;
+  FIELD_(ret, includeText);
   return ret;
+}
+
+bool TextDocumentIdentifier::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri);
+}
+
+bool Position::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, line) && MAP_(m, character);
+}
+
+JsonValue Position::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, line);
+  FIELD_(ret, character);
+  return ret;
+}
+
+bool TextDocumentPositionParams::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, textDocument) && MAP_(m, position);
+}
+
+bool Location::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, uri) && MAP_(m, range);
+}
+
+JsonValue Location::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, uri);
+  FIELD_(ret, range);
+  return ret;
+}
+
+bool LocationLink::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, originSelectionRange) &&
+      MAP_(m, targetUri) &&
+      MAP_(m, targetRange) &&
+      MAP_(m, targetSelectionRange);
+}
+
+JsonValue LocationLink::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, originSelectionRange);
+  FIELD_(ret, targetUri);
+  FIELD_(ret, targetRange);
+  FIELD_(ret, targetSelectionRange);
+  return ret;
+}
+
+bool Range::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  return m && MAP_(m, start) && MAP_(m, end);
+}
+
+JsonValue Range::toJson() const {
+  JsonObject ret;
+  FIELD_(ret, start);
+  FIELD_(ret, end);
+  return ret;
+}
+
+JsonValue DeclarationResult::toJson() const {
+  if (!result) return nullptr;
+  if (auto v = std::get_if<LocationArray>(&*result)) return *v;
+  if (auto v = std::get_if<std::vector<LocationLink>>(&*result)) return *v;
+  return nullptr;
+}
+
+JsonValue DefinitionResult::toJson() const {
+  if (!result) return nullptr;
+  if (auto v = std::get_if<std::vector<Location>>(&*result)) return *v;
+  if (auto v = std::get_if<std::vector<LocationLink>>(&*result)) return *v;
+  return nullptr;
 }
 
 } // end namespace 'chpldef'

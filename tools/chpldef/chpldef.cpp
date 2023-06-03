@@ -39,15 +39,18 @@ static Server::Configuration prepareServerConfig(int argc, char** argv) {
     std::cerr << "No value for '$CHPL_HOME'!" << std::endl;
   }
 
-  // TODO: Wire these up to command-line flags.
   ret.logFile = cmd::logFile;
   ret.logLevel = cmd::logLevel;
-  ret.garbageCollectionFrequency = 0;
-  ret.warnUnstable = false;
-  ret.enableStandardLibrary = false;
-  ret.compilerDebugTrace = false;
+  ret.garbageCollectionFrequency = cmd::garbageCollectionFrequency;
+  ret.warnUnstable = cmd::warnUnstable;
+  ret.enableStandardLibrary = cmd::enableStandardLibrary;
+  ret.compilerDebugTrace = cmd::compilerDebugTrace;
 
   return ret;
+}
+
+static chpl::owned<BaseRequest> maybePublishDiagnostics(Server* ctx) {
+  return nullptr;
 }
 
 int main(int argc, char** argv) {
@@ -103,14 +106,18 @@ int main(int argc, char** argv) {
     CHPL_ASSERT(msg->status() == Message::PENDING);
     CHPL_ASSERT(!msg->isOutbound());
 
+    // Prepare to exit if we received the 'Exit' message.
     if (msg->tag() == Message::Exit) {
       CHPL_ASSERT(ctx->state() == Server::SHUTDOWN);
       run = 0;
     }
 
-    // We have an immediate response, so send it.
-    if (auto optRsp = Message::handle(ctx, msg.get())) {
-      auto pack = optRsp->pack();
+    // Handle the request that was read.
+    auto rsp = Message::handle(ctx, msg.get());
+
+    // Maybe send a response.
+    if (rsp) {
+      auto pack = rsp->pack();
       if (log.level() == Logger::TRACE) {
         auto str = jsonToString(pack);
         ctx->trace("Outgoing JSON is %s\n", str.c_str());
@@ -120,10 +127,17 @@ int main(int argc, char** argv) {
       CHPL_ASSERT(ok);
 
     // Response was delayed.
-    } else {
-      if (!msg->isNotification()) {
-        CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
-      }
+    } else if (!msg->isNotification()) {
+      CHPLDEF_FATAL(ctx, "Handler response should not be delayed!");
+    }
+
+    // TODO: Enqueue all messages onto an event queue instead.
+    if (auto notify = maybePublishDiagnostics(ctx)) {
+      CHPL_ASSERT(notify->isNotification());
+      CHPL_ASSERT(notify->isOutbound());
+      auto pack = notify->pack();
+      ok = Transport::sendJsonBlocking(ctx, std::cout, std::move(pack));
+      CHPL_ASSERT(ok);
     }
 
     // Flush the log in case something goes wrong.

@@ -23,6 +23,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/printf.h"
 
@@ -43,6 +44,12 @@
   } while (0)
 
 namespace chpldef {
+
+void Server::ErrorHandler::report(chpl::Context* chapel,
+                                  const chpl::ErrorBase* err) {
+  auto p = std::make_pair(err->clone(), ctx_->revision());
+  errors_.push_back(std::move(p));
+}
 
 void Server::setLogger(Logger&& logger) {
   this->logger_ = std::move(logger);
@@ -68,6 +75,12 @@ void Server::trace(const char* fmt, ...) {
 Server::Server(Server::Configuration config) : config_(std::move(config)) {
   chapel_ = createCompilerContext();
 
+  // Install the server error handler.
+  auto handler = toOwned(new ErrorHandler(this));
+  errorHandler_ = handler.get();
+  chapel_->installErrorHandler(std::move(handler));
+
+  // Open the server log.
   Logger logger;
   if (!config_.logFile.empty()) {
     logger = Logger::createForFile(config_.logFile);
@@ -101,6 +114,28 @@ bool Server::shouldPrepareToGarbageCollect() {
   auto f = config_.garbageCollectionFrequency;
   if (f == 0) return false;
   return (revision_ % f) == 1;
+}
+
+void Server::fmtImpl(std::stringstream& ss, FormatDetail dt,
+                     const chpl::uast::AstNode* t) {
+  if (t == nullptr) {
+    ss << "<null>";
+    return;
+  }
+
+  withChapel([&](auto chapel) {
+    ss << chpl::uast::asttags::tagToString(t->tag()) << " ";
+    if (auto nd = t->toNamedDecl()) ss << "'" << nd->name().c_str() << "' ";
+    auto loc = chpl::parsing::locateAst(chapel, t);
+    ss << "[" << loc.path().c_str() << ":" << loc.firstLine();
+    ss << ":" << loc.firstColumn() << "]";
+  });
+}
+
+void Server::fmtImpl(std::stringstream& ss, FormatDetail dt,
+                     const chpl::Location& t) {
+  ss << t.path().c_str() << ":" << t.firstLine() << ":" << t.firstColumn();
+  ss << "-" << t.lastLine() << ":" << t.lastColumn();
 }
 
 } // end namespace 'chpldef'

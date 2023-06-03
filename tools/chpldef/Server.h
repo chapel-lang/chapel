@@ -24,7 +24,9 @@
 #include "./Logger.h"
 #include "./misc.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/uast/AstNode.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/Support/JSON.h"
 #include <chrono>
@@ -71,6 +73,23 @@ public:
 
   using TextRegistry = std::map<std::string, TextEntry>;
 
+  class ErrorHandler : public chpl::Context::ErrorHandler {
+  public:
+    using Error = chpl::ErrorBase;
+    using ErrorAndRevision = std::pair<chpl::owned<Error>, int64_t>;
+    using ErrorList = std::vector<ErrorAndRevision>;
+  private:
+    ErrorList errors_;
+    Server* ctx_ = nullptr;
+  public:
+    ErrorHandler(Server* ctx) : ctx_(ctx) {}
+   ~ErrorHandler() = default;
+    virtual void report(chpl::Context* chapel, const Error* err) override;
+    inline const ErrorList& errors() const { return errors_; }
+    inline void clear() { errors_.clear(); }
+    inline size_t numErrors() { return errors_.size(); }
+  };
+
 private:
   State state_ = UNINIT;
   Logger logger_;
@@ -78,10 +97,15 @@ private:
   Configuration config_;
   TextRegistry textRegistry_;
   int64_t revision_;
+  ErrorHandler* errorHandler_ = nullptr;
 
   chpl::owned<chpl::Context> createCompilerContext();
   bool shouldGarbageCollect();
   bool shouldPrepareToGarbageCollect();
+
+  inline bool isLogLevel(Logger::Level level) const {
+    return logger_.level() == level;
+  }
 
 protected:
   friend class chpldef::Initialize;
@@ -90,44 +114,67 @@ protected:
   friend class chpldef::DidOpen;
 
   inline void setState(State state) { state_ = state; }
-  inline TextRegistry& textRegistry() { return textRegistry_; };
+  inline TextRegistry& textRegistry() { return textRegistry_; }
 
 public:
   Server(Configuration config);
  ~Server() = default;
 
+  inline ErrorHandler* errorHandler() { return errorHandler_; }
   inline State state() const { return state_; }
   inline int64_t revision() const { return revision_; }
   inline const chpl::Context* chapel() const { return chapel_.get(); }
 
   void setLogger(Logger&& logger);
   inline Logger& logger() { return logger_; }
-  void sleep(int msec);
-
+  inline bool isLogMessage() const { return isLogLevel(Logger::MESSAGES); }
+  inline bool isLogVerbose() const { return isLogLevel(Logger::VERBOSE); }
+  inline bool isLogTrace() const { return isLogLevel(Logger::TRACE); }
   CHPLDEF_PFMT(2, 3, void message(const char* fmt, ...));
   CHPLDEF_PFMT(2, 3, void verbose(const char* fmt, ...));
   CHPLDEF_PFMT(2, 3, void trace(const char* fmt, ...));
 
-  enum WithChapelContextConfig {
+  void sleep(int msec);
+
+  enum WithChapelConfig {
     CHPL_NO_MASK         = 0,
     CHPL_BUMP_REVISION   = 1,
   };
 
   /** Execute code with controlled access to the Chapel context. */
-  template <typename T=void, typename F, typename ...Ns>
-  T withChapelContext(F& f, Ns... ns) {
-    return withChapelContext(CHPL_NO_MASK, f, ns...);
-  }
-
-  /** Execute code with controlled access to the Chapel context. */
-  template <typename T=void, typename F, typename ...Ns>
-  T withChapelContext(WithChapelContextConfig c, F&& f, Ns... ns) {
+  template <typename F, typename ...Ns>
+  auto withChapel(WithChapelConfig c, F&& f, Ns... ns)
+  -> decltype(f(chapel_.get(), ns...)) {
     if (shouldGarbageCollect()) chapel_->collectGarbage();
     if (c & CHPL_BUMP_REVISION) {
       chapel_->advanceToNextRevision(shouldPrepareToGarbageCollect());
       ++revision_;
     }
     return f(chapel_.get(), ns...);
+  }
+
+  /** Execute code with controlled access to the Chapel context. */
+  template <typename F, typename ...Ns>
+  auto withChapel(F&& f, Ns... ns)
+  -> decltype(withChapel(CHPL_NO_MASK, f, ns...)) {
+    return withChapel(CHPL_NO_MASK, f, ns...);
+  }
+
+  enum FormatDetail {
+    DEFAULT = 0
+  };
+
+private:
+  void fmtImpl(std::stringstream& ss, FormatDetail dt,
+               const chpl::uast::AstNode* t);
+  void fmtImpl(std::stringstream& ss, FormatDetail dt,
+               const chpl::Location& t);
+public:
+  template <typename T>
+  std::string fmt(const T& t, FormatDetail dt=FormatDetail::DEFAULT) {
+    std::stringstream ss;
+    fmtImpl(ss, dt, t);
+    return ss.str();
   }
 };
 

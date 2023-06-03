@@ -24,6 +24,8 @@
 #include "./Logger.h"
 #include "./misc.h"
 #include <cstdint>
+#include <variant>
+#include <vector>
 
 /** This header contains types which help form the Microsoft language server
     protocol. The types attempt to follow the specification as faithfully
@@ -222,6 +224,70 @@ struct DidSaveParams : ProtocolTypeRecv {
 struct DidCloseParams : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
   TextDocumentItem textDocument;
+};
+
+struct TextDocumentIdentifier : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  std::string uri;
+};
+
+struct Position : ProtocolType {
+  uint64_t line = 0;            /** Zero-based position. */
+  uint64_t character = 0;       /** Zero-based position. */
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  Position() = default;
+  Position(uint64_t line, uint64_t character)
+    : line(line), character(character) {}
+};
+
+struct Range : ProtocolType {
+  Position start;
+  Position end;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  Range() = default;
+  Range(Position start, Position end) : start(start), end(end) {}
+};
+
+struct TextDocumentPositionParams : ProtocolTypeRecv {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  TextDocumentIdentifier textDocument;
+  Position position;
+};
+
+struct Location : ProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  std::string uri;
+  Range range;
+};
+
+struct LocationLink : ProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  opt<Range> originSelectionRange;
+  std::string targetUri;
+  Range targetRange;
+  Range targetSelectionRange;
+};
+
+using LocationArray = std::vector<Location>;
+using LocationLinkArray = std::vector<LocationLink>;
+
+struct DeclarationParams : TextDocumentPositionParams {};
+struct DefinitionParams : TextDocumentPositionParams {};
+
+struct DeclarationResult : ProtocolTypeSend {
+  virtual JsonValue toJson() const override;
+  opt<std::variant<LocationArray, LocationLinkArray>> result;
+};
+
+struct DefinitionResult : ProtocolTypeSend {
+  virtual JsonValue toJson() const override;
+  opt<std::variant<LocationArray, LocationLinkArray>> result;
 };
 
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
