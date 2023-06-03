@@ -1910,7 +1910,7 @@ module DefaultRectangular {
 
   private proc transferHelper(A, aView, B, bView) : bool {
     if A.rank == B.rank &&
-       aView.hasPosNegUnitStride() && (bView.strides == aView.strides) &&
+       aView.hasUnitStride() && bView.hasUnitStride() &&
        _canDoSimpleTransfer(A, aView, B, bView) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("Performing simple DefaultRectangular transfer");
