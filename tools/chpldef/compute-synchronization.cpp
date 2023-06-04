@@ -22,10 +22,6 @@
 #include "./Server.h"
 #include "chpl/parsing/parsing-queries.h"
 
-/** This is one file where message handlers can be implemented. However, if
-    a particular message's handler grows to be very large in size (e.g.,
-    perhaps 500+ lines), then we should feel free to move it to a different
-    source file with a name that matches the message name. */
 namespace chpldef {
 
 DidOpen::ComputedResult

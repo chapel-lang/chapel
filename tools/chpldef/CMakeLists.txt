@@ -15,10 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_executable(chpldef
-    chpldef.cpp
+# Put all the binary source files into an object blob.
+add_library(chpldef-objects
     command-line-flags.cpp
-    compute-goto-entity.cpp
+    compute-goto-declaration.cpp
     compute-lifecycle.cpp
     compute-synchronization.cpp
     Logger.cpp
@@ -27,9 +27,26 @@ add_executable(chpldef
     protocol-types.cpp
     Server.cpp
     Transport.cpp)
-set_property(TARGET chpldef PROPERTY CXX_STANDARD 17)
-target_link_libraries(chpldef ChplFrontend)
+
+# Link the Chapel frontend to the object blob.
+target_link_libraries(chpldef-objects ChplFrontend)
+target_include_directories(chpldef-objects PRIVATE
+                           ${CHPL_MAIN_INCLUDE_DIR}
+                           ${CHPL_INCLUDE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(TARGET chpldef-objects PROPERTY CXX_STANDARD 17)
+
+# Create the 'chpldef' executable.
+add_executable(chpldef chpldef.cpp)
+target_link_libraries(chpldef chpldef-objects)
 target_include_directories(chpldef PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR}
                            ${CMAKE_CURRENT_SOURCE_DIR})
+set_property(TARGET chpldef PROPERTY CXX_STANDARD 17)
+
+# Enable testing if the test folder exists.
+if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
+  enable_testing()
+  add_subdirectory(test)
+endif()
