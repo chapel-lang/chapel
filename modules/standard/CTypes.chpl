@@ -319,7 +319,7 @@ module CTypes {
     }
   }
 
-  /* Copy the elements from one ``c_array`` to another.
+  /* Copy the elements from one :type:`c_array` to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
   operator c_array.=(ref lhs:c_array, rhs:c_array) {
@@ -739,8 +739,8 @@ module CTypes {
     return c_pointer_return(arr[arr.domain.low]);
   }
   /*
-   Like c_ptrTo for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -949,7 +949,7 @@ module CTypes {
   }
 
   /*
-    Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+    Like :proc:`c_ptrTo`, but returns a :type:`c_ptrConst` which disallows direct
     modification of the pointee.
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
@@ -985,8 +985,8 @@ module CTypes {
   }
 
   /*
-   Like c_addrOf for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
   */
   inline proc c_addrOfConst(arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -1014,8 +1014,8 @@ module CTypes {
   }
 
   /*
-    Like c_addrOf, but returns a :type:`c_ptrConst` which disallows direct
-    modification of the pointee.
+    Like :proc:`c_addrOf`, but returns a :type:`c_ptrConst` which disallows
+    direct modification of the pointee.
   */
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
