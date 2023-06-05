@@ -52,7 +52,7 @@ IO module's serialization/deserialization API. For example:
   var r2 = myFile.reader().withDeserializer(new YamlDeserializer()).read(R);
   assert(r1 == r2);
 
-Yaml files can also be parsed and written directly using the :type:`YamlValue`
+Yaml files can also be written and parsed directly using the :type:`YamlValue`
 class with the :proc:`writeYamlFile` and :proc:`parseYamlFile` procedures.
 
 
@@ -728,12 +728,12 @@ module Yaml {
     @chpldoc.nodoc
 
     /* index into a YAML mapping by string */
-    proc this(key: string): borrowed YamlValue throws {
+    proc this(key: string): shared YamlValue throws {
       throw new YamlIndexError("indexing not supported");
     }
 
     /* index into a YAML mapping by YAML value */
-    proc this(ref key: owned YamlValue) ref : owned YamlValue throws {
+    proc this(key: shared YamlValue) ref : shared YamlValue throws {
       throw new YamlIndexError("indexing not supported");
       return _dummy_yaml_value;
     }
@@ -785,47 +785,53 @@ module Yaml {
       throw new YamlTypeError("cannot convert to list");
     }
 
+    @chpldoc.nodoc
     proc writeThis(fw) throws {
       fw.write("Empty YamlValue");
+    }
+
+    @chpldoc.nodoc
+    proc asKey(): string {
+      return "empty-yaml-value";
     }
   }
 
   class YamlMapping: YamlValue {
+    // TODO: get map(YamlValue, YamlValue) working...
     @chpldoc.nodoc
-    var _map: map(owned YamlValue, owned YamlValue);
-    @chpldoc.nodoc
-    var _x: owned YamlValue = new YamlValue();
+    var _map: map(string, (shared YamlValue, shared YamlValue));
+
     @chpldoc.nodoc
     var isKey: bool = true;
+    @chpldoc.nodoc
+    var nextKey: shared YamlValue? = nil;
 
     proc init() {
-      this._map = new map(owned YamlValue, owned YamlValue);
+      this._map = new map(string, (shared YamlValue, shared YamlValue));
     }
 
-    pragma "unsafe"
     @chpldoc.nodoc
-    proc _append(in kv: owned YamlValue) {
+    proc _append(in kv: shared YamlValue) {
       if this.isKey {
-        this._x = owned.adopt(owned.release(kv));
+        this.nextKey = kv;
         this.isKey = false;
       } else {
         this._map.add(
-          owned.adopt(owned.release(this._x)),
-          kv
+          this.nextKey!.asKey(),
+          (try! (this.nextKey: shared YamlValue), kv)
         );
         this.isKey = true;
       }
     }
 
     /* index into a YAML mapping by string */
-    override proc this(key: string): borrowed YamlValue throws {
-      var yamlKey = new YamlScalar(key);
-      return this._map[(yamlKey: owned YamlValue)].borrow();
+    override proc this(key: string): shared YamlValue throws {
+      return this._map[key][1];
     }
 
     /* index into a YAML mapping by YAML value */
-    override proc this(ref key: owned YamlValue) ref : owned YamlValue throws {
-      return this._map[key];
+    override proc this(key: shared YamlValue) ref : shared YamlValue throws {
+      return this._map[key.asKey()][1];
     }
 
     override proc size(): int {
@@ -836,9 +842,9 @@ module Yaml {
       return YamlValueType.Mapping;
     }
 
-    iter keys() const ref {
-      for k in this._map.keys() do
-        yield k;
+    iter these() const ref {
+      for kv in this._map.values() do
+        yield kv;
     }
 
     proc asMapOf(type kt, type vt): map(kt, vt) throws {
@@ -867,23 +873,32 @@ module Yaml {
       }
       fw.writeLiteral("}");
     }
+
+    @chpldoc.nodoc
+    override proc asKey(): string {
+      var s = "{";
+      for k in this._map.values() do
+        s += k[0].asKey() + ":" + k[1].asKey() + ";";
+      s += "}";
+      return s;
+    }
   }
 
   class YamlSequence: YamlValue {
     @chpldoc.nodoc
-    var _seq: list(owned YamlValue);
+    var _seq: list(shared YamlValue);
 
     proc init() {
-      this._seq = new list(owned YamlValue);
+      this._seq = new list(shared YamlValue);
     }
 
     @chpldoc.nodoc
-    proc _push(in val: owned YamlValue) {
+    proc _push(in val: shared YamlValue) {
       this._seq.append(val);
     }
 
     /* index into a YAML sequence */
-    override proc this(idx: int): borrowed YamlValue throws {
+    override proc this(idx: int): shared YamlValue throws {
       return this._seq(idx);
     }
 
@@ -897,7 +912,7 @@ module Yaml {
 
     iter these(): YamlValue {
       for v in this._seq do
-        yield v.borrow();
+        yield v;
     }
 
     proc asListOf(type t): list(t) throws {
@@ -924,6 +939,15 @@ module Yaml {
         fw.write(v);
       }
       fw.writeLiteral("]");
+    }
+
+    @chpldoc.nodoc
+    override proc asKey(): string {
+      var s = "[";
+      for v in this._seq do
+        s += v.asKey() + ";";
+      s += "]";
+      return s;
     }
   }
 
@@ -1036,10 +1060,9 @@ module Yaml {
         else fw.write(this.value);
     }
 
-    // ensures that types are not considered when using a scalar as a key
     @chpldoc.nodoc
-    override proc hash(): uint {
-      return this.value.hash();
+    override proc asKey(): string {
+      return this.value;
     }
   }
 
@@ -1066,6 +1089,11 @@ module Yaml {
     override proc writeThis(fw) throws {
       fw.write("*", this._alias);
     }
+
+    @chpldoc.nodoc
+    override proc asKey(): string {
+      return this._alias;
+    }
   }
 
   /* write a yaml file to the give path */
@@ -1088,9 +1116,9 @@ module Yaml {
       when YamlValueType.Mapping {
         emitter.startMapping();
         const x = value: borrowed YamlMapping;
-        for k in x.keys() {
+        for (k, v) in x {
           emitYamlValue(emitter, k);
-          emitYamlValue(emitter, x[k]);
+          emitYamlValue(emitter, v);
         }
         emitter.endMapping();
       }
@@ -1117,7 +1145,7 @@ module Yaml {
   }
 
   /* parse a yaml file at the given path and return an array of documents */
-  proc parseYamlFile(path: string): [] owned YamlValue throws {
+  proc parseYamlFile(path: string): [] shared YamlValue throws {
     var f = open(path, ioMode.r),
         reader = f.reader(locking = false);
 
@@ -1128,7 +1156,7 @@ module Yaml {
   }
 
   @chpldoc.nodoc
-  iter parseUntilEvent(parser: borrowed LibYamlParser, event: EventType, reader: fileReader): owned YamlValue {
+  iter parseUntilEvent(parser: borrowed LibYamlParser, event: EventType, reader: fileReader): shared YamlValue {
     while true {
       const (t, start, end) = try! parser.parseNext(reader);
 
@@ -1151,14 +1179,14 @@ module Yaml {
         }
         when EventType.Alias {
           try! reader.seek(start:int..);
-          yield new YamlAlias(try! reader.readString((end - start):int));
+          yield new shared YamlAlias(try! reader.readString((end - start):int));
         }
         when EventType.Scalar {
           try! reader.seek(start:int..);
-          yield new YamlScalar(try! reader.readString((end - start):int));
+          yield new shared YamlScalar(try! reader.readString((end - start):int));
         }
         when EventType.MappingStart {
-          var mapping = new owned YamlMapping();
+          var mapping = new shared YamlMapping();
 
           for e in parseUntilEvent(parser, EventType.MappingEnd, reader) {
             mapping._append(e);
@@ -1171,7 +1199,7 @@ module Yaml {
           break;
         }
         when EventType.SequenceStart {
-          var sequence = new owned YamlSequence();
+          var sequence = new shared YamlSequence();
 
           for e in parseUntilEvent(parser, EventType.SequenceEnd, reader) do
             sequence._push(e);

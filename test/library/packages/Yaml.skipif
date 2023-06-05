@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import subprocess
+from contextlib import suppress
+
+Ok = False
+
+with suppress(Exception):
+    sub = subprocess.run(['pkg-config', '--exists', 'libyaml'], stderr=subprocess.DEVNULL)
+    if sub.returncode == 0:
+        Ok = True
+
+print(not Ok)
