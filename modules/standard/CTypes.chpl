@@ -160,7 +160,14 @@ module CTypes {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
-    /* The type that this pointer points to */
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptr = c_ptrTo(...);
+         if x.eltType == c_int then do writeln("x is an int pointer");
+    */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
       Does the equivalent of ptr[i] in C.
@@ -192,13 +199,30 @@ module CTypes {
   pragma "c_ptr class"
   pragma "c_ptrConst class"
   class c_ptrConst {
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptrConst = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is a const int pointer");
+    */
     type eltType;
+    /* Retrieve the i'th element (zero based) from a pointer to an array.
+       Does the equivalent of ptr[i] in C.
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc this(i: integral) const ref {
       return __primitive("array_get", this, i);
     }
+    /* Get element pointed to directly by this pointer. If the pointer
+       refers to an array, this will return ptr[0].
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc deref() const ref {
       return __primitive("array_get", this, 0);
     }
+    /* Print this pointer */
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
@@ -219,9 +243,23 @@ module CTypes {
   pragma "c_array record"
   pragma "default intent is ref if modified"
   record c_array {
-    /* The array element type */
+    /*
+       The array element type, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is an array of ints");
+    */
     type eltType;
-    /* The fixed number of elements */
+    /*
+       The fixed number of elements, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         writeln("x has ", x.size, " elements.");
+    */
     param size;
 
     proc init(type eltType, param size) {
