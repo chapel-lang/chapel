@@ -670,6 +670,9 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
         re.setType(qt);
         return false;
       }
+    } else {
+      // Otherwise, proceed normally.
+      return false;
     }
   }
 
