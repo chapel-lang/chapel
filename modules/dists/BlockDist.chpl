@@ -350,7 +350,7 @@ class LocBlock {
 //
 // rank:      generic domain rank
 // idxType:   generic domain index type
-// stridable: generic domain stridable parameter
+// strides:   generic domain stridable parameter
 // dist:      reference to distribution class
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
@@ -358,8 +358,8 @@ class LocBlock {
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
-  var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, stridable);
-  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, strides);
+  var whole: domain(rank, idxType, strides);
 }
 
 //
@@ -367,14 +367,14 @@ class BlockDom: BaseRectangularDom {
 //
 // rank: generic domain rank
 // idxType: generic domain index type
-// stridable: generic domain stridable parameter
+// strides: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
 class LocBlockDom {
   param rank: int;
   type idxType;
-  param stridable: bool;
-  var myBlock: domain(rank, idxType, stridable);
+  param strides: strideKind;
+  var myBlock: domain(rank, idxType, strides);
 }
 
 //
@@ -383,7 +383,7 @@ class LocBlockDom {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // dom: reference to domain class
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
@@ -391,10 +391,11 @@ class LocBlockDom {
 class BlockArr: BaseRectangularArr {
   type sparseLayoutType;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType);
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockArr(eltType, rank, idxType, stridable);
+  var dom: unmanaged BlockDom(rank, idxType, strides, sparseLayoutType);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockArr(eltType,
+                                                  rank, idxType, strides);
   pragma "local field"
-  var myLocArr: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
+  var myLocArr: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
   const SENTINEL = max(rank*int);
 }
 
@@ -404,7 +405,7 @@ class BlockArr: BaseRectangularArr {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
@@ -412,9 +413,9 @@ class LocBlockArr {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
-  const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, chpl_strideKind(stridable))?; // non-nil if doRADOpt=true
+  param strides: strideKind;
+  const locDom: unmanaged LocBlockDom(rank, idxType, strides);
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, strides)?; // non-nil if doRADOpt=true
   pragma "local field" pragma "unsafe"
   // may be initialized separately
   var myElems: [locDom.myBlock] eltType;
@@ -423,13 +424,13 @@ class LocBlockArr {
   proc init(type eltType,
             param rank: int,
             type idxType,
-            param stridable: bool,
-            const locDom: unmanaged LocBlockDom(rank, idxType, stridable),
+            param strides: strideKind,
+            const locDom: unmanaged LocBlockDom(rank, idxType, strides),
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
-    this.stridable = stridable;
+    this.strides = strides;
     this.locDom = locDom;
     this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
   }
@@ -475,7 +476,7 @@ proc Block.init(boundingBox: domain,
   if boundingBox.sizeAs(uint) == 0 then
     halt("Block() requires a non-empty boundingBox");
 
-  this.boundingBox = boundingBox : domain(rank, idxType, stridable = false);
+  this.boundingBox = boundingBox : domain(rank, idxType);
 
   if !allowDuplicateTargetLocales {
     var checkArr: [LocaleSpace] bool;
@@ -599,28 +600,28 @@ override proc Block.dsiDisplayRepresentation() {
 }
 
 override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
-                                         param stridable: bool, inds) {
+                                         param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Block domain rank does not match distribution's");
 
-  const whole = createWholeDomainForInds(rank, idxType, stridable, inds);
+  const whole = createWholeDomainForInds(rank, idxType, strides, inds);
 
-  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
   var locDomsTemp: [this.targetLocDom]
-                  unmanaged LocBlockDom(rank, idxType, stridable) = dummyLBD;
+                  unmanaged LocBlockDom(rank, idxType, strides) = dummyLBD;
   coforall (localeIdx, loc, locDomsTempElt)
            in zip(this.targetLocDom, this.targetLocales, locDomsTemp) {
     on loc {
-      locDomsTempElt = new unmanaged LocBlockDom(rank, idxType, stridable,
-        // the cast to domain supports deprecation by Vass in 1.31 for #17131
-        this.getChunk(whole, localeIdx): domain(rank, idxType, stridable));
+      locDomsTempElt = new unmanaged LocBlockDom(rank, idxType, strides,
+        // todo: can/should we get a more specific return type out of getChunk?
+        this.getChunk(whole, localeIdx): domain(rank, idxType, strides));
     }
   }
   delete dummyLBD;
 
-  var dom = new unmanaged BlockDom(rank, idxType, stridable, sparseLayoutType,
+  var dom = new unmanaged BlockDom(rank, idxType, strides, sparseLayoutType,
                                    this: unmanaged, locDomsTemp, whole);
 
   if debugBlockDist {
@@ -634,7 +635,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
                                     dom: domain) {
   var ret =  new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
-                            stridable=dom.stridable,
+                            strides=dom.strides,
                             dist=_to_unmanaged(this), whole=dom._value.whole,
                             parentDom=dom);
   ret.setup();
@@ -894,14 +895,11 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // TODO: Can we just re-use the DefaultRectangularDom follower here?
 //
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag then
     chpl__testParWriteln("Block domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, strides = chpl_strideProduct(whole.strides,
+                                              chpl_strideUnion(followThis)));
   for param i in 0..rank-1 {
     const wholeDim  = whole.dim(i);
     const followDim = followThis(i);
@@ -922,19 +920,19 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
-  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
   const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
-                                             stridable, dummyLBD, false);
+                                             strides, dummyLBD, false);
   var locArrTemp: [dom.dist.targetLocDom]
-        unmanaged LocBlockArr(eltType, rank, idxType, stridable) = dummyLBA;
-  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
+        unmanaged LocBlockArr(eltType, rank, idxType, strides) = dummyLBA;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
 
   // formerly in BlockArr.setup()
   coforall (loc, locDomsElt, locArrTempElt)
            in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
            with (ref myLocArrTemp) {
     on loc {
-      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
+      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt,
                                             initElts=initElts);
       locArrTempElt = LBA;
@@ -945,7 +943,7 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   delete dummyLBA, dummyLBD;
 
   var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-       stridable=stridable, sparseLayoutType=sparseLayoutType,
+       strides=strides, sparseLayoutType=sparseLayoutType,
        dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
 
   // formerly in BlockArr.setup()
@@ -974,7 +972,7 @@ proc BlockDom.dsiGetIndices() do  return whole.getIndices();
 proc BlockDom.dsiMember(i) do     return whole.contains(i);
 proc BlockDom.doiToString() do    return whole:string;
 proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
-proc BlockDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+proc BlockDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist() do                   return dist;
 
@@ -1071,7 +1069,8 @@ proc BlockArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableBlockLazyRAD {
-        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType,
+                                             strides, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -1145,7 +1144,8 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.locRADLock.lock();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
+                                               strides, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
@@ -1212,10 +1212,6 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
 }
 
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag {
     if fast then
       chpl__testParWriteln("Block array fast follower invoked on ", followThis);
@@ -1226,7 +1222,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Block array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
+                                     strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1324,7 +1321,7 @@ proc _extendTuple(type t, idx, args) {
   return tup;
 }
 
-override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
+override proc BlockArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,strides))
 {
   //
   // For the default rectangular array, this function changes the data
@@ -1415,7 +1412,7 @@ proc type BlockDom.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged BlockDom(rank=this.rank,
                               idxType=this.idxType,
-                              stridable=this.stridable,
+                              strides=this.strides,
                               sparseLayoutType=this.sparseLayoutType),
            data);
 }
@@ -1436,11 +1433,11 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData.distpid);
 
   var locDomsTemp: [privdist.targetLocDom]
-                      unmanaged LocBlockDom(rank, idxType, stridable)
+                      unmanaged LocBlockDom(rank, idxType, strides)
     = privatizeData.locdoms;
 
   // in initializer we have to pass sparseLayoutType as it has no default value
-  const c = new unmanaged BlockDom(rank, idxType, stridable,
+  const c = new unmanaged BlockDom(rank, idxType, strides,
                                    privdist.sparseLayoutType, privdist,
                                    locDomsTemp, {(...privatizeData.dims)});
   return c;
@@ -1462,7 +1459,7 @@ proc type BlockArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged BlockArr(rank=this.rank,
                               idxType=this.idxType,
-                              stridable=this.stridable,
+                              strides=this.strides,
                               eltType=this.eltType,
                               sparseLayoutType=this.sparseLayoutType),
            data);
@@ -1483,16 +1480,16 @@ proc BlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData.dompid);
 
   var locArrTemp: [privdom.dist.targetLocDom]
-                     unmanaged LocBlockArr(eltType, rank, idxType, stridable)
+                     unmanaged LocBlockArr(eltType, rank, idxType, strides)
     = privatizeData.locarr;
 
-  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
   for localeIdx in privdom.dist.targetLocDom do
     if locArrTemp(localeIdx).locale.id == here.id then
       myLocArrTemp = locArrTemp(localeIdx);
 
   const c = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
-                      stridable=stridable, sparseLayoutType=sparseLayoutType,
+                      strides=strides, sparseLayoutType=sparseLayoutType,
                       dom=privdom, locArr=locArrTemp, myLocArr = myLocArrTemp);
   return c;
 }
@@ -1532,7 +1529,7 @@ proc BlockArr.dsiLocalSubdomain(loc: locale) {
     if const myLocArrNN = myLocArr then
       return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
-    var d: domain(rank, idxType, stridable);
+    var d: domain(rank, idxType, strides);
     return d;
   } else {
     return dom.dsiLocalSubdomain(loc);
@@ -1551,7 +1548,7 @@ proc BlockDom.dsiLocalSubdomain(loc: locale) {
       return whole[(...inds)];
     }
   } else {
-    var d: domain(rank, idxType, stridable);
+    var d: domain(rank, idxType, strides);
     return d;
   }
 }
@@ -1629,7 +1626,7 @@ proc BlockArr.canDoOptimizedSwap(other) {
 // TODO: stridability causes issues with RAD swap, and somehow isn't captured by
 // the formal type when we check whether this resolves.
 proc BlockArr.doiOptimizedSwap(other: this.type)
-  where this.stridable == other.stridable {
+  where this.strides == other.strides {
 
   if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {

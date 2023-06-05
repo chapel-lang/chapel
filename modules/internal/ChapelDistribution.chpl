@@ -980,7 +980,7 @@ module ChapelDistribution {
     // deprecated by Vass in 1.31 to implement #17131
     //RSDW: @deprecated("[array].stridable is deprecated; use [array].strides instead")
     proc stridable param do return strides.toStridable();
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    //RSDW: @deprecated("[array].stridable is deprecated; use [array].strides instead")
     proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();

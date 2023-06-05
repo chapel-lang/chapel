@@ -77,13 +77,13 @@ record BlockDim {
 
 record Block1dom {
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   // convenience
-  proc rangeT type do  return range(idxType, boundKind.both, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, strides);
 
   // our range
-  var wholeR: range(idxType, boundKind.both, stridable);
+  var wholeR: range(idxType, boundKind.both, strides);
 
   // privatized distribution descriptor
   const pdist;
@@ -137,7 +137,7 @@ proc Block1dom.dsiGetPrivatizeData1d() {
 proc type Block1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Block1dom(idxType   = this.idxType,
-                  stridable = this.stridable,
+                  strides   = this.strides,
                   wholeR    = privatizeData(0),
                   pdist     = privDist);
 }
@@ -172,7 +172,7 @@ proc BlockDim.init(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = b
 proc BlockDim.toString() do
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
-proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+proc BlockDim.dsiNewRectangularDom1d(type idxType, param strides: strideKind,
                                      type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
@@ -180,13 +180,13 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
     compilerError("The index type ", idxType:string,
                   " does not match the index type ",this.idxType:string,
                   " of the 'BlockDim' 1-d distribution");
-  return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
+  return new Block1dom(idxType = idxType, strides = strides, pdist = this);
 }
 
 proc Block1dom.dsiIsReplicated1d() param do return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  var defaultVal: range(stoIndexT, stridable=this.stridable);
+  var defaultVal: range(stoIndexT, strides=this.strides);
   return new Block1locdom(myRange = defaultVal);
 }
 

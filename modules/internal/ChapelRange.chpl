@@ -1049,7 +1049,7 @@ module ChapelRange {
 
   @chpldoc.nodoc
   inline proc range.chpl_alignedLowAsIntForIter {
-    if stridable && !hasLowBound() && isFiniteIndexType() {
+    if !hasUnitStride() && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
       return alignedLowAsInt;
@@ -1145,7 +1145,7 @@ module ChapelRange {
 
   @chpldoc.nodoc
   inline proc range.chpl_alignedHighAsIntForIter {
-    if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
+    if !hasUnitStride() && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
     } else {
       return alignedHighAsInt;
@@ -2080,14 +2080,12 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
-    type strType = chpl__rangeStrideType(e);
-
     return new range(e, b, s,
                      r._low - i,
                      r._high - i,
-                     r.stride : strType,
+                     r._stride,
                      chpl__idxToInt(r.alignment)-i,
-                     r.aligned);
+                     r._aligned, false);
   }
 
   // TODO can this be removed?

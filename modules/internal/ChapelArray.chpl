@@ -781,8 +781,8 @@ module ChapelArray {
                      rank, idxType, stridable, ranges2) {
 
         //RSDW: compilerWarning("the domain map '", _value.type:string,
-        // " needs to be updated from stridable: bool to strides: strideKind",
-        // " because 'stridable' is deprecated");
+        //  " needs to be updated from stridable: bool to strides: strideKind",
+        //  " because 'stridable' is deprecated");
 
         return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
       }

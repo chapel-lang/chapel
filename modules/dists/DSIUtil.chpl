@@ -503,7 +503,7 @@ private proc asap1(arg) {
 // asapP1 = All Strides Are Positive - Param - 1 arg
 // returns true if all strides are known to be positive at compile time
 private proc asapP1(arg) param {
-  return !arg.stridable;
+  return arg.strides.isPositive();
 }
 
 private proc asapTuple(dims: _tuple) {

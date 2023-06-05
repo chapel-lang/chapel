@@ -276,9 +276,9 @@ private proc stoStridableDom(type stoIndexT, dom1, dom2) param {
   proc stoStridable1d(dom1d) param {
     const dummy = dom1d.dsiNewLocalDom1d(stoIndexT, 0:locIdT)
       .dsiSetLocalIndices1d(dom1d, 0:locIdT);
-    return dummy.stridable;
+    return dummy.strides;
   }
-  return stoStridable1d(dom1) || stoStridable1d(dom2);
+  return chpl_strideUnion(stoStridable1d(dom1), stoStridable1d(dom2));
 }
 
 private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type {
@@ -287,10 +287,10 @@ private proc locDescTypeHelper(param rank : int, type idxType, dom1, dom2) type 
 
   proc strideHelper(dom1d) param {
     const dummy = dom1d.dsiNewLocalDom1d(idxType, 0).dsiSetLocalIndices1d(dom1d, 0);
-    return dummy.stridable;
+    return dummy.strides;
   }
 
-  param str = strideHelper(dom1) || strideHelper(dom2);
+  param str = chpl_strideUnion(strideHelper(dom1), strideHelper(dom2));
 
   return unmanaged LocDimensionalDom(domain(rank, idxType, str), d1type, d2type);
 }
@@ -301,8 +301,8 @@ class DimensionalDom : BaseRectangularDom {
 
   // convenience
   proc targetIds do return localDdescs.domain;
-  proc rangeT  type do  return range(idxType, boundKind.both, stridable);
-  proc domainT type do  return domain(rank, idxType, stridable);
+  proc rangeT  type do  return range(idxType, boundKind.both, strides);
+  proc domainT type do  return domain(rank, idxType, strides);
   proc indexT  type do  return dist.indexT;
 
   // subordinate 1-d global domain descriptors
@@ -310,7 +310,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // This is our index set; we store it here so we can get to it easily.
   // Although strictly speaking it is not necessary.
-  var whole: domain(rank, idxType, stridable);
+  var whole: domain(rank, idxType, strides);
 
   // This is the idxType of the "storage index ranges" to be produced
   // by dsiSetLocalIndices1d(). It needs to be uniform across dimensions,
@@ -320,7 +320,7 @@ class DimensionalDom : BaseRectangularDom {
 
   // replace this with 'this.stridable' for simplicity?
   proc stoStridable param do  return stoStridableDom(stoIndexT, dom1, dom2);
-  proc stoRangeT type do  return range(stoIndexT, stridable = stoStridable);
+  proc stoRangeT type do  return range(stoIndexT, strides = stoStridable);
   proc stoDomainT type do  return domain(rank, stoIndexT, stoStridable);
 
   // convenience - our instantiation of LocDimensionalDom
@@ -536,7 +536,7 @@ proc DimensionalDist2D.dsiPrivatize(privatizeData) {
   const pdTargetLocales = privatizeData(0);
   const privTargetIds: domain(pdTargetLocales.domain.rank,
                               pdTargetLocales.domain.idxType,
-                              pdTargetLocales.domain.stridable
+                              pdTargetLocales.domain.strides
                               ) = pdTargetLocales.domain;
   const privTargetLocales: [privTargetIds] locale = pdTargetLocales;
 
@@ -726,7 +726,7 @@ proc DimensionalDom.dsiPrivatize(privatizeData) {
 
   const result = new unmanaged DimensionalDom(rank      = this.rank,
                                     idxType   = this.idxType,
-                                    stridable = this.stridable,
+                                    strides   = this.strides,
                                     dist = privdist,
                                     dom1 = dom1new,
                                     dom2 = dom2new,
@@ -764,7 +764,7 @@ proc DimensionalDom.dsiReprivatize(other, reprivatizeData) {
 
   compilerAssert(this.rank == other.rank &&
                  this.idxType == other.idxType &&
-                 this.stridable == other.stridable);
+                 this.strides == other.strides);
 
   dom1.dsiReprivatize1d(reprivatizeData(0));
   dom2.dsiReprivatize1d(reprivatizeData(1));
@@ -785,12 +785,12 @@ proc DimensionalDom.dimSpecifier(param dim: int) {
 // create a new domain mapped with this distribution
 override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
                                             type idxType,
-                                            param stridable: bool,
+                                            param strides: strideKind,
                                             inds)
-//  : DimensionalDom(rank, idxType, stridable, this.type, ...)
+//  : DimensionalDom(rank, idxType, strides, this.type, ...)
 {
   _traceddd(this, ".dsiNewRectangularDom ",
-            (rank, idxType:string, stridable, inds));
+            (rank, idxType:string, strides, inds));
   if rank != 2 then
     compilerError("DimensionalDist2D presently supports only 2 dimensions,",
                   " got ", rank:string, " dimensions");
@@ -809,10 +809,10 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
   // need this for dsiNewRectangularDom1d()
   type stoIndexT = this.idxType;
 
-  var dom1 = di1.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
+  var dom1 = di1.dsiNewRectangularDom1d(idxType, strides, stoIndexT);
   _passLocalLocIDsDom1d(dom1, di1);
 
-  var dom2 = di2.dsiNewRectangularDom1d(idxType, stridable, stoIndexT);
+  var dom2 = di2.dsiNewRectangularDom1d(idxType, strides, stoIndexT);
   _passLocalLocIDsDom1d(dom2, di2);
 
   // We could try the dummyLB trick from BlockDist instead of the '?'/'!',
@@ -831,7 +831,7 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 
   var localDdescsNN = localDdescsTemp!; //#15080
   const result = new unmanaged DimensionalDom(rank=rank, idxType=idxType,
-                                    stridable=stridable, dist=_to_unmanaged(this),
+                                    strides=strides, dist=_to_unmanaged(this),
                                     localDdescs = localDdescsNN,
                                     dom1 = dom1, dom2 = dom2);
   // result.whole is initialized to the default value (empty domain)
@@ -861,7 +861,7 @@ proc DimensionalDom.dsiDims() do        return whole.dims();
 proc DimensionalDom.dsiMember(i) do     return whole.contains(i);
 proc DimensionalDom.doiToString() do    return whole:string;
 proc DimensionalDom.dsiSerialWrite(x) do { x.write(whole); }
-proc DimensionalDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+proc DimensionalDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc DimensionalDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc DimensionalDom.dsiMyDist() do                   return dist;
 
@@ -918,7 +918,7 @@ proc LocDimensionalDom._dsiLocalSetIndicesHelper(type stoRangeT, globDD, locId)
 
 proc DimensionalDom.dsiGetIndices(): rank * range(idxType,
                                                  boundKind.both,
-                                                 stridable) {
+                                                 strides) {
   _traceddd(this, ".dsiGetIndices");
   return whole.dims();
 }
@@ -954,7 +954,7 @@ proc DimensionalArr.dsiPrivatize(privatizeData) {
 
   const result = new unmanaged DimensionalArr(rank     = this.rank,
                                     idxType  = this.idxType,
-                                    stridable= this.stridable,
+                                    strides  = this.strides,
                                     eltType  = this.eltType,
                                     localAdescs = privatizeData(2),
                                     dom      = privDom,
@@ -1004,7 +1004,7 @@ proc DimensionalDom.dsiBuildArray(type eltType, param initElts:bool)
   var localAdescsNN = localAdescsTemp!; //#15080
   const result = new unmanaged DimensionalArr(rank = rank,
                                     idxType = idxType,
-                                    stridable = stridable,
+                                    strides = strides,
                                     eltType  = eltType,
                                     localAdescs = localAdescsNN,
                                     dom      = _to_unmanaged(this),

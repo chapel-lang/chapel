@@ -350,12 +350,12 @@ proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Cyclic domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Cyclic domain rank does not match distribution's");
-  const whole = createWholeDomainForInds(rank, idxType, stridable, inds);
+  const whole = createWholeDomainForInds(rank, idxType, strides, inds);
 
   const dummyLCD = new unmanaged LocCyclicDom(rank, idxType);
   var locDomsTemp: [this.targetLocDom] unmanaged LocCyclicDom(rank, idxType)
@@ -363,10 +363,10 @@ override proc Cyclic.dsiNewRectangularDom(param rank: int, type idxType, param s
   coforall localeIdx in this.targetLocDom do
     on this.targetLocs(localeIdx) do
       locDomsTemp(localeIdx) = new unmanaged LocCyclicDom(rank, idxType,
-                                              this.getChunk(whole, localeIdx));
+             this.getChunk(whole, localeIdx): myBlockType(rank, idxType));
   delete dummyLCD;
 
-  var dom = new unmanaged CyclicDom(rank, idxType, stridable,
+  var dom = new unmanaged CyclicDom(rank, idxType, strides,
                                     this: unmanaged, locDomsTemp, whole);
   return dom;
 }
@@ -435,13 +435,13 @@ proc Cyclic.dsiIndexToLocale(i: rank*idxType) {
   proc chpl__computeCyclicDim(type idxType, lo, myloc, numlocs) {
     const lower = min(idxType)..(lo+myloc) by -numlocs;
     const upper = lo+myloc..max(idxType) by numlocs;
-    return lower.last..upper.last by numlocs;
+    return lower.last..upper.last by numlocs:uint;
   }
 
 proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
     type strType = chpl__signedType(idxType);
     param rank = targetLocBox.size;
-    var inds: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, strides=strideKind.positive);
     for param i in 0..rank-1 {
       // NOTE: Not bothering to check to see if these can fit into idxType
       const lo = chpl__tuplify(startIdx)(i): idxType;
@@ -457,7 +457,7 @@ class LocCyclic {
   param rank: int;
   type idxType;
 
-  const myChunk: domain(rank, idxType, true);
+  const myChunk: domain(rank, idxType, strideKind.positive);
 
   proc init(param rank, type idxType, locid,
             distStartIdx: rank*idxType, distLocDims) {
@@ -473,7 +473,7 @@ class LocCyclic {
     else
       for param i in 0..rank-1 do locidx(i) = locid(i):idxType;
 
-    var inds: rank*range(idxType, stridable=true);
+    var inds: rank*range(idxType, strides=strideKind.positive);
 
     inds = chpl__computeCyclic(idxType, locid, distLocDims, startIdx);
     myChunk = {(...inds)};
@@ -492,7 +492,7 @@ class CyclicDom : BaseRectangularDom {
 
   var locDoms: [dist.targetLocDom] unmanaged LocCyclicDom(rank, idxType);
 
-  var whole: domain(rank, idxType, stridable);
+  var whole: domain(rank, idxType, strides);
 }
 
 proc CyclicDom.setup() {
@@ -535,7 +535,7 @@ proc CyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   delete dummyLCA, dummyLCD;
 
   var arr = new unmanaged CyclicArr(eltType=eltType, rank=rank,
-                                    idxType=idxType, stridable=stridable,
+                                    idxType=idxType, strides=strides,
          dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
 
   // formerly in CyclicArr.setup()
@@ -571,7 +571,7 @@ proc CyclicDom.dsiGetIndices() do  return whole.getIndices();
 proc CyclicDom.dsiMember(i) do     return whole.contains(i);
 proc CyclicDom.doiToString() do    return whole:string;
 //proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
-proc CyclicDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+proc CyclicDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc CyclicDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc CyclicDom.dsiMyDist() do                   return dist;
 
@@ -646,12 +646,15 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
       // distribution (at least, I couldn't figure out a way to not go
       // back and forth without breaking tests)
       const zeroShift = {(...newFollowThis)}.chpl__unTranslate(wholeLow);
-      var result: rank*range(idxType=idxType, stridable=true);
+      var result: rank*range(idxType=idxType, strides=chpl_strideProduct(
+                              whole.strides, chpl_strideUnion(zeroShift) ));
       type strType = chpl__signedType(idxType);
       for param i in 0..rank-1 {
         const wholestride = chpl__tuplify(wholeStride)(i);
         const ref dim = zeroShift.dim(i);
-        result(i) = (dim.first / wholestride:idxType)..(dim.last / wholestride:idxType) by (dim.stride:strType / wholestride);
+        result(i).chpl_setFields(dim.first / wholestride:idxType,
+                                 dim.last / wholestride:idxType,
+                                 dim.stride:strType / wholestride);
       }
       yield result;
     }
@@ -662,7 +665,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 // of 'whole'
 private proc chpl__followThisToOrig(type idxType, followThis, whole) {
   param rank = followThis.size;
-  var t: rank*range(idxType, stridable=true);
+  var t: rank*range(idxType, strides=strideKind.any);
   if debugCyclicDist then
     writeln(here.id, ": follower whole is: ", whole,
                      " follower is: ", followThis);
@@ -693,7 +696,7 @@ proc CyclicDom.chpl__serialize() {
 proc type CyclicDom.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(unmanaged CyclicDom(rank=this.rank,
                                                     idxType=this.idxType,
-                                                    stridable=this.stridable),
+                                                    strides=this.strides),
                                 data);
 }
 
@@ -703,7 +706,7 @@ proc CyclicDom.dsiGetPrivatizeData() do return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
-  return new unmanaged CyclicDom(rank, idxType, stridable,
+  return new unmanaged CyclicDom(rank, idxType, strides,
                                  privdist, locDoms, whole);
 }
 
@@ -721,8 +724,11 @@ class LocCyclicDom {
 
   // The local block type is always stridable
   // (because that's inherent to the cyclic distribution)
-  var myBlock: domain(rank, idxType, stridable=true);
+  var myBlock: myBlockType(rank, idxType);
 }
+
+private proc myBlockType(param rank, type idxType) type do
+  return domain(rank, idxType, strides=strideKind.any);
 
 //
 // Added as a performance stopgap to avoid returning a domain
@@ -732,7 +738,7 @@ proc LocCyclicDom.contains(i) do return myBlock.contains(i);
 
 class CyclicArr: BaseRectangularArr {
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: unmanaged CyclicDom(rank, idxType, stridable);
+  var dom: unmanaged CyclicDom(rank, idxType, strides);
 
   var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType);
   var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType)?;
@@ -770,7 +776,7 @@ override proc CyclicArr.dsiIteratorYieldsLocalElements() param {
 // the RAD cache.
 //
 proc CyclicArr.setupRADOpt() {
-  if !stridable { // for now, no support for strided cyclic arrays
+  if hasUnitStride() { // for now, no support for strided cyclic arrays
     for localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocs(localeIdx) {
         const myLocArr = locArr(localeIdx);
@@ -780,7 +786,7 @@ proc CyclicArr.setupRADOpt() {
         }
         if disableCyclicLazyRAD {
           myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType,
-              stridable=true, dom.dist.targetLocDom);
+              strideKind.any, dom.dist.targetLocDom);
           myLocArr.locCyclicRAD = new unmanaged LocCyclicRADCache(rank, idxType, dom.dist.startIdx, dom.dist.targetLocDom);
           for l in dom.dist.targetLocDom {
             if l != localeIdx {
@@ -831,7 +837,7 @@ proc CyclicArr.chpl__serialize()
 proc type CyclicArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(unmanaged CyclicArr(rank=this.rank,
                                                     idxType=this.idxType,
-                                                    stridable=this.stridable,
+                                                    strides=this.strides,
                                                     eltType=this.eltType),
                                 data);
 }
@@ -843,7 +849,7 @@ proc CyclicArr.dsiGetPrivatizeData() do return 0;
 proc CyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new unmanaged CyclicArr(eltType=eltType, rank=rank, idxType=idxType,
-                              stridable=stridable, dom=privdom, locArr=locArr);
+                              strides=strides, dom=privdom, locArr=locArr);
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then
       c.myLocArr = c.locArr(localeIdx);
@@ -852,14 +858,14 @@ proc CyclicArr.dsiPrivatize(privatizeData) {
 
 
 inline proc _remoteAccessData.getDataIndex(
-    param stridable,
+    param strides,
     myStr: rank*chpl__signedType(idxType),
     ind: rank*idxType,
     startIdx,
     dimLen) {
   // modified from DefaultRectangularArr
   var sum = origin;
-  if stridable {
+  if ! strides.isOne() {
     compilerError("RADOpt not supported for strided cyclic arrays.");
   } else {
     for param i in 0..rank-1 do {
@@ -879,7 +885,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
       if myLocArrNN.locDom.contains(i) then
         return myLocArrNN.this(i);
   }
-  if !stridable && doRADOpt {
+  if hasUnitStride() && doRADOpt {
     if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
@@ -887,7 +893,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           myLocArr.locRADLock.lock();
           if myLocArr.locRAD == nil {
             var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
-                stridable=true, dom.dist.targetLocDom);
+                strideKind.any, dom.dist.targetLocDom);
             if myLocArr.locCyclicRAD != nil {
               delete myLocArr.locCyclicRAD;
               myLocArr.locCyclicRAD = nil;
@@ -919,7 +925,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
           pragma "no copy" pragma "no auto destroy" var whole = dom.whole;
           str(i) = whole.dim(i).stride;
         }
-        var dataIdx = radata(rlocIdx).getDataIndex(stridable, str, i, startIdx, dimLength);
+        var dataIdx = radata(rlocIdx).getDataIndex(strides, str, i, startIdx, dimLength);
         return radata(rlocIdx).dataElem(dataIdx);
       }
     }
@@ -964,17 +970,22 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Cyclic array");
 
-  var t: rank*range(idxType=idxType, stridable=true);
+  var t: rank*range(idxType=idxType, strides=chpl_strideProduct(
+                      chpl_strideUnion(followThis), dom.whole.strides));
   for param i in 0..rank-1 {
     type strType = chpl__signedType(idxType);
     const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
-    if wholestride < 0 && idxType != strType then
+//wass if this assertion holds, remove the cast in the previous line
+compilerAssert(dom.whole.dim(i).stride.type == chpl__signedType(idxType));//wass
+    if !dom.whole.strides.isPositive() && idxType != strType then
+     if wholestride < 0 then
       halt("negative stride with unsigned idxType not supported");
     const iStride = wholestride:idxType;
     const      lo = (followThis(i).lowBound * iStride):idxType,
                hi = (followThis(i).highBound * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
-    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
+    t(i).chpl_setFields(lo, hi, stride);
+    t(i) = t(i) + dom.whole.dim(i).low;
   }
   const myFollowThisDom = {(...t)};
   if fast {
@@ -1021,7 +1032,8 @@ proc CyclicArr.dsiSerialWrite(f) {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-override proc CyclicArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable)) {
+override proc CyclicArr.dsiReallocate(bounds:rank*range(
+                                        idxType, boundKind.both, strides)) {
   // The reallocation happens when the LocCyclicDom.myBlock field is changed
   // in CyclicDom.setup(). Nothing more needs to happen here.
 }
@@ -1142,8 +1154,8 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
         const sb  = chpl__tuplify(regionSrc.stride);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2 = regionDest.dims();
+        var r1: rank * range(idxType = el, strides = strideKind.any);
+        const r2 = regionDest.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
@@ -1184,8 +1196,8 @@ where useBulkTransferDist {
 
         //r2 is the domain to refer the elements of A in locale j
         //r1 is the domain to refer the corresponding elements of Dest
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2 = inters.dims();
+        var r1: rank * range(idxType = el, strides = strideKind.any);
+        const r2 = inters.dims();
 
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
@@ -1226,8 +1238,8 @@ where useBulkTransferDist {
         const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
         const sb  = chpl__tuplify(srcDom.stride);
 
-        var r1,r2: rank * range(idxType = el,stridable = true);
-        r2 = inters.dims();
+        var r1: rank * range(idxType = el, strides = strideKind.any);
+        const r2 = inters.dims();
         //In the case that the number of elements in dimension t for r1 and r2
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
@@ -1287,7 +1299,7 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
     if const myLocArrNN = myLocArr then
       return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
-    var d: domain(rank, idxType, stridable=true);
+    var d: myBlockType(rank, idxType);
     return d;
   } else {
     return dom.dsiLocalSubdomain(loc);
@@ -1296,11 +1308,9 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))]
-      // supports deprecation by Vass in 1.31 to implement #17131
-      : domain(rank, idxType, stridable=true);
+    return whole[(...(chpl__computeCyclic(idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))] : myBlockType(rank, idxType);
   } else {
-    var d: domain(rank, idxType, stridable=true);
+    var d: myBlockType(rank, idxType);
     return d;
   }
 }

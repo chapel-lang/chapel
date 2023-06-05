@@ -408,7 +408,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
 pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
-  if !Dom.stridable {
+  if Dom.hasUnitStride(){
     var tmp:Data[Dom.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
@@ -499,7 +499,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
 
-  const stride = if Dom.stridable then abs(Dom.stride) else 1:Dom.idxType;
+  const stride = abs(Dom.stride): Dom.idxType;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
     if i > Dom.low {
@@ -801,7 +801,7 @@ module BinaryInsertionSort {
     Does not check for a valid comparator.
   */
   private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const stride = abs(Dom.stride): Dom.idxType;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
 
@@ -858,7 +858,7 @@ module TimSort {
     /*Parallelly apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const stride = abs(Dom.stride): Dom.idxType;
     const size = (hi - lo) / stride + 1;
     const chunks = (size + blockSize - 1) / blockSize;
 
@@ -899,11 +899,13 @@ module TimSort {
     if mid >= hi {
       return;
     }
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const stride = abs(Dom.stride): Dom.idxType;
+    const a1range = if Dom.hasPosNegUnitStride() then lo..mid
+                    else lo..mid by stride:uint;
     const a1max = mid;
 
-    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2range = if Dom.hasPosNegUnitStride() then (mid+1)..hi
+                    else (mid+stride)..hi by stride:uint;
     const a2max = hi;
 
     var A1 = Dst[a1range];
@@ -981,7 +983,7 @@ module MergeSort {
     where Dom.rank == 1 {
     import Sort.InsertionSort;
 
-    const stride = if Dom.stridable then abs(Dom.stride) else 1,
+    const stride = abs(Dom.stride): Dom.idxType,
           size = (hi - lo) / stride,
           mid = lo + (size/2) * stride;
 
@@ -1003,10 +1005,7 @@ module MergeSort {
       if depth & 1 {
         // At odd depths, we need to return the results in Scratch.
         // But if the test above is correct, we'll never reach this point.
-        if Dom.stridable then
-          Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
-        else
-          Scratch[lo..hi] = Data[lo..hi];
+        Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
       }
       return;
     }
@@ -1031,11 +1030,13 @@ module MergeSort {
   private proc _Merge(Dst: [?Dom] ?eltType, Src: [], lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
-    const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const stride = abs(Dom.stride): Dom.idxType;
+    const a1range = if Dom.hasPosNegUnitStride() then lo..mid
+                    else lo..mid by stride;
     const a1max = mid;
 
-    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2range = if Dom.hasPosNegUnitStride() then (mid+1)..hi
+                    else (mid+stride)..hi by stride;
     const a2max = hi;
 
     ref A1 = Src[a1range];
@@ -1236,7 +1237,7 @@ module QuickSort {
       compilerError("quickSort() requires 1-D array");
     }
 
-    if Dom.stridable && Dom.stride != 1 {
+    if Dom.stride != 1 {
       ref reindexed = Data.reindex(Dom.low..#Dom.size);
       assert(reindexed.domain.stride == 1);
       quickSortImpl(reindexed, minlen, comparator);
@@ -1364,7 +1365,7 @@ module ShellSort {
 
     if Dom.rank != 1 then
       compilerError("shellSort() requires 1-D array");
-    if Dom.stridable then
+    if ! Dom.hasUnitStride() then
       compilerError("shellSort() requires an array over a non-stridable domain");
 
     // Based on Sedgewick's Shell Sort -- see
@@ -1476,7 +1477,7 @@ module SampleSortHelp {
       return numBuckets * (1 + equalBuckets:int);
     }
     proc getBinsToRecursivelySort() {
-      var r:range(stridable=true);
+      var r:range(strides = strideKind.positive);
       if equalBuckets {
         // odd bins will be equality buckets
         r = (0..(getNumBuckets()-1)) by 2;

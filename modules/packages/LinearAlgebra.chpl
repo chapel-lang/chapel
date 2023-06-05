@@ -1153,9 +1153,9 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
 
 @chpldoc.nodoc
 private inline proc hasNonStridedIndices(Adom : domain(2)) {
-  return (if Adom.stridable
+  return if !Adom.strides.isNegative()
           then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1
-          else true);
+          else false;
 }
 
 /*
