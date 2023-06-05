@@ -2498,7 +2498,10 @@ record fileReader {
    */
   param locking:bool;
 
-  @chpldoc.nodoc
+  /*
+     deserializerType indicates the type of the deserializer that this
+     fileReader will use to deserialize data.
+   */
   type deserializerType = defaultSerializeType(/* writing= */ false);
 
   @chpldoc.nodoc
@@ -2565,7 +2568,10 @@ record fileWriter {
    */
   param locking:bool;
 
-  @chpldoc.nodoc
+  /*
+     serializerType indicates the type of the serializer that this fileWriter
+     will use to serialize data.
+   */
   type serializerType = defaultSerializeType(/* writing */ true);
 
   @chpldoc.nodoc
