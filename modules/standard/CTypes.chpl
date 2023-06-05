@@ -189,8 +189,8 @@ module CTypes {
 
   // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
   /*
-    Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
-    the type `const eltType*`.
+    Like :type:`c_ptr`, but for a pointer to const data. In C, this is
+    equivalent to the type `const eltType*`.
   */
   pragma "data class"
   pragma "no object"
@@ -843,8 +843,8 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~String.string`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
     where cPtrToStringBytesClassLogicalAddress == true
@@ -890,8 +890,8 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
     where cPtrToStringBytesClassLogicalAddress == true
@@ -942,7 +942,7 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
+   Like :proc:`c_ptrTo` for class types, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
