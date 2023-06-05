@@ -122,11 +122,10 @@ module CTypes {
   /*
 
     Represents a local C pointer for the purpose of C integration. This type
-    represents the equivalent to a C language pointer `eltType*`. Instances of
+    represents the equivalent to a C language pointer ``eltType*``. Instances of
     this type support assignment to other instances or ``nil``, ``==`` or ``!=``
-    comparison with a
-    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
-    the ``c_void_ptr`` type.
+    comparison with a ``c_void_ptr`` or with ``nil``, and casting to another
+    ``c_ptr`` type or to the ``c_void_ptr`` type.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
@@ -208,17 +207,18 @@ module CTypes {
   /*
   This type represents a C array with fixed size.  A variable of type
   ``c_array`` can coerce to a ``c_ptr`` with the same element type.  In that
-  event, the pointer will be equivalent to `c_ptrTo(array[0])`.  A ``c_array``
+  event, the pointer will be equivalent to ``c_ptrTo(array[0])``.  A ``c_array``
   behaves similarly to a homogeneous tuple except that its indices start at 0
   and it is guaranteed to be stored in contiguous memory.  A ``c_array``
-  variable has value semantics. Declaring one as a function local variable will
+  variable has value semantics. Declaring one as a function-local variable will
   create the array elements in the function's stack. Assigning or copy
   initializing will result in copying the elements (vs resulting in two pointers
   that refer to the same elements).  A ``nil`` ``c_array`` is not representable
   in Chapel.
   */
-  pragma "c_array record" pragma
-         "default intent is ref if modified" record c_array {
+  pragma "c_array record"
+  pragma "default intent is ref if modified"
+  record c_array {
     /* The array element type */
     type eltType;
     /* The fixed number of elements */
