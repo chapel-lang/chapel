@@ -667,7 +667,8 @@ class CSArr: BaseSparseArrImpl {
     if found then
       return data(loc);
     else
-      halt("attempting to assign a 'zero' value in a sparse array: ", ind);
+      halt("attempting to assign a 'zero' value in a sparse array at index ",
+           if rank == 1 then ind(0) else ind);
   }
   // value version for POD types
   proc dsiAccess(ind: rank*idxType)
