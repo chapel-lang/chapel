@@ -187,11 +187,11 @@ module CTypes {
     }
   }
 
+  // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
   /*
     Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
     the type `const eltType*`.
   */
-  // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
