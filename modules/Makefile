@@ -157,6 +157,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnorderedCopy.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
+	packages/Yaml.chpl \
 	packages/ZMQ.chpl \
 
 
