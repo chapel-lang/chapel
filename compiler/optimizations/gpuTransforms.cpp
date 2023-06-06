@@ -1018,7 +1018,7 @@ class CpuBoundLoopCleanup {
 
     for_vector(CallExpr, callExpr, callExprsInBody) {
       if(callExpr->isPrimitive()) {
-        replaceDisallowedPrimitiveWithError(callExpr) &&
+        replaceDisallowedPrimitiveWithError(callExpr) ||
         stripPrimitiveIfWeShouldStrip(callExpr);
       }
     }
