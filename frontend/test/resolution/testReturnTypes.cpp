@@ -115,7 +115,7 @@ void testProgram(const std::vector<ReturnVariant>& variants, F func,
     requiredKind = kind;
   }
   auto commonTypeResult = chpl::resolution::commonType(context, types, requiredKind);
-#if LLVM_VERSION_MAJOR >= 16
+#if LLVM_VERSION_MAJOR >= 15
   auto qt = commonTypeResult.value_or(QualifiedType());
 #else
   auto qt = commonTypeResult.getValueOr(QualifiedType());
