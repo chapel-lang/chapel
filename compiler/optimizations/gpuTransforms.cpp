@@ -200,10 +200,8 @@ FnSymbol* CreateGpuFunctionSpecializations::getGpuSpecializationOfFcn(FnSymbol *
 FnSymbol* CreateGpuFunctionSpecializations::createGpuSpecializationOfFn(FnSymbol* fn) {
   SET_LINENO(fn);
   auto specMapFnIter = specMap_.find(fn);
-  if (FnSymbol *alreadySpecialized =
-      specMapFnIter != specMap_.end() ? specMapFnIter->first : nullptr)
-  {
-    (void)alreadySpecialized;
+
+  if (specMapFnIter != specMap_.end()) {
     return nullptr;
   } else if (!fn->hasFlag(FLAG_EXTERN)) {
     FnSymbol* gpuSpecFn = fn->copy();
@@ -788,7 +786,7 @@ void GpuKernel::determineBlockSize() {
 }
 
 bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
-  return call && 
+  return call &&
     (call->isPrimitive(PRIM_ASSERT_ON_GPU) ||
      call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE));
 }
@@ -964,7 +962,7 @@ void GpuKernel::markGPUSubCalls(FnSymbol* fn) {
 }
 
 // ----------------------------------------------------------------------------
-// CpuBoundLoopCleanup 
+// CpuBoundLoopCleanup
 // ----------------------------------------------------------------------------
 
 // Post process a foreach loop after we have outlined it into a GPU kernel
@@ -975,16 +973,16 @@ class CpuBoundLoopCleanup {
   static const std::unordered_map<PrimitiveTag, const char *>
     gpuPrimitivesDisallowedOnHost;
 
-  // We will remove any calls to these primitives on host code 
+  // We will remove any calls to these primitives on host code
   static const std::unordered_set<PrimitiveTag> gpuPrimitivesStripOnHost;
 
-  static void replaceDisallowedPrimitiveWithError(CallExpr *callExpr) {
+  static bool replaceDisallowedPrimitiveWithError(CallExpr *callExpr) {
     INT_ASSERT(callExpr->isPrimitive());
     SET_LINENO(callExpr);
 
     auto tagIt = gpuPrimitivesDisallowedOnHost.find(callExpr->primitive->tag);
     if (tagIt == gpuPrimitivesDisallowedOnHost.end()) {
-        return;
+        return false;
     }
 
     auto errorMsg = new_CStringSymbol(
@@ -996,15 +994,18 @@ class CpuBoundLoopCleanup {
     //   (move call_tmp 0)
     callExpr->parentExpr->insertBefore(new CallExpr(PRIM_RT_ERROR, errorMsg));
     callExpr->replace(new SymExpr(new_IntSymbol(0)));
+
+    return true;
   }
 
-  static void stripPrimitiveIfWeShouldStrip(CallExpr *callExpr) {
+  static bool stripPrimitiveIfWeShouldStrip(CallExpr *callExpr) {
     INT_ASSERT(callExpr->isPrimitive());
     auto tagIt = gpuPrimitivesStripOnHost.find(callExpr->primitive->tag);
     if (tagIt == gpuPrimitivesStripOnHost.end()) {
-        return;
+        return false;
     }
     callExpr->remove();
+    return true;
   }
 
   public:
@@ -1017,7 +1018,7 @@ class CpuBoundLoopCleanup {
 
     for_vector(CallExpr, callExpr, callExprsInBody) {
       if(callExpr->isPrimitive()) {
-        replaceDisallowedPrimitiveWithError(callExpr);
+        replaceDisallowedPrimitiveWithError(callExpr) &&
         stripPrimitiveIfWeShouldStrip(callExpr);
       }
     }
@@ -1040,7 +1041,7 @@ const std::unordered_map<PrimitiveTag, const char *>
       {PRIM_GPU_GRIDDIM_Z, "getGridDimZ"},
 };
 
-// We will remove any calls to these primitives on host code 
+// We will remove any calls to these primitives on host code
 const std::unordered_set<PrimitiveTag>
     CpuBoundLoopCleanup::gpuPrimitivesStripOnHost = {
       PRIM_GPU_SET_BLOCKSIZE
@@ -1194,7 +1195,7 @@ static void outlineGpuKernelsInFn(FnSymbol *fn) {
   }
 }
 
-// We need to strip any GPU specific primitives that remain i
+// We need to strip any GPU specific primitives that remain
 static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
   std::vector<BaseAST*> asts;
   collect_asts(fn, asts);
@@ -1220,7 +1221,7 @@ static void doGpuTransforms() {
       outlineGpuKernelsInFn(fn);
 
       // All eligible loops in the function will have been outlined into
-      // kernels at this point so anything that remains is gauranteed to
+      // kernels at this point so anything that remains is guaranteed to
       // run on the CPU
       cleanupForeachLoopsGauranteedToRunOnCpu(fn);
     }
