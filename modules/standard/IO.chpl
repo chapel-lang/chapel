@@ -3034,7 +3034,10 @@ operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
-    if lhs._deserializer != nil then delete lhs._deserializer;
+    if lhs._deserializer != nil {
+      delete lhs._deserializer;
+      lhs._deserializer = nil;
+    }
   }
 
   lhs._home = rhs._home;
@@ -3052,7 +3055,10 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 
   on lhs._home {
     qio_channel_release(lhs._channel_internal);
-    if lhs._serializer != nil then delete lhs._serializer;
+    if lhs._serializer != nil {
+      delete lhs._serializer;
+      lhs._serializer = nil;
+    }
   }
 
   lhs._home = rhs._home;
