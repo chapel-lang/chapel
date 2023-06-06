@@ -47,9 +47,10 @@ module DistributedMap {
       m = new shared distributedMapImpl(keyType, valType, hasher);
     }
 
-    proc init(type keyType, type valType, r: fileReader) throws {
+    proc init(type keyType, type valType,
+              reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType);
-      readThis(r);
+      readThis(reader);
     }
 
     proc clear() {

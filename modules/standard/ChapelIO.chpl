@@ -286,29 +286,79 @@ module ChapelIO {
       }
     }
 
+    private proc __numIOFields(type t) : int {
+      param n = __primitive("num fields", t);
+      var ret = 0;
+      pragma "no init"
+      var dummy : t;
+      for param i in 1..n {
+        if isIoField(dummy, i) then
+          ret += 1;
+      }
+      return ret;
+    }
+
     //
     // Called by the compiler to implement the default behavior for
-    // the compiler-generated 'encodeTo' method.
+    // the compiler-generated 'serialize' method.
     //
     // TODO: would any formats want to print type or param fields?
+    // - more useful for param fields, e.g., an enum
     //
-    proc encodeToDefaultImpl(writer:fileWriter, const x:?t) throws {
-      writer.formatter.writeTypeStart(writer, t);
+    @chpldoc.nodoc
+    proc serializeDefaultImpl(writer:fileWriter, ref serializer,
+                              const x:?t, name: string) throws {
+      const numIO = __numIOFields(t);
+      if isClassType(t) then
+        serializer.startClass(writer, name, numIO);
+      else
+        serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed object {
-        encodeToDefaultImpl(writer, x.super);
+        serializeDefaultImpl(writer, serializer, x.super, "super");
       }
 
       param num_fields = __primitive("num fields", t);
       for param i in 1..num_fields {
         if isIoField(x, i) {
           param name : string = __primitive("field num to name", x, i);
-          writer.formatter.writeField(writer, name,
-                                      __primitive("field by num", x, i));
+          serializer.serializeField(writer, name,
+                                    __primitive("field by num", x, i));
         }
       }
 
-      writer.formatter.writeTypeEnd(writer, t);
+      if isClassType(t) then
+        serializer.endClass(writer);
+      else
+        serializer.endRecord(writer);
+    }
+
+    @chpldoc.nodoc
+    proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
+                                ref x:?t, name:string) throws {
+      if isClassType(t) then
+        deserializer.startClass(reader, name);
+      else
+        deserializer.startRecord(reader, name);
+
+      if isClassType(t) && _to_borrowed(t) != borrowed object {
+        deserializeDefaultImpl(reader, deserializer, x.super, "super");
+      }
+
+      param num_fields = __primitive("num fields", t);
+      for param i in 1..num_fields {
+        if isIoField(x, i) {
+          param name : string = __primitive("field num to name", x, i);
+          ref field = __primitive("field by num", x, i);
+          field = deserializer.deserializeField(reader, name,
+                                                __primitive("field by num", x, i).type);
+        }
+      }
+
+      if isClassType(t) then
+        deserializer.endClass(reader);
+      else
+        deserializer.endRecord(reader);
     }
 
     //
@@ -611,14 +661,14 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc _ddata.encodeTo(f) throws { writeThis(f); }
+  proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
 
   @chpldoc.nodoc
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
   @chpldoc.nodoc
-  proc chpl_taskID_t.encodeTo(f) throws { writeThis(f); }
+  proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
   @chpldoc.nodoc
   proc chpl_taskID_t.readThis(f) throws {
@@ -626,16 +676,16 @@ module ChapelIO {
   }
 
   @chpldoc.nodoc
-  proc type chpl_taskID_t.decodeFrom(f) throws {
+  proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
-    ret.readThis(f);
+    ret.readThis(reader);
     return ret;
   }
 
   @chpldoc.nodoc
   proc nothing.writeThis(f) {}
   @chpldoc.nodoc
-  proc nothing.encodeTo(f) {}
+  proc nothing.serialize(writer, ref serializer) {}
 
   @chpldoc.nodoc
   proc _tuple.readThis(f) throws {
@@ -701,29 +751,34 @@ module ChapelIO {
     }
   }
 
-  proc type _tuple.decodeFrom(f) throws {
-    ref fmt = f.formatter;
+  @chpldoc.nodoc
+  proc type _tuple.deserializeFrom(reader, ref deserializer) throws {
     pragma "no init"
     var ret : this;
-    fmt.readTypeStart(f, this);
-    for param i in 0..<this.size {
-      pragma "no auto destroy"
-      var elt = fmt.readField(f, "", this(i));
-      __primitive("=", ret(i), elt);
-    }
-    fmt.readTypeEnd(f, this);
+    ret.deserialize(reader, deserializer);
     return ret;
   }
 
-  proc const _tuple.encodeTo(w) throws {
-    ref fmt = w.formatter;
-    fmt.writeTypeStart(w, this.type);
+  @chpldoc.nodoc
+  proc _tuple.deserialize(reader, ref deserializer) throws {
+    ref des = deserializer;
+    des.startTuple(reader);
+    for param i in 0..<this.size {
+      pragma "no auto destroy"
+      var elt = des.deserializeField(reader, "", this(i).type);
+      __primitive("=", this(i), elt);
+    }
+    des.endTuple(reader);
+  }
+
+  @chpldoc.nodoc
+  proc const _tuple.serialize(writer, ref serializer) throws {
+    serializer.startTuple(writer, this.size);
     for param i in 0..<size {
       const ref elt = this(i);
-      // TODO: should probably have something like 'writeElement'
-      fmt.writeField(w, "", elt);
+      serializer.serializeField(writer, "", elt);
     }
-    fmt.writeTypeEnd(w, this.type);
+    serializer.endTuple(writer);
   }
 
   // Moved here to avoid circular dependencies in ChapelRange
@@ -786,10 +841,12 @@ module ChapelIO {
     }
   }
 
+  @chpldoc.nodoc
   proc range.init(type idxType = int,
                   param bounds : boundKind = boundKind.both,
                   param strides : strideKind = strideKind.one,
-                  reader: fileReader(?)) {
+                  reader: fileReader(?),
+                  ref deserializer) {
     this.init(idxType, bounds, strides);
 
     // TODO:
@@ -839,6 +896,11 @@ module ChapelIO {
   @chpldoc.nodoc
   override proc Error.writeThis(f) throws {
     f.write(chpl_describe_error(this));
+  }
+
+  @chpldoc.nodoc
+  override proc Error.serialize(writer, ref serializer) throws {
+    writer.write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */

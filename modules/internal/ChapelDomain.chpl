@@ -2488,8 +2488,8 @@ module ChapelDomain {
       _value.dsiSerialWrite(f);
     }
     @chpldoc.nodoc
-    proc encodeTo(f) throws {
-      _value.dsiSerialWrite(f);
+    proc serialize(writer, ref serializer) throws {
+      _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
@@ -2500,9 +2500,9 @@ module ChapelDomain {
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
     @chpldoc.nodoc
-    proc type decodeFrom(f) throws {
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
