@@ -26,13 +26,13 @@ class BinaryTree {
 iter BinaryTree.postOrder(): eltType {
   use List;
 
-  type Tree = unmanaged BinaryTree(eltType);
+  type Tree = borrowed BinaryTree(eltType);
 
   var isDescending = true;
   var last: Tree? = nil;
   var nodes: list(Tree);
 
-  nodes.pushBack(_to_unmanaged(this));
+  nodes.pushBack(this);
 
   while !nodes.isEmpty() {
     var node = nodes.popBack();
