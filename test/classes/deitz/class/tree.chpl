@@ -32,7 +32,7 @@ iter BinaryTree.postOrder(): eltType {
   var last: Tree? = nil;
   var nodes: list(Tree);
 
-  nodes.pushBack(this:unmanaged);
+  nodes.pushBack(_to_unmanaged(this));
 
   while !nodes.isEmpty() {
     var node = nodes.popBack();
