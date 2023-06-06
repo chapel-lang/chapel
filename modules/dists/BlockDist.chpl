@@ -1886,7 +1886,12 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         }
 
         // Iterator that yields values instead of references (to enable RVF)
-        iter valIter(iterable) {
+        iter valIter(iterable) where isPOD(iterable.eltType) {
+          for elem in iterable do yield elem;
+        }
+
+        // BigInteger values are yielded by ref to disable RVF
+        iter valIter(iterable) ref where !isPOD(iterable.eltType) {
           for elem in iterable do yield elem;
         }
 
