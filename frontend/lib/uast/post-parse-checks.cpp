@@ -784,8 +784,8 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
 
 void Visitor::checkLambdaDeprecated(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
-  error(node, "'lambda' syntax is deprecated, please construct anonymous "
-              "procedures using the 'proc' keyword instead");
+  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
+             "procedures using the 'proc' keyword instead");
 }
 
 void Visitor::checkLambdaReturnIntent(const Function* node) {

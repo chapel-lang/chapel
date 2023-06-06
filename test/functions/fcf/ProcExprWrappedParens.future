@@ -1,0 +1,1 @@
+Shouldn't need to wrap a proc expr in parens to invoke it directly.

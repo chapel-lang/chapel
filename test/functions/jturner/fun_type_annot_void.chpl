@@ -1,8 +1,8 @@
 use Functions;
 
-var g : func(void) = lambda() { writeln("hello, world!"); };
+var g : proc() = proc() { writeln("hello, world!"); };
 g();
 
-var h : func() = lambda() { writeln("hello, world!"); };
+var h : proc() = proc() { writeln("hello, world!"); };
 h();
 
