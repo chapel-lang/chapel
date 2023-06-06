@@ -1,6 +1,168 @@
 Release Changes List
 ====================
 
+version 1.31.0
+==============
+
+released June 22, 2023
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Configuration / Build / Packaging Changes
+-----------------------------------------
+
+New Language Features
+---------------------
+
+Language Feature Improvements
+-----------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to the Chapel Language
+-------------------------------------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+
+Name Changes in Libraries
+-------------------------
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+
+Tool Improvements
+-----------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Platform-specific Performance Optimizations / Improvements
+----------------------------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Language Specification Improvements
+-----------------------------------
+
+Other Documentation Improvements
+--------------------------------
+
+Example Codes
+-------------
+
+Syntax Highlighting
+-------------------
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+
+GPU Computing
+-------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Generated Executable Flags
+--------------------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for GPU Computing
+---------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Platform-specific Bug Fixes
+---------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements / changes
+-----------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements / changes
+------------------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------~
+
+
 version 1.30.0
 ==============
 
