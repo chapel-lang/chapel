@@ -1923,7 +1923,6 @@ static chpl::Context::CompilationGlobals dynoBuildCompilationGlobals() {
     .privatization = !(fNoPrivatization || fLocal),
     .local = fLocal,
     .warnUnstable = fWarnUnstable,
-    .useIoFormatters = fUseIOFormatters
   };
 }
 
