@@ -62,6 +62,12 @@ module ExternalArray {
   }
 
   pragma "no copy return"
+  proc makeArrayFromPtr(value: c_ptr, dom: domain) {
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, dom.size);
+    return makeArrayFromExternArray(data, value.eltType, dom);
+  }
+
+  pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
@@ -81,6 +87,21 @@ module ExternalArray {
     return _newArray(arr);
   }
 
+  pragma "no copy return"
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType, dom: domain) {
+    var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                  rank=dom.rank,
+                                                  idxType=dom.idxType,
+                                                  stridable=dom.stridable,
+                                                  dom=dom._value,
+                                                  data=value.elts: _ddata(eltType),
+                                                  externFreeFunc=value.freer,
+                                                  externArr=true,
+                                                  _borrowed=true);
+    dom.add_arr(arr, locking = false);
+    return _newArray(arr);
+  }
+  
   // Creates an _array wrapper to store the information given by chpl_opaque_array
   // arrType is a subclass of BaseArr
   pragma "no copy return"
