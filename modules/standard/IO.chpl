@@ -2462,6 +2462,13 @@ private proc defaultSerializeVal(param writing : bool) {
 class _serializeWrapper {
   type T;
   var member: T;
+  // TODO: Needed to avoid a weird memory error in the following test in
+  // no-local configurations:
+  // - library/draft/DistributedMap/v2/use-distributed-map
+  //
+  // Cause of bug likely involves the case when 'T' is nothing, and this
+  // class has a zero-size allocation.
+  var __dummy: int;
 
   override proc serialize(writer, ref serializer) throws {
   }
