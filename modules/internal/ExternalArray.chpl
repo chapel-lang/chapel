@@ -101,7 +101,7 @@ module ExternalArray {
     dom.add_arr(arr, locking = false);
     return _newArray(arr);
   }
-  
+
   // Creates an _array wrapper to store the information given by chpl_opaque_array
   // arrType is a subclass of BaseArr
   pragma "no copy return"
