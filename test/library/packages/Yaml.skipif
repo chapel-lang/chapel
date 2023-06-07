@@ -6,7 +6,8 @@ from contextlib import suppress
 Ok = False
 
 with suppress(Exception):
-    sub = subprocess.run(['pkg-config', '--exists', 'libyaml'], stderr=subprocess.DEVNULL)
+    # look for a libyaml package (for some reason, the .pkgconfig file for libyaml on chapcs is named yaml-0.1)
+    sub = subprocess.run(['pkg-config', '--exists', 'yaml-0.1'], stderr=subprocess.DEVNULL)
     if sub.returncode == 0:
         Ok = True
 
