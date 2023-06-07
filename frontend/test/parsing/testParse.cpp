@@ -1133,7 +1133,7 @@ static void testAttribute3NamedArgs(Parser* parser) {
     proc foo() { }
   )"""";
 
-  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl", program);
+  auto parseResult = parseStringAndReportErrors(parser, "testAttribute3NamedArgs.chpl", program);
   assert(guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -1155,6 +1155,30 @@ static void testAttribute3NamedArgs(Parser* parser) {
   assert(attr1->isNamedActual(2));
   assert(attr1->actualName(2) == UniqueString::get(parser->context(), "issue"));
   assert(attr1->actual(2)->isIntLiteral());
+}
+
+/* a test of the pragma chpldoc ignore chpl prefix*/
+static void testPragmaChpldocIgnoreChplPrefix(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    module M {
+      pragma "chpldoc ignore chpl prefix"
+      proc chpl_foo() { }
+    }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "testPragmaChpldocIgnoreChplPrefix.chpl", program);
+
+  auto mod = parseResult.singleModule();
+  assert(guard.numErrors()==0);
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto p = mod->stmt(0)->toFunction();
+  assert(p);
+  auto attr = p->attributeGroup();
+  assert(attr);
+  assert(attr->numAttributes() == 0);
+  assert(attr->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
 }
 
 int main() {
@@ -1223,6 +1247,7 @@ int main() {
   testAttributeNamedArgs(p);
   testAttributeMixedNamedArgs(p);
   testAttribute3NamedArgs(p);
+  testPragmaChpldocIgnoreChplPrefix(p);
 
   return 0;
 }

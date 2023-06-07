@@ -295,11 +295,20 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
 }
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = parsing::astToAttributeGroup(gContext, e)) {
+  auto attrs = parsing::astToAttributeGroup(gContext, e);
+  if (attrs) {
     auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
                                                            "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
+    }
+  }
+  if (auto namedDecl = e->toNamedDecl()) {
+    if (namedDecl->name().startsWith(UniqueString::get(gContext, "chpl_"))) {
+      // TODO: Remove this check and the pragma once we have an attribute that
+      // can be used to document chpl_ symbols or otherwise remove the
+      // chpl_ prefix from symbols in the GMP module we want documented
+      return !(attrs && attrs->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
     }
   }
   return false;
