@@ -15,13 +15,13 @@ var a: atomic int;
 proc addIt(p: c_void_ptr): c_void_ptr {
   a.unorderedAdd(1);
   unorderedAtomicTaskFence();
-  return c_nil;
+  return nil;
 }
 
 proc threadsAddIt(nthreads) {
   var pthread_arr = allocate(pthread_t, nthreads);
   for i in 0..#nthreads do
-    pthread_create(c_ptrTo(pthread_arr[i]), c_nil:c_ptr(pthread_attr_t), c_ptrTo(addIt), c_nil);
+    pthread_create(c_ptrTo(pthread_arr[i]), nil:c_ptr(pthread_attr_t), c_ptrTo(addIt), nil);
 
   var res: c_void_ptr;
   for i in 0..#nthreads do

@@ -897,8 +897,11 @@ extern const QIO_HINT_NOREUSE:c_int;
 @chpldoc.nodoc
 extern const QIO_HINT_OWNED:c_int;
 
+// can be left opaque, but we need the correct C type name
 @chpldoc.nodoc
-extern type qio_file_ptr_t;
+extern record qio_file_t {};
+@chpldoc.nodoc
+extern type qio_file_ptr_t = c_ptr(qio_file_t);
 private extern const QIO_FILE_PTR_NULL:qio_file_ptr_t;
 
 
@@ -908,8 +911,11 @@ extern record qiovec_t {
   var iov_len: c_size_t;
 }
 
+// opaque like qio_file_t
 @chpldoc.nodoc
-extern type qio_channel_ptr_t;
+extern record qio_channel_t {};
+@chpldoc.nodoc
+extern type qio_channel_ptr_t = c_ptr(qio_channel_t);
 private extern const QIO_CHANNEL_PTR_NULL:qio_channel_ptr_t;
 
 // also the type for a buffer for qio_file_open_mem.
@@ -1835,7 +1841,7 @@ proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
 
 @chpldoc.nodoc
 proc file.checkAssumingLocal() throws {
-  if is_c_nil(_file_internal) then
+  if _file_internal == nil then
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
     throw createSystemError(EBADF, "Operation attempted on closed file");
@@ -1856,7 +1862,7 @@ proc file.check() throws {
    closed and invalid files
 */
 proc file.isOpen(): bool {
-  if (is_c_nil(_file_internal)) {
+  if (_file_internal == nil) {
     return false;
   } else {
     return qio_file_isopen(_file_internal);
@@ -1932,7 +1938,7 @@ proc file._style:iostyleInternal throws {
    :throws SystemError: Thrown if the file could not be closed.
  */
 proc file.close() throws {
-  if is_c_nil(_file_internal) then
+  if _file_internal == nil then
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
 
   var err:errorCode = 0;
@@ -3506,7 +3512,7 @@ proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
 inline proc fileReader.lock() throws {
   var err:errorCode = 0;
 
-  if is_c_nil(_channel_internal) then
+  if _channel_internal == nil then
     throw createSystemError(EINVAL,
                             "Operation attempted on an invalid fileReader");
 
@@ -3526,7 +3532,7 @@ inline proc fileReader.lock() throws {
 inline proc fileWriter.lock() throws {
   var err:errorCode = 0;
 
-  if is_c_nil(_channel_internal) then
+  if _channel_internal == nil then
     throw createSystemError(EINVAL,
                             "Operation attempted on an invalid fileWriter");
 
@@ -8757,7 +8763,7 @@ proc fileReader.atEOF(): bool throws {
 proc fileReader.close() throws {
   var err:errorCode = 0;
 
-  if is_c_nil(_channel_internal) then
+  if _channel_internal == nil then
     throw createSystemOrChplError(EINVAL, "cannot close invalid fileReader");
 
   on this._home {
@@ -8775,7 +8781,7 @@ proc fileReader.close() throws {
 proc fileWriter.close() throws {
   var err:errorCode = 0;
 
-  if is_c_nil(_channel_internal) then
+  if _channel_internal == nil then
     throw createSystemOrChplError(EINVAL, "cannot close invalid fileWriter");
 
   on this._home {
