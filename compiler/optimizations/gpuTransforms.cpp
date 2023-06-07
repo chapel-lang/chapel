@@ -242,7 +242,7 @@ bool GpuizableLoop::isReportWorthy() {
   if(isAlreadyInGpuKernel()) {
     return false;
   }
-  
+
   return true;
 }
 
