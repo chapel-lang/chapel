@@ -79,7 +79,7 @@ class LocAccumStencil {
 //
 // rank:      generic domain rank
 // idxType:   generic domain index type
-// stridable: generic domain stridable parameter
+// strides:   generic domain stridable parameter
 // dist:      reference to distribution class
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
@@ -87,11 +87,12 @@ class LocAccumStencil {
 class AccumStencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: unmanaged AccumStencil(rank, idxType, ignoreFluff);
-  var locDoms: [dist.targetLocDom] unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocAccumStencilDom(rank, idxType,
+                                                                strides);
+  var whole: domain(rank, idxType, strides);
   var fluff: rank*idxType;
   var periodic: bool = false;
-  var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
+  var wholeFluff : domain(rank, idxType, strides);
 }
 
 //
@@ -99,7 +100,7 @@ class AccumStencilDom: BaseRectangularDom {
 //
 // rank: generic domain rank
 // idxType: generic domain index type
-// stridable: generic domain stridable parameter
+// strides: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
 // NeighDom will be a rectangular domain where each dimension is the range
@@ -108,8 +109,8 @@ class AccumStencilDom: BaseRectangularDom {
 class LocAccumStencilDom {
   param rank: int;
   type idxType;
-  param stridable: bool;
-  var myBlock, myFluff: domain(rank, idxType, stridable);
+  param strides: strideKind;
+  var myBlock, myFluff: domain(rank, idxType, strides);
   var recvDom : domain(1);
 }
 
@@ -119,7 +120,7 @@ class LocAccumStencilDom {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // dom: reference to domain class
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
@@ -127,10 +128,11 @@ class LocAccumStencilDom {
 class AccumStencilArr: BaseRectangularArr {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: unmanaged AccumStencilDom(rank, idxType, stridable, ignoreFluff);
-  var locArr: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable);
+  var dom: unmanaged AccumStencilDom(rank, idxType, strides, ignoreFluff);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType,
+                                                      rank, idxType, strides);
   pragma "local field"
-  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
+  var myLocArr: unmanaged LocAccumStencilArr(eltType, rank, idxType, strides)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -140,7 +142,7 @@ class AccumStencilArr: BaseRectangularArr {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
@@ -148,9 +150,9 @@ class LocAccumStencilArr {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
-  const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, chpl_strideKind(stridable))?; // non-nil if doRADOpt=true
+  param strides: strideKind;
+  const locDom: unmanaged LocAccumStencilDom(rank, idxType, strides);
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, strides)?; // non-nil if doRADOpt=true
 
   pragma "local field" pragma "unsafe"
   // may be initialized separately
@@ -164,13 +166,13 @@ class LocAccumStencilArr {
   proc init(type eltType,
             param rank: int,
             type idxType,
-            param stridable: bool,
-            const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable),
+            param strides: strideKind,
+            const locDom: unmanaged LocAccumStencilDom(rank, idxType, strides),
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
-    this.stridable = stridable;
+    this.strides = strides;
     this.locDom = locDom;
     this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
 
@@ -247,7 +249,7 @@ proc AccumStencil.init(boundingBox: domain,
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
 
-  this.boundingBox = boundingBox : domain(rank, idxType, stridable=false);
+  this.boundingBox = boundingBox : domain(rank, idxType);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
@@ -349,21 +351,23 @@ proc AccumStencil.dsiDisplayRepresentation() {
 }
 
 override proc AccumStencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                  param stridable: bool, inds) {
+                                  param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("AccumStencil domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("AccumStencil domain rank does not match distribution's");
 
   const dist = this;
-  const dummyLACSD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var locDomsTemp: [dist.targetLocDom] unmanaged LocAccumStencilDom(rank, idxType, stridable) = dummyLACSD;
+  const dummyLACSD = new unmanaged LocAccumStencilDom(rank, idxType, strides);
+  var locDomsTemp: [dist.targetLocDom] unmanaged LocAccumStencilDom(rank,
+                                              idxType, strides) = dummyLACSD;
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
-      locDomsTemp(localeIdx) = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
+      locDomsTemp(localeIdx) = new unmanaged LocAccumStencilDom(rank, idxType,
+                                                                strides);
   delete dummyLACSD;
 
-  var dom = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this), stridable=stridable, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms = locDomsTemp);
+  var dom = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, dist=_to_unmanaged(this), strides=strides, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms = locDomsTemp);
 
   dom.dsiSetIndices(inds);
   if debugAccumStencilDist {
@@ -438,14 +442,10 @@ proc AccumStencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param do
-    return if i == space.size then space(i).stridable
-           else space(i).stridable || anyStridable(space, i+1);
-
   // Should this error be in ChapelArray or not an error at all?
-  if newSpace(1).idxType != oldSpace(1).idxType then
+  if newSpace(0).idxType != oldSpace(0).idxType then
     compilerError("index type of reindex domain must match that of original domain");
-  if anyStridable(newSpace) || anyStridable(oldSpace) then
+  if !chpl_strideUnion(newSpace, oldSpace).isOne() then
     compilerWarning("reindexing stridable AccumStencil arrays is not yet fully supported");
 
   /* To shift the bounding box, we must perform the following operation for
@@ -662,14 +662,11 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag then
     chpl__testPar("AccumStencil domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, strides=chpl_strideProduct(strides,
+                                       chpl_strideUnion(followThis)));
   type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
     var stride = whole.dim(i).stride: strType;
@@ -696,19 +693,21 @@ proc AccumStencilDom.dsiSerialWrite(x) {
 proc AccumStencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
-  const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
+  const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, strides);
   const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
-                                                     stridable, dummyLASD,
+                                                     strides, dummyLASD,
                                                      false);
-  var locArrTemp: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
-  var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
+  var locArrTemp: [dom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType,
+                                           rank, idxType, strides) = dummyLASA;
+  var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                 strides)?;
   
   // formerly in AccumStencilArr.setup()
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const locDom = dom.getLocDom(localeIdx);
       const LASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
-                                                    stridable, locDom,
+                                                    strides, locDom,
                                                     initElts=initElts);
       locArrTemp(localeIdx) = LASA;
       if here.id == creationLocale then
@@ -717,7 +716,7 @@ proc AccumStencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   }
   delete dummyLASA, dummyLASD;
 
-  var arr = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this), ignoreFluff=this.ignoreFluff, locArr=locArrTemp, myLocArr=myLocArrTemp);
+  var arr = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, strides=strides, dom=_to_unmanaged(this), ignoreFluff=this.ignoreFluff, locArr=locArrTemp, myLocArr=myLocArrTemp);
 
   // formerly in AccumStencilArr.setup()
   if arr.doRADOpt && disableAccumStencilLazyRAD then arr.setupRADOpt();
@@ -786,7 +785,7 @@ proc AccumStencilDom.dsiGetIndices() {
 }
 
 // dsiLocalSlice
-proc AccumStencilDom.dsiLocalSlice(param stridable: bool, ranges) {
+proc AccumStencilDom.dsiLocalSlice(param strides: strideKind, ranges) {
   return whole((...ranges));
 }
 
@@ -870,7 +869,8 @@ proc AccumStencilArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableAccumStencilLazyRAD {
-        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType,
+                                             strides, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD!.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -979,7 +979,7 @@ proc AccumStencilArr.nonLocalAccess(i: rank*idxType) ref {
         if mArr.locRAD == nil {
           mArr.lockLocRAD();
           if mArr.locRAD == nil {
-            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, strides, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             mArr.locRAD = tempLocRAD;
           }
@@ -1060,10 +1060,6 @@ proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: domain) do
   return lead._value == this.dom;
 
 iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag {
     if fast then
       chpl__testPar("AccumStencil array fast follower invoked on ", followThis);
@@ -1074,7 +1070,8 @@ iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = f
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for AccumStencil array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
+                                     strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1358,12 +1355,13 @@ proc AccumStencilArr.dsiNoFluffView() {
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = new _distribution(tempDist);
-  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType, dom.stridable, dom.whole.dims());
+  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType,
+                                                dom.strides, dom.whole.dims());
   newDist._value.add_dom(tempDom._value);
 
   var newDom = tempDom._value;
 
-  var alias = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom, ignoreFluff=true, locArr=locArr, myLocArr=myLocArr);
+  var alias = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, strides=newDom.strides, dom=newDom, ignoreFluff=true, locArr=locArr, myLocArr=myLocArr);
 
   newDom.add_arr(alias, locking=false);
   return alias;
@@ -1531,7 +1529,8 @@ proc AccumStencilArr.dsiUpdateFluff() {
   }
 }
 
-override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType, boundKind.both, stridable)) {
+override proc AccumStencilArr.dsiReallocate(bounds : rank*range(idxType,
+                                                boundKind.both, strides)) {
   //
   // For the default rectangular array, this function changes the data
   // vector in the array class so that it is setup once the default
@@ -1613,7 +1612,7 @@ proc AccumStencilDom.dsiGetPrivatizeData() do return (dist.pid, whole.dims());
 
 proc AccumStencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
-  var c = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, stridable=stridable, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms=locDoms, whole={(...privatizeData(1))});
+  var c = new unmanaged AccumStencilDom(rank=rank, idxType=idxType, strides=strides, dist=privdist, fluff=fluff, periodic=periodic, ignoreFluff=this.ignoreFluff, locDoms=locDoms, whole={(...privatizeData(1))});
 
   if c.whole.size > 0 {
     var absFluff : fluff.type;
@@ -1647,10 +1646,13 @@ proc AccumStencilArr.dsiGetPrivatizeData() do return dom.pid;
 proc AccumStencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
 
-  const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable, dummyLASD, initElts=false);
-  var locArrTemp: [privdom.dist.targetLocDom] unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable) = dummyLASA;
-  var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType, stridable)?;
+  const dummyLASD = new unmanaged LocAccumStencilDom(rank, idxType, strides);
+  const dummyLASA = new unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                          strides, dummyLASD, initElts=false);
+  var locArrTemp: [privdom.dist.targetLocDom] unmanaged LocAccumStencilArr(
+                                eltType, rank, idxType, strides) = dummyLASA;
+  var myLocArrTemp: unmanaged LocAccumStencilArr(eltType, rank, idxType,
+                                                 strides)?;
   
   for localeIdx in privdom.dist.targetLocDom {
     const LASA = locArr(localeIdx);
@@ -1660,7 +1662,7 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   }
   delete dummyLASA, dummyLASD;
 
-  var c = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom, ignoreFluff=this.ignoreFluff, locArr=locArrTemp, myLocArr=myLocArrTemp);
+  var c = new unmanaged AccumStencilArr(eltType=eltType, rank=rank, idxType=idxType, strides=strides, dom=privdom, ignoreFluff=this.ignoreFluff, locArr=locArrTemp, myLocArr=myLocArrTemp);
 
   return c;
 }
@@ -1696,7 +1698,7 @@ proc AccumStencilDom.dsiLocalSubdomain(loc: locale) {
 
   // TODO -- could be replaced by a privatized myLocDom in AccumStencilDom
   // as it is with AccumStencilArr
-  var myLocDom:unmanaged LocAccumStencilDom(rank, idxType, stridable) = nil;
+  var myLocDom:unmanaged LocAccumStencilDom(rank, idxType, strides) = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDoms) {
     if loc == here then
       myLocDom = locDom;

@@ -822,22 +822,34 @@ module ChapelIO {
 
     if hasHighBound() then _high = f.read(_high.type);
 
-    if stride != 1 {
-      f._readLiteral(" by ");
-      _stride = f.read(stride.type);
+    if f.matchLiteral(" by ") {
+      const strideVal = f.read(strType);
+      var expectedStride = "";
+      use strideKind;
+      select strides {
+        when one      do if strideVal != 1 then expectedStride = "stride 1";
+        when negOne   do if strideVal != 1 then expectedStride = "stride -1";
+        when positive do if strideVal < 0 then expectedStride = "a positive";
+        when negative do if strideVal > 0 then expectedStride = "a negative";
+        when any      do;
+      }
+      if expectedStride != "" then throw new owned BadFormatError(
+        "for a range with strides=" + strides:string + ", expected " +
+        (if expectedStride.size > 2 then expectedStride + " stride"
+         else expectedStride) + ", got stride ", strideVal:string);
+      if ! hasParamStride() then
+        _stride = strideVal;
     }
 
-    try {
-      f._readLiteral(" align ");
-
-      if stridable {
-        _alignment = f.read(intIdxType);
+    if f.matchLiteral(" align ") {
+      const alignVal = f.read(intIdxType);
+      if hasParamStrideAltvalAld() {
+        // It is valid to align this range. We do not store its alignment
+        // at runtime because the alignment always normalizes to 0.
       } else {
-        throw new owned
-          BadFormatError("Range is not stridable, cannot store alignment");
+        _alignment = chpl__mod(alignVal, _stride);
+        _aligned = true;
       }
-    } catch err: BadFormatError {
-      // Range is naturally aligned.
     }
   }
 
@@ -846,41 +858,9 @@ module ChapelIO {
                   param bounds : boundKind = boundKind.both,
                   param strides : strideKind = strideKind.one,
                   reader: fileReader(?),
-                  ref deserializer) {
+                  ref deserializer) throws {
     this.init(idxType, bounds, strides);
-
-    // TODO:
-    // The alignment logic here is pretty tricky, so fall back on the
-    // actual operators for the time being...
-
-    // TODO: experiment with using throwing initializers in this case.
-    try! {
-      if hasLowBound() then _low = reader.read(_low.type);
-      reader._readLiteral("..");
-      if hasHighBound() then _high = reader.read(_high.type);
-
-      if stridable {
-        if reader.matchLiteral(" by ") {
-          //_stride = reader.read(stride.type);
-          this = ( this by reader.read(stride.type) ): this.type;
-        }
-      }
-    }
-
-    try! {
-      try {
-        if reader.matchLiteral(" align ") {
-          if stridable {
-            //_alignment = reader.read(intIdxType);
-            this = this align reader.read(intIdxType);
-          }
-        } else {
-          // TODO: throw error if not stridable
-        }
-      } catch err: BadFormatError {
-        // Range is naturally aligned.
-      }
-    }
+    this.readThis(reader);
   }
 
   @chpldoc.nodoc
