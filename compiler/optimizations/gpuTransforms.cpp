@@ -224,7 +224,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   }
 }
 
-// Given --report-gpu we don't want to report on all 'for' loops just those
+// Given --report-gpu we don't want to report on all 'for' loops, just those
 // that are from forall/foreach that aren't already within GPU kernels
 bool GpuizableLoop::isReportWorthy() {
   CForLoop *cfl = this->loop_;
