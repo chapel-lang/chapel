@@ -1,1 +1,1 @@
--scPtrToStringBytesClassLogicalAddress=true -scFileTypeHasPointer=false
+-cPtrToLogicalValue=true -scFileTypeHasPointer=false
