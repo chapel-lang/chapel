@@ -2526,7 +2526,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
 
     // if not developer, skip all non user functions
     if (!developer) {
-      auto funcName = Remark.FunctionName; 
+      auto funcName = Remark.FunctionName;
       auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr(funcName.str()));
       if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
         auto mod = funcIt->second->getModule();
