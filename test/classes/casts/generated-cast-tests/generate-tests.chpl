@@ -186,7 +186,7 @@ proc generate(allowed: set(2*string),
 proc generateExplicitCasts() {
   var allowed: set(2*string);
   // cast owned to ...
-  for x in ["owned", "shared", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
+  for x in ["owned", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
     allowed.add(("owned", x));
 
   // cast shared to ...
@@ -202,7 +202,7 @@ proc generateExplicitCasts() {
     allowed.add(("borrowed", x));
 
   // cast owned? to ...
-  for x in ["owned", "unmanaged", "borrowed", "owned?", "shared?", "unmanaged?", "borrowed?"] do
+  for x in ["owned", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
     allowed.add(("owned?", x));
 
   // cast shared? to ...
@@ -220,11 +220,6 @@ proc generateExplicitCasts() {
   // upcast is close to the same
   var allowedUpcast: set(2*string);
   for x in allowed do allowedUpcast.add(x);
-  // upcast does not support owned->shared
-  allowedUpcast.remove(("owned", "shared"));
-  allowedUpcast.remove(("owned?", "shared"));
-  allowedUpcast.remove(("owned", "shared?"));
-  allowedUpcast.remove(("owned?", "shared?"));
 
   // downcast is the same as upcast
   var allowedDowncast: set(2*string);
