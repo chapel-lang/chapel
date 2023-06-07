@@ -565,8 +565,8 @@ Inheritance
 
 A class inherits, or *derives*, from the class specified in the class
 declaration’s ``class-inherit`` clause when such clause is present.
-Otherwise the class inherits from the predefined ``object`` class
-(:ref:`The_object_Class`). In either case, there is exactly one
+Otherwise the class inherits from the predefined ``RootClass`` class
+(:ref:`The_Root_Class`). In either case, there is exactly one
 *parent* class. There can be many classes that inherit from a particular
 parent class.
 
@@ -577,16 +577,16 @@ fields in the ``ParentC`` as described
 in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
-.. _The_object_Class:
+.. _The_Root_Class:
 
-The *object* Class
-~~~~~~~~~~~~~~~~~~
+The Root Class
+~~~~~~~~~~~~~~
 
-All classes are derived from the ``object`` class, either directly or
+All classes are derived from the ``RootClass`` class, either directly or
 indirectly. If no class name appears in ``class-inherit`` clause, the
-class derives implicitly from ``object``. Otherwise, a class derives
-from ``object`` indirectly through the class it inherits. A variable of
-type ``object`` can hold a reference to an object of any class type.
+class derives implicitly from ``RootClass``. Otherwise, a class derives
+from ``RootClass`` indirectly through the class it inherits. A variable of
+type ``RootClass`` can hold a reference to an object of any class type.
 
 .. _Accessing_Base_Class_Fields:
 
