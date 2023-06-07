@@ -832,13 +832,14 @@ const types::QualifiedType typeWithDefaults(Context* context,
                                             types::QualifiedType t) {
   if (t.type()) {
     if (auto clst = t.type()->toClassType()) {
-      auto bct = clst->basicClassType();
-      auto got = getTypeWithDefaultsQuery(context, bct);
-      CHPL_ASSERT(got->isBasicClassType());
-      bct = got->toBasicClassType();
+      if (auto bct = clst->basicClassType()) {
+        auto got = getTypeWithDefaultsQuery(context, bct);
+        CHPL_ASSERT(got->isBasicClassType());
+        bct = got->toBasicClassType();
 
-      auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
-      return QualifiedType(t.kind(), r, t.param());
+        auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
+        return QualifiedType(t.kind(), r, t.param());
+      }
     } else if (auto ct = t.type()->toCompositeType()) {
       auto got = getTypeWithDefaultsQuery(context, ct);
       return QualifiedType(t.kind(), got, t.param());
@@ -984,8 +985,12 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
     CHPL_ASSERT(!classType->decorator().isUnknownManagement());
     CHPL_ASSERT(!classType->decorator().isUnknownNilability());
 
-    auto bct = classType->basicClassType();
-    return getFieldsGenericity(context, bct, ignore);
+    auto mt = classType->manageableType();
+    if (auto bct = mt->toBasicClassType()) {
+      return getFieldsGenericity(context, bct, ignore);
+    } else {
+      // TODO
+    }
   }
 
   auto compositeType = t->toCompositeType();
@@ -1191,7 +1196,12 @@ QualifiedType getInstantiationType(Context* context,
       }
 
       // which BasicClassType to use?
-      const BasicClassType* bct = formalCt->basicClassType();
+      const BasicClassType* bct;
+      if (auto formalBct = formalCt->basicClassType()) {
+        bct = formalBct;
+      } else {
+        // TODO
+      }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
         CHPL_ASSERT(false && "not implemented yet");
@@ -2412,20 +2422,20 @@ static const Type* getManagedClassType(Context* context,
     return ErroneousType::get(context);
   }
 
-  const BasicClassType* bct = nullptr;
+  const ManageableType* mt = nullptr;
   if (auto ct = t->toClassType()) {
-    bct = ct->basicClassType();
+    mt = ct->manageableType();
     // get nilability from ct
     if (ct->decorator().isNilable())
       d = d.addNilable();
     if (ct->decorator().isNonNilable())
       d = d.addNonNil();
   } else {
-    bct = t->toBasicClassType();
+    mt = t->toBasicClassType();
   }
 
-  CHPL_ASSERT(bct);
-  return ClassType::get(context, bct, manager, d);
+  CHPL_ASSERT(mt);
+  return ClassType::get(context, mt, manager, d);
 }
 
 static const Type* getNumericType(Context* context,

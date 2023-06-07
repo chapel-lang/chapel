@@ -93,10 +93,13 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
       QualifiedType qt = r.byAst(parentClassExpr).type();
       if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType())
+        if (auto bct = t->toBasicClassType()) {
           parentClassType = bct;
-        else if (auto ct = t->toClassType())
-          parentClassType = ct->basicClassType();
+        } else if (auto ct = t->toClassType()) {
+          if (auto bct = ct->basicClassType()) {
+            parentClassType = bct;
+          }
+        }
       }
       if (qt.isType() && parentClassType != nullptr) {
         // OK
@@ -110,12 +113,15 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 
     const BasicClassType* insnFromBct = nullptr;
     if (instantiatedFrom != nullptr) {
-      if (auto bct = instantiatedFrom->toBasicClassType())
+      if (auto bct = instantiatedFrom->toBasicClassType()) {
         insnFromBct = bct;
-      else if (auto ct = instantiatedFrom->toClassType())
-        insnFromBct = ct->basicClassType();
-      else
+      } else if (auto ct = instantiatedFrom->toClassType()) {
+        if (auto bct = ct->basicClassType()) {
+          insnFromBct = bct;
+        }
+      } else {
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
+      }
     }
 
 
@@ -532,8 +538,10 @@ returnTypeForTypeCtorQuery(Context* context,
       CHPL_ASSERT(t);
 
       // ignore decorators etc for finding instantiatedFrom
-      if (auto ct = t->toClassType())
+      if (auto ct = t->toClassType()) {
         t = ct->basicClassType();
+        CHPL_ASSERT(t && "Expecting initial type for type declaration to be concrete");
+      }
 
       instantiatedFrom = t->toCompositeType();
       CHPL_ASSERT(instantiatedFrom);

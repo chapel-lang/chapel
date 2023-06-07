@@ -1748,6 +1748,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
       CHPL_ASSERT(newCls);
       CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
       CHPL_ASSERT(cls->decorator().isBorrowed());
+      CHPL_ASSERT(cls->basicClassType());
       type = ClassType::get(context, cls->basicClassType(),
                             newCls->manager(),
                             newCls->decorator());
@@ -2353,15 +2354,16 @@ QualifiedType Resolver::getSuperType(Context* context,
   }
 
   if (auto classType = sub.type()->toClassType()) {
-    auto basicParentClass = classType->basicClassType()->parentClassType();
-    auto newClassType = ClassType::get(context,
-        basicParentClass,
-        /* no manager for borrowed class */ nullptr,
-        classType->decorator().toBorrowed());
-    return QualifiedType(sub.kind(), newClassType);
-  } else {
-    CHPL_REPORT(context, InvalidSuper, identForError, sub);
+    if (auto basicClass = classType->basicClassType()) {
+      auto basicParentClass = basicClass->parentClassType();
+      auto newClassType = ClassType::get(context,
+          basicParentClass,
+          /* no manager for borrowed class */ nullptr,
+          classType->decorator().toBorrowed());
+      return QualifiedType(sub.kind(), newClassType);
+    }
   }
+  CHPL_REPORT(context, InvalidSuper, identForError, sub);
   return QualifiedType();
 }
 
@@ -3233,6 +3235,12 @@ static const ClassType*
 getDecoratedClassForNew(Context* context, const New* node,
                         const ClassType* classType) {
   auto basic = classType->basicClassType();
+
+  if (!basic) {
+    context->error(node, "Attempt to 'new' the generic class type");
+    return nullptr;
+  }
+
   auto decorator = classType->decorator();
   const Type* manager = nullptr;
 
@@ -3612,6 +3620,7 @@ constructReduceScanOpClass(Resolver& resolver,
   bool converts, instantiates;
   if (opType.kind() != QualifiedType::TYPE ||
       !actualClass ||
+      !actualClass->basicClassType() ||
       !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
     CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
   }
@@ -3635,6 +3644,9 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
     auto scanOp = constructReduceScanOpClass(resolver, reduceOrScan, toLookUp, iterType);
     if (scanOp != nullptr) {
       // Since we found a ReduceScanOp, set the refersToId of the identifier.
+      //
+      // It's safe to call basicClassType since constructReduceScanOpClass
+      // ensures it's a basic class type.
       resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
                                   ident, scanOp->basicClassType()->id());
     }
@@ -3783,23 +3795,29 @@ bool Resolver::enter(const Catch* node) {
 
     ResolvedExpression& re = byPostorder.byAst(errVar);
 
+    bool isBasicClass = false;
     if (auto ct = re.type().type()->toClassType()) {
       bool converts = false;
       bool instantiates = false;
-      if (!ct->basicClassType()->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
-        // get the penultimate type in the chain
-        auto bct = ct->basicClassType();
-        while (!bct->parentClassType()->isObjectType()) {
-          bct = bct->parentClassType();
+      if (auto bct = ct->basicClassType()) {
+        isBasicClass = true;
+        if (!bct->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
+          // get the penultimate type in the chain
+          while (!bct->parentClassType()->isObjectType()) {
+            bct = bct->parentClassType();
+          }
+          context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
+        } else {
+          auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+          auto manager = AnyOwnedType::get(context);
+          auto ret = ClassType::get(context, bct, manager, dec);
+          auto qt = QualifiedType(re.type().kind(), ret->withDecorator(context, dec));
+          re.setType(qt); // replace type
         }
-        context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
       }
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
-      auto manager = AnyOwnedType::get(context);
-      auto ret = ClassType::get(context, ct->basicClassType(), manager, dec);
-      auto qt = QualifiedType(re.type().kind(), ret->withDecorator(context, dec));
-      re.setType(qt); // replace type
-    } else {
+    }
+
+    if (!isBasicClass) {
       context->error(errVar, "catch variable '%s' must be a class that inherits from Error", errVar->name().c_str());
     }
   } // TODO: is there an else case to handle here for catchall without an error variable (e.g. catch {})?

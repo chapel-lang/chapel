@@ -512,6 +512,7 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
     return fail();
   }
 
+  // TODO
   auto actualBct = actualCt->basicClassType();
   auto formalBct = formalCt->basicClassType();
 

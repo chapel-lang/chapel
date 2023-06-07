@@ -55,7 +55,7 @@ static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
 
 static const CompositeType* typeToCompType(const Type* type) {
   if (auto cls = type->toClassType()) {
-    return cls->basicClassType();
+    return cls->toManageableType();
   } else {
     auto ret = type->toCompositeType();
     return ret;
@@ -269,6 +269,10 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                           subs);
   } else if (auto cls = initialRecvType_->toClassType()) {
     auto oldBasic = cls->basicClassType();
+    if (!oldBasic) {
+      CHPL_ASSERT(false && "Not handled!");
+    }
+
     auto basic = BasicClassType::get(ctx_, oldBasic->id(),
                                      oldBasic->name(),
                                      oldBasic->parentClassType(),
