@@ -35,6 +35,13 @@ ifeq ($(CHPL_LIB_PIC),pic)
 CXXFLAGS += $(SHARED_LIB_CFLAGS)
 endif
 
+ifeq ($(CHPL_MAKE_TARGET_COMPILER),llvm)
+# If we are using LLVM 15+, it defaults to -fPIE, so use that here as well
+ifeq ($(shell test $(CHPL_MAKE_LLVM_VERSION) -ge 15; echo "$$?"),0)
+CXXFLAGS += -fPIE
+endif
+endif
+
 CHPL_RE2_CFG_OPTIONS += $(CHPL_RE2_MORE_CFG_OPTIONS)
 
 # RE2 2017-04-01 uses C++11 features
