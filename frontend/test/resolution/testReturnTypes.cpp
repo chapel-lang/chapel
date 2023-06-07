@@ -596,6 +596,33 @@ static void testControlFlow15() {
   , ControlFlowResult::FallsThrough);
 }
 
+static void testControlFlowYield() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      yield "hello";
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "could not determine return type for function");
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -635,5 +662,7 @@ int main() {
   testControlFlow13();
   testControlFlow14();
   testControlFlow15();
+
+  testControlFlowYield();
   return 0;
 }
