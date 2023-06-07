@@ -177,6 +177,32 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
+// TOOD:
+// This code will be duplicating a lot of stuff in VarScopeVisitor, but it's
+// different enough that I don't know how to proceed. I'm certain that there's
+// a general way to make all these traversals work.
+
+struct ReturnInferenceFrame;
+struct ReturnInferenceSubFrame {
+  // The AST node whose frame should be saved into this sub-frame
+  const AstNode* astNode = nullptr;
+  // The frame associated with the given AST node.
+  owned<ReturnInferenceFrame> frame = nullptr;
+  // Whether this sub-frame should be skipped when combining sub-results.
+  // Occurrs in particular when a branch is known statically not to occur.
+  bool skip = false;
+
+  ReturnInferenceSubFrame(const AstNode* node) : astNode(node) {}
+};
+
+struct ReturnInferenceFrame {
+  const AstNode* scopeAst = nullptr;
+  bool returnsOrThrows = false;
+  std::vector<ReturnInferenceSubFrame> subFrames;
+
+  ReturnInferenceFrame(const AstNode* node) : scopeAst(node) {}
+};
+
 struct ReturnTypeInferrer {
   using RV = ResolvedVisitor<ReturnTypeInferrer>;
 
@@ -185,6 +211,9 @@ struct ReturnTypeInferrer {
   const AstNode* astForErr;
   Function::ReturnIntent returnIntent;
   const Type* declaredReturnType;
+
+  // intermediate information
+  std::vector<owned<ReturnInferenceFrame>> returnFrames;
 
   // output
   std::vector<QualifiedType> returnedTypes;
@@ -206,6 +235,14 @@ struct ReturnTypeInferrer {
   void noteReturnType(const AstNode* expr, const AstNode* inExpr, RV& rv);
 
   QualifiedType returnedType();
+
+  ReturnInferenceSubFrame& currentThenFrame();
+  ReturnInferenceSubFrame& currentElseFrame();
+
+  void enterScope(const uast::AstNode* node);
+  void exitScope(const uast::AstNode* node);
+
+  bool markReturnOrThrow();
 
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
@@ -302,6 +339,103 @@ QualifiedType ReturnTypeInferrer::returnedType() {
   }
 }
 
+ReturnInferenceSubFrame& ReturnTypeInferrer::currentThenFrame() {
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto& topFrame = returnFrames.back();
+  CHPL_ASSERT(topFrame->scopeAst->isConditional());
+  return topFrame->subFrames[0];
+}
+ReturnInferenceSubFrame& ReturnTypeInferrer::currentElseFrame() {
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto& topFrame = returnFrames.back();
+  CHPL_ASSERT(topFrame->scopeAst->isConditional());
+  return topFrame->subFrames[1];
+}
+
+void ReturnTypeInferrer::enterScope(const uast::AstNode* node) {
+  if (!createsScope(node->tag())) return;
+
+  returnFrames.push_back(toOwned(new ReturnInferenceFrame(node)));
+  auto& newFrame = returnFrames.back();
+
+  if (auto condNode = node->toConditional()) {
+    newFrame->subFrames.emplace_back(condNode->thenBlock());
+    newFrame->subFrames.emplace_back(condNode->elseBlock());
+  } else if (auto tryNode = node->toTry()) {
+    for (auto clause : tryNode->handlers()) {
+      newFrame->subFrames.emplace_back(clause);
+    }
+  }
+}
+
+void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
+  if (!createsScope(node->tag())) return;
+
+  CHPL_ASSERT(returnFrames.size() > 0);
+  auto poppingFrame = std::move(returnFrames.back());
+  CHPL_ASSERT(poppingFrame->scopeAst == node);
+  returnFrames.pop_back();
+
+  bool parentReturnsOrThrows = poppingFrame->returnsOrThrows;
+
+  if (poppingFrame->scopeAst->isLoop()) {
+    // Could have while true { break; return; }, so do not propagate
+    // returns.
+    parentReturnsOrThrows = false;
+  }
+
+  // Integrate sub-frame information.
+  if (poppingFrame->subFrames.size() > 0) {
+    bool allReturnOrThrow = true;
+    for (auto& subFrame : poppingFrame->subFrames) {
+      if (subFrame.skip) continue;
+
+      if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
+        allReturnOrThrow = false;
+        break;
+      }
+    }
+
+    if (auto tryNode = poppingFrame->scopeAst->toTry()) {
+      // The sub-frames of try/catch nodes are just the catches, but they
+      // aren't the only thing that needs to return: the try itself
+      // should return too.
+      //
+      // Use & here because parentOrThrows is already set to try's return
+      // state earlier.
+      parentReturnsOrThrows &= allReturnOrThrow;
+    } else {
+      parentReturnsOrThrows = allReturnOrThrow;
+    }
+
+  }
+
+  if (returnFrames.size() > 0) {
+    // Might we become a sub-frame in another frame?
+    auto& parentFrame = returnFrames.back();
+    bool storedAsSubFrame = false;
+
+    for (auto& subFrame : parentFrame->subFrames) {
+      if (subFrame.astNode == node) {
+        subFrame.frame = std::move(poppingFrame);
+        storedAsSubFrame = true;
+      }
+    }
+
+    if (!storedAsSubFrame) {
+      parentFrame->returnsOrThrows |= parentReturnsOrThrows;
+    }
+  }
+}
+
+bool ReturnTypeInferrer::markReturnOrThrow() {
+  if (returnFrames.empty()) return false;
+  auto& topFrame = returnFrames.back();
+  bool oldValue = topFrame->returnsOrThrows;
+  topFrame->returnsOrThrows = true;
+  return oldValue;
+}
+
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
   return false;
 }
@@ -310,6 +444,7 @@ void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
 
 
 bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
+  enterScope(cond);
   auto condition = cond->condition();
   CHPL_ASSERT(condition != nullptr);
   const ResolvedExpression& r = rv.byAst(condition);
@@ -317,21 +452,31 @@ bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
     auto then = cond->thenBlock();
     CHPL_ASSERT(then != nullptr);
     then->traverse(rv);
+    // It doesn't matter if we don't return in the else frame, since it's
+    // compiled out.
+    currentElseFrame().skip = true;
     return false;
   } else if (r.type().isParamFalse()) {
     auto else_ = cond->elseBlock();
     if (else_) {
       else_->traverse(rv);
     }
+    // It doesn't matter if we don't return in the then frame, since it's
+    // compiled out.
+    currentThenFrame().skip = true;
     return false;
   }
   return true;
 }
 void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
+  exitScope(cond);
 }
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
-  if (const AstNode* expr = ret->value()) {
+  if (markReturnOrThrow()) {
+    // If it's statically known that we've already encountered a return or yield,
+    // we can safely ignore subsequent returns.
+  } else if (const AstNode* expr = ret->value()) {
     noteReturnType(expr, ret, rv);
   } else {
     noteVoidReturnType(ret);
@@ -342,16 +487,23 @@ void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
-  noteReturnType(ret->value(), ret, rv);
+  if (markReturnOrThrow()) {
+    // If it's statically known that we've already encountered a return or yield,
+    // we can safely ignore subsequent returns.
+  } else {
+    noteReturnType(ret->value(), ret, rv);
+  }
   return false;
 }
 void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const AstNode* ast, RV& rv) {
+  enterScope(ast);
   return true;
 }
 void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
+  exitScope(ast);
 }
 
 
