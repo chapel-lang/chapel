@@ -12,7 +12,7 @@ End of swap(int(64))
 (7, 3)
 Array sections
 1 2 3 4 5 6 7 8 9 10
-End of swap([domain(1,int(64),false)] int(64))
+End of swap([domain(1,int(64),one)] int(64))
 4 5 6 1 2 3 7 8 9 10
 Whole tuples
 ((1, 2, 3), (4, 5, 6))
@@ -28,19 +28,19 @@ End of swap(borrowed C)
 {a = 3, b = 4}{a = 1, b = 2}
 Domains
 ({1..10}, {3..13})
-End of swap(domain(1,int(64),false))
+End of swap(domain(1,int(64),one))
 ({3..13}, {1..10})
 Arrays
 (1 2 3 4 5 6 7 8 9 10, 10 9 8 7 6 5 4 3 2 1)
-End of swap([domain(1,int(64),false)] int(64))
+End of swap([domain(1,int(64),one)] int(64))
 (10 9 8 7 6 5 4 3 2 1, 1 2 3 4 5 6 7 8 9 10)
 Ranges
 (1..20 by 2, 1..10 by -1)
-End of swap(range(int(64),both,true))
+End of swap(range(int(64),both,any))
 (1..10 by -1, 1..20 by 2)
 Differently sized ranges
 (1..20, 1..10)
-End of swap(range(int(64),both,false))
+End of swap(range(int(64),both,one))
 (1..10, 1..20)
 Enum values
 (a, d)

@@ -65,8 +65,8 @@ module MemConsistency {
       ch.write("memory_order_unknown");
   }
 
-  proc memory_order.encodeTo(ch) throws {
-    writeThis(ch);
+  proc memory_order.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   extern const memory_order_relaxed:memory_order;

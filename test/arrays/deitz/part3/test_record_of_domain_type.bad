@@ -1,1 +1,1 @@
-test_record_of_domain_type.chpl:3: error: cannot default initialize 'x' because field 't' of type 'domain(1,int(64),false)' does not have enough information to be default initialized
+test_record_of_domain_type.chpl:3: error: cannot default initialize 'x' because field 't' of type 'domain(1,int(64),one)' does not have enough information to be default initialized

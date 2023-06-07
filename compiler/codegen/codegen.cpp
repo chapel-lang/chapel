@@ -2938,9 +2938,6 @@ void nprint_view(GenRet& gen) {
     printf("\n");
   }
 #endif
-  printf("canBeMarkedAsConstAfterStore=%i\n",
-         (int) gen.canBeMarkedAsConstAfterStore);
-  printf("alreadyStored %i\n", (int) gen.alreadyStored);
   if (gen.chplType) {
     TypeSymbol* ts = gen.chplType->symbol;
     printf("chplType=%s (%i)\n", ts->name, ts->id);

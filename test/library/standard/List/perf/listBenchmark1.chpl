@@ -100,7 +100,7 @@ class PopFromFront: Test {
   // Use a smaller value for N because PopFront is O(n**2).
   override proc setup() { _lst = createList(n1); }
   override proc test() {
-    while !_lst.isEmpty() do _lst.pop(0);
+    while !_lst.isEmpty() do _lst.getAndRemove(0);
   }
 }
 

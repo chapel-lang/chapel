@@ -1,1 +1,1 @@
-no-dom-field-error.chpl:4: error: rectangular domains not supported by this distribution
+no-dom-field-error.chpl:5: error: unresolved call 'unmanaged GlobalArray.eltType'

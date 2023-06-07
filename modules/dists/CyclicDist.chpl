@@ -1043,7 +1043,7 @@ class LocCyclicArr {
 
   const locDom: unmanaged LocCyclicDom(rank, idxType);
 
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable=true)?; // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, strideKind.any)?; // non-nil if doRADOpt=true
   var locCyclicRAD: unmanaged LocCyclicRADCache(rank, idxType)?; // see below for why
   pragma "local field" pragma "unsafe"
   // may be initialized separately
@@ -1296,7 +1296,9 @@ proc CyclicArr.dsiLocalSubdomain(loc: locale) {
 proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   const (gotit, locid) = dist.chpl__locToLocIdx(loc);
   if (gotit) {
-    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))];
+    return whole[(...(chpl__computeCyclic(this.idxType, locid, dist.targetLocDom.dims(), dist.startIdx)))]
+      // supports deprecation by Vass in 1.31 to implement #17131
+      : domain(rank, idxType, stridable=true);
   } else {
     var d: domain(rank, idxType, stridable=true);
     return d;

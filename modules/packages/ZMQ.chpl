@@ -1106,7 +1106,7 @@ module ZMQ {
       const myOffset = tid*lenPerTask;
       const myLen = if tid == numTasks-1 then length:int-myOffset else lenPerTask;
 
-      memmove(dst+myOffset,x+myOffset,myLen);
+      memmove(dst+myOffset,x+myOffset,myLen.safeCast(c_size_t));
     }
 
     dst[length] = 0;

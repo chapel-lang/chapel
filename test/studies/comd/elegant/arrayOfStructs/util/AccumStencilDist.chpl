@@ -150,7 +150,7 @@ class LocAccumStencilArr {
   type idxType;
   param stridable: bool;
   const locDom: unmanaged LocAccumStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, chpl_strideKind(stridable))?; // non-nil if doRADOpt=true
 
   pragma "local field" pragma "unsafe"
   // may be initialized separately
@@ -438,7 +438,7 @@ proc AccumStencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
-  proc anyStridable(space, param i=1) param
+  proc anyStridable(space, param i=1) param do
     return if i == space.size then space(i).stridable
            else space(i).stridable || anyStridable(space, i+1);
 
@@ -566,7 +566,7 @@ proc LocAccumStencil.init(param rank, type idxType, param dummy: bool) where dum
   this.idxType = idxType;
 }
 
-override proc AccumStencilDom.dsiMyDist() return dist;
+override proc AccumStencilDom.dsiMyDist() do return dist;
 
 proc AccumStencilDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);
@@ -574,12 +574,12 @@ proc AccumStencilDom.dsiDisplayRepresentation() {
     writeln("locDoms[", tli, "].myBlock = ", locDoms[tli].myBlock);
 }
 
-proc AccumStencilDom.dsiDims() return whole.dims();
+proc AccumStencilDom.dsiDims() do return whole.dims();
 
-proc AccumStencilDom.dsiDim(d: int) return whole.dim(d);
+proc AccumStencilDom.dsiDim(d: int) do return whole.dim(d);
 
 // stopgap to avoid accessing locDoms field (and returning an array)
-proc AccumStencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc AccumStencilDom.getLocDom(localeIdx) do return locDoms(localeIdx);
 
 
 //
@@ -662,7 +662,7 @@ iter AccumStencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter AccumStencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -725,10 +725,10 @@ proc AccumStencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   return arr;
 }
 
-proc AccumStencilDom.dsiNumIndices return whole.size;
-proc AccumStencilDom.dsiLow return whole.low;
-proc AccumStencilDom.dsiHigh return whole.high;
-proc AccumStencilDom.dsiStride return whole.stride;
+proc AccumStencilDom.dsiNumIndices do return whole.size;
+proc AccumStencilDom.dsiLow do return whole.low;
+proc AccumStencilDom.dsiHigh do return whole.high;
+proc AccumStencilDom.dsiStride do return whole.stride;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -845,7 +845,7 @@ override proc AccumStencilDom.dsiIndexOrder(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocAccumStencilDom.contains(i) return myBlock.contains(i);
+proc LocAccumStencilDom.contains(i) do return myBlock.contains(i);
 
 proc AccumStencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -855,7 +855,7 @@ proc AccumStencilArr.dsiDisplayRepresentation() {
   }
 }
 
-override proc AccumStencilArr.dsiGetBaseDom() return dom;
+override proc AccumStencilArr.dsiGetBaseDom() do return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
@@ -1021,15 +1021,15 @@ inline proc AccumStencilArr.dsiAccess(i: rank*idxType) const ref {
 
 // ref version
 inline proc AccumStencilArr.dsiAccess(i: idxType...rank) ref
-  return dsiAccess(i);
+  do return dsiAccess(i);
 // value version for POD types
 inline proc AccumStencilArr.dsiAccess(i: idxType...rank)
 where shouldReturnRvalueByValue(eltType)
-  return dsiAccess(i);
+  do return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc AccumStencilArr.dsiAccess(i: idxType...rank) const ref
 where shouldReturnRvalueByConstRef(eltType)
-  return dsiAccess(i);
+  do return dsiAccess(i);
 
 inline proc AccumStencilArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.wholeFluff.contains(i);
@@ -1050,17 +1050,17 @@ iter AccumStencilArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield followThis;
 }
 
-override proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param
+override proc AccumStencilArr.dsiStaticFastFollowCheck(type leadType) param do
   return leadType == this.type || leadType == this.dom.type;
 
-proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: [])
+proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: []) do
   return lead.domain._value == this.dom;
 
-proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: domain)
+proc AccumStencilArr.dsiDynamicFastFollowCheck(lead: domain) do
   return lead._value == this.dom;
 
 iter AccumStencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -1583,7 +1583,7 @@ proc AccumStencil.init(other: unmanaged AccumStencil, privateData,
   dataParMinGranularity = privateData(4);
 }
 
-override proc AccumStencil.dsiSupportsPrivatization() param return true;
+override proc AccumStencil.dsiSupportsPrivatization() param do return true;
 
 proc AccumStencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1595,7 +1595,7 @@ proc AccumStencil.dsiPrivatize(privatizeData) {
   return new unmanaged AccumStencil(_to_unmanaged(this), privatizeData);
 }
 
-proc AccumStencil.dsiGetReprivatizeData() return boundingBox.dims();
+proc AccumStencil.dsiGetReprivatizeData() do return boundingBox.dims();
 
 proc AccumStencil.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
@@ -1607,9 +1607,9 @@ proc AccumStencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-override proc AccumStencilDom.dsiSupportsPrivatization() param return true;
+override proc AccumStencilDom.dsiSupportsPrivatization() param do return true;
 
-proc AccumStencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc AccumStencilDom.dsiGetPrivatizeData() do return (dist.pid, whole.dims());
 
 proc AccumStencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
@@ -1625,7 +1625,7 @@ proc AccumStencilDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc AccumStencilDom.dsiGetReprivatizeData() return whole.dims();
+proc AccumStencilDom.dsiGetReprivatizeData() do return whole.dims();
 
 proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   for i in dist.targetLocDom do
@@ -1640,9 +1640,9 @@ proc AccumStencilDom.dsiReprivatize(other, reprivatizeData) {
   }
 }
 
-override proc AccumStencilArr.dsiSupportsPrivatization() param return true;
+override proc AccumStencilArr.dsiSupportsPrivatization() param do return true;
 
-proc AccumStencilArr.dsiGetPrivatizeData() return dom.pid;
+proc AccumStencilArr.dsiGetPrivatizeData() do return dom.pid;
 
 proc AccumStencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
@@ -1679,8 +1679,8 @@ proc AccumStencil.dsiTargetLocales() const ref {
 
 // AccumStencil subdomains are continuous
 
-proc AccumStencilArr.dsiHasSingleLocalSubdomain() param return true;
-proc AccumStencilDom.dsiHasSingleLocalSubdomain() param return true;
+proc AccumStencilArr.dsiHasSingleLocalSubdomain() param do return true;
+proc AccumStencilDom.dsiHasSingleLocalSubdomain() param do return true;
 
 // returns the current locale's subdomain
 

@@ -1,2 +1,2 @@
-v5bothReturnTypes.chpl:2: error: conflicting return type specified for 'C.bbox(x: int): range(int(64),both,true)'
-v5bothReturnTypes.chpl:17: error:   overridden by 'D.bbox(x: int(64)): range(int(64),both,false)'
+v5bothReturnTypes.chpl:2: error: conflicting return type specified for 'C.bbox(x: int): range(int(64),both,one)'
+v5bothReturnTypes.chpl:17: error:   overridden by 'D.bbox(x: int(64)): range(int(64),both,positive)'

@@ -71,8 +71,18 @@ module ChapelDomain {
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
-                                    param stridable: bool = false) type {
-    return new _domain(dist, rank, idxType, stridable);
+                                    param strides: strideKind = strideKind.one
+                                    ) type {
+    return new _domain(dist, rank, idxType, strides);
+  }
+
+  // deprecated by Vass in 1.31 to implement #17131
+  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+                                    type idxType = int,
+                                    param stridable: bool) type {
+    return chpl__buildDomainRuntimeType(dist, rank, idxType,
+                                        chpl_strideKind(stridable));
   }
 
   pragma "runtime type init fn"
@@ -119,10 +129,22 @@ module ChapelDomain {
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
+                                       param strides: strideKind,
+                                       param isNoInit: bool,
+                                       definedConst: bool) {
+    return new _domain(dist, rank, idxType, strides, definedConst);
+  }
+
+  // deprecated by Vass in 1.31 to implement #17131
+  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       param rank: int,
+                                       type idxType = int,
                                        param stridable: bool,
                                        param isNoInit: bool,
                                        definedConst: bool) {
-    return new _domain(dist, rank, idxType, stridable, definedConst);
+    return new _domain(dist, rank, idxType, chpl_strideKind(stridable),
+                       definedConst);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
@@ -142,7 +164,7 @@ module ChapelDomain {
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseRectangularDom) {
     return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
-                              dom._value.idxType, dom._value.stridable);
+                                      dom._value.idxType, dom._value.strides);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
@@ -189,7 +211,7 @@ module ChapelDomain {
     for param i in 0..rank-1 do
       if ranges(i).bounds != boundKind.both then
         compilerError("one of domain's dimensions is not a bounded range");
-    var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
+    var d: domain(rank, ranges(0).idxType, chpl_strideUnion(ranges));
     d.setIndices(ranges);
     if definedConst then
       chpl__setDomainConst(d);
@@ -328,7 +350,7 @@ module ChapelDomain {
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
 
-    return new _domain(dom.dist, dom.rank, dom.idxType, dom.stridable, ranges);
+    return new _domain(dom.dist, dom.rank, dom.idxType, dom.strides, ranges);
   }
 
   @chpldoc.nodoc
@@ -700,8 +722,10 @@ module ChapelDomain {
       compilerError("index type mismatch in domain assignment");
 
     if a.isRectangular() && b.isRectangular() then
-      if !a.stridable && b.stridable then
-        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
+      if ! chpl_assignStrideIsSafe(a.strides, b.strides) then
+        compilerError("assigning to a domain with strideKind.",a.strides:string,
+                      " from a domain with strideKind.", b.strides:string,
+                      " without an explicit cast");
 
     a._instance.dsiAssignDomain(b, lhsPrivate=false);
 
@@ -763,17 +787,38 @@ module ChapelDomain {
     }
   }
 
+  private proc allUint(b) param {
+    if isInt(b) then return false;
+    if isUint(b) then return true;
+    if isTuple(b) then return allUintTup(0);
+    return false; // an error will be issued by _makeIndexTuple()
+    proc allUintTup(param dim) param do
+      if dim == b.size then return false;
+      else if ! isUint(b(dim)) then return false;
+      else return allUintTup(dim+1);
+  }
+
   // This is the definition of the 'by' operator for domains.
   @chpldoc.nodoc
   operator by(a: domain, b) {
     errorIfNotRectangular(a, "by");
-    var r: a.rank*range(a._value.idxType,
-                      boundKind.both,
-                      true);
+    param newStrides = if ! allUint(b) then strideKind.any
+                       else chpl_strideProduct(a.strides, strideKind.positive);
+    var r: a.rank*range(a._value.idxType, boundKind.both, newStrides);
     var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, true, r);
+    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
+  }
+
+  @chpldoc.nodoc
+  operator by(a: domain, param b: integral) {
+    errorIfNotRectangular(a, "by");
+    param newStrides = chpl_strideProduct(a.dim(0), b);
+    var r: a.rank*range(a._value.idxType, boundKind.both, newStrides);
+    for param i in 0..a.rank-1 do
+      r(i) = a.dim(i) by b;
+    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
   }
 
   // This is the definition of the 'align' operator for domains.
@@ -782,13 +827,11 @@ module ChapelDomain {
   @chpldoc.nodoc
   operator align(a: domain, b) {
     errorIfNotRectangular(a, "align");
-    var r: a.rank*range(a._value.idxType,
-                      boundKind.both,
-                      a.stridable);
+    var r: a.rank*range(a._value.idxType, boundKind.both, a.strides);
     var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) align t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
+    return new _domain(a.dist, a.rank, a._value.idxType, a.strides, r);
   }
 
   // This function exists to avoid communication from computing _value when
@@ -987,19 +1030,41 @@ module ChapelDomain {
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
-              param stridable: bool = false,
+              param strides = strideKind.one,
               definedConst: bool = false) {
-      this.init(d.newRectangularDom(rank, idxType, stridable, definedConst));
+      this.init(d.newRectangularDom(rank, idxType, strides, definedConst));
     }
 
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
-              param stridable: bool = false,
-              ranges: rank*range(idxType, boundKind.both,stridable),
+              param strides = strideKind.one,
+              ranges: rank*range(idxType, boundKind.both,strides),
               definedConst: bool = false) {
-      this.init(d.newRectangularDom(rank, idxType, stridable, ranges,
+      this.init(d.newRectangularDom(rank, idxType, strides, ranges,
                 definedConst));
+    }
+
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool,
+              definedConst: bool = false) {
+      this.init(d, rank, idxType, chpl_strideKind(stridable), definedConst);
+    }
+
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc init(d: _distribution,
+              param rank : int,
+              type idxType = int,
+              param stridable: bool,
+              ranges: _tuple,
+              definedConst: bool = false) {
+      this.init(d, rank, idxType, chpl_strideKind(stridable),
+                chpl_convertRangeTuple(ranges, stridable), definedConst);
     }
 
     proc init(d: _distribution,
@@ -1133,19 +1198,37 @@ module ChapelDomain {
     }
 
     /* Return true if this is a stridable domain */
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc stridable param where this.isRectangular() {
-      return _value.stridable;
+      return _value.strides.toStridable();
     }
 
+    // deprecated by Vass in 1.31 to implement #17131
+    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
     @chpldoc.nodoc
     proc stridable param where this.isSparse() {
-      return _value.parentDom.stridable;
+      return _value.parentDom.strides.toStridable();
     }
 
     @chpldoc.nodoc
     proc stridable param where this.isAssociative() {
       compilerError("associative domains do not support .stridable");
     }
+
+    /* Return the 'strides' value of the domain */
+    proc strides param where this.isRectangular() do return _value.strides;
+
+    @chpldoc.nodoc
+    proc strides param where this.isSparse() do return _value.parentDom.strides;
+
+    @chpldoc.nodoc
+    proc strides param where this.isAssociative() {
+      compilerError("associative domains do not support .strides");
+    }
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     /* Yield the domain indices */
     iter these() {
@@ -1198,16 +1281,18 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc this(ranges...rank)
     where chpl__isTupleOfRanges(ranges) {
-      param stridable = _value.stridable || chpl__anyStridable(ranges);
-      var r: rank*range(_value.idxType,
-                        boundKind.both,
-                        stridable);
       const myDims = dims();
 
+      proc resultStrides(param dim = 0) param do return
+        if dim == rank-1 then ( myDims(dim)[ranges(dim)] ).strides
+        else chpl_strideUnion( ( myDims(dim)[ranges(dim)] ).strides,
+                                      resultStrides(dim+1) );
+
+      var r: rank*range(_value.idxType, boundKind.both, resultStrides());
       for param i in 0..rank-1 {
         r(i) = myDims(i)[ranges(i)];
       }
-      return new _domain(dist, rank, _value.idxType, stridable, r);
+      return new _domain(dist, rank, _value.idxType, r(0).strides, r);
     }
 
     // domain rank change
@@ -1222,9 +1307,9 @@ module ChapelDomain {
       var collapsedDim: rank*bool;
       var idx: rank*idxType;
       param uprank = chpl__countRanges((...args));
-      param upstridable = this.stridable || chpl__anyRankChangeStridable(args);
-      var upranges: uprank*range(idxType=_value.idxType,
-                                 stridable=upstridable);
+      param upstrides = chpl_strideUnion(this.strides,
+                                         chpl_strideUnionRC(args));
+      var upranges: uprank*range(idxType=_value.idxType, strides=upstrides);
       var updim = 0;
 
       for param i in 0..rank-1 {
@@ -1364,12 +1449,23 @@ module ChapelDomain {
     proc chpl_checkNegativeStride() /*private*/ {
       if noNegativeStrideWarnings then return;
       // todo: add compile-time checks for neg. strides once ranges allow that
-      if this.isRectangular() && this.stridable {
-        for s in chpl__tuplify(this.stride) do
-          if s < 0 {
-            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
-            break;
+
+      if this.isRectangular() {
+/*
+// The following causes duplicate compile-time warnings,
+// so leaving just the runtime-time ones:
+       if this.strides.isNegative() {
+        compilerWarning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning");
+       } else
+*/
+        if ! this.strides.isPositive() {
+          for s in chpl__tuplify(this.stride) {
+            if s < 0 {
+              warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
+              break;
+            }
           }
+        }
       }
     }
 
@@ -2392,8 +2488,8 @@ module ChapelDomain {
       _value.dsiSerialWrite(f);
     }
     @chpldoc.nodoc
-    proc encodeTo(f) throws {
-      _value.dsiSerialWrite(f);
+    proc serialize(writer, ref serializer) throws {
+      _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
@@ -2404,9 +2500,9 @@ module ChapelDomain {
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
     @chpldoc.nodoc
-    proc type decodeFrom(f) throws {
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
@@ -2432,7 +2528,7 @@ module ChapelDomain {
     where chpl__isTupleOfRanges(r) &&
           !_value.isDefaultRectangular()
     {
-      return _value.dsiLocalSlice(chpl__anyStridable(r), r);
+      return _value.dsiLocalSlice(chpl_strideUnion(r), r);
     }
 
     /*
@@ -2571,14 +2667,14 @@ module ChapelDomain {
       if tmpD.idxType != d.idxType then
         compilerError("idxType mismatch in cast");
 
-      if tmpD.stridable == d.stridable then
+      if tmpD.strides == d.strides then
         return d;
-      else if !tmpD.stridable && d.stridable {
+      else if ! chpl_assignStrideIsSafe(tmpD.strides, d.strides) {
         var inds = d.getIndices();
-        var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+        var unstridableInds: tmpD.getIndices().type;
 
         for param i in 0..tmpD.rank-1 {
-          unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+          unstridableInds(i) = inds(i): unstridableInds(i).type;
         }
         tmpD.setIndices(unstridableInds);
         return tmpD;

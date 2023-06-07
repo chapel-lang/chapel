@@ -858,6 +858,7 @@ extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
+extern Symbol *gStrideOne, *gStrideAny; //deprecation in 1.31 for #17131
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gSplitInit;
@@ -891,7 +892,6 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
-extern VarSymbol *gUseIOFormatters;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
