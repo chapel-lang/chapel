@@ -41,9 +41,11 @@ struct PromotedPair {
 bool isArrayVecOrStruct(llvm::Type* t);
 
 // 0 means undefined alignment
+// creates an alloca instruction and inserts it before insertBefore
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
-llvm::AllocaInst* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
+// creates an alloca instruction at the top of the function
+llvm::AllocaInst* createAllocaInFunctionEntry(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
 
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
 llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
@@ -57,12 +59,6 @@ void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
                        const llvm::DataLayout& layout,
                        llvm::LLVMContext &ctx,
                        llvm::Type *valType, llvm::Value *addr);
-
-// Returns an alloca
-llvm::AllocaInst* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
-                                        const llvm::DataLayout& layout,
-                                        llvm::LLVMContext &ctx,
-                                        llvm::Type* type, const char* name);
 
 int64_t getTypeSizeInBytes(const llvm::DataLayout& layout, llvm::Type* ty);
 bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint64_t max_size_bytes);

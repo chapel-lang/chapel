@@ -2511,8 +2511,6 @@ void FnSymbol::codegenDef() {
 
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
-
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
     func = getFunctionLLVM(cname);
@@ -2695,8 +2693,7 @@ void FnSymbol::codegenDef() {
             if (srcSize <= dstSize) {
               storeAdr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
             } else {
-              storeAdr = makeAllocaAndLifetimeStart(irBuilder, layout, ctx,
-                                                    sTy, "coerce");
+              storeAdr = createAllocaInFunctionEntry(irBuilder, sTy, "coerce");
             }
 
             unsigned nElts = sTy->getNumElements();
