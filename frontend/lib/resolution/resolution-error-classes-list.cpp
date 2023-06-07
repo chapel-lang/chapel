@@ -882,8 +882,7 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {
-    if (auto bct = classType->basicClassType()) {
-      actualClassType = bct;
+    if (auto actualClassType = classType->basicClassType()) {
       while (auto instFrom = actualClassType->instantiatedFrom()) {
         actualClassType = instFrom;
       }

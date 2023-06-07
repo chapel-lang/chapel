@@ -96,9 +96,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
         if (auto bct = t->toBasicClassType()) {
           parentClassType = bct;
         } else if (auto ct = t->toClassType()) {
-          if (auto bct = ct->basicClassType()) {
-            parentClassType = bct;
-          }
+          // safe because it's checked for null later.
+          parentClassType = ct->basicClassType();
         }
       }
       if (qt.isType() && parentClassType != nullptr) {
@@ -116,10 +115,11 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       if (auto bct = instantiatedFrom->toBasicClassType()) {
         insnFromBct = bct;
       } else if (auto ct = instantiatedFrom->toClassType()) {
-        if (auto bct = ct->basicClassType()) {
-          insnFromBct = bct;
-        }
-      } else {
+        // safe because it's checked for null later.
+        insnFromBct = ct->basicClassType();
+      }
+
+      if (!insnFromBct) {
         CHPL_ASSERT(false && "unexpected instantiatedFrom type");
       }
     }

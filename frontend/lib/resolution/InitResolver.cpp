@@ -269,9 +269,7 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                           subs);
   } else if (auto cls = initialRecvType_->toClassType()) {
     auto oldBasic = cls->basicClassType();
-    if (!oldBasic) {
-      CHPL_ASSERT(false && "Not handled!");
-    }
+    CHPL_ASSERT(oldBasic && "Not handled!");
 
     auto basic = BasicClassType::get(ctx_, oldBasic->id(),
                                      oldBasic->name(),
