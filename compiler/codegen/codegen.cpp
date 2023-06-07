@@ -2703,8 +2703,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
 }
 
 void codegen() {
@@ -2718,6 +2716,9 @@ void codegen() {
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
+    
+    // flush stdout before forking process so buffered output doesn't get copied over
+    fflush(stdout);
 
     pid_t pid = fork();
 
