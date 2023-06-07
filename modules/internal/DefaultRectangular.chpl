@@ -1003,15 +1003,6 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
-    //RSDW remove this once Block, Cyclic, Stencil use 'strides'
-    pragma "dont disable remote value forwarding"
-    proc init(type eltType, param rank: int, type idxType,
-              param stridable: bool, newTargetLocDom: domain(rank)) {
-compilerWarning("vass1 - should not be invoked");
-      this.init(eltType, rank, idxType, chpl_strideKind(stridable),
-                newTargetLocDom);
-    }
-
     inline proc lockRAD(rlocIdx) {
       RADLocks[rlocIdx].lock();
     }

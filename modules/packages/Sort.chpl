@@ -1005,7 +1005,10 @@ module MergeSort {
       if depth & 1 {
         // At odd depths, we need to return the results in Scratch.
         // But if the test above is correct, we'll never reach this point.
-        Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
+        if ! Dom.strides.isPosNegOne() then
+          Scratch[lo..hi by Dom.stride] = Data[lo..hi by Dom.stride];
+        else
+          Scratch[lo..hi] = Data[lo..hi];
       }
       return;
     }

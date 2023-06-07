@@ -974,9 +974,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
                       chpl_strideUnion(followThis), dom.whole.strides));
   for param i in 0..rank-1 {
     type strType = chpl__signedType(idxType);
-    const wholestride = dom.whole.dim(i).stride:chpl__signedType(idxType);
-//wass if this assertion holds, remove the cast in the previous line
-compilerAssert(dom.whole.dim(i).stride.type == chpl__signedType(idxType));//wass
+    const wholestride = dom.whole.dim(i).stride;
     if !dom.whole.strides.isPositive() && idxType != strType then
      if wholestride < 0 then
       halt("negative stride with unsigned idxType not supported");
