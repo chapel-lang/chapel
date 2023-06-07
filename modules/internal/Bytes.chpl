@@ -617,6 +617,7 @@ module Bytes {
 
     :yields: uint(8)
   */
+  pragma "chpldoc ignore chpl prefix"
   iter bytes.chpl_bytes(): uint(8) {
     foreach i in this.indices do
       yield this.byte(i);

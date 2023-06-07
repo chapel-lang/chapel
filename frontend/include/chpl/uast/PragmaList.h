@@ -114,7 +114,7 @@ PRAGMA(CHPL__ITER, npr,
 // Marks chpl__iter things created for ForallStmt.
 PRAGMA(CHPL__ITER_NEWSTYLE, npr, "chpl__iter_newstyle", ncm)
 // TODO: Remove this pragma once we have an attribute or otherwise remove/rename
-// or nodoc the chpl_ prefix on symbols in the GMP module
+// or nodoc the chpl_ prefix on symbols we want documented
 PRAGMA(CHPLDOC_IGNORE_CHPL_PREFIX, ypr,
        "chpldoc ignore chpl prefix",
        "generate chpldoc documentation for this symbol even though it starts with chpl_")

@@ -1438,6 +1438,7 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
+  pragma "chpldoc ignore chpl prefix"
   iter string.chpl_bytes() : uint(8) {
     var localThis: string = this.localize();
 

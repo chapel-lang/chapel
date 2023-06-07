@@ -30,4 +30,17 @@ module M {
   proc chpl_proc(x: real) {
     writeln("chpl_proc(x: real)");
   }
+
+  /* this type is not documented by default*/
+  record chpl_someType {
+    var x: int;
+    var y: int;
+  }
+
+  /* this proc on chpl_someType is not documented by default */
+  proc chpl_someType.someProc() {
+    writeln("chpl_someType.someProc()");
+  }
+
+
 }
