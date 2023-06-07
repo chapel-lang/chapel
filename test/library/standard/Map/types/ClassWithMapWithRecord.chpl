@@ -5,8 +5,8 @@ const filename = "foo";
 // a simplified example
 
 record MyRecord {
-  var de: unmanaged object;
-// this works: var de = new unmanaged object();
+  var de: unmanaged RootClass;
+// this works: var de = new unmanaged RootClass();
 }
 
 class MyClass {
@@ -15,10 +15,10 @@ class MyClass {
 
 const myC = new unmanaged MyClass();
 
-// TODO: The following seems to create an extra new unmanaged object()
+// TODO: The following seems to create an extra new unmanaged RootClass()
 // that is not deleted by `myC.files[filename].de` below.
 // Once this test passes memleaks testing, remove the --memLeaks .execopts.
-myC.files[filename] = new MyRecord(new unmanaged object());
+myC.files[filename] = new MyRecord(new unmanaged RootClass());
 
 writeln(myC);  // {files = {foo: (de = {})}}
 

@@ -5,6 +5,6 @@ match-param.chpl:6: note: because actual argument #1 with type 'string'
 $CHPL_HOME/modules/internal/ChapelBase.chpl:97: note: is passed to formal 'a: nil'
 match-param.chpl:6: note: other candidates are:
 $CHPL_HOME/modules/internal/ChapelBase.chpl:98: note:   ==(a: bool, b: bool)
-$CHPL_HOME/modules/internal/ChapelBase.chpl:104: note:   ==(a: borrowed object?, b: borrowed object?)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:104: note:   ==(a: borrowed RootClass?, b: borrowed RootClass?)
 note: and N other candidates, use --print-all-candidates to see them
   match-param.chpl:1: called as foo(x: R(int(64),100))
