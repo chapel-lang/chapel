@@ -3939,7 +3939,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
     case typetags::AnyManagementAnyNilableType:  return dtAnyManagementAnyNilable;
     case typetags::AnyManagementNilableType:     return dtAnyManagementNilable;
-    case typetags::AnyManagementNonNilableType:  return dtAnyManagementNonNilable;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;
@@ -3960,6 +3959,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
 
     case typetags::ArrayType: return dtUnknown;
     case typetags::BasicClassType:   return convertBasicClassType(qt);
+    case typetags::AnyClassType: return dtAnyManagementNonNilable;
     case typetags::DomainType:   return dtUnknown;
     case typetags::RecordType:   return convertRecordType(qt);
     case typetags::TupleType:   return convertTupleType(qt);
@@ -3974,6 +3974,8 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::UintType:   return convertUintType(qt);
 
     // implementation detail tags (should not be reachable)
+    case typetags::START_ManageableType:
+    case typetags::END_ManageableType:
     case typetags::START_BuiltinType:
     case typetags::END_BuiltinType:
     case typetags::START_DeclaredType:
