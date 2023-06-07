@@ -14,10 +14,10 @@ boundedRangeType.chpl:16: warning: 'boundedHigh' is deprecated; please use 'boun
 boundedRangeType.chpl:15: warning: range.boundedType is deprecated; please use '.bounds' instead
 boundedRangeType.chpl:18: warning: range.boundedType is deprecated; please use '.bounds' instead
 boundedRangeType.chpl:18: warning: high
-boundedRangeType.chpl:18: warning: range.boundedType is deprecated; please use '.bounds' instead
 boundedRangeType.chpl:21: In function 'query':
+boundedRangeType.chpl:21: warning: range.boundedType is deprecated; please use '.bounds' instead
 boundedRangeType.chpl:22: warning: highfalse
-  boundedRangeType.chpl:25: called as query(arg: range(int(64),high,false))
+  boundedRangeType.chpl:25: called as query(arg: range(int(64),high,one))
 both
 low
 high

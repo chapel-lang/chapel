@@ -20,12 +20,7 @@ for x in 4..1 by -1 { writeln(x); }
 A = 4..1 by -1;
 writeln(A);
 
-writeln("Case 5: Expecting 4 3 2 1");
-// for loop correctly gives error for unbounded range
-//for x in 4.. by -1 { writeln(x); }
-A = 4.. by -1;
-writeln(A);
-
+// Case 5 is moved to test/types/range/unbounded/noFirst-forallzip-down.chpl
 
 writeln("Case 6: Expecting 4 3 2 1");
 // for loop is (correctly) infinite loop.

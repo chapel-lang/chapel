@@ -6,28 +6,7 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
 
-# For our internal testing, this is necessary to get the latest version of gcc
-# on the system.
-if [ -z "${CHPL_SOURCED_BASHRC}" -a -f ~/.bashrc ] ; then
-    source ~/.bashrc
-    export CHPL_SOURCED_BASHRC=true
-fi
-
-if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-  source /data/cf/chapel/setup_system_llvm.bash
-elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-  source /cray/css/users/chapelu/setup_system_llvm.bash
-elif [ -f /cy/users/chapelu/setup_system_llvm.bash ] ; then
-  source /cy/users/chapelu/setup_system_llvm.bash
-fi
-
-if [ -f /data/cf/chapel/setup_cmake_nightly.bash ] ; then
-  source /data/cf/chapel/setup_cmake_nightly.bash
-elif [ -f /cray/css/users/chapelu/setup_cmake_nightly.bash ] ; then
-  source /cray/css/users/chapelu/setup_cmake_nightly.bash
-elif [ -f /cy/users/chapelu/setup_cmake_nightly.bash ] ; then
-  source /cy/users/chapelu/setup_cmake_nightly.bash
-fi
+source $CWD/load-base-deps.bash
 
 log_info "gcc version: $(which gcc)"
 gcc --version

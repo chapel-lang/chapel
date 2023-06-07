@@ -1,1 +1,1 @@
-test_error_stride_range.chpl:4: error: type mismatch in assignment of ranges with different stridable parameters
+test_error_stride_range.chpl:4: error: assigning to a range with strideKind.one from a range with strideKind.positive without an explicit cast

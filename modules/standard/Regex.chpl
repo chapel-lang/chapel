@@ -1094,9 +1094,9 @@ record regex {
   }
 
   @chpldoc.nodoc
-  proc init(type exprType, f: fileReader) {
+  proc init(type exprType, reader: fileReader, ref deserializer) throws {
     this.init(exprType);
-    readThis(f);
+    readThis(reader);
   }
 }
 

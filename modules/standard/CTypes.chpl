@@ -56,8 +56,42 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
-  extern "_cfile" type c_FILE;
+  @chpldoc.nodoc
+  extern "_cfile" type chpl_cFilePtr; // can be removed when deprecation is complete
+  @chpldoc.nodoc
+  extern "_cfiletype" type chpl_cFile; // direct uses of this type in the IO module
+                                      // can be replaced with c_FILE when deprecation is complete
+
+  /* Controls whether :type:`c_FILE` represents a ``FILE*`` or a ``FILE``.
+
+    - If true, ``c_FILE`` represents a ``FILE*``. This behavior is deprecated
+      and will be removed in an upcoming release.
+    - If false, ``c_FILE`` represents a ``FILE``. A ``FILE*`` can still be
+      represented with ``c_ptr(c_FILE)``.
+
+    The deprecated behavior is on by default. To opt-in to the new behavior,
+    recompile your program with ``-scFileTypeHasPointer=false``.
+
+  */
+  config param cFileTypeHasPointer = true;
+
+  /* Chapel type alias for a C ``FILE`` */
+  proc c_FILE type {
+    if cFileTypeHasPointer {
+      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
+      return chpl_cFilePtr;
+    } else {
+      return chpl_cFile;
+    }
+  }
+  // post deprecation, all the above type-proc can be replaced with the following:
+  // extern "_cfiletype" type c_FILE;
+
+  // type c_FILE = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
+
+  // all uses of this type should be replaced with c_FILE when deprecation is complete
+  @chpldoc.nodoc
+  type c_FILE_internal = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
 
   // Former CPtr contents start here
 
@@ -87,11 +121,11 @@ module CTypes {
 
   /*
 
-    Represents a local C pointer for the purpose of C integration. This class
-    represents the equivalent to a C language pointer. Instances of this class
-    support assignment to other instances or nil, == or != comparison with a
-    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
-    the ``c_void_ptr`` type.
+    Represents a local C pointer for the purpose of C integration. This type
+    represents the equivalent to a C language pointer ``eltType*``. Instances of
+    this type support assignment to other instances or ``nil``, ``==`` or ``!=``
+    comparison with a ``c_void_ptr`` or with ``nil``, and casting to another
+    ``c_ptr`` type or to the ``c_void_ptr`` type.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
@@ -126,7 +160,14 @@ module CTypes {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
-    /* The type that this pointer points to */
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptr = c_ptrTo(...);
+         if x.eltType == c_int then do writeln("x is an int pointer");
+    */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
       Does the equivalent of ptr[i] in C.
@@ -144,13 +185,16 @@ module CTypes {
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
+    }
   }
 
-  /*
-    Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
-    the type `const eltType*`.
-  */
   // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
+  /*
+    Like :type:`c_ptr`, but for a pointer to const data. In C, this is
+    equivalent to the type `const eltType*`.
+  */
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -158,35 +202,70 @@ module CTypes {
   pragma "c_ptr class"
   pragma "c_ptrConst class"
   class c_ptrConst {
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptrConst = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is a const int pointer");
+    */
     type eltType;
+    /* Retrieve the i'th element (zero based) from a pointer to an array.
+       Does the equivalent of ptr[i] in C.
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc this(i: integral) const ref {
       return __primitive("array_get", this, i);
     }
+    /* Get element pointed to directly by this pointer. If the pointer
+       refers to an array, this will return ptr[0].
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc deref() const ref {
       return __primitive("array_get", this, 0);
     }
+    /* Print this pointer */
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
+    }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
     }
   }
 
   /*
-  This class represents a C array with fixed size.  A variable of type c_array
-  can coerce to a c_ptr with the same element type.  In that event, the
-  pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
-  similarly to a homogeneous tuple except that its indices start at 0 and it is
-  guaranteed to be stored in contiguous memory.  A c_array variable has value
-  semantics. Declaring one as a function local variable will create the array
-  elements in the function's stack. Assigning or copy initializing will result
-  in copying the elements (vs resulting in two pointers that refer to the same
-  elements).  A `nil` c_array is not representable in Chapel.
+  This type represents a C array with fixed size.  A variable of type
+  ``c_array`` can coerce to a ``c_ptr`` with the same element type.  In that
+  event, the pointer will be equivalent to ``c_ptrTo(array[0])``.  A ``c_array``
+  behaves similarly to a homogeneous tuple except that its indices start at 0
+  and it is guaranteed to be stored in contiguous memory.  A ``c_array``
+  variable has value semantics. Declaring one as a function-local variable will
+  create the array elements in the function's stack. Assigning or copy
+  initializing will result in copying the elements (vs resulting in two pointers
+  that refer to the same elements).  A ``nil`` ``c_array`` is not representable
+  in Chapel.
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
   record c_array {
-    /* The array element type */
+    /*
+       The array element type, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is an array of ints");
+    */
     type eltType;
-    /* The fixed number of elements */
+    /*
+       The fixed number of elements, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         writeln("x has ", x.size, " elements.");
+    */
     param size;
 
     proc init(type eltType, param size) {
@@ -271,6 +350,10 @@ module CTypes {
       ch.readWriteLiteral("]");
     }
 
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
@@ -284,7 +367,7 @@ module CTypes {
     }
   }
 
-  /* Copy the elements from one c_array to another.
+  /* Copy the elements from one :type:`c_array` to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
   operator c_array.=(ref lhs:c_array, rhs:c_array) {
@@ -306,6 +389,10 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
+  }
+  @chpldoc.nodoc
+  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
+    this.writeThis(writer);
   }
 
   @chpldoc.nodoc
@@ -704,8 +791,8 @@ module CTypes {
     return c_pointer_return(arr[arr.domain.low]);
   }
   /*
-   Like c_ptrTo for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -770,8 +857,8 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~String.string`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
     where cPtrToStringBytesClassLogicalAddress == true
@@ -817,8 +904,8 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
     where cPtrToStringBytesClassLogicalAddress == true
@@ -869,7 +956,7 @@ module CTypes {
   }
 
   /*
-   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
+   Like :proc:`c_ptrTo` for class types, but returns a :type:`c_ptrConst`
    which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
@@ -914,7 +1001,7 @@ module CTypes {
   }
 
   /*
-    Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+    Like :proc:`c_ptrTo`, but returns a :type:`c_ptrConst` which disallows direct
     modification of the pointee.
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
@@ -950,8 +1037,8 @@ module CTypes {
   }
 
   /*
-   Like c_addrOf for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
   */
   inline proc c_addrOfConst(arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -979,8 +1066,8 @@ module CTypes {
   }
 
   /*
-    Like c_addrOf, but returns a :type:`c_ptrConst` which disallows direct
-    modification of the pointee.
+    Like :proc:`c_addrOf`, but returns a :type:`c_ptrConst` which disallows
+    direct modification of the pointee.
   */
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
@@ -1212,7 +1299,7 @@ module CTypes {
 
 
   // since isAnyCPtr is used internally, renaming to chpl_isAnyCPtr this way
-  // the deprecated warning is not propogated across our internal modules by
+  // the deprecated warning is not propagated across our internal modules by
   // using the internal name.
   // After the deprecated function is removed, we can remove the extra
   // definition and just have `isAnyCPtr` as a private nodoc function

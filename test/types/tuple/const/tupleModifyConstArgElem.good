@@ -34,9 +34,9 @@ note: to formal of type complex(128)
   tupleModifyConstArgElem.chpl:110: called as run(elem: complex(128))
 tupleModifyConstArgElem.chpl:23: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:24: error: const actual is passed to 'ref' formal 'r1' of =
-note: to formal of type range(int(64),both,false)
-  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*range(int(64),both,false)) from function 'run'
-  tupleModifyConstArgElem.chpl:113: called as run(elem: range(int(64),both,false))
+note: to formal of type range(int(64),both,one)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*range(int(64),both,one)) from function 'run'
+  tupleModifyConstArgElem.chpl:113: called as run(elem: range(int(64),both,one))
 tupleModifyConstArgElem.chpl:27: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:27: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type owned C?
@@ -73,13 +73,13 @@ note: tuple element #0 of type u
 tupleModifyConstArgElem.chpl:65: note: possibly set here
 tupleModifyConstArgElem.chpl:72: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:72: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
-note: tuple element #0 of type domain(1,int(64),false)
+note: tuple element #0 of type domain(1,int(64),one)
 tupleModifyConstArgElem.chpl:73: note: possibly set here
-  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*domain(1,int(64),false)) from function 'run'
-  tupleModifyConstArgElem.chpl:154: called as run(elem: domain(1,int(64),false))
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*domain(1,int(64),one)) from function 'run'
+  tupleModifyConstArgElem.chpl:154: called as run(elem: domain(1,int(64),one))
 tupleModifyConstArgElem.chpl:76: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:76: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
-note: tuple element #0 of type [domain(1,int(64),false)] int(64)
+note: tuple element #0 of type [domain(1,int(64),one)] int(64)
 tupleModifyConstArgElem.chpl:77: note: possibly set here
-  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*[domain(1,int(64),false)] int(64)) from function 'run'
-  tupleModifyConstArgElem.chpl:158: called as run(elem: [domain(1,int(64),false)] int(64))
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*[domain(1,int(64),one)] int(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:158: called as run(elem: [domain(1,int(64),one)] int(64))

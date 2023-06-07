@@ -34,7 +34,7 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
 
   assert(fields.fieldName(0) == "idxType");
   assert(fields.fieldName(1) == "bounds");
-  assert(fields.fieldName(2) == "stridable");
+  assert(fields.fieldName(2) == "strides");
 
   auto bounded = fields.fieldType(1);
   assert(bounded.kind() == QualifiedType::PARAM);
@@ -47,7 +47,14 @@ static QualifiedType getRangeIndexType(Context* context, const RecordType* r, co
   assert(astNode->name().str() == ensureBoundedType);
 
   auto stridable = fields.fieldType(2);
-  assert(stridable.isParamTrue() || stridable.isParamFalse());
+  assert(stridable.kind() == QualifiedType::PARAM);
+  assert(stridable.type()->isEnumType());
+  assert(stridable.param() != nullptr);
+  auto stridableValue = stridable.param()->toEnumParam();
+  auto idS = stridableValue->value();
+  auto astNodeS = idToAst(context, idS)->toNamedDecl();
+  assert(astNodeS != nullptr);
+  assert(astNodeS->name().str() == "one");
 
   return fields.fieldType(0);
 }

@@ -372,7 +372,7 @@ module BytesStringCommon {
     proc simpleCaseHelper() {
       // cast the argument r to `int` to make sure that we are not dealing with
       // byteIndex
-      const intR = r:range(int, r.bounds, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
         if !x.byteIndices.boundsCheck(intR) {
           halt("range ", r, " out of bounds for " + t:string + " with length ",
@@ -415,7 +415,7 @@ module BytesStringCommon {
       return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
-      if r.stridable {
+      if ! r.hasUnitStride() {
         // Slicing by stridable codepoint ranges is unsupported because it
         // creates an irregular sequence of bytes.  We could add support in the
         // future by refactoring the callers of _getView() to add a slow path,
@@ -428,7 +428,7 @@ module BytesStringCommon {
 
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
-      const intR = r:range(int, r.bounds, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
         if !x.indices.boundsCheck(intR) {
           halt("range ", r, " out of bounds for string with length ", x.size);

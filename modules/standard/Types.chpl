@@ -877,11 +877,11 @@ proc chpl_enum_mintype(type t: enum) type {
 
 
 /*
-Returns ``this``, cast to the type ``T``.
-Generates a run-time error if ``this`` cannot be represented by ``T``,
+The following ``safeCast()`` methods return ``this`` cast to the type ``T``.
+At present, these halt the program if ``this`` cannot be represented by ``T``,
 for example ``(-1).safeCast(uint)`` or ``256.safeCast(uint(8))``.
 
-This method performs the minimum number of runtime checks.
+These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
@@ -935,9 +935,24 @@ inline proc integral.safeCast(type T: integral) : T {
   }
 }
 
+proc integral.safeCast(type T: bool) {
+  if this != 0 && this != 1 then
+    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  return this: bool;
+}
+
+proc bool.safeCast(type T: integral) {
+  return this: T;
+}
+
+proc bool.safeCast(type T: bool) {
+  return this;
+}
+
 @chpldoc.nodoc // documented with the other safeCast above
 proc integral.safeCast(type T) {
-  compilerError("safeCast is only supported between integral types");
+  compilerError("safeCasts are not supported from " + this.type:string +
+                " to " + T:string);
 }
 
 //

@@ -927,7 +927,7 @@ element type by assigning to a pseudo-field named ``IRV`` in the array.
 
    .. BLOCK-test-chapeloutput
 
-      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array: (1, 5)
+      sparse-error.chpl:9: error: halt reached - attempting to assign a 'zero' value in a sparse array at index (1, 5)
 
 .. _Association_of_Arrays_to_Domains:
 
