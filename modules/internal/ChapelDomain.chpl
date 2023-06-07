@@ -1941,9 +1941,6 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    @deprecated(notes="makeIndexBuffer has been renamed to createIndexBuffer")
-    inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
-
     /*
      Creates an index buffer which can be used for faster index addition.
 
