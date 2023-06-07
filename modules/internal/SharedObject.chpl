@@ -113,20 +113,17 @@ module SharedObject {
    */
   pragma "managed pointer"
   record _shared {
-    @chpldoc.nodoc
     type chpl_t;         // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that compiler also allows coercion to the borrow type.
     forwarding borrow();
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn:unmanaged ReferenceCount?; // reference counter
 
     /*
@@ -534,7 +531,6 @@ module SharedObject {
 
   // This is a workaround
   pragma "auto destroy fn"
-  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
@@ -743,11 +739,9 @@ module WeakPointer {
     type classType;
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p: __primitive("to nilable class", _to_unmanaged(classType)); // instance pointer
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
     // ---------------- Initializers ----------------

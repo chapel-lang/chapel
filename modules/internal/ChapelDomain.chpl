@@ -218,7 +218,6 @@ module ChapelDomain {
     return d;
   }
 
-  @chpldoc.nodoc
   private proc chpl__setDomainConst(dom: domain) {
     dom._value.definedConst = true;
   }
@@ -1114,7 +1113,6 @@ module ChapelDomain {
 
     forwarding _value except chpl__serialize, chpl__deserialize;
 
-    @chpldoc.nodoc
     proc chpl__serialize()
       where this._value.isDefaultRectangular() {
       return this._value.chpl__serialize();
@@ -1123,7 +1121,6 @@ module ChapelDomain {
     // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
-    @chpldoc.nodoc
     proc type chpl__deserialize(data) {
       type valueType = __primitive("static field type", this, "_instance");
       return new _domain(_to_borrowed(valueType).chpl__deserialize(data));

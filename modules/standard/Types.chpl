@@ -259,7 +259,6 @@ proc isDefaultInitializableType(type t) param {
 }
 
 // Returns the unsigned equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
@@ -267,13 +266,11 @@ proc chpl__unsignedType(type t) type
 
 
 // Returns the signed equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
 
-@chpldoc.nodoc
 proc chpl__maxIntTypeSameSign(type t) type {
   if ! isIntegralType(t) then
     compilerError("type t is non-integral: ", t:string);
@@ -644,7 +641,6 @@ proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 
 
 // for internal use until we have a better name
-@chpldoc.nodoc
 proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
   isSingleType(t) ||
@@ -653,7 +649,6 @@ proc chpl_isSyncSingleAtomic(e: ?t) param do return
 // isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
-@chpldoc.nodoc
 proc chpl__legalIntCoerce(type t1, type t2) param
 {
   if (isIntType(t2)) {
@@ -870,7 +865,6 @@ private proc chpl_enum_minbits(type t: enum) param {
 }
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
-@chpldoc.nodoc
 proc chpl_enum_mintype(type t: enum) type {
   return uint(chpl_enum_minbits(t));
 }

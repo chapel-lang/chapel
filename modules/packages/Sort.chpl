@@ -321,7 +321,6 @@ proc compareByPart(a:?t, b:t, comparator:?rec) {
      a > b : returns value > 0
      a == b: returns 0
 */
-@chpldoc.nodoc
 inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // TODO -- In cases where values are larger than keys, it may be faster to
   //         key data once and sort the keyed data, mirroring swaps in data.
@@ -341,7 +340,6 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
 
 
 pragma "unsafe" // due to 'data' default-initialized to nil for class types
-@chpldoc.nodoc
 /*
     Check if a comparator was passed and confirm that it will work, otherwise
     throw a compile-time error.

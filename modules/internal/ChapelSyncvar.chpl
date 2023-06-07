@@ -106,7 +106,6 @@ module ChapelSyncvar {
     return ret;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(x) do return x;
 
   /************************************ | *************************************
@@ -395,7 +394,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
@@ -411,7 +409,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   @chpldoc.nodoc
@@ -960,7 +957,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
     return new _singlevar(rhs);
   }
@@ -974,7 +970,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************

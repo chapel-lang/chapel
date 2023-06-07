@@ -103,7 +103,6 @@ module Bytes {
                                        size=length+1);
   }
 
-  @chpldoc.nodoc
   proc chpl_createBytesWithLiteral(buffer: c_string,
                                    offset: int,
                                    x: c_string,
@@ -617,6 +616,7 @@ module Bytes {
 
     :yields: uint(8)
   */
+  pragma "chpldoc ignore chpl prefix"
   iter bytes.chpl_bytes(): uint(8) {
     foreach i in this.indices do
       yield this.byte(i);

@@ -33,13 +33,11 @@ module OwnedObject {
   pragma "copy mutates"
   pragma "managed pointer"
   record _owned {
-    @chpldoc.nodoc
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that the compiler also allows coercion to the borrow type.
@@ -355,7 +353,6 @@ module OwnedObject {
   // initCopy is defined explicitly as a workaround
   // for problems with initializers in this case
   pragma "init copy fn"
-  @chpldoc.nodoc
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -366,7 +363,6 @@ module OwnedObject {
   // autoCopy is defined explicitly as a workaround
   // for problems with initializers in this case
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -376,7 +372,6 @@ module OwnedObject {
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "auto destroy fn"
-  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
   }

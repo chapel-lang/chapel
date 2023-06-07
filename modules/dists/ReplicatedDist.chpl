@@ -198,7 +198,6 @@ class ReplicatedDom : BaseRectangularDom {
   //
   // helper function to get the local domain safely
   //
-  @chpldoc.nodoc
   proc chpl_myLocDom() {
     if boundsChecking then
       if (!dist.targetLocDom.contains(here.id)) then
@@ -400,7 +399,6 @@ class ReplicatedArr : AbsBaseArr {
   //
   // helper function to get the local array safely
   //
-  @chpldoc.nodoc
   proc chpl_myLocArr() {
     if boundsChecking then
       if (!dom.dist.targetLocDom.contains(here.id)) then

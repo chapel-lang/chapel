@@ -123,7 +123,6 @@ module ChapelIteratorSupport {
   //
   // This function IS executed at runtime - and 'x' is advanced once -
   // because the returned type is an array and so has a runtime component.
-  @chpldoc.nodoc
   proc chpl_elemTypeForReducingIterables(x) type {
 
     // Part 1 - get the first element yielded by 'x'

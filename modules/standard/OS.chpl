@@ -1078,7 +1078,6 @@ module OS {
   inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
   @chpldoc.nodoc
   inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
-  @chpldoc.nodoc
   inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
   @chpldoc.nodoc
   inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
