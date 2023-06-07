@@ -642,20 +642,20 @@ module DefaultAssociative {
     }
 
     proc _usingSerializers(f) param : bool {
-      if f.writing then return f.serializerType != nothing;
+      if f._writing then return f.serializerType != nothing;
       else return f.deserializerType != nothing;
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _usingSerializers(f) && !_isDefaultDeser(f) {
-      ref fmt = if f.writing then f.serializer else f.deserializer;
+      ref fmt = if f._writing then f.serializer else f.deserializer;
 
-      if f.writing then
+      if f._writing then
         fmt.startMap(f, dom.dsiNumIndices:uint);
       else
         fmt.startMap(f);
 
-      if f.writing {
+      if f._writing {
         for (key, val) in zip(this.dom, this) {
           fmt.writeKey(f, key);
           fmt.writeValue(f, val);
@@ -676,15 +676,15 @@ module DefaultAssociative {
     }
 
     proc _isDefaultDeser(f) param : bool {
-      if f.writing then return f.serializerType == IO.DefaultSerializer;
+      if f._writing then return f.serializerType == IO.DefaultSerializer;
       else return f.deserializerType == IO.DefaultDeserializer;
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _isDefaultDeser(f) {
-      ref fmt = if f.writing then f.serializer else f.deserializer;
+      ref fmt = if f._writing then f.serializer else f.deserializer;
 
-      if f.writing {
+      if f._writing {
         fmt.startArray(f, dom.dsiNumIndices:uint);
         fmt.startArrayDim(f, dom.dsiNumIndices:uint);
       } else {
@@ -692,7 +692,7 @@ module DefaultAssociative {
         fmt.startArrayDim(f);
       }
 
-      if f.writing {
+      if f._writing {
         for (key, val) in zip(this.dom, this) {
           fmt.writeArrayElement(f, val);
         }

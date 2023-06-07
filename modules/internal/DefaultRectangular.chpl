@@ -1737,14 +1737,14 @@ module DefaultRectangular {
   proc _supportsBulkElements(f, arr) param : bool {
     use Reflection;
     var temp : c_ptr(arr.eltType);
-    if f.writing then
+    if f._writing then
       return Reflection.canResolveMethod(f.serializer, "writeBulkElements", f, temp, 0:uint);
     else
       return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
   }
 
   proc _supportsSerializers(f) param : bool {
-    if f.writing then return f.serializerType != nothing;
+    if f._writing then return f.serializerType != nothing;
     else return f.deserializerType != nothing;
   }
 
@@ -1764,14 +1764,14 @@ module DefaultRectangular {
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
-    ref fmt = if f.writing then f.serializer else f.deserializer;
+    ref fmt = if f._writing then f.serializer else f.deserializer;
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
-      if f.writing then
+      if f._writing then
         fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
       else
         fmt.startArrayDim(f);
@@ -1780,7 +1780,7 @@ module DefaultRectangular {
       if dim == rank-1 {
         for j in dom.dsiDim(dim) by makeStridePositive {
           idx(dim) = j;
-          if f.writing then
+          if f._writing then
             fmt.writeArrayElement(f, arr.dsiAccess(idx));
           else {
             arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
@@ -1800,7 +1800,7 @@ module DefaultRectangular {
       fmt.endArrayDim(f);
     }
 
-    if f.writing then
+    if f._writing then
       fmt.startArray(f, dom.dsiNumIndices:uint);
     else
       fmt.startArray(f);
@@ -1812,16 +1812,16 @@ module DefaultRectangular {
   }
 
   proc _readWriteBulk(f, arr, dom) throws {
-    ref fmt = if f.writing then f.serializer else f.deserializer;
+    ref fmt = if f._writing then f.serializer else f.deserializer;
 
     const len = dom.dsiNumIndices:uint;
-    if f.writing then
+    if f._writing then
       fmt.startArray(f, len);
     else
       fmt.startArray(f);
 
     var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
-    if f.writing {
+    if f._writing {
       fmt.writeBulkElements(f, ptr, len);
     } else {
       fmt.readBulkElements(f, ptr, len);
