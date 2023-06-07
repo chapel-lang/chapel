@@ -60,7 +60,8 @@ Dependencies
 ------------
 
 This module depends on the ``libyaml`` library. Installation instructions
-can be found `here <https://github.com/yaml/libyaml>`_.
+can be found `here <https://github.com/yaml/libyaml>`_. The module was developed
+and tested with version 0.2.5 of ``libyaml``.
 
 To compile a program that uses the Yaml module, you will either need to set the
 ``CHPL_INCLUDE_PATH`` and ``CHPL_LIB_PATH`` environment variables with
