@@ -396,7 +396,7 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
       }
     }
 
-    if (auto tryNode = poppingFrame->scopeAst->toTry()) {
+    if (poppingFrame->scopeAst->isTry()) {
       // The sub-frames of try/catch nodes are just the catches, but they
       // aren't the only thing that needs to return: the try itself
       // should return too.
