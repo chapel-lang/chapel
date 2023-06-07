@@ -77,7 +77,7 @@ module ChapelDomain {
   }
 
   // deprecated by Vass in 1.31 to implement #17131
-  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  @deprecated("domain.stridable is deprecated; use domain.strides instead")
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
                                     param stridable: bool) type {
@@ -136,7 +136,7 @@ module ChapelDomain {
   }
 
   // deprecated by Vass in 1.31 to implement #17131
-  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  @deprecated("domain.stridable is deprecated; use domain.strides instead")
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
@@ -793,7 +793,7 @@ module ChapelDomain {
     if isTuple(b) then return allUintTup(0);
     return false; // an error will be issued by _makeIndexTuple()
     proc allUintTup(param dim) param do
-      if dim == b.size then return false;
+      if dim == b.size then return true;
       else if ! isUint(b(dim)) then return false;
       else return allUintTup(dim+1);
   }
@@ -1046,7 +1046,7 @@ module ChapelDomain {
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
@@ -1056,7 +1056,7 @@ module ChapelDomain {
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
@@ -1198,13 +1198,13 @@ module ChapelDomain {
 
     /* Return true if this is a stridable domain */
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc stridable param where this.isRectangular() {
       return _value.strides.toStridable();
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     @chpldoc.nodoc
     proc stridable param where this.isSparse() {
       return _value.parentDom.strides.toStridable();

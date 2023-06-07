@@ -95,7 +95,7 @@ proc runtest(param ndim : int, fn : string) {
        of the complex array in a real<->complex in-place transform.
 */
   var D : domain(ndim);
-  var rD,cD,reD,imD : domain(ndim,int,true);
+  var rD,cD,reD,imD : domain(ndim,int,strideKind.any);
 
 
 /* Read in the arrays from the file below. ``A`` and ``B`` are the

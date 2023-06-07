@@ -2811,10 +2811,8 @@ static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
         "range.boundedType is deprecated; please use '.bounds' instead");
       retval = at->getField("bounds");
     } else if (!strcmp(requested, "stridable")) {
-#if 0 //RSDW
       USR_WARN(call,
         "range.stridable is deprecated; please use '.strides' instead");
-#endif
 
       // White lie: return a bogus value just so that the PRIM_QUERY case
       // in preFoldPrimOp() generates the call 'var.stridable'.

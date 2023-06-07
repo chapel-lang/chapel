@@ -933,19 +933,15 @@ static void checkRangeDeprecations(AggregateType* at, NamedExpr* ne,
       field = at->getField("bounds");
     }
     else { // "stridable"
-#if 0 //RSDW
       USR_WARN(ne,
         "range.stridable is deprecated; please use '.strides' instead");
-#endif
       field = at->getField("strides");
       replaceStridesWithStridableSE(toSymExpr(ne->actual));
     }
   } else if (isStridable) {
     if (AggregateType* base = baseRectDsiParent(at)) {
-#if 0 //RSDW
       USR_WARN(ne,
             "domain.stridable is deprecated; please use '.strides' instead");
-#endif
       field = base->getField("strides");
       replaceStridesWithStridableSE(toSymExpr(ne->actual));
     }
@@ -1242,11 +1238,9 @@ static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
                                    Symbol* field, Symbol*& val) {
   if (hasStrideFieldToAdjust(at->symbol) && !strcmp(field->name, "strides")
       && (val->type == dtBool)) {
-#if 0 //RSDW
     USR_WARN(call, "%s(..., s) is deprecated when s is a boolean;"
              " please use values of the type 'enum strideKind' for s instead",
-             at->symbol->hasFlag(FLAG_RANGE) : "range" : "domain");
-#endif
+             at->symbol->hasFlag(FLAG_RANGE) ? "range" : "domain");
     if (val == gTrue) val = gStrideAny;
     else if (val == gFalse) val = gStrideOne;
     else INT_FATAL(call, "need to handle a non-param boolean");

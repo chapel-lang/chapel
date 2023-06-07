@@ -234,7 +234,7 @@ its parameters, i.e., ``range(int, boundKind.both, false)``.
 
    .. code-block:: chapel
 
-      var r: range(int(32), boundKind.both, stridable=true);
+      var r: range(int(32), boundKind.both, strides=strideKind.any);
 
    .. BLOCK-test-chapelpost
 

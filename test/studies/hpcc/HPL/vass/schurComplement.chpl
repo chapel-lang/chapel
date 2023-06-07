@@ -62,7 +62,7 @@ const AbD: domain(2, indexType) dmapped dimdist = MatVectSpace;
 
 // temporaries
 var Rest: domain(2, indexType) dmapped dimdist; //AbD.dist;
-var RestByBlkSize: domain(2, indexType, true) dmapped dimdist; //AbD.dist;
+var RestByBlkSize: domain(2, indexType, strideKind.any) dmapped dimdist; //AbD.dist;
 
 // Ab: the matrix A and vector b
 var Ab: [if do_dgemms then AbD else 1..1] elemType; // small if !do_dgemms

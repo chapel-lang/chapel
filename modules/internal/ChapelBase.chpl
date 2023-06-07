@@ -1287,7 +1287,7 @@ module ChapelBase {
       return x != 0:x.type;
     } else if t == strideKind {
       // to support deprecation by Vass in 1.31 to implement #17131
-//RSDW:  compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
+      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
       return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
