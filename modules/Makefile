@@ -103,7 +103,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Set.chpl \
 	standard/Subprocess.chpl \
 	standard/Sys.chpl \
-	standard/SysBasic.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
