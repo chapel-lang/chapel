@@ -103,7 +103,6 @@ module Bytes {
                                        size=length+1);
   }
 
-  @chpldoc.nodoc
   proc chpl_createBytesWithLiteral(buffer: c_string,
                                    offset: int,
                                    x: c_string,

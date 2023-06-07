@@ -294,6 +294,32 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   }
 }
 
+/* helper to check if a symbol name starts with chpl_. Typically used to see
+   if we should ignore documentation for this symbol by default
+*/
+static bool symbolNameBeginsWithChpl(const Decl* node) {
+  if (auto namedDecl = node->toNamedDecl()) {
+    auto chplPrefix = UniqueString::get(gContext, "chpl_");
+    // check if this symbol itself starts with chpl_
+    if (namedDecl->name().startsWith(chplPrefix)) {
+      return true;
+    }
+    // check if this is a method on a type that starts with chpl_
+    if (auto func = namedDecl->toFunction()) {
+      if (func->isMethod() && !func->isPrimaryMethod()) {
+        if (auto typeExpr = func->thisFormal()->typeExpression()) {
+          if (auto ident = typeExpr->toIdentifier()) {
+            if (ident->name().startsWith(chplPrefix)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
   if (attrs) {
@@ -1630,6 +1656,7 @@ struct RstResultBuilder {
     std::queue<const AstNode*> expressions;
 
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (decl->toVariable()->typeExpression() ||
           decl->toVariable()->initExpression()) {
         expressions.push(decl);
@@ -1639,6 +1666,7 @@ struct RstResultBuilder {
     std::string prevTypeExpression;
     std::string prevInitExpression;
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
         indentStream(os_, 1 * indentPerDepth);
       }

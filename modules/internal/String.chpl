@@ -119,64 +119,48 @@ module String {
 }
 
   // Helper routines in support of being able to use ranges of indices
-  @chpldoc.nodoc
   proc chpl_build_bounded_range(low: byteIndex, high: byteIndex) do
     return new range(byteIndex, low=low, high=high);
-  @chpldoc.nodoc
   proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex) do
     return new range(codepointIndex, low=low, high=high);
 
-  @chpldoc.nodoc
   proc chpl_build_low_bounded_range(low: byteIndex) do
     return new range(low=low);
-  @chpldoc.nodoc
   proc chpl_build_low_bounded_range(low: codepointIndex) do
     return new range(low=low);
 
-  @chpldoc.nodoc
   proc chpl_build_high_bounded_range(high: byteIndex) do
     return new range(high=high);
-  @chpldoc.nodoc
   proc chpl_build_high_bounded_range(high: codepointIndex) do
     return new range(high=high);
 
 
-  @chpldoc.nodoc
   proc chpl__rangeStrideType(type idxType: byteIndex) type do
     return int;
 
-  @chpldoc.nodoc
   proc chpl__rangeStrideType(type idxType: codepointIndex) type do
     return int;
 
-  @chpldoc.nodoc
   proc chpl__rangeUnsignedType(type idxType: byteIndex) type do
     return uint;
 
-  @chpldoc.nodoc
   proc chpl__rangeUnsignedType(type idxType: codepointIndex) type do
     return uint;
 
-  @chpldoc.nodoc
   inline proc chpl__idxToInt(i: byteIndex) do
     return i:int;
-  @chpldoc.nodoc
   inline proc chpl__idxToInt(i: codepointIndex) do
     return i:int;
 
-  @chpldoc.nodoc
   inline proc chpl__intToIdx(type idxType: byteIndex, i: int) do
     return i: byteIndex;
 
-  @chpldoc.nodoc
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
 
-  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
     return int;
 
-  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
     return int;
 
@@ -466,7 +450,6 @@ module String {
                                         size=length+1);
   }
 
-  @chpldoc.nodoc
   proc chpl_createStringWithLiteral(buffer: c_string,
                                     offset: int,
                                     x: c_string,

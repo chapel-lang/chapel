@@ -663,19 +663,15 @@ module ChapelIO {
   @chpldoc.nodoc
   proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
-  @chpldoc.nodoc
   proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.readThis(f) throws {
     this = f.read(uint(64)) : chpl_taskID_t;
   }
 
-  @chpldoc.nodoc
   proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
     ret.readThis(reader);
@@ -913,7 +909,6 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
-  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
     use IO only stringify;
     return stringify((...args));

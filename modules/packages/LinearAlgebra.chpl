@@ -607,7 +607,6 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   return M;
 }
 
-@chpldoc.nodoc
 proc chpl_varargsOKForMatrix(Arrays) param {
   if isHomogeneousTuple(Arrays) {
     return isArray(Arrays(0)) && Arrays(0).rank == 1;

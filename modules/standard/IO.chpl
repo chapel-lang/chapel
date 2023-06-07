@@ -1131,7 +1131,6 @@ class QioPluginChannel {
 
 // These functions let the C QIO code call the plugins
 // TODO: Move more of the QIO code to be pure Chapel
-@chpldoc.nodoc
 export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
@@ -1140,17 +1139,14 @@ export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_
   return ret;
 }
 
-@chpldoc.nodoc
 export proc chpl_qio_read_atleast(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.readAtLeast(amt);
 }
-@chpldoc.nodoc
 export proc chpl_qio_write(ch_plugin:c_void_ptr, amt:int(64)) {
   var c=(ch_plugin:unmanaged QioPluginChannel?)!;
   return c.write(amt);
 }
-@chpldoc.nodoc
 export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
   var c=(ch:unmanaged QioPluginChannel?)!;
   var err = c.close();
@@ -1158,27 +1154,22 @@ export proc chpl_qio_channel_close(ch:c_void_ptr):errorCode {
   return err;
 }
 
-@chpldoc.nodoc
 export proc chpl_qio_filelength(file:c_void_ptr, ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.filelength(length);
 }
-@chpldoc.nodoc
 export proc chpl_qio_getpath(file:c_void_ptr, ref str:c_string, ref len:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getpath(str, len);
 }
-@chpldoc.nodoc
 export proc chpl_qio_fsync(file:c_void_ptr):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.fsync();
 }
-@chpldoc.nodoc
 export proc chpl_qio_get_chunk(file:c_void_ptr, ref length:int(64)):errorCode {
   var f=(file:unmanaged QioPluginFile?)!;
   return f.getChunk(length);
 }
-@chpldoc.nodoc
 export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
     end:int(64), ref localeNames:c_void_ptr, ref nLocales:int(64)):errorCode {
   var strPtr:c_ptr(c_string);
@@ -1187,7 +1178,6 @@ export proc chpl_qio_get_locales_for_region(file:c_void_ptr, start:int(64),
   localeNames = strPtr:c_void_ptr;
   return ret;
 }
-@chpldoc.nodoc
 export proc chpl_qio_file_close(file:c_void_ptr):errorCode {
   var f = (file:unmanaged QioPluginFile?)!;
   var err = f.close();
@@ -3614,7 +3604,6 @@ proc fileReader.offset():int(64)
   do return offsetHelper(this, false);
 
 // remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-@chpldoc.nodoc
 proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
@@ -3647,7 +3636,6 @@ proc fileWriter.offset():int(64)
   do return offsetHelper(this, false);
 
 // remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-@chpldoc.nodoc
 proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
@@ -5180,7 +5168,6 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):err
   return EINVAL;
 }
 
-@chpldoc.nodoc
 config param chpl_testReadBinaryInternalEIO = false;
 
 private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, ref x:?t):errorCode where _isIoPrimitiveType(t) {
@@ -5282,7 +5269,6 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
   return EINVAL;
 }
 
-@chpldoc.nodoc
 config param chpl_testWriteBinaryInternalEIO = false;
 
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):errorCode where _isIoPrimitiveType(t) {
@@ -8857,14 +8843,12 @@ record itemReaderInternal {
 const stdin:fileReader(iokind.dynamic, true);
 stdin = try! (new file(0)).reader();
 
-@chpldoc.nodoc
 extern proc chpl_cstdout():chpl_cFilePtr;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
-@chpldoc.nodoc
 extern proc chpl_cstderr():chpl_cFilePtr;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);

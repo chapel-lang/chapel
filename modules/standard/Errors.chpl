@@ -155,7 +155,6 @@ module Errors {
   // will be read from this after all tasks that can add
   // errors have completed; at that point it no longer needs
   // to be parallel-safe.
-  @chpldoc.nodoc
   record chpl_TaskErrors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
@@ -401,7 +400,6 @@ module Errors {
     }
   }
 
-  @chpldoc.nodoc
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
     var nameC: c_string = __primitive("class name by id", cid);
@@ -411,7 +409,6 @@ module Errors {
     }
     return nameS;
   }
-  @chpldoc.nodoc
   proc chpl_describe_error(err: borrowed Error) : string {
     var nameS = chpl_error_type_name(err);
 
@@ -422,7 +419,6 @@ module Errors {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_do_fix_thrown_error(err: unmanaged Error?): unmanaged Error {
 
     var fixErr: unmanaged Error? = err;
@@ -448,7 +444,6 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   pragma "ignore in global analysis"
-  @chpldoc.nodoc
   proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
     return chpl_do_fix_thrown_error(owned.release(err));
   }
@@ -457,20 +452,17 @@ module Errors {
   pragma "always propagate line file info"
   pragma "ignore transfer errors"
   pragma "ignore in global analysis"
-  @chpldoc.nodoc
   proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
     return chpl_do_fix_thrown_error(owned.release(err));
   }
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_fix_thrown_error(err: _nilType) {
     return chpl_do_fix_thrown_error(nil);
   }
 
   pragma "last resort"
-  @chpldoc.nodoc
   proc chpl_fix_thrown_error(err) {
     type t = err.type;
     if isCoercible(t, borrowed Error?) {
@@ -487,19 +479,16 @@ module Errors {
   }
 
   pragma "last resort"
-  @chpldoc.nodoc
   proc chpl_fix_thrown_error(type errType) {
     compilerError("Cannot throw a type: '", errType:string, "'. Did you forget the keyword 'new'?");
   }
 
-  @chpldoc.nodoc
   proc chpl_delete_error(err: unmanaged Error?) {
     if err != nil then delete err;
   }
   pragma "function terminates program"
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_uncaught_error(err: unmanaged Error) {
     extern proc chpl_error_preformatted(c_string);
 
@@ -529,7 +518,6 @@ module Errors {
   // should be replaced by goto-error-handling.
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_propagate_error(err: unmanaged Error) {
     chpl_uncaught_error(err);
   }
@@ -537,7 +525,6 @@ module Errors {
   // from a forall loop, so that it is always TaskErrors
   // (since the author of the forall loop shouldn't need to know
   //  how many tasks were run in that loop).
-  @chpldoc.nodoc
   proc chpl_forall_error(err: unmanaged Error) : unmanaged Error {
     if err:unmanaged TaskErrors? then
       return err;
@@ -549,7 +536,6 @@ module Errors {
   // function helps the compiler throw errors from those generated casts.
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_enum_cast_error(casted: string, enumName: string) throws {
     if casted.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty string to enum '" + enumName + "'");
@@ -559,14 +545,12 @@ module Errors {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_enum_cast_error(casted: integral, enumName: string) throws {
     throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName, "'");
   }
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                           constName + "' has no integer value");
@@ -578,7 +562,6 @@ module Errors {
   // function helps the compiler throw errors from those generated casts.
   pragma "insert line file info"
   pragma "always propagate line file info"
-  @chpldoc.nodoc
   proc chpl_enum_cast_error(casted: bytes, enumName: string) throws {
     if casted.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty bytes to enum '" + enumName + "'");

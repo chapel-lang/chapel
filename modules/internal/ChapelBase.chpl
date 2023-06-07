@@ -1508,10 +1508,8 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class

@@ -980,7 +980,7 @@ module ChapelRange {
   // to work around casting limitations in code that calculates the ordinals
   // for low/high of a pre-allocated enum range, ex., in range/domain followers
 
-  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high, stride) {
+  inline proc ref range.chpl_setFields(low, high, stride) {
     this._low  = chpl__idxToInt(low):  this.intIdxType;
     this._high = chpl__idxToInt(high): this.intIdxType;
     if this.hasParamStrideAltvalAld() {
@@ -993,7 +993,7 @@ module ChapelRange {
     }
   }
 
-  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high) {
+  inline proc ref range.chpl_setFields(low, high) {
     compilerAssert(this.hasParamStride()); // otherwise stride = ?
     this._low  = chpl__idxToInt(low):  this.intIdxType;
     this._high = chpl__idxToInt(high): this.intIdxType;
@@ -1047,7 +1047,6 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_alignedLowAsIntForIter {
     if !hasUnitStride() && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
@@ -1143,7 +1142,6 @@ module ChapelRange {
       return helpAlignHigh(_high, _alignment, stride);
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_alignedHighAsIntForIter {
     if !hasUnitStride() && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
@@ -1263,7 +1261,6 @@ module ChapelRange {
     return lenAsUint: t;
   }
 
-  @chpldoc.nodoc
   proc range.chpl_sizeAsForIter(type t: integral): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
@@ -1316,7 +1313,6 @@ module ChapelRange {
                                   else this.alignedHighAsInt;
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_firstAsIntForIter {
     if this.bounds == boundKind.both {
       return this.firstAsInt;
@@ -1371,7 +1367,6 @@ module ChapelRange {
                                   else this.alignedLowAsInt;
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_lastAsIntForIter {
     if bounds == boundKind.both {
       return this.lastAsInt;
@@ -3620,7 +3615,6 @@ private inline proc rangeCastHelper(r, type t) throws {
   //# Internal helper functions.
   //#
 
-  @chpldoc.nodoc
   inline proc range.chpl__unTranslate(i) do
     return this - i;
 
@@ -3773,7 +3767,6 @@ private inline proc rangeCastHelper(r, type t) throws {
     }
   }
 
-  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isIntegralType(idxType) {
       // integer idxTypes are their own integer idxType
@@ -3789,7 +3782,6 @@ private inline proc rangeCastHelper(r, type t) throws {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
-  @chpldoc.nodoc
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }

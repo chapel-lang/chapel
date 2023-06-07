@@ -48,9 +48,7 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  @chpldoc.nodoc
   extern "_cfile" type chpl_cFilePtr; // can be removed when deprecation is complete
-  @chpldoc.nodoc
   extern "_cfiletype" type chpl_cFile; // direct uses of this type in the IO module
                                       // can be replaced with c_FILE when deprecation is complete
 
@@ -1293,13 +1291,9 @@ module CTypes {
   // using the internal name.
   // After the deprecated function is removed, we can remove the extra
   // definition and just have `isAnyCPtr` as a private nodoc function
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t) param do return false;
 
   /*
