@@ -56,7 +56,7 @@ class AnyClassType final : public ManageableType {
 
   static const AnyClassType* get(Context* context);
 
-  Genericity genericity() const override {
+  Type::Genericity genericity() const override {
     return GENERIC;
   }
 };
