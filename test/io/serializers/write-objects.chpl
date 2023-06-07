@@ -27,7 +27,7 @@ class D : C {
 }
 
 proc main() {
-  var li : list(owned object);
+  var li : list(owned RootClass);
   li.pushBack(new A());
   li.pushBack(new B());
   li.pushBack(new C());
