@@ -42,14 +42,6 @@ module CTypes {
   use HaltWrappers;
   public use ChapelSysCTypes;
 
-  @chpldoc.nodoc
-  proc chpl_typeMoveWarning(param name: string, param mod: string,
-                            param newmod: string = "CTypes") {
-    compilerWarning("type '" + name + "' has moved from '" + mod +
-                    "' to '" + newmod + "'; please update your " +
-                    "'use'/'import' statements accordingly.", errorDepth=2);
-  }
-
   /* The Chapel type corresponding to the C 'float' type */
   extern type c_float = real(32);
 
@@ -92,8 +84,6 @@ module CTypes {
   // all uses of this type should be replaced with c_FILE when deprecation is complete
   @chpldoc.nodoc
   type c_FILE_internal = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
-
-  // Former CPtr contents start here
 
   /*
 
