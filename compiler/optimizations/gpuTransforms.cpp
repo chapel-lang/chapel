@@ -1019,7 +1019,7 @@ static void logGpuizableLoops() {
   printf("\n");
 
   printf("GPU ELIGIBLE LOOPS:\n");
-  printf("------------------\n");
+  printf("-------------------\n");
   for (const auto& loop : eligibleLoops) {
     printf("%s\n", loop->stringLoc());
   }
