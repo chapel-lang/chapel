@@ -307,7 +307,8 @@ module ChapelIO {
     //
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
-                              const x:?t, name: string) throws {
+                              const x:?t) throws {
+      const name = __primitive("simple type name", x);
       const numIO = __numIOFields(t);
       if isClassType(t) then
         serializer.startClass(writer, name, numIO);
@@ -315,7 +316,7 @@ module ChapelIO {
         serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed object {
-        serializeDefaultImpl(writer, serializer, x.super, "super");
+        serializeDefaultImpl(writer, serializer, x.super);
       }
 
       param num_fields = __primitive("num fields", t);
@@ -335,7 +336,8 @@ module ChapelIO {
 
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
-                                ref x:?t, name:string) throws {
+                                ref x:?t) throws {
+      const name = __primitive("simple type name", x);
       if isClassType(t) then
         deserializer.startClass(reader, name);
       else
