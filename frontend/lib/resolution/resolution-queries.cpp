@@ -267,12 +267,14 @@ const QualifiedType& typeForBuiltin(Context* context,
 
   QualifiedType result;
 
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
 
-  auto search = map.find(name);
-  if (search != map.end()) {
-    const Type* t = search->second;
+  auto searchTypes = typeMap.find(name);
+  auto searchGlobals = globalMap.find(name);
+  if (searchTypes != typeMap.end()) {
+    const Type* t = searchTypes->second;
     CHPL_ASSERT(t);
 
     if (auto bct = t->toBasicClassType()) {
@@ -281,6 +283,8 @@ const QualifiedType& typeForBuiltin(Context* context,
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
+  } else if (searchGlobals != globalMap.end()) {
+    result = searchGlobals->second;
   } else {
     // Could be a non-type builtin like 'index'
     result = QualifiedType();
@@ -3576,6 +3580,31 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+
+template <typename T>
+QualifiedType paramTypeFromValue(Context* context, T value);
+
+template <>
+QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context, 0),
+                       BoolParam::get(context, value));
+}
+
+const std::unordered_map<UniqueString, QualifiedType>&
+getCompilerGeneratedGlobals(Context* context) {
+  QUERY_BEGIN(getCompilerGeneratedGlobals, context);
+
+  std::unordered_map<UniqueString, QualifiedType> result;
+  #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)\
+    result[UniqueString::get(context, IDENT__)] = \
+      paramTypeFromValue<TYPE__>(context, \
+                                 context->configuration().compilationGlobals.NAME__);
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+
+  return QUERY_END(result);
+}
 
 
 } // end namespace resolution
