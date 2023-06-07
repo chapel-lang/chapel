@@ -10,7 +10,7 @@ reportGpu.chpl:36
 reportGpu.chpl:100
 
 GPU ELIGIBLE LOOPS:
-------------------
+-------------------
 reportGpu.chpl:41
 reportGpu.chpl:45
 reportGpu.chpl:51
