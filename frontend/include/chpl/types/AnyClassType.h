@@ -57,7 +57,6 @@ class AnyClassType final : public ManageableType {
   static const AnyClassType* get(Context* context);
 
   Genericity genericity() const override {
-    // A CompositeType's generic-ness depends on the fields
     return GENERIC;
   }
 };

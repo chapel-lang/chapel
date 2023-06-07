@@ -3257,7 +3257,7 @@ getDecoratedClassForNew(Context* context, const New* node,
   auto basic = classType->basicClassType();
 
   if (!basic) {
-    context->error(node, "Attempt to 'new' the generic class type");
+    context->error(node, "attempt to 'new' the generic 'class' type");
     return nullptr;
   }
 
