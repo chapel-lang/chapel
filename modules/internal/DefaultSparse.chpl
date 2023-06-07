@@ -49,9 +49,9 @@ module DefaultSparse {
       this.dist = dist;
     }
 
-    proc stridable param {
-      return parentDom.stridable;
-    }
+    // deprecated by Vass in 1.31 to implement #17131
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc stridable param do return parentDom.strides.toStridable();
 
     override proc getNNZ(): int{
       return _nnz;
