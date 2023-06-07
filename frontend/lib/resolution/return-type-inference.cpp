@@ -243,6 +243,7 @@ struct ReturnTypeInferrer {
   void exitScope(const uast::AstNode* node);
 
   bool markReturnOrThrow();
+  bool hasReturnedOrThrown();
 
   bool enter(const Function* fn, RV& rv);
   void exit(const Function* fn, RV& rv);
@@ -436,6 +437,11 @@ bool ReturnTypeInferrer::markReturnOrThrow() {
   return oldValue;
 }
 
+bool ReturnTypeInferrer::hasReturnedOrThrown() {
+  if (returnFrames.empty()) return false;
+  return returnFrames.back()->returnsOrThrows;
+}
+
 bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
   return false;
 }
@@ -487,7 +493,7 @@ void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
 }
 
 bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
-  if (markReturnOrThrow()) {
+  if (hasReturnedOrThrown()) {
     // If it's statically known that we've already encountered a return or yield,
     // we can safely ignore subsequent returns.
   } else {
