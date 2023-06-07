@@ -826,9 +826,9 @@ module CTypes {
 
     The deprecated behavior is on by default. To opt in to the new behavior,
     compile your program with the following argument:
-    ``-s cPtrToStringBytesClassLogicalAddress=true``.
+    ``-s cPtrToLogicalValue=true``.
   */
-  config param cPtrToStringBytesClassLogicalAddress = false;
+  config param cPtrToLogicalValue = false;
 
   /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
@@ -840,7 +840,7 @@ module CTypes {
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -849,9 +849,9 @@ module CTypes {
     return c_pointer_return(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref s: string): c_ptr(string)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(s);
   }
@@ -861,7 +861,7 @@ module CTypes {
    :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -870,9 +870,9 @@ module CTypes {
     return c_pointer_return_const(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(s);
   }
@@ -887,7 +887,7 @@ module CTypes {
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -896,9 +896,9 @@ module CTypes {
     return c_pointer_return(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(b);
   }
@@ -908,7 +908,7 @@ module CTypes {
    :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -917,9 +917,9 @@ module CTypes {
     return c_pointer_return_const(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(b);
   }
@@ -932,25 +932,25 @@ module CTypes {
     freed or even reallocated.
   */
   inline proc c_ptrTo(ref c: class): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     return c : c_void_ptr : c_ptr(c.type);
   }
   inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     return c : c_void_ptr : c_ptr(c.type);
   }
 
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
   }
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
   }
@@ -960,25 +960,25 @@ module CTypes {
    which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     return c : c_void_ptr : c_ptrConst(c.type);
   }
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     return c : c_void_ptr : c_ptrConst(c.type);
   }
 
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(c);
   }
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(c);
   }
