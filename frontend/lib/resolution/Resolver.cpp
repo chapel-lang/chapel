@@ -645,6 +645,14 @@ static void varArgTypeQueryError(Context* context,
   result.setType(errType);
 }
 
+static bool isCallToClassManager(const FnCall* call) {
+  auto ident = call->calledExpression()->toIdentifier();
+  if (!ident) return false;
+  auto name = ident->name();
+  return name == USTR("owned") || name == USTR("shared") ||
+         name == USTR("unmanaged") || name == USTR("borrowed");
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const QualifiedType& actualType,
@@ -701,6 +709,18 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           }
         }
       }
+    } else if (isCallToClassManager(call) &&
+               call->numActuals() == 1 &&
+               actualTypePtr->isClassType()) {
+      // Strip the owned/shared/etc. for both the formal and the type
+      // This works since the recursive case expects the actual type to
+      // be a composite type, which manageable types are.
+
+      auto classArg = call->actual(0);
+      auto actualMt = actualTypePtr->toClassType()->manageableType();
+      resolveTypeQueries(classArg, QualifiedType(actualType.kind(), actualMt),
+                         isNonStarVarArg,
+                         /* isTopLevel */ false);
     } else {
       // Error if it is not calling a type constructor
       auto actualCt = actualTypePtr->toCompositeType();

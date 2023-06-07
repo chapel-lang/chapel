@@ -277,7 +277,7 @@ const QualifiedType& typeForBuiltin(Context* context,
     const Type* t = searchTypes->second;
     CHPL_ASSERT(t);
 
-    if (auto bct = t->toBasicClassType()) {
+    if (auto bct = t->toManageableType()) {
       auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
       t = ClassType::get(context, bct, /*manager*/ nullptr, d);
     }
@@ -989,7 +989,8 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
     if (auto bct = mt->toBasicClassType()) {
       return getFieldsGenericity(context, bct, ignore);
     } else {
-      // TODO
+      CHPL_ASSERT(mt->isAnyClassType());
+      return Type::GENERIC;
     }
   }
 
@@ -1200,7 +1201,8 @@ QualifiedType getInstantiationType(Context* context,
       if (auto formalBct = formalCt->basicClassType()) {
         bct = formalBct;
       } else {
-        // TODO
+        CHPL_ASSERT(formalCt->manageableType()->toManageableType());
+        bct = actualCt->basicClassType();
       }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
@@ -2417,7 +2419,7 @@ static const Type* getManagedClassType(Context* context,
   if (ci.numActuals() > 0)
     t = ci.actual(0).type().type();
 
-  if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
+  if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
     context->error(astForErr, "invalid class type construction");
     return ErroneousType::get(context);
   }
@@ -2431,7 +2433,7 @@ static const Type* getManagedClassType(Context* context,
     if (ct->decorator().isNonNilable())
       d = d.addNonNil();
   } else {
-    mt = t->toBasicClassType();
+    mt = t->toManageableType();
   }
 
   CHPL_ASSERT(mt);
@@ -2538,7 +2540,7 @@ static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
 
-  if (auto bct = t->toBasicClassType()) {
+  if (auto bct = t->toManageableType()) {
     auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
     ct = ClassType::get(context, bct, nullptr, d);
   } else {

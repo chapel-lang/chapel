@@ -21,6 +21,7 @@
 #define CHPL_TYPES_CLASS_TYPE_H
 
 #include "chpl/types/BasicClassType.h"
+#include "chpl/types/AnyClassType.h"
 #include "chpl/types/ClassTypeDecorator.h"
 #include "chpl/types/Type.h"
 

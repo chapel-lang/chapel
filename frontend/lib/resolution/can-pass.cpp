@@ -512,7 +512,6 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
     return fail();
   }
 
-  // TODO
   auto actualBct = actualCt->basicClassType();
   auto formalBct = formalCt->basicClassType();
 
@@ -525,7 +524,16 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   bool converts = decResult.conversionKind_ != NONE;
   bool instantiates = decResult.instantiates_;
 
-  if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+  if (auto formalAct = formalCt->manageableType()->toAnyClassType()) {
+    // Formal is the generic `class`. This is an instantiation since
+    // that's always generic.
+    return CanPassResult(/* passes */ true,
+                         /* instantiates */ true,
+                         /* promotes */ false,
+                         /* conversion */ NONE);
+  } else if (auto actualAct = actualCt->manageableType()->toAnyClassType()) {
+    CHPL_ASSERT(false && "probably shouldn't happen");
+  } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
     // the basic class types are the same
     // or there was a subclass relationship
     // or there was instantiation
