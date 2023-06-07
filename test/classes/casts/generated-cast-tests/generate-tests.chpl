@@ -48,15 +48,15 @@ managmentTypesAll[D.high+1..D.high*2] = ([x in managmentTypes] x + "?");
 // generate generic stuff all tests need
 proc generateFile(filename: string, const ref lines: list(string)) {
   var chplLines = new list(string);
-  chplLines.append("""// AUTO-GENERATED: Do not edit
+  chplLines.pushBack("""// AUTO-GENERATED: Do not edit
 class A {}
 class Parent {}
 class Child : Parent {}
 """);
 
-  chplLines.append(lines);
+  chplLines.pushBack(lines);
 
-  chplLines.append("""proc main() {
+  chplLines.pushBack("""proc main() {
   foo();
 }
   """);
@@ -70,20 +70,20 @@ proc generateOneFile(filename: string,
                      const ref lines: list(string),
                      numModules: integral) {
   var chplLines = new list(string);
-  chplLines.append("""// AUTO-GENERATED: Do not edit
+  chplLines.pushBack("""// AUTO-GENERATED: Do not edit
 module %s {
 class A {}
 class Parent {}
 class Child : Parent {}
 """.format(filename));
 
-  chplLines.append(lines);
+  chplLines.pushBack(lines);
 
-  chplLines.append("proc main() {");
+  chplLines.pushBack("proc main() {");
   for i in 1..numModules do
-    chplLines.append("  M%n.foo();".format(i));
-  chplLines.append("}");
-  chplLines.append("}");
+    chplLines.pushBack("  M%n.foo();".format(i));
+  chplLines.pushBack("}");
+  chplLines.pushBack("}");
 
   {
     var w = openWriter(filename+".chpl");
@@ -159,10 +159,10 @@ proc generate(allowed: set(2*string),
       then generateFile(filename, chplLines);
     if isLegal && ! generateErrorCases {
       numLegalModules += 1;
-      legalFileLines.append("module M%n {".format(numLegalModules));
-      legalFileLines.append("use noerror;");
-      legalFileLines.append(chplLines);
-      legalFileLines.append("}");
+      legalFileLines.pushBack("module M%n {".format(numLegalModules));
+      legalFileLines.pushBack("use noerror;");
+      legalFileLines.pushBack(chplLines);
+      legalFileLines.pushBack("}");
     }
   }
 
@@ -238,17 +238,17 @@ proc generateExplicitCasts() {
                          allocToType: string): list(string) {
     var chplLines: list(string);
 
-    chplLines.append("proc foo() {");
-    chplLines.append("  // casting from %s to %s".format(fromType, toType));
+    chplLines.pushBack("proc foo() {");
+    chplLines.pushBack("  // casting from %s to %s".format(fromType, toType));
     if allocFromType != fromType {
-      chplLines.append("  var alloc = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = alloc;".format(fromType));
+      chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = alloc;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
-    chplLines.append("  var a_ = a:%s;".format(toType));
-    chplLines.append("}");
+    chplLines.pushBack("  var a_ = a:%s;".format(toType));
+    chplLines.pushBack("}");
     return chplLines;
   }
   generate(allowed, allowedUpcast, allowedDowncast, writeEachTestCase);
@@ -310,17 +310,17 @@ proc generateCoerceInitAndAssign(doInit: bool = true) {
                      toType: string,
                      allocToType: string): list(string) {
     var chplLines: list(string);
-    chplLines.append("proc foo() {");
-    chplLines.append("  // coercing from %s to %s".format(fromType, toType));
+    chplLines.pushBack("proc foo() {");
+    chplLines.pushBack("  // coercing from %s to %s".format(fromType, toType));
     if allocFromType != fromType {
-      chplLines.append("  var alloc = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = alloc;".format(fromType));
+      chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = alloc;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
-    chplLines.append("  var a_:%s = a;".format(toType));
-    chplLines.append("}");
+    chplLines.pushBack("  var a_:%s = a;".format(toType));
+    chplLines.pushBack("}");
     return chplLines;
   }
 
@@ -331,24 +331,24 @@ proc generateCoerceInitAndAssign(doInit: bool = true) {
                      toType: string,
                      allocToType:string): list(string) {
     var chplLines: list(string);
-    chplLines.append("proc foo() {");
-    chplLines.append("  // coercing from %s to %s".format(fromType, toType));
+    chplLines.pushBack("proc foo() {");
+    chplLines.pushBack("  // coercing from %s to %s".format(fromType, toType));
     if allocFromType != fromType {
-      chplLines.append("  var allocFrom = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = allocFrom;".format(fromType));
+      chplLines.pushBack("  var allocFrom = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = allocFrom;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
     if allocToType != toType {
-      chplLines.append("  var allocTo = new %s();".format(allocToType));
-      chplLines.append("  var a_:%s = allocTo;".format(toType));
+      chplLines.pushBack("  var allocTo = new %s();".format(allocToType));
+      chplLines.pushBack("  var a_:%s = allocTo;".format(toType));
     }
     else {
-      chplLines.append("  var a_ = new %s();".format(toType));
+      chplLines.pushBack("  var a_ = new %s();".format(toType));
     }
-    chplLines.append("  a_ = a;");
-    chplLines.append("}");
+    chplLines.pushBack("  a_ = a;");
+    chplLines.pushBack("}");
     return chplLines;
   }
 
@@ -427,18 +427,18 @@ proc generateArgumentConst() {
                      toType: string,
                      allocToType: string): list(string) {
     var chplLines: list(string);
-    chplLines.append("// coercing from %s to %s".format(fromType, toType));
-    chplLines.append("proc bar(const x: %s) {}".format(toType));
-    chplLines.append("proc foo() {");
+    chplLines.pushBack("// coercing from %s to %s".format(fromType, toType));
+    chplLines.pushBack("proc bar(const x: %s) {}".format(toType));
+    chplLines.pushBack("proc foo() {");
     if allocFromType != fromType {
-      chplLines.append("  var alloc = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = alloc;".format(fromType));
+      chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = alloc;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
-    chplLines.append("  bar(a);");
-    chplLines.append("}");
+    chplLines.pushBack("  bar(a);");
+    chplLines.pushBack("}");
     return chplLines;
   }
 
@@ -497,18 +497,18 @@ proc generateArgumentIn(doConst: bool = false) {
                      toType: string,
                      allocToType: string): list(string) {
       var chplLines: list(string);
-      chplLines.append("// coercing from %s to %s".format(fromType, toType));
-      chplLines.append("proc bar(%s x: %s) {}".format(intent, toType));
-      chplLines.append("proc foo() {");
+      chplLines.pushBack("// coercing from %s to %s".format(fromType, toType));
+      chplLines.pushBack("proc bar(%s x: %s) {}".format(intent, toType));
+      chplLines.pushBack("proc foo() {");
       if allocFromType != fromType {
-        chplLines.append("  var alloc = new %s();".format(allocFromType));
-        chplLines.append("  var a:%s = alloc;".format(fromType));
+        chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+        chplLines.pushBack("  var a:%s = alloc;".format(fromType));
       }
       else {
-        chplLines.append("  var a = new %s();".format(fromType));
+        chplLines.pushBack("  var a = new %s();".format(fromType));
       }
-      chplLines.append("  bar(a);");
-      chplLines.append("}");
+      chplLines.pushBack("  bar(a);");
+      chplLines.pushBack("}");
       return chplLines;
   }
 
@@ -551,18 +551,18 @@ proc generateArgumentRef(doConst: bool = false) {
                      toType: string,
                      allocToType: string): list(string) {
       var chplLines: list(string);
-      chplLines.append("// coercing from %s to %s".format(fromType, toType));
-      chplLines.append("proc bar(%s x: %s) {}".format(intent, toType));
-      chplLines.append("proc foo() {");
+      chplLines.pushBack("// coercing from %s to %s".format(fromType, toType));
+      chplLines.pushBack("proc bar(%s x: %s) {}".format(intent, toType));
+      chplLines.pushBack("proc foo() {");
       if allocFromType != fromType {
-        chplLines.append("  var alloc = new %s();".format(allocFromType));
-        chplLines.append("  var a:%s = alloc;".format(fromType));
+        chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+        chplLines.pushBack("  var a:%s = alloc;".format(fromType));
       }
       else {
-        chplLines.append("  var a = new %s();".format(fromType));
+        chplLines.pushBack("  var a = new %s();".format(fromType));
       }
-      chplLines.append("  bar(a);");
-      chplLines.append("}");
+      chplLines.pushBack("  bar(a);");
+      chplLines.pushBack("}");
       return chplLines;
   }
 
@@ -629,32 +629,32 @@ proc generateArgumentOut() {
                      toType: string,
                      allocToType: string): list(string) {
     var chplLines: list(string);
-    chplLines.append("// coercing from %s to %s".format(fromType, toType));
+    chplLines.pushBack("// coercing from %s to %s".format(fromType, toType));
 
     // doing a global alloc to avoid lifetime issues
     if allocToType != toType {
-      chplLines.append("var globalAlloc = new %s();".format(allocToType));
+      chplLines.pushBack("var globalAlloc = new %s();".format(allocToType));
     }
-    chplLines.append("proc bar(out x: %s) {".format(toType));
+    chplLines.pushBack("proc bar(out x: %s) {".format(toType));
     if allocToType != toType {
-      chplLines.append("  x = globalAlloc;");
+      chplLines.pushBack("  x = globalAlloc;");
     }
     else {
-      chplLines.append("  x = new %s();".format(toType));
+      chplLines.pushBack("  x = new %s();".format(toType));
     }
-    chplLines.append("}");
+    chplLines.pushBack("}");
 
-    chplLines.append("proc foo() {");
+    chplLines.pushBack("proc foo() {");
     // alloc bere is just a dummy for the non nilable case
     if allocFromType != fromType {
-      chplLines.append("  var alloc = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = alloc;".format(fromType));
+      chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = alloc;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
-    chplLines.append("  bar(a);");
-    chplLines.append("}");
+    chplLines.pushBack("  bar(a);");
+    chplLines.pushBack("}");
     return chplLines;
   }
 
@@ -684,31 +684,31 @@ proc generateArgumentInout() {
                      toType: string,
                      allocToType: string): list(string) {
     var chplLines: list(string);
-    chplLines.append("// coercing from %s to %s".format(fromType, toType));
+    chplLines.pushBack("// coercing from %s to %s".format(fromType, toType));
 
     // doing a global alloc to avoid lifetime issues
     if allocToType != toType {
-      chplLines.append("var globalAlloc = new %s();".format(allocToType));
+      chplLines.pushBack("var globalAlloc = new %s();".format(allocToType));
     }
-    chplLines.append("proc bar(inout x: %s) {".format(toType));
+    chplLines.pushBack("proc bar(inout x: %s) {".format(toType));
     if allocToType != toType {
-      chplLines.append("  x = globalAlloc;");
+      chplLines.pushBack("  x = globalAlloc;");
     }
     else {
-      chplLines.append("  x = new %s();".format(toType));
+      chplLines.pushBack("  x = new %s();".format(toType));
     }
-    chplLines.append("}");
+    chplLines.pushBack("}");
 
-    chplLines.append("proc foo() {");
+    chplLines.pushBack("proc foo() {");
     if allocFromType != fromType {
-      chplLines.append("  var alloc = new %s();".format(allocFromType));
-      chplLines.append("  var a:%s = alloc;".format(fromType));
+      chplLines.pushBack("  var alloc = new %s();".format(allocFromType));
+      chplLines.pushBack("  var a:%s = alloc;".format(fromType));
     }
     else {
-      chplLines.append("  var a = new %s();".format(fromType));
+      chplLines.pushBack("  var a = new %s();".format(fromType));
     }
-    chplLines.append("  bar(a);");
-    chplLines.append("}");
+    chplLines.pushBack("  bar(a);");
+    chplLines.pushBack("}");
     return chplLines;
   }
 
