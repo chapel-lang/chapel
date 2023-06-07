@@ -944,18 +944,17 @@ module CTypes {
   }
 
   /*
-   Like :proc:`c_ptrTo` for class types, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+  inline proc c_ptrToConst(const ref c: class): c_void_ptr
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptrConst(c.type);
+    return c : c_void_ptr;
   }
-  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+  inline proc c_ptrToConst(const ref c: class?): c_void_ptr
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptrConst(c.type);
+    return c : c_void_ptr;
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
