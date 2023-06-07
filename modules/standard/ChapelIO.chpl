@@ -663,19 +663,15 @@ module ChapelIO {
   @chpldoc.nodoc
   proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
-  @chpldoc.nodoc
   proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.readThis(f) throws {
     this = f.read(uint(64)) : chpl_taskID_t;
   }
 
-  @chpldoc.nodoc
   proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
     ret.readThis(reader);
@@ -721,11 +717,11 @@ module ChapelIO {
 
     const (start, comma, comma1tup, end) = getLiterals();
 
-    proc helper(const ref arg) throws where f.writing { f.write(arg); }
-    proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
+    proc helper(const ref arg) throws where f._writing { f.write(arg); }
+    proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if !binary {
@@ -913,7 +909,6 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
-  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
     use IO only stringify;
     return stringify((...args));

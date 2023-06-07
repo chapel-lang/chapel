@@ -64,13 +64,6 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
-  // This is a compatibility flag to maintain old behavior for applications
-  // that rely on it (e.g., Arkouda). The tests for new features will run
-  // with this set to FALSE. At a certain point the old behavior will be
-  // deprecated, and this flag will be removed.
-  // TODO: Move to a separate module if we add closure stuff to module code.
-  config param fcfsUseLegacyBehavior = true;
-
   // This flag toggles on the new pointer-based implementation.
   // It is unstable and experimental.
   config param fcfsUsePointerImplementation = false;
@@ -1508,10 +1501,8 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
@@ -2498,8 +2489,14 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func() type { return __primitive("create fn type", void); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;

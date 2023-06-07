@@ -61,22 +61,17 @@ module ChapelDebugPrint {
   // (chpl__testParFlag and related code is here to avoid order
   //  of resolution issues.)
 
-  @chpldoc.nodoc
   config param chpl__testParFlag = false;
-  @chpldoc.nodoc
   var chpl__testParOn = false;
 
-  @chpldoc.nodoc
   proc chpl__testParStart() {
     chpl__testParOn = true;
   }
 
-  @chpldoc.nodoc
   proc chpl__testParStop() {
     chpl__testParOn = false;
   }
 
-  @chpldoc.nodoc
   proc chpl__testPar(args...) {
     if chpl__testParFlag && chpl__testParOn {
       // This function is written this way because it is called
@@ -95,7 +90,6 @@ module ChapelDebugPrint {
       printf("CHPL TEST PAR (%s:%i): %s\n", file_cs, line:c_int, str.c_str());
     }
   }
-  @chpldoc.nodoc
   proc chpl__testParWriteln(args...) {
     if chpl__testParFlag && chpl__testParOn {
       const file_cs : c_string = __primitive("chpl_lookupFilename",

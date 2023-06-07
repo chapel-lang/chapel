@@ -113,20 +113,17 @@ module SharedObject {
    */
   pragma "managed pointer"
   record _shared {
-    @chpldoc.nodoc
     type chpl_t;         // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that compiler also allows coercion to the borrow type.
     forwarding borrow();
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn:unmanaged ReferenceCount?; // reference counter
 
     /*
@@ -534,7 +531,6 @@ module SharedObject {
 
   // This is a workaround
   pragma "auto destroy fn"
-  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
@@ -554,12 +550,12 @@ module SharedObject {
   proc _shared._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp == nil then halt("internal error - read nil");
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
       var tmp = this.chpl_p : borrowed class?;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
         this.doClear();
@@ -665,7 +661,7 @@ module SharedObject {
   }
 
   // cast from owned to shared
-  @chpldoc.nodoc
+  @deprecated("casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead")
   inline operator :(pragma "nil from arg" pragma "leaves arg nil" in x:owned, type t:_shared) {
     if t.chpl_t != ? && t.chpl_t != x.chpl_t then
       compilerError("Cannot change class type in conversion from '",
@@ -743,11 +739,9 @@ module WeakPointer {
     type classType;
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p: __primitive("to nilable class", _to_unmanaged(classType)); // instance pointer
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
     // ---------------- Initializers ----------------

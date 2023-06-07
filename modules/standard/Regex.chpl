@@ -511,7 +511,6 @@ proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
 @chpldoc.nodoc
 inline operator regexMatch.!(m: regexMatch) do return !m.matched;
 
-@chpldoc.nodoc
 inline proc regexMatch.chpl_cond_test_method() do return this.matched;
 
 /*  This function extracts the part of a string matching a regular
@@ -548,7 +547,6 @@ private proc serializedType(type exprType) type {
 /* We hold a copy of pattern string/bytes in its serialized form inside
  * this record.
  */
-@chpldoc.nodoc
 record chpl_serializeHelper {
   type exprType;
   var pattern:serializedType(exprType);
@@ -719,12 +717,10 @@ record regex {
                              this._regex);
   }
 
-  @chpldoc.nodoc
   proc chpl__serialize() {
     return _serialize();
   }
 
-  @chpldoc.nodoc
   proc type chpl__deserialize(data) {
     var ret:regex(exprType);
     ret._deserialize(data);

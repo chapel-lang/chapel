@@ -38,20 +38,16 @@ module GPU
   use ChplConfig;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_write(const str : c_string) : void;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_printTimeDelta(
     msg : c_string, start : uint, stop : uint) : void;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
   /*

@@ -198,7 +198,6 @@ class ReplicatedDom : BaseRectangularDom {
   //
   // helper function to get the local domain safely
   //
-  @chpldoc.nodoc
   proc chpl_myLocDom() {
     if boundsChecking then
       if (!dist.targetLocDom.contains(here.id)) then
@@ -400,7 +399,6 @@ class ReplicatedArr : AbsBaseArr {
   //
   // helper function to get the local array safely
   //
-  @chpldoc.nodoc
   proc chpl_myLocArr() {
     if boundsChecking then
       if (!dom.dist.targetLocDom.contains(here.id)) then
@@ -585,11 +583,11 @@ proc ReplicatedArr.dsiBoundsCheck(indexx) {
 
 // Write the array out to the given Writer serially.
 proc ReplicatedArr.dsiSerialWrite(f): void {
-  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialWrite(f);
+  localArrs[f._readWriteThisFromLocale.id]!.arrLocalRep._value.dsiSerialWrite(f);
 }
 
 proc ReplicatedArr.dsiSerialRead(f, loc): void {
-  localArrs[f.readWriteThisFromLocale().id]!.arrLocalRep._value.dsiSerialRead(f);
+  localArrs[f._readWriteThisFromLocale.id]!.arrLocalRep._value.dsiSerialRead(f);
 }
 
 proc isReplicatedArr(arr) param {
@@ -597,7 +595,7 @@ proc isReplicatedArr(arr) param {
 }
 
 proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
-  const origloc = f.readWriteThisFromLocale();
+  const origloc = f._readWriteThisFromLocale;
   on origloc do
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
 }

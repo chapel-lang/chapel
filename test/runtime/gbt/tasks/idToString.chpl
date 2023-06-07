@@ -16,7 +16,7 @@ proc main() {
     var buf: [1..bufLen] buf_t;
     var idStr = chpl_task_idToString(c_ptrTo(buf), buf.size:c_size_t, id);
     writeln('task ID of ', what, ' is: ',
-            if idStr==c_nil:c_string then '<OVF>'
+            if idStr==nil:c_string then '<OVF>'
                                      else string.createCopyingBuffer(idStr));
   }
 

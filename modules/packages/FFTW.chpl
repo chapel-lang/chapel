@@ -161,7 +161,7 @@ module FFTW {
     An opaque type used to store and reuse FFTW plans across multiple
     routines.
   */
-  extern type fftw_plan; // opaque type
+  extern type fftw_plan = c_ptr(opaque);
 
   /*
     Type alias for FFTW flags

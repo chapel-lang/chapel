@@ -83,7 +83,7 @@ module CString {
   }
 
   // let us set c_strings to NULL
-  inline operator c_string.=(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
+  inline operator c_string.=(ref a:c_string, b:_nilType) { a = nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
@@ -233,8 +233,8 @@ module CString {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(ref cs: c_string);
-    if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);
-    // cs = c_nil;
+    if (cs != nil:c_string) then chpl_rt_free_c_string(cs);
+    // cs = nil;
   }
 
   proc c_string.writeThis(x) throws {
