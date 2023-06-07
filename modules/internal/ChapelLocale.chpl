@@ -149,11 +149,6 @@ module ChapelLocale {
       return this._value._getChildCount();
     }
 
-    @deprecated(notes="'locale.getChildCount' is deprecated")
-    inline proc getChildCount() {
-      return this._value.getChildCount();
-    }
-
   } // end of record _locale
 
 
@@ -271,15 +266,6 @@ module ChapelLocale {
   }
 
   /*
-    ``callStackSize`` holds the size of a task stack on a given
-    locale.  Thus, ``here.callStackSize`` is the size of the call
-    stack for any task on the current locale, including the
-    caller.
-  */
-  @deprecated(notes="'locale.callStackSize' is deprecated.")
-  inline proc locale.callStackSize { return this._value.callStackSize; }
-
-  /*
     Get the number of tasks running on this locale.
 
     This method is intended to guide task creation during a parallel
@@ -338,8 +324,6 @@ module ChapelLocale {
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
 
     var maxTaskPar: int;
-
-    var callStackSize: c_size_t;
 
     proc id : int do return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
@@ -439,13 +423,6 @@ module ChapelLocale {
       return 0;
     }
 
-    @chpldoc.nodoc
-    @deprecated(notes="'locale.getChildCount' is deprecated")
-    proc getChildCount() : int {
-      HaltWrappers.pureVirtualMethodHalt();
-      return 0;
-    }
-
 // Part of the required locale interface.
 // Commented out because presently iterators are statically bound.
 //    iter getChildIndices() : int {
@@ -461,12 +438,6 @@ module ChapelLocale {
 
     @chpldoc.nodoc
     proc _getChild(idx:int) : locale {
-      HaltWrappers.pureVirtualMethodHalt();
-    }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'locale.getChild' is deprecated")
-    proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
@@ -517,13 +488,7 @@ module ChapelLocale {
     override proc _getChildCount() : int {
       return 0;
     }
-    override proc getChildCount() : int {
-      return 0;
-    }
     override proc _getChild(idx:int) : locale {
-      return new locale(this);
-    }
-    override proc getChild(idx:int) : locale {
       return new locale(this);
     }
     override proc addChild(loc:locale)

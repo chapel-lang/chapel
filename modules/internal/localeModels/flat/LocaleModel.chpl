@@ -102,19 +102,11 @@ module LocaleModel {
 
     proc getChildSpace() do return chpl_emptyLocaleSpace;
 
-    override proc getChildCount() do return 0;
     override proc _getChildCount() do return 0;
 
     iter getChildIndices() : int {
       for idx in chpl_emptyLocaleSpace do
         yield idx;
-    }
-
-    pragma "unsafe"
-    override proc getChild(idx:int) : locale {
-      halt("requesting a child from a flat LocaleModel locale");
-      var tmp:locale; // nil
-      return tmp;
     }
 
     pragma "unsafe"
@@ -186,7 +178,6 @@ module LocaleModel {
       f.write(name);
     }
 
-    override proc getChildCount() do return this.myLocaleSpace.size;
     override proc _getChildCount() do return this.myLocaleSpace.size;
 
     proc getChildSpace() do return this.myLocaleSpace;
@@ -196,7 +187,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) do return this.myLocales[idx];
     override proc _getChild(idx:int) do return this.myLocales[idx];
 
     iter getChildren() : locale  {

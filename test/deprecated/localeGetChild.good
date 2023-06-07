@@ -1,2 +1,0 @@
-localeGetChild.chpl:1: warning: 'locale.getChild' is deprecated
-localeGetChild.chpl:1: error: halt reached - requesting a child from a flat LocaleModel locale
