@@ -124,7 +124,7 @@ void Type::gatherBuiltins(Context* context,
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
-  gatherType(context, map, "todo", AnyClassType::get(context));
+  gatherType(context, map, "class", AnyClassType::get(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

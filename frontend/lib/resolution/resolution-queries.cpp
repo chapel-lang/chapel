@@ -1228,8 +1228,6 @@ QualifiedType getInstantiationType(Context* context,
       classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
     } else if (formalT->isAnyManagementNilableType()) {
       classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NILABLE;
-    } else if (formalT->isAnyManagementNonNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NONNIL;
     } else if (formalT->isAnyOwnedType() &&
                actualCt->decorator().isManaged() &&
                actualCt->manager()->isAnyOwnedType()) {
