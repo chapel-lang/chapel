@@ -1677,7 +1677,7 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     rwLiteral("{");
@@ -1686,7 +1686,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f.write(ranges(i));
+      if f._writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1737,14 +1737,14 @@ module DefaultRectangular {
   proc _supportsBulkElements(f, arr) param : bool {
     use Reflection;
     var temp : c_ptr(arr.eltType);
-    if f.writing then
+    if f._writing then
       return Reflection.canResolveMethod(f.serializer, "writeBulkElements", f, temp, 0:uint);
     else
       return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
   }
 
   proc _supportsSerializers(f) param : bool {
-    if f.writing then return f.serializerType != nothing;
+    if f._writing then return f.serializerType != nothing;
     else return f.deserializerType != nothing;
   }
 
@@ -1764,14 +1764,14 @@ module DefaultRectangular {
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
-    ref fmt = if f.writing then f.serializer else f.deserializer;
+    ref fmt = if f._writing then f.serializer else f.deserializer;
 
     proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
 
       type strType = idxSignedType;
       const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
 
-      if f.writing then
+      if f._writing then
         fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
       else
         fmt.startArrayDim(f);
@@ -1780,7 +1780,7 @@ module DefaultRectangular {
       if dim == rank-1 {
         for j in dom.dsiDim(dim) by makeStridePositive {
           idx(dim) = j;
-          if f.writing then
+          if f._writing then
             fmt.writeArrayElement(f, arr.dsiAccess(idx));
           else {
             arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
@@ -1800,7 +1800,7 @@ module DefaultRectangular {
       fmt.endArrayDim(f);
     }
 
-    if f.writing then
+    if f._writing then
       fmt.startArray(f, dom.dsiNumIndices:uint);
     else
       fmt.startArray(f);
@@ -1812,16 +1812,16 @@ module DefaultRectangular {
   }
 
   proc _readWriteBulk(f, arr, dom) throws {
-    ref fmt = if f.writing then f.serializer else f.deserializer;
+    ref fmt = if f._writing then f.serializer else f.deserializer;
 
     const len = dom.dsiNumIndices:uint;
-    if f.writing then
+    if f._writing then
       fmt.startArray(f, len);
     else
       fmt.startArray(f);
 
     var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
-    if f.writing {
+    if f._writing {
       fmt.writeBulkElements(f, ptr, len);
     } else {
       fmt.readBulkElements(f, ptr, len);
@@ -1839,7 +1839,7 @@ module DefaultRectangular {
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     proc rwSpaces(dim:int) throws {
@@ -1868,13 +1868,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f.write(arr.dsiAccess(idx));
+          if f._writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
@@ -1918,7 +1918,7 @@ module DefaultRectangular {
       // byte order is set to native or its equivalent.
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
-        var rw = if f.writing then "write" else "read";
+        var rw = if f._writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
                "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
@@ -1928,7 +1928,7 @@ module DefaultRectangular {
       const idx = arr.getDataIndex(dom.dsiLow);
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
-        if f.writing {
+        if f._writing {
           f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f._readBytes(_ddata_shift(arr.eltType, src, idx), size);

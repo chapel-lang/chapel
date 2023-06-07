@@ -2538,9 +2538,13 @@ record fileReader {
 
 /* Returns a bool indicating whether the fileReader is used for writing.  It is
    always ``false`` */
+@deprecated(notes="'fileReader.writing' is deprecated and will be removed in a future release")
 proc fileReader.writing param: bool {
   return false;
 }
+
+@chpldoc.nodoc
+proc fileReader._writing param: bool do return false;
 
 /*
   Return a mutable reference to this fileReader's deserializer.
@@ -2608,10 +2612,13 @@ record fileWriter {
 
 /* Returns a bool indicating whether the fileWriter is used for writing.  It is
    always ``true`` */
+@deprecated(notes="'fileWriter.writing' is deprecated and will be removed in a future release")
 proc fileWriter.writing param: bool {
   return true;
 }
 
+@chpldoc.nodoc
+proc fileWriter._writing param: bool do return true;
 
 /*
   Return a mutable reference to this fileWriter's serializer.
@@ -3165,7 +3172,7 @@ proc fileReader.init(param kind:iokind, param locking:bool, in deserializer:?,
       local_style.byteorder = kind:uint(8);
     }
     error = qio_channel_create(this._channel_internal, f._file_internal,
-                               hints._internal, !this.writing, this.writing,
+                               hints._internal, true, false,
                                start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
@@ -3201,7 +3208,7 @@ proc fileWriter.init(param kind:iokind, param locking:bool, in serializer:?,
       local_style.byteorder = kind:uint(8);
     }
     error = qio_channel_create(this._channel_internal, f._file_internal,
-                               hints._internal, !this.writing, this.writing,
+                               hints._internal, false, true,
                                start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
@@ -4335,6 +4342,7 @@ proc fileWriter._set_styleInternal(style: iostyleInternal) {
    that is the formal argument to a `readThis` method.
 
  */
+@unstable("'readWriteThisFromLocale' is unstable and may be removed or modified in a future release")
 inline
 proc fileReader.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
@@ -4347,6 +4355,7 @@ proc fileReader.readWriteThisFromLocale() {
    that is the formal argument to a `writeThis` method.
 
  */
+@unstable("'readWriteThisFromLocale' is unstable and may be removed or modified in a future release")
 inline
 proc fileWriter.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
@@ -4361,7 +4370,7 @@ proc fileWriter.readWriteThisFromLocale() {
 @chpldoc.nodoc
 inline
 proc fileReader.getLocaleOfIoRequest() {
-  var ret = this.readWriteThisFromLocale();
+  var ret = this._readWriteThisFromLocale;
   if ret == nilLocale then
     ret = here;
   return ret;
@@ -4376,7 +4385,7 @@ proc fileReader.getLocaleOfIoRequest() {
 @chpldoc.nodoc
 inline
 proc fileWriter.getLocaleOfIoRequest() {
-  var ret = this.readWriteThisFromLocale();
+  var ret = this._readWriteThisFromLocale;
   if ret == nilLocale then
     ret = here;
   return ret;
@@ -8451,6 +8460,7 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
 
 // Documented in the varargs version
 @chpldoc.nodoc
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
@@ -8473,6 +8483,7 @@ proc fileReader.readln():bool throws {
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl);
@@ -8553,6 +8564,7 @@ proc fileReader.read(type t) throws {
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(type t) throws {
   var tmp:t;
   var nl = new ioNewline();
@@ -8573,6 +8585,7 @@ proc fileReader.readln(type t) throws {
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
  */
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   var nl = new ioNewline();
@@ -8929,16 +8942,19 @@ proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==
 }
 
 /* Equivalent to ``stdin.readln``. See :proc:`fileReader.readln` */
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
 }
 // documented in the arguments version.
 @chpldoc.nodoc
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc readln():bool throws {
   return stdin.readln();
 }
 
 /* Equivalent to ``stdin.readln``. See :proc:`fileReader.readln` for types */
+@unstable("'readln' is unstable and may be removed or modified in a future release")
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }

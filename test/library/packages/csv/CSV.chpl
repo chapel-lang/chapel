@@ -32,6 +32,7 @@ module CSV {
     var ch;
     var sep: string;
     var hasHeader: bool;
+    param writing: bool;
 
     /* Initialize a CSVIO record.
        :arg ch: The fileWriter to write to.
@@ -43,6 +44,7 @@ module CSV {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
+      this.writing = true;
     }
     /* Initialize a CSVIO record.
        :arg ch: The fileReader to read from.
@@ -54,6 +56,7 @@ module CSV {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
+      this.writing = false;
     }
 
     /* Read a CSV file with lines matching the types of the fields in a record
@@ -62,7 +65,7 @@ module CSV {
       use Reflection;
       var r: t;
       var skipHeader = hasHeader;
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
 
       for l in ch.lines() {
         const line = l.strip(leading=false);
@@ -89,7 +92,7 @@ module CSV {
        the arguments to the function
      */
     iter read(type t...) throws where t.size > 1 || !isSpecialCaseType(t(0)) {
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
 
       var r: t;
       var skipHeader = hasHeader;
@@ -121,7 +124,7 @@ module CSV {
     /* Read a CSV file with arbitrarily many rows and columns. Returns the
        data as strings in a 2D array. */
     proc read(type t: string) throws {
-      if ch.writing then compilerError("reading from a writing channel");
+      if writing then compilerError("reading from a writing channel");
       var r: t;
       var skipHeader = hasHeader;
 
@@ -153,7 +156,7 @@ module CSV {
      */
     proc write(r: ?t) throws where isRecord(t) {
       use Reflection;
-      if !ch.writing then compilerError("writing to a reading channel");
+      if !writing then compilerError("writing to a reading channel");
 
       for param i in 0..<numFields(t) {
         ch.write(getField(r, i));
@@ -167,7 +170,7 @@ module CSV {
        resulting in a single row being added to the channel.
      */
     proc write(tup: ?t) throws where isTuple(t) {
-      if !ch.writing then compilerError("writing to a reading channel");
+      if !writing then compilerError("writing to a reading channel");
 
       for param i in 0..tup.size-1 {
         ch.write(tup(i));
