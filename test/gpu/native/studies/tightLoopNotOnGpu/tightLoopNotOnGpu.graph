@@ -1,0 +1,5 @@
+perfkeys: Average time per trial (ms):, Average time per trial (ms):
+files: tightLoopNotOnGpu-no-spec.dat, tightLoopNotOnGpu-with-spec.dat
+graphkeys: Without specialization, With specialization
+ylabel: Time (ms)
+graphtitle: Gpuizable loops on CPU locale in a tight loop
