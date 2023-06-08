@@ -138,7 +138,7 @@ x 18.10 "Cosmic Cuttlefish" EOL July 2019
 x 19.04 "Disco Dingo"       EOL Jan 2020
 x 19.10 "Eoan Ermine"       EOL July 2020
 x 20.10 "Groovy Gorilla"    EOL July 2021
-x 21.04 "Hirsute Hippo"     EOL January 2022
+x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
   22.10 "Kinetic Kudu"      EOL July 2023
-  23.04 "Lunar Lobster"     expected release in April 2023
+  23.04 "Lunar Lobster"     EOL Jan 2024
