@@ -596,7 +596,7 @@ static void testControlFlow15() {
   , ControlFlowResult::FallsThrough);
 }
 
-static void testControlFlowYield() {
+static void testControlFlowYield1() {
   auto program = R"""(
     iter myIter() {
       yield 1;
@@ -618,6 +618,61 @@ static void testControlFlowYield() {
   std::ignore = resolveConcreteFunction(context, fn->id());
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() == "could not determine return type for function");
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
+// returning without a value in an iterator is allowed.
+static void testControlFlowYield2() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      return;
+      yield "hello";
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  auto resolvedFunction = resolveConcreteFunction(context, fn->id());
+  assert(resolvedFunction->returnType().type());
+  assert(resolvedFunction->returnType().type()->isIntType());
+}
+
+// returning with a value is not allowed in an iterator.
+static void testControlFlowYield3() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      return 2;
+      yield 3;
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::ReturnInIterator);
 
   // Already checked expected errors above.
   guard.realizeErrors();
@@ -663,6 +718,8 @@ int main() {
   testControlFlow14();
   testControlFlow15();
 
-  testControlFlowYield();
+  testControlFlowYield1();
+  testControlFlowYield2();
+  testControlFlowYield3();
   return 0;
 }
