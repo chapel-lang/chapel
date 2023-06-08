@@ -135,7 +135,7 @@ prototype module DistributedFFT {
     }
 
     proc isValid : bool {
-      return plan != nil;
+      return !is_c_nil(plan);
     }
   }
 

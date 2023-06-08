@@ -1,7 +1,7 @@
 use CTypes;
 class A {
   proc fn() : c_ptr(int) {
-    return nil : c_ptr(int);
+    return c_nil : c_ptr(int);
   }
 }
 
@@ -14,7 +14,7 @@ proc main() {
     forall 1..1 {
       var ptr = a.fn();
       var ptrSimple = fnSimple(a);
-      writeln(ptr == nil, ptrSimple);
+      writeln(ptr == c_nil, ptrSimple);
     }
   }
 }

@@ -714,8 +714,7 @@ You can refer to other external pointer-based C types that cannot be
 described in Chapel using the "opaque" keyword.  As the name implies,
 these types are opaque as far as Chapel is concerned and cannot be
 used for operations other than argument passing and assignment
-(to/from other similarly opaque types). This includes ``==`` comparison to
-``nil`` for opaque C pointer types; for that one can use a ``c_ptr(opaque)``.
+(to/from other similarly opaque types).
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that we can't or won't describe as

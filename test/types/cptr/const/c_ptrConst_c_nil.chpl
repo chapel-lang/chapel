@@ -1,4 +1,4 @@
 use CTypes;
 var p: c_ptrConst(int);
-p = nil;
+p = c_nil;
 writeln(p);

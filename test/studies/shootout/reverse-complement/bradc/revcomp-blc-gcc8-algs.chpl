@@ -276,7 +276,7 @@ proc findSeqStart(buff, inds, ref ltLoc) {
           ltptr = memchr(lowptr, '>'.toByte(), inds.size): c_ptr(uint(8));
 
     ltLoc = ltptr - zeroptr;
-    return ltptr != nil;
+    return ltptr != c_nil;
   } else if searchAlg == Find {
     ltLoc = buff[inds].find('>'.toByte());
     return ltLoc != inds.low-1;

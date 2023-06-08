@@ -1,13 +1,13 @@
 use CTypes;
 record Foo {
-  var mem = nil:c_ptr(uint(64));
+  var mem = c_nil:c_ptr(uint(64));
 }
 
 record Bar {
-  var mem:c_void_ptr = nil;
+  var mem:c_void_ptr = c_nil;
 }
 
-writeln("nil = ", nil:c_void_ptr);
+writeln("c_nil = ", c_nil:c_void_ptr);
 
 var foo: Foo;
 writeln("foo = ", foo);

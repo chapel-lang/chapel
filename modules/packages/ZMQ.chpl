@@ -548,7 +548,7 @@ module ZMQ {
 
     proc deinit() {
       on this.home {
-        if socket != nil {
+        if socket != c_nil {
           var ret = zmq_close(socket):int;
           if ret == -1 {
             var errmsg: string;
@@ -557,7 +557,7 @@ module ZMQ {
             }
             halt("Error in SocketClass.deinit(): %s\n", errmsg);
           }
-          socket = nil;
+          socket = c_nil;
         }
       }
     }
@@ -635,7 +635,7 @@ module ZMQ {
           var errmsg = zmq_strerror(errno):string;
           writef("Error in Socket.close(): %s\n", errmsg);
         }
-        classRef.socket = nil;
+        classRef.socket = c_nil;
       }
     }
 
@@ -896,7 +896,7 @@ module ZMQ {
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init_data(msg, copy.c_str():c_void_ptr,
                                    copy.numBytes:c_size_t, c_ptrTo(free_helper),
-                                   nil)) {
+                                   c_nil)) {
           try throw_socket_error(errno, "send");
         }
 

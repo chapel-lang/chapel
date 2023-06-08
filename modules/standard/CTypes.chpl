@@ -94,16 +94,16 @@ module CTypes {
 
 
   /* A Chapel version of a C NULL pointer. */
-  @deprecated(notes="c_nil is deprecated, use just 'nil' instead.")
   inline proc c_nil {
+    // TODO: this routine should be deprecated
     return nil;
   }
 
   /*
      :returns: true if the passed value is a NULL pointer (ie 0).
    */
-  @deprecated(notes="is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_void_ptr first if needed.")
   inline proc is_c_nil(x):bool {
+    // TODO: this routine should be deprecated
     return __primitive("cast", c_void_ptr, x) == c_nil;
   }
 
@@ -708,7 +708,7 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline operator c_ptr.!(x: c_ptr) do return x == nil;
+  inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
 
   @chpldoc.nodoc
   inline operator c_ptr.+(a: c_ptr, b: integral) do return __primitive("+", a, b);
@@ -717,7 +717,7 @@ module CTypes {
   inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
   @chpldoc.nodoc
-  inline operator c_ptrConst.!(x: c_ptrConst) do return x == nil;
+  inline operator c_ptrConst.!(x: c_ptrConst) do return x == c_nil;
 
   @chpldoc.nodoc
   inline operator c_ptrConst.+(a: c_ptrConst, b: integral) do

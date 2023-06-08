@@ -384,7 +384,7 @@ module AggregationPrimitives {
     // Allocate a buffer on loc if we haven't already. Return a c_ptr to the
     // remote locales buffer
     proc cachedAlloc(): c_ptr(elemType) {
-      if data == nil {
+      if data == c_nil {
         const rvf_size = size.safeCast(c_size_t);
         on Locales[loc] do {
           data = allocate(elemType, rvf_size);
@@ -399,7 +399,7 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(this.loc == here.id);
         assert(this.data == data);
-        assert(data != nil);
+        assert(data != c_nil);
       }
       foreach i in 0..<size {
         yield data[i];
@@ -414,7 +414,7 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(this.loc == here.id);
         assert(this.data == data);
-        assert(data != nil);
+        assert(data != c_nil);
       }
       deallocate(data);
     }
@@ -425,7 +425,7 @@ module AggregationPrimitives {
       if boundsChecking {
         assert(this.locale.id == here.id);
       }
-      data = nil;
+      data = c_nil;
     }
 
     // Copy size elements from lArr to the remote buffer. Must be running on
@@ -461,7 +461,7 @@ module AggregationPrimitives {
     }
 
     proc deinit() {
-      if data != nil {
+      if data != c_nil {
         const rvf_data=data;
         on Locales[loc] {
           localFree(rvf_data);

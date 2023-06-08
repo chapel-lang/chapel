@@ -7,7 +7,7 @@ proc test_neq(x, y) {
   writeln(x != y);
 }
 
-var a: c_void_ptr = nil;
+var a: c_void_ptr = c_nil;
 var tmp: c_void_ptr = c_ptrTo(a):c_void_ptr;
 var b: c_void_ptr;
 b = tmp;
