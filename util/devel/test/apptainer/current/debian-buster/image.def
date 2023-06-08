@@ -9,4 +9,4 @@ From: debian:buster
     /provision-scripts/apt-get-llvm-11.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

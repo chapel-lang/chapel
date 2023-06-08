@@ -10,4 +10,4 @@ From: alpine:3.17
     /provision-scripts/apk-llvm14.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

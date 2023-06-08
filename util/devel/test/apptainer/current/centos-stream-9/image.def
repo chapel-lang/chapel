@@ -11,4 +11,4 @@ From: quay.io/centos/centos:stream9
     /provision-scripts/dnf-llvm-14.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

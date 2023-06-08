@@ -11,4 +11,4 @@ From: fedora:37
     # though there are llvm14-devel and clang14-devel
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"
