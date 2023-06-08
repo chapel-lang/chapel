@@ -488,10 +488,6 @@ bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   }
 
   if (functionKind == Function::ITER) {
-    if (ret->value() != nullptr) {
-      // Returns with a value are not allowed in iterators.
-      CHPL_REPORT(context, ReturnInIterator, fnAstForErr, ret);
-    }
     // Plain returns don't count towards type infernence for iterators.
     return false;
   }
@@ -511,11 +507,6 @@ bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
     // If it's statically known that we've already encountered a return
     // we can safely ignore subsequent yields.
     return false;
-  }
-
-  if (functionKind != Function::ITER) {
-    // Yields aren't allowed outside of an iterator.
-    CHPL_REPORT(context, YieldOutsideIterator, fnAstForErr, ret);
   }
 
   noteReturnType(ret->value(), ret, rv);

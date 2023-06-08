@@ -274,6 +274,22 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto blockingAst = std::get<1>(info);
   auto allowingAst = std::get<2>(info);
 
+  // The error for value-having return in an iterator is so specific that it's
+  // easiest to special case it.
+  if (auto ret = invalidAst->toReturn()) {
+    if (blockingAst && blockingAst->isFunction()) {
+      auto fn = blockingAst->toFunction();
+      wr.heading(kind_, type_, ret, "'return' statements with valuesa are not allowed "
+                                    "in iterators.");
+      wr.message("The following 'return' statement has a value:");
+      wr.code(ret, { ret->value() });
+      wr.note(fn, "inside '", fn->name(), "', which is declared as an iterator here:");
+      wr.codeForLocation(fn);
+      wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
+      return;
+    }
+  }
+
   std::string astType = "";
   std::string labelName = "";
   if (invalidAst->isReturn()) {

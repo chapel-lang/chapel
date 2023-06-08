@@ -210,7 +210,13 @@ enum class ControlFlowModifier {
 
 static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
                                             const Return* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER && ctrl->value() != nullptr) {
+      // can't return a value from an iterator.
+      return ControlFlowModifier::BLOCKS;
+    }
+    return ControlFlowModifier::ALLOWS;
+  }
   if (node->isForall() || node->isForeach() || node->isCoforall() ||
       node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
@@ -220,7 +226,14 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
 
 static ControlFlowModifier nodeAllowsYield(const AstNode* node,
                                            const Yield* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER) {
+      return ControlFlowModifier::ALLOWS;
+    } else {
+      // Can't yield from non-function.
+      return ControlFlowModifier::BLOCKS;
+    }
+  }
   if (node->isBegin()) {
     return ControlFlowModifier::BLOCKS;
   }

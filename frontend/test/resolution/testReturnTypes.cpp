@@ -672,7 +672,7 @@ static void testControlFlowYield3() {
 
   std::ignore = resolveConcreteFunction(context, fn->id());
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::ReturnInIterator);
+  assert(guard.error(0)->type() == ErrorType::DisallowedControlFlow);
 
   // Already checked expected errors above.
   guard.realizeErrors();
@@ -698,7 +698,7 @@ static void testControlFlowYield4() {
 
   std::ignore = resolveConcreteFunction(context, fn->id());
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->type() == ErrorType::YieldOutsideIterator);
+  assert(guard.error(0)->type() == ErrorType::DisallowedControlFlow);
 
   // Already checked expected errors above.
   guard.realizeErrors();
