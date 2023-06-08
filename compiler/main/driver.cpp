@@ -1914,7 +1914,7 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
-static chpl::CompilationGlobals dynoBuildCompilationGlobals() {
+static chpl::CompilerGlobals dynoBuildCompilationGlobals() {
   return {
     .boundsChecking = !fNoBoundsChecks,
     .castChecking = !fNoCastChecks,

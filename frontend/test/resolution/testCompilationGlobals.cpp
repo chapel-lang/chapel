@@ -45,8 +45,8 @@ static std::unordered_map<std::string, QualifiedType> compilationGlobalTypes(Con
   return resolveTypesOfVariables(context, allGlobalsProgram, variables);
 }
 
-static CompilationGlobals defaultGlobals() {
-  CompilationGlobals globals;
+static CompilerGlobals defaultGlobals() {
+  CompilerGlobals globals;
   // For the time being, all globals are bools so just set them to false.
   #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) globals.FIELD__ = false;
   #include "chpl/uast/compiler-globals-list.h"
@@ -70,7 +70,7 @@ void verifyCompilerGlobals(F&& function) {
   Context* context = &ctx;
 
   // Configure the globals (including running user code to set them)
-  CompilationGlobals myGlobals = defaultGlobals();
+  CompilerGlobals myGlobals = defaultGlobals();
   function(myGlobals);
   setCompilerGlobals(context, myGlobals);
 
@@ -92,13 +92,13 @@ void verifyCompilerGlobals(F&& function) {
 static void test1() {
   // Default configuration, everything is false.
 
-  verifyCompilerGlobals([](CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     // Do not change the globals; all should be false.
   });
 }
 
 static void test2() {
-  verifyCompilerGlobals([](CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     globals.boundsChecking = true;
   });
 }
@@ -106,7 +106,7 @@ static void test2() {
 static void test3() {
   // Default configuration, everything is false.
 
-  verifyCompilerGlobals([](CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     globals.boundsChecking = true;
     globals.cacheRemote = true;
   });

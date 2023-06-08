@@ -23,18 +23,18 @@
 
 namespace chpl {
 
-bool CompilationGlobals::update(CompilationGlobals& keep, CompilationGlobals& addin) {
+bool CompilerGlobals::update(CompilerGlobals& keep, CompilerGlobals& addin) {
   return defaultUpdate(keep, addin);
 }
 
-void CompilationGlobals::swap(CompilationGlobals& other) {
+void CompilerGlobals::swap(CompilerGlobals& other) {
   #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
     std::swap(this->FIELD__, other.FIELD__);
   #include "chpl/uast/compiler-globals-list.h"
   #undef COMPILER_GLOBAL
 }
 
-bool CompilationGlobals::operator==(const CompilationGlobals& other) const {
+bool CompilerGlobals::operator==(const CompilerGlobals& other) const {
   #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
     this->FIELD__ == other.FIELD__&&
   return
@@ -43,17 +43,17 @@ bool CompilationGlobals::operator==(const CompilationGlobals& other) const {
     true;
 }
 
-bool CompilationGlobals::operator!=(const CompilationGlobals& other) const {
+bool CompilerGlobals::operator!=(const CompilerGlobals& other) const {
   return !(*this==other);
 }
 
-const CompilationGlobals& compilerGlobals(Context* context) {
+const CompilerGlobals& compilerGlobals(Context* context) {
   QUERY_BEGIN_INPUT(compilerGlobals, context);
-  CompilationGlobals ret;
+  CompilerGlobals ret;
   return QUERY_END(ret);
 }
 
-void setCompilerGlobals(Context* context, CompilationGlobals newValue) {
+void setCompilerGlobals(Context* context, CompilerGlobals newValue) {
   QUERY_STORE_INPUT_RESULT(compilerGlobals, context, newValue);
 }
 
