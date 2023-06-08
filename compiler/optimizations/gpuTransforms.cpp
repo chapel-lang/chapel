@@ -993,19 +993,17 @@ static void logGpuizableLoops() {
   std::set<CForLoop*, LocationComparator> ineligibleLoops;
 
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
-    std::vector<BaseAST*> asts;
-    collect_asts(fn, asts);
+    std::vector<CForLoop*> loops;
+    collectCForLoopStmts(fn, loops);
 
-    for_vector(BaseAST, ast, asts) {
-      if (CForLoop* loop = toCForLoop(ast)) {
-        GpuizableLoop gpuLoop(loop);
-        bool isInModuleWeShouldReportOn = developer || loop->getModule()->modTag == MOD_USER;
-        if (gpuLoop.isReportWorthy() && isInModuleWeShouldReportOn) {
-          if(gpuLoop.isEligible()) {
-            eligibleLoops.insert(loop);
-          } else {
-            ineligibleLoops.insert(loop);
-          }
+    for_vector(CForLoop, loop, loops) {
+      GpuizableLoop gpuLoop(loop);
+      bool isInModuleWeShouldReportOn = developer || loop->getModule()->modTag == MOD_USER;
+      if (gpuLoop.isReportWorthy() && isInModuleWeShouldReportOn) {
+        if(gpuLoop.isEligible()) {
+          eligibleLoops.insert(loop);
+        } else {
+          ineligibleLoops.insert(loop);
         }
       }
     }
