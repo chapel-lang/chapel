@@ -208,7 +208,7 @@ struct ReturnTypeInferrer {
 
   // input
   Context* context;
-  const AstNode* astForErr;
+  const Function* fnAstForErr;
   Function::ReturnIntent returnIntent;
   Function::Kind functionKind;
   const Type* declaredReturnType;
@@ -223,7 +223,7 @@ struct ReturnTypeInferrer {
                      const Function* fn,
                      const Type* declaredReturnType)
     : context(context),
-      astForErr(fn),
+      fnAstForErr(fn),
       returnIntent(fn->returnIntent()),
       functionKind(fn->kind()),
       declaredReturnType(declaredReturnType) {
@@ -277,7 +277,7 @@ bool ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
       // Returns shouldn't contribute to yield return types, even if they
       // have a value (which is an error).
       if (ret->value() != nullptr) {
-        context->error(inExpr, "non-void returns are not allowed in iterators");
+        CHPL_REPORT(context, ReturnInIterator, fnAstForErr, ret);
       }
       return false;
     }
@@ -348,7 +348,7 @@ QualifiedType ReturnTypeInferrer::returnedType() {
                               (QualifiedType::Kind) returnIntent);
     if (!retType) {
       // Couldn't find common type, so return type is incorrect.
-      context->error(astForErr, "could not determine return type for function");
+      context->error(fnAstForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
     auto adjType = adjustForReturnIntent(returnIntent, *retType);

@@ -896,6 +896,19 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorReturnInIterator::write(ErrorWriterBase& wr) const {
+  auto fn = std::get<const uast::Function*>(info);
+  auto ret = std::get<const uast::Return*>(info);
+
+  wr.heading(kind_, type_, ret, "'return' statements with valuesa are not allowed "
+                                "in iterators.");
+  wr.message("The following 'return' statement has a value:");
+  wr.code(ret, { ret->value() });
+  wr.note(fn, "inside '", fn->name(), "', which is declared as an iterator here:");
+  wr.codeForLocation(fn);
+  wr.message("Did you mean to use the 'yield' keyword instead of 'return'?");
+}
+
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::AstNode*>(info);
   auto mod = std::get<const uast::Module*>(info);
