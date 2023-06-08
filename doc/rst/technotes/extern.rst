@@ -1015,8 +1015,48 @@ c_ptr. See the following example:
   }
   c_free(cArray);
 
-Variables of type c_ptr can be compared against or set to nil.
+Variables of type ``c_ptr``/``c_ptrConst`` can be compared against or set to
+``nil``.
 
+The ``c_ptrTo()`` function and its const equivalent provide special behavior on
+some types to make them more amenable to common use cases. This includes
+pointers to ``string`` or ``bytes`` types, for which it returns a pointer to the
+underlying buffer as opposed to the Chapel variable descriptor, and pointers
+to class types as described below. To get a "naive" pointer to a Chapel
+variable without any special behavior, one can use
+``c_addrOf``/``c_addrOfConst``; this is the Chapel equivalent to the ``&``
+operator in C.
+
+There is also special behavior for ``c_ptrTo`` on class types. In Chapel, a
+class variable is actually some information on the stack containing a pointer to
+the "real" instance on the heap. Calling ``c_ptrTo()`` on a class type will give
+a ``c_void_ptr`` to the instance on the heap. Memory-managed heap instances will
+still be deallocated according to Chapel memory-management rules regardless of
+any pointer created to them this way. In the case of an ``unmanaged`` instance,
+it is possible to safely go back the other direction:
+
+.. code-block:: chapel
+
+  class Func {
+    var x: int;
+    proc postinit() {
+      writeln("created");
+    }
+    proc this() const {
+      writeln("invoked");
+      return x;
+    }
+  }
+
+  proc main() {
+    var c = new unmanaged Func(42);
+    writeln((c, c_addrOf(c), c_ptrTo(c)));
+    var p: c_void_ptr = c_ptrTo(c);
+    writeln(p);
+    var c2: unmanaged Func = (p: unmanaged Func?)!;
+    writeln((c2, c_addrOf(c2), c_ptrTo(c2)));
+    writeln(c2());
+  }
 
 Working with strings
 --------------------
