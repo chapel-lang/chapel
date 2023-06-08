@@ -582,11 +582,12 @@ will be a subclass of a corresponding fully specified ``ParentC``.
 The Root Class
 ~~~~~~~~~~~~~~
 
-All classes are derived from the ``RootClass`` class, either directly or
-indirectly. If no class name appears in ``class-inherit`` clause, the
-class derives implicitly from ``RootClass``. Otherwise, a class derives
-from ``RootClass`` indirectly through the class it inherits. A variable of
-type ``RootClass`` can hold a reference to an object of any class type.
+All classes are derived from a base class named ``RootClass``, either
+directly or indirectly. If a class declaration does not contain a
+``class-inherit`` clause, the class implicitly derives from
+``RootClass``. Otherwise, the class derives from ``RootClass``
+indirectly through the class it inherits from. A variable of type
+``RootClass`` can hold a reference to an object of any class type.
 
 .. _Accessing_Base_Class_Fields:
 
