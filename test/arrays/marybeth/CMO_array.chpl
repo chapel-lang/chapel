@@ -81,7 +81,7 @@ class CMODom: BaseRectangularDom {
     return ranges(d);
 
   proc bbox(d: int) {
-    const r: range(idxType,boundKind.both,false) = ranges(d);
+    const r: range(idxType) = ranges(d);
     return r;
   }
 

@@ -13,6 +13,7 @@ gpu/native/studies/shoc/sort.graph
 gpu/native/streamPrototype/gpuStream.graph
 
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
+gpu/native/studies/tightLoopNotOnGpu/tightLoopNotOnGpu.graph
 
 gpu/native/studies/transpose/transpose-throughput.graph
 gpu/native/studies/transpose/transpose-time.graph

@@ -160,7 +160,7 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   ref GRow = G.Row;
   const uxIDs = GRow.domain.dim(0);
   type VType = uxIDs.idxType;
-  compilerAssert(!uxIDs.stridable); // for efficiency
+  compilerAssert(uxIDs.hasUnitStride()); // for efficiency
 
   if IOserial {
     const sv = createGraphChannel(snapshot_prefix, SV2_FILENAME, rea);
@@ -283,7 +283,7 @@ iter graphReaderIterator(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   // ensure we got unstridable range with VType-typed indices
   compilerAssert(followThis.type ==
-                 1*range(VType, boundKind.both, false));
+                 1*range(VType, boundKind.both, strideKind.one));
 
   const myIDs = unDensify(followThis(0), uxIDs);
 
@@ -301,7 +301,7 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 {
   if IOgate then IOgate$.writeEF(true);
 
-  compilerAssert(!myIDs.stridable); // for efficiency, also for v1,v2
+  compilerAssert(myIDs.hasUnitStride()); // for efficiency, also for v1,v2
   // start/end IDs
   const v1 = myIDs.low, v2 = myIDs.high;
   //writeln("loc ", here.id, "  myIDs ", v1, "..", v2, "  of ", uxIDs);

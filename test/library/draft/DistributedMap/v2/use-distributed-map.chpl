@@ -9,7 +9,7 @@ var inputArr = ["John", "Jacob", "Jingleheimer", "Schmidt", "his", "name", "is",
                 "la"];
 
 forall key in inputArr with
-(var agg = dm1.updateAggregator(updater=lambda (ref element: int) { element += 1; })) {
+(var agg = dm1.updateAggregator(updater=proc(ref element: int) { element += 1; })) {
   agg.update(key);
 }
 

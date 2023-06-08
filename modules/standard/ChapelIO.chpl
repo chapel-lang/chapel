@@ -307,7 +307,8 @@ module ChapelIO {
     //
     @chpldoc.nodoc
     proc serializeDefaultImpl(writer:fileWriter, ref serializer,
-                              const x:?t, name: string) throws {
+                              const x:?t) throws {
+      const name = __primitive("simple type name", x);
       const numIO = __numIOFields(t);
       if isClassType(t) then
         serializer.startClass(writer, name, numIO);
@@ -315,7 +316,7 @@ module ChapelIO {
         serializer.startRecord(writer, name, numIO);
 
       if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
-        serializeDefaultImpl(writer, serializer, x.super, "super");
+        serializeDefaultImpl(writer, serializer, x.super);
       }
 
       param num_fields = __primitive("num fields", t);
@@ -335,7 +336,8 @@ module ChapelIO {
 
     @chpldoc.nodoc
     proc deserializeDefaultImpl(reader: fileReader, ref deserializer,
-                                ref x:?t, name:string) throws {
+                                ref x:?t) throws {
+      const name = __primitive("simple type name", x);
       if isClassType(t) then
         deserializer.startClass(reader, name);
       else
@@ -663,19 +665,15 @@ module ChapelIO {
   @chpldoc.nodoc
   proc _ddata.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
-  @chpldoc.nodoc
   proc chpl_taskID_t.serialize(writer, ref serializer) throws { writeThis(writer); }
 
-  @chpldoc.nodoc
   proc chpl_taskID_t.readThis(f) throws {
     this = f.read(uint(64)) : chpl_taskID_t;
   }
 
-  @chpldoc.nodoc
   proc type chpl_taskID_t.deserializeFrom(reader, ref deserializer) throws {
     var ret : chpl_taskID_t;
     ret.readThis(reader);
@@ -721,11 +719,11 @@ module ChapelIO {
 
     const (start, comma, comma1tup, end) = getLiterals();
 
-    proc helper(const ref arg) throws where f.writing { f.write(arg); }
-    proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
+    proc helper(const ref arg) throws where f._writing { f.write(arg); }
+    proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if !binary {
@@ -822,22 +820,34 @@ module ChapelIO {
 
     if hasHighBound() then _high = f.read(_high.type);
 
-    if stride != 1 {
-      f._readLiteral(" by ");
-      _stride = f.read(stride.type);
+    if f.matchLiteral(" by ") {
+      const strideVal = f.read(strType);
+      var expectedStride = "";
+      use strideKind;
+      select strides {
+        when one      do if strideVal != 1 then expectedStride = "stride 1";
+        when negOne   do if strideVal != 1 then expectedStride = "stride -1";
+        when positive do if strideVal < 0 then expectedStride = "a positive";
+        when negative do if strideVal > 0 then expectedStride = "a negative";
+        when any      do;
+      }
+      if expectedStride != "" then throw new owned BadFormatError(
+        "for a range with strides=" + strides:string + ", expected " +
+        (if expectedStride.size > 2 then expectedStride + " stride"
+         else expectedStride) + ", got stride ", strideVal:string);
+      if ! hasParamStride() then
+        _stride = strideVal;
     }
 
-    try {
-      f._readLiteral(" align ");
-
-      if stridable {
-        _alignment = f.read(intIdxType);
+    if f.matchLiteral(" align ") {
+      const alignVal = f.read(intIdxType);
+      if hasParamStrideAltvalAld() {
+        // It is valid to align this range. We do not store its alignment
+        // at runtime because the alignment always normalizes to 0.
       } else {
-        throw new owned
-          BadFormatError("Range is not stridable, cannot store alignment");
+        _alignment = chpl__mod(alignVal, _stride);
+        _aligned = true;
       }
-    } catch err: BadFormatError {
-      // Range is naturally aligned.
     }
   }
 
@@ -846,41 +856,9 @@ module ChapelIO {
                   param bounds : boundKind = boundKind.both,
                   param strides : strideKind = strideKind.one,
                   reader: fileReader(?),
-                  ref deserializer) {
+                  ref deserializer) throws {
     this.init(idxType, bounds, strides);
-
-    // TODO:
-    // The alignment logic here is pretty tricky, so fall back on the
-    // actual operators for the time being...
-
-    // TODO: experiment with using throwing initializers in this case.
-    try! {
-      if hasLowBound() then _low = reader.read(_low.type);
-      reader._readLiteral("..");
-      if hasHighBound() then _high = reader.read(_high.type);
-
-      if stridable {
-        if reader.matchLiteral(" by ") {
-          //_stride = reader.read(stride.type);
-          this = ( this by reader.read(stride.type) ): this.type;
-        }
-      }
-    }
-
-    try! {
-      try {
-        if reader.matchLiteral(" align ") {
-          if stridable {
-            //_alignment = reader.read(intIdxType);
-            this = this align reader.read(intIdxType);
-          }
-        } else {
-          // TODO: throw error if not stridable
-        }
-      } catch err: BadFormatError {
-        // Range is naturally aligned.
-      }
-    }
+    this.readThis(reader);
   }
 
   @chpldoc.nodoc
@@ -933,7 +911,6 @@ module ChapelIO {
     try! { stdout.writef(fmt); }
   }
 
-  @chpldoc.nodoc
   proc chpl_stringify_wrapper(const args ...):string {
     use IO only stringify;
     return stringify((...args));

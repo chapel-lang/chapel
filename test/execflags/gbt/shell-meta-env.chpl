@@ -1,5 +1,5 @@
 use OS.POSIX;
 
 const ev = getenv(c'SHELL_META_ENV');
-if ev != c_nil then
+if ev != nil then
   writeln(string.createCopyingBuffer(ev:c_string));

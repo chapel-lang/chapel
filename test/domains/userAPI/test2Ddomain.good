@@ -4,7 +4,7 @@
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = false
+strides          = one
 size             = 25
 isEmpty()        = false
 lowBound         = (1, 0)
@@ -67,7 +67,7 @@ strided 2D domain
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = true
+strides          = positive
 size             = 6
 isEmpty()        = false
 lowBound         = (1, 0)

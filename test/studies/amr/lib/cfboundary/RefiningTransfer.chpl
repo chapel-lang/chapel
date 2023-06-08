@@ -23,7 +23,7 @@ class GridCFGhostRegion {
 
   const grid:             unmanaged Grid;
   var coarse_neighbors: domain(unmanaged Grid);
-  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension,stridable=true)?;
+  var transfer_regions:  [coarse_neighbors] unmanaged MultiDomain(dimension, strideKind.any)?;
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -57,7 +57,7 @@ class GridCFGhostRegion {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
         
-        var boundary_multidomain = new unmanaged MultiDomain(dimension, stridable=true);
+        var boundary_multidomain = new unmanaged MultiDomain(dimension, strideKind.any);
         boundary_multidomain.add( fine_intersection );
         boundary_multidomain.subtract( grid.cells );
         
@@ -231,10 +231,10 @@ class GridCFGhostSolution {
   
   const grid_cf_ghost_region: unmanaged GridCFGhostRegion;
   
-  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real)?;
+  var old_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,strideKind.any,real)?;
   var old_time: real;
 
-  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,true,real)?;
+  var current_data: [grid_cf_ghost_region.coarse_neighbors] unmanaged MultiArray(dimension,strideKind.any,real)?;
   var current_time: real;
 
 
@@ -265,10 +265,10 @@ class GridCFGhostSolution {
   {      
     for c_neighbor in grid_cf_ghost_region.coarse_neighbors {
 
-      old_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
+      old_data(c_neighbor) = new unmanaged MultiArray(dimension,strideKind.any,real);
       old_data(c_neighbor)!.allocate( grid_cf_ghost_region.transfer_regions(c_neighbor)! );
 
-      current_data(c_neighbor) = new unmanaged MultiArray(dimension,true,real);
+      current_data(c_neighbor) = new unmanaged MultiArray(dimension,strideKind.any,real);
       current_data(c_neighbor)!.allocate( grid_cf_ghost_region.transfer_regions(c_neighbor)! );
     }
   }
@@ -624,7 +624,7 @@ proc LevelVariable.fillCFGhostRegion (
 //---------------------------------------------------------------
 
 proc GridVariable.refineValues (
-  fine_cells: domain(dimension,stridable=true),
+  fine_cells: domain(dimension,strides=strideKind.any),
   ref_ratio:  dimension*int )
 {
 

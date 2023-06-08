@@ -16,7 +16,7 @@ proc runtest(param ndim : int, fn : string) {
   var dims : ndim*int(32); 
   var D : domain(ndim);
   // Define ranges here
-  var rD,cD,reD,imD : domain(ndim,int,true); 
+  var rD,cD,reD,imD : domain(ndim,int,strideKind.any); 
   var A,B,goodA,goodB : [D] fftw_complex;
   {
     var f = open(fn,ioMode.r).reader(kind=iokind.little);

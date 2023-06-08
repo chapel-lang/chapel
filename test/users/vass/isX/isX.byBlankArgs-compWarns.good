@@ -253,11 +253,11 @@ isRangeValue
 isRangeType
   isX.byBlankArgs-compWarns.chpl:214: called as test(arg: range(int(64),both,one))
 
-range(uint(8),neither,any)
+range(uint(8),neither,negative)
 isRange
 isRangeValue
 isRangeType
-  isX.byBlankArgs-compWarns.chpl:215: called as test(arg: range(uint(8),neither,any))
+  isX.byBlankArgs-compWarns.chpl:215: called as test(arg: range(uint(8),neither,negative))
 
 DefaultDist
 isDmap
@@ -271,11 +271,11 @@ isDomainValue
 isDomainType
   isX.byBlankArgs-compWarns.chpl:217: called as test(arg: domain(1,int(64),one))
 
-domain(2,uint(32),any)
+domain(2,uint(32),positive)
 isDomain
 isDomainValue
 isDomainType
-  isX.byBlankArgs-compWarns.chpl:218: called as test(arg: domain(2,uint(32),any))
+  isX.byBlankArgs-compWarns.chpl:218: called as test(arg: domain(2,uint(32),positive))
 
 [domain(1,int(64),one)] int(64)
 isArray
@@ -283,11 +283,11 @@ isArrayValue
 isArrayType
   isX.byBlankArgs-compWarns.chpl:219: called as test(arg: [domain(1,int(64),one)] int(64))
 
-[domain(2,uint(32),any)] uint(16)
+[domain(2,uint(32),positive)] uint(16)
 isArray
 isArrayValue
 isArrayType
-  isX.byBlankArgs-compWarns.chpl:220: called as test(arg: [domain(2,uint(32),any)] uint(16))
+  isX.byBlankArgs-compWarns.chpl:220: called as test(arg: [domain(2,uint(32),positive)] uint(16))
 
 sync int(64)
 isSync

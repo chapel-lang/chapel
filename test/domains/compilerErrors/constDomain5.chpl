@@ -1,2 +1,2 @@
-const d : domain(rank=2, stridable=true);
+const d : domain(rank=2, strides=strideKind.any);
 d.clear();

@@ -94,7 +94,7 @@ module Crypto {
   proc generateKeys(bits: int) {
    var localKeyPair: EVP_PKEY_PTR;
    var keyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA: c_int,
-                                    c_nil: ENGINE_PTR);
+                                    nil: ENGINE_PTR);
    EVP_PKEY_keygen_init(keyCtx);
    EVP_PKEY_CTX_set_rsa_keygen_bits(keyCtx, bits: c_int);
    EVP_PKEY_keygen(keyCtx, localKeyPair);
@@ -402,7 +402,7 @@ module Crypto {
     var md: CONST_EVP_MD_PTR;
     md = EVP_get_digestbyname(digestName.c_str());
 
-    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, c_nil: ENGINE_PTR);
+    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, nil: ENGINE_PTR);
     EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: c_size_t);
     EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
@@ -516,7 +516,7 @@ module Crypto {
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_EncryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -551,7 +551,7 @@ module Crypto {
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
@@ -719,7 +719,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
 
@@ -755,7 +755,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),

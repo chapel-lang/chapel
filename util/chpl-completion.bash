@@ -82,6 +82,7 @@ _chpl ()
 --gpu-arch \
 --gpu-block-size \
 --gpu-ptxas-enforce-optimization \
+--gpu-specialization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -192,6 +193,7 @@ _chpl ()
 --no-force-vectorize \
 --no-formal-domain-checks \
 --no-gen-ids \
+--no-gpu-specialization \
 --no-html-print-block-ids \
 --no-html-wrap-lines \
 --no-ieee-float \

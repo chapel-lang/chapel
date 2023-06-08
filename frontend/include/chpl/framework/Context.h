@@ -83,11 +83,21 @@ class Context {
     virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
+  /** Information about the program's compilation state that's available to
+      the programs themselves via global variables. */
+  struct CompilationGlobals {
+    #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__) TYPE__ NAME__;
+    #include "chpl/uast/compiler-globals-list.h"
+    #undef COMPILER_GLOBAL
+  };
+
   /** This struct stores configuration information to use when
       constructing a Context. */
   struct Configuration {
     /** Used for determining Chapel environment variables */
     std::string chplHome;
+
+    CompilationGlobals compilationGlobals;
 
     std::unordered_map<std::string, std::string> chplEnvOverrides;
 

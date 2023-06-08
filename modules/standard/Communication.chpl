@@ -34,7 +34,6 @@ module Communication {
 
   // This module may be used from internal modules that are resolved before
   // Locale-related modules. So, we can't use `numLocales` or `Locales` here.
-  @chpldoc.nodoc
   private extern const chpl_numNodes: int(32);
 
   /*

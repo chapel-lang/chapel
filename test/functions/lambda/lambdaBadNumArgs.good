@@ -1,3 +1,0 @@
-lambdaBadNumArgs.chpl:7: error: cannot capture lambda because it refers to outer variables
-lambdaBadNumArgs.chpl:7: note: such as 'f', here
-lambdaBadNumArgs.chpl:7: note: such as 'g', here

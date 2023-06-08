@@ -34,20 +34,15 @@ class C {
   }
 
   proc readThis(r) throws {
-    readWriteHelper(r);
+    var loc = r.readWriteThisFromLocale();
+    writeln("in C.readThis loc= ", loc.id);
+    r.read(x);
   }
 
   proc writeThis(w) throws {
-    readWriteHelper(w);
-  }
-
-  proc readWriteHelper(rw) throws {
-    var loc = rw.readWriteThisFromLocale();
-    writeln("in C.readWriteHelper loc= ", loc.id);
-    if rw.writing then
-      rw.write(x);
-    else
-      rw.read(x);
+    var loc = w.readWriteThisFromLocale();
+    writeln("in C.writeThis loc= ", loc.id);
+    w.write(x);
   }
 }
 

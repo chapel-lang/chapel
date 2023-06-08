@@ -66,13 +66,6 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
-  // This is a compatibility flag to maintain old behavior for applications
-  // that rely on it (e.g., Arkouda). The tests for new features will run
-  // with this set to FALSE. At a certain point the old behavior will be
-  // deprecated, and this flag will be removed.
-  // TODO: Move to a separate module if we add closure stuff to module code.
-  config param fcfsUseLegacyBehavior = true;
-
   // This flag toggles on the new pointer-based implementation.
   // It is unstable and experimental.
   config param fcfsUsePointerImplementation = false;
@@ -1296,7 +1289,7 @@ module ChapelBase {
       return x != 0:x.type;
     } else if t == strideKind {
       // to support deprecation by Vass in 1.31 to implement #17131
-//RSDW:  compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
+      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
       return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
@@ -1510,10 +1503,8 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
@@ -2500,8 +2491,14 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func() type { return __primitive("create fn type", void); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;
