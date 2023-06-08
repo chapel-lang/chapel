@@ -24,7 +24,7 @@ iter helper(param dim : int, param rank : int, ranges) {
 }
 
 proc buildSlices(param rank : int, OrigArg : domain) {
-  const Orig = OrigArg: domain(rank, stridable=true);
+  const Orig = OrigArg: domain(rank, strides=strideKind.any);
 
   //
   // The commented out code below triggers a strange bug related to the RTTI
@@ -33,12 +33,12 @@ proc buildSlices(param rank : int, OrigArg : domain) {
   //
   // See: #13808
   //
-  // var ret : list(domain(rank, stridable=true));
+  // var ret : list(domain(rank, strides=strideKind.any));
   //
-  var ret = new list(domain(rank, stridable=true));
+  var ret = new list(domain(rank, strides=strideKind.any));
 
   var innerDom = {1..0};
-  var perDim : [1..rank] [innerDom] range(stridable=true);
+  var perDim : [1..rank] [innerDom] range(strides=strideKind.any);
 
   for i in 0..#rank {
     const cur = Orig.dim(i);
@@ -49,7 +49,7 @@ proc buildSlices(param rank : int, OrigArg : domain) {
     const quart = size/4;
     const str = Orig.dim(i).stride;
 
-    var mine : list(range(stridable=true));
+    var mine : list(range(strides=strideKind.any));
 
     if cur.size == 1 {
       mine.pushBack(cur by str);
@@ -88,7 +88,7 @@ proc buildSlices(param rank : int, OrigArg : domain) {
   }
 
   for r in helper(1, rank, perDim) {
-    var dom : domain(rank, stridable=true) = r;
+    var dom : domain(rank, strides=strideKind.any) = r;
     ret.pushBack(dom);
   }
   
@@ -152,16 +152,16 @@ proc testReindex(param rank : int, Dom) {
 }
 
 proc makeDom(param rank : int, low : int, str = 1) {
-  var r : rank*range(stridable=true);
+  var r : rank*range(strides=strideKind.any);
   for param i in 0..rank-1 do r(i) = low.. by str # n;
   return r;
 }
 
 proc main() {
   for param rank in 1..3 {
-    var negative : domain(rank, stridable=true) = makeDom(rank, -(n+5));
-    var positive : domain(rank, stridable=true) = makeDom(rank, 1);
-    var str : domain(rank, stridable=true) = makeDom(rank, 1, 3);
+    var negative : domain(rank, strides=strideKind.any) = makeDom(rank, -(n+5));
+    var positive : domain(rank, strides=strideKind.any) = makeDom(rank, 1);
+    var str : domain(rank, strides=strideKind.any) = makeDom(rank, 1, 3);
 
     test(rank, negative);
     test(rank, positive);
@@ -172,7 +172,7 @@ proc main() {
   // 1-length dimension due to a stride larger than the dimension's size
   test(3, {1..10, 1..3 by 4, 1..10});
 
-  var four : domain(4, stridable=true) = makeDom(4, 1);
+  var four : domain(4, strides=strideKind.any) = makeDom(4, 1);
   test(4, four);
 
   testReindex(1, {1..10} by 1);

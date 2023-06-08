@@ -3,37 +3,37 @@ const fmt = "%-"+colWidth:string+"s|%-"+colWidth:string+"s\n";
 
 // this is const ref -- note that if you pass a var domain, we don't set it
 //                      const
-proc defIntent(d: domain(1, int, false)) {
+proc defIntent(d: domain(1, int)) {
   writef(fmt, "(const ref)", d.definedConst);
 }
 
-proc inIntent(in d: domain(1, int, false)) {
+proc inIntent(in d: domain(1, int)) {
   writef(fmt, "in", d.definedConst);
 }
 
-proc outIntent(out d: domain(1, int, false)) {
+proc outIntent(out d: domain(1, int)) {
   writef(fmt, "out", d.definedConst);
 }
 
-proc inoutIntent(inout d: domain(1, int, false)) {
+proc inoutIntent(inout d: domain(1, int)) {
   writef(fmt, "inout", d.definedConst);
 }
 
-proc refIntent(ref d: domain(1, int, false)) {
+proc refIntent(ref d: domain(1, int)) {
   writef(fmt, "ref", d.definedConst);
 }
 
 // this is const ref -- note that if you pass a var domain, we don't set it
 //                      const
-proc constIntent(const d: domain(1, int, false)) {
+proc constIntent(const d: domain(1, int)) {
   writef(fmt, "const (ref)", d.definedConst);
 }
 
-proc constInIntent(const in d: domain(1, int, false)) {
+proc constInIntent(const in d: domain(1, int)) {
   writef(fmt, "const in", d.definedConst);
 }
 
-proc constRefIntent(const ref d: domain(1, int, false)) {
+proc constRefIntent(const ref d: domain(1, int)) {
   writef(fmt, "const ref", d.definedConst);
 }
 

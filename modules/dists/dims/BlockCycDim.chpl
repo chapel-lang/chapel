@@ -709,7 +709,7 @@ proc BlockCyclic1locdom.dsiMyDensifiedRangeType1d(globDD) type do
   return range(idxType=globDD.idxType, strides=globDD.strides);
 
 proc BlockCyclic1locdom.dsiLocalSliceStorageIndices1d(globDD, sliceRange)
-  : range(stoIndexT, sliceRange.bounds, false)
+  : range(stoIndexT, sliceRange.bounds, strideKind.one)
 {
   if !sliceRange.hasUnitStride() {
     // to be done: figure out sliceRange's stride vs. globDD.wholeR.stride

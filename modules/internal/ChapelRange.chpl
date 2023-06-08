@@ -121,7 +121,7 @@ module ChapelRange {
     proc boundedType param do return bounds;
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("range.stridable is deprecated; please use '.strides' instead")
+    @deprecated("range.stridable is deprecated; please use '.strides' instead")
     proc stridable param do return !hasUnitStride();
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound

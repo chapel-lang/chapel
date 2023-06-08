@@ -52,7 +52,7 @@ proc tryCast(r, type t) {
   }
   writeln("casting ", r, " to stridable range of ", t:string, ":");
   try {
-    var resStr = r: range(t, stridable=true);
+    var resStr = r: range(t, strides=strideKind.any);
     printRange(resStr);
   } catch e {
     writeln("  caught Error: ", e.message());

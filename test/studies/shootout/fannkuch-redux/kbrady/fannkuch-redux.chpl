@@ -10,7 +10,7 @@ use IO;
 
 config const N: int(32) = 7;
 
-var D: domain(1, int(32), false) = {0..15:int(32)};
+var D: domain(1, int(32)) = {0..15:int(32)};
 var s: [D] int(32);
 var t: [D] int(32);
 var maxFlips: int(32);

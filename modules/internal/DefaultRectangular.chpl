@@ -1003,6 +1003,15 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
+    // supports deprecation by Vass in 1.31 to implement #17131
+    pragma "dont disable remote value forwarding"
+    @deprecated("'LocRADCache' initializer with 'stridable: bool' is deprecated; please use 'strides: strideKind' instead")
+    proc init(type eltType, param rank: int, type idxType,
+              param stridable: bool, newTargetLocDom: domain(rank)) {
+      this.init(eltType, rank, idxType, chpl_strideKind(stridable),
+                newTargetLocDom);
+    }
+
     inline proc lockRAD(rlocIdx) {
       RADLocks[rlocIdx].lock();
     }

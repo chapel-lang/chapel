@@ -26,7 +26,7 @@ writeln("Passing around a literal returned from a function");
 
 {
   writeln("Pass to concrete in intent");
-  proc receiveDomainLiteral(in d: domain(1, int, false)) {
+  proc receiveDomainLiteral(in d: domain(1, int)) {
     writeln(d.definedConst);
   }
 

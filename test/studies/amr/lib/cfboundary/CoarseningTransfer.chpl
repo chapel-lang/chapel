@@ -21,7 +21,7 @@ class GridInvalidRegion {
   //|/...............|/
   
   var fine_neighbors: domain(unmanaged Grid);
-  var domains:        [fine_neighbors] domain(dimension,stridable=true);
+  var domains:        [fine_neighbors] domain(dimension,strides=strideKind.any);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -250,7 +250,7 @@ proc LevelVariable.fillInvalidRegion (
 //-------------------------------------------------------------------
 
 proc GridVariable.coarsenValues (
-  coarse_cells: domain(dimension,stridable=true),
+  coarse_cells: domain(dimension,strides=strideKind.any),
   ref_ratio:    dimension*int)
 {
 

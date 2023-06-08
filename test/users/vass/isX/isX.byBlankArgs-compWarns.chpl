@@ -40,7 +40,7 @@ const uInstance = uInstanceVar;
 type DomType1 = domain(1);
 const init1dom: DomType1 = {7770..7771};
 
-type DomType2 = domain(2, uint(32), true);
+type DomType2 = domain(2, uint(32), strideKind.positive);
 const init2dom: DomType2 = {110001..110002:uint(32),
                             330004..330033:uint(32) by 3};
 
@@ -88,7 +88,7 @@ var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
-var rng2: range(uint(8), boundKind.neither, true);
+var rng2: range(uint(8), boundKind.neither, strideKind.negative);
 var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;

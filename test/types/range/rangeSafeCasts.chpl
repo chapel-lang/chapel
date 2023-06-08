@@ -38,7 +38,7 @@ proc tryCast(r, type t) {
     printRange(res);
 
     writeln("casting ", r, " to stridable range of ", t:string, ":");
-    var resStr = r.safeCast(range(t, stridable=true));
+    var resStr = r.safeCast(range(t, strides=strideKind.any));
     printRange(resStr);
   }
 }

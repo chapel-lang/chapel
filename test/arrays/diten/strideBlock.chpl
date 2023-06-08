@@ -1,6 +1,6 @@
 use BlockDist;
 var Dist = new dmap(new Block(rank=1, boundingBox={1..10}));
-var dom: domain(1, stridable=true) dmapped Dist = {1..10 by 2};
+var dom: domain(1, strides=strideKind.any) dmapped Dist = {1..10 by 2};
 var A: [dom] int = [i in dom] i;
 writeln(A);
 for i in dom {
