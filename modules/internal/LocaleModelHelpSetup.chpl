@@ -158,9 +158,6 @@ module LocaleModelHelpSetup {
   proc helpSetupLocaleFlat(dst:borrowed LocaleModel, out local_name:string) {
     local_name = getNodeName();
 
-    extern proc chpl_task_getCallStackSize(): c_size_t;
-    dst.callStackSize = chpl_task_getCallStackSize();
-
     extern proc chpl_topo_getNumCPUsPhysical(accessible_only: bool): c_int;
     dst.nPUsPhysAcc = chpl_topo_getNumCPUsPhysical(true);
     dst.nPUsPhysAll = chpl_topo_getNumCPUsPhysical(false);

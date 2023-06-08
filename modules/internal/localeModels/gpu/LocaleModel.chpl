@@ -244,7 +244,6 @@ module LocaleModel {
       f.write("-GPU" + sid:string);
     }
 
-    override proc getChildCount(): int { return 0; }
     override proc _getChildCount(): int { return 0; }
 
     iter getChildIndices() : int {
@@ -253,10 +252,6 @@ module LocaleModel {
     }
     proc addChild(loc:locale) {
       halt("Cannot add children to this locale type.");
-    }
-    override proc getChild(idx:int) : locale {
-      halt("requesting a child from a GPULocale locale");
-      return new locale(this);
     }
     override proc _getChild(idx:int) : locale {
       halt("requesting a child from a GPULocale locale");
@@ -334,7 +329,6 @@ module LocaleModel {
 
     proc getChildSpace() do return childSpace;
 
-    override proc getChildCount() do return numSublocales;
     override proc _getChildCount() do return numSublocales;
 
     iter getChildIndices() : int {
@@ -342,12 +336,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) : locale {
-      if boundsChecking then
-        if (idx < 0) || (idx >= numSublocales) then
-          halt("sublocale child index out of bounds (",idx,")");
-      return new locale(childLocales[idx]);
-    }
     override proc _getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
@@ -422,7 +410,6 @@ module LocaleModel {
       f.write(name);
     }
 
-    override proc getChildCount() do return this.myLocaleSpace.size;
     override proc _getChildCount() do return this.myLocaleSpace.size;
 
     proc getChildSpace() do return this.myLocaleSpace;
@@ -432,7 +419,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) do return this.myLocales[idx];
     override proc _getChild(idx:int) do return this.myLocales[idx];
 
     iter getChildren() : locale  {
