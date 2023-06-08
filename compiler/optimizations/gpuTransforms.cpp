@@ -336,6 +336,8 @@ class GpuizableLoop {
 public:
   GpuizableLoop(BlockStmt* blk);
 
+  bool isReportWorthy();
+
   CForLoop* loop() const { return loop_; }
   bool isEligible() const { return isEligible_; }
   Symbol* upperBound() const { return upperBound_; }
@@ -383,6 +385,28 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   }
 }
 
+// Given --report-gpu we don't want to report on all 'for' loops, just those
+// that are from forall/foreach that aren't already within GPU kernels
+bool GpuizableLoop::isReportWorthy() {
+  CForLoop *cfl = this->loop_;
+  INT_ASSERT(cfl);
+
+  if (!cfl->inTree())
+    return false;
+
+  if (!cfl->isOrderIndependent())
+    return false;
+
+  // We currently don't support launching kernels from kernels. So if
+  // the loop is within a function already marked for use on the GPU,
+  // don't GPUize.
+  if(isAlreadyInGpuKernel()) {
+    return false;
+  }
+
+  return true;
+}
+
 bool GpuizableLoop::determineIfShouldErrorIfNotGpuizable() {
   CForLoop *cfl = this->loop_;
   INT_ASSERT(cfl);
@@ -409,23 +433,8 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 }
 
 bool GpuizableLoop::evaluateLoop() {
-  CForLoop *cfl = this->loop_;
-  INT_ASSERT(cfl);
-
-  if (!cfl->inTree())
-    return false;
-
-  if (!cfl->isOrderIndependent())
-    return false;
-
-  // We currently don't support launching kernels from kernels. So if
-  // the loop is within a function already marked for use on the GPU,
-  // don't GPUize.
-  if(isAlreadyInGpuKernel()) {
-    return false;
-  }
-
-  return parentFnAllowsGpuization() &&
+  return isReportWorthy() &&
+         parentFnAllowsGpuization() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -1229,26 +1238,55 @@ static void doGpuTransforms() {
 }
 
 static void logGpuizableLoops() {
-  forv_Vec(BlockStmt, block, gBlockStmts) {
-    if (ForLoop* forLoop = toForLoop(block)) {
-      if (forLoop->isOrderIndependent())
-        if (GpuizableLoop(forLoop).isEligible())
-          if (debugPrintGPUChecks)
-            printf("Found viable forLoop %s:%d[%d]\n",
-                   forLoop->fname(), forLoop->linenum(), forLoop->id);
-    } else if (CForLoop* forLoop = toCForLoop(block)) {
-      if (GpuizableLoop(forLoop).isEligible())
-        if (debugPrintGPUChecks)
-          printf("Found viable CForLoop %s:%d[%d]\n",
-                 forLoop->fname(), forLoop->linenum(), forLoop->id);
+  struct LocationComparator {
+    bool operator()(const CForLoop* item1, const CForLoop* item2) const {
+      const char* s1 = item1->fname();
+      const char* s2 = item2->fname();
+      int result = strcmp(s1, s2);
+      if (result != 0) {
+        return result < 0;
+      }
+      return item1->linenum() < item2->linenum();
     }
+  };
+  std::set<CForLoop*, LocationComparator> eligibleLoops;
+  std::set<CForLoop*, LocationComparator> ineligibleLoops;
+
+  forv_Vec(FnSymbol*, fn, gFnSymbols) {
+    std::vector<CForLoop*> loops;
+    collectCForLoopStmts(fn, loops);
+
+    for_vector(CForLoop, loop, loops) {
+      GpuizableLoop gpuLoop(loop);
+      bool isInModuleWeShouldReportOn = developer || loop->getModule()->modTag == MOD_USER;
+      if (gpuLoop.isReportWorthy() && isInModuleWeShouldReportOn) {
+        if(gpuLoop.isEligible()) {
+          eligibleLoops.insert(loop);
+        } else {
+          ineligibleLoops.insert(loop);
+        }
+      }
+    }
+  }
+
+  printf("GPU INELIGIBLE LOOPS:\n");
+  printf("---------------------\n");
+  for (const auto& loop : ineligibleLoops) {
+    printf("%s\n", loop->stringLoc());
+  }
+  printf("\n");
+
+  printf("GPU ELIGIBLE LOOPS:\n");
+  printf("-------------------\n");
+  for (const auto& loop : eligibleLoops) {
+    printf("%s\n", loop->stringLoc());
   }
 }
 
 // ----------------------------------------------------------------------------
 
 void gpuTransforms() {
-  if (debugPrintGPUChecks) {
+  if (fReportGpu) {
     logGpuizableLoops();
   }
 

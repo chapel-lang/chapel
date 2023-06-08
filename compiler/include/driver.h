@@ -242,6 +242,7 @@ extern bool fReportVectorizedLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
+extern bool fReportGpu;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 extern bool fReportGpuTransformTime;
