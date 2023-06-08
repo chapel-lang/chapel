@@ -47,6 +47,11 @@ def main():
             sync = syncToDreamhost(dirToSync, destDir, logFile, numRetries)
     exit(sync)
 
+# Sends the performance graphs to a server inside the HPE firewall 
+# returns: 
+# Will pass the results of the rsync up to the caller
+# or 124 (value that doesn't conflict with rsync exit codes) if the SUCCESS
+# file wasn't found in the directory that is being synced
 def syncToCrayWebhost(dirToSync, destDir, logFile, numRetries): 
     logFile.write('ChapelU Webhost sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
 
@@ -59,26 +64,20 @@ def syncToCrayWebhost(dirToSync, destDir, logFile, numRetries):
 
     # Assumes correct username and authentication for tower.dreamhost.com is
     # configured for the current system.
+    webHost = 'chapcs11.us.cray.com'
     perfBaseDir = '/users/chapelu/public_html/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 
-    # Delete files older than 100 days. Don't just use `rsync --del` because
-    # there might be subdirectories we don't want to delete, ignore errors
-    delOldCommand = 'find {0} -ctime +100 | xargs rm -rf '.format(perfDir)
-    delOldDesc = 'delete old files'
-    executeCommand(delOldCommand, delOldDesc, logFile)
-
-    # rsync, authenticating with ssh
-    rsyncCommand = 'rsync -avz {0} {1}'.format(dirToSync, perfDir)
     rsyncDesc = 'rsync perf graphs to internal webhost'
-    rsyncRet = runRsyncCommand (rsyncCommand, rsyncDesc, numRetries, logFile)
-    return rsyncRet
-    
+    rsyncRet = updateTarget(dirToSync, webHost, perfDir, rsyncDesc, logFile, numRetries)
+    return rsyncRet 
 
 # Send the performance graphs to dreamhost
-# Returns the status of the rsync command (0 on success)
+# returns: 
+# Will pass the results of the rsync up to the caller
 # or 124 (value that doesn't conflict with rsync exit codes) if the SUCCESS
 # file wasn't found in the directory that is being synced
+# 
 def syncToDreamhost(dirToSync, destDir, logFile, numRetries):
 
     logFile.write('Dreamhost sync log for: {0} \n\n'.format(time.strftime("%m/%d/%Y")))
@@ -97,6 +96,13 @@ def syncToDreamhost(dirToSync, destDir, logFile, numRetries):
     perfBaseDir = '/home/chapeljenkins/chapel-lang.org/perf'
     perfDir = posixpath.join(perfBaseDir, destDir)
 
+    rsyncDesc = 'rsync perf graphs to dreamhost'
+    rsyncRet = updateTarget(dirToSync, webHost, perfDir, rsyncDesc, logFile, numRetries)
+    return rsyncRet
+
+# Syncronizes data after culling out older files
+# Returns the status of the rsync command (0 on success)
+def updateTarget (dirToSync, webHost, perfDir, rsyncDesc, logFile, numRetries):
     # Delete files older than 100 days. Don't just use `rsync --del` because
     # there might be subdirectories we don't want to delete, ignore errors
     delOldCommand = 'ssh {0} "find {1} -ctime +100 | xargs rm -rf "'.format(webHost, perfDir)
@@ -106,10 +112,8 @@ def syncToDreamhost(dirToSync, destDir, logFile, numRetries):
     # rsync, authenticating with ssh
     rsyncDest = '{0}:{1}'.format(webHost, perfDir)
     rsyncCommand = 'rsync -avz -e ssh {0} {1}'.format(dirToSync, rsyncDest)
-    rsyncDesc = 'rsync perf graphs to dreamhost'
     rsyncRet = runRsyncCommand (rsyncCommand, rsyncDesc, numRetries, logFile)
     return rsyncRet
-
 
 # Functions to run rsync command
 def runRsyncCommand (rsyncCommand, rsyncDesc, numRetries, logFile):
@@ -123,7 +127,6 @@ def runRsyncCommand (rsyncCommand, rsyncDesc, numRetries, logFile):
             logFile.write('Waiting {0} seconds before retrying sync...\n\n'.format(delay))
             time.sleep(delay)
     return rsyncRet
-
 
 # Helper function for execute a command and log results/progress
 def executeCommand(command, commandDesc, logFile):
