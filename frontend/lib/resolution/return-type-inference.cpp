@@ -232,7 +232,7 @@ struct ReturnTypeInferrer {
   void process(const uast::AstNode* symbol,
                ResolutionResultByPostorderID& byPostorder);
 
-  bool checkReturn(const AstNode* inExpr, const QualifiedType& qt);
+  void checkReturn(const AstNode* inExpr, const QualifiedType& qt);
   void noteVoidReturnType(const AstNode* inExpr);
   void noteReturnType(const AstNode* expr, const AstNode* inExpr, RV& rv);
 
@@ -269,22 +269,10 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
   symbol->traverse(rv);
 }
 
-bool ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
+void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
                                      const QualifiedType& qt) {
-  // Reject non-void returns in iterators
-  if (functionKind == Function::ITER) {
-    if (auto ret = inExpr->toReturn()) {
-      // Returns shouldn't contribute to yield return types, even if they
-      // have a value (which is an error).
-      if (ret->value() != nullptr) {
-        CHPL_REPORT(context, ReturnInIterator, fnAstForErr, ret);
-      }
-      return false;
-    }
-  }
-
   if (!qt.type()) {
-    return true;
+    return;
   }
   if (qt.type()->isVoidType()) {
     if (returnIntent == Function::REF) {
@@ -309,14 +297,13 @@ bool ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
       context->error(inExpr, "cannot return it with provided return intent");
     }
   }
-  return true;
 }
 
 void ReturnTypeInferrer::noteVoidReturnType(const AstNode* inExpr) {
   auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-  if (checkReturn(inExpr, voidType)) {
-    returnedTypes.push_back(voidType);
-  }
+  returnedTypes.push_back(voidType);
+
+  checkReturn(inExpr, voidType);
 }
 void ReturnTypeInferrer::noteReturnType(const AstNode* expr,
                                         const AstNode* inExpr,
@@ -335,9 +322,8 @@ void ReturnTypeInferrer::noteReturnType(const AstNode* expr,
     qt = QualifiedType(kind, type);
   }
 
-  if (checkReturn(inExpr, qt)) {
-    returnedTypes.push_back(std::move(qt));
-  }
+  checkReturn(inExpr, qt);
+  returnedTypes.push_back(std::move(qt));
 }
 
 QualifiedType ReturnTypeInferrer::returnedType() {
@@ -498,7 +484,19 @@ bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   if (markReturnOrThrow()) {
     // If it's statically known that we've already encountered a return
     // we can safely ignore subsequent returns.
-  } else if (const AstNode* expr = ret->value()) {
+    return false;
+  }
+
+  if (functionKind == Function::ITER) {
+    if (ret->value() != nullptr) {
+      // Returns with a value are not allowed in iterators.
+      CHPL_REPORT(context, ReturnInIterator, fnAstForErr, ret);
+    }
+    // Plain returns don't count towards type infernence for iterators.
+    return false;
+  }
+
+  if (const AstNode* expr = ret->value()) {
     noteReturnType(expr, ret, rv);
   } else {
     noteVoidReturnType(ret);
