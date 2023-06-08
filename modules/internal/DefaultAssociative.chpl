@@ -88,7 +88,7 @@ module DefaultAssociative {
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(this:unmanaged class);
+        new DefaultAssociativeDomRehashHelper(_to_unmanaged(this));
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here

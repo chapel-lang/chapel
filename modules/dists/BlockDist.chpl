@@ -622,7 +622,7 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   delete dummyLBD;
 
   var dom = new unmanaged BlockDom(rank, idxType, strides, sparseLayoutType,
-                                   this: unmanaged, locDomsTemp, whole);
+                                   _to_unmanaged(this), locDomsTemp, whole);
 
   if debugBlockDist {
     writeln("Creating new Block domain:");

@@ -186,11 +186,11 @@ proc generate(allowed: set(2*string),
 proc generateExplicitCasts() {
   var allowed: set(2*string);
   // cast owned to ...
-  for x in ["owned", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
+  for x in ["owned", "borrowed", "owned?", "borrowed?"] do
     allowed.add(("owned", x));
 
   // cast shared to ...
-  for x in ["shared", "unmanaged", "borrowed", "shared?", "unmanaged?", "borrowed?"] do
+  for x in ["shared", "borrowed", "shared?", "borrowed?"] do
     allowed.add(("shared", x));
 
   // cast unmanaged to ...
@@ -198,15 +198,15 @@ proc generateExplicitCasts() {
     allowed.add(("unmanaged", x));
 
   // cast borrowed to ...
-  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
+  for x in ["borrowed", "borrowed?"] do
     allowed.add(("borrowed", x));
 
   // cast owned? to ...
-  for x in ["owned", "unmanaged", "borrowed", "owned?", "unmanaged?", "borrowed?"] do
+  for x in ["owned", "borrowed", "owned?", "borrowed?"] do
     allowed.add(("owned?", x));
 
   // cast shared? to ...
-  for x in ["shared", "unmanaged", "borrowed", "shared?", "unmanaged?", "borrowed?"] do
+  for x in ["shared", "borrowed", "shared?", "borrowed?"] do
     allowed.add(("shared?", x));
 
   // cast unmanaged? to ...
@@ -214,10 +214,10 @@ proc generateExplicitCasts() {
     allowed.add(("unmanaged?", x));
 
   // cast borrowed? to ...
-  for x in ["unmanaged", "borrowed", "unmanaged?", "borrowed?"] do
+  for x in ["borrowed", "borrowed?"] do
     allowed.add(("borrowed?", x));
 
-  // upcast is close to the same
+  // downcast is the same as upcast
   var allowedUpcast: set(2*string);
   for x in allowed do allowedUpcast.add(x);
 
@@ -584,7 +584,7 @@ proc generateArgumentRef(doConst: bool = false) {
 
 
 proc generateArgumentOut() {
-
+  // these are kinda "reversed", since we are assigning to the out variable now
   var allowed: set(2*string);
   allowed.add(("owned", "owned"));
   allowed.add(("owned?", "owned"));
