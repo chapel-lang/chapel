@@ -2535,16 +2535,16 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
       }
     }
 
-    OS << "From '" << Remark.PassName << "'";
-    OS << " at ";
     if (auto Loc = Remark.Loc) {
-      OS << "'" << Loc->SourceFilePath << ":" << Loc->SourceLine << ":"
-         << Loc->SourceColumn << "'";
+      OS << "" << Loc->SourceFilePath << ":" << Loc->SourceLine << ":"
+         << Loc->SourceColumn << "";
     } else {
       // no file location available, use generated LLVM function name
-      OS << "function '" << Remark.FunctionName << "'";
+      OS << "" << Remark.FunctionName << "";
     }
-    OS << ": " << Remark.getArgsAsMsg() << "\n";
+    OS << ": opt " << typeToString(Remark.RemarkType);
+    OS << " for '" << Remark.PassName << "'";
+    OS << " - " << Remark.getArgsAsMsg() << "\n";
   }
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
@@ -2552,6 +2552,18 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
       chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
         OS, ExternalFilename);
+  }
+  private:
+  std::string typeToString(llvm::remarks::Type t) {
+    switch (t) {
+      case llvm::remarks::Type::Passed:           return "passed";
+      case llvm::remarks::Type::Missed:           return "missed";
+      case llvm::remarks::Type::Analysis:
+      case llvm::remarks::Type::AnalysisFPCommute:
+      case llvm::remarks::Type::AnalysisAliasing: return "analysis";
+      case llvm::remarks::Type::Failure:          return "failure";
+      default:                                    return "unknown";
+    }
   }
 };
 
