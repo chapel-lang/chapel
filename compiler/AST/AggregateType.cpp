@@ -2504,7 +2504,7 @@ void AggregateType::buildReaderInitializer() {
 
         auto startKind = this->isClass() ? "startClass" : "startRecord";
         CallExpr* readStart = new CallExpr(startKind, gMethodToken, deser,
-                                           reader, new_StringSymbol(this->symbol->name));
+                                           reader, new CallExpr(PRIM_SIMPLE_TYPE_NAME, fn->_this));
         fn->insertAtHead(readStart);
 
         // Parent fields before child fields
@@ -2558,8 +2558,10 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
                                ArgSymbol*             fileReader,
                                ArgSymbol*             formatter) {
   bool isReaderInit = (fileReader != nullptr);
+  int fieldNum = isClass() ? -1 : 0;
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
+    fieldNum += 1;
 
     if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
       if (field->hasFlag(FLAG_SUPER_CLASS) == false) {
@@ -2688,7 +2690,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           if (typeExpr != nullptr) {
             CallExpr* desField = new CallExpr("deserializeField", gMethodToken, formatter,
                                                fileReader,
-                                               new_StringSymbol(name),
+                                               new CallExpr(PRIM_FIELD_NUM_TO_NAME, fn->_this, new_IntSymbol(fieldNum)),
                                                typeExpr);
             fn->insertAtTail(new CallExpr("=",
                                           new CallExpr(".",

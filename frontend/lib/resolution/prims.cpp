@@ -324,6 +324,10 @@ CallResolutionResult resolvePrimCall(Context* context,
       CHPL_ASSERT(false && "not implemented yet");
       break;
 
+    case PRIM_SIMPLE_TYPE_NAME:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
+
     case PRIM_NUM_FIELDS:
       type = primNumFields(context, ci);
       break;
