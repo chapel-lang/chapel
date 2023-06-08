@@ -23,6 +23,39 @@
 
 namespace chpl {
 
+bool CompilationGlobals::update(CompilationGlobals& keep, CompilationGlobals& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+void CompilationGlobals::swap(CompilationGlobals& other) {
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    std::swap(this->FIELD__, other.FIELD__);
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+}
+
+bool CompilationGlobals::operator==(const CompilationGlobals& other) const {
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    this->FIELD__ == other.FIELD__&&
+  return
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+    true;
+}
+
+bool CompilationGlobals::operator!=(const CompilationGlobals& other) const {
+  return !(*this==other);
+}
+
+const CompilationGlobals& compilerGlobals(Context* context) {
+  QUERY_BEGIN_INPUT(compilerGlobals, context);
+  CompilationGlobals ret;
+  return QUERY_END(ret);
+}
+
+void setCompilerGlobals(Context* context, CompilationGlobals newValue) {
+  QUERY_STORE_INPUT_RESULT(compilerGlobals, context, newValue);
+}
 
 const CompilerFlags& compilerFlags(Context* context) {
   QUERY_BEGIN_INPUT(compilerFlags, context);

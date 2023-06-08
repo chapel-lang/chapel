@@ -24,6 +24,30 @@
 
 namespace chpl {
 
+  /** Information about the program's compilation state that's available to
+      the programs themselves via global variables. */
+  struct CompilationGlobals {
+    #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__) TYPE__ NAME__;
+    #include "chpl/uast/compiler-globals-list.h"
+    #undef COMPILER_GLOBAL
+
+    static bool update(CompilationGlobals& keep, CompilationGlobals& addin);
+
+    void mark(Context* context) const {}
+    void swap(CompilationGlobals& other);
+    bool operator==(const CompilationGlobals& other) const;
+    bool operator!=(const CompilationGlobals& other) const;
+  };
+
+  /** Get the values of compiler-provided global variables. Variables here
+      are intended to be those influenced by command-line flags.
+   */
+  const CompilationGlobals& compilerGlobals(Context* context);
+
+  /**
+    Set the values of the various compiler global variables.
+   */
+  void setCompilerGlobals(Context* Context, CompilationGlobals newValue);
 
   /**
     Get the flags for the current session. The class returned by this
