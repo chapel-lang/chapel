@@ -1037,25 +1037,30 @@ it is possible to safely go back the other direction:
 
 .. code-block:: chapel
 
-  class Func {
+  class Foo {
     var x: int;
-    proc postinit() {
-      writeln("created");
-    }
-    proc this() const {
-      writeln("invoked");
+    proc getX() const {
       return x;
     }
   }
 
   proc main() {
-    var c = new unmanaged Func(42);
+    // create an unmanaged Foo
+    var c = new unmanaged Foo(42);
     writeln((c, c_addrOf(c), c_ptrTo(c)));
+    writeln(c.getX());
+
+    // get pointer to instance
     var p: c_void_ptr = c_ptrTo(c);
     writeln(p);
-    var c2: unmanaged Func = (p: unmanaged Func?)!;
+
+    // create another unmanaged Foo pointing to the same instance
+    var c2: unmanaged Foo = (p: unmanaged Foo?)!;
     writeln((c2, c_addrOf(c2), c_ptrTo(c2)));
-    writeln(c2());
+    writeln(c2.getX());
+
+    // there's just one heap instance, so only free once
+    delete c;
   }
 
 Working with strings
