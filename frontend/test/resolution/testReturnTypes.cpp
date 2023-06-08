@@ -678,6 +678,32 @@ static void testControlFlowYield3() {
   guard.realizeErrors();
 }
 
+static void testControlFlowYield4() {
+  auto program = R"""(
+    proc myIter() {
+      yield 1;
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::YieldOutsideIterator);
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -721,5 +747,6 @@ int main() {
   testControlFlowYield1();
   testControlFlowYield2();
   testControlFlowYield3();
+  testControlFlowYield4();
   return 0;
 }

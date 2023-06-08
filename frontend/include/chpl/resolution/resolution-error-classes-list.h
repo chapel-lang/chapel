@@ -84,3 +84,4 @@ ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
 ERROR_CLASS(UseImportUnknownSym, std::string, const uast::AstNode*, const uast::VisibilityClause*, const resolution::Scope*, const resolution::VisibilityStmtKind, bool)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(YieldOutsideIterator, const uast::Function*, const uast::Yield*)

@@ -510,9 +510,15 @@ bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
   if (hasReturnedOrThrown()) {
     // If it's statically known that we've already encountered a return
     // we can safely ignore subsequent yields.
-  } else {
-    noteReturnType(ret->value(), ret, rv);
+    return false;
   }
+
+  if (functionKind != Function::ITER) {
+    // Yields aren't allowed outside of an iterator.
+    CHPL_REPORT(context, YieldOutsideIterator, fnAstForErr, ret);
+  }
+
+  noteReturnType(ret->value(), ret, rv);
   return false;
 }
 void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {

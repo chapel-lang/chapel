@@ -1195,6 +1195,18 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
 }
 
 
+void ErrorYieldOutsideIterator::write(ErrorWriterBase& wr) const {
+  auto fn = std::get<const uast::Function*>(info);
+  auto yield = std::get<const uast::Yield*>(info);
+
+  wr.heading(kind_, type_, yield, "'yield' statements are not allowed outside of iterators.");
+  wr.message("In the 'yield' statement here:");
+  wr.codeForLocation(yield);
+  wr.note(fn, "inside '", fn->name(), "', which is declared as a non-iterator here:");
+  wr.codeForLocation(fn);
+  wr.message("Did you mean to use the 'return' keyword instead of 'yield'?");
+}
+
 /* end resolution errors */
 
 } // end namespace 'chpl'
