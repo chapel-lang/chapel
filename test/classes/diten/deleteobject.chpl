@@ -1,5 +1,5 @@
 proc main {
-  var o:unmanaged object = new unmanaged object();
+  var o:unmanaged RootClass = new unmanaged RootClass();
   writeln(o);
   delete o;
 }

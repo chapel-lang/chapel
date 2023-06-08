@@ -1054,7 +1054,7 @@ void initPrimitiveTypes() {
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);

@@ -141,7 +141,7 @@ module ChapelIO {
   // TODO -- this should probably be private
   @chpldoc.nodoc
   proc _isNilObject(val) {
-    proc helper(o: borrowed object) do return o == nil;
+    proc helper(o: borrowed RootClass) do return o == nil;
     proc helper(o) do                  return false;
     return helper(val);
   }
@@ -204,9 +204,9 @@ module ChapelIO {
       var isBinary = writer.binary();
 
       if (isClassType(t)) {
-        if _to_borrowed(t) != borrowed object {
-          // only write parent fields for subclasses of object
-          // since object has no .super field.
+        if _to_borrowed(t) != borrowed RootClass {
+          // only write parent fields for subclasses of RootClass
+          // since RootClass has no .super field.
           writeThisFieldsDefaultImpl(writer, x.super, first);
         }
       }
@@ -315,7 +315,7 @@ module ChapelIO {
       else
         serializer.startRecord(writer, name, numIO);
 
-      if isClassType(t) && _to_borrowed(t) != borrowed object {
+      if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
         serializeDefaultImpl(writer, serializer, x.super);
       }
 
@@ -343,7 +343,7 @@ module ChapelIO {
       else
         deserializer.startRecord(reader, name);
 
-      if isClassType(t) && _to_borrowed(t) != borrowed object {
+      if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
         deserializeDefaultImpl(reader, deserializer, x.super, "super");
       }
 
@@ -412,11 +412,11 @@ module ChapelIO {
       param numFields = __primitive("num fields", t);
       var isBinary = reader.binary();
 
-      if isClassType(t) && _to_borrowed(t) != borrowed object {
+      if isClassType(t) && _to_borrowed(t) != borrowed RootClass {
 
         //
-        // Only write parent fields for subclasses of object since object has
-        // no .super field.
+        // Only write parent fields for subclasses of RootClass since
+        // RootClass has no .super field.
         //
         type superType = x.super.type;
 
