@@ -1296,6 +1296,10 @@ private extern proc qio_file_path_for_fp(pf: chpl_cFilePtr, ref path:c_string):e
 private extern proc qio_file_path(f:qio_file_ptr_t, ref path:c_string):errorCode;
 private extern proc qio_shortest_path(fl: qio_file_ptr_t, ref path_out:c_string, path_in:c_string):errorCode;
 
+private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:int(32)):errorCode;
+private extern proc qio_get_fp(fl:qio_file_ptr_t, ref fp:c_ptr(c_FILE)):errorCode;
+private extern proc qio_channel_get_file_ptr(ch:qio_channel_ptr_t, ref file_out: qio_file_ptr_t):void;
+
 // we don't use qio_channel_read_int/write_int since the code there is pretty
 // much a dispatch based on type and that fits better in Chapel. Doing it
 // this way also happens to avoid an Intel compiler bug.
@@ -3276,6 +3280,28 @@ record _internalIoChar {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
     assert(false);
+  }
+}
+
+@chpldoc.nodoc
+proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
+  extern proc fdopen(fd: int(32), mode: c_string): c_ptr(c_FILE);
+
+  var f: qio_file_ptr_t,
+      fd: c_int,
+      fp: c_ptr(c_FILE);
+
+  qio_channel_get_file_ptr(this._channel_internal, f);
+
+  if qio_get_fp(f, fp) == 0 {
+    return (true, fp);
+  } else {
+    if qio_get_fd(f, fd) == 0 {
+      fp = fdopen(fd, c"r");
+      return (true, fp);
+    } else {
+      return (false, fp);
+    }
   }
 }
 
