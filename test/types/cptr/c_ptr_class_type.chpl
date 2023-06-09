@@ -47,7 +47,9 @@ writeln(myunmanaged.getX());
 var heapPtrToAFoo : c_void_ptr;
 if (cPtrToLogicalValue) {
   // use the new preferred method of c_ptrTo
-  heapPtrToAFoo = c_ptrTo(myunmanaged);
+  var heapPtrTmp = c_ptrTo(myunmanaged);
+  writeln(heapPtrTmp.type:string);
+  heapPtrToAFoo = heapPtrTmp;
 } else {
   // use the old method of casting to c_void_ptr
   heapPtrToAFoo = myunmanaged : c_void_ptr;
