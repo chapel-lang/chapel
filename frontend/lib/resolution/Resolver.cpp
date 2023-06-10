@@ -344,7 +344,8 @@ Resolver::createForParentClassScopeResolve(Context* context,
                                            const AggregateDecl* decl,
                                            ResolutionResultByPostorderID& byId)
 {
-  auto parent = parsing::parentAst(context, decl);
+  auto parentId = decl->id().parentSymbolId(context);
+  auto parent = parsing::idToAst(context, parentId);
   auto ret = Resolver(context, parent, byId, /* poiScope */ nullptr);
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
   ret.byPostorder.setupForSymbol(parent);
