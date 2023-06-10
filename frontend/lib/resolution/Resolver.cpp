@@ -530,6 +530,11 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
         if (outId) *outId = byPostorder.byAst(ident).toId();
       }
       return true;
+    } else if (auto agg = symbol->toAggregateDecl()) {
+      // Lacking any more specific information, use the parent aggregate ID
+      // if available.
+      if (outId) *outId = agg->id();
+      return true;
     }
   }
 
@@ -567,6 +572,12 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
 QualifiedType Resolver::methodReceiverType() {
   if (typedSignature && typedSignature->untyped()->isMethod()) {
     return typedSignature->formalType(0);
+  } else if (inCompositeType != nullptr) {
+    // We might find this case useful when resolving a forwarding statement.
+    //
+    // TODO: 'CONST_REF' probably isn't the right choice here. What we really
+    // want is the qualifier of the variable we're resolving this on.
+    return QualifiedType(QualifiedType::CONST_REF, inCompositeType);
   }
 
   return QualifiedType();
