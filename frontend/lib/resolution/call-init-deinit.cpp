@@ -472,8 +472,16 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
         actuals.push_back(CallInfoActual(qt, fname));
       }
     }
+
+    // Get the 'root' instantiation
+    const CompositeType* calledCT = compositeType;
+    while (auto insn = calledCT->instantiatedFromCompositeType()) {
+      calledCT = insn;
+    }
+    auto calledType = QualifiedType(QualifiedType::VAR, calledCT);
+
     auto ci = CallInfo (/* name */ USTR("init"),
-                        /* calledType */ QualifiedType(),
+                        /* calledType */ calledType,
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
