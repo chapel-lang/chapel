@@ -638,10 +638,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
     for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      bool isForwardingField = child->isForwardingDecl() &&
+                               child->toForwardingDecl()->expr()->isDecl();
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl() ||
-          child->isForwardingDecl()) {
+          isForwardingField) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
