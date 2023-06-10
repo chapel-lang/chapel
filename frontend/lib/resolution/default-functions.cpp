@@ -28,6 +28,8 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
+#include "Resolver.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -83,11 +85,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
       if (auto fn = node->toFunction()) {
         if (!fn->isMethod()) continue;
 
-        auto ufs = UntypedFnSignature::get(context, fn->id());
-
         // TODO: way to just compute formal type instead of whole TFS?
-        auto tfs = typedSignatureInitial(context, ufs);
-        auto receiverQualType = tfs->formalType(0);
+        ResolutionResultByPostorderID r;
+        auto vis = Resolver::createForInitialSignature(context, fn, r);
+        fn->thisFormal()->traverse(vis);
+        auto receiverQualType = vis.byPostorder.byAst(fn->thisFormal()).type();
 
         // return true if the receiver type matches or
         // if the receiver type is a generic type and we have
