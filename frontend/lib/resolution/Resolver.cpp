@@ -2440,7 +2440,18 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
       result.setIsBuiltin(true);
-      result.setToId(id);
+
+      // Some builtin types have a more useful ID than an empty ID
+      ID builtinId = id;
+      if (type.hasTypePtr()) {
+        if (auto cl = type.type()->toClassType()) {
+          builtinId = cl->basicClassType()->id();
+        } else if (auto ct = type.type()->toCompositeType()) {
+          builtinId = ct->id();
+        }
+      }
+      result.setToId(builtinId);
+
       result.setType(type);
       return;
     }
