@@ -679,6 +679,58 @@ static void testNotThisDot(void) {
   std::ignore = resolveModule(ctx, mod->id());
 }
 
+static void testRelevantInit(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  //
+  // Based on behavior implemented by production compiler back in:
+  //   https://github.com/chapel-lang/chapel/pull/9004
+  //
+  // This test exists to check dyno's ability to only try resolving candidate
+  // initializers that are implemented for a particular type. Without this
+  // capability, the program below would fail to compile while trying to
+  // resolve 'X.init' and 'R.init' for the formal 'x' in 'R.init'.
+  //
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + otherOps + R""""(
+    operator =(ref lhs: int, const rhs: int) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record X {
+      var val : int;
+    }
+
+    operator =(ref lhs: X, const rhs: X) {
+      lhs.val = rhs.val;
+    }
+
+    record R {
+      var x : X;
+
+      proc init(x = new X(5)) {
+        this.x = x;
+      }
+    }
+
+    var r: R;
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -706,6 +758,8 @@ int main() {
 
   // Tests that track old InitResolver bugs
   testNotThisDot();
+
+  testRelevantInit();
 
   return 0;
 }
