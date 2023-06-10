@@ -700,6 +700,53 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   return f;
 }
 
+// Resolve all statements like 'forwarding _value;' in 'ct'
+static
+const ResolvedFields& resolveForwardingExprs(Context* context,
+                                             const CompositeType* ct) {
+  QUERY_BEGIN(resolveForwardingExprs, context, ct);
+
+  ResolvedFields result;
+
+  CHPL_ASSERT(ct);
+  result.setType(ct);
+
+  bool isObjectType = false;
+  if (auto bct = ct->toBasicClassType()) {
+    isObjectType = bct->isObjectType();
+  }
+  bool isMissingBundledType =
+    CompositeType::isMissingBundledType(context, ct->id());
+
+  if (isObjectType || isMissingBundledType) {
+    // no need to try to resolve the fields for the object type,
+    // which doesn't have a real uAST ID.
+    // for built-in types like Errors when we didn't parse the standard library
+    // don't try to resolve the fields
+  } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    CHPL_ASSERT(ast && ast->isAggregateDecl());
+    auto ad = ast->toAggregateDecl();
+
+    // TODO: don't rely on 'ResolvedFields' or 'resolveFieldDecl' here...
+    for (auto child: ad->children()) {
+      if (child->isForwardingDecl() &&
+          !child->toForwardingDecl()->expr()->isDecl()) {
+        const ResolvedFields& resolvedFields =
+          resolveFieldDecl(context, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
+        // Copy resolved forwarding statements into the result
+        int n = resolvedFields.numForwards();
+        for (int i = 0; i < n; i++) {
+          result.addForwarding(resolvedFields.forwardingStmt(i),
+                               resolvedFields.forwardingToType(i));
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
     if (ct->isBasicClassType() || ct->isRecordType() || ct->isUnionType()) {
@@ -2864,31 +2911,52 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
   // Resolve the forwarding expression's types & decide if we
   // want to consider forwarding.
-  const ResolvedFields* forwards = nullptr;
+  ResolvedFields forwards;
   UniqueString name = ci.name();
   if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
-    auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
-    const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
-                                                     useDefaults);
-    if (fields.numForwards() > 0) {
-      // and check for cycles
-      bool cycleFound = emitErrorForForwardingCycles(context, ct);
-      if (cycleFound == false) {
-        forwards = &fields;
+    // Possible recursion here when resolving a function call in a forwarding
+    // statement:
+    //     record R { forwarding foo(); }
+    // We need to try resolving 'foo()' as a method on 'R', which eventually
+    // leads us back to this path here.
+    //
+    // By skipping the 'resolveForwardingExprs' check below, we effectively
+    // prevent forwarding statements from containing expressions that
+    // themselves require forwarding. For example, if you had a couple of
+    // forwarding statements like:
+    //     forwarding b;
+    //     forwarding bar();
+    // The 'isQueryRunning' check below would prevent resolving a method
+    // 'bar()' on 'b'.
+    //
+    if (!context->isQueryRunning(resolveForwardingExprs,
+                                std::make_tuple(ct))) {
+      auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
+      const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
+                                                       useDefaults);
+      const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+      if (fields.numForwards() > 0 ||
+          exprs.numForwards() > 0) {
+        // and check for cycles
+        bool cycleFound = emitErrorForForwardingCycles(context, ct);
+        if (cycleFound == false) {
+          forwards.addForwarding(fields);
+          forwards.addForwarding(exprs);
+        }
       }
     }
   }
 
-  if (forwards) {
+  if (forwards.numForwards() > 0) {
     // Construct CallInfos with the receiver replaced for each
     // of the forwarded-to types.
     std::vector<CallInfo> forwardingCis;
 
-    int numForwards = forwards->numForwards();
+    int numForwards = forwards.numForwards();
     for (int i = 0; i < numForwards; i++) {
-      QualifiedType forwardType = forwards->forwardingToType(i);
+      QualifiedType forwardType = forwards.forwardingToType(i);
       std::vector<CallInfoActual> actuals;
       // compute the actuals
       // first, the method receiver (from the forwarded type)
