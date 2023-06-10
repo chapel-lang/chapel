@@ -654,12 +654,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));
         }
-        // Copy resolved forwarding statements into the result
-        n = resolvedFields.numForwards();
-        for (int i = 0; i < n; i++) {
-          result.addForwarding(resolvedFields.forwardingStmt(i),
-                               resolvedFields.forwardingToType(i));
-        }
+        result.addForwarding(resolvedFields);
       }
     }
 
@@ -734,12 +729,7 @@ const ResolvedFields& resolveForwardingExprs(Context* context,
           !child->toForwardingDecl()->expr()->isDecl()) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
-        // Copy resolved forwarding statements into the result
-        int n = resolvedFields.numForwards();
-        for (int i = 0; i < n; i++) {
-          result.addForwarding(resolvedFields.forwardingStmt(i),
-                               resolvedFields.forwardingToType(i));
-        }
+        result.addForwarding(resolvedFields);
       }
     }
   }
