@@ -2252,7 +2252,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
       if (isPotentialSuper(ident)) {
         // We found a single ID, and it's just 'super'.
         return { BorrowedIdsWithName::createWithBuiltinId() };
-      } else {
+      } else if (!resolvingCalledIdent) {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
