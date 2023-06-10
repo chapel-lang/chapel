@@ -368,9 +368,11 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   if (!state || !state->initPointId.isEmpty()) return false;
 
   if (state->qt.isParam()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::PARAM, ErroneousType::get(ctx_));
   } else if (state->qt.isType()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::TYPE, ErroneousType::get(ctx_));
   } else {
     auto ct = typeToCompType(currentRecvType_);
     auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
