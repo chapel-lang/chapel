@@ -418,6 +418,10 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
         if (const AstNode* parentClassExpr = c->parentClass()) {
           // Resolve the parent class type expression
           ResolutionResultByPostorderID r;
+          // TODO: Seems like we should just be able to call
+          // 'resolveIdentifier' here. As-is, going through normal traversal is
+          // a bit muddled by the parentClassExpr technically being a child of
+          // 'c'.
           auto visitor =
             Resolver::createForParentClassScopeResolve(context, c, r);
           parentClassExpr->traverse(visitor);
