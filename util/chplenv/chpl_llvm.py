@@ -367,18 +367,27 @@ def validate_llvm_config():
             if not (bindir and os.path.isdir(bindir)):
                 error("llvm-config command {0} provides missing bin dir {1}"
                       .format(llvm_config, bindir))
-            clang_c = get_llvm_clang('c')[0]
-            clang_cxx = get_llvm_clang('c++')[0]
-            if not is_system_clang_version_ok(clang_c):
-                error("Missing or wrong version for clang at {0}".format(
-                      clang_c))
-            if not is_system_clang_version_ok(clang_cxx):
-                error("Missing or wrong version for clang++ at {0}".format(
-                      clang_cxx))
 
-            (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
-            if not noPackageErrors:
-              error(package_err)
+        (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
+        if not noPackageErrors:
+            error(package_err)
+
+        clang_c = get_llvm_clang('c')[0]
+        clang_cxx = get_llvm_clang('c++')[0]
+        if clang_c == '':
+            error("Could not find clang with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
+        if clang_cxx == '':
+            error("Could not find clang++ with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
+
+        if not is_system_clang_version_ok(clang_c):
+            error("Missing or wrong version for clang at {0}".format(
+                  clang_c))
+        if not is_system_clang_version_ok(clang_cxx):
+            error("Missing or wrong version for clang++ at {0}".format(
+                  clang_cxx))
+
 
 @memoize
 def get_system_llvm_config_bindir():
@@ -418,6 +427,34 @@ def is_system_clang_version_ok(clang_command):
 # use. Returns '' if no acceptable system clang was found.
 @memoize
 def get_system_llvm_clang(lang):
+    lang_upper = lang.upper()
+    if lang_upper == 'C++':
+        lang_upper = 'CXX'
+
+    # compute it based on setting CHPL_LLVM_CLANG_C/CXX
+    # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX
+    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+    if lang_upper == 'C':
+        llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C', '')
+        if llvm_clang_c != '':
+            return llvm_clang_c
+        if tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CC', '')
+            if target_cc != '':
+                return target_cc
+    elif lang_upper == 'CXX':
+        llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX', '')
+        if llvm_clang_cxx != '':
+            return llvm_clang_cxx
+        if tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CXX', '')
+            if target_cc != '':
+                return target_cc
+    else:
+        error('unknown lang value {}'.format(lang))
+
+    # Otherwise, look for an acceptable clang in the
+    # llvm-config --bindir and in PATH.
     llvm_config = find_system_llvm_config()
     llvm_version_string = get_llvm_config_version(llvm_config)
 
