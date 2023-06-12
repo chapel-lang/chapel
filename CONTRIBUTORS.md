@@ -3,7 +3,7 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 1.30.0 release
+Contributors to the Chapel 1.31.0 release
 -----------------------------------------
 * Jade Abraham, [HPE]
 * Paul Cassella, [HPE]
