@@ -361,10 +361,16 @@ void ReturnTypeInferrer::enterScope(const uast::AstNode* node) {
   returnFrames.push_back(toOwned(new ReturnInferenceFrame(node)));
   auto& newFrame = returnFrames.back();
 
+  if (returnFrames.size() > 1) {
+    // If we returned in the parent frame, we already returned here.
+    newFrame->returnsOrThrows |= returnFrames[returnFrames.size() - 2]->returnsOrThrows;
+  }
+
   if (auto condNode = node->toConditional()) {
     newFrame->subFrames.emplace_back(condNode->thenBlock());
     newFrame->subFrames.emplace_back(condNode->elseBlock());
   } else if (auto tryNode = node->toTry()) {
+    newFrame->subFrames.emplace_back(tryNode->body());
     for (auto clause : tryNode->handlers()) {
       newFrame->subFrames.emplace_back(clause);
     }
@@ -399,18 +405,7 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
       }
     }
 
-    if (poppingFrame->scopeAst->isTry()) {
-      // The sub-frames of try/catch nodes are just the catches, but they
-      // aren't the only thing that needs to return: the try itself
-      // should return too.
-      //
-      // Use & here because parentOrThrows is already set to try's return
-      // state earlier.
-      parentReturnsOrThrows &= allReturnOrThrow;
-    } else {
-      parentReturnsOrThrows = allReturnOrThrow;
-    }
-
+    parentReturnsOrThrows = allReturnOrThrow;
   }
 
   if (returnFrames.size() > 0) {

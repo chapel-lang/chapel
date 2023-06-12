@@ -596,6 +596,17 @@ static void testControlFlow15() {
   , ControlFlowResult::FallsThrough);
 }
 
+static void testControlFlow16() {
+  testControlFlow(
+      R"""(
+      if true then return 1;
+
+      var b = false;
+      if b then /* fall through to the default return */
+      )"""
+  , ControlFlowResult::AllPathsReturn);
+}
+
 static void testControlFlowYield1() {
   auto program = R"""(
     iter myIter() {
@@ -743,6 +754,7 @@ int main() {
   testControlFlow13();
   testControlFlow14();
   testControlFlow15();
+  testControlFlow16();
 
   testControlFlowYield1();
   testControlFlowYield2();
