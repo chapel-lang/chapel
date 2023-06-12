@@ -778,15 +778,13 @@ def filter_llvm_link_flags(flags):
         # So, if we have '-lzstd', use pkg-config to get the link flags.
         if flag == '-lzstd':
           import third_party_utils
-          try:
-            link_bundled_args, link_system_args = (
-                third_party_utils.pkgconfig_get_system_link_args('libzstd'))
-          except:
-            link_system_args = None
-          if link_system_args:
-              # found something with pkg-config, so use that instead
-              ret.extend(link_system_args)
-              continue
+          if third_party_utils.has_pkgconfig():
+              link_bundled_args, link_system_args = (
+                  third_party_utils.pkgconfig_get_system_link_args('libzstd'))
+              if link_system_args:
+                  # found something with pkg-config, so use that instead
+                  ret.extend(link_system_args)
+                  continue
         # otherwise, append -lzstd as usual
 
         ret.append(flag)
