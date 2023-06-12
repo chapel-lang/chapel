@@ -1914,7 +1914,7 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
-static chpl::CompilerGlobals dynoBuildCompilationGlobals() {
+static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
   return {
     .boundsChecking = !fNoBoundsChecks,
     .castChecking = !fNoCastChecks,
@@ -2011,7 +2011,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::setCompilerFlags(gContext, flags);
 
   // Set the compilation globals all at once using a query.
-  chpl::setCompilerGlobals(gContext, dynoBuildCompilationGlobals());
+  chpl::setCompilerGlobals(gContext, dynoBuildCompilerGlobals());
 }
 
 
