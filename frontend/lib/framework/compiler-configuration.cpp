@@ -49,7 +49,7 @@ bool CompilerGlobals::operator!=(const CompilerGlobals& other) const {
 
 const CompilerGlobals& compilerGlobals(Context* context) {
   QUERY_BEGIN_INPUT(compilerGlobals, context);
-  CompilerGlobals ret;
+  CompilerGlobals ret{};
   return QUERY_END(ret);
 }
 
