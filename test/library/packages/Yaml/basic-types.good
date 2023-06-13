@@ -138,7 +138,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
---- !Parent
+--- !borrowed_Parent
 x: 5
 
 ====================
@@ -152,7 +152,7 @@ SUCCESS
 ===== writing: =====
 {x = 5, y = 42.0}
 --------------------
---- !SimpleChild
+--- !borrowed_SimpleChild
 x: 5
 y: 42.0
 
@@ -167,7 +167,7 @@ SUCCESS
 ===== writing: =====
 {x = 1, y = 42.0, z = 5}
 --------------------
---- !ChildChild
+--- !borrowed_ChildChild
 x: 1
 y: 42.0
 z: 5
@@ -183,7 +183,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
---- !Parent
+--- !borrowed_Parent
 x: 5
 
 ====================
@@ -209,7 +209,7 @@ SUCCESS
 ===== writing: =====
 {x = 5}
 --------------------
---- !Parent
+--- !borrowed_Parent
 x: 5
 
 ====================
