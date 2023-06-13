@@ -661,8 +661,39 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   }
 }
 
+static bool isWrapperSymbol(Symbol* sym) {
+  return sym->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+         sym->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
+         sym->hasFlag(FLAG_ON) ||
+         sym->hasFlag(FLAG_ON_BLOCK);
+}
+
+static Symbol* findParentFunction(Symbol* sym) {
+  // Skip all generated / wrapper fnctions.
+  while (sym && isFnSymbol(sym) && isWrapperSymbol(sym)) {
+    auto fn = toFnSymbol(sym);
+    if (fn->calledBy->size() < 1) return sym;
+    auto firstCall = fn->calledBy->head();
+    if (!firstCall) return sym;
+    sym = firstCall->parentSymbol;
+  }
+  return sym;
+}
+
+static const char* getLoopName(CForLoop* loop) {
+  auto parentFn = findParentFunction(loop->parentSymbol);
+  const char* name = nullptr;
+  if (parentFn && !isWrapperSymbol(parentFn)) {
+    name = astr(parentFn->name, "_");
+  } else {
+    name = astr("");
+  }
+  auto line = loop->astloc.stringLineno();
+  return astr("chpl_gpu_kernel_", name, line);
+}
+
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
-  fn_ = new FnSymbol("chpl_gpu_kernel");
+  fn_ = new FnSymbol(getLoopName(gpuLoop.loop()));
 
   fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 

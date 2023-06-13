@@ -102,6 +102,13 @@ const char* astlocT::stringLoc() const {
   return astr(this->filename(), ":", linenoBuf);
 }
 
+const char* astlocT::stringLineno() const {
+  char linenoBuf[16];
+
+  snprintf(linenoBuf, sizeof(linenoBuf), "%d", this->lineno());
+  return astr(linenoBuf);
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Definitions for astlocMarker                                                *
