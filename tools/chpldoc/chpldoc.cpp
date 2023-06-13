@@ -294,12 +294,47 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   }
 }
 
+/* helper to check if a symbol name starts with chpl_. Typically used to see
+   if we should ignore documentation for this symbol by default
+*/
+static bool symbolNameBeginsWithChpl(const Decl* node) {
+  if (auto namedDecl = node->toNamedDecl()) {
+    auto chplPrefix = UniqueString::get(gContext, "chpl_");
+    // check if this symbol itself starts with chpl_
+    if (namedDecl->name().startsWith(chplPrefix)) {
+      return true;
+    }
+    // check if this is a method on a type that starts with chpl_
+    if (auto func = namedDecl->toFunction()) {
+      if (func->isMethod() && !func->isPrimaryMethod()) {
+        if (auto typeExpr = func->thisFormal()->typeExpression()) {
+          if (auto ident = typeExpr->toIdentifier()) {
+            if (ident->name().startsWith(chplPrefix)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributeGroup()) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext, "chpldoc.nodoc"));
+  auto attrs = parsing::astToAttributeGroup(gContext, e);
+  if (attrs) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
+                                                           "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
     }
+  }
+  if (symbolNameBeginsWithChpl(e)) {
+    // TODO: Remove this check and the pragma once we have an attribute that
+    // can be used to document chpl_ symbols or otherwise remove the
+    // chpl_ prefix from symbols we want documented
+    return !(attrs &&
+             attrs->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
   }
   return false;
 }
@@ -528,7 +563,7 @@ static char* checkProjectVersion(char* projectVersion) {
   } else {
     std::cerr << "error: Invalid version format: "
               << projectVersion << " due to: " << error << std::endl;
-    exit(1);
+    clean_exit(1);
   }
   return NULL;
 }
@@ -1621,6 +1656,7 @@ struct RstResultBuilder {
     std::queue<const AstNode*> expressions;
 
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (decl->toVariable()->typeExpression() ||
           decl->toVariable()->initExpression()) {
         expressions.push(decl);
@@ -1630,6 +1666,7 @@ struct RstResultBuilder {
     std::string prevTypeExpression;
     std::string prevInitExpression;
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
         indentStream(os_, 1 * indentPerDepth);
       }
@@ -2000,7 +2037,7 @@ module M {
 
   private proc privateProc { return 37; }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc procNoDoc { return 42; }
 
   // got a comment for ya
@@ -2010,7 +2047,7 @@ module M {
   var x : [1..3] int = [1, 2, 3];
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 module N { }
 /* comment 4 */;
 )RAW";
@@ -2141,7 +2178,7 @@ class ChpldocErrorHandler : public Context::ErrorHandler {
       Context::defaultReportError(context, e.get());
     }
     if (fatal) {
-      exit(1);
+      clean_exit(1);
     }
     reportedErrors.clear();
   }
@@ -2179,7 +2216,10 @@ int main(int argc, char** argv) {
   processUsedModules_ = args.processUsedModules;
 
 
-  Context context(CHPL_HOME);
+  Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  config.toolName = "chpldoc";
+  Context context(config);
   gContext = &context;
   auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
   gContext->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
@@ -2206,12 +2246,10 @@ int main(int argc, char** argv) {
   // Root of the sphinx project and generated rst files. If
   // --docs-save-sphinx is not specified, it will be a temp dir.
   std::string docsSphinxDir;
-  std::string doctmpdirname;
   if (!args.saveSphinx.empty()) {
     docsSphinxDir = args.saveSphinx;
   } else {
-    makeTempDir("chpldoc-", doctmpdirname);
-    docsSphinxDir = doctmpdirname;
+    docsSphinxDir = gContext->tmpDir();
   }
 
   // Make the intermediate dir and output dir.

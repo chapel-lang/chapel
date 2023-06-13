@@ -11,10 +11,10 @@ class D : C {
   type dim_type;
   param stridable: bool;
 
-  var ranges: rank*range(dim_type, BoundedRangeType.bounded, stridable);
+  var ranges: rank*range(dim_type, boundKind.both);
 
   override proc bbox(d: int) {
-    const r: range(dim_type, BoundedRangeType.bounded, false) = ranges(d-1);
+    const r: range(dim_type, boundKind.both) = ranges(d-1);
     return r;
   }
 }

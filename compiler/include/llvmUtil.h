@@ -80,5 +80,11 @@ void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
 
 void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy);
 
+bool isOpaquePointer(llvm::Type* ty);
+
+// if ptr is an AllocaInst or GlobalValue, we can get the pointed-to type
+// from it. Otherwise, return nullptr.
+llvm::Type* tryComputingPointerElementType(llvm::Value* ptr);
+
 #endif //HAVE_LLVM
 #endif //LLVMUTIL_H

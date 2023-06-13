@@ -58,6 +58,8 @@ struct ofi_mr_info {
 	struct iovec iov;
 	enum fi_hmem_iface iface;
 	uint64_t device;
+	void     *ipc_mapped_addr;
+	uint8_t  ipc_handle[MAX_IPC_HANDLE_SIZE];
 };
 
 
@@ -127,6 +129,15 @@ union ofi_mr_hmem_info {
 	uint64_t ze_id;
 };
 
+struct ofi_mr_entry {
+	struct ofi_mr_info		info;
+	struct ofi_rbnode		*node;
+	int				use_cnt;
+	struct dlist_entry		list_entry;
+	union ofi_mr_hmem_info		hmem_info;
+	uint8_t				data[];
+};
+
 enum fi_mm_state {
 	FI_MM_STATE_UNSPEC = 0,
 	FI_MM_STATE_IDLE,
@@ -157,8 +168,8 @@ struct ofi_mem_monitor {
 	 * pages behind a given virtual address have changed), the buffer needs
 	 * to be re-registered.
 	 */
-	bool (*valid)(struct ofi_mem_monitor *notifier, const void *addr,
-		      size_t len, union ofi_mr_hmem_info *hmem_info);
+	bool (*valid)(struct ofi_mem_monitor *notifier,
+		      const struct ofi_mr_info *info, struct ofi_mr_entry *entry);
 };
 
 void ofi_monitor_init(struct ofi_mem_monitor *monitor);
@@ -181,6 +192,14 @@ void ofi_monitor_unsubscribe(struct ofi_mem_monitor *monitor,
 			     const void *addr, size_t len,
 			     union ofi_mr_hmem_info *hmem_info);
 
+int ofi_monitor_start_no_op(struct ofi_mem_monitor *monitor);
+void ofi_monitor_stop_no_op(struct ofi_mem_monitor *monitor);
+int ofi_monitor_subscribe_no_op(struct ofi_mem_monitor *notifier,
+				 const void *addr, size_t len,
+				 union ofi_mr_hmem_info *hmem_info);
+void ofi_monitor_unsubscribe_no_op(struct ofi_mem_monitor *notifier,
+				    const void *addr, size_t len,
+				    union ofi_mr_hmem_info *hmem_info);
 extern struct ofi_mem_monitor *default_monitor;
 extern struct ofi_mem_monitor *default_cuda_monitor;
 extern struct ofi_mem_monitor *default_rocr_monitor;
@@ -208,6 +227,7 @@ struct ofi_memhooks {
 extern struct ofi_mem_monitor *memhooks_monitor;
 
 extern struct ofi_mem_monitor *cuda_monitor;
+extern struct ofi_mem_monitor *cuda_ipc_monitor;
 extern struct ofi_mem_monitor *rocr_monitor;
 extern struct ofi_mem_monitor *ze_monitor;
 extern struct ofi_mem_monitor *import_monitor;
@@ -285,16 +305,7 @@ struct ofi_mr_cache_params {
 
 extern struct ofi_mr_cache_params	cache_params;
 
-struct ofi_mr_entry {
-	struct ofi_mr_info		info;
-	struct ofi_rbnode		*node;
-	int				use_cnt;
-	struct dlist_entry		list_entry;
-	union ofi_mr_hmem_info		hmem_info;
-	uint8_t				data[];
-};
-
-#define OFI_HMEM_MAX 4
+#define OFI_HMEM_MAX 6
 
 struct ofi_mr_cache {
 	struct util_domain		*domain;
@@ -330,6 +341,12 @@ void ofi_mr_cache_cleanup(struct ofi_mr_cache *cache);
 
 void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t len);
 
+int ofi_ipc_cache_open(struct ofi_mr_cache **cache,
+			struct util_domain *domain);
+void ofi_ipc_cache_destroy(struct ofi_mr_cache *cache);
+int  ofi_ipc_cache_search(struct ofi_mr_cache *cache, struct ipc_info *ipc_info,
+			   struct ofi_mr_entry **mr_entry);
+
 static inline bool ofi_mr_cache_full(struct ofi_mr_cache *cache)
 {
 	return (cache->cached_cnt >= cache_params.max_cnt) ||
@@ -338,8 +355,21 @@ static inline bool ofi_mr_cache_full(struct ofi_mr_cache *cache)
 
 bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru);
 
-int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
-			struct ofi_mr_entry **entry);
+/**
+ * @brief Given an ofi_mr_info (with an iov range, ipc_info)
+ * If the iov range is already registered and validated by the monitor,
+ * assign the corresponding ofi_mr_entry to entry. Otherwise, register
+ * a new ofi_mr_entry and assign it to entry.
+ *
+ * @param[in] cache     The cache the entry belongs to
+ * @param[in] info      Information about the mr entry to search
+ * @param[out] entry    The registered entry corresponding to the
+ *			region described in info.
+ * @returns On success, returns 0. On failure, returns a negative error code.
+ */
+int ofi_mr_cache_search(struct ofi_mr_cache *cache,
+			 const struct ofi_mr_info *info,
+			 struct ofi_mr_entry **entry);
 
 /**
  * Given an attr (with an iov range), if the iov range is already registered,

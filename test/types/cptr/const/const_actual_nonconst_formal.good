@@ -1,0 +1,4 @@
+const_actual_nonconst_formal.chpl:12: error: unresolved call 'foo(c_ptrConst(int(32)))'
+const_actual_nonconst_formal.chpl:4: note: this candidate did not match: foo(x: c_ptr(int(32)))
+const_actual_nonconst_formal.chpl:12: note: because actual argument #1 with type 'c_ptrConst(int(32))'
+const_actual_nonconst_formal.chpl:4: note: is passed to formal 'in x: c_ptr(int(32))'

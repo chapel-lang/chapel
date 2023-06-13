@@ -65,7 +65,7 @@ record buf {
     extern proc memchr(s:c_void_ptr, c : c_int, n : c_size_t) : c_void_ptr;
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
-    if ret != c_nil {
+    if ret != nil {
       const idx = arr.domain.first + ret:c_intptr - ptr:c_intptr;
       return idx;
     }
@@ -80,12 +80,12 @@ record buf {
       if avail.size > 0 {
         const idx = _memchr(term, avail);
         if idx >= 0 {
-          // Character found, bulk-append characters up to and including 'idx'
+          // Character found, bulk-pushBack characters up to and including 'idx'
           // to the 'data' array.
-          data.append(avail[..idx]);
+          data.pushBack(avail[..idx]);
           (done, used) = (true, avail[..idx].size);
         } else {
-          data.append(avail);
+          data.pushBack(avail);
           (done, used) = (false, avail.size);
         }
       } else return 0;
@@ -138,7 +138,7 @@ proc main(args: [] string) {
 
   const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
                                          hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-  //
+
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.
   //

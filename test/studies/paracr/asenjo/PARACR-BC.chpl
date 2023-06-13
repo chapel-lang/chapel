@@ -10,6 +10,7 @@
 use Time;
 use BlockDist;
 use CyclicDist;
+use Math;
 
 //Problem Dimension
 config const n:int=16;

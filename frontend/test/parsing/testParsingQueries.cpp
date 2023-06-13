@@ -639,6 +639,152 @@ static void test9() {
   assert(lMod != nullptr);
 }
 
+// check that we get the right AttributeGroup for items inside a multi-decl
+static void test10() {
+  printf("test10\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                      "@chpldoc.nodoc\n"
+                      "var z, v, (a, (x, y), c);\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkIdsAllChildren(ctx, mod, nullptr);
+  auto multiDecl = mod->stmt(0)->toMultiDecl();
+  assert(multiDecl);
+  auto multiDeclAttr = parsing::idToAttributeGroup(ctx, multiDecl->id());
+  assert(multiDeclAttr);
+  auto noDoc = multiDeclAttr->getAttributeNamed(UniqueString::get(ctx,
+                                                                 "chpldoc.nodoc"));
+  assert(noDoc);
+  auto zDecl = multiDecl->declOrComment(0)->toVariable();
+  assert(zDecl);
+  auto zDeclAttr = parsing::idToAttributeGroup(ctx, zDecl->id());
+  assert(zDeclAttr==multiDeclAttr);
+  auto tupleDecl = multiDecl->declOrComment(2)->toTupleDecl();
+  assert(tupleDecl);
+  auto tupleDeclAttr = parsing::idToAttributeGroup(ctx, tupleDecl->id());
+  assert(tupleDeclAttr==multiDeclAttr);
+  auto nestedTupleDecl = tupleDecl->decl(1)->toTupleDecl();
+  assert(nestedTupleDecl);
+  auto nestedTupleDeclAttr = parsing::idToAttributeGroup(ctx, nestedTupleDecl->id());
+  assert(nestedTupleDeclAttr==multiDeclAttr);
+  auto xDecl = nestedTupleDecl->decl(0)->toVariable();
+  assert(xDecl);
+  auto xDeclAttr = parsing::idToAttributeGroup(ctx, xDecl->id());
+  assert(xDeclAttr==multiDeclAttr);
+  auto yDecl = nestedTupleDecl->decl(1)->toVariable();
+  assert(yDecl);
+  auto yDeclAttr = parsing::idToAttributeGroup(ctx, yDecl->id());
+  assert(yDeclAttr==multiDeclAttr);
+  auto cDecl = tupleDecl->decl(2)->toVariable();
+  assert(cDecl);
+  auto cDeclAttr = parsing::idToAttributeGroup(ctx, cDecl->id());
+  assert(cDeclAttr==multiDeclAttr);
+}
+
+// check that we get the right AttributeGroup for items inside a nested tuple
+static void test11() {
+  printf("test11\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                      "@chpldoc.nodoc\n"
+                      "var (a, (x, y), c);\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkIdsAllChildren(ctx, mod, nullptr);
+  auto tupleDecl = mod->stmt(0)->toTupleDecl();
+  assert(tupleDecl);
+  auto tupleDeclAttr = parsing::idToAttributeGroup(ctx, tupleDecl->id());
+  assert(tupleDeclAttr);
+  auto noDoc = tupleDeclAttr->getAttributeNamed(UniqueString::get(ctx,
+                                                                 "chpldoc.nodoc"));
+  assert(noDoc);
+  auto nestedTupleDecl = tupleDecl->decl(1)->toTupleDecl();
+  assert(nestedTupleDecl);
+  auto nestedTupleDeclAttr = parsing::idToAttributeGroup(ctx, nestedTupleDecl->id());
+  assert(nestedTupleDeclAttr==tupleDeclAttr);
+  auto xDecl = nestedTupleDecl->decl(0)->toVariable();
+  assert(xDecl);
+  auto xDeclAttr = parsing::idToAttributeGroup(ctx, xDecl->id());
+  assert(xDeclAttr==tupleDeclAttr);
+  auto yDecl = nestedTupleDecl->decl(1)->toVariable();
+  assert(yDecl);
+  auto yDeclAttr = parsing::idToAttributeGroup(ctx, yDecl->id());
+  assert(yDeclAttr==tupleDeclAttr);
+  auto cDecl = tupleDecl->decl(2)->toVariable();
+  assert(cDecl);
+  auto cDeclAttr = parsing::idToAttributeGroup(ctx, cDecl->id());
+  assert(cDeclAttr==tupleDeclAttr);
+  auto aDecl = tupleDecl->decl(0)->toVariable();
+  assert(aDecl);
+  auto aDeclAttr = parsing::idToAttributeGroup(ctx, aDecl->id());
+  assert(aDeclAttr==tupleDeclAttr);
+}
+
+// check that we get nullptr for the AttributeGroup of all the children of a
+// multi-decl without an AttributeGroup
+static void test12() {
+  printf("test12\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::get(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                      "var z, v, (a, (x, y), c);\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkIdsAllChildren(ctx, mod, nullptr);
+  auto multiDecl = mod->stmt(0)->toMultiDecl();
+  assert(multiDecl);
+  auto multiDeclAttr = parsing::idToAttributeGroup(ctx, multiDecl->id());
+  assert(multiDeclAttr == nullptr);
+  auto zDecl = multiDecl->declOrComment(0)->toVariable();
+  assert(zDecl);
+  auto zDeclAttr = parsing::idToAttributeGroup(ctx, zDecl->id());
+  assert(zDeclAttr==nullptr);
+  auto tupleDecl = multiDecl->declOrComment(2)->toTupleDecl();
+  assert(tupleDecl);
+  auto tupleDeclAttr = parsing::idToAttributeGroup(ctx, tupleDecl->id());
+  assert(tupleDeclAttr==nullptr);
+  auto nestedTupleDecl = tupleDecl->decl(1)->toTupleDecl();
+  assert(nestedTupleDecl);
+  auto nestedTupleDeclAttr = parsing::idToAttributeGroup(ctx, nestedTupleDecl->id());
+  assert(nestedTupleDeclAttr==nullptr);
+  auto xDecl = nestedTupleDecl->decl(0)->toVariable();
+  assert(xDecl);
+  auto xDeclAttr = parsing::idToAttributeGroup(ctx, xDecl->id());
+  assert(xDeclAttr==nullptr);
+  auto yDecl = nestedTupleDecl->decl(1)->toVariable();
+  assert(yDecl);
+  auto yDeclAttr = parsing::idToAttributeGroup(ctx, yDecl->id());
+  assert(yDeclAttr==nullptr);
+  auto cDecl = tupleDecl->decl(2)->toVariable();
+  assert(cDecl);
+  auto cDeclAttr = parsing::idToAttributeGroup(ctx, cDecl->id());
+  assert(cDeclAttr==nullptr);
+}
+
 int main() {
   test0();
   test1();
@@ -650,6 +796,9 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
+  test12();
 
   return 0;
 }

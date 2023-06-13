@@ -737,7 +737,7 @@ GitHub Issues
 +++++++++++++
 
 Currently, it is mandatory to include a GitHub issue number with any new
-futures. That said, futures the pre-date Chapel's adoption of GitHub issues may
+futures. That said, futures that pre-date Chapel's adoption of GitHub issues may
 have a description instead of an issue number.
 
 When filing a bug report as an issue, it is considered good practice to

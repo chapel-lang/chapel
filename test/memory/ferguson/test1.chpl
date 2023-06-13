@@ -8,10 +8,10 @@ extern proc c_function_free(x:c_ptr(uint(64)));
 {
   var ptr: c_ptr(uint(64));
   writeln("Allocating in Chapel");
-  ptr = c_calloc(uint(64), 1);
+  ptr = allocate(uint(64), 1, clear=true);
   ptr[0] = 55;
   writeln("Freeing in Chapel");
-  c_free(ptr);
+  deallocate(ptr);
 }
 
 // c allocate -> c free
@@ -31,7 +31,7 @@ extern proc c_function_free(x:c_ptr(uint(64)));
   ptr = c_function_malloc();
   ptr[0] = 55;
   writeln("Freeing in Chapel");
-  c_free(ptr);
+  deallocate(ptr);
 }
 
 // c calloc -> chapel free
@@ -41,7 +41,7 @@ extern proc c_function_free(x:c_ptr(uint(64)));
   ptr = c_function_calloc();
   ptr[0] = 55;
   writeln("Freeing in Chapel");
-  c_free(ptr);
+  deallocate(ptr);
 }
 
 // c strdup -> chapel free
@@ -51,7 +51,7 @@ extern proc c_function_free(x:c_ptr(uint(64)));
   ptr = c_function_strdup();
   ptr[0] = 55;
   writeln("Freeing in Chapel");
-  c_free(ptr);
+  deallocate(ptr);
 }
 
 // NOTE: this block needs to appear last, because we want to capture this
@@ -62,7 +62,7 @@ extern proc c_function_free(x:c_ptr(uint(64)));
 {
   var ptr: c_ptr(uint(64));
   writeln("Allocating in Chapel");
-  ptr = c_calloc(uint(64), 1);
+  ptr = allocate(uint(64), 1, clear=true);
   ptr[0] = 55;
   writeln("Freeing in C");
   c_function_free(ptr);

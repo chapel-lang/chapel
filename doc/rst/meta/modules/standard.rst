@@ -42,6 +42,7 @@ Diagnostics
 
    CommDiagnostics <standard/CommDiagnostics>
    GpuDiagnostics <standard/GpuDiagnostics>
+   MemDiagnostics <standard/MemDiagnostics>
    Memory <standard/Memory>
 
 
@@ -103,7 +104,6 @@ System/Interoperability
    OS <standard/OS>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
 
 Utilities
 ---------

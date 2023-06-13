@@ -1,4 +1,7 @@
+// See the README for more info on this test
+
 extern {
+  #define __HIP_PLATFORM_AMD__
   #include <hip/hip_runtime.h>
   #include <hip/hip_runtime_api.h>
   #include <assert.h>

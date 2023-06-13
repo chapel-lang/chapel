@@ -1,2 +1,0 @@
-arrayFuncs.chpl:6: warning: 'Array.count' is unstable
-Count of 1's in A = 4

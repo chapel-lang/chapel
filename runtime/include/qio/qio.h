@@ -57,6 +57,9 @@ typedef enum {
 
 typedef uint32_t qio_hint_t;
 
+extern ssize_t qio_write_unbuffered_threshold;
+extern ssize_t qio_read_unbuffered_threshold;
+
 // TODO: make these better values
 #ifndef FTYPE_NONE
 #define FTYPE_NONE 0
@@ -453,6 +456,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
 qioerr qio_get_fd(qio_file_t* fl, int* out);
+qioerr qio_get_fp(qio_file_t* fl, FILE** out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
 qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int64_t* num_locs_out);
 
@@ -674,7 +678,7 @@ typedef struct qio_channel_s {
    * we allocate bufferspace (appending without updating av_end)
    * and then update av_end to be the end of the buffer.
    *
-   * right_mark_start is mark_space[mark_next-1] or av_start if mark_next==0.
+   * right_mark_start is mark_space[mark_cur] or av_start if mark_cur==0.
    *
    * How does marking interact with cached_cur/start/end?
    *  - mark positions are always offsets from get_offset which includes cached_cur.
@@ -687,7 +691,7 @@ typedef struct qio_channel_s {
    * |             | aka available           | aka allocated          |
    *             mark_stack[0]              av_end
    *             "av_start"
-   *                  mark_stack[mark_next-1]
+   *                  mark_stack[mark_cur-1]
    *                  "right_mark_start"
    * the available section is ready for user read/write.
    * Space to the right of av_end is allocated but not yet read from disk
@@ -769,6 +773,11 @@ qioerr qio_channel_error(qio_channel_t* ch) {
 static inline
 void* qio_channel_get_plugin(qio_channel_t* ch) {
   return ch->chan_info;
+}
+
+static inline
+void qio_channel_get_file_ptr(qio_channel_t* ch, qio_file_t** file_out) {
+  *file_out = ch->file;
 }
 
 qioerr _qio_channel_init_buffered(qio_channel_t* ch, qio_file_t* file, qio_hint_t hints, int readable, int writeable, int64_t start, int64_t end, qio_style_t* style);

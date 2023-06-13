@@ -1,5 +1,6 @@
 use Random;
 use Time;
+use Math;
 
 enum classVals {S, W, A, B, C};
 

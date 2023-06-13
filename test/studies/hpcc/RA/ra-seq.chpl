@@ -1,4 +1,4 @@
-use Time;
+use Time, Math;
 
 use HPCCProblemSize, RARandomStream;
 

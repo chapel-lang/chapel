@@ -20,8 +20,8 @@ proc verifyLaunches() {
 }
 
 config param useForeach = true;
-
 config const useGpuDiags = true;
+config const SI = true;
 
 //
 // The number of vectors and element type of those vectors
@@ -200,7 +200,7 @@ proc verifyResults(A, B, C) {
 }
 
 //
-// Print out success/failure, the timings, and the GB/s value
+// Print out success/failure, the timings, and the throughput
 //
 proc printResults(successful, execTimes) {
   writeln("Validation: ", if successful then "SUCCESS" else "FAILURE");
@@ -227,7 +227,14 @@ proc printResults(successful, execTimes) {
     writeln("  avg = ", avgTime);
     writeln("  min = ", minTime);
 
-    const GBPerSec = numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
-    writeln("Performance (GB/s) = ", GBPerSec);
+    if SI {
+      const GBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) * 1e-9;
+      writeln("Performance (GB/s) = ", GBPerSec);
+    } else {
+      const GiBPerSec =
+        numVectors * numBytes(elemType) * (m / minTime) / (1<<30):real;
+      writeln("Performance (GiB/s) = ", GiBPerSec);
+    }
   }
 }

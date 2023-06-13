@@ -5,11 +5,11 @@ var today = date.today(); // workaround for problem with unused records
 
 proc test_date_delta_non_days_ignored() {
   var dt = new date(2000, 1, 2);
-  var delta = new timedelta(days=1, hours=2, minutes=3, seconds=4,
+  var delta = new timeDelta(days=1, hours=2, minutes=3, seconds=4,
                             microseconds=5);
 
-  var days = new timedelta(delta.days);
-  assert(days == new timedelta(1));
+  var days = new timeDelta(delta.days);
+  assert(days == new timeDelta(1));
 
   var dt2 = dt + delta;
   assert(dt2 == dt+days);
@@ -21,8 +21,8 @@ proc test_date_delta_non_days_ignored() {
   assert(dt2 == dt - days);
 
   delta = -delta;
-  days = new timedelta(delta.days);
-  assert(days == new timedelta(-2));
+  days = new timeDelta(delta.days);
+  assert(days == new timeDelta(-2));
 
   dt2 = dt + delta;
   assert(dt2 == dt + days);
@@ -41,18 +41,18 @@ proc test_date_ordinal_conversions() {
                     (1945,11,12,710347)] {
     var d1 = new date(y, m, d);
     assert(n == d1.toOrdinal());
-    var fromord = date.fromOrdinal(n);
+    var fromord = date.createFromOrdinal(n);
     assert(d1 == fromord);
   }
 
   for year in MINYEAR..MAXYEAR by 7 {
     var d = new date(year, 1, 1);
     var n = d.toOrdinal();
-    var d2 = date.fromOrdinal(n);
+    var d2 = date.createFromOrdinal(n);
     assert(d == d2);
 
     if year > 1 {
-      d = date.fromOrdinal(n-1);
+      d = date.createFromOrdinal(n-1);
       d2 = new date(year-1, 12, 31);
       assert(d == d2);
       assert(d2.toOrdinal() == n-1);
@@ -69,7 +69,7 @@ proc test_date_ordinal_conversions() {
       for day in 1..md {
         var d = new date(year, month, day);
         assert(d.toOrdinal() == n);
-        assert(d == date.fromOrdinal(n));
+        assert(d == date.createFromOrdinal(n));
         n += 1;
       }
     }
@@ -79,21 +79,21 @@ proc test_date_ordinal_conversions() {
 proc test_date_extreme_ordinals() {
   var a = date.min;
   var aord = a.toOrdinal();
-  var b = date.fromOrdinal(aord);
+  var b = date.createFromOrdinal(aord);
   assert(a == b);
 
-  b = a + new timedelta(days=1);
+  b = a + new timeDelta(days=1);
   assert(b.toOrdinal() == aord + 1);
-  assert(b == date.fromOrdinal(aord+1));
+  assert(b == date.createFromOrdinal(aord+1));
 
   a = date.max;
   aord = a.toOrdinal();
-  b = date.fromOrdinal(aord);
+  b = date.createFromOrdinal(aord);
   assert(a == b);
 
-  b = a - new timedelta(days=1);
+  b = a - new timeDelta(days=1);
   assert(b.toOrdinal() == aord - 1);
-  assert(b == date.fromOrdinal(aord - 1));
+  assert(b == date.createFromOrdinal(aord - 1));
 }
 
 proc test_date_computations() {
@@ -105,8 +105,8 @@ proc test_date_computations() {
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
 
-  var day = new timedelta(1);
-  var week = new timedelta(7);
+  var day = new timeDelta(1);
+  var week = new timeDelta(7);
   a = new date(2002, 3, 2);
 
   assert(a + day == new date(2002, 3, 3));
@@ -130,10 +130,10 @@ proc test_date_computations() {
 proc test_date_fromtimestamp() {
   var (year, month, day) = (1999, 9, 19);
   var d1 = new date(year, month, day);
-  var delta = d1 - unixEpoch.getdate();
+  var delta = d1 - unixEpoch.getDate();
   var ts = delta.days * 60 * 60 * 24 + delta.seconds;
 
-  var d = date.fromTimestamp(ts);
+  var d = date.createFromTimestamp(ts);
   assert(d.year == year);
   assert(d.month == month);
   assert(d.day == day);
@@ -143,9 +143,9 @@ proc test_date_today() {
   var tday, tdayAgain: date;
   for 1..3 { // give it a few tries in case we cross midnight
     tday = date.today();
-    var delta = tday - unixEpoch.getdate();
+    var delta = tday - unixEpoch.getDate();
     var ts = delta.days * 60 * 60 * 24 + delta.seconds;
-    tdayAgain = date.fromTimestamp(ts);
+    tdayAgain = date.createFromTimestamp(ts);
     if tday == tdayAgain then
       break;
   }
@@ -165,13 +165,13 @@ proc test_date_isocalendar() {
   for i in 0..#7 {
     var d = new date(2003, 12, 22+i);
     assert(d.isoCalendar() == (2003, 52, i+1));
-    d = new date(2003, 12, 29) + new timedelta(i);
+    d = new date(2003, 12, 29) + new timeDelta(i);
     assert(d.isoCalendar() == (2004, 1, i+1));
     d = new date(2004, 1, 5+i);
     assert(d.isoCalendar() == (2004, 2, i+1));
     d = new date(2009, 12, 21+i);
     assert(d.isoCalendar() == (2009, 52, i+1));
-    d = new date(2009, 12, 28) + new timedelta(i);
+    d = new date(2009, 12, 28) + new timeDelta(i);
     assert(d.isoCalendar() == (2009, 53, i+1));
     d = new date(2010, 1, 4+i);
     assert(d.isoCalendar() == (2010, 1, i+1));
@@ -197,7 +197,7 @@ proc test_date_iso_long_years() {
     assert(d.isoCalendar()(1) == d1.isoCalendar()(1) &&
            d.isoCalendar()(2) == d1.isoCalendar()(2));
     if d.isoCalendar()(1) == 53 then
-      L.append(i);
+      L.pushBack(i);
   }
 
   assert(L.size == ISO_LONG_YEARS_TABLE.size);
@@ -229,14 +229,14 @@ proc test_date_resolution_info() {
   proc isdate(type t, d) param do return false;
   assert(istype(date, date.min));
   assert(istype(date, date.max));
-  assert(istype(timedelta, date.resolution));
+  assert(istype(timeDelta, date.resolution));
   assert(date.max > date.min);
 }
 
-proc test_date_extreme_timedelta() {
+proc test_date_extreme_timeDelta() {
   var big = date.max - date.min;
   var n = (big.days*24*3600 + big.seconds)*1000000 + big.microseconds;
-  var justasbig = new timedelta(0, 0, n);
+  var justasbig = new timeDelta(0, 0, n);
 
   assert(big == justasbig);
   assert(date.min + big == date.max);
@@ -339,7 +339,7 @@ test_date_isoformat();
 test_date_ctime();
 test_date_strftime();
 test_date_resolution_info();
-test_date_extreme_timedelta();
+test_date_extreme_timeDelta();
 test_date_timetuple();
 test_date_compare();
 test_date_replace();

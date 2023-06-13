@@ -1,4 +1,4 @@
-use IO;
+use IO, Math;
 
 config const debug = false;
 

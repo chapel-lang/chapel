@@ -529,7 +529,6 @@ genSubclassArray(bool isHeader) {
 
 // Returns the type, in .c or .type field, for the passed name.
 // The type_name typically refers to something defined in the runtime.
-static
 GenRet codegenTypeByName(const char* type_name)
 {
   GenInfo* info = gGenInfo;
@@ -1403,7 +1402,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       }
     }
     fprintf(hdrfile, "\n};\n");
-  } else {
+  } else if (!gCodegenGPU) {
 #ifdef HAVE_LLVM
     llvm::Type *global_serializeTableEntryType =
       llvm::IntegerType::getInt8PtrTy(info->module->getContext());
@@ -1920,15 +1919,14 @@ static void codegen_header(std::set<const char*> & cnames,
           info->module->getNamedGlobal("chpl_globals_registry"))) {
       GVar->eraseFromParent();
     }
+    llvm::Type* globValType =
+      llvm::ArrayType::get(ptr_wide_ptr_t, globals_registry_static_size);
     llvm::GlobalVariable *chpl_globals_registryGVar =
       llvm::cast<llvm::GlobalVariable>(
           info->module->getOrInsertGlobal("chpl_globals_registry",
-            llvm::ArrayType::get(
-              ptr_wide_ptr_t,
-              globals_registry_static_size)));
+                                          globValType));
     chpl_globals_registryGVar->setInitializer(
-        llvm::Constant::getNullValue(
-          chpl_globals_registryGVar->getType()->getContainedType(0)));
+        llvm::Constant::getNullValue(globValType));
     info->lvt->addGlobalValue("chpl_globals_registry",
                               chpl_globals_registryGVar, GEN_PTR, true, /* chplType= */ nullptr);
 #endif
@@ -2115,11 +2113,9 @@ codegen_config() {
         std::vector<llvm::Value *> args (6);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[0] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[0] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[0] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         Type* type = var->type;
@@ -2134,28 +2130,22 @@ codegen_config() {
         }
         {
           GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[1] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[1] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
           GenRet gen = new_CStringSymbol("Built-in")->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         else {
           GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[2] =info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[2] =info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
@@ -2163,11 +2153,9 @@ codegen_config() {
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
         {
           GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-#if HAVE_LLVM_VER >= 130
-          args[5] = info->irBuilder->CreateLoad(gen.val->getType()->getPointerElementType(), gen.val);
-#else
-          args[5] = info->irBuilder->CreateLoad(gen.val);
-#endif
+          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+          INT_ASSERT(eltType); // it should have been a global variable
+          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
         }
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
@@ -2509,10 +2497,14 @@ static void embedGpuCode() {
   std::string err;
   chpl::readfile(fatbinFilename.c_str(), buffer, err);
   if (!err.empty()) {
-    USR_FATAL("%s", err.c_str());
+    USR_FATAL("Error while reading GPU binary: %s", err.c_str());
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
+}
+
+static void codegenGpuGlobals() {
+  genGlobalInt("chpl_nodeID", 0, false);
 }
 #endif
 
@@ -2588,7 +2580,7 @@ static void codegenPartTwo() {
     // processes. In one process gCodegenGPU is true and we generate a .fatbin file,
     // in the other gCodegenGpu is false and we'll consume the fatbin file
     // and embed its contents into the generated code.
-    if (usingGpuLocaleModel() && !gCodegenGPU) {
+    if (isFullGpuCodegen() && !gCodegenGPU) {
       embedGpuCode();
     }
 
@@ -2652,6 +2644,11 @@ static void codegenPartTwo() {
   if ( gCodegenGPU == false ) {
     codegen_config();
   }
+#ifdef HAVE_LLVM
+  else {
+    codegenGpuGlobals();
+  }
+#endif
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
@@ -2706,8 +2703,6 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-
-
 }
 
 void codegen() {
@@ -2716,22 +2711,42 @@ void codegen() {
 
   codegenPartOne();
 
-  if (usingGpuLocaleModel()) {
+  if (isFullGpuCodegen()) {
     // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
 
+    // flush stdout before forking process so buffered output doesn't get copied over
+    fflush(stdout);
+
     pid_t pid = fork();
 
     if (pid == 0) {
       // child process
+
+      // Currently, gpu code generation is done in on forked process. This
+      // forked process produces some files in the tmp directory that are
+      // later read by the main process, so we want the main process
+      // to clean up the temp dir and not the forked process.
+
+      // set up the child to have a gContext with the same tmp dir
+      // that does not delete that tmp dir
+      auto oldContext = gContext;
+      auto config = oldContext->configuration();
+      config.tmpDir = oldContext->tmpDir();
+      config.keepTmpDir = true;
+      gContext = new chpl::Context(*oldContext, std::move(config));
+      delete oldContext;
+
+      // activate GPU code generation
       gCodegenGPU = true;
       codegenPartTwo();
       makeBinary();
       clean_exit(0);
     } else {
       // parent process
+
       INT_ASSERT(!gCodegenGPU);
       int status = 0;
       while (wait(&status) != pid) {
@@ -2801,6 +2816,11 @@ GenInfo::GenInfo()
              clangInfo(nullptr)
 #endif
 {
+#ifdef LLVM_NO_OPAQUE_POINTERS
+#if HAVE_LLVM_VER >= 150 && HAVE_LLVM_VER < 160
+  llvmContext.setOpaquePointers(false);
+#endif
+#endif
 }
 
 std::string numToString(int64_t num)
@@ -2919,9 +2939,6 @@ void nprint_view(GenRet& gen) {
     printf("\n");
   }
 #endif
-  printf("canBeMarkedAsConstAfterStore=%i\n",
-         (int) gen.canBeMarkedAsConstAfterStore);
-  printf("alreadyStored %i\n", (int) gen.alreadyStored);
   if (gen.chplType) {
     TypeSymbol* ts = gen.chplType->symbol;
     printf("chplType=%s (%i)\n", ts->name, ts->id);

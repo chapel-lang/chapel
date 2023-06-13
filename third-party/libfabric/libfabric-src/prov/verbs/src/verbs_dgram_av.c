@@ -43,12 +43,12 @@ static inline int
 vrb_dgram_verify_av_flags(struct util_av *av, uint64_t flags)
 {
 	if ((av->flags & FI_EVENT) && !av->eq) {
-		VERBS_WARN(FI_LOG_AV, "No EQ bound to AV\n");
+		VRB_WARN(FI_LOG_AV, "No EQ bound to AV\n");
 		return -FI_ENOEQ;
 	}
 
 	if (flags & ~(FI_MORE)) {
-		VERBS_WARN(FI_LOG_AV, "Unsupported flags\n");
+		VRB_WARN(FI_LOG_AV, "Unsupported flags\n");
 		return -FI_ENOEQ;
 	}
 
@@ -79,21 +79,21 @@ vrb_dgram_av_insert_addr(struct vrb_dgram_av *av, const void *addr,
 		ah_attr.grh.sgid_index = vrb_gl_data.gid_idx;
 	} else if (OFI_UNLIKELY(!vrb_dgram_av_is_addr_valid(av, addr))) {
 		ret = -FI_EADDRNOTAVAIL;
-		VERBS_WARN(FI_LOG_AV, "Invalid address\n");
+		VRB_WARN(FI_LOG_AV, "Invalid address\n");
 		goto fn1;
 	}
 
 	av_entry = calloc(1, sizeof(*av_entry));
 	if (OFI_UNLIKELY(!av_entry)) {
 		ret = -FI_ENOMEM;
-		VERBS_WARN(FI_LOG_AV, "Unable to allocate memory for AV entry\n");
+		VRB_WARN(FI_LOG_AV, "Unable to allocate memory for AV entry\n");
 		goto fn1;
 	}
 
 	av_entry->ah = ibv_create_ah(domain->pd, &ah_attr);
 	if (OFI_UNLIKELY(!av_entry->ah)) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_AV,
+		VRB_WARN(FI_LOG_AV,
 			   "Unable to create Address Handle, errno - %d\n", errno);
 		goto fn2;
 	}
@@ -124,7 +124,7 @@ static int vrb_dgram_av_insert(struct fid_av *av_fid, const void *addr,
 	if (ret)
 		return ret;
 
-	VERBS_DBG(FI_LOG_AV, "Inserting %"PRIu64" addresses\n", count);
+	VRB_DBG(FI_LOG_AV, "Inserting %"PRIu64" addresses\n", count);
 	for (i = 0; i < count; i++) {
 		ret = vrb_dgram_av_insert_addr(
 				av, (struct ofi_ib_ud_ep_name *)addr + i,
@@ -133,7 +133,7 @@ static int vrb_dgram_av_insert(struct fid_av *av_fid, const void *addr,
 			success_cnt++;
 	}
 
-	VERBS_DBG(FI_LOG_AV,
+	VRB_DBG(FI_LOG_AV,
 		  "%d addresses were inserted successfully\n", success_cnt);
 	return success_cnt;
 }
@@ -143,7 +143,7 @@ vrb_dgram_av_remove_addr(struct vrb_dgram_av_entry *av_entry)
 {
 	int ret = ibv_destroy_ah(av_entry->ah);
 	if (ret)
-		VERBS_WARN(FI_LOG_AV,
+		VRB_WARN(FI_LOG_AV,
 			   "AH Destroying failed with status - %d\n",
 			   ret);
 	dlist_remove(&av_entry->list_entry);

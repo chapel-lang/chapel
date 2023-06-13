@@ -1,3 +1,3 @@
-ExternBlock.chpl:14: error: extern procedure argument types should be extern types - 'proc(x: int, y: int): int' is not
+ExternBlock.chpl:13: error: extern procedure argument types should be extern types - 'proc(x: int, y: int): int' is not
 ExternBlock.chpl:17: note: when instantiated from here
 ExternBlock.chpl:23: note: when instantiated from here

@@ -69,7 +69,7 @@ struct gnix_fid_cq {
 
 	struct fid_wait *wait;
 
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct gnix_reference ref_cnt;
 
 	struct gnix_prog_set pset;

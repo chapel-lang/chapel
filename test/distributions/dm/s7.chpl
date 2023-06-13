@@ -102,7 +102,7 @@ proc test(X, Y, Z) {
 
 // copy to a default-rectangular array, for writeln()
 proc copyToDF(A:[]) {
-  var D: domain(A.rank, A.domain.idxType, A.domain.stridable);
+  var D: domain(A.rank, A.domain.idxType, A.domain.strides);
   D = A.domain;
   var Res: [D] A.eltType = A;
   return Res;

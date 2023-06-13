@@ -318,6 +318,10 @@ def test_directory(test, test_type):
                                    ".test.cpp", ".ml-test.cpp")) :
                         are_tests = True
                         break
+                    # this directory may generate test files
+                    if f == "PRETEST":
+                        are_tests = True
+                        break
                 else:
                     if f.endswith("." + perf_keys):
                         are_tests = True
@@ -1259,7 +1263,6 @@ def check_for_duplicates():
                         .format(g, graph_set[filename]))
             else:
                 graph_set[filename] = g
-
 
 # END STUFF
 

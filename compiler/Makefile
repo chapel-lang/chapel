@@ -114,7 +114,19 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 
 
 COMPILER_LIB_DIR = $(CHPL_MAKE_HOME)/lib/compiler/$(CHPL_MAKE_HOST_BIN_SUBDIR)
-CMAKE_FLAGS = -DCMAKE_C_COMPILER=$(CHPL_MAKE_HOST_CC) -DCMAKE_CXX_COMPILER=$(CHPL_MAKE_HOST_CXX) -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(CHPL_BIN_DIR) -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(COMPILER_LIB_DIR) -DCHPL_CXX_FLAGS="$(COMP_CXXFLAGS)" -DCHPL_LD_FLAGS="$(LDFLAGS)"
+
+CMAKE_FLAGS = -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(CHPL_BIN_DIR) -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(COMPILER_LIB_DIR) -DCHPL_CXX_FLAGS="$(COMP_CXXFLAGS)" -DCHPL_LD_FLAGS="$(LDFLAGS)"
+
+# Generally speaking, we want to pass -DCMAKE_C_COMPILER / -DCMAKE_CXX_COMPILER
+# so that cmake uses the same compiler as these Makefiles are configured to.
+# However, in some test configurations we want to be able to override the
+# cmake compiler by setting the CC and CXX environment variables. But
+# cmake will ignore CC and CXX environment variables if -DCMAKE_C_COMPILER /
+# -DCMAKE_CXX_COMPILER are passed. So, we need a way to not pass those
+# in some testing configurations.
+ifndef CHPL_CMAKE_USE_CC_CXX
+CMAKE_FLAGS += -DCMAKE_C_COMPILER=$(CHPL_MAKE_HOST_CC) -DCMAKE_CXX_COMPILER=$(CHPL_MAKE_HOST_CXX)
+endif
 
 # Handling of VERBOSE flag to set CMake verbose output on or off. This logic
 # prefers the command-line arguments VERBOSE=1 or QUIET=1, over the env. var
@@ -188,10 +200,15 @@ $(CHPL): FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD) | $(CHPL_BIN_DIR)
 
 MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 
-$(CHPLDOC): FORCE $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR) $(CHPL)
+$(CHPLDOC): FORCE $(COMPILER_BUILD) $(MAKEALLCHPLDOCSUBDIRS) | $(CHPL_BIN_DIR)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpldoc
 
 chpldoc: FORCE $(CHPLDOC)
+
+$(CHPLDEF): FORCE $(CHPLDEF_OBJS) | $(CHPL_BIN_DIR) $(CHPL)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpldef
+
+chpldef: FORCE $(CHPLDEF)
 
 $(COMPILER_BUILD):
 	mkdir -p $@

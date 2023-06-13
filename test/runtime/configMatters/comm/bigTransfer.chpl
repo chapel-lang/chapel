@@ -1,4 +1,4 @@
-use Memory.Diagnostics, Time, CTypes;
+use MemDiagnostics, Time, CTypes;
 
 type elemType = int;
 

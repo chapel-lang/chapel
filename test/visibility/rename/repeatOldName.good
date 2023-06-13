@@ -1,3 +1,4 @@
-repeatOldName.chpl:8: warning: identifier 'a' is repeated
+repeatOldName.chpl:7: In module 'M':
+repeatOldName.chpl:8: warning: 'a' is repeated
 -12
 -12

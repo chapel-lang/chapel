@@ -411,7 +411,13 @@ print "\$chplhomedir = $chplhomedir\n";
 #
 $mailer = $ENV{'CHPL_MAILER'};
 if ($mailer eq "") {
-    $chplsendemail = "$chplhomedir/util/test/send_email.py";
+    $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+    if ($hostplatform =~ "darwin") {
+     print "[ For Mac systems use the default Mail. Defaulting to 'mail'.]\n";
+     $mailer = "mail";
+    }
+    else {
+     $chplsendemail = "$chplhomedir/util/test/send_email.py";
     `$chplsendemail --help >/dev/null 2>&1`;
     if ($? == 0) {
         $header = "";
@@ -423,6 +429,7 @@ if ($mailer eq "") {
     } else {
         print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
         $mailer = "mail";
+    }
     }
 }
 print "\$mailer = $mailer\n";
@@ -798,6 +805,7 @@ if ($runtests == 0) {
         my $str = "syncToDreamhost.$perfConfigName/$syncsuffix";
         $str =~ s,/,-,g;
         $str =~ s,-*$,,;
+# Restore graph sync once we find a solution to our network issues
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/$str.errors";
         $rsyncMessage = "syncing performance graph to dreamhost -- log file at $logdir/$str.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
@@ -862,6 +870,7 @@ if ($runtests == 0) {
             my $str = "syncReleaseToDreamhost.$perfConfigName/releaseOverRelease/$syncsuffix";
             $str =~ s,/,-,g;
             $str =~ s,-*$,,;
+# Restore graph sync once we find a solution to our network issues
             $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/$str.errors";
             $rsyncMessage = "syncing release performance graph to dreamhost -- log file at $logdir/$str.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);

@@ -37,28 +37,28 @@ module ChapelArray {
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
-  pragma "no doc"
+  @chpldoc.nodoc
   var numPrivateObjects: chpl__processorAtomicType(int);
-  pragma "no doc"
+  @chpldoc.nodoc
   param nullPid = -1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugBulkTransfer = false;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useBulkTransfer = true;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useBulkTransferStride = true;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useBulkPtrTransfer = useBulkTransfer;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param disableConstDomainOpt = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugOptimizedSwap = false;
 
   // Return POD values from arrays as values instead of const ref?
-  pragma "no doc"
+  @chpldoc.nodoc
   config param PODValAccess = true;
 
   // Toggles the functionality to perform strided bulk transfers involving
@@ -66,17 +66,17 @@ module ChapelArray {
   //
   // Currently disabled due to observations of higher communication counts
   // compared to element-by-element assignment.
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useBulkTransferDist = false;
 
-  pragma "no doc" // no doc unless we decide to expose this
+  @chpldoc.nodoc // no doc unless we decide to expose this
   config param arrayAsVecGrowthFactor = 1.5;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugArrayAsVec = false;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param logDistArrEltAccess = false;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param logAllArrEltAccess = false;
 
   proc _isPrivatized(value) param do
@@ -125,12 +125,12 @@ module ChapelArray {
 
   // original is the value this method shouldn't free, because it's the
   // canonical version. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original:object) : void  {
+  proc _freePrivatizedClass(pid:int, original:RootClass) : void  {
     // Do nothing for null pids.
     if pid == nullPid then return;
 
     coforall loc in Locales do on loc {
-      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged RootClass, pid);
       if prv != original then
         delete prv;
 
@@ -246,13 +246,13 @@ module ChapelArray {
    * NOTE:  It would be nice to define a second, less specific, function
    *        to handle the case of multiple types, however this is not
    *        possible atm due to using var args with a query type. */
-  pragma "no doc"
+  @chpldoc.nodoc
   config param CHPL_WARN_DOMAIN_LITERAL = "unset";
 
   // the low bound to use for array literals
-  pragma "no doc"
+  @chpldoc.nodoc
   config param arrayLiteralLowBound = defaultLowBound;
-  pragma "no doc"
+  @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
   /* The traditional one-argument form of :proc:`.find()` on arrays
@@ -444,7 +444,7 @@ module ChapelArray {
         const distDom = new _domain(d.newRectangularDom(
                               dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable,
+                              dom._value.strides,
                               dom.dims(),
                               definedConst));
         return distDom;
@@ -458,7 +458,7 @@ module ChapelArray {
         var distDom = new _domain(d.newRectangularDom(
                               dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable,
+                              dom._value.strides,
                               dom.dims(),
                               definedConst));
 
@@ -559,7 +559,7 @@ module ChapelArray {
     if chpl__isRectangularDomType(domainType) {
       var dom: domainType;
       return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
-                                          dom._value.stridable);
+                                          dom._value.strides);
     } else if chpl__isSparseDomType(domainType) {
       const ref parentDom = chpl__parentDomainFromDomainRuntimeType(domainType);
       return chpl__buildSparseDomainRuntimeType(d, parentDom);
@@ -664,8 +664,8 @@ module ChapelArray {
   //
   // Support for distributions
   //
-  pragma "no doc"
   pragma "syntactic distribution"
+  @chpldoc.nodoc
   record dmap { }
 
   proc chpl__buildDistType(type t) type where isSubtype(_to_borrowed(t), BaseDist) {
@@ -682,7 +682,7 @@ module ChapelArray {
     return new _distribution(x);
   }
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
-    return new _distribution(x.release());
+    return new _distribution(owned.release(x));
   }
 
   proc chpl__buildDistValue(x) {
@@ -694,7 +694,7 @@ module ChapelArray {
   //
   pragma "distribution"
   pragma "ignore noinit"
-  pragma "no doc"
+  @chpldoc.nodoc
   record _distribution {
     var _pid:int;  // only used when privatized
     pragma "owned"
@@ -755,10 +755,47 @@ module ChapelArray {
       return new _distribution(_value.dsiClone());
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
-                           ranges: rank*range(idxType, BoundedRangeType.bounded,stridable),
+    /* This is a workaround for an internal failure I experienced when
+       this code was part of newRectangularDom() and relied on split init:
+       var x;
+       if __prim(...) then x = ...;
+       else if __prim(...) then x = ...;
+       else compilerError(...); */
+    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
+
+      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
+      // we use "method call resolves" instead of just "resolves".
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, strides, ranges) {
+        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+      }
+
+      // The following supports deprecation by Vass in 1.31 to implement #17131
+      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
+      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
+      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
+
+      param stridable = strides.toStridable();
+      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, stridable, ranges2) {
+
+        compilerWarning("the domain map '", _value.type:string,
+          "' needs to be updated from 'stridable: bool' to",
+          " 'strides: strideKind' because 'stridable' is deprecated");
+
+        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
+      }
+
+      compilerError("rectangular domains are not supported by",
+                    " the distribution ", this.type:string);
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
                            definedConst: bool = false) {
-      var x = _value.dsiNewRectangularDom(rank, idxType, stridable, ranges);
+      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
 
       x.definedConst = definedConst;
 
@@ -768,10 +805,11 @@ module ChapelArray {
       return x;
     }
 
-    proc newRectangularDom(param rank: int, type idxType, param stridable: bool,
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
                            definedConst: bool = false) {
-      var ranges: rank*range(idxType, BoundedRangeType.bounded, stridable);
-      return newRectangularDom(rank, idxType, stridable, ranges, definedConst);
+      var ranges: rank*range(idxType, boundKind.both, strides);
+      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
     }
 
     proc newAssociativeDom(type idxType, param parSafe: bool=true) {
@@ -797,19 +835,19 @@ module ChapelArray {
     }
 
     // TODO: Can't this be an initializer?
-    pragma "no doc"
-    proc type decodeFrom(f) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
     proc writeThis(f) throws {
       f.write(_value);
     }
-    pragma "no doc"
-    proc encodeTo(f) throws {
-      f.write(_value);
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writer.write(_value);
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
@@ -822,14 +860,14 @@ module ChapelArray {
     }
   }  // record _distribution
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
     return !(d1 == d2);
   }
@@ -841,11 +879,27 @@ module ChapelArray {
     return defaultComparator;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc shouldReturnRvalueByValue(type t) param {
     if !PODValAccess then return false;
     if isPODType(t) then return true;
     return false;
+  }
+
+  // supports deprecation by Vass in 1.31 to implement #17131
+  // A compatibility wrapper that allows code to work with domain maps
+  // whether they have been converted from stridable to strides or not.
+  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
+                           definedConst: bool = false) {
+    if __primitive("resolves",
+                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
+    then
+      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
+    else
+      return dist.dsiNewRectangularDom(rank, idxType,
+                                       strides.toStridable(), ranges);
   }
 
   // Array wrapper record
@@ -869,7 +923,6 @@ module ChapelArray {
       return _instance.chpl__serialize();
     }
 
-    pragma "no doc"
     pragma "no copy return"
     proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
@@ -893,7 +946,7 @@ module ChapelArray {
                              doiBulkTransferFromAny,  doiBulkTransferToAny,
                              chpl__serialize, chpl__deserialize;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       _do_destroy_array(this);
     }
@@ -920,6 +973,12 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param do return this.domain.rank;
 
+    /* The strides value of the underlying domain */
+    proc strides param do return this.domain.strides;
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
+
     /*
       Return a dense rectangular array's indices as a default domain.
     */
@@ -938,7 +997,7 @@ module ChapelArray {
     // bounds checking helpers
     pragma "insert line file info"
     pragma "always propagate line file info"
-    pragma "no doc"
+    @chpldoc.nodoc
     proc checkAccess(indices, value) {
       if this.isRectangular() {
         if !value.dsiBoundsCheck(indices) {
@@ -978,7 +1037,7 @@ module ChapelArray {
 
     pragma "insert line file info"
     pragma "always propagate line file info"
-    pragma "no doc"
+    @chpldoc.nodoc
     proc checkSlice(d: domain, value) {
       if (d.isRectangular() || d.isSparse()) {
         checkSlice((...d.dsiDims()), value=value);
@@ -994,7 +1053,7 @@ module ChapelArray {
 
     pragma "insert line file info"
     pragma "always propagate line file info"
-    pragma "no doc"
+    @chpldoc.nodoc
     proc checkSlice(ranges...rank, value) where chpl__isTupleOfRanges(ranges) {
       if this.isRectangular() {
         var ok = true;
@@ -1039,10 +1098,10 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
-    pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
+    @chpldoc.nodoc // ref version
     inline proc ref this(i: rank*_value.dom.idxType) ref {
       const value = _value;
       if boundsChecking then
@@ -1057,8 +1116,8 @@ module ChapelArray {
       else
         return value.dsiAccess(i(0));
     }
-    pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // value version, for POD types
     inline proc const this(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
@@ -1075,8 +1134,8 @@ module ChapelArray {
       else
         return value.dsiAccess(i(0));
     }
-    pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // const ref version, for not-POD types
     inline proc const this(i: rank*_value.dom.idxType) const ref
     {
       const value = _value;
@@ -1093,28 +1152,28 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
-    pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
+    @chpldoc.nodoc // ref version
     inline proc ref this(i: _value.dom.idxType ...rank) ref do
       return this(i);
 
-    pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // value version, for POD types
     inline proc const this(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType) do
       return this(i);
 
-    pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // const ref version, for not-POD types
     inline proc const this(i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
 
-    pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
+    @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: rank*_value.dom.idxType) ref
     {
       const value = _value;
@@ -1133,8 +1192,8 @@ module ChapelArray {
         else
           return value.dsiLocalAccess(i(0));
     }
-    pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // value version, for POD types
     inline proc const localAccess(i: rank*_value.dom.idxType)
     where shouldReturnRvalueByValue(_value.eltType)
     {
@@ -1154,8 +1213,8 @@ module ChapelArray {
         else
           return value.dsiLocalAccess(i(0));
     }
-    pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // const ref version, for not-POD types
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
     {
       const value = _value;
@@ -1175,20 +1234,20 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
-    pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
+    @chpldoc.nodoc // ref version
     inline proc ref localAccess(i: _value.dom.idxType ...rank) ref do
       return localAccess(i);
 
-    pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // value version, for POD types
     inline proc const localAccess(i: _value.dom.idxType ...rank)
     where shouldReturnRvalueByValue(_value.eltType) do
       return localAccess(i);
 
-    pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
+    @chpldoc.nodoc // const ref version, for not-POD types
     inline proc const localAccess(i: _value.dom.idxType ...rank) const ref do
       return localAccess(i);
 
@@ -1202,9 +1261,9 @@ module ChapelArray {
     // dense case because we can represent a domain by a tuple of
     // ranges, but in the sparse case, is there a general representation?
     //
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc this(d: domain) {
       if d.rank != rank then
         compilerError("slicing an array with a domain of a different rank");
@@ -1236,9 +1295,9 @@ module ChapelArray {
     }
 
     // array slicing by a tuple of ranges
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc this(ranges...rank) where chpl__isTupleOfRanges(ranges) {
       if boundsChecking then
         checkSlice((... ranges), value=_value);
@@ -1274,9 +1333,9 @@ module ChapelArray {
     }
 
     // array rank change
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc this(args ...rank) where _validRankChangeArgs(args, _value.dom.idxType) {
       if boundsChecking then
         checkRankChange(args);
@@ -1324,12 +1383,12 @@ module ChapelArray {
       return this.domain.dim(d);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dim(param d : int) {
       return this.domain.dim(d);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do
         if !_value.dom.dsiDim(i).boundsCheck(args(i)) then
@@ -1338,9 +1397,9 @@ module ChapelArray {
 
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc localSlice(r... rank)
     where chpl__isDROrDRView(this) && chpl__isTupleOfRanges(r) {
       if boundsChecking then
@@ -1349,9 +1408,9 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
 
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc localSlice(d: domain) where chpl__isDROrDRView(this) {
       if boundsChecking then
         checkSlice((...d.getIndices()), value=_value);
@@ -1366,9 +1425,9 @@ module ChapelArray {
              _value.locale.id, " from locale ", here.id);
       return this(d);
     }
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc localSlice(r... rank)
     where chpl__isTupleOfRanges(r) && !chpl__isDROrDRView(this) {
       if boundsChecking then
@@ -1376,9 +1435,9 @@ module ChapelArray {
       return _value.dsiLocalSlice(r);
     }
 
-    pragma "no doc"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc localSlice(d: domain) {
       return localSlice((...d.getIndices()));
     }
@@ -1391,22 +1450,22 @@ module ChapelArray {
       }
     }
 
-    pragma "no doc"
     pragma "reference to const when const this"
+    @chpldoc.nodoc
     iter these(param tag: iterKind) ref
       where tag == iterKind.standalone &&
             __primitive("resolves", _value.these(tag=tag)) {
       for i in _value.these(tag) do
         yield i;
     }
-    pragma "no doc"
+    @chpldoc.nodoc
     iter these(param tag: iterKind)
       where tag == iterKind.leader {
       for followThis in _value.these(tag) do
         yield followThis;
     }
-    pragma "no doc"
     pragma "reference to const when const this"
+    @chpldoc.nodoc
     iter these(param tag: iterKind, followThis, param fast: bool = false) ref
       where tag == iterKind.follower {
       if __primitive("resolves", _value.these(tag=tag, followThis, fast=fast)) {
@@ -1538,8 +1597,8 @@ module ChapelArray {
         if newDims(i).sizeAs(uint) != origDims(i).sizeAs(uint) then
           halt("extent mismatch in dimension ", i+1, ": cannot reindex() from ",
                origDims(i), " to ", newDims(i));
-        if ! noNegativeStrideWarnings && origDims(i).chpl_hasPositiveStride()
-           && ! newDims(i).chpl_hasPositiveStride() then
+        if ! noNegativeStrideWarnings && origDims(i).hasPositiveStride()
+           && ! newDims(i).hasPositiveStride() then
           warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; in reindex() from ", origDims, " to ", newDims);
       }
 
@@ -1557,7 +1616,7 @@ module ChapelArray {
       pragma "no copy"
       pragma "no auto destroy"
       const newDom = new _domain(redistRec, rank, updom.idxType,
-                                 updom.stridable, updom.dims(),
+                                 updom.strides, updom.dims(),
                                  definedConst=true);
       newDom._value._free_when_no_arrs = true;
 
@@ -1579,13 +1638,13 @@ module ChapelArray {
 
     // reindex for all non-rectangular domain types.
     // See above for the rectangular version.
-    pragma "no doc"
     pragma "fn returns aliasing array"
+    @chpldoc.nodoc
     proc reindex(d:domain) {
       compilerError("Reindexing non-rectangular arrays is not permitted.");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc writeThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
@@ -1596,16 +1655,16 @@ module ChapelArray {
       _value.dsiSerialWrite(f);
     }
 
-    // Note: This 'encodeTo' is required at the moment because the compiler
-    // generated 'encodeTo', like 'writeThis' is considered to be a last
+    // Note: This 'serialize' is required at the moment because the compiler
+    // generated 'serialize', like 'writeThis' is considered to be a last
     // resort. Without this method we would incur promotion when trying
     // to print arrays.
-    pragma "no doc"
-    proc encodeTo(f) throws {
-      writeThis(f);
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
@@ -1616,12 +1675,17 @@ module ChapelArray {
       _value.dsiSerialRead(f);
     }
 
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
-    pragma "no doc"
-    proc type decodeFrom(f) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
@@ -1631,7 +1695,7 @@ module ChapelArray {
       compilerError("only sparse arrays have an IRV");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc IRV ref where this.isSparse() {
       return _value.IRV;
     }
@@ -1654,7 +1718,7 @@ module ChapelArray {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
     /*
@@ -1708,7 +1772,7 @@ module ChapelArray {
     proc chpl__isDense1DArray() param {
       return this.isRectangular() &&
              this.rank == 1 &&
-             !this._value.stridable;
+             this._value.hasUnitStride();
     }
 
     /* The following methods are intended to provide a list or vector style
@@ -1729,7 +1793,8 @@ module ChapelArray {
     /* Return the first value in the array */
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
-    pragma "no doc"
+    @chpldoc.nodoc
+    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
     proc head(): this._value.eltType {
       return this[this.domain.low];
     }
@@ -1737,7 +1802,8 @@ module ChapelArray {
     /* Return the last value in the array */
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
-    pragma "no doc"
+    @chpldoc.nodoc
+    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }
@@ -1904,7 +1970,6 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    @unstable("'Array.count' is unstable")
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
@@ -1915,7 +1980,7 @@ module ChapelArray {
       return this.domain.shape;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Associative domains assumed to be 1-D. */
     proc shape where this.isAssociative() {
       var s: (size.type,);
@@ -1923,18 +1988,18 @@ module ChapelArray {
       return s;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Unsupported case */
     proc shape {
       compilerError(".shape not supported on this array");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _scan(op) where Reflection.canResolveMethod(_value, "doiScan", op, this.domain) {
       return _value.doiScan(op, this.domain);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }
@@ -2077,7 +2142,7 @@ module ChapelArray {
   }
 
   // The same as the built-in _cast, except accepts a param arg.
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(param arg, type t:_array) {
     var result: t;
     // The would-be param version of proc =, inlined.
@@ -2086,26 +2151,26 @@ module ChapelArray {
   }
 
   // How to cast arrays to strings
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(x: [], type t:string) {
     use IO;
     return stringify(x);
   }
 
-  pragma "no doc"
   pragma "fn returns aliasing array"
+  @chpldoc.nodoc
   operator #(arr: [], counts: integral) {
     return arr[arr.domain#counts];
   }
 
-  pragma "no doc"
   pragma "fn returns aliasing array"
+  @chpldoc.nodoc
   operator #(arr: [], counts: _tuple) {
     return arr[arr.domain#counts];
   }
 
-  pragma "no doc"
   pragma "last resort"
+  @chpldoc.nodoc
   operator #(arr: [], counts) {
     compilerError("cannot apply '#' to '", arr.type:string,
                   "' using count(s) of type ", counts.type:string);
@@ -2115,28 +2180,10 @@ module ChapelArray {
   // Helper functions
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param do return false;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc isCollapsedDimension(r) param do return true;
-
-  // computes || reduction over stridable of ranges
-  proc chpl__anyStridable(ranges) param {
-    for param i in 0..ranges.size-1 do
-      if ranges(i).stridable then
-        return true;
-    return false;
-  }
-
-  // computes || reduction over stridable of ranges, but permits some
-  // elements not to be ranges (as in a rank-change slice)
-  proc chpl__anyRankChangeStridable(args) param {
-    for param i in 0..args.size-1 do
-      if isRangeValue(args(i)) then
-        if args(i).stridable then
-          return true;
-    return false;
-  }
 
   // the following pair of routines counts the number of ranges in its
   // argument list and is used for rank-change slices
@@ -2196,11 +2243,12 @@ module ChapelArray {
   //
   // Assignment of distributions and arrays
   //
-  pragma "no doc"
+  @chpldoc.nodoc
+  @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
   operator =(ref a: _distribution, b: _distribution) {
     if a._value == nil {
       __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
-    } else if a._value._doms_containing_dist == 0 {
+    } else {
       if a._value.type != b._value.type then
         compilerError("type mismatch in distribution assignment");
       if a._value == b._value {
@@ -2209,8 +2257,6 @@ module ChapelArray {
         a._value.dsiAssign(b._value);
       if _isPrivatized(a._instance) then
         _reprivatize(a._value);
-    } else {
-      halt("assignment to distributions with declared domains is not yet supported");
     }
   }
 
@@ -2283,10 +2329,10 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: locale) param do return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param do return true;
   // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed RootClass) param do return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
     if a.isRectangular() && b.isRectangular() {
       const aDims = a._value.dom.dsiDims(),
@@ -2304,8 +2350,8 @@ module ChapelArray {
     }
   }
 
-  pragma "no doc"
   pragma "find user line"
+  @chpldoc.nodoc
   inline operator =(ref a: [], b:[]) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -2333,7 +2379,7 @@ module ChapelArray {
   }
 
   // what kind of transfer to do for each element?
-  pragma "no doc"
+  @chpldoc.nodoc
   enum _tElt {
     move,
     initCopy,
@@ -2682,7 +2728,7 @@ module ChapelArray {
       aa = b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -2691,7 +2737,7 @@ module ChapelArray {
     chpl__transferArray(a, b);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(a: [], b: range(?)) {
     if a.rank == 1 then
       chpl__transferArray(a, b);
@@ -2699,14 +2745,14 @@ module ChapelArray {
       compilerError("cannot assign from ranges to multidimensional arrays");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(ref a: [], b: _iteratorRecord) {
     // e.g. b might be a list
     chpl__transferArray(a, b);
   }
 
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator =(ref a: [], b: ?t)
   where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
     // e.g. b might be a list
@@ -2765,7 +2811,7 @@ module ChapelArray {
     helpInitArrFromTuple(j, a.rank, a, b, kind);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator =(ref a: [], b: _tuple) where a.isRectangular() {
     initArrFromTuple(a, b, _tElt.assign);
   }
@@ -2806,7 +2852,7 @@ module ChapelArray {
     return _desync(eltType);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator =(ref a: [], b: _desync(a.eltType)) {
     forall e in a do
       e = b;
@@ -2815,67 +2861,67 @@ module ChapelArray {
   //
   // op= overloads for array/scalar pairs
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   operator +=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e += b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator -=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e -= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e *= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator /=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e /= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator %=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e %= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator **=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e **= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator &=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e &= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator |=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e |= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ^=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e ^= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >>=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e >>= b;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <<=(a: [], b: _desync(a.eltType)) {
     forall e in a do
       e <<= b;
@@ -2884,7 +2930,7 @@ module ChapelArray {
   //
   // Swap operator for arrays
   //
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator <=>(x: [?xD], y: [?yD]) {
     if x.rank != y.rank then
       compilerError("rank mismatch in array swap");
@@ -2925,7 +2971,7 @@ module ChapelArray {
     return B;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc reshape(A: _iteratorRecord, D: domain) {
     if !D.isRectangular() then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
@@ -2933,7 +2979,7 @@ module ChapelArray {
     return B;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   iter linearize(Xs) {
     for x in Xs do yield x;
   }
@@ -2942,7 +2988,7 @@ module ChapelArray {
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where rhs.isRectangular() {
 
-    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
+    var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.strides,
                           rhs.dims(), definedConst=definedConst);
     return lhs;
   }
@@ -2999,7 +3045,7 @@ module ChapelArray {
       return chpl__convertRuntimeTypeToValue(dist=dist,
                                              rank=instanceType.rank,
                                              idxType=instanceType.idxType,
-                                             stridable=instanceType.stridable,
+                                             strides=instanceType.strides,
                                              isNoInit=false,
                                              definedConst=definedConst);
     }
@@ -3633,7 +3679,6 @@ module ChapelArray {
   //   var A: [1..3] real;
   //   foo(A);
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
-  pragma "no doc"
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
     if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);

@@ -1,5 +1,5 @@
 record Foo {
-  var funcField: func(int, bool);
+  var funcField: proc(x: int): bool;
 
   proc callTheField(arg: int) {
     if (funcField(arg)) {

@@ -1,3 +1,3 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 memTrack = true;
 writeln(memoryUsed());

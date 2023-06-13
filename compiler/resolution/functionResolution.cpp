@@ -1517,18 +1517,34 @@ bool canCoerceAsSubtype(Type*     actualType,
       return true;
   }
 
+  // coerce c_ptr to c_ptrConst
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      !actualType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      formalType->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    // check element types match
+    Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
+    Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
+    if (actualElt && formalElt && (actualElt == formalElt)) {
+      return true;
+    }
+  }
+
+  // coerce c_ptr to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_void_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
     return true;
 
+  // coerce c_array to c_ptr
   if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
       formalType->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
     // check element types match
     Type* actualElt = getDataClassType(actualType->symbol)->typeInfo();
     Type* formalElt = getDataClassType(formalType->symbol)->typeInfo();
-    if (actualElt && formalElt && actualElt == formalElt)
+    if (actualElt && formalElt && (actualElt == formalElt))
       return true;
   }
 
@@ -4069,12 +4085,9 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
     delete candidate;
   }
 
-  if (retval && retval->hasFlag(FLAG_DEPRECATED)) {
-    retval->generateDeprecationWarning(info.call);
-  }
-
-  if (retval && retval->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-    retval->generateUnstableWarning(info.call);
+  if (retval) {
+    retval->maybeGenerateDeprecationWarning(info.call);
+    retval->maybeGenerateUnstableWarning(info.call);
   }
 
   return retval;
@@ -10205,6 +10218,20 @@ finalLoweringForFunctionCapture(FnSymbol* fn, Expr* use, bool useClass) {
   }
 }
 
+static bool
+maybeErrorForInvalidCaptureReturnIntent(FunctionType* ft, Expr* use) {
+  auto ri = ft->returnIntent();
+  bool disallowedRetIntent = ri == RET_PARAM || ri == RET_TYPE;
+  if (disallowedRetIntent) {
+    USR_FATAL_CONT(use, "a captured %s cannot return by '%s' intent",
+                   FunctionType::kindToString(ft->kind()),
+                   FunctionType::returnIntentToString(ri));
+    return true;
+  }
+
+  return false;
+}
+
 // Create either a function pointer, a closure, or a 'c_fn_ptr' depending
 // on the function to be captured (or an error, if it does not exist or
 // could not be disambiguated to a single symbol).
@@ -10247,6 +10274,11 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
   // 'functions/vass/passing-iterator-as-argument'
   if (ft->kind() == FunctionType::ITER) {
     USR_FATAL_CONT(use, "passing iterators by name is not yet supported");
+    return swapInErrorSinkForCapture(ft->kind(), use);
+  }
+
+  // Make sure the return intent is acceptable.
+  if (maybeErrorForInvalidCaptureReturnIntent(ft, use)) {
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
 
@@ -10347,16 +10379,6 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
 
     // TODO: Need to have this compute a function type.
     case PRIM_CREATE_FN_TYPE: {
-      if (!fcfs::useLegacyBehavior()) {
-        USR_WARN(call, "the 'func(...)' function type constructor has "
-                       "been deprecated");
-        USR_PRINT(call, "consider the builtin 'proc(...)' syntax "
-                        "instead");
-      } else if (fWarnUnstable) {
-        USR_WARN(call, "the 'func(...)' function type constructor is "
-                       "unstable");
-      }
-
       if (fcfs::usePointerImplementation()) {
         INT_FATAL(call, "Not supported!");
       }

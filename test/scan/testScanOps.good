@@ -1,4 +1,4 @@
-Testing type '[domain(1,int(64),false)] int(64)'
+Testing type '[domain(1,int(64),one)] int(64)'
 + scan
   Success
 min scan
@@ -18,7 +18,7 @@ minloc scan
 ^ scan
   Success
 
-Testing type '[BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64)'
+Testing type '[BlockDom(1,int(64),one,unmanaged DefaultDist)] int(64)'
 + scan
   Success
 min scan
@@ -38,7 +38,7 @@ minloc scan
 ^ scan
   Success
 
-Testing type '[PrivateDom(1,int(64),false)] int(64)'
+Testing type '[PrivateDom(1,int(64),one)] int(64)'
 + scan
   Success
 min scan
@@ -58,7 +58,7 @@ minloc scan
 ^ scan
   Success
 
-Testing type '[domain(1,int(64),false)] real(64)'
+Testing type '[domain(1,int(64),one)] real(64)'
 + scan
   Success
 min scan
@@ -72,7 +72,7 @@ maxloc scan
 minloc scan
   Success
 
-Testing type '[BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64)'
+Testing type '[BlockDom(1,int(64),one,unmanaged DefaultDist)] real(64)'
 + scan
   Success
 min scan
@@ -86,7 +86,7 @@ maxloc scan
 minloc scan
   Success
 
-Testing type '[PrivateDom(1,int(64),false)] real(64)'
+Testing type '[PrivateDom(1,int(64),one)] real(64)'
 + scan
   Success
 min scan
@@ -100,19 +100,19 @@ maxloc scan
 minloc scan
   Success
 
-Testing type '[domain(1,int(64),false)] bool'
+Testing type '[domain(1,int(64),one)] bool'
 && scan
   Success
 || scan
   Success
 
-Testing type '[BlockDom(1,int(64),false,unmanaged DefaultDist)] bool'
+Testing type '[BlockDom(1,int(64),one,unmanaged DefaultDist)] bool'
 && scan
   Success
 || scan
   Success
 
-Testing type '[PrivateDom(1,int(64),false)] bool'
+Testing type '[PrivateDom(1,int(64),one)] bool'
 && scan
   Success
 || scan

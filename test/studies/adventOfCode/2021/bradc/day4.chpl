@@ -6,7 +6,7 @@ var numbers: list(int);
 
 while true {
   const num = read(int);
-  numbers.append(num);
+  numbers.pushBack(num);
   try {
     readf(",");
   } catch {

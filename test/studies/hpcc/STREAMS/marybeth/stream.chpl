@@ -1,6 +1,7 @@
 // Modules for timing and random number generator routines
 use Time;
 use Random;
+use Math;
 
 // constants related to memory
 param MB = 1024**2,

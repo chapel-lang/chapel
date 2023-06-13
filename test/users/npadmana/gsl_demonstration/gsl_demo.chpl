@@ -1,4 +1,5 @@
 use CTypes;
+use Math;
 require '-lgsl','-lgslcblas';
 
 /* Put in the usual GSL includes here */
@@ -26,14 +27,14 @@ writeln(gsl_sf_erf(0.1));
 // Note how the res structure is available to the user
 var ret = gsl_sf_erf_e(0.1, c_ptrTo(res));
 writeln(res);
-writeln(createStringWithNewBuffer(gsl_strerror(ret)));
+writeln(string.createCopyingBuffer(gsl_strerror(ret)));
 
 // Use GSL precision modes. These are #defines and the extern block code
 // gets the types wrong, so we need to explicitly case.
 ret = gsl_sf_airy_Ai_e(10.0, GSL_PREC_DOUBLE : c_uint, c_ptrTo(res));
-writeln(createStringWithNewBuffer(gsl_strerror(ret)), res);
+writeln(string.createCopyingBuffer(gsl_strerror(ret)), res);
 ret = gsl_sf_airy_Ai_e(10.0, GSL_PREC_APPROX : c_uint,c_ptrTo(res));
-writeln(createStringWithNewBuffer(gsl_strerror(ret)), res);
+writeln(string.createCopyingBuffer(gsl_strerror(ret)), res);
 
 // Random number generators
 // Note that this follows the C-API --- so you need to explicitly free things.

@@ -183,6 +183,8 @@ proc SetExampleMatrix()
 
 proc GetNumStages(n: int)
 {
+  use Math;
+
   if n-2**log2(n) != 0 then
     return (log2(n)+1);
   else

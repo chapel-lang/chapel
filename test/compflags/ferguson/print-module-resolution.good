@@ -4,6 +4,14 @@ ChapelSysCTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.ChapelSysCTypes
 Reflection
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Reflection
+AutoMath
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math.AutoMath
+Math
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.Math
+OS
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX.OS
+POSIX
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
 Communication
@@ -12,10 +20,6 @@ ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
 NVStringFactory
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.NVStringFactory
-POSIX
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS.POSIX
-OS
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS
 BytesCasts
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes.BytesCasts
 Bytes
@@ -66,8 +70,6 @@ DSIUtil
   from print-module-resolution.ChapelStandard.ChapelTuple.DSIUtil
 ChapelTuple
   from print-module-resolution.ChapelStandard.ChapelTuple
-AutoMath
-  from print-module-resolution.ChapelStandard.ChapelRange.AutoMath
 ChapelIOStringifyHelper
   from print-module-resolution.ChapelStandard.ChapelRange.ChapelDebugPrint.ChapelIOStringifyHelper
 ChapelDebugPrint
@@ -180,6 +182,8 @@ CopyAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
+GPU
+  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU
 ChapelGpuSupport
   from print-module-resolution.ChapelStandard.ChapelGpuSupport
 stopInitCommDiags

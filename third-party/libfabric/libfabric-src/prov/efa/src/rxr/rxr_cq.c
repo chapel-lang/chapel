@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2019-2022 Amazon.com, Inc. or its affiliates.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -36,35 +36,20 @@
 #include <inttypes.h>
 #include <ofi_iov.h>
 #include <ofi_recvwin.h>
-#include "rxr.h"
+#include "efa.h"
 #include "rxr_rma.h"
 #include "rxr_msg.h"
 #include "rxr_cntr.h"
 #include "rxr_read.h"
 #include "rxr_atomic.h"
-#include "efa.h"
+#include "rxr_pkt_cmd.h"
+
+#include "rxr_tp.h"
 
 static const char *rxr_cq_strerror(struct fid_cq *cq_fid, int prov_errno,
 				   const void *err_data, char *buf, size_t len)
 {
-	struct fid_list_entry *fid_entry;
-	struct util_ep *util_ep;
-	struct util_cq *cq;
-	struct rxr_ep *ep;
-	const char *str;
-
-	cq = container_of(cq_fid, struct util_cq, cq_fid);
-
-	fastlock_acquire(&cq->ep_list_lock);
-	assert(!dlist_empty(&cq->ep_list));
-	fid_entry = container_of(cq->ep_list.next,
-				 struct fid_list_entry, entry);
-	util_ep = container_of(fid_entry->fid, struct util_ep, ep_fid.fid);
-	ep = container_of(util_ep, struct rxr_ep, util_ep);
-
-	str = fi_cq_strerror(ep->rdm_cq, prov_errno, err_data, buf, len);
-	fastlock_release(&cq->ep_list_lock);
-	return str;
+	return efa_strerror(prov_errno);
 }
 
 /**
@@ -88,7 +73,7 @@ static const char *rxr_cq_strerror(struct fid_cq *cq_fid, int prov_errno,
  * @param[in]	err		positive libfabric error code
  * @param[in]	prov_errno	positive provider specific error code
  */
-void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
+void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_op_entry *rx_entry,
 			   int err, int prov_errno)
 {
 	struct fi_cq_err_entry err_entry;
@@ -96,8 +81,12 @@ void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
 	struct dlist_entry *tmp;
 	struct rxr_pkt_entry *pkt_entry;
 	int write_cq_err;
+	char ep_addr_str[OFI_ADDRSTRLEN], peer_addr_str[OFI_ADDRSTRLEN];
+	size_t buflen = 0;
 
 	memset(&err_entry, 0, sizeof(err_entry));
+	memset(&ep_addr_str, 0, sizeof(ep_addr_str));
+	memset(&peer_addr_str, 0, sizeof(peer_addr_str));
 
 	util_cq = ep->util_ep.rx_cq;
 
@@ -113,7 +102,7 @@ void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
 		break;
 	case RXR_RX_RECV:
 #if ENABLE_DEBUG
-		dlist_remove(&rx_entry->rx_pending_entry);
+		dlist_remove(&rx_entry->pending_recv_entry);
 #endif
 		break;
 	case RXR_RX_QUEUED_CTRL:
@@ -150,11 +139,15 @@ void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
 
 	rxr_msg_multi_recv_free_posted_entry(ep, rx_entry);
 
-        FI_WARN(&rxr_prov, FI_LOG_CQ,
-		"rxr_cq_write_rx_error: err: %d, prov_err: %s (%d)\n",
-		err_entry.err, fi_strerror(-err_entry.prov_errno),
-		err_entry.prov_errno);
+	buflen = sizeof(ep_addr_str);
+	rxr_ep_raw_addr_str(ep, ep_addr_str, &buflen);
+	buflen = sizeof(peer_addr_str);
+	rxr_peer_raw_addr_str(ep, rx_entry->addr, peer_addr_str, &buflen);
 
+	FI_WARN(&rxr_prov, FI_LOG_CQ,
+		"rxr_cq_write_rx_error: err: %d, prov_err: %s (%d) our address: %s, peer address %s\n",
+		err_entry.err, efa_strerror(err_entry.prov_errno),
+		err_entry.prov_errno, ep_addr_str, peer_addr_str);
 	/*
 	 * TODO: We can't free the rx_entry as we may receive additional
 	 * packets for this entry. Add ref counting so the rx_entry can safely
@@ -190,7 +183,7 @@ void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
  * @param[in]	err		positive libfabric error code
  * @param[in]	prov_errno	positive EFA provider specific error code
  */
-void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
+void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_op_entry *tx_entry,
 			   int err, int prov_errno)
 {
 	struct fi_cq_err_entry err_entry;
@@ -199,8 +192,12 @@ void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	struct dlist_entry *tmp;
 	struct rxr_pkt_entry *pkt_entry;
 	int write_cq_err;
+	char ep_addr_str[OFI_ADDRSTRLEN], peer_addr_str[OFI_ADDRSTRLEN];
+	size_t buflen = 0;
 
 	memset(&err_entry, 0, sizeof(err_entry));
+	memset(&ep_addr_str, 0, sizeof(ep_addr_str));
+	memset(&peer_addr_str, 0, sizeof(peer_addr_str));
 
 	util_cq = ep->util_ep.tx_cq;
 	api_version = util_cq->domain->fabric->fabric_fid.api_version;
@@ -214,10 +211,6 @@ void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	case RXR_TX_SEND:
 		dlist_remove(&tx_entry->entry);
 		break;
-	case RXR_TX_QUEUED_CTRL:
-	case RXR_TX_QUEUED_SHM_RMA:
-		dlist_remove(&tx_entry->queued_ctrl_entry);
-		break;
 	default:
 		FI_WARN(&rxr_prov, FI_LOG_CQ, "tx_entry unknown state %d\n",
 			tx_entry->state);
@@ -226,6 +219,9 @@ void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 
 	if (tx_entry->rxr_flags & RXR_TX_ENTRY_QUEUED_RNR)
 		dlist_remove(&tx_entry->queued_rnr_entry);
+
+	if (tx_entry->rxr_flags & RXR_OP_ENTRY_QUEUED_CTRL)
+		dlist_remove(&tx_entry->queued_ctrl_entry);
 
 	dlist_foreach_container_safe(&tx_entry->queued_pkts,
 				     struct rxr_pkt_entry,
@@ -240,14 +236,19 @@ void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	if (FI_VERSION_GE(api_version, FI_VERSION(1, 5)))
 		err_entry.err_data_size = 0;
 
+	buflen = sizeof(ep_addr_str);
+	rxr_ep_raw_addr_str(ep, ep_addr_str, &buflen);
+	buflen = sizeof(peer_addr_str);
+	rxr_peer_raw_addr_str(ep, tx_entry->addr, peer_addr_str, &buflen);
+
 	FI_WARN(&rxr_prov, FI_LOG_CQ,
-		"rxr_cq_write_tx_error: err: %d, prov_err: %s (%d)\n",
-		err_entry.err, fi_strerror(-err_entry.prov_errno),
-		err_entry.prov_errno);
+		"rxr_cq_write_tx_error: err: %d, prov_err: %s (%d) our address: %s, peer address %s\n",
+		err_entry.err, efa_strerror(err_entry.prov_errno),
+		err_entry.prov_errno, ep_addr_str, peer_addr_str);
 
 	/*
 	 * TODO: We can't free the tx_entry as we may receive a control packet
-	 * packet for this entry. Add ref counting so the tx_entry can safely
+	 * for this entry. Add ref counting so the tx_entry can safely
 	 * be freed once all packets are accounted for.
 	 */
 	//rxr_release_tx_entry(ep, tx_entry);
@@ -372,7 +373,7 @@ void rxr_cq_queue_rnr_pkt(struct rxr_ep *ep,
 }
 
 void rxr_cq_write_rx_completion(struct rxr_ep *ep,
-				struct rxr_rx_entry *rx_entry)
+				struct rxr_op_entry *rx_entry)
 {
 	struct util_cq *rx_cq = ep->util_ep.rx_cq;
 	int ret = 0;
@@ -416,6 +417,11 @@ void rxr_cq_write_rx_completion(struct rxr_ep *ep,
 		       rx_entry->addr, rx_entry->rx_id, rx_entry->msg_id,
 		       rx_entry->cq_entry.tag, rx_entry->total_len);
 
+		rxr_tracing(recv_end, 
+			    rx_entry->msg_id, (size_t) rx_entry->cq_entry.op_context, 
+			    rx_entry->total_len, rx_entry->cq_entry.tag, rx_entry->addr);
+
+
 		if (ep->util_ep.caps & FI_SOURCE)
 			ret = ofi_cq_write_src(rx_cq,
 					       rx_entry->cq_entry.op_context,
@@ -440,7 +446,7 @@ void rxr_cq_write_rx_completion(struct rxr_ep *ep,
 			FI_WARN(&rxr_prov, FI_LOG_CQ,
 				"Unable to write recv completion: %s\n",
 				fi_strerror(-ret));
-			rxr_cq_write_rx_error(ep, rx_entry, -ret, -ret);
+			rxr_cq_write_rx_error(ep, rx_entry, -ret, FI_EFA_ERR_WRITE_RECV_COMP);
 			return;
 		}
 
@@ -450,73 +456,142 @@ void rxr_cq_write_rx_completion(struct rxr_ep *ep,
 	efa_cntr_report_rx_completion(&ep->util_ep, rx_entry->cq_entry.flags);
 }
 
-void rxr_cq_handle_rx_completion(struct rxr_ep *ep,
-				 struct rxr_pkt_entry *pkt_entry,
-				 struct rxr_rx_entry *rx_entry)
+/**
+ * @brief complete an operation of receiving data
+ *
+ * This function completes an RX operation. RX operation can be
+ * a receive, a write response, or a read response. This function
+ * is called when all data has been transmitted.
+ *
+ * To complete a RX operation, this function does 3 things:
+ *
+ * 1. If necessary, write completion to application. (Not all
+ *    completed RX action will cause a completion to be written).
+ *
+ * 2. When asked, send a ctrl packet back to the peer.
+ *    Caller of this function needs to decide whether such a ctrl packet
+ *    is needed. Usually it is because of the two scenarios:
+ *
+ *    a. longread message/write protocol was used, which requires the receiver/
+ *       responder send an EOR back to the sender/requester.
+ *
+ *    b. dc eager/medium/long message/write protocol was used, which requires
+ *       the receiver/responder to send an RECEIPT back to sender/requester.
+ *
+ * 3. Ensure release of rx_entry.
+ *
+ * @param[in,out]	ep		endpoint
+ * @param[in,out]	op_entry	op_entry that contains information of a data receive operation
+ * @param[in]		post_ctrl	whether to post a ctrl packet back to sender/requester
+ * @param[in]		ctrl_type	ctrl packet type.
+ */
+void rxr_cq_complete_recv(struct rxr_ep *ep,
+		          struct rxr_op_entry *op_entry,
+	 		  bool post_ctrl, int ctrl_type)
 {
-	struct rxr_tx_entry *tx_entry = NULL;
+	struct rxr_op_entry *tx_entry = NULL;
+	struct rxr_op_entry *rx_entry = NULL;
+	struct rdm_peer *peer;
+	bool inject;
+	int err;
 
-	if (rx_entry->cq_entry.flags & FI_WRITE) {
+	/* It is important to write completion before sending ctrl packet, because the
+	 * action of sending ctrl packet may cause the release of RX entry (when inject
+	 * was used on lower device).
+	 */
+	if (op_entry->cq_entry.flags & FI_WRITE) {
 		/*
-		 * must be on the remote side, notify cq if REMOTE_CQ_DATA is on
+		 * For write, only write RX completion when REMOTE_CQ_DATA is on
 		 */
-		if (rx_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
-			rxr_cq_write_rx_completion(ep, rx_entry);
-
-		rxr_pkt_entry_release_rx(ep, pkt_entry);
-		return;
-	}
-
-	if (rx_entry->cq_entry.flags & FI_READ) {
-		/* Note for emulated FI_READ, there is an rx_entry on
-		 * both initiator side and on remote side.
-		 * However, only on the initiator side,
-		 * rxr_cq_handle_rx_completion() will be called.
-		 * The following shows the sequence of events that
-		 * is happening
+		if (op_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
+			rxr_cq_write_rx_completion(ep, op_entry);
+	} else if (op_entry->cq_entry.flags & FI_READ) {
+		/* This op_entry is part of the for emulated read protocol,
+		 * created on the read requester side.
+		 * The following shows the sequence of events in an emulated
+		 * read protocol.
 		 *
-		 * Initiator side                 Remote side
+		 * Requester                      Responder
 		 * create tx_entry
-		 * create rx_entry
-		 * send rtr(with rx_id)
+		 * send rtr
 		 *                                receive rtr
 		 *                                create rx_entry
-		 *                                create tx_entry
-		 *                                tx_entry sending data
-		 * rx_entry receiving data
+		 *                                rx_entry sending data
+		 * tx_entry receiving data
 		 * receive completed              send completed
-		 * handle_rx_completion()         handle_pkt_send_completion()
-		 * |->write_tx_completion()
+		 * call rxr_cq_complete_recv()    call rxr_cq_handle_send_completion()
 		 *
-		 * As can be seen, although there is a rx_entry on remote side,
-		 * the entry will not enter into rxr_cq_handle_rx_completion
-		 * So at this point we must be on the initiator side, we
-		 *     1. find the corresponding tx_entry
-		 *     2. call rxr_cq_write_tx_completion()
+		 * As can be seen, in the emulated read protocol, this function is called only
+		 * on the requester side, so we need to find the corresponding tx_entry and
+		 * complete it.
 		 */
-		tx_entry = ofi_bufpool_get_ibuf(ep->tx_entry_pool, rx_entry->rma_loc_tx_id);
+		assert(!post_ctrl); /* in emulated read, no ctrl should be posted */
+		assert(op_entry->type == RXR_TX_ENTRY);
+		tx_entry = op_entry; /* Intentionally assigned for easier understanding */
+
 		assert(tx_entry->state == RXR_TX_REQ);
 		if (tx_entry->fi_flags & FI_COMPLETION) {
 			rxr_cq_write_tx_completion(ep, tx_entry);
 		} else {
 			efa_cntr_report_tx_completion(&ep->util_ep, tx_entry->cq_entry.flags);
 		}
+	} else {
+		assert(op_entry->type == RXR_RX_ENTRY);
+		rx_entry = op_entry; /* Intentionally assigned for easier understanding */
 
-		rxr_release_tx_entry(ep, tx_entry);
-		/*
-		 * do not call rxr_release_rx_entry here because
-		 * caller will release
-		 */
-		rxr_pkt_entry_release_rx(ep, pkt_entry);
+		assert(rx_entry->op == ofi_op_msg || rx_entry->op == ofi_op_tagged);
+		if (rx_entry->fi_flags & FI_MULTI_RECV)
+			rxr_msg_multi_recv_handle_completion(ep, rx_entry);
+
+		rxr_cq_write_rx_completion(ep, rx_entry);
+		rxr_msg_multi_recv_free_posted_entry(ep, rx_entry);
+	}
+
+	/* As can be seen, this function does not release rx_entry when
+	 * rxr_pkt_post_or_queue() was successful.
+	 *
+	 * This is because that rxr_pkt_post_or_queue() might have
+	 * queued the ctrl packet (due to out of resource), and progress
+	 * engine will resend the packet. In that case, progress engine
+	 * needs the rx_entry to construct the ctrl packet.
+	 * 
+	 * Hence, the rx_entry can be safely released only when we got
+	 * the send completion of the ctrl packet.
+	 *
+	 * Another interesting point is that when inject was used, the
+	 * rx_entry was released by rxr_pkt_post_or_queue(), because
+	 * when inject was used, lower device will not provider send
+	 * completion for the ctrl packet.
+	 */
+	if (post_ctrl) {
+		assert(op_entry->type == RXR_RX_ENTRY);
+		rx_entry = op_entry; /* Intentionally assigned for easier understanding */
+		assert(ctrl_type == RXR_RECEIPT_PKT || ctrl_type == RXR_EOR_PKT);
+		peer = rxr_ep_get_peer(ep, rx_entry->addr);
+		assert(peer);
+		inject = peer->is_local && ep->use_shm_for_tx;
+		err = rxr_pkt_post_or_queue(ep, rx_entry, ctrl_type, inject);
+		if (OFI_UNLIKELY(err)) {
+			FI_WARN(&rxr_prov,
+				FI_LOG_CQ,
+				"Posting of ctrl packet failed when complete rx! err=%s(%d)\n",
+				fi_strerror(-err), -err);
+			rxr_cq_write_rx_error(ep, rx_entry, -err, FI_EFA_ERR_PKT_POST);
+			rxr_release_rx_entry(ep, rx_entry);
+		}
+
 		return;
 	}
 
-	if (rx_entry->fi_flags & FI_MULTI_RECV)
-		rxr_msg_multi_recv_handle_completion(ep, rx_entry);
-
-	rxr_cq_write_rx_completion(ep, rx_entry);
-	rxr_pkt_entry_release_rx(ep, pkt_entry);
-	return;
+	if (op_entry->rxr_flags & RXR_EOR_IN_FLIGHT)
+		return;
+	
+	if (op_entry->type == RXR_TX_ENTRY) {
+		rxr_release_tx_entry(ep, op_entry);
+	} else {
+		assert(op_entry->type == RXR_RX_ENTRY);
+		rxr_release_rx_entry(ep, op_entry);
+	}
 }
 
 int rxr_cq_reorder_msg(struct rxr_ep *ep,
@@ -575,10 +650,7 @@ int rxr_cq_reorder_msg(struct rxr_ep *ep,
 
 	cur_ooo_entry = *ofi_recvwin_get_msg(robuf, msg_id);
 	if (cur_ooo_entry) {
-		assert(rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_MEDIUM_MSGRTM_PKT ||
-		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_MEDIUM_TAGRTM_PKT ||
-		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_DC_MEDIUM_MSGRTM_PKT ||
-		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_DC_MEDIUM_TAGRTM_PKT);
+		assert(rxr_pkt_type_is_mulreq(rxr_get_base_hdr(cur_ooo_entry->pkt)->type));
 		assert(rxr_pkt_msg_id(cur_ooo_entry) == msg_id);
 		assert(rxr_pkt_rtm_total_len(cur_ooo_entry) == rxr_pkt_rtm_total_len(ooo_entry));
 		rxr_pkt_entry_append(cur_ooo_entry, ooo_entry);
@@ -598,7 +670,7 @@ void rxr_cq_proc_pending_items_in_recvwin(struct rxr_ep *ep,
 
 	while (1) {
 		pending_pkt = *ofi_recvwin_peek((&peer->robuf));
-		if (!pending_pkt || !pending_pkt->pkt)
+		if (!pending_pkt)
 			return;
 
 		msg_id = rxr_pkt_msg_id(pending_pkt);
@@ -658,7 +730,7 @@ void rxr_cq_handle_shm_completion(struct rxr_ep *ep, struct fi_cq_data_entry *cq
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"Unable to write a cq entry for shm operation: %s\n",
 			fi_strerror(-ret));
-		efa_eq_write_error(&ep->util_ep, FI_EIO, ret);
+		efa_eq_write_error(&ep->util_ep, FI_EIO, FI_EFA_ERR_WRITE_SHM_CQ_ENTRY);
 	}
 
 	if (cq_entry->flags & FI_ATOMIC) {
@@ -671,7 +743,7 @@ void rxr_cq_handle_shm_completion(struct rxr_ep *ep, struct fi_cq_data_entry *cq
 
 static inline
 bool rxr_cq_need_tx_completion(struct rxr_ep *ep,
-			       struct rxr_tx_entry *tx_entry)
+			       struct rxr_op_entry *tx_entry)
 
 {
 	if (tx_entry->fi_flags & RXR_NO_COMPLETION)
@@ -690,19 +762,19 @@ bool rxr_cq_need_tx_completion(struct rxr_ep *ep,
 }
 
 /**
- * @brief write a cq entry for an tx operation (send/read/write) if application wants it.
- *        Sometimes application does not want to receive a cq entry for an tx
- *        operation.
+ * @brief write a cq entry for an operation (send/read/write) if application wants it.
+ *        Sometimes application does not want to receive a cq entry for a tx operation.
  *
- * @param[in]	ep		end point
- * @param[in]	tx_entry	tx entry that contains information of the TX operation
+ * @param[in]	ep			end point
+ * @param[in]	op_entry	tx entry that contains information of the TX operation
  */
 void rxr_cq_write_tx_completion(struct rxr_ep *ep,
-				struct rxr_tx_entry *tx_entry)
+				struct rxr_op_entry *tx_entry)
 {
 	struct util_cq *tx_cq = ep->util_ep.tx_cq;
 	int ret;
 
+	assert(tx_entry->type == RXR_TX_ENTRY);
 	if (rxr_cq_need_tx_completion(ep, tx_entry)) {
 		FI_DBG(&rxr_prov, FI_LOG_CQ,
 		       "Writing send completion for tx_entry to peer: %" PRIu64
@@ -710,6 +782,11 @@ void rxr_cq_write_tx_completion(struct rxr_ep *ep,
 		       PRIu64 "\n",
 		       tx_entry->addr, tx_entry->tx_id, tx_entry->msg_id,
 		       tx_entry->cq_entry.tag, tx_entry->total_len);
+
+
+	rxr_tracing(send_end, 
+		    tx_entry->msg_id, (size_t) tx_entry->cq_entry.op_context, 
+		    tx_entry->total_len, tx_entry->cq_entry.tag, tx_entry->addr);
 
 		/* TX completions should not send peer address to util_cq */
 		if (ep->util_ep.caps & FI_SOURCE)
@@ -736,7 +813,7 @@ void rxr_cq_write_tx_completion(struct rxr_ep *ep,
 			FI_WARN(&rxr_prov, FI_LOG_CQ,
 				"Unable to write send completion: %s\n",
 				fi_strerror(-ret));
-			rxr_cq_write_tx_error(ep, tx_entry, -ret, -ret);
+			rxr_cq_write_tx_error(ep, tx_entry, -ret, FI_EFA_ERR_WRITE_SEND_COMP);
 			return;
 		}
 	}
@@ -746,44 +823,46 @@ void rxr_cq_write_tx_completion(struct rxr_ep *ep,
 	return;
 }
 
-void rxr_cq_handle_tx_completion(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
+/**
+ * @brief This functions handles completion process after all data bytes of a message are sent 
+ *  	  and the receiver/requestor has acknowledged that the sent bytes were received. 
+ *
+ * @param[in]	ep		end point
+ * @param[in]	op_entry	tx/rx entry that contains information of the data send operation  
+ */
+void rxr_cq_handle_send_completion(struct rxr_ep *ep, struct rxr_op_entry *op_entry)
 {
-	struct rdm_peer *peer;
+	struct rxr_op_entry *rx_entry;
 
-	if (tx_entry->state == RXR_TX_SEND)
-		dlist_remove(&tx_entry->entry);
+	if (op_entry->state == RXR_TX_SEND)
+		dlist_remove(&op_entry->entry);
 
-	peer = rxr_ep_get_peer(ep, tx_entry->addr);
-	assert(peer);
-	peer->tx_credits += tx_entry->credit_allocated;
-
-	if (tx_entry->cq_entry.flags & FI_READ) {
+	if (op_entry->cq_entry.flags & FI_READ) {
 		/*
 		 * This is on responder side of an emulated read operation.
 		 * In this case, we do not write any completion.
-		 * The TX entry is allocated for emulated read, so no need to write tx completion.
+		 * The entry is allocated for emulated read, so no need to write tx completion.
 		 * EFA does not support FI_RMA_EVENT, so no need to write rx completion.
 		 */
-		struct rxr_rx_entry *rx_entry = NULL;
-
-		rx_entry = ofi_bufpool_get_ibuf(ep->rx_entry_pool, tx_entry->rma_loc_rx_id);
-		assert(rx_entry);
-		assert(rx_entry->state == RXR_RX_WAIT_READ_FINISH);
+		assert(op_entry->type == RXR_RX_ENTRY);
+		rx_entry = op_entry;
 		rxr_release_rx_entry(ep, rx_entry);
-	} else if (tx_entry->cq_entry.flags & FI_WRITE) {
-		if (tx_entry->fi_flags & FI_COMPLETION) {
-			rxr_cq_write_tx_completion(ep, tx_entry);
+		return;
+	} else if (op_entry->cq_entry.flags & FI_WRITE) {
+		if (op_entry->fi_flags & FI_COMPLETION) {
+			rxr_cq_write_tx_completion(ep, op_entry);
 		} else {
-			if (!(tx_entry->fi_flags & RXR_NO_COUNTER))
-				efa_cntr_report_tx_completion(&ep->util_ep, tx_entry->cq_entry.flags);
+			if (!(op_entry->fi_flags & RXR_NO_COUNTER))
+				efa_cntr_report_tx_completion(&ep->util_ep, op_entry->cq_entry.flags);
 		}
 
 	} else {
-		assert(tx_entry->cq_entry.flags & FI_SEND);
-		rxr_cq_write_tx_completion(ep, tx_entry);
+		assert(op_entry->cq_entry.flags & FI_SEND);
+		rxr_cq_write_tx_completion(ep, op_entry);
 	}
 
-	rxr_release_tx_entry(ep, tx_entry);
+	assert(op_entry->type == RXR_TX_ENTRY);
+	rxr_release_tx_entry(ep, op_entry);
 }
 
 static int rxr_cq_close(struct fid *fid)
@@ -823,7 +902,7 @@ int rxr_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 {
 	int ret;
 	struct util_cq *cq;
-	struct rxr_domain *rxr_domain;
+	struct efa_domain *efa_domain;
 
 	if (attr->wait_obj != FI_WAIT_NONE)
 		return -FI_ENOSYS;
@@ -832,10 +911,10 @@ int rxr_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	if (!cq)
 		return -FI_ENOMEM;
 
-	rxr_domain = container_of(domain, struct rxr_domain,
+	efa_domain = container_of(domain, struct efa_domain,
 				  util_domain.domain_fid);
 	/* Override user cq size if it's less than recommended cq size */
-	attr->size = MAX(rxr_domain->cq_size, attr->size);
+	attr->size = MAX(efa_domain->rdm_cq_size, attr->size);
 
 	ret = ofi_cq_init(&rxr_prov, domain, attr, cq,
 			  &ofi_cq_progress, context);

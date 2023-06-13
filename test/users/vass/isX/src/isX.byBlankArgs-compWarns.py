@@ -33,7 +33,7 @@ varList = [
   ("unn",  "UnionType"),
 
   ("rng1", "range"),
-  ("rng2", "range(uint(8), BoundedRangeType.boundedNone, true)"),
+  ("rng2", "range(uint(8), boundKind.neither, true)"),
 
   ("dmp",  "defaultDist"),
   ("dom1", "DomType1"),

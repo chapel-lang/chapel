@@ -8,7 +8,7 @@ extern {
     assert(err == CUDA_SUCCESS);
   }
 
-  static CUdeviceptr getDeviceBufferPointer(){
+  static CUdeviceptr getDeviceBufferPointer(void){
     double X;
     CUdeviceptr devBufferX;
 

@@ -53,6 +53,8 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
+        if chpl_gpu.get() == "cpu":
+            bundled.append("-DGPU_RUNTIME_CPU")
         memtype = chpl_gpu.get_gpu_mem_strategy()
 
         # If compiling for GPU locales, add CUDA runtime headers to include path
@@ -60,9 +62,9 @@ def get_runtime_includes_and_defines():
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
 
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
-        if gpu_type == "cuda":
+        if gpu_type == "nvidia":
             system.append("-I" + os.path.join(sdk_path, "include"))
-        elif gpu_type == "rocm":
+        elif gpu_type == "amd":
             # -isystem instead of -I silences warnings from inside these includes.
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
@@ -92,11 +94,11 @@ def get_runtime_link_args(runtime_subdir):
         # and add cuda libraries
         gpu_type = chpl_gpu.get()
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
-        if gpu_type == "cuda":
+        if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
             system.append("-lcuda")
             system.append("-lcudart")
-        elif gpu_type == "rocm":
+        elif gpu_type == "amd":
             lib_path = os.path.join(sdk_path, "lib")
             system.append("-L" + lib_path)
             system.append("-Wl,-rpath," + lib_path)

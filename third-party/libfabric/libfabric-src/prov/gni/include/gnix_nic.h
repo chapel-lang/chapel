@@ -171,7 +171,7 @@ struct gnix_nic {
 	struct dlist_entry gnix_nic_list; /* global NIC list */
 	struct dlist_entry ptag_nic_list; /* global PTAG NIC list */
 	struct dlist_entry gnix_nic_prog_list; /* temporary list for nic progression */
-	fastlock_t lock;
+	ofi_spin_t lock;
 	uint32_t allocd_gni_res;
 	gni_cdm_handle_t gni_cdm_hndl;
 	uint32_t	 gni_cdm_modes;
@@ -181,11 +181,11 @@ struct gnix_nic {
 	gni_cq_handle_t tx_cq;
 	gni_cq_handle_t tx_cq_blk;
 	pthread_t progress_thread;
-	fastlock_t tx_desc_lock;
+	ofi_spin_t tx_desc_lock;
 	struct dlist_entry tx_desc_active_list;
 	struct dlist_entry tx_desc_free_list;
 	struct gnix_tx_descriptor *tx_desc_base;
-	fastlock_t prog_vcs_lock;
+	ofi_spin_t prog_vcs_lock;
 	struct dlist_entry prog_vcs;
 	/* note this free list will be initialized for thread safe */
 	struct gnix_freelist vc_freelist;
@@ -194,7 +194,7 @@ struct gnix_nic {
 	uint32_t device_id;
 	uint32_t device_addr;
 	int max_tx_desc_id;
-	fastlock_t vc_id_lock;
+	ofi_spin_t vc_id_lock;
 	void **vc_id_table;
 	int vc_id_table_capacity;
 	int vc_id_table_count;

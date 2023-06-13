@@ -37,6 +37,7 @@
 #include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/util/filtering.h"
 
 #include "global-ast-vecs.h"
 
@@ -55,6 +56,7 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
+Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -71,22 +73,14 @@ Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol *gBoundsChecking = NULL;
-VarSymbol *gCastChecking = NULL;
-VarSymbol *gNilChecking = NULL;
-VarSymbol *gOverloadSetsChecks = NULL;
-VarSymbol *gDivZeroChecking = NULL;
-VarSymbol* gCacheRemote = NULL;
-VarSymbol* gPrivatization = NULL;
-VarSymbol* gLocal = NULL;
-VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
-VarSymbol *gUseIOFormatters = NULL;
+
+llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -469,16 +463,12 @@ const char* Symbol::getUnstableMsg() const {
 // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
 // for information on the markup.
 const char* Symbol::getSanitizedMsg(std::string msg) const {
-  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
-  //       show up in sanitized message).
-  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
-  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`([!$\w\$\.]+)`\B)";
-  msg = std::regex_replace(msg, std::regex(reStr), "$2");
-  return astr(msg.c_str());
+  return astr(chpl::removeSphinxMarkup(msg));
 }
 
-void Symbol::generateDeprecationWarning(Expr* context) {
+void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
+  if (!this->hasFlag(FLAG_DEPRECATED)) return;
+
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
@@ -500,10 +490,36 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   }
 }
 
-//based on generateDeprecationWarning
-void Symbol::generateUnstableWarning(Expr* context) {
+static bool isInvisibleModule(Symbol* sym) {
+  return sym == rootModule || sym == theProgram;
+}
+
+static bool isUnstableContext(Symbol* sym) {
+  if (sym->hasFlag(FLAG_UNSTABLE)) return true;
+  if (auto mod = toModuleSymbol(sym)) {
+    if (isInvisibleModule(mod)) return false;
+    if (mod->modTag == MOD_INTERNAL) return !fWarnUnstableInternal;
+    if (mod->modTag == MOD_STANDARD) return !fWarnUnstableStandard;
+  }
+  return false;
+}
+
+static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
+  if (!sym->hasFlag(FLAG_UNSTABLE)) return false;
+  auto mod = initialContext->getModule();
+  INT_ASSERT(mod);
+  if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+  if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  INT_ASSERT(mod->modTag == MOD_USER);
+  return fWarnUnstable;
+}
+
+//based on maybeGenerateDeprecationWarning
+void Symbol::maybeGenerateUnstableWarning(Expr* context) {
+  if (!isUnstableShouldWarn(this, context)) return;
+
   Symbol* contextParent = context->parentSymbol;
-  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
 
@@ -512,10 +528,11 @@ void Symbol::generateUnstableWarning(Expr* context) {
   // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
+         !isInvisibleModule(contextParent) &&
          parentUnstable != true && compilerGenerated != true &&
          parentDeprecated != true) {
     contextParent = contextParent->defPoint->parentSymbol;
-    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
   }

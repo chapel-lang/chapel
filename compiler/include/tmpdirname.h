@@ -22,6 +22,5 @@
 #define _TMPDIRNAME_H_
 
 extern const char* tmpdirname;
-extern const char* doctmpdirname;
 
 #endif

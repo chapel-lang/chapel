@@ -272,17 +272,11 @@ void ResolveScope::addBuiltIns() {
   extend(dtModuleToken->symbol);
   extend(gModuleToken);
 
-  extend(gBoundsChecking);
-  extend(gCastChecking);
-  extend(gNilChecking);
-  extend(gOverloadSetsChecks);
-  extend(gDivZeroChecking);
-  extend(gCacheRemote);
-  extend(gPrivatization);
-  extend(gLocal);
-  extend(gWarnUnstable);
+  for (auto compilerGlobalParam : gCompilerGlobalParams) {
+    extend(compilerGlobalParam);
+  }
+
   extend(gNodeID);
-  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -831,14 +825,9 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (!fDynoCompilerLibrary) {
-      if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-        outerMod->generateDeprecationWarning(call);
-      }
-
-      if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-        outerMod->generateUnstableWarning(call);
-      }
+    if (!fDynoScopeResolve) {
+      outerMod->maybeGenerateDeprecationWarning(call);
+      outerMod->maybeGenerateUnstableWarning(call);
     }
 
     const char* rhsName = getNameFrom(call->get(2));

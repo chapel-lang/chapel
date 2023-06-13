@@ -33,6 +33,12 @@ std::string opEquals = R"""(
     }
     )""";
 
+std::string otherOps = R"""(
+    operator >(ref lhs: int, rhs: int) {
+      return __primitive(">", lhs, rhs);
+    }
+    )""";
+
 static void testFieldUseBeforeInit1(void) {
   Context context;
   Context* ctx = &context;
@@ -633,6 +639,46 @@ static void testInitParamCondGeneric(void) {
   }
 }
 
+static void testNotThisDot(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + otherOps + R""""(
+    record X {
+      proc type foo() {
+        return 5;
+      }
+    }
+
+    record R {
+      var i : int;
+
+      proc init(i = 0) {
+        if X.foo() > 0 {
+          this.i = 1;
+        } else {
+          this.i = 0;
+        }
+      }
+    }
+
+    var r : R;
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -657,6 +703,9 @@ int main() {
   testInitCondGenericDiff();
   testInitCondGeneric();
   testInitParamCondGeneric();
+
+  // Tests that track old InitResolver bugs
+  testNotThisDot();
 
   return 0;
 }

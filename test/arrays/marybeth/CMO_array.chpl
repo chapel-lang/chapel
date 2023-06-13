@@ -13,7 +13,7 @@ class CMODom: BaseRectangularDom {
   type idxType;
   param stridable: bool;
   var dist: CMODist;
-  var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
+  var ranges : rank*range(idxType,boundKind.both,stridable);
 
   proc dsiGetIndices() return ranges;
 
@@ -81,7 +81,7 @@ class CMODom: BaseRectangularDom {
     return ranges(d);
 
   proc bbox(d: int) {
-    const r: range(idxType,BoundedRangeType.bounded,false) = ranges(d);
+    const r: range(idxType) = ranges(d);
     return r;
   }
 
@@ -287,7 +287,7 @@ class CMOArr:BaseArr {
 
   proc dsiCheckSlice(d) {
     for param i in 0..rank-1 {
-      if d(i).boundedType == BoundedRangeType.bounded then
+      if d(i).bounds == boundKind.both then
         if !dom.dim(i).contains(d(i)) then
           halt("array slice out of bounds in dimension ", i, ": ", d(i));
     }
@@ -315,7 +315,7 @@ class CMOArr:BaseArr {
 
     for param i in 0..args.size-1 do
       if isRange(args(i)) then
-        if args(i).boundedType == BoundedRangeType.bounded then
+        if args(i).bounds == boundKind.both then
           if !dom.dsiDim(i).contains(args(i)) then
             halt("array slice out of bounds in dimension ", i, ": ", args(i));
   }

@@ -33,8 +33,8 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
     listlinks=true): string {
   use CTypes;
 
-  extern type DIRptr;
-  extern type direntptr;
+  extern type DIRptr = c_ptr(opaque);
+  extern type direntptr = c_ptr(opaque);
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
@@ -48,10 +48,10 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
   var dir: DIRptr;
   var ent: direntptr;
   dir = opendir(path.c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     ent = readdir(dir);
-    while (!is_c_nil(ent)) {
-      const filename = createStringWithNewBuffer(ent.d_name());
+    while (ent != nil) {
+      const filename = string.createCopyingBuffer(ent.d_name());
       if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           //

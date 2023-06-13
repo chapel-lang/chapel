@@ -530,7 +530,7 @@ void markNotConst(GraphNode node)
     if (fieldIndex == 0) {
       // mark all fields
       int nFields = at->numFields();
-      for (int i = 0; i <= nFields; i++) {
+      for (int i = 1; i <= nFields; i++) {
         INT_ASSERT(sym->fieldQualifiers[i] != QUAL_CONST_REF);
       }
     } else {

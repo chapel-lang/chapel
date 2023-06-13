@@ -6,5 +6,4 @@ const r = 1..;
 
 writeln(r.type:string);
 
-lst.append(r);
-
+lst.pushBack(r);

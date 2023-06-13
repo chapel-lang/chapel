@@ -1,0 +1,9 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+0 (cpu): --:0: allocate 12B of comm layer remote fork done flag(s) at 0xPREDIFFED
+0 (cpu): --:0: allocate 20B of comm layer private broadcast data at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 88B of domain(1,int(64),one) at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 168B of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: allocate 80B of array elements at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 80B of array elements at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 168B of [domain(1,int(64),one)] int(64) at 0xPREDIFFED
+0 (gpu 0): basicMem.chpl:5: free 88B of domain(1,int(64),one) at 0xPREDIFFED

@@ -4,7 +4,7 @@ import os
 import shutil
 
 # Native GPU tests require nvcc/hipcc, llvm, and the gpu locale model
-if os.getenv('CHPL_GPU_CODEGEN') == 'rocm':
+if os.getenv('CHPL_GPU') == 'amd':
   missing_gpucc = shutil.which("hipcc") is None
 else:
   missing_gpucc = shutil.which("nvcc") is None

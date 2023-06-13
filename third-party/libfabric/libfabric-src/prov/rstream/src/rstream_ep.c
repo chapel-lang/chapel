@@ -56,9 +56,9 @@ static int rstream_ep_close(fid_t fid)
 
 	rstream_tx_ctx_fs_free(rstream_ep->tx_ctxs);
 
-	fastlock_destroy(&rstream_ep->send_lock);
-	fastlock_destroy(&rstream_ep->recv_lock);
-	fastlock_destroy(&rstream_ep->cq_lock);
+	ofi_mutex_destroy(&rstream_ep->send_lock);
+	ofi_mutex_destroy(&rstream_ep->recv_lock);
+	ofi_mutex_destroy(&rstream_ep->cq_lock);
 	free(rstream_ep->rx_ctxs);
 	free(rstream_ep);
 	return 0;
@@ -289,9 +289,9 @@ int rstream_ep_open(struct fid_domain *domain, struct fi_info *info,
 	(*ep_fid)->ops = &rstream_ops_ep;
 	(*ep_fid)->cm = &rstream_ops_cm;
 	(*ep_fid)->msg = &rstream_ops_msg;
-	fastlock_init(&rstream_ep->send_lock);
-	fastlock_init(&rstream_ep->recv_lock);
-	fastlock_init(&rstream_ep->cq_lock);
+	ofi_mutex_init(&rstream_ep->send_lock);
+	ofi_mutex_init(&rstream_ep->recv_lock);
+	ofi_mutex_init(&rstream_ep->cq_lock);
 	return 0;
 
 err1:

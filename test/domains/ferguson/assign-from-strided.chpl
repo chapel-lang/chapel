@@ -4,6 +4,6 @@ var A:[D] int = D;
 
 writeln(A);
 
-D = {1..4 by 2};
+D = {1..4 by -2} by 2;
 
 writeln(A);

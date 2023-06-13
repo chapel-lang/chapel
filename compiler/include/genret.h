@@ -86,6 +86,13 @@ extern GenRet baseASTCodegenString(const char* str);
    BaseAST* (code generate some Chapel thing)
    const char* (generate a string)
    int (generate an int)
+     TODO: change these to explicit ->codegen() calls and remove the
+           implicit conversion
+
+   In a GenRet value, there is also a .chplType field that stores the relevant
+   Chapel type. In the case that isLVPtr is some sort of pointer (GEN_PTR or
+   GEN_WIDE_PTR), then the value is expected to be a pointer (or wide
+   pointer/wide reference) and .chplType is the element type of that pointer.
 
  */
 class GenRet {
@@ -113,15 +120,6 @@ public:
   void* aliasScope;
   void* noalias;
 #endif
-
-  // Used to mark variables as const after they are stored
-  // Specifically: use "llvm.invariant.start"
-  bool canBeMarkedAsConstAfterStore;
-
-  // Mark pointers we already stored to, used to assert
-  // the assumption that store to const memory
-  // is the only store to that memory
-  bool alreadyStored;
 
   // Used for generating LLVM parallel_loop_accesses metadata.
   // Loads/stores to/from loop local stack variables should not be considered
@@ -154,7 +152,6 @@ public:
   GenRet() : c(), val(NULL), type(NULL), surroundingStruct(NULL),
              fieldOffset(0), fieldTbaaTypeDescriptor(NULL),
              aliasScope(NULL), noalias(NULL),
-             canBeMarkedAsConstAfterStore(false), alreadyStored(false),
              mustPointOutsideOrderIndependentLoop(false),
              chplType(NULL), isLVPtr(GEN_VAL), isUnsigned(false) { }
 

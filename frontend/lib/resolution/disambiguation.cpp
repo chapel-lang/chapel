@@ -714,8 +714,10 @@ computeIsMoreVisible(Context* context,
 
   // TODO: This might be over-simplified -- see issue #19167
 
-  LookupConfig onlyDecls = LOOKUP_DECLS;
-  LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE;
+  // In both cases, include methods since they're considered for candidate
+  // search.
+  LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
+  LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE | LOOKUP_METHODS;
 
   // Go up scopes to figure out which of the two IDs is
   // declared first / innermost

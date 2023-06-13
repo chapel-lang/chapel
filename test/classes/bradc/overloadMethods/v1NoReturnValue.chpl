@@ -6,7 +6,7 @@ class C {
 
 class D : C {
   param rank: int;
-  var ranges : rank*range(int, BoundedRangeType.bounded, false);
+  var ranges : rank*range(int, boundKind.both);
 
   proc init(param rankVal: int) {
     rank = rankVal;

@@ -227,7 +227,7 @@ class DistributedWorkQueue {
   var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _value {
     if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
     return chpl_getPrivatizedCopy(unmanaged LocalDistributedWorkQueue(eltType,lockType), pid);

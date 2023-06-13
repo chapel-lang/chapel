@@ -83,17 +83,15 @@ its deletion. It is legal to access the class fields or methods only
 during its lifetime.
 
 Each allocation of a class instance specifies a *memory management
-strategy*. Four memory management strategies are available: ``owned``,
-``shared``, ``borrowed``, and ``unmanaged``.
+strategy*. Three memory management strategies are available: ``owned``,
+``shared``, and ``unmanaged``.
 
 ``owned`` and ``shared`` class instances always have their lifetime
 managed by the compiler. In other words, the compiler automatically calls
 ``delete`` on these instances to reclaim their memory. For these
 instances, ``=`` and copy initialization can result in the transfer or
 sharing of ownership. See the :ref:`Owned_Objects` and :ref:`Shared_Objects`
-sections for more details.  When ``borrowed`` is used as a memory management
-strategy in a ``new-expression``, it also creates an instance that has its
-lifetime managed by the compiler (:ref:`Class_New`).
+sections for more details.
 
 Class instances that are ``unmanaged`` have their lifetime managed
 explicitly by the programmer. The ``delete`` keyword must be used to
@@ -567,8 +565,8 @@ Inheritance
 
 A class inherits, or *derives*, from the class specified in the class
 declaration’s ``class-inherit`` clause when such clause is present.
-Otherwise the class inherits from the predefined ``object`` class
-(:ref:`The_object_Class`). In either case, there is exactly one
+Otherwise the class inherits from the predefined ``RootClass`` class
+(:ref:`The_Root_Class`). In either case, there is exactly one
 *parent* class. There can be many classes that inherit from a particular
 parent class.
 
@@ -579,16 +577,17 @@ fields in the ``ParentC`` as described
 in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
-.. _The_object_Class:
+.. _The_Root_Class:
 
-The *object* Class
-~~~~~~~~~~~~~~~~~~
+The Root Class
+~~~~~~~~~~~~~~
 
-All classes are derived from the ``object`` class, either directly or
-indirectly. If no class name appears in ``class-inherit`` clause, the
-class derives implicitly from ``object``. Otherwise, a class derives
-from ``object`` indirectly through the class it inherits. A variable of
-type ``object`` can hold a reference to an object of any class type.
+All classes are derived from a base class named ``RootClass``, either
+directly or indirectly. If a class declaration does not contain a
+``class-inherit`` clause, the class implicitly derives from
+``RootClass``. Otherwise, the class derives from ``RootClass``
+indirectly through the class it inherits from. A variable of type
+``RootClass`` can hold a reference to an object of any class type.
 
 .. _Accessing_Base_Class_Fields:
 
@@ -691,8 +690,7 @@ An initializer for a given class is called by placing the ``new``
 operator in front of a type expression. Any initializer arguments follow
 the class name in a parenthesized list.
 
-Syntactically, the ``type-expression`` includes ``owned``, ``shared``,
-``borrowed``, and ``unmanaged``. However these have important
+Syntactically, the ``type-expression`` includes ``owned``, ``shared``, and ``unmanaged``. However these have important
 consequences for class new expressions. In particular, suppose ``C`` is
 a ``type-expression`` that results in a class type. Then:
 
@@ -706,17 +704,6 @@ a ``type-expression`` that results in a class type. Then:
 -  ``new shared C()`` allocates and initializes the instance that will
    be deleted when the last ``shared`` variable referring to it goes out
    of scope. Results in something of type ``shared C``.
-
--  ``new borrowed C()`` allocates and initializes an instance that will
-   be automatically deleted at the end of the current block. This
-   process is managed by an ``owned`` temporary. Unlike
-   ``new owned C()``, this results in a value of type ``borrowed C`` and
-   ownership of the instance cannot be transferred out of the block. In
-   other words, ``new borrowed C()`` is equivalent to 
-
-   .. code-block:: chapel
-
-            (new owned C()).borrow()
 
 -  ``new unmanaged C()`` allocates and initializes an instance that must
    have ``delete`` called on it explicitly to avoid a memory leak. It

@@ -1,6 +1,6 @@
 use Time;
 use GpuDiagnostics;
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config const validate = true;
 config const printStats = false;

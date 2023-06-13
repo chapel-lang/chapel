@@ -83,7 +83,7 @@ module CString {
   }
 
   // let us set c_strings to NULL
-  inline operator c_string.=(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
+  inline operator c_string.=(ref a:c_string, b:_nilType) { a = nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
@@ -114,16 +114,32 @@ module CString {
   //
   // casts from c_string to c_ptr(c_char/int(8)/uint(8))
   //
-  inline operator :(x: c_string, type t:c_ptr)
-    where t.eltType == c_char || t.eltType == int(8) || t.eltType == uint(8)
+  inline operator :(x: c_string, type t:c_ptr(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_string to c_ptrConst(c_char/int(8)/uint(8))
+  //
+  inline operator :(x: c_string, type t:c_ptrConst(?eltType))
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }
   //
   // casts from c_ptr(c_char/int(8)/uint(8)) to c_string
   //
-  inline operator :(x: c_ptr, type t:c_string)
-    where x.eltType == c_char || x.eltType == int(8) || x.eltType == uint(8)
+  inline operator :(x: c_ptr(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
+  {
+    return __primitive("cast", t, x);
+  }
+  //
+  // casts from c_ptrConst(c_char/int(8)/uint(8)) to c_string
+  //
+  inline operator :(x: c_ptrConst(?eltType), type t:c_string)
+    where eltType == c_char || eltType == int(8) || eltType == uint(8)
   {
     return __primitive("cast", t, x);
   }
@@ -134,7 +150,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anybool) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -145,7 +161,7 @@ module CString {
   inline operator :(x:c_string, type t:integral) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -156,7 +172,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyreal)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -164,7 +180,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anyimag) throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -175,7 +191,7 @@ module CString {
   inline operator :(x:c_string, type t:chpl_anycomplex)  throws {
     var chplString: string;
     try! {
-      chplString = createStringWithNewBuffer(x);
+      chplString = string.createCopyingBuffer(x);
     }
     return try (chplString.strip()): t;
   }
@@ -217,12 +233,15 @@ module CString {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_rt_free_c_string(ref cs: c_string);
-    if (cs != c_nil:c_string) then chpl_rt_free_c_string(cs);
-    // cs = c_nil;
+    if (cs != nil:c_string) then chpl_rt_free_c_string(cs);
+    // cs = nil;
   }
 
   proc c_string.writeThis(x) throws {
     compilerError("Cannot write a c_string, cast to a string first.");
+  }
+  proc c_string.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   proc c_string.readThis(x) throws {

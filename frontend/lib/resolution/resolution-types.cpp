@@ -212,8 +212,11 @@ void CallInfo::prepareActuals(Context* context,
         // Keep questionArg pointing at the first question argument we found
       }
     } else {
-      const ResolvedExpression& r = byPostorder.byAst(actual);
-      QualifiedType actualType = r.type();
+      QualifiedType actualType;
+      // replace default value with resolved if available
+      if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
+        actualType = r->type();
+      }
       UniqueString byName;
       if (fnCall && fnCall->isNamedActual(i)) {
         byName = fnCall->actualName(i);
@@ -283,7 +286,8 @@ CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
-                          std::vector<const uast::AstNode*>* actualAsts) {
+                          std::vector<const uast::AstNode*>* actualAsts,
+                          UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -366,6 +370,13 @@ CallInfo CallInfo::create(Context* context,
     CHPL_ASSERT(actualAsts->size() == actuals.size());
   }
 
+  if (!rename.isEmpty()) {
+    // Whatever we were calling was a value, and is now and actual. Can't
+    // rename an argument to a function...
+    CHPL_ASSERT(name != "this");
+    name = rename;
+  }
+
   auto ret = CallInfo(name, calledType, isMethodCall,
                       /* hasQuestionArg */ questionArg != nullptr,
                       /* isParenless */ false, actuals);
@@ -374,13 +385,15 @@ CallInfo CallInfo::create(Context* context,
 }
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
-                                      QualifiedType receiverType) {
+                                      QualifiedType receiverType,
+                                      UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
 
-  return CallInfo(ci.name_, receiverType,
+  auto name = rename.isEmpty() ? ci.name_ : rename;
+  return CallInfo(name, receiverType,
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -389,26 +402,14 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
-  vec.resize(ast->id().numContainedChildren());
 
   symbolId = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  int maxPostorderId = 0;
-  if (func && func->numChildren() > 0)
-    maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId();
-  CHPL_ASSERT(0 <= maxPostorderId);
-  vec.resize(maxPostorderId + 1);
-
   symbolId = func->id();
 }
-void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, ResolutionResultByPostorderID& parent) {
-  int bodyPostorder = 0;
-  if (loop && loop->body())
-    bodyPostorder = loop->body()->id().postOrderId();
-  CHPL_ASSERT(0 <= bodyPostorder);
-  vec.resize(bodyPostorder);
-
+void ResolutionResultByPostorderID::setupForParamLoop(
+    const For* loop, ResolutionResultByPostorderID& parent) {
   this->symbolId = parent.symbolId;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
@@ -869,6 +870,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case INFER_TYPE:
+      return "infer-type";
     // no default to get a warning if new Actions are added
   }
 

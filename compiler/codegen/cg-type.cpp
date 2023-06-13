@@ -313,6 +313,10 @@ void AggregateType::codegenDef() {
     TypeSymbol* base = getDataClassType(symbol);
     const char* baseType = base->cname;
     if( outfile ) {
+      // TODO: add const qualifier for const pointers
+      // This would require properly using const qualifiers throughout generated C
+      // code, which we currently do not have. Otherwise we get warnings about
+      // discarding const qualification. Anna, 04-19-2023
       fprintf(outfile, "typedef %s *%s;\n", baseType, symbol->cname);
     } else {
 #ifdef HAVE_LLVM
@@ -423,6 +427,7 @@ void AggregateType::codegenDef() {
         for_fields(field, this) {
           if (field->type != dtNothing && field->type != dtVoid) {
             nonVoidFields++;
+            break;
           }
         }
 
@@ -460,14 +465,25 @@ void AggregateType::codegenDef() {
         Type* baseType = this->getField("addr")->type;
         llvm::Type* llBaseType = baseType->symbol->codegen().type;
         INT_ASSERT(llBaseType);
-        llvm::Type *globalPtrTy = NULL;
+        llvm::Type *globalPtrTy = nullptr;
 
-        // Remove one level of indirection since the addr field
-        // of a wide pointer is always a local address.
-        llBaseType = llBaseType->getPointerElementType();
-        INT_ASSERT(llBaseType);
+        if (isOpaquePointer(llBaseType)) {
+#if HAVE_LLVM_VER >= 140
+          // No need to compute the element type for an opaque pointer
+          globalPtrTy = llvm::PointerType::get(info->llvmContext,
+                                               globalAddressSpace);
+#endif
+        } else {
+#ifdef HAVE_LLVM_TYPED_POINTERS
+          // Remove one level of indirection since the addr field
+          // of a wide pointer is always a local address.
+          llvm::Type* eltType = llBaseType->getPointerElementType();
+          INT_ASSERT(eltType);
+          globalPtrTy = llvm::PointerType::get(eltType, globalAddressSpace);
+#endif
+        }
 
-        globalPtrTy = llvm::PointerType::get(llBaseType, globalAddressSpace);
+        INT_ASSERT(globalPtrTy);
         type = globalPtrTy; // set to use alternative address space ptr
 
         if( fLLVMWideOpt ) {
@@ -554,7 +570,7 @@ void AggregateType::codegenPrototype() {
 
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
       info->lvt->addGlobalType(symbol->cname, pt, false);
-      symbol->llvmImplType = pt;
+      symbol->llvmImplType = st;
 #endif
     }
   }

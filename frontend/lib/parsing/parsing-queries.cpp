@@ -35,6 +35,7 @@
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/util/version-info.h"
+#include "chpl/util/filtering.h"
 
 #include "../util/filesystem_help.h"
 
@@ -107,6 +108,20 @@ static Parser helpMakeParser(Context* context,
 #define LIBRARY_VERSION_MAJOR 0
 #define LIBRARY_VERSION_MINOR 1
 
+static UniqueString cleanLocalPath(Context* context, UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
+  }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(context, str);
+}
+
 //
 // The library file format (whitespace not significant):
 // <magic number, uint64_t>
@@ -167,6 +182,7 @@ void LibraryFile::generate(Context* context,
   std::stringstream ss;
   chpl::Serializer builderSer(ss);
   for (auto path : paths) {
+    path = cleanLocalPath(context, path);
     UniqueString empty;
     auto& result = parseFileToBuilderResult(context, path, empty);
     ss.str(std::string()); // clear for this iteration
@@ -442,6 +458,45 @@ void setModuleSearchPath(Context* context,
   QUERY_STORE_INPUT_RESULT(moduleSearchPathQuery, context, searchPath);
 }
 
+static const std::vector<UniqueString>&
+prependedStandardModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedStandardModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedStandardModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context) {
+  return prependedStandardModulePathQuery(context);
+}
+
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedStandardModulePathQuery, context, paths);
+}
+
+
+static const std::vector<UniqueString>&
+prependedInternalModulePathQuery(Context* context) {
+  QUERY_BEGIN_INPUT(prependedInternalModulePathQuery, context);
+
+  // use empty string if wasn't already set by setPrependedInternalModulePath
+  std::vector<UniqueString> result;
+
+  return QUERY_END(result);
+}
+
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context) {
+  return prependedInternalModulePathQuery(context);
+}
+
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths) {
+  QUERY_STORE_INPUT_RESULT(prependedInternalModulePathQuery, context, paths);
+}
+
 
 static const UniqueString&
 internalModulePathQuery(Context* context) {
@@ -524,10 +579,16 @@ void setupModuleSearchPaths(
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
+  std::vector<UniqueString> uPrependedInternalModulePaths;
+  std::vector<UniqueString> uPrependedStandardModulePaths;
 
   for (auto& path : prependInternalModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedInternalModulePaths.push_back(uPath);
   }
+
+  setPrependedInternalModulePath(context, uPrependedInternalModulePaths);
 
   // TODO: Shouldn't these use the internal path we just set?
   searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
@@ -541,8 +602,10 @@ void setupModuleSearchPaths(
 
   searchPath.push_back(modRoot + "/internal");
 
-  for (auto& path : prependInternalModulePaths) {
+  for (auto& path : prependStandardModulePaths) {
     searchPath.push_back(path);
+    UniqueString uPath = UniqueString::get(context, path);
+    uPrependedStandardModulePaths.push_back(uPath);
   }
 
   // TODO: Shouldn't these use the standard path we just set?
@@ -611,30 +674,62 @@ void setupModuleSearchPaths(Context* context,
                          inputFilenames);
 }
 
-bool idIsInInternalModule(Context* context, ID id) {
-  UniqueString internal = internalModulePath(context);
-  if (internal.isEmpty()) return false;
+bool
+filePathIsInInternalModule(Context* context, UniqueString filePath) {
+  // check for prepended internal module paths that may have come in from
+  // the command line flag --prepend-internal-module-dir
+  auto& prependedPaths = prependedInternalModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
 
+  UniqueString prefix = internalModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
+
+static bool
+filePathIsInBundledModule(Context* context, UniqueString filePath) {
+  UniqueString prefix = bundledModulePath(context);
+  if (prefix.isEmpty()) return false;
+  return filePath.startsWith(prefix);
+}
+
+bool
+filePathIsInStandardModule(Context* context, UniqueString filePath) {
+  // check for prepended standard module paths that may have come in from
+  // the command line flag --prepend-standard-module-dir
+  auto& prependedPaths = prependedStandardModulePath(context);
+  for (auto& path : prependedPaths) {
+    if (filePath.startsWith(path)) return true;
+  }
+
+  UniqueString prefix1 = bundledModulePath(context);
+  if (prefix1.isEmpty()) return false;
+  auto concat = prefix1.endsWith("/") ? "standard" : "/standard";
+  auto prefix2 = UniqueString::getConcat(context, prefix1.c_str(), concat);
+  return filePath.startsWith(prefix2);
+}
+
+bool idIsInInternalModule(Context* context, ID id) {
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(internal);
-  }
-  return false;
+  return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
-  UniqueString modules = bundledModulePath(context);
-  if (modules.isEmpty()) return false;
-
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
-  if (found) {
-    return filePath.startsWith(modules);
-  }
-  return false;
+  return found && filePathIsInBundledModule(context, filePath);
+}
+
+bool idIsInStandardModule(Context* context, ID id) {
+  UniqueString filePath;
+  UniqueString parentSymbolPath;
+  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  return found && filePathIsInStandardModule(context, filePath);
 }
 
 static const bool& fileExistsQuery(Context* context, std::string path) {
@@ -685,7 +780,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
       check += ".chpl";
 
       if (hasFileText(context, check) || fileExistsQuery(context, check)) {
-        auto filePath = UniqueString::get(context, check);
+        auto filePath = cleanLocalPath(context, UniqueString::get(context, check));
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
@@ -840,13 +935,15 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
 
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
-  const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr) {
-    result = ast->tag();
-  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
-    result = asttags::Record;
-  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
-    result = asttags::Class;
+  if (!id.isFabricatedId()) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      result = ast->tag();
+    } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
+      result = asttags::Record;
+    } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+      result = asttags::Class;
+    }
   }
 
   return QUERY_END(result);
@@ -1251,16 +1348,35 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   if (id.isEmpty()) return ret;
 
   auto ast = parsing::idToAst(context, id);
-  if (ast && ast->isDecl()) {
-    auto decl = ast->toDecl();
-    ret = decl->attributeGroup();
+  ret = parsing::astToAttributeGroup(context, ast);
+
+  return ret;
+}
+
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* ast) {
+  const uast::AttributeGroup* ret = nullptr;
+  if (ast) {
+    auto parent = parentAst(context, ast);
+    bool done = ast->isMultiDecl() || !parent ||
+                (!parent->isTupleDecl() && !parent->isMultiDecl());
+    // recurse if not done
+    return done
+           ? ast->attributeGroup()
+           : parsing::astToAttributeGroup(context, parent);
   }
 
   return ret;
 }
 
-// TODO: Might be worth figuring out how to generalize this pattern so that
-// more parts of the compiler can use it.
+
+
+//
+// TODO: The below queries on AST could be made into methods, and the
+// 'anyParentMatches' and 'firstParentMatch' could be made into
+// utility functions (not sure where those live).
+//
+
 static const AstNode*
 firstParentMatch(Context* context, ID id,
                  const std::function<bool(Context*, const AstNode*)>& f) {
@@ -1296,6 +1412,24 @@ static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
   return attr && attr->hasPragma(PRAGMA_COMPILER_GENERATED);
 }
 
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
+static bool
+isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInStandardModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+}
+
+static bool
+isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
+  if (!ast->isModule()) return false;
+  if (!idIsInInternalModule(context, ast->id())) return false;
+  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
@@ -1310,30 +1444,11 @@ shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
 // deprecated things are likely to be removed soon.
 static bool
 shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
-  return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast)        ||
-         isAstUnstable(context, ast);
-}
-
-static bool isAstFormal(Context* context, const AstNode* ast) {
-  return ast->isFormal();
-}
-
-// When printing the deprecation message to the console we typically want to
-// filter out inline markup used for Sphinx (which is useful for when
-// generating the docs). See:
-// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
-static std::string
-removeSphinxMarkupFromWarningMessage(const std::string msg) {
-
-  // TODO: Support explicit title and reference targets like in reST direct
-  // hyperlinks (and having only target show up in sanitized message).
-  // TODO: Prefixing content with ! (and filtering it out)
-  // TODO: Prefixing content with ~ (and displaying only the last component)
-  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param|enum)"
-                         R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
-  auto ret = std::regex_replace(msg, std::regex(re), "$2");
-  return ret;
+  return isAstUnstable(context, ast)                  ||
+         isAstDeprecated(context, ast)                ||
+         isAstCompilerGenerated(context, ast)         ||
+         isAstSuppressedStandardModule(context, ast)  ||
+         isAstSuppressedInternalModule(context, ast);
 }
 
 static std::string
@@ -1373,7 +1488,7 @@ deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
       ? createDefaultDeprecationMessage(context, targetNamedDecl)
       : storedMsg.c_str();
 
-  msg = removeSphinxMarkupFromWarningMessage(msg);
+  msg = removeSphinxMarkup(msg);
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
@@ -1410,7 +1525,7 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();
 
-  msg = removeSphinxMarkupFromWarningMessage(msg);
+  msg = removeSphinxMarkup(msg);
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);
@@ -1453,31 +1568,59 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning))
+  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
     return;
+  }
 
-  std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
+  deprecationWarningForIdQuery(context, idMention, idTarget);
+}
+
+static bool
+isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr || !attr->isUnstable()) return false;
+
+  auto flag = CompilerFlags::WARN_UNSTABLE;
+  if (idIsInInternalModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
+  } else if (idIsInStandardModule(context, idMention)) {
+    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
+  }
+
+  return isCompilerFlagSet(context, flag);
 }
 
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
-
-  // Nothing to do, symbol is not unstable.
-  if (!attr || !attr->isUnstable()) return;
-
-  // Nothing to do, we do not report unstable things this revision.
-  if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
 
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning))
-    return;
+  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning)) return;
 
-  std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
+  unstableWarningForIdQuery(context, idMention, idTarget);
 }
+
+static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
+  Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
+  QUERY_BEGIN(getModuleKindQuery, context, moduleId);
+  const AstNode* ast = astForIDQuery(context, moduleId);
+  CHPL_ASSERT(ast && "could not find AST for module ID");
+  if (auto mod = ast->toModule()) {
+    ret = mod->kind();
+  } else {
+    CHPL_ASSERT(mod && "A module was expected, but not found");
+  }
+  return QUERY_END(ret);
+}
+
+Module::Kind idToModuleKind(Context* context, ID id) {
+  auto modID = getModuleForId(context, id);
+  return getModuleKindQuery(context, modID);
+}
+
 
 } // end namespace parsing
 } // end namespace chpl

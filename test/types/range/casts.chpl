@@ -9,10 +9,10 @@ testit(..);
 proc testit(r) {
   writeln(r, " as: ");
 
-  var ru = r: range(uint, boundedType=r.boundedType, stridable=r.stridable);
+  var ru = r: range(uint, bounds=r.bounds, strides=r.strides);
   writeln(ru.type: string, ": ", ru);
 
-  var ri8 = r: range(int(8), boundedType=r.boundedType, stridable=r.stridable);
+  var ri8 = r: range(int(8), bounds=r.bounds, strides=strideKind.any);
   writeln(ri8.type: string, ": ", ri8);
 
   writeln();

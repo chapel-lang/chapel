@@ -22,7 +22,7 @@ record distributedMap {
   type keyType;
   type valType;
   // privatization id
-  pragma "no doc"
+  @chpldoc.nodoc
   const pid = -1;
   // privatized class
   forwarding _value;
@@ -50,7 +50,7 @@ record distributedMap {
 
 // This is the implementation class. It is privatized.
 // All fields should contain local values.
-pragma "no doc"
+@chpldoc.nodoc
 class DistributedMapImpl {
   type keyType;
   type valType;
@@ -213,13 +213,13 @@ record distributedMapManager {
       client.localMaps[mapIdx]._leave();
     }
     if err then throw err;
-  } 
+  }
 }
 
 // factor out single-element access code from 'proc ref this'
 proc ref map.thisInternal(k: keyType) ref { //private
   compilerAssert(isDefaultInitializable(valType));
-  
+
   var (_, slot) = table.findAvailableSlot(k);
   if !table.isSlotFull(slot) {
     var val: valType;

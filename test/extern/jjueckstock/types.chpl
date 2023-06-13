@@ -33,7 +33,7 @@ module OuterModule {
   var strct: C.my_struct = new my_struct(42, "bar".c_str());
   writeln(strct.foo);
   try {
-    writeln(createStringWithNewBuffer(strct.bar));
+    writeln(string.createCopyingBuffer(strct.bar));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");

@@ -33,7 +33,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************/
 
-use fft, Time;
+use fft, Time, Math;
 
 config const NUMRUNS = 1000;
 config const MIN_SIZE = 1;

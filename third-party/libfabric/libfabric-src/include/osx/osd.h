@@ -2,6 +2,7 @@
  * Copyright (c) 2015 Los Alamos Nat. Security, LLC. All rights reserved.
  * Copyright (c) 2016 Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2018 Amazon.com, Inc. or its affiliates. All rights reserved.
+ * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -49,6 +50,8 @@
 
 #include <limits.h>
 
+#include <AvailabilityMacros.h>
+
 #include "unix/osd.h"
 #include "rdma/fi_errno.h"
 #include "config.h"
@@ -61,6 +64,10 @@
 #define HOST_NAME_MAX _POSIX_HOST_NAME_MAX
 #else
 #define HOST_NAME_MAX 255
+#endif
+
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
 #endif
 
 #ifdef __cplusplus
@@ -78,11 +85,6 @@ static inline ssize_t ofi_get_hugepage_size(void)
 }
 
 static inline int ofi_alloc_hugepage_buf(void **memptr, size_t size)
-{
-	return -FI_ENOSYS;
-}
-
-static inline int ofi_free_hugepage_buf(void *memptr, size_t size)
 {
 	return -FI_ENOSYS;
 }
@@ -157,10 +159,93 @@ ofi_sendto_socket(SOCKET fd, const void *buf, size_t count, int flags,
 	return sendto(fd, buf, len, flags, to, tolen);
 }
 
+ssize_t ofi_sendv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt,
+			 int flags);
+ssize_t ofi_recvv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt,
+			 int flags);
 ssize_t ofi_writev_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt);
 ssize_t ofi_readv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt);
 ssize_t ofi_sendmsg_tcp(SOCKET fd, const struct msghdr *msg, int flags);
 ssize_t ofi_recvmsg_tcp(SOCKET fd, struct msghdr *msg, int flags);
+
+/*
+ * pthread_spinlock is not available on Mac OS X, the following code
+ * used os_unfair_lock to implement pthread_spinlock.
+ * os_unfair_lock does not enforce fairness or lock ordering (hence
+ * the name unfair), which is similar to pthread_spinlock.
+ * New code supported only on 10.12+: https://developer.apple.com/documentation/os/os_unfair_lock
+ * Fallback: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/spinlock.3.html
+ */
+
+#if __MAC_OS_X_VERSION_MIN_REQUIRED > 101100
+
+#include <os/lock.h>
+
+typedef os_unfair_lock pthread_spinlock_t;
+
+static inline int pthread_spin_init(pthread_spinlock_t *lock, int type)
+{
+	*lock = OS_UNFAIR_LOCK_INIT;
+	return 0;
+}
+
+static inline int pthread_spin_lock(pthread_spinlock_t *lock)
+{
+	os_unfair_lock_lock(lock);
+	return 0;
+}
+
+static inline int pthread_spin_unlock(pthread_spinlock_t *lock)
+{
+	os_unfair_lock_unlock(lock);
+	return 0;
+}
+
+static inline int pthread_spin_trylock(pthread_spinlock_t *lock)
+{
+	return os_unfair_lock_trylock(lock) ? 0 : EBUSY;
+}
+
+static inline int pthread_spin_destroy(pthread_spinlock_t *lock)
+{
+	return 0;
+}
+
+#else
+
+#include <libkern/OSAtomic.h>
+
+typedef OSSpinLock pthread_spinlock_t;
+
+static inline int pthread_spin_init(pthread_spinlock_t *lock, int type)
+{
+	*lock = OS_SPINLOCK_INIT;
+	return 0;
+}
+
+static inline int pthread_spin_lock(pthread_spinlock_t *lock)
+{
+	OSSpinLockLock(lock);
+	return 0;
+}
+
+static inline int pthread_spin_unlock(pthread_spinlock_t *lock)
+{
+	OSSpinLockUnlock(lock);
+	return 0;
+}
+
+static inline int pthread_spin_trylock(pthread_spinlock_t *lock)
+{
+	return OSSpinLockTry(lock) ? 0 : EBUSY;
+}
+
+static inline int pthread_spin_destroy(pthread_spinlock_t *lock)
+{
+	return 0;
+}
+
+#endif
 
 #ifdef __cplusplus
 }

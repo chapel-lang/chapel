@@ -504,7 +504,7 @@ def GetTimer(f):
     lines = ReadFileWithComments(f)
     if len(lines) != 1:
         sys.stdout.write('[Error "%s" must contain exactly one non-comment line '
-            'with the name of the timer located in %s to use. Using default ' 
+            'with the name of the timer located in %s to use. Using default '
             'timer %s.]\n' %(f, timersdir, defaultTimer))
         timer = defaultTimer
     else:
@@ -521,9 +521,9 @@ def GetTimer(f):
 # options are one of the below configuration specific parameters that are
 # checked for. E.G the current comm layer. commExecNums are the optional
 # compopt and execopt number to enable different .good files for different
-# compopts/execopts with explicitly specifying name. 
+# compopts/execopts with explicitly specifying name.
 def FindGoodFile(basename, commExecNums=['']):
-    
+
     goodfile = ''
     for commExecNum in commExecNums:
         # Try the machine specific .good
@@ -598,7 +598,9 @@ def translateOutput(output_in):
               ('aprun: Unexpected close of the apsys control connection',
                'Jira 193 -- Unexpected close of apsys for'),
               ('qsub: cannot connect to server sdb',
-               'Jira 283 -- Sporadic: qstat failed to connect to server sdb'),
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
+              ('qstat: cannot connect to server sdb',
+               'private issue #4542 -- Sporadic: qstat failed to connect to server sdb'),
               ('Failed to recv data from background qsub',
                'Jira 260 -- Failed to recv data from background qsub for'),
               (r'\d+ Killed /var/spool/PBS/mom_priv/jobs',
@@ -645,7 +647,7 @@ def filter_compiler_errors(compiler_output):
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            error_msg = '(private issue #398) '
+            error_msg = '(private issue #398)'
             break
 
     return error_msg
@@ -691,7 +693,7 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
-            extra_msg = '(private issue #398) '
+            extra_msg = '(private issue #398)'
             break
 
     err_strings = ['=* Memory Leaks =*']
@@ -876,6 +878,19 @@ chpltasksstr='.tasks-'+chpltasks
 # Test options for all tests in this directory
 #
 
+#
+# directory-wide PRETEST
+# must be run first, in case is generates any of the following files
+#
+if os.access('./PRETEST', os.R_OK|os.X_OK):
+    sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
+    sys.stdout.flush()
+    p = py3_compat.Popen(['./PRETEST', compiler],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    sys.stdout.write(p.communicate()[0])
+    sys.stdout.flush()
+
 if os.getenv('CHPL_TEST_PERF')!=None:
     perftest=True
     perflabel=os.getenv('CHPL_TEST_PERF_LABEL')
@@ -1052,9 +1067,9 @@ if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
         compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
     else:
-        compperfdir=chpl_home+'/test/compperfdat/' 
+        compperfdir=chpl_home+'/test/compperfdat/'
 
-    # The env var CHPL_PRINT_PASSES_FILE will cause the 
+    # The env var CHPL_PRINT_PASSES_FILE will cause the
     # compiler to save the pass timings to specified file.
     if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
         printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
@@ -1170,6 +1185,7 @@ if os.access('./PREEXEC',os.R_OK|os.X_OK):
     globalPreexec='./PREEXEC'
 else:
     globalPreexec=None
+
 #
 # Start running tests
 #
@@ -1784,7 +1800,7 @@ for testname in testsrc:
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good or
             # testname.<configuration>.<compoptsnum>.good.
-            basename = test_filename 
+            basename = test_filename
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
@@ -1893,11 +1909,11 @@ for testname in testsrc:
         #
         sys.stdout.write('[Success compiling %s/%s]\n'%(localdir, test_filename))
 
-        # Note that compiler performance only times successful compilations. 
-        # Tests that are designed to fail before compilation is complete will 
-        # not get timed, so the total time compiling might be off slightly.   
+        # Note that compiler performance only times successful compilations.
+        # Tests that are designed to fail before compilation is complete will
+        # not get timed, so the total time compiling might be off slightly.
         if compperftest and not is_c_or_cpp_test:
-            # make the compiler performance directories if they don't exist 
+            # make the compiler performance directories if they don't exist
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
                 py3_compat.makedirs(compperfdir, exist_ok=True)
@@ -1911,8 +1927,8 @@ for testname in testsrc:
                 sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
                 timePasses = False
 
-            # so long as we have to the directories 
-            if timePasses: 
+            # so long as we have to the directories
+            if timePasses:
                 # We need to name the files differently for each compiler
                 # option. 0 is the default compoptsnum if there are no options
                 # listed so we don't need to clutter the names with that
@@ -1945,7 +1961,7 @@ for testname in testsrc:
                         if os.path.isfile(datFile):
                             os.unlink(datFile)
 
-            #delete the timing file     
+            #delete the timing file
             cleanup(printpassesfile)
 
 
@@ -2031,7 +2047,7 @@ for testname in testsrc:
             for var, val in [env.split('=', 1) for env in globalExecenv]:
                 testenv[var.strip()] = val.strip()
 
-            # The test environment is that of this process, 
+            # The test environment is that of this process,
             # augmented as specified
             if os.access(test_filename+execenvsuffix, os.R_OK):
                 args = [execname, execlog, compiler] + envCompopts + \
@@ -2329,19 +2345,19 @@ for testname in testsrc:
                         sys.stdout.write(p.communicate()[0])
 
                     if not perftest:
-                        # find the good file 
+                        # find the good file
 
                         basename = test_filename
                         commExecNum = ['']
 
                         # if there were multiple compopts/execopts find the
-                        # .good file that corresponds to that run 
+                        # .good file that corresponds to that run
                         if not onlyone:
                             commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
 
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
-                        # compopts/execopts or just the base .good file 
+                        # compopts/execopts or just the base .good file
                         if explicitexecgoodfile != None:
                             basename  = explicitexecgoodfile.replace('.good', '')
                             commExecNum = ['']

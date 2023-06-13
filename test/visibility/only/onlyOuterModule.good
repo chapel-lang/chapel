@@ -1,2 +1,2 @@
 onlyOuterModule.chpl:8: In function 'main':
-onlyOuterModule.chpl:9: error: Bad identifier in 'only' clause, no known 'Outer' defined in 'Toolbox'
+onlyOuterModule.chpl:9: error: cannot use 'only' clause with symbol 'Outer' as it is not defined in 'Toolbox'

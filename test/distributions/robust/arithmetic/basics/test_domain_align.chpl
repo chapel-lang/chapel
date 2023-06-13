@@ -40,7 +40,7 @@ proc compare(D, R, a, s=2) {
 
 proc test(ref D) {
   D = rangeTuple(D.rank, 1..10);
-  var R : domain(D.rank, D.idxType, D.stridable);
+  var R : domain(D.rank, D.idxType, D.strides);
   R; R = D; // disable split init because warning text differs per dist
 
   compare(D, R, 0);

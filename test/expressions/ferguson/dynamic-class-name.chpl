@@ -1,8 +1,8 @@
-proc getNameFromClass(obj:borrowed object) : string
+proc getNameFromClass(obj:borrowed RootClass) : string
 {
   var cid =  __primitive("getcid", obj);
   var cs: c_string = __primitive("class name by id", cid);
-  var str = createStringWithNewBuffer(cs);
+  var str = string.createCopyingBuffer(cs);
   return str;
 }
 

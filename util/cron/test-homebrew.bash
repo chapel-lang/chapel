@@ -61,6 +61,8 @@ $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$s
 # Test if homebrew install using the chapel formula works.
 brew upgrade 
 brew uninstall --force chapel
+# Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
+rm /Users/chapelu/Library/Caches/Homebrew/downloads/*.tar.gz
 brew install --build-from-source chapel.rb
 INSTALL_STATUS=$?
     if [ $INSTALL_STATUS -ne 0 ]

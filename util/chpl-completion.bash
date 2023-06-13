@@ -64,6 +64,7 @@ _chpl ()
 --dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-scope-resolve \
 --dyno-verify-serialization \
 --early-deinit \
 --explain-call \
@@ -81,6 +82,7 @@ _chpl ()
 --gpu-arch \
 --gpu-block-size \
 --gpu-ptxas-enforce-optimization \
+--gpu-specialization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -108,6 +110,9 @@ _chpl ()
 --instantiate-max \
 --interleave-memory \
 --interprocedural-alias-analysis \
+--io-deserialize-readThis \
+--io-gen-serialization \
+--io-serialize-writeThis \
 --launcher \
 --ldflags \
 --lib-linkage \
@@ -180,6 +185,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-scope-resolve \
 --no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
@@ -187,6 +193,7 @@ _chpl ()
 --no-force-vectorize \
 --no-formal-domain-checks \
 --no-gen-ids \
+--no-gpu-specialization \
 --no-html-print-block-ids \
 --no-html-wrap-lines \
 --no-ieee-float \
@@ -203,6 +210,9 @@ _chpl ()
 --no-inline-iterators \
 --no-interleave-memory \
 --no-interprocedural-alias-analysis \
+--no-io-deserialize-readThis \
+--no-io-gen-serialization \
+--no-io-serialize-writeThis \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -257,7 +267,6 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
---no-use-io-formatters \
 --no-vectorize \
 --no-verify \
 --no-warn-array-of-range \
@@ -268,6 +277,8 @@ _chpl ()
 --no-warn-tuple-iteration \
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
+--no-warn-unstable-internal \
+--no-warn-unstable-standard \
 --no-warnings \
 --optimize \
 --optimize-forall-unordered-ops \
@@ -290,6 +301,7 @@ _chpl ()
 --print-callgraph \
 --print-callstack-on-error \
 --print-chpl-home \
+--print-chpl-loc \
 --print-chpl-settings \
 --print-code-size \
 --print-commands \
@@ -319,6 +331,7 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
+--report-gpu \
 --report-gpu-transform-time \
 --report-inlined-iterators \
 --report-inlining \
@@ -347,7 +360,6 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
---use-io-formatters \
 --using-attribute-toolname \
 --vectorize \
 --verify \
@@ -360,6 +372,8 @@ _chpl ()
 --warn-tuple-iteration \
 --warn-unknown-attribute-toolname \
 --warn-unstable \
+--warn-unstable-internal \
+--warn-unstable-standard \
 --warnings \
 -I \
 -L \
@@ -372,7 +386,7 @@ _chpl ()
 -o \
 -s"
 
-      # non-developer options
+      # user options
       local nodevel_opts="\
 --atomics \
 --auto-aggregation \
@@ -508,6 +522,7 @@ _chpl ()
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
+--print-chpl-home \
 --print-code-size \
 --print-commands \
 --print-module-files \

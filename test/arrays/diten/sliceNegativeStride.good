@@ -4,4 +4,4 @@
 4
 5
 6
-sliceNegativeStride.chpl:2: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..6 by -1)
+sliceNegativeStride.chpl:2: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..6 by -1,)

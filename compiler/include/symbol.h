@@ -168,11 +168,12 @@ public:
 
   std::string deprecationMsg;
   const char* getDeprecationMsg() const;
-  void generateDeprecationWarning(Expr* context);
+  void maybeGenerateDeprecationWarning(Expr* context);
+
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
-  void generateUnstableWarning(Expr* context);
+  void maybeGenerateUnstableWarning(Expr* context);
 
   const char* getSanitizedMsg(std::string msg) const;
 
@@ -857,6 +858,7 @@ extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
+extern Symbol *gStrideOne, *gStrideAny; //deprecation in 1.31 for #17131
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gSplitInit;
@@ -875,22 +877,14 @@ extern Symbol *gDummyRef;
 extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gBoundsChecking;
-extern VarSymbol *gCastChecking;
-extern VarSymbol *gNilChecking;
-extern VarSymbol *gOverloadSetsChecks;
-extern VarSymbol *gDivZeroChecking;
-extern VarSymbol *gCacheRemote;
-extern VarSymbol *gPrivatization;
-extern VarSymbol *gLocal;
-extern VarSymbol *gWarnUnstable;
 extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
-extern VarSymbol *gUseIOFormatters;
+
+extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

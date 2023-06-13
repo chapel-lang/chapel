@@ -402,6 +402,20 @@ static void parseChplSourceFile(const char* inputFileName) {
   parseFile(inputFileName, MOD_USER, true);
 }
 
+static UniqueString cleanLocalPath(UniqueString path) {
+  if (path.startsWith("/") ||
+      path.startsWith("./") == false) {
+    return path;
+  }
+
+  auto str = path.str();
+  while (str.find("./") == 0) {
+    str = str.substr(2);
+  }
+
+  return chpl::UniqueString::get(gContext, str);
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -417,7 +431,7 @@ static void parseCommandLineFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isChplSource(inputFileName))
     {
-      auto path = chpl::UniqueString::get(gContext, inputFileName);
+      auto path = cleanLocalPath(chpl::UniqueString::get(gContext, inputFileName));
       chpl::UniqueString emptySymbolPath;
       chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
     }
@@ -946,27 +960,6 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
   return ret;
 }
 
-//
-// TODO: The error handler would like to do something like fetch AST from
-// IDs, but it cannot due to the possibility of a query cycle:
-//
-// - The 'parseFileToBuilderResult' query is called
-// - Some errors are encountered
-// - Errors are reported to the context by the builder
-// - Which calls the custom error handler, which calls 'idToAst'...
-// - Which calls 'parseFileToBuilderResult' again!
-//
-// I'm sure there's a better way to avoid this cycle, but for right now
-// I am just going to store the errors and display them at a later point
-// after the parsing has completed.
-//
-// One option to fix this is to wield query powers and manually check
-// for and handle the recursion. Another option might be to make our
-// error handler more robust (e.g., make it a class, and separate out the
-// reporting and "realizing" of the errors, as we are doing here).
-//
-static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
-
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
@@ -1013,7 +1006,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) return nullptr;
 
-  auto path = chpl::UniqueString::get(gContext, fileName);
+  auto path = cleanLocalPath(chpl::UniqueString::get(gContext, fileName));
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.

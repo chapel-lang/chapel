@@ -8,6 +8,7 @@
 use BitOps;
 use Random;
 use Time;
+use Math;
 
 
 // problem size configs

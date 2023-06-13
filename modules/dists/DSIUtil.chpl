@@ -232,6 +232,20 @@ proc computeZeroBasedRanges(ranges: _tuple) {
     return (0:idxType..#ranges(0).sizeAs(idxType),);
 }
 
+// densiResult() calculates the result type of densify() and unDensify()
+private proc densiResult(arg: domain, whole: domain) type
+  do return domain(whole.rank, whole.idxType,
+                   chpl_strideProduct(arg.dim(0), whole.dim(0)));
+
+// returns the type of one dimension
+private proc densiResult(arg: _tuple, whole: _tuple) type
+  do return range(whole(0).idxType, arg(0).bounds,
+       chpl_strideProduct(chpl_strideUnion(arg), chpl_strideUnion(whole)));
+
+private proc densiResult(arg: range(?), whole: range(?)) type
+  do return range(whole.idxType, arg.bounds,
+                  chpl_strideProduct(arg, whole));
+
 //
 // densify(): returns a DSI densification of a
 // sub-domain / tuple of ranges / a single range w.r.t.
@@ -251,10 +265,9 @@ proc computeZeroBasedRanges(ranges: _tuple) {
 // or with assert() (if false).
 //
 
-// would like 'whole: domain(?IT,?r,?)'
-proc densify(sub: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+proc densify(sub: domain, whole: domain, userErrors = true
+             ) : densiResult(sub, whole)
 {
-
   type argtypes = (sub, whole).type;
   _densiCheck(sub.rank == whole.rank, argtypes);
   _densiIdxCheck(sub.idxType, whole.idxType,  argtypes);
@@ -274,7 +287,7 @@ proc densify(subs, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * densiResult(subs, wholes);
 
   for param d in 0..rank-1 {
     _densiCheck(isRange(subs(d)), argtypes);
@@ -288,7 +301,8 @@ proc densify(subs, wholes, userErrors = true)
   return result;
 }
 
-proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErrors=true) : range(IT,B,true)
+proc densify(s: range(?,bounds=?B), w: range(?IT,?), userErrors=true
+             ) : densiResult(s, w)
 {
   _densiEnsureBounded(s);
   _densiIdxCheck(s.idxType, IT, (s,w).type);
@@ -299,7 +313,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
   }
 
   if s.sizeAs(int) == 0 {
-    return 1:IT .. 0:IT;
+    return new (densiResult(s, w))();
 
   } else {
     ensure(w.sizeAs(uint) > 0, "densify(s=", s, ", w=", w, "): w is empty while s is not");
@@ -310,7 +324,7 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
     if s.sizeAs(int) == 1 {
       // The "several indices" case should produce the same answer. We still
       // include this special (albeit infrequent) case because it's so short.
-      return low .. low;
+      return densiResult(s,w).createWithSingleElement(low);
 
     } else {
       // several indices
@@ -324,12 +338,14 @@ proc densify(s: range(?,boundedType=?B), w: range(?IT,?,stridable=true), userErr
       if stride < 0 then low <=> high;
 
       assert(low <= high, "densify(s=", s, ", w=", w, "): got low (", low, ") larger than high (", high, ")");
-      return low .. high by stride;
+      return ( low .. high by stride ) :densiResult(s,w);
     }
   }
 }
 
-proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridable=false), userErrors=true) : range(IT,B,S)
+// w.strides==one
+// in this case densiResult(sArg,w) == range(IT,B,S)
+proc densify(sArg: range(?,bounds=?B,strides=?S), w: range(?IT,?,strides=strideKind.one), userErrors=true) : range(IT,B,S)
 {
   _densiEnsureBounded(sArg);
   _densiIdxCheck(sArg.idxType, IT, (sArg,w).type);
@@ -349,13 +365,14 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
   if isUintType(IT) && s.isEmpty() then
-    return 1:IT..0:IT;
+    return new range(IT,B,S);
 
   return (s - w.lowBound): range(IT,B,S);
 }
 
-proc _densiEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("densify() currently requires that sub-ranges be bounded", 2);
+proc _densiEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("densify() currently requires that sub-ranges be bounded", 2);
 }
 
 // not sure what kind of relationship we want to enforce
@@ -375,7 +392,8 @@ proc _densiCheck(param cond, type argtypes, param errlevel = 2) {
 // at compile time that they won't be.
 //
 
-proc unDensify(dense: domain, whole: domain, userErrors = true) : domain(whole.rank, whole.idxType, true)
+proc unDensify(dense: domain, whole: domain, userErrors = true
+               ) : densiResult(dense, whole)
 {
   type argtypes = (dense, whole).type;
   _undensCheck(dense.rank == whole.rank, argtypes);
@@ -394,7 +412,7 @@ proc unDensify(denses, wholes, userErrors = true)
 
   param rank = wholes.size;
   type IT = wholes(0).idxType;
-  var result: rank * range(IT, BoundedRangeType.bounded, true);
+  var result: rank * densiResult(denses, wholes);
 
   for param d in 0..rank-1 {
     _undensCheck(isRange(denses(d)), argtypes);
@@ -407,15 +425,16 @@ proc unDensify(denses, wholes, userErrors = true)
   return result;
 }
 
-proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=true)) : range(IT,B,true)
+proc unDensify(dense: range(?dIT,bounds=?B), whole: range(?IT,?)
+               ) : densiResult(dense, whole)
 {
   _undensEnsureBounded(dense);
-  if whole.boundedType == BoundedRangeType.boundedNone then
+  if whole.bounds == boundKind.neither then
     compilerError("unDensify(): the 'whole' argument must have at least one bound");
 
   // ensure we can call dense.first below
   if dense.sizeAs(int) == 0 then
-    return 1:IT .. 0:IT;
+    return new (densiResult(dense, whole))();
 
   if ! whole.hasFirst() then
     halt("unDensify() is invoked with the 'whole' range that has no first index");
@@ -429,10 +448,11 @@ proc unDensify(dense: range(?dIT,boundedType=?B), whole: range(?IT,?,stridable=t
   if stride < 0 then low <=> high;
 
   assert(low <= high, "unDensify(dense=", dense, ", whole=", whole, "): got low (", low, ") larger than high (", high, ")");
-  return low .. high by stride;
+  return ( low .. high by stride ) :densiResult(dense, whole);
 }
 
-proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,stridable=false)) : range(IT,B,S)
+// whole.strides==one
+proc unDensify(dense: range(?,bounds=?B,strides=?S), whole: range(?IT,?,strides=strideKind.one)) : range(IT,B,S)
 {
   if !whole.hasLowBound() then
     compilerError("unDensify(): the 'whole' argument, when not stridable, must have a low bound");
@@ -440,8 +460,9 @@ proc unDensify(dense: range(?,boundedType=?B,stridable=?S), whole: range(?IT,?,s
   return (dense + whole.lowBound): range(IT,B,S);
 }
 
-proc _undensEnsureBounded(arg) {
-  if !isBoundedRange(arg) then compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
+proc _undensEnsureBounded(arg: range(?)) {
+  if arg.bounds != boundKind.both then
+    compilerError("unDensify() currently requires that the densified ranges be bounded", 2);
 }
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
@@ -482,11 +503,11 @@ private proc asap1(arg) {
 // asapP1 = All Strides Are Positive - Param - 1 arg
 // returns true if all strides are known to be positive at compile time
 private proc asapP1(arg) param {
-  return !arg.stridable;
+  return arg.strides.isPositive();
 }
 
 private proc asapTuple(dims: _tuple) {
-  for d in dims do if ! d.chpl_hasPositiveStride() then return false;
+  for d in dims do if d.hasNegativeStride() then return false;
   return true;
 }
 
@@ -532,11 +553,11 @@ proc setupTargetLocRanges(param rank, specifiedLocArr) {
   return ranges;
 }
 
-proc createWholeDomainForInds(param rank, type idxType, param stridable, inds) {
+proc createWholeDomainForInds(param rank, type idxType, param strides, inds) {
   if isDomain(inds) {
     return inds;
   } else {
-    var result: domain(rank, idxType, stridable);
+    var result: domain(rank, idxType, strides);
     result.setIndices(inds);
     return result;
   }
@@ -610,9 +631,9 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // If the given slice is stridable but its context is not, then the result
   // will need to be stridable as well. For example:
   // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
-  param needsStridable = targetDom.stridable || srcSlice.stridable;
+  param strides = chpl_strideUnion(targetDom, srcSlice);
   var rngs = targetDom.dims() :
-             (targetDom.rank*range(targetDom.idxType,stridable=needsStridable));
+             (targetDom.rank*range(targetDom.idxType,strides=strides));
 
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);

@@ -60,7 +60,7 @@ var filenamesList: list(string);
 // findFiles() returns an iterator so putting all file names in a list
 // to enable creating an array of file names.
 for f in findFiles(inputDir) {
-    filenamesList.append(f);
+    filenamesList.pushBack(f);
 }
 // Create an array blocked into pieces per locale.
 var filenames = Block.createArray(0..#filenamesList.size, string);
@@ -92,7 +92,7 @@ forall (i, file) in zip(filenames.domain, filenames) {
   // filter out any words that do not show up more than once
   var infrequentWords = new list(string);
   for (word,count) in zip(wordCount.keys(), wordCount.values()) {
-    if count<=minCount then infrequentWords.append(word);
+    if count<=minCount then infrequentWords.pushBack(word);
   }
   for word in infrequentWords {
     wordCount.remove(word);

@@ -2,5 +2,5 @@ r is: 0..12297829382473034410 by 6148914691236517205
 0
 6148914691236517205
 12297829382473034410
-r.type = range(uint(64),bounded,true)
+r.type = range(uint(64),both,positive)
 r.str.type = int(64)

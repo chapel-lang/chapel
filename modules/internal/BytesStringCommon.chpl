@@ -67,10 +67,10 @@ module BytesStringCommon {
   enum encodePolicy { unescape, pass };
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param showStringBytesInitDeprWarnings = true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param surrogateEscape = 0xdc:byteType;
 
   private proc isBytesOrStringType(type t) param: bool {
@@ -276,7 +276,7 @@ module BytesStringCommon {
         // if other is remote, copy and own the buffer no matter what
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x.buffLen = otherLen+1;
+        x.buffSize = otherLen+1;
         if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
@@ -372,7 +372,7 @@ module BytesStringCommon {
     proc simpleCaseHelper() {
       // cast the argument r to `int` to make sure that we are not dealing with
       // byteIndex
-      const intR = r:range(int, r.boundedType, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
         if !x.byteIndices.boundsCheck(intR) {
           halt("range ", r, " out of bounds for " + t:string + " with length ",
@@ -415,7 +415,7 @@ module BytesStringCommon {
       return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
-      if r.stridable {
+      if ! r.hasUnitStride() {
         // Slicing by stridable codepoint ranges is unsupported because it
         // creates an irregular sequence of bytes.  We could add support in the
         // future by refactoring the callers of _getView() to add a slow path,
@@ -428,7 +428,7 @@ module BytesStringCommon {
 
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
-      const intR = r:range(int, r.boundedType, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
         if !x.indices.boundsCheck(intR) {
           halt("range ", r, " out of bounds for string with length ", x.size);
@@ -516,7 +516,7 @@ module BytesStringCommon {
           size=buffSize, numCodepoints=numCodepoints);
     }
     else {
-      return createBytesWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
+      return bytes.createAdoptingBuffer(x=buff, length=buffLen, size=buffSize);
     }
   }
 
@@ -792,7 +792,7 @@ module BytesStringCommon {
   // TODO: could use a multi-pattern search or some variant when there are
   // multiple needles. Probably wouldn't be worth the overhead for small
   // needles though
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc startsEndsWith(const ref x: ?t, needles,
                              param fromLeft: bool) : bool
                              where isHomogeneousTuple(needles) &&
@@ -901,7 +901,7 @@ module BytesStringCommon {
                                                   numCodepoints=numCodepoints);
       }
       else {
-        return createBytesWithOwnedBuffer(x=newBuff,
+        return bytes.createAdoptingBuffer(x=newBuff,
                                           length=joinedSize,
                                           size=allocSize);
       }
@@ -1207,7 +1207,7 @@ module BytesStringCommon {
                                                 x.cachedNumCodepoints*n);
     }
     else {
-      return createBytesWithOwnedBuffer(buff, buffLen, allocSize);
+      return bytes.createAdoptingBuffer(buff, buffLen, allocSize);
     }
   }
 
@@ -1377,7 +1377,7 @@ module BytesStringCommon {
     Returns true if the argument is a valid initial byte of a UTF-8
     encoded multibyte character.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc isInitialByte(b: uint(8)) : bool {
     return (b & 0xc0) != 0x80;
   }

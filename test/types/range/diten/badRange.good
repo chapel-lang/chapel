@@ -1,1 +1,1 @@
-badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64),boundedNone,false)' are not currently supported
+badRange.chpl:1: error: Ranges defined using bounds of type 'range(int(64),neither,one)' are not currently supported

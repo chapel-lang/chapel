@@ -811,9 +811,9 @@ initPrimitive() {
 
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
-  // get complex real component
+  // given a complex value, produce a reference to the real component
   prim_def(PRIM_GET_REAL, "complex_get_real", returnInfoComplexField);
-  // get complex imag component
+  // given a complex value, produce a reference to the imag component
   prim_def(PRIM_GET_IMAG, "complex_get_imag", returnInfoComplexField);
   // query expression primitive
   prim_def(PRIM_QUERY, "query", returnInfoUnknown);
@@ -1116,6 +1116,7 @@ initPrimitive() {
 
   prim_def(PRIM_VIRTUAL_METHOD_CALL, "virtual method call", returnInfoVirtualMethodCall, true);
 
+  prim_def(PRIM_SIMPLE_TYPE_NAME, "simple type name", returnInfoString);
   prim_def(PRIM_NUM_FIELDS, "num fields", returnInfoInt32);
   prim_def(PRIM_FIELD_NUM_TO_NAME, "field num to name", returnInfoString);
   prim_def(PRIM_FIELD_NAME_TO_NUM, "field name to num", returnInfoInt32);

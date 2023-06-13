@@ -979,7 +979,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
   case PRIM_FIELD_BY_NUM: {
     // if call->get(1) is a reference type, dereference it
-    Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
+    Type*          t          = canonicalClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
 
     VarSymbol*     var        = toVarSymbol(toSymExpr(call->get(2))->symbol());
@@ -1005,9 +1005,25 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 toString(classType));
     }
 
-    retval = new CallExpr(PRIM_GET_MEMBER,
-                          call->get(1)->copy(),
-                          new_CStringSymbol(name));
+    if(isManagedPtrType(call->get(1)->getValType())) {
+      // Extract the 'chpl_p' field.
+      Symbol* pField = toAggregateType(call->get(1)->getValType())->getField("chpl_p");
+      VarSymbol* pTemp = newTempConst(pField->type);
+      call->getStmtExpr()->insertBefore(new DefExpr(pTemp));
+      call->getStmtExpr()->insertBefore(new CallExpr(PRIM_MOVE,
+                            pTemp,
+                            new CallExpr(PRIM_GET_MEMBER,
+                                call->get(1)->copy(),
+                                pField)));
+
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            new SymExpr(pTemp),
+                            new_CStringSymbol(name));
+    } else {
+      retval = new CallExpr(PRIM_GET_MEMBER,
+                            call->get(1)->copy(),
+                            new_CStringSymbol(name));
+    }
 
     call->replace(retval);
 
@@ -1651,6 +1667,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     call->replace(retval);
 
+    break;
+  }
+
+  case PRIM_SIMPLE_TYPE_NAME: {
+    Type* t = call->get(1)->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      const char* typeName = toString(at->getRootInstantiation());
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    } else {
+      const char* typeName = toString(t);
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    }
     break;
   }
 
@@ -2783,6 +2815,28 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
+// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
+// from `range(boundedType=?b)` or `range(stridable=?s`)`
+// to   `range(bounds=?b)`      or `s = <arg>.stridable`
+static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
+                                   VarSymbol* var, Symbol*& retval) {
+  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
+    const char* requested = var->immediate->v_string.c_str();
+    if (!strcmp(requested, "boundedType")) {
+      USR_WARN(call,
+        "range.boundedType is deprecated; please use '.bounds' instead");
+      retval = at->getField("bounds");
+    } else if (!strcmp(requested, "stridable")) {
+      USR_WARN(call,
+        "range.stridable is deprecated; please use '.strides' instead");
+
+      // White lie: return a bogus value just so that the PRIM_QUERY case
+      // in preFoldPrimOp() generates the call 'var.stridable'.
+      retval = new VarSymbol(requested);
+      retval->addFlag(FLAG_PARAM);
+    }
+  }
+}
 
 //
 // determine field associated with query expression
@@ -2796,6 +2850,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
+    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

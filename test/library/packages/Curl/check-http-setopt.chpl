@@ -51,7 +51,7 @@ module CheckHttpSetOpt {
     curl_easy_getinfo(getCurlHandle(urlreader), CURLINFO_FILETIME,
 		      c_ptrTo(time));
 
-    writeln("Remote Time ", datetime.utcFromTimestamp(time));
+    writeln("Remote Time ", dateTime.createUtcFromTimestamp(time));
 
     stderr.flush();
     stdout.flush();
@@ -99,7 +99,7 @@ module CheckHttpSetOpt {
   proc write_callback(ptr: c_ptr(c_char), size: c_size_t,
 		      nmemb: c_size_t, userdata: c_void_ptr) {
     writeln("callback called");
-    var str = try! createStringWithBorrowedBuffer(ptr:c_string,
+    var str = try! string.createBorrowingBuffer(ptr:c_string,
                                                   (size * nmemb):int);
     write(str);
     return size * nmemb;

@@ -10,6 +10,13 @@ on here.gpus[0] {
   foreach i in 0..0 {
     var dblFactor = 1;
     var start, stop : uint;
+
+    // Warm up loop to pull "A" onto the GPU if using
+    // unified memory
+    for k in 0..1024 * dblFactor {
+      A[k % 1024] = A[k % 1024] * k;
+    }
+
     for j in 0..<howManyResults {
       start = gpuClock();
       for k in 0..1024 * dblFactor {

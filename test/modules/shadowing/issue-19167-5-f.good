@@ -1,4 +1,4 @@
-issue-19167-5-f.chpl:20: In function 'main':
-issue-19167-5-f.chpl:21: error: ambiguous call 'f()'
-issue-19167-5-f.chpl:8: note: candidates are: f()
+issue-19167-5-f.chpl:18: In function 'main':
+issue-19167-5-f.chpl:19: error: ambiguous call 'f()'
+issue-19167-5-f.chpl:7: note: candidates are: f()
 issue-19167-5-f.chpl:2: note:                 f()

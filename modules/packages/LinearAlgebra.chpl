@@ -188,6 +188,7 @@ module LinearAlgebra {
 
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
+use Math;
 
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
@@ -204,15 +205,15 @@ class LinearAlgebraError : Error {
     /* Stores message to be emitted upon uncaught throw */
     var info: string;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() { }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(info: string) {
       this.info = info;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     override proc message() {
       if info.isEmpty() then
         return "LinearAlgebra error";
@@ -221,7 +222,7 @@ class LinearAlgebraError : Error {
     }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*
 This class promotes lazy computation of required
 Helper matrices to evaluate matrix exponential.
@@ -506,7 +507,7 @@ proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
   return V;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Vector(Scalars...) overload where eltType is inferred */
 proc Vector(x: ?t, Scalars...?n)  where isNumericType(t) {
   type eltType = x.type;
@@ -580,7 +581,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   return M;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Return a matrix (2D array) with domain and values of ``A`` - sparse case */
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && Sparse.isCSArr(A)
@@ -594,7 +595,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   return M;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Return a matrix (2D array) with domain and values of ``A`` - sparse case */
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && isDefaultSparseArr(A)
@@ -606,7 +607,6 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   return M;
 }
 
-pragma "no doc"
 proc chpl_varargsOKForMatrix(Arrays) param {
   if isHomogeneousTuple(Arrays) {
     return isArray(Arrays(0)) && Arrays(0).rank == 1;
@@ -620,7 +620,7 @@ proc chpl_varargsOKForMatrix(Arrays) param {
   return true;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc Matrix(const Arrays ...?n) {
   if !isArray(Arrays(0)) {
     compilerError("Matrix() requires a series of 1D arrays as its arguments");
@@ -743,25 +743,25 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc transpose(D: domain(1)) {
   return D;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 inline proc transpose(D: domain(2)) {
   return {D.dim(1), D.dim(0)};
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Transpose vector (no-op) */
 inline proc transpose(A: [?Dom]) where Dom.rank == 1 {
   return A;
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Syntactic sugar for transpose(Vector) */
 proc _array.T where this.domain.rank == 1 { return transpose(this); }
 
@@ -865,7 +865,7 @@ proc _array.dot(A: []) where isDenseArr(this) && isDenseArr(A) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Element-wise scalar multiplication. */
 proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
   var C: A.type = A * b;
@@ -873,7 +873,7 @@ proc dot(A: [?Adom] ?eltType, b) where isNumeric(b) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Element-wise scalar multiplication */
 proc dot(a, B: []) where isNumeric(a) {
   var C: B.type = B * a ;
@@ -897,7 +897,7 @@ private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* matrix-vector multiplication */
 private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where BLAS.isBLASType(eltType) && usingBLAS
@@ -931,7 +931,7 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* matrix-matrix multiplication */
 private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where BLAS.isBLASType(eltType) && usingBLAS
@@ -946,7 +946,7 @@ private proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /*
    Returns ``true`` if the domain is distributed
 
@@ -1032,7 +1032,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Generic matrix-vector multiplication. */
 proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   where !usingBLAS || !BLAS.isBLASType(eltType)
@@ -1062,7 +1062,7 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Generic matrix-matrix multiplication */
 proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   where !usingBLAS || !BLAS.isBLASType(eltType)
@@ -1096,7 +1096,7 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
   return C;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Helper for Generic matrix-matrix multiplication */
 proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
                        ref BMat : [?Bdom] eltType,
@@ -1150,11 +1150,11 @@ proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 private inline proc hasNonStridedIndices(Adom : domain(2)) {
-  return (if Adom.stridable
+  return if !Adom.strides.isNegative()
           then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1
-          else true);
+          else false;
 }
 
 /*
@@ -1216,7 +1216,7 @@ proc matPow(A: [], b) where isNumeric(b) {
   return _expBySquaring(A, b).value;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 // This is a workaround for undesired use
 // of runtime-type of the input array x below
 // in the return type. See also issue #9438.
@@ -1224,7 +1224,7 @@ record _wrap {
   var value;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Exponentiate by squaring recursively */
 private proc _expBySquaring(x: ?t, n): _wrap(t) {
   // TODO -- _expBySquaring(pinv(x), -n);
@@ -1892,7 +1892,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   return (x1, residue, rank, s);
 }
 
-pragma "no doc" // TODO: To be publicly documented in the future
+@chpldoc.nodoc // TODO: To be publicly documented in the future
 /* Generate Vandermonde matrix */
 proc vander(x: [?d], in N=0) where d.rank == 1 {
 
@@ -1942,7 +1942,7 @@ proc cholesky(A: [] ?t, lower = true)
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc cholesky(A: [] ?t, lower = true)
   where A.rank == 2 && isLAPACKType(t) && !usingLAPACK
 {
@@ -2316,7 +2316,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 proc eig(A: [] ?t, param left = false, param right = false)
   where A.domain.rank == 2 && !usingLAPACK {
   compilerError("eigvals() requires LAPACK");
@@ -2535,42 +2535,42 @@ proc cosm(A: []) throws {
 //
 
 // TODO: Add this to public interface eventually
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the array is dense N-dimensional non-distributed array. */
 proc isDenseArr(A: [?D]) param : bool {
   return isDenseDom(D);
 }
 
 // TODO: Add this to public interface eventually
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
   return D.isRectangular();
 }
 
 // TODO: Add this to public interface eventually
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the array is N-dimensional non-distributed array. */
 proc isLocalArr(A: [?D]) param : bool {
   return isLocalDom(D);
 }
 
 // TODO: Add this to public interface eventually
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
   return D.dist.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the array is dense 2-dimensional non-distributed array. */
 proc isDenseMatrix(A: []) param : bool {
   return A.rank == 2 && isDenseArr(A) && isLocalArr(A);
 }
 
 // Work-around for #8543
-pragma "no doc"
+@chpldoc.nodoc
 proc type _array.rank param {
   var x: this;
   return x.rank;
@@ -2580,13 +2580,13 @@ proc type _array.rank param {
 // Type helpers
 //
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
   return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Returns ``true`` if the array is ``DefaultSparse`` */
 private proc isDefaultSparseArr(A: []) param {
   return isDefaultSparseDom(A.domain);
@@ -2716,7 +2716,7 @@ module Sparse {
     return csrDom;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Return a CSR domain based on domain: ``Dom`` - Dense case */
   proc CSRDomain(Dom: domain(2)) where Dom.rank == 2 {
     var csrDom: sparse subdomain(Dom) dmapped CS(sortedIndices=false);
@@ -2737,7 +2737,7 @@ module Sparse {
     return M;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Return a CSR matrix over domain: ``Dom`` - Dense case */
   proc CSRMatrix(Dom: domain, type eltType=real) where Dom.rank == 2 &&
                                                        isDenseDom(Dom) &&
@@ -2761,7 +2761,7 @@ module Sparse {
     return M;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Return a CSR matrix with domain and values of ``A`` - Dense case */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where isDenseMatrix(A) {
     var D = CSRDomain(Dom);
@@ -3181,7 +3181,7 @@ module Sparse {
     return S;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _array.plus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
                                               && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -3210,7 +3210,7 @@ module Sparse {
     return S;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _array.minus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
                                                && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -3246,7 +3246,7 @@ module Sparse {
     return B;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _array.times(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
                                                && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
@@ -3284,7 +3284,7 @@ module Sparse {
     return B;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _array.elementDiv(A: [?Adom] ?eltType) where
                                             this.isSparse() && !isCSArr(this)
                                             && A.isSparse() && !isCSArr(A) {
@@ -3302,7 +3302,7 @@ module Sparse {
   }
 
   /* Matrix division (solve) */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _array.div(A) where isCSArr(this) && isCSArr(A) {
     compilerError("Matrix division not yet supported for sparse matrices */");
   }
@@ -3322,7 +3322,7 @@ module Sparse {
     return A;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
               b: [Xdom] eltType, tol = 0.0001, maxiter = 1000) where isCSArr(A) {
     if Adom.rank != 2 || X.rank != 1 || b.rank != 1 then
@@ -3354,7 +3354,7 @@ module Sparse {
     return itern;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
                 where X.isSparse() {
       if D.rank != 2 then
@@ -3422,11 +3422,11 @@ module Sparse {
   //
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
   proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
   proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
 

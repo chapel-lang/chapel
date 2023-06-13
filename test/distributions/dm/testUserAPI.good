@@ -4,13 +4,13 @@
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = false
+strides          = one
 size             = 25
 isEmpty()        = false
 lowBound         = (1, 0)
 highBound        = (5, 4)
 stride           = (1, 1)
-alignment        = (1, 0)
+alignment        = (0, 0)
 first            = (1, 0)
 last             = (5, 4)
 low              = (1, 0)
@@ -59,7 +59,7 @@ isEmpty()        = true
 lowBound         = (1, 1)
 highBound        = (0, 0)
 stride           = (1, 1)
-alignment        = (1, 1)
+alignment        = (0, 0)
 
 ### bl1,bc2 2D domain
 ------------
@@ -67,13 +67,13 @@ alignment        = (1, 1)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = false
+strides          = one
 size             = 25
 isEmpty()        = false
 lowBound         = (1, 0)
 highBound        = (5, 4)
 stride           = (1, 1)
-alignment        = (1, 0)
+alignment        = (0, 0)
 first            = (1, 0)
 last             = (5, 4)
 low              = (1, 0)
@@ -122,7 +122,7 @@ isEmpty()        = true
 lowBound         = (1, 1)
 highBound        = (0, 0)
 stride           = (1, 1)
-alignment        = (1, 1)
+alignment        = (0, 0)
 
 ### bc1,bl2 2D domain
 ------------
@@ -130,13 +130,13 @@ alignment        = (1, 1)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = false
+strides          = one
 size             = 25
 isEmpty()        = false
 lowBound         = (1, 0)
 highBound        = (5, 4)
 stride           = (1, 1)
-alignment        = (1, 0)
+alignment        = (0, 0)
 first            = (1, 0)
 last             = (5, 4)
 low              = (1, 0)
@@ -185,7 +185,7 @@ isEmpty()        = true
 lowBound         = (1, 1)
 highBound        = (0, 0)
 stride           = (1, 1)
-alignment        = (1, 1)
+alignment        = (0, 0)
 
 ### bc1,bc2 2D domain
 ------------
@@ -193,13 +193,13 @@ alignment        = (1, 1)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = false
+strides          = one
 size             = 25
 isEmpty()        = false
 lowBound         = (1, 0)
 highBound        = (5, 4)
 stride           = (1, 1)
-alignment        = (1, 0)
+alignment        = (0, 0)
 first            = (1, 0)
 last             = (5, 4)
 low              = (1, 0)
@@ -248,7 +248,7 @@ isEmpty()        = true
 lowBound         = (1, 1)
 highBound        = (0, 0)
 stride           = (1, 1)
-alignment        = (1, 1)
+alignment        = (0, 0)
 
 ### bl1,bl2 strided 2D domain
 ------------
@@ -256,7 +256,7 @@ alignment        = (1, 1)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = true
+strides          = positive
 size             = 6
 isEmpty()        = false
 lowBound         = (1, 0)
@@ -319,7 +319,7 @@ alignment        = (0, 0)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = true
+strides          = positive
 size             = 6
 isEmpty()        = false
 lowBound         = (1, 0)
@@ -382,7 +382,7 @@ alignment        = (0, 0)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = true
+strides          = positive
 size             = 6
 isEmpty()        = false
 lowBound         = (1, 0)
@@ -445,7 +445,7 @@ alignment        = (0, 0)
 rank             = 2
 idxType          = int(64)
 fullIdxType      = 2*int(64)
-stridable        = true
+strides          = positive
 size             = 6
 isEmpty()        = false
 lowBound         = (1, 0)

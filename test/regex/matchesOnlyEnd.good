@@ -1,0 +1,5 @@
+matches('$')
+((matched = true, byteOffset = 10, numBytes = 0),)
+
+search('$')
+(matched = true, byteOffset = 10, numBytes = 0)

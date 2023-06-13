@@ -8,8 +8,6 @@ const num_cp = ch.readAll(s);
 writeln(s);
 writeln(num_cp);
 
-// nothing remaining to read in the channel:
-const s2 = ch.readLine(string);
-writeln(s2.isEmpty());
+writeln(ch.readAll(s));
 
 ch.close();

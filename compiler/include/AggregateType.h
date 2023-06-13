@@ -264,7 +264,7 @@ private:
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
                                          ArgSymbol*             fileReader,
-                                         VarSymbol*             formatter);
+                                         ArgSymbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
@@ -272,7 +272,8 @@ private:
   bool                        handleSuperFields(FnSymbol*                    fn,
                                                 const std::set<const char*>& names,
                                                 SymbolMap&                   fieldArgMap,
-                                                ArgSymbol* fileReader = nullptr);
+                                                ArgSymbol* fileReader = nullptr,
+                                                ArgSymbol* deser = nullptr);
 
   std::vector<AggregateType*> instantiations;
 
@@ -288,6 +289,11 @@ private:
   bool                        mIsGeneric;
   bool                        mIsGenericWithDefaults;
 };
+
+// support for deprecation by Vass in 1.31 to implement #17131
+AggregateType* dsiTypeBeingConstructed(CallExpr* parentCall);
+AggregateType* baseRectDsiParent(AggregateType* ag);
+Symbol* stridesFieldInDsiContext(Expr* use);
 
 extern AggregateType* dtObject;
 

@@ -315,25 +315,25 @@ var rangeThisToThat: range = thisInt..thatInt; // using variables
 var rangeEmpty: range = 100..-100; // this is valid but contains no indices
 
 // Ranges can be unbounded.
-var range1toInf: range(boundedType=BoundedRangeType.boundedLow) = 1.. ; // 1, 2, 3, 4, 5, ...
+var range1toInf: range(bounds=boundKind.low) = 1.. ; // 1, 2, 3, 4, 5, ...
 var rangeNegInfTo1 = ..1; // ..., -4, -3, -2, -1, 0, 1
 
 // Ranges can be strided (and reversed) using the ``by`` operator.
-var range2to10by2: range(stridable=true) = 2..10 by 2; // 2, 4, 6, 8, 10
+var range2to10by2: range(strides=strideKind.any) = 2..10 by 2; // 2, 4, 6, 8, 10
 var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
 writeln("Size of range '", trapRange, "' = ", trapRange.size);
 
-// Note: ``range(boundedType= ...)`` and ``range(stridable= ...)`` are only
-// necessary if we explicitly type the variable.
+// Note: ``range(bounds= ...)`` and ``range(stridable= ...)`` are necessary
+// only if we give the variable a type explicitly.
 
 // The end point of a range can be computed by specifying the total size
 // of the range using the count (``#``) operator.
 var rangeCount: range = -5..#12; // range from -5 to 6
 
 // Operators can be mixed.
-var rangeCountBy: range(stridable=true) = -5..#12 by 2; // -5, -3, -1, 1, 3, 5
+var rangeCountBy: range(strides=strideKind.any) = -5..#12 by 2; // -5, -3, -1, 1, 3, 5
 writeln(rangeCountBy);
 
 // Properties of the range can be queried.

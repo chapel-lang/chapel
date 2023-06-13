@@ -194,7 +194,8 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
       ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
-  auto attrList = consumeList(attributeGroupParts.attributeList);
+  AstList attrList = consumeList(attributeGroupParts.attributeList);
+
   auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
@@ -292,7 +293,10 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@deprecated' attribute only accepts 'since', 'notes', and "
+                   "'suggestion' arguments",
+                   actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
@@ -340,7 +344,9 @@ void ParserContext::noteStable(YYLTYPE loc, MaybeNamedActualList* actuals) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@stable' attribute only accepts 'since' or unnamed argument", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@stable' attribute only accepts 'since' or unnamed argument",
+                   actual.name.c_str());
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "stable attribute arguments must be string literals for now");
@@ -365,7 +371,10 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
             actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
             actual.name == UniqueString::get(context(), "reason").podUniqueString()||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@unstable' attribute only accepts 'category', 'issue', "
+                   "and 'reason' arguments",
+                   actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
@@ -1006,9 +1015,9 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 
   // Own the recorded identifier to clean it up, but grab its location.
   owned<Identifier> identName = toOwned(fp.name);
-  assert(identName.get());
+  CHPL_ASSERT(identName.get());
   auto identNameLoc = builder->getLocation(identName.get());
-  assert(!identNameLoc.isEmpty());
+  CHPL_ASSERT(!identNameLoc.isEmpty());
 
   auto f = Function::build(builder, identNameLoc,
                            toOwned(fp.attributeGroup),
@@ -1492,7 +1501,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
     ret = node.release();
   } else {
     auto node = Variable::build(builder, convertLocation(location),
-                                this->buildAttributeGroup(location),
+                                /*attributeGroup*/ nullptr,
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
@@ -2378,7 +2387,12 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       if (elt->isComment()) delete elt;
     }
     delete vars;
-
+    // for single element decls, we attach the attribute group to the decl
+    // *note that this places the AttributeGroup as the LAST child of the decl
+    auto attributeGroup = buildAttributeGroup(locEverything);
+    if (attributeGroup) {
+      lastDecl->attachAttributeGroup(std::move(attributeGroup));
+    }
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2393,7 +2407,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-
     auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributeGroup),

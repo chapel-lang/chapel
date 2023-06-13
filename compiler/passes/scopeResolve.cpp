@@ -272,7 +272,8 @@ static void processGenericFields() {
 // to handle chpl__Program with little or no special casing.
 
 static void addToSymbolTable() {
-  rootScope = ResolveScope::getRootModule();
+  rootScope = ResolveScope::getScopeFor(theProgram->block);
+  if (!rootScope) rootScope = ResolveScope::getRootModule();
 
   // Extend the rootScope with every top-level definition
   for_alist(stmt, theProgram->block->body) {
@@ -854,6 +855,29 @@ static bool callSpecifiesClassKind(CallExpr* call) {
           call->isNamed("chpl__distributed"));
 }
 
+// Supports deprecation by Vass in 1.31 to implement #17131.
+static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use) {
+  CallExpr* pCall = toCallExpr(use->parentExpr);
+  if (pCall == nullptr)
+    if (NamedExpr* pNamed = toNamedExpr(use->parentExpr))
+      pCall = toCallExpr(pNamed->parentExpr);
+  return tryReplaceStridable(pCall, name, use);
+}
+
+// Supports deprecation by Vass in 1.31 to implement #17131.
+// Sometimes lookupAndCount() will return a type method 'stridable'.
+// This is more likely a bug. So we steamroll over it.
+static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use,
+                                Symbol* sym) {
+  if (!strcmp(name, "stridable"))
+    if (FnSymbol* symFn = toFnSymbol(sym))
+      if (symFn->thisTag == INTENT_TYPE)
+        if (symFn->getModule()->modTag == MOD_INTERNAL)
+          // ignore 'sym'
+          return tryReplaceStridableSR(name, use);
+  return false;
+}
+
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
   SET_LINENO(usymExpr);
@@ -891,7 +915,12 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   Symbol* sym = lookupAndCount(name, usymExpr, nSymbols, returnRename,
                                &renameLoc);
   if (sym != NULL) {
-    resolveUnresolvedSymExpr(usymExpr, sym);
+    if (!tryReplaceStridableSR(name, usymExpr, sym))
+      resolveUnresolvedSymExpr(usymExpr, sym);
+
+  } else if (tryReplaceStridableSR(name, usymExpr)) {
+    // handled
+
   } else {
     updateMethod(usymExpr);
   }
@@ -927,13 +956,8 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
       }
     }
 
-    if (sym->hasFlag(FLAG_DEPRECATED)) {
-      sym->generateDeprecationWarning(usymExpr);
-    }
-
-    if ((sym->hasFlag(FLAG_UNSTABLE)) && (fWarnUnstable)) {
-      sym->generateUnstableWarning(usymExpr);
-    }
+    sym->maybeGenerateDeprecationWarning(usymExpr);
+    sym->maybeGenerateUnstableWarning(usymExpr);
 
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
@@ -1506,16 +1530,12 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
-            if (!fDynoCompilerLibrary) {
-              if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
-                // Function symbols will generate a warning during function
-                // resolution, no need to warn here.
-                sym->generateDeprecationWarning(call);
-              }
-
-              if (sym->hasFlag(FLAG_UNSTABLE) &&
-                  (!isFnSymbol(sym)) && (fWarnUnstable)) {
-                sym->generateUnstableWarning(call);
+            if (!fDynoScopeResolve) {
+              // Function symbols will generate a warning during function
+              // resolution, no need to warn here.
+              if (!isFnSymbol(sym)) {
+                sym->maybeGenerateDeprecationWarning(call);
+                sym->maybeGenerateUnstableWarning(call);
               }
             }
 
@@ -1645,13 +1665,8 @@ static void resolveEnumeratedTypes() {
 
             for_enums(constant, type) {
               if (!strcmp(constant->sym->name, name)) {
-                if (constant->sym->hasFlag(FLAG_DEPRECATED)) {
-                  constant->sym->generateDeprecationWarning(call);
-                }
-
-                if (constant->sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-                  constant->sym->generateUnstableWarning(call);
-                }
+                constant->sym->maybeGenerateDeprecationWarning(call);
+                constant->sym->maybeGenerateUnstableWarning(call);
 
                 call->replace(new SymExpr(constant->sym));
               }
@@ -3115,7 +3130,7 @@ void scopeResolve() {
 
   resolveGotoLabels();
 
-  if (!fDynoCompilerLibrary || fDynoScopeProduction) {
+  if (!fDynoScopeResolve || fDynoScopeProduction) {
     resolveUnresolvedSymExprs();
   }
 

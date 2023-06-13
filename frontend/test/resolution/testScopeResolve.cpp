@@ -30,30 +30,6 @@
 
 // helper functions
 
-static const Variable* findVariable(const AstNode* ast, const char* name) {
-  if (auto v = ast->toVariable()) {
-    if (v->name() == name) {
-      return v;
-    }
-  }
-
-  for (auto child : ast->children()) {
-    auto got = findVariable(child, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-
-static const Variable* findVariable(const ModuleVec& vec, const char* name) {
-  for (auto mod : vec) {
-    auto got = findVariable(mod, name);
-    if (got) return got;
-  }
-
-  return nullptr;
-}
-
 static const ResolvedExpression&
 scopeResolveIt(Context* context, const AstNode* ast) {
   ID mId = idToParentModule(context, ast->id());
@@ -1109,6 +1085,182 @@ static void test29() {
   assert(reY.toId().isEmpty());
 }
 
+// this one is a regression test for filter/exclude flags and their storage.
+// Using just a single Flags bitfield in scope lookup is not enough, we
+// need a list, and this test exposes why.
+//
+// See also https://github.com/chapel-lang/chapel/issues/22217 for an explanation
+// of what used to go wrong.
+static void test30() {
+  printf("test30\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module TopLevel {
+          module XContainerUser {
+              public use TopLevel.XContainer; // Will search for public, to no avail.
+          }
+          module XContainer {
+              private var x: int;
+              record R {} // R is in the same scope as x so it won't set public
+
+              module MethodHaver {
+                  use TopLevel.XContainerUser;
+                  use TopLevel.XContainer;
+                  proc R.foo() {
+                      var y = x;
+                  }
+              }
+          }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId() == x->id());
+}
+
+// It has been observed that the production compiler finds `x` in test30 even
+// when the second use statement is commented out. It shouldn't, because
+// parent lookup ought to stop at module boundaries.
+static void test30a() {
+  printf("test30a\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module TopLevel {
+          module XContainerUser {
+              public use TopLevel.XContainer; // Will search for public, to no avail.
+          }
+          module XContainer {
+              private var x: int;
+              record R {} // R is in the same scope as x so it won't set public
+
+              module MethodHaver {
+                  use TopLevel.XContainerUser;
+                  proc R.foo() {
+                      var y = x;
+                  }
+              }
+          }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId().isEmpty());
+}
+
+// Production compiler excludes methods from search unless their receiver
+// somehow matches. In non-method contexts, Dyno mimics this by ignoring
+// all methods. So, a method on int should not get in the way of foo.
+//
+// At the time of writing, this is locked down in production by:
+// test/functions/kbrady/proc_scoping.chpl
+static void test31() {
+  printf("test31\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      proc foo(arg: int) {
+        proc int.arg {}
+        var x = arg;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+
+  ID fnId = x->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reX = rfn->byAst(x->initExpression());
+  assert(reX.toId() == fn->toFunction()->formal(0)->id());
+}
+
+static void test32a() {
+  printf("test32\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        proc int.method() {}
+      }
+
+      module O {
+        use M only method;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* moduleO = vec[1];
+  auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
+
+  assert(guard.realizeErrors() == 0);
+}
+
+static void test32b() {
+  printf("test32\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        proc int.method() {}
+      }
+
+      module O {
+        import M.{method};
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* moduleO = vec[1];
+  auto moduleResolutionResults = scopeResolveModule(context, moduleO->id());
+}
+
 
 int main() {
   test1();
@@ -1140,6 +1292,11 @@ int main() {
   test27();
   test28();
   test29();
+  test30();
+  test30a();
+  test31();
+  test32a();
+  test32b();
 
   return 0;
 }

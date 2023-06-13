@@ -62,7 +62,7 @@ proc processCommand(command: []): int {
       const start = cursor;
       var args: list(int);
       while cursor-start < totBitLength do
-        args.append(processCommand(command[cursor..]));
+        args.pushBack(processCommand(command[cursor..]));
       return processOp(packetTypeID, args);
     } else {
       var numSubPackets = binArrToVal(command[cursor+1..#11]);

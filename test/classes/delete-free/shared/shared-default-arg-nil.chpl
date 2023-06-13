@@ -1,4 +1,4 @@
-// test inspired by datetime.init
+// test inspired by dateTime.init
 
 class MyClass {
   var x:int;
