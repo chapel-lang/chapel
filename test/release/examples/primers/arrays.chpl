@@ -15,7 +15,7 @@
 config const n = 5;
 
 //
-// Declare an 'n'-element array of 64-bit real values (where 'n' is 5
+// Declare an ``n``-element array of 64-bit real values (where ``n`` is 5
 // by default):
 //
 var A: [1..n] real;
@@ -76,7 +76,7 @@ writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
 // Arrays can be multidimensional as well.  For example, the following
-// declaration creates a 2D 'n' x 'n' array of ``real`` floating point
+// declaration creates a 2D ``n`` x ``n`` array of ``real`` floating point
 // values.
 //
 
@@ -91,7 +91,7 @@ writeln("Initially, B is:\n", B, "\n");
 // An array's elements can be iterated over using Chapel's loop forms
 // (e.g., ``for``, ``foreach``, or ``forall``), which causes the index
 // variable to refer to an array element in each iteration.  For
-// example, the following loop increments each of 'B's elements by 1,
+// example, the following loop increments each of ``B``'s elements by 1,
 // in parallel:
 //
 
@@ -103,8 +103,8 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 //
 // An array's index set is referred to as a *domain* — a first-class
 // language concept that stores the set of indices used to access the
-// array.  The arrays 'A' and 'B' above are respectively declared with
-// the anonymous domains ``{1..n}`` and ``{1..n, 1..n}``.  Array 'A2'
+// array.  The arrays ``A`` and ``B`` above are respectively declared with
+// the anonymous domains ``{1..n}`` and ``{1..n, 1..n}``.  Array ``A2``
 // above is declared with the implicit domain ``{0..4}``.
 
 // An array's domain can be queried using the ``.domain`` method,
@@ -122,8 +122,8 @@ writeln("After decrementing B's elements, B is:\n", B, "\n");
 // Domains can also be queried when arrays are passed to routines, as
 // a means of associating a new ``const ref`` identifier with the
 // domain for the routine's duration.  For example, the following
-// procedure queries the domain of its array argument 'X', naming it
-// 'D':
+// procedure queries the domain of its array argument ``X``, naming it
+// ``D``:
 //
 
 proc negateAndPrintArr(X: [?D] real) {
@@ -137,8 +137,8 @@ negateAndPrintArr(B);
 
 //
 // Arrays are passed to routines by reference (``ref``) by default, so
-// the modifications to 'X' in procedure 'negateAndPrintArr()' are
-// reflected back in the actual argument 'B' as well:
+// the modifications to ``X`` in procedure ``negateAndPrintArr()`` are
+// reflected back in the actual argument ``B`` as well:
 //
 
 writeln("After calling negateAndPrintArr, B is:\n", B, "\n");
@@ -152,7 +152,7 @@ writeln("After calling negateAndPrintArr, B is:\n", B, "\n");
 // compiler optimizations.
 //
 // The following domain declaration defines a 2D rectangular domain
-// called 'ProbSpace', which is the same size and shape as 'B' was
+// called ``ProbSpace``, which is the same size and shape as ``B`` was
 // above.
 //
 
@@ -184,9 +184,9 @@ writeln("After assigning C, its value is:\n", C, "\n");
 // the tuple into its integer components.  Similarly, multidimensional
 // array accesses can be expressed using tuple indices rather than
 // multiple integer arguments.  In the following example, the index
-// variable 'ij' stores a 2-tuple of integers (``2*int`` in Chapel).
+// variable ``ij`` stores a 2-tuple of integers (``2*int`` in Chapel).
 // Note the use of tuple indexing to tease the individual components
-// of out of the 2-tuple 'ij'.
+// of out of the 2-tuple ``ij``.
 //
 
 for ij in ProbSpace do
@@ -217,7 +217,7 @@ writeln("After being reset, B is:\n", B, "\n");
 // An array need not be indexed using the domain that was used to
 // declare it, though doing so presents the compiler with
 // opportunities to optimize bounds checks away.  In the following
-// loop, there is no known relation between 'B' and 'ProbSpace', so
+// loop, there is no known relation between ``B`` and ``ProbSpace``, so
 // bounds checks are harder to prove away (since it requires symbolic
 // analysis of the definitions of the two domains and the invariance
 // of their bounds).
@@ -244,8 +244,8 @@ writeln("After assigning a slice of B to a slice of F, F's value is:\n", F, "\n"
 // Arrays can also be sliced using unbounded ranges in which either
 // the low and/or high bounds are omitted.  In this case, the missing
 // bounds are defined by the array's bounds.  For example, the
-// following statement assigns all rows of 'G' starting from row 2
-// using all rows of 'B' up to number 'n-1'.  It assigns all columns
+// following statement assigns all rows of ``G`` starting from row 2
+// using all rows of ``B`` up to number ``n-1``.  It assigns all columns
 // since no bounds are provided in the second dimension.
 //
 
@@ -256,8 +256,8 @@ writeln("After assigning a slice of B to G, G's value is:\n", G, "\n");
 //
 // Array slicing supports rank-change semantics when sliced using a
 // scalar value rather than a range.  In the following assignment,
-// recall that 'A' was our initial 1-dimensional array.  The slice
-// of 'B' takes all columns of row 'n/2' and treats it as a 1D array.
+// recall that ``A`` was our initial 1-dimensional array.  The slice
+// of ``B`` takes all columns of row ``n/2`` and treats it as a 1D array.
 //
 
 A = B[n/2, ..];
@@ -320,7 +320,7 @@ var VarArr: [VarDom] real = [i in VarDom] i;
 writeln("Initially, VarArr = ", VarArr, "\n");
 
 //
-// Now, if we reassign 'VarDom', 'VarArr' will be reallocated with the
+// Now, if we reassign ``VarDom``, ``VarArr`` will be reallocated with the
 // old values preserved and the new values initialized to the element
 // type's default value.
 //
@@ -379,7 +379,7 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 //
 // An implication of this is that arrays declared using an anonymous
 // domain cannot be reallocated.  So for our original array
-// declarations 'A' and 'B', we have no way of reallocating them.
+// declarations ``A`` and ``B``, we have no way of reallocating them.
 // Arrays with constant domains provide the compiler with optimization
 // benefits, so this design supports a common case efficiently.
 
