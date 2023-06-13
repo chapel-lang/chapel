@@ -434,8 +434,10 @@ def get_overriden_llvm_clang(lang):
     if lang_upper == 'C++':
         lang_upper = 'CXX'
 
-    # compute it based on setting CHPL_LLVM_CLANG_C/CXX
-    # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX
+    # Compute it based on setting CHPL_LLVM_CLANG_C/CXX
+    # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
+    # These use split in order to separate the command out from
+    # any arguments passed to it.
     tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
     if lang_upper == 'C':
         llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
@@ -452,7 +454,7 @@ def get_overriden_llvm_clang(lang):
         if tgt_llvm:
             target_cc = overrides.get('CHPL_TARGET_CXX')
             if target_cc:
-                return target_cc
+                return target_cc.split()
     else:
         error('unknown lang value {}'.format(lang))
 
