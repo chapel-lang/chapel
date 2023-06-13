@@ -531,12 +531,10 @@ Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
     initNode = std::move(mod->children_[0]->children_.back());
     // clean out the nullptr
     mod->children_[0]->children_.pop_back();
-  }
-  else if (mod->stmt(0)->isErroneousExpression()) {
+  } else if (mod->stmt(0)->isErroneousExpression()) {
     auto loc = Location();
     context()->error(loc, "Error while trying to set config '%s'", var->name().c_str());
-  }
-  else {
+  } else {
     CHPL_ASSERT(false && "should only be an assignment or type initializer");
   }
   return initNode;
