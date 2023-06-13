@@ -1098,9 +1098,9 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  extern record DIR {};
+  extern record DIR {}
   extern type DIRptr = c_ptr(DIR);
-  extern "struct dirent" record chpl_dirent {};
+  extern "struct dirent" record chpl_dirent {}
   extern type direntptr = c_ptr(chpl_dirent);
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
