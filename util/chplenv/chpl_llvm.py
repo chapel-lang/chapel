@@ -480,6 +480,10 @@ def get_system_llvm_clang(lang):
             clang_path = clang_name + suffix
             if prefix is not None:
                 clang_path = os.path.join(prefix, clang_path)
+            # Use the full path to clang. For some reason, this is important
+            # on Alpine Linux for clang to find its own standard lib headers.
+            if '/' not in clang_path:
+                clang_path = which(clang_path)
             if is_system_clang_version_ok(clang_path):
                 return clang_path
     return ''
