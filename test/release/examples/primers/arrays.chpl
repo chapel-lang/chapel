@@ -1,33 +1,38 @@
 // Arrays
 
 //
-// This primer is a tutorial on Chapel's rectangular arrays and domains.
+// This primer is a tutorial on Chapel's rectangular arrays and
+// domains.  Other primers cover Chapel's :ref:`associative
+// <primers-associative>` and :ref:`sparse <primers-sparse>` arrays,
+// building on concepts introduced here.
 //
 
 //
 // Arrays in Chapel are specified using a square-bracketed expression
-// that specifies the array's index set, followed by the array's
-// element type.  Rectangular arrays are those whose indices are
-// integers or tuples of integers, bounded by a range in each
+// that specifies the array's index set or *domain*, followed by the
+// array's element type.  Rectangular arrays are those whose indices
+// are integers or tuples of integers, bounded by a range in each
 // dimension, supporting multidimensional, rectilinear index sets.
 //
 
+// Declaring Arrays
+// ----------------
+
+// Let's start by declaring an ``n``-element array of 64-bit ``real``
+// values (where ``n`` defaults to 5):
+
 config const n = 5;
 
-//
-// Declare an ``n``-element array of 64-bit real values (where ``n`` is 5
-// by default):
-//
 var A: [1..n] real;
 
 //
 // Like other variable types in Chapel, arrays are initialized so that
-// each element stores its default value.  So our array of real values
+// each element stores its default value.  So our array of ``real`` values
 // above will default to an array whose elements each store the value
 // 0.0.
 //
 
-writeln("Initially, A is: ", A);
+writeln("Initially, A is: ", A);  // prints 0.0 for each array element
 
 //
 // Arrays can also be declared using array literals.  These are
@@ -42,6 +47,10 @@ var A2 = [-1.1, -2.2, -3.3, -4.4, -5.5];
 
 writeln("Initially, A2 is: ", A2);
 
+
+// Basic Array Indexing and Slicing
+// --------------------------------
+
 //
 // Arrays can be accessed using scalar index values of the appropriate
 // type, using either parentheses or square brackets:
@@ -54,7 +63,7 @@ writeln("After assigning two elements, A is: ", A);
 
 //
 // Arrays can also be accessed using ranges to refer to subsets of
-// array elements, or *sub-arrays*, using a technique called slicing:
+// array elements, or *sub-arrays*, using a technique called *slicing*:
 //
 
 A[2..4] = 3.3;
@@ -70,13 +79,16 @@ writeln();
 writeln("A(2..4) is: ", A(2..4), "\n");
 
 //
-// Note: further information on slicing can be found in the
-// :ref:`Slices Primer <primers-slices>`
+// Further information on slicing can be found in the :ref:`Slices
+// Primer <primers-slices>`
 //
+
+// Multidimensional Arrays
+// -----------------------
 
 //
 // Arrays can be multidimensional as well.  For example, the following
-// declaration creates a 2D ``n`` x ``n`` array of ``real`` floating point
+// declaration creates a 2D ``n`` x ``n`` array of ``real``
 // values.
 //
 
@@ -87,12 +99,15 @@ forall (i,j) in {1..n, 1..n} do
 
 writeln("Initially, B is:\n", B, "\n");
 
+// Loops over Arrays
+// -----------------
+
 //
-// An array's elements can be iterated over using Chapel's loop forms
-// (e.g., ``for``, ``foreach``, or ``forall``), which causes the index
-// variable to refer to an array element in each iteration.  For
-// example, the following loop increments each of ``B``'s elements by 1,
-// in parallel:
+// An array's elements can be iterated over using Chapel's standard
+// loop forms like ``for``, ``foreach``, or ``forall``.  These cause
+// the index variable to refer to an array element in each iteration.
+// For example, the following loop increments each of ``B``'s elements
+// by 1, in parallel:
 //
 
 forall b in B do
@@ -100,12 +115,20 @@ forall b in B do
 
 writeln("After incrementing B's elements, B is:\n", B, "\n");
 
+// While the following loop negates ``A``'s elements:
+
+
+// Domains and Domain Queries
+// --------------------------
+
 //
-// An array's index set is referred to as a *domain* — a first-class
+// An array's index set is referred to as a domain — a first-class
 // language concept that stores the set of indices used to access the
-// array.  The arrays ``A`` and ``B`` above are respectively declared with
-// the anonymous domains ``{1..n}`` and ``{1..n, 1..n}``.  Array ``A2``
-// above is declared with the implicit domain ``{0..4}``.
+// array.  The arrays ``A`` and ``B`` above are respectively declared
+// over the anonymous domains ``{1..n}`` and ``{1..n, 1..n}``, created
+// from the ranges specified within the array type's square brackets.
+// Array ``A2`` above will have the implicit domain ``{0..4}`` to
+// represent the five values in its initializing expression.
 
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For
@@ -145,15 +168,20 @@ writeln("After calling negateAndPrintArr, B is:\n", B, "\n");
 
 //
 // Domains can also be declared and named.  This has several
-// advantages, including: allowing multiple arrays to share a single
-// domain; associating a logical name with an index set; amortizing
-// the overheads associated with storing distributed arrays across
-// multiple array variables of the same size and shape; and enabling
-// compiler optimizations.
+// advantages, including:
+//
+// * allowing multiple arrays to share a single domain
+//
+// * associating a logical name with an index set
+//
+// * amortizing overheads when storing multiple distributed arrays with the same indices
+//
+// * enabling compiler optimizations.
+//
 //
 // The following domain declaration defines a 2D rectangular domain
-// called ``ProbSpace``, which is the same size and shape as ``B`` was
-// above.
+// called ``ProbSpace``, which has the same size, shape, and index set
+// as ``B`` above.
 //
 
 const ProbSpace = {1..n, 1..n};
@@ -162,7 +190,7 @@ const ProbSpace = {1..n, 1..n};
 // we will never change the set of indices it represents.  Besides
 // indicating the programmer's intent, this can enable key compiler
 // optimizations, so is recommended whenever a domain's index set is
-// known to be unchanging.
+// known to be invariant.
 //
 
 //
@@ -179,14 +207,26 @@ forall (i,j) in ProbSpace do
 writeln("After assigning C, its value is:\n", C, "\n");
 
 //
-// When indexing over a multidimensional domain, the indices can be
+// An array need not be accessed using indices from the domain that
+// was used to declare it.  For example, the following loop indexes
+// into ``B`` using indices from ``ProbSpace`` even though there is no
+// direct relationship between ``B`` and ``ProbSpace``.
+//
+
+for (i,j) in ProbSpace do
+  B[i,j] = i + j/10.0;
+
+writeln("B has been re-assigned to:\n", B, "\n");
+
+//
+// When iterating over a multidimensional domain, the indices can be
 // expressed using a single tuple variable rather than destructuring
 // the tuple into its integer components.  Similarly, multidimensional
-// array accesses can be expressed using tuple indices rather than
+// array accesses can be written using tuple indices rather than
 // multiple integer arguments.  In the following example, the index
-// variable ``ij`` stores a 2-tuple of integers (``2*int`` in Chapel).
-// Note the use of tuple indexing to tease the individual components
-// of out of the 2-tuple ``ij``.
+// variable ``ij`` stores a 2-tuple of integers (``2*int`` or ``(int,
+// int)``).  Note the use of tuple indexing to access the individual
+// components of the 2-tuple ``ij``.
 //
 
 for ij in ProbSpace do
@@ -194,6 +234,14 @@ for ij in ProbSpace do
 
 writeln("After assigning D, its value is:\n", D, "\n");
 
+//
+// For further information on domains, see the :ref:`Domain Primer
+// <primers-domains>`.
+//
+
+
+// Whole-Array Assignment
+// ----------------------
 
 //
 // Arrays of similar size and shape support whole-array assignment.
@@ -209,24 +257,9 @@ writeln("After assigning C to E, E's value is:\n", E, "\n");
 // element of the array:
 //
 
-B = 0.0;
+E = true;
 
-writeln("After being reset, B is:\n", B, "\n");
-
-//
-// An array need not be indexed using the domain that was used to
-// declare it, though doing so presents the compiler with
-// opportunities to optimize bounds checks away.  In the following
-// loop, there is no known relation between ``B`` and ``ProbSpace``, so
-// bounds checks are harder to prove away (since it requires symbolic
-// analysis of the definitions of the two domains and the invariance
-// of their bounds).
-//
-
-for (i,j) in ProbSpace do
-  B[i,j] = i + j/10.0;
-
-writeln("B has been re-initialized to:\n", B, "\n");
+writeln("After being assigned 'true', E is:\n", E, "\n");
 
 //
 // Whole-array assignment can also be used for arrays or sub-arrays
@@ -239,6 +272,10 @@ var F, G: [ProbSpace] real;
 F[2..n-1, 2..n-1] = B[1..n-2, 3..n];
 
 writeln("After assigning a slice of B to a slice of F, F's value is:\n", F, "\n");
+
+
+// More on Slicing
+// ---------------
 
 //
 // Arrays can also be sliced using unbounded ranges in which either
@@ -257,7 +294,7 @@ writeln("After assigning a slice of B to G, G's value is:\n", G, "\n");
 // Array slicing supports rank-change semantics when sliced using a
 // scalar value rather than a range.  In the following assignment,
 // recall that ``A`` was our initial 1-dimensional array.  The slice
-// of ``B`` takes all columns of row ``n/2`` and treats it as a 1D array.
+// of ``B`` takes all columns of row ``n/2``, treating it as a 1D array.
 //
 
 A = B[n/2, ..];
@@ -283,27 +320,9 @@ const ProbSpaceSlice = ProbSpace[0..n+1, 3..];
 
 writeln("B[ProbSpaceSlice] is:\n", B[ProbSpaceSlice], "\n");
 
-//
-// Forall loops over domains and arrays can be written using the
-// syntax ``[<ind> in <Dom>] ...`` which is shorthand for
-// ``forall <ind> in <Dom> do ...`` Forall loops are discussed
-// in the :ref:`foralls primer (forallLoops.chpl)<primers-forallLoops>`.
-//
 
-const offset = (1,1);  // a 2-tuple offset
-
-[ij in ProbSpace[2..n-1, 2..n-1]] F[ij] = B[ij + offset];
-
-writeln("After assigning F a shifted slice of B, it is:\n", F, "\n");
-
-[b in B] b = -b;
-
-writeln("After negating B, it is:\n", B, "\n");
-
-//
-// Note that this loop shorthand resembles the array type definition
-// in a variable declaration.
-//
+// Resizing Arrays
+// ---------------
 
 //
 // Another advantage to declaring named domain variables is that their
@@ -330,7 +349,7 @@ VarDom = {1..2*n};
 writeln("After doubling VarDom, VarArr = ", VarArr, "\n");
 
 //
-// As mentioned before, this reallocation preserves values according
+// As mentioned, this reallocation preserves values according
 // to index, so if we extend the lower bound of the domain, the
 // non-zero values will still logically be associated with indices
 // ``1..n``:
@@ -358,14 +377,14 @@ VarDom = {1..0};  // empty the array such that no values need to be preserved
 
 writeln("VarArr is now empty: ", VarArr, "\n");
 
-VarDom = {1..n};  // assign the new size
+VarDom = {1..n};  // re-assign the domain to establish the new indices
 
 writeln("VarArr should now be reset: ", VarArr, "\n");
 
 // Note that querying an array's domain via the ``.domain`` method or
-// the function argument query syntax does not result in a domain
-// expression that can be reassigned since those forms return a
-// ``const ref`` to the domain.  In particular, we cannot do:
+// the function argument query syntax does not result in a domain that
+// can be reassigned since those forms return a ``const ref``.  In
+// particular, we cannot do:
 //
 //   ``B.domain = {1..2*n, 1..2*n};``
 //
@@ -382,6 +401,9 @@ writeln("VarArr should now be reset: ", VarArr, "\n");
 // declarations ``A`` and ``B``, we have no way of reallocating them.
 // Arrays with constant domains provide the compiler with optimization
 // benefits, so this design supports a common case efficiently.
+
+// Array Fields / Storing Arrays in Objects
+// ----------------------------------------
 
 //
 // A record with an array field whose size is not known until
@@ -421,9 +443,13 @@ writeln("New size of r: ", r.Arr.size);
 // different array size.
 
 //
-// Note: further information on records can be found in the
-// :ref:`Records Primer <primers-records>`
+// Further information on records can be found in the :ref:`Records
+// Primer <primers-records>`
 //
+
+
+// Arrays of Arrays
+// ----------------
 
 //
 // Arrays in Chapel can have arbitrary element types, such as numeric
@@ -457,9 +483,3 @@ writeln("Y is:\n", Y);
    array elements in records, as shown above.
 
 */
-
-//
-// For further information, see the :ref:`Domain Primer <primers-domains>`
-// and other array primers: :ref:`Sparse <primers-sparse>`,
-// :ref:`Associative <primers-associative>`.
-//
