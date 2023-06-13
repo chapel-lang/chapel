@@ -194,40 +194,65 @@ CHPL_*_COMPILER
         pgi                 The PGI compiler suite -- pgcc and pgc++
         =================== ===================================================
 
-   The default for ``CHPL_HOST_COMPILER`` depends on the value of the
-   corresponding ``CHPL_HOST_PLATFORM`` environment variable:
+   The default value for ``CHPL_HOST_COMPILER`` is:
 
-        +----------------+----------------------------------------------+
-        | Host Platform  | Compiler                                     |
-        +================+==============================================+
-        | hpe-cray-ex    |                                              |
-        |                | gnu                                          |
-        | cray-xc        |                                              |
-        +----------------+----------------------------------------------+
-        | darwin         |                                              |
-        |                | clang if available, otherwise gnu            |
-        | freebsd        |                                              |
-        +----------------+----------------------------------------------+
-        | pwr6           | ibm                                          |
-        +----------------+----------------------------------------------+
-        | other          | gnu                                          |
-        +----------------+----------------------------------------------+
+     * inferred from ``CHPL_HOST_CC`` and ``CHPL_HOST_CXX`` if those are
+       provided (see :ref:`readme-chplenv.CHPL_CC`)
+
+     * otherwise, inferred from ``CC`` and ``CXX`` if those are provided
+       and none of the ``CHPL_*_CC`` / ``CHPL_*_CXX`` variables are set
+       (see :ref:`readme-chplenv.CHPL_CC`)
+
+     * otherwise, a default based on the value of ``CHPL_HOST_PLATFORM``:
+
+        +---------------------+----------------------------------------------+
+        | CHPL_HOST_PLATFORM  | Compiler                                     |
+        +=====================+==============================================+
+        | hpe-cray-ex         |                                              |
+        |                     | gnu                                          |
+        | cray-xc             |                                              |
+        +---------------------+----------------------------------------------+
+        | darwin              |                                              |
+        |                     | clang if available, otherwise gnu            |
+        | freebsd             |                                              |
+        +---------------------+----------------------------------------------+
+        | pwr6                | ibm                                          |
+        +---------------------+----------------------------------------------+
+        | other               | gnu                                          |
+        +---------------------+----------------------------------------------+
 
    The default for ``CHPL_TARGET_COMPILER`` is:
 
      * ``llvm`` if the compiler is configured with LLVM support (see
        :ref:`readme-chplenv.CHPL_LLVM`)
-     * ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and ``hpe-cray-ex``
-       platforms (where ``PE_ENV`` is set by ``PrgEnv-*`` modules)
-     * ``CHPL_HOST_COMPILER`` if the host and target platforms are the
-       same
-     * ``gnu`` otherwise.
+
+     * otherwise, ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and
+       ``hpe-cray-ex`` platforms (where ``PE_ENV`` is set by ``PrgEnv-*``
+       modules)
+
+     * otherwise, inferred from ``CHPL_TARGET_CC`` and
+       ``CHPL_TARGET_CXX`` if those are provided (see
+       :ref:`readme-chplenv.CHPL_CC`)
+
+     * otherwise, inferred from ``CC`` and ``CXX``  if those are provided
+       and none of the ``CHPL_*_CC`` / ``CHPL_*_CXX`` variables are set
+       (see :ref:`readme-chplenv.CHPL_CC`)
+
+     * otherwise, ``CHPL_HOST_COMPILER`` if the host and target platforms
+       are the same
+
+     * otherwise, ``gnu``.
 
    In cases where the LLVM code generation strategy is the default,
    setting ``CHPL_TARGET_COMPILER`` to something other than ``llvm`` will
    request that the C backend be used with that compiler. For example, to
    select the C backend with the PrgEnv-gnu compiler, set
    ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
+
+.. _readme-chplenv.CHPL_CC:
+
+CC and Similar
+~~~~~~~~~~~~~~
 
    It is sometimes important to be able to provide a particular command
    to run for C or C++ compilation. The following variables are available
@@ -236,31 +261,33 @@ CHPL_*_COMPILER
         =============== =======================================================
         Variable        Description
         =============== =======================================================
-        CC              indicates the C compiler to use (but see note below)
-        CXX             indicates the CXX compiler to use (but see note below)
+        CC              indicates the C compiler to use
+        CXX             indicates the CXX compiler to use
         CHPL_HOST_CC    indicates the C compiler for building ``chpl`` itself
         CHPL_HOST_CXX   indicates the C++ compiler for building ``chpl`` itself
         CHPL_TARGET_CC  indicates the C compiler used by ``chpl``
         CHPL_TARGET_CXX indicates the C++ compiler used by ``chpl``
         =============== =======================================================
 
-   .. note::
+   In normal usage, both the C and C++ variants of these should be
+   provided (e.g. ``CC`` and ``CXX`` would both be set).
 
-     If the ``CC`` and ``CXX`` variables are set, the other variables in
-     the above table can be inferred. When these variables are used, the
-     following variables can be inferred from them:
+   The compiler family settings ``CHPL_HOST_COMPILER`` and
+   ``CHPL_TARGET_COMPILER`` can be inferred from these ``*CC`` ``*CXX``
+   variables in some cases as described in
+   :ref:`readme-chplenv.CHPL_COMPILER`. To infer a compiler family from a
+   a path to a compiler, the configuration looks to recognize an
+   executable name normally used with that compiler. For example,
+   the ``gnu`` family normally uses ``gcc`` for C code and ``g++`` for
+   C++ code. This inference process ignores the directory as well as any
+   suffix following ``-`` or ``.`` and so the ``gnu`` family can be
+   inferred from ``/path/to/gcc-10``, for example.
 
-       * ``CHPL_HOST_COMPILER``, ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``
-       * ``CHPL_TARGET_COMPILER``, ``CHPL_TARGET_CC``, ``CHPL_TARGET_CXX``
-
-     However:
-
-       * Setting any of these inferred variables will disable the
-         inference for all of them
-       * The ``*TARGET*`` variables above are not inferred from ``CC`` /
-         ``CXX`` when ``CHPL_TARGET_COMPILER=llvm`` or when working with
-         a PrgEnv compiler.
-
+   Please note that setting ``CC`` and ``CXX`` or ``CHPL_TARGET_CC`` and
+   ``CHPL_TARGET_CXX`` will not change the target compiler used when the
+   LLVM backend is in use or when working with a PrgEnv compiler. In
+   these cases, it is necessary to also set ``CHPL_TARGET_COMPILER`` in
+   order for the ``CC`` / ``CHPL_TARGET_CC`` variables to take effect.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
