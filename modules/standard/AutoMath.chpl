@@ -43,6 +43,71 @@ handling in the AutoMath module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+.. _automath-roots:
+
+Roots
+-----
+:proc:`cbrt`
+:proc:`sqrt`
+
+.. _automath-rounding:
+
+Rounding
+--------
+:proc:`ceil`
+:proc:`divceil`
+:proc:`divceilpos`
+:proc:`divfloor`
+:proc:`divfloorpos`
+:proc:`floor`
+:proc:`nearbyint`
+:proc:`rint`
+:proc:`round`
+:proc:`trunc`
+
+.. _automath-complex:
+
+Computations Involving Complex Numbers
+--------------------------------------
+:proc:`carg`
+:proc:`conjg`
+:proc:`cproj`
+
+.. _automath-inf-nan:
+
+Infinity and NaN
+----------------
+:var:`INFINITY`
+:var:`NAN`
+:proc:`isfinite`
+:proc:`isinf`
+:proc:`isnan`
+
+.. _automath-comparison:
+
+Comparison Functions
+--------------------
+:proc:`max`
+:proc:`min`
+:proc:`isclose`
+
+.. _automath-sign:
+
+Sign Functions
+--------------
+:proc:`sgn`
+:proc:`signbit`
+
+.. _automath-other:
+
+Remaining Functions
+-------------------
+:proc:`abs`
+:proc:`mod`
+
+Constant and Function Definitions
+---------------------------------
+
 */
 pragma "module included by default"
 module AutoMath {
