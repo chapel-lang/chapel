@@ -443,7 +443,13 @@ module Yaml {
     this.context.enter();
 
     if !this.context.inSuperClass {
-      var nb = if name.size > 0 then b"!" + name: bytes else b"";
+      // libyaml does not accept spaces in type names (e.g., "borrowed myClass")
+      var n = "";
+      if name.count(" ") > 0
+        then n = name.replace(" ", "_");
+        else n = name;
+
+      var nb = if n.size > 0 then b"!" + n: bytes else b"";
       this.emitter.startMapping(nb);
     }
   }
@@ -563,6 +569,7 @@ module Yaml {
   @chpldoc.nodoc
   proc YamlDeserializer._startMapping(reader: yamlReader, name: string) throws {
     // TODO: extract the type name from the document/mapping start and do type checking
+    //   (ensure that underscores in the type name are replaced with spaces before type-check)
 
     // start a document if we're in the base context
     if this.context.isBase
