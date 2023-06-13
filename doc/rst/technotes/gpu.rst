@@ -209,8 +209,8 @@ Multi-Locale Support
 
 As of Chapel 1.27.0 the GPU locale model may be used alongside communication
 layers (values of ``CHPL_COMM``) other than ``none``. This enables programs to
-use GPUs across nodes.  We have only tested multi-locale support with NVIDIA
-GPUs although we intend to support it with AMD GPUs in a future release.
+use GPUs across nodes. We have tested multi-locale support with both NVIDIA and
+AMD GPUs.
 
 In this mode, normal remote access is supported outside of loops that are
 offloaded to the GPU; however, remote access within a kernel is not supported.
@@ -328,8 +328,6 @@ improvements in the future.
 * Intel GPUs are not supported, yet.
 
 * For AMD GPUs:
-
-    * Can only be used with local builds (i.e., CHPL_COMM=none)
 
     * Certain 64-bit math functions are unsupported. To see what does
       and doesn't work see `this test
