@@ -422,11 +422,14 @@ def is_system_clang_version_ok(clang_command):
     clang_version_out = get_clang_version(clang_command)
     return clang_version_out != None and llvm_version in clang_version_out
 
-# given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
-# to use. Checks that the clang version matches the version of llvm-config in
-# use. Returns '' if no acceptable system clang was found.
+# Given a lang argument of 'c' or 'c++'/'cxx', returns the value to use for
+# CHPL_LLVM_CLANG_C / CHPL_LLVM_CLANG_CXX when considering overrides for these
+# variables as well as for CHPL_TARGET_CC / CHPL_TARGET_CXX.
+# Returns a list where the 1st value is the command and additional values
+# are arguments to use.
+# Returns None if no override was present.
 @memoize
-def get_system_llvm_clang(lang):
+def get_overriden_llvm_clang(lang):
     lang_upper = lang.upper()
     if lang_upper == 'C++':
         lang_upper = 'CXX'
@@ -435,23 +438,34 @@ def get_system_llvm_clang(lang):
     # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX
     tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
     if lang_upper == 'C':
-        llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C', '')
-        if llvm_clang_c != '':
-            return llvm_clang_c
+        llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
+        if llvm_clang_c:
+            return llvm_clang_c.split()
         if tgt_llvm:
-            target_cc = overrides.get('CHPL_TARGET_CC', '')
-            if target_cc != '':
-                return target_cc
+            target_cc = overrides.get('CHPL_TARGET_CC')
+            if target_cc:
+                return target_cc.split()
     elif lang_upper == 'CXX':
-        llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX', '')
-        if llvm_clang_cxx != '':
-            return llvm_clang_cxx
+        llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX')
+        if llvm_clang_cxx:
+            return llvm_clang_cxx.split()
         if tgt_llvm:
-            target_cc = overrides.get('CHPL_TARGET_CXX', '')
-            if target_cc != '':
+            target_cc = overrides.get('CHPL_TARGET_CXX')
+            if target_cc:
                 return target_cc
     else:
         error('unknown lang value {}'.format(lang))
+
+    return None
+
+# given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
+# to use. Checks that the clang version matches the version of llvm-config in
+# use. Returns '' if no acceptable system clang was found.
+@memoize
+def get_system_llvm_clang(lang):
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided[0]
 
     # Otherwise, look for an acceptable clang in the
     # llvm-config --bindir and in PATH.
@@ -493,6 +507,11 @@ def get_system_llvm_clang(lang):
 # then necessary arguments
 @memoize
 def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
 
     clang = None
     llvm_val = get()
