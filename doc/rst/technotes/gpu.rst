@@ -233,6 +233,34 @@ For more examples see the tests under |multi_locale_dir|_ available from our `pu
 .. |multi_locale_dir| replace:: ``test/gpu/native/multiLocale``
 .. _multi_locale_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/multiLocale
 
+Device-to-Device Communication Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel supports direct communication between interconnected GPUs. The supported
+connection types are dictated by the GPU vendor; PCIe and NVLink (on NVIDIA
+GPUs) are known to work.
+
+This feature is disabled by default; it can be enabled by
+setting the ``enableGpuP2P`` configuration constant using the compiler
+flag ``-senableGpuP2P=true``. The following example demonstrates using
+Device-to-Device communication to send data between two GPUs:
+
+.. code-block:: chapel
+
+  var dev1 = here.gpus[0],
+      dev2 = here.gpus[1];
+  on dev1 {
+    var dev1Data: [0..#1024] int;
+    on dev2 {
+      var dev2Data: [0..#1024] int;
+      dev2Data = dev1Data;
+    }
+  }
+
+Notice that in this example, the GPU locales were stored into variables
+``dev1`` and ``dev2``. Writing ``on here.gpus[1]`` in the second ``on`` statement
+directly would not be correct, since neither GPU locale has GPU sublocales of
+its own.
+
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
 
