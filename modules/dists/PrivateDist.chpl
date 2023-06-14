@@ -69,13 +69,13 @@ between locales.
 */
 class Private: BaseDist {
   override proc dsiNewRectangularDom(param rank: int, type idxType,
-                                     param stridable: bool, inds) {
+                                     param strides: strideKind, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
 
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=_to_unmanaged(this));
   }
 
@@ -116,7 +116,7 @@ class PrivateDom: BaseRectangularDom {
   proc dsiBuildArray(type eltType, param initElts:bool) {
     return new unmanaged PrivateArr(eltType=eltType, rank=rank,
                                     idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dom=_to_unmanaged(this),
                                     initElts=initElts);
   }
@@ -151,7 +151,7 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged PrivateDom(rank=rank, idxType=idxType,
-                                    stridable=stridable,
+                                    strides=strides,
                                     dist=dist);
   }
 
@@ -170,7 +170,7 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 
 class PrivateArr: BaseRectangularArr {
 
-  var dom: unmanaged PrivateDom(rank, idxType, stridable);
+  var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately
   // always destroyed explicitly (to control deiniting elts)
@@ -183,11 +183,11 @@ class PrivateArr: BaseRectangularArr {
   proc init(type eltType,
             param rank,
             type idxType,
-            param stridable,
-            dom: unmanaged PrivateDom(rank, idxType, stridable),
+            param strides,
+            dom: unmanaged PrivateDom(rank, idxType, strides),
             param initElts: bool) {
     super.init(eltType=eltType, rank=rank, idxType=idxType,
-               stridable=stridable);
+               strides=strides);
     this.dom = dom;
     // this.data not initialized
     this.isPrivatizedCopy = false;
@@ -204,7 +204,7 @@ class PrivateArr: BaseRectangularArr {
     var privdom = chpl_getPrivatizedCopy(toPrivatize.dom.type,
                                          toPrivatize.dom.pid);
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
-               idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
+               idxType=toPrivatize.idxType, strides=toPrivatize.strides);
     this.dom = privdom;
     // this.data not initialized
     this.isPrivatizedCopy = true;

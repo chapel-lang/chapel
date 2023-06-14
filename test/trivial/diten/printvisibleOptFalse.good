@@ -1,10 +1,10 @@
 printvisibleOptFalse.chpl:3: Printing symbols visible from here:
-  modules/minimal/internal/ChapelLocale.chpl:27: chpl_sublocID_t
-  modules/minimal/internal/ChapelLocale.chpl:35: chpl_localeModel_sublocToExecutionSubloc
-  modules/minimal/internal/ChapelLocale.chpl:41: chpl_localeModel_sublocMerge
-  modules/minimal/internal/ChapelLocale.chpl:53: chpl_taskRunningCntInc
-  modules/minimal/internal/ChapelLocale.chpl:58: chpl_taskRunningCntDec
-  modules/minimal/internal/ChapelLocale.chpl:62: chpl_taskRunningCntReset
+  modules/minimal/internal/ChapelLocale.chpl:26: chpl_sublocID_t
+  modules/minimal/internal/ChapelLocale.chpl:34: chpl_localeModel_sublocToExecutionSubloc
+  modules/minimal/internal/ChapelLocale.chpl:40: chpl_localeModel_sublocMerge
+  modules/minimal/internal/ChapelLocale.chpl:52: chpl_taskRunningCntInc
+  modules/minimal/internal/ChapelLocale.chpl:57: chpl_taskRunningCntDec
+  modules/minimal/internal/ChapelLocale.chpl:61: chpl_taskRunningCntReset
   modules/minimal/internal/ChapelTaskData.chpl:24: chpl_task_setCommDiagsTemporarilyDisabled
   modules/minimal/internal/ChapelTaskData.chpl:28: chpl_task_getCommDiagsTemporarilyDisabled
   modules/minimal/internal/ChapelTaskTable.chpl:26: chpldev_taskTable_init

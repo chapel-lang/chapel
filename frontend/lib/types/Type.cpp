@@ -115,6 +115,9 @@ void Type::gatherBuiltins(Context* context,
   auto stringType = CompositeType::getStringType(context);
   gatherType(context, map, "string", stringType);
   gatherType(context, map, "_string", stringType);
+  auto localeType = CompositeType::getLocaleType(context);
+  gatherType(context, map, "locale", localeType);
+  gatherType(context, map, "_locale", localeType);
 
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 

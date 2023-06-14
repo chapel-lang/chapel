@@ -310,10 +310,14 @@ static void populateScopeWithBuiltinKeywords(Context* context, Scope* scope) {
 }
 
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
 
-  for (const auto& pair : map) {
+  for (const auto& pair : typeMap) {
+    scope->addBuiltin(pair.first);
+  }
+  for (const auto& pair : globalMap) {
     scope->addBuiltin(pair.first);
   }
 

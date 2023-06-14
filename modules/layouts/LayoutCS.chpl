@@ -84,7 +84,7 @@ class CS: BaseDist {
   param sortedIndices: bool = LayoutCSDefaultToSorted;
 
   override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
-    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.stridable, _to_unmanaged(this), dom);
+    return new unmanaged CSDom(rank, idxType, this.compressRows, this.sortedIndices, dom.strides, _to_unmanaged(this), dom);
   }
 
   proc dsiClone() {
@@ -108,11 +108,11 @@ class CS: BaseDist {
 class CSDom: BaseSparseDomImpl {
   param compressRows;
   param sortedIndices;
-  param stridable;
+  param strides;
   var dist: unmanaged CS(compressRows,sortedIndices);
 
-  var rowRange: range(idxType, stridable=stridable);
-  var colRange: range(idxType, stridable=stridable);
+  var rowRange: range(idxType, strides=strides);
+  var colRange: range(idxType, strides=strides);
 
   /* (row|col) startIdxDom */
   var startIdxDom: domain(1, idxType);
@@ -127,7 +127,7 @@ class CSDom: BaseSparseDomImpl {
   var idx: [nnzDom] idxType;      // would like index(parentDom.dim(0))
 
   /* Initializer */
-  proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
+  proc init(param rank, type idxType, param compressRows, param sortedIndices, param strides, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
     if (rank != 2 || parentDom.rank != 2) then
       compilerError("Only 2D sparse domains are supported by the CS distribution");
     if parentDom.idxType != idxType then
@@ -137,7 +137,7 @@ class CSDom: BaseSparseDomImpl {
 
     this.compressRows = compressRows;
     this.sortedIndices = sortedIndices;
-    this.stridable = stridable;
+    this.strides      = strides;
 
     this.dist = dist;
     rowRange = parentDom.dim(0);

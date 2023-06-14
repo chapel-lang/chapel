@@ -1,0 +1,5 @@
+generic-field-init.chpl:16: In function 'main':
+generic-field-init.chpl:23: error: unresolved call 'G.init(type int(64), fileReader(dynamic,true,DefaultDeserializer))'
+generic-field-init.chpl:4: note: this candidate did not match: G.init(x)
+generic-field-init.chpl:23: note: because call includes 2 arguments
+generic-field-init.chpl:4: note: but function can only accept 1 argument

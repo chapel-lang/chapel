@@ -208,6 +208,7 @@ module CommDiagnostics
      and forth between the two.  This first definition duplicates the
      one in the comm layer(s).
    */
+  pragma "chpldoc ignore chpl prefix"
   extern record chpl_commDiagnostics {
     /*
       blocking GETs, in which initiator waits for completion

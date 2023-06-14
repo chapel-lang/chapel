@@ -124,6 +124,7 @@ struct Visitor {
   void checkFormalsForTypeOrParamProcs(const Function* node);
   void checkNoReceiverClauseOnPrimaryMethod(const Function* node);
   void checkLambdaReturnIntent(const Function* node);
+  void checkConstReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
   void checkGenericArrayTypeUsage(const BracketLoop* node);
@@ -133,6 +134,8 @@ struct Visitor {
   void checkAttributeUsedParens(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkExternBlockAtModuleScope(const ExternBlock* node);
+  void checkLambdaDeprecated(const Function* node);
+
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -780,6 +783,12 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   }
 }
 
+void Visitor::checkLambdaDeprecated(const Function* node) {
+  if (node->kind() != Function::LAMBDA) return;
+  warn(node, "'lambda' syntax is deprecated, please construct anonymous "
+             "procedures using the 'proc' keyword instead");
+}
+
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
@@ -787,7 +796,7 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
   switch (node->returnIntent()) {
     case Function::CONST_REF:
     case Function::REF:
-      disallowedReturnType = "ref";
+      disallowedReturnType = "[const] ref";
       break;
     case Function::PARAM:
       disallowedReturnType = "param";
@@ -799,9 +808,16 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
       break;
   }
   if (disallowedReturnType) {
-    error(node, "'%s' return types are not allowed in lambdas.",
+    error(node, "'%s' return intent is not allowed in lambdas.",
           disallowedReturnType);
   }
+}
+
+void Visitor::checkConstReturnIntent(const Function* node) {
+  if (node->returnIntent() != Function::CONST) return;
+  if (!shouldEmitUnstableWarning(node)) return;
+  warn(node, "'const' return intent is unstable and may work differently"
+             " in the future");
 }
 
 void
@@ -1120,7 +1136,7 @@ void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
     }
   }
   // don't check if warn_unstable isn't set
-  if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
+  if (!shouldEmitUnstableWarning(node)) return;
 
   // don't warn if the only pragma is 'no doc', which is deprecated
   bool noDocIsOnlyPragma = (pragmaNoDocFound && pragmaCount == 1);
@@ -1223,7 +1239,9 @@ void Visitor::visit(const Function* node) {
   checkOverrideNonMethod(node);
   checkFormalsForTypeOrParamProcs(node);
   checkNoReceiverClauseOnPrimaryMethod(node);
+  checkLambdaDeprecated(node);
   checkLambdaReturnIntent(node);
+  checkConstReturnIntent(node);
   checkProcDefFormalsAreNamed(node);
 }
 

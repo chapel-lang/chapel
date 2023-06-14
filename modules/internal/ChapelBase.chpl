@@ -61,21 +61,10 @@ module ChapelBase {
   pragma "no object"
   class _object { }
 
-  proc object.encodeTo(f) throws {
-    ref fmt = f.formatter;
-    fmt.writeTypeStart(f, object);
-    fmt.writeTypeEnd(f, object);
-  }
-
+  @deprecated(notes="the 'object' abstract root class has been deprecated; please use 'RootClass' instead")
+  class object { }
 
   enum iterKind {leader, follower, standalone};
-
-  // This is a compatibility flag to maintain old behavior for applications
-  // that rely on it (e.g., Arkouda). The tests for new features will run
-  // with this set to FALSE. At a certain point the old behavior will be
-  // deprecated, and this flag will be removed.
-  // TODO: Move to a separate module if we add closure stuff to module code.
-  config param fcfsUseLegacyBehavior = true;
 
   // This flag toggles on the new pointer-based implementation.
   // It is unstable and experimental.
@@ -154,7 +143,7 @@ module ChapelBase {
 
   inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
-  inline operator ==(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_eq", a, b);
+  inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -185,7 +174,7 @@ module ChapelBase {
 
   inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
-  inline operator !=(a: borrowed object?, b: borrowed object?) do return __primitive("ptr_neq", a, b);
+  inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }
@@ -1300,7 +1289,7 @@ module ChapelBase {
       return x != 0:x.type;
     } else if t == strideKind {
       // to support deprecation by Vass in 1.31 to implement #17131
-//RSDW:  compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
+      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
       return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
@@ -1314,7 +1303,7 @@ module ChapelBase {
     } else if isSubtype(t, single(?)) {
       compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
       return _cond_test(x.readFF());
-    } else if isCoercible(t, borrowed object?) {
+    } else if isCoercible(t, borrowed RootClass?) {
       return x != nil;
     } else if isCoercible(t, bool) {
       return x;
@@ -1336,7 +1325,7 @@ module ChapelBase {
     }
   }
 
-  proc _cond_invalid(x: borrowed object?) param do return false;
+  proc _cond_invalid(x: borrowed RootClass?) param do return false;
   proc _cond_invalid(x: bool) param do return false;
   proc _cond_invalid(x: int) param do return false;
   proc _cond_invalid(x: uint) param do return false;
@@ -1514,10 +1503,8 @@ module ChapelBase {
   // chpl_mem_descInt_t is really a well known compiler type since the compiler
   // emits calls for the chpl_mem_descs table. Maybe the compiler should just
   // create the type and export it to the runtime?
-  @chpldoc.nodoc
   extern type chpl_mem_descInt_t = int(16);
 
-  @chpldoc.nodoc
   enum chpl_ddataResizePolicy { normalInit, skipInit, skipInitButClearMem }
 
   // dynamic data block class
@@ -2165,19 +2152,41 @@ module ChapelBase {
   }
 
   // casting to unmanaged?, no class downcast
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
   }
+  inline operator :(x:unmanaged class?, type t:unmanaged class?)
+    where isSubtype(_to_unmanaged(x.type),t)
+  {
+    return __primitive("cast", t, x);
+  }
+
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
+    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+  {
+    return __primitive("cast", t, x);
+  }
+  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     return __primitive("cast", t, x);
   }
 
   // casting to unmanaged, no class downcast
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class)
+    where isSubtype(_to_unmanaged(x.type),t)
+  {
+    return __primitive("cast", t, x);
+  }
+  inline operator :(x:unmanaged class, type t:unmanaged class)
     where isSubtype(_to_unmanaged(x.type),t)
   {
     return __primitive("cast", t, x);
@@ -2205,7 +2214,17 @@ module ChapelBase {
   }
 
   // casting away nilability, no class downcast
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class)  throws
+    where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
+  {
+    if x == nil {
+      throw new owned NilClassError();
+    }
+    return __primitive("cast", t, x);
+  }
+  inline operator :(x:unmanaged class?, type t:unmanaged class)  throws
     where isSubtype(_to_nonnil(_to_unmanaged(x.type)),t)
   {
     if x == nil {
@@ -2242,7 +2261,22 @@ module ChapelBase {
 
 
   // this version handles downcast to non-nil unmanaged
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class) throws
+    where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
+  {
+    if x == nil {
+      throw new owned NilClassError();
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
+    if tmp == nil {
+      throw new owned ClassCastError();
+    }
+
+    return _to_nonnil(_to_unmanaged(tmp));
+  }
+  inline operator :(x:unmanaged class?, type t:unmanaged class) throws
     where isProperSubtype(t,_to_nonnil(_to_unmanaged(x.type)))
   {
     if x == nil {
@@ -2257,7 +2291,18 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class?, type t:unmanaged class?)
+    where isProperSubtype(t,_to_unmanaged(x.type))
+  {
+    if x == nil {
+      return nil;
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
+    return _to_nilable(_to_unmanaged(tmp));
+  }
+  inline operator :(x:unmanaged class?, type t:unmanaged class?)
     where isProperSubtype(t,_to_unmanaged(x.type))
   {
     if x == nil {
@@ -2268,7 +2313,18 @@ module ChapelBase {
   }
 
   // this version handles downcast to nilable unmanaged
+  pragma "last resort"
+  @deprecated("casting from a managed class to an 'unmanaged?' is deprecated")
   inline operator :(x:borrowed class, type t:unmanaged class?)
+    where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
+  {
+    if x == nil {
+      return nil;
+    }
+    var tmp = __primitive("dynamic_cast", t, x);
+    return _to_nilable(_to_unmanaged(tmp));
+  }
+  inline operator :(x:unmanaged class, type t:unmanaged class?)
     where isProperSubtype(_to_nonnil(_to_borrowed(t)),x.type)
   {
     if x == nil {
@@ -2404,7 +2460,7 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: borrowed object) { }
+  inline proc chpl__autoDestroy(x: borrowed RootClass) { }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -2448,7 +2504,7 @@ module ChapelBase {
   inline proc chpl__tounmanaged(ref arg:Owned) {
     return owned.release(arg);
   }
-  inline proc chpl__tounmanaged(arg) where arg:object {
+  inline proc chpl__tounmanaged(arg) where arg:RootClass {
     return arg;
   }*/
 
@@ -2504,8 +2560,14 @@ module ChapelBase {
   }
 
   // Type functions for representing function types
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func() type { return __primitive("create fn type", void); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type rettype) type { return __primitive("create fn type", rettype); }
+
+  @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")
   inline proc func(type t...?n, type rettype) type { return __primitive("create fn type", (...t), rettype); }
 
   proc isIterator(ic: _iteratorClass) param do return true;

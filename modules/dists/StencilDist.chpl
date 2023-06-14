@@ -279,7 +279,7 @@ class LocStencil {
 //
 // rank:      generic domain rank
 // idxType:   generic domain index type
-// stridable: generic domain stridable parameter
+// strides:   generic domain stridable parameter
 // dist:      reference to distribution class
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
@@ -287,11 +287,12 @@ class LocStencil {
 class StencilDom: BaseRectangularDom {
   param ignoreFluff : bool;
   const dist: unmanaged Stencil(rank, idxType, ignoreFluff);
-  var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType, stridable);
-  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var locDoms: [dist.targetLocDom] unmanaged LocStencilDom(rank, idxType,
+                                                           strides);
+  var whole: domain(rank=rank, idxType=idxType, strides=strides);
   var fluff: rank*idxType;
   var periodic: bool = false;
-  var wholeFluff : domain(rank=rank, idxType=idxType, stridable=stridable);
+  var wholeFluff : domain(rank, idxType, strides);
 }
 
 //
@@ -299,7 +300,7 @@ class StencilDom: BaseRectangularDom {
 //
 // rank: generic domain rank
 // idxType: generic domain index type
-// stridable: generic domain stridable parameter
+// strides: generic domain stridable parameter
 // myBlock: a non-distributed domain that defines the local indices
 //
 // NeighDom will be a rectangular domain where each dimension is the range
@@ -308,12 +309,12 @@ class StencilDom: BaseRectangularDom {
 class LocStencilDom {
   param rank: int;
   type idxType;
-  param stridable: bool;
-  var myBlock, myFluff: domain(rank, idxType, stridable);
+  param strides: strideKind;
+  var myBlock, myFluff: domain(rank, idxType, strides);
   var NeighDom: domain(rank);
   var bufDom : domain(1);
   var recvDest, recvSrc,
-      sendDest, sendSrc: [NeighDom] domain(rank, idxType, stridable);
+      sendDest, sendSrc: [NeighDom] domain(rank, idxType, strides);
   var Neighs: [NeighDom] rank*int;
 }
 
@@ -323,7 +324,7 @@ class LocStencilDom {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // dom: reference to domain class
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
@@ -331,10 +332,11 @@ class LocStencilDom {
 class StencilArr: BaseRectangularArr {
   param ignoreFluff: bool;
   var doRADOpt: bool = defaultDoRADOpt;
-  var dom: unmanaged StencilDom(rank, idxType, stridable, ignoreFluff);
-  var locArr: [dom.dist.targetLocDom] unmanaged LocStencilArr(eltType, rank, idxType, stridable);
+  var dom: unmanaged StencilDom(rank, idxType, strides, ignoreFluff);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocStencilArr(eltType, rank,
+                                                             idxType, strides);
   pragma "local field"
-  var myLocArr: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
+  var myLocArr: unmanaged LocStencilArr(eltType, rank, idxType, strides)?;
   const SENTINEL = max(rank*idxType);
 }
 
@@ -344,7 +346,7 @@ class StencilArr: BaseRectangularArr {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
@@ -352,9 +354,9 @@ class LocStencilArr {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
-  const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
-  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, chpl_strideKind(stridable))?; // non-nil if doRADOpt=true
+  param strides: strideKind;
+  const locDom: unmanaged LocStencilDom(rank, idxType, strides);
+  var locRAD: unmanaged LocRADCache(eltType, rank, idxType, strides)?; // non-nil if doRADOpt=true
   pragma "local field" pragma "unsafe"
   // may be initialized separately
   var myElems: [locDom.myFluff] eltType;
@@ -367,13 +369,13 @@ class LocStencilArr {
   proc init(type eltType,
             param rank: int,
             type idxType,
-            param stridable: bool,
-            const locDom: unmanaged LocStencilDom(rank, idxType, stridable),
+            param strides: strideKind,
+            const locDom: unmanaged LocStencilDom(rank, idxType, strides),
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
-    this.stridable = stridable;
+    this.strides = strides;
     this.locDom = locDom;
     this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
 
@@ -446,7 +448,7 @@ proc Stencil.init(boundingBox: domain,
   this.idxType = idxType;
   this.ignoreFluff = ignoreFluff;
 
-  this.boundingBox = boundingBox : domain(rank, idxType, stridable=false);
+  this.boundingBox = boundingBox : domain(rank, idxType);
   this.fluff = fluff;
 
   // can't have periodic if there's no fluff
@@ -547,23 +549,23 @@ override proc Stencil.dsiDisplayRepresentation() {
 }
 
 override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
-                                           param stridable: bool, inds) {
+                                           param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Stencil domain index type does not match distribution's");
   if rank != this.rank then
     compilerError("Stencil domain rank does not match distribution's");
 
-  const dummyLSD = new unmanaged LocStencilDom(rank, idxType, stridable);
+  const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
   var locDomsTemp: [this.targetLocDom]
-                  unmanaged LocStencilDom(rank, idxType, stridable) = dummyLSD;
+                  unmanaged LocStencilDom(rank, idxType, strides) = dummyLSD;
   coforall localeIdx in this.targetLocDom do
     on this.targetLocales(localeIdx) do
       locDomsTemp(localeIdx) =
-        new unmanaged LocStencilDom(rank, idxType, stridable,
+        new unmanaged LocStencilDom(rank, idxType, strides,
                                     NeighDom=nearestDom(rank));
   delete dummyLSD;
 
-  var dom = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
+  var dom = new unmanaged StencilDom(rank, idxType, strides, ignoreFluff,
              _to_unmanaged(this), locDomsTemp, fluff=fluff, periodic=periodic);
   dom.dsiSetIndices(inds);
 
@@ -795,14 +797,11 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag then
     chpl__testPar("Stencil domain follower invoked on ", followThis);
 
-  var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
+  var t: rank*range(idxType, strides=chpl_strideProduct(strides,
+                                      chpl_strideUnion(followThis)));
   for param i in 0..rank-1 {
     const wholeDim  = whole.dim(i);
     const followDim = followThis(i);
@@ -823,17 +822,17 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
-  const dummyLSD = new unmanaged LocStencilDom(rank, idxType, stridable);
+  const dummyLSD = new unmanaged LocStencilDom(rank, idxType, strides);
   const dummyLSA = new unmanaged LocStencilArr(eltType, rank, idxType,
-                                               stridable, dummyLSD, false);
+                                               strides, dummyLSD, false);
   var locArrTemp: [dom.dist.targetLocDom]
-        unmanaged LocStencilArr(eltType, rank, idxType, stridable) = dummyLSA;
-  var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
+        unmanaged LocStencilArr(eltType, rank, idxType, strides) = dummyLSA;
+  var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, strides)?;
 
   // formerly in StencilArr.setup()
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
-      const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, stridable,
+      const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, strides,
                                               dom.getLocDom(localeIdx),
                                               initElts=initElts);
       locArrTemp(localeIdx) = LSA;
@@ -844,7 +843,7 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   delete dummyLSA, dummyLSD;
 
   var arr = new unmanaged StencilArr(eltType=eltType, rank=rank,
-        idxType=idxType, stridable=stridable, ignoreFluff=this.ignoreFluff,
+        idxType=idxType, strides=strides, ignoreFluff=this.ignoreFluff,
         dom=_to_unmanaged(this), locArr=locArrTemp, myLocArr=myLocArrTemp);
 
   // formerly in StencilArr.setup()
@@ -870,7 +869,7 @@ proc StencilDom.dsiGetIndices() do  return whole.getIndices();
 //proc StencilDom.dsiMember(i) do     return whole.contains(i);
 proc StencilDom.doiToString() do    return whole:string;
 proc StencilDom.dsiSerialWrite(x) { x.write(whole); }
-proc StencilDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+proc StencilDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc StencilDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc StencilDom.dsiMyDist() do                   return dist;
 
@@ -982,14 +981,14 @@ proc StencilDom.setup() {
 
               // TODO: simplify?
               if to(i) < 0 then
-                dr(i) = cur.first - fa .. cur.first-abstr(i);
+                dr(i).chpl_setFields(cur.first - fa, cur.first-abstr(i),
+                                     cur.stride);
               else if to(i) > 0 then
-                dr(i) = cur.last+abstr(i)..cur.last+fa;
+                dr(i).chpl_setFields(cur.last+abstr(i), cur.last+fa,
+                                     cur.stride);
               else
-                dr(i) = cur.first..cur.last;
-
-              if stridable then
-                dr(i) = dr(i) by cur.stride;
+                dr(i).chpl_setFields(cur.first, cur.last,
+                                     cur.stride);
             }
 
             // destination indices in the fluff region
@@ -1113,7 +1112,8 @@ proc StencilArr.setupRADOpt() {
         myLocArr.locRAD = nil;
       }
       if disableStencilLazyRAD {
-        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+        myLocArr.locRAD = new unmanaged LocRADCache(eltType, rank, idxType,
+                                             strides, dom.dist.targetLocDom);
         for l in dom.dist.targetLocDom {
           if l != localeIdx {
             myLocArr.locRAD.RAD(l) = locArr(l).myElems._value.dsiGetRAD();
@@ -1209,7 +1209,8 @@ proc StencilArr.nonLocalAccess(i: rank*idxType) ref {
         if myLocArr.locRAD == nil {
           myLocArr.locRADLock.lock();
           if myLocArr.locRAD == nil {
-            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType, stridable, dom.dist.targetLocDom);
+            var tempLocRAD = new unmanaged LocRADCache(eltType, rank, idxType,
+                                              strides, dom.dist.targetLocDom);
             tempLocRAD.RAD.blk = SENTINEL;
             myLocArr.locRAD = tempLocRAD;
           }
@@ -1298,10 +1299,6 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
 }
 
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param do
-      return if i == rangeTuple.size-1 then rangeTuple(i).stridable
-             else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
-
   if chpl__testParFlag {
     if fast then
       chpl__testPar("Stencil array fast follower invoked on ", followThis);
@@ -1312,7 +1309,8 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   if testFastFollowerOptimization then
     writeln((if fast then "fast" else "regular") + " follower invoked for Stencil array");
 
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable || anyStridable(followThis));
+  var myFollowThis: rank*range(idxType=idxType, strides=chpl_strideProduct(
+                                      strides, chpl_strideUnion(followThis)));
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
@@ -1546,13 +1544,16 @@ proc StencilArr.noFluffView() {
                              dom.dist.dataParTasksPerLocale, dom.dist.dataParIgnoreRunningTasks,
                              dom.dist.dataParMinGranularity, ignoreFluff=true);
   pragma "no auto destroy" var newDist = new _distribution(tempDist);
-  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType, dom.stridable, dom.whole.dims());
+  pragma "no auto destroy" var tempDom = new _domain(newDist, rank, idxType,
+                                                dom.strides, dom.whole.dims());
   newDist._value._free_when_no_doms = true;
 
   var newDom = tempDom._value;
   newDom._free_when_no_arrs = true;
 
-  var alias = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType, stridable=newDom.stridable, dom=newDom, ignoreFluff=true, locArr=locArr, myLocArr=myLocArr);
+  var alias = new unmanaged StencilArr(eltType=eltType, rank=rank,
+                         idxType=idxType, strides=newDom.strides, dom=newDom,
+                         ignoreFluff=true, locArr=locArr, myLocArr=myLocArr);
 
   newDom.add_arr(alias, locking=false);
   return _newArray(alias);
@@ -1711,7 +1712,8 @@ proc StencilArr.updateFluff() {
   }
 }
 
-override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,boundKind.both,stridable))
+override proc StencilArr.dsiReallocate(bounds:rank*range(idxType,
+                                                     boundKind.both, strides))
 {
   //
   // For the default rectangular array, this function changes the data
@@ -1798,10 +1800,10 @@ proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
 
   var locDomsTemp: [privdist.targetLocDom]
-                      unmanaged LocStencilDom(rank, idxType, stridable)
+                      unmanaged LocStencilDom(rank, idxType, strides)
     = locDoms;
 
-  var c = new unmanaged StencilDom(rank, idxType, stridable, ignoreFluff,
+  var c = new unmanaged StencilDom(rank, idxType, strides, ignoreFluff,
             privdist, locDomsTemp, {(...privatizeData(1))}, fluff, periodic);
 
   if c.whole.sizeAs(int) > 0 {
@@ -1841,7 +1843,7 @@ proc type StencilDom.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged StencilDom(rank=this.rank,
                                 idxType=this.idxType,
-                                stridable=this.stridable,
+                                strides=this.strides,
                                 ignoreFluff=this.ignoreFluff),
            data);
 }
@@ -1855,7 +1857,7 @@ proc type StencilArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged StencilArr(rank=this.rank,
                                 idxType=this.idxType,
-                                stridable=this.stridable,
+                                strides=this.strides,
                                 eltType=this.eltType,
                                 ignoreFluff=this.ignoreFluff),
            data);
@@ -1869,16 +1871,16 @@ proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
 
   var locArrTemp: [privdom.dist.targetLocDom]
-        unmanaged LocStencilArr(eltType, rank, idxType, stridable)
+        unmanaged LocStencilArr(eltType, rank, idxType, strides)
     = locArr;
 
-  var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
+  var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, strides)?;
   for localeIdx in privdom.dist.targetLocDom do
     if locArrTemp(localeIdx).locale.id == here.id then
       myLocArrTemp = locArrTemp(localeIdx);
 
   var c = new unmanaged StencilArr(eltType=eltType, rank=rank, idxType=idxType,
-                       stridable=stridable, ignoreFluff=ignoreFluff,
+                       strides=strides, ignoreFluff=ignoreFluff,
                        dom=privdom, locArr=locArrTemp, myLocArr=myLocArrTemp);
   return c;
 }
@@ -1916,7 +1918,7 @@ proc StencilArr.dsiLocalSubdomain(loc: locale) {
     if myLocArr != nil then
       return _to_nonnil(myLocArr).locDom.myBlock;
     // if not, we must not own anything
-    var d: domain(rank, idxType, stridable);
+    var d: domain(rank, idxType, strides);
     return d;
   } else {
     return dom.dsiLocalSubdomain(loc);
@@ -1928,7 +1930,7 @@ proc StencilDom.dsiLocalSubdomain(loc: locale) {
     var inds = chpl__computeBlock(locid, dist.targetLocDom, dist.boundingBox);
     return whole[(...inds)];
   } else {
-    var d: domain(rank, idxType, stridable);
+    var d: domain(rank, idxType, strides);
     return d;
   }
 }

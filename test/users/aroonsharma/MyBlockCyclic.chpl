@@ -211,8 +211,8 @@ proc MyBlockCyclic.getStarts(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
-  var D: domain(rank, idxType, stridable=true);
-  var R: rank*range(idxType, stridable=true);
+  var D: domain(rank, idxType, strides=strideKind.any);
+  var R: rank*range(idxType, strides=strideKind.any);
   for i in 1..rank {
     var lo, hi: idxType;
     const domlo = inds.dim(i).low, 
@@ -290,7 +290,7 @@ class LocMyBlockCyclic {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myStarts: rank*range(idxType, boundKind.low, stridable=true);
+  const myStarts: rank*range(idxType, boundKind.low, strides=strideKind.any);
 
   //
   // Constructor computes what chunk of index(1) is owned by the
@@ -375,7 +375,7 @@ iter MyBlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     coforall core in 0..tasks-1 do
     for i in core..blocksize-1 by tasks {
       var ind=locDom.myStarts.low+i;
-      var retstride: rank*range(idxType, stridable=true);
+      var retstride: rank*range(idxType, strides=strideKind.any);
 //       writeln("whole.low=", whole.low, " whole.dim=", whole.dim(1)); //.size
 //       writeln("pattern size=", locDoms.size);
       //retstride(1) = locDom.myStarts.low+i .. locDom.myStarts.high+i by locDom.myStarts.stride;
@@ -575,7 +575,7 @@ class LocMyBlockCyclicDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myStarts: domain(rank, idxType, stridable=true);
+  var myStarts: domain(rank, idxType, strides=strideKind.any);
   var myFlatInds: domain(1) = {0..#computeFlatInds()};
 }
 
@@ -732,7 +732,7 @@ iter MyBlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 
 //asdf
 iter MyBlockCyclicArr.these(param tag: iterKind, followThis) var where tag == iterKind.follower {
-  var myFollowThis: rank*range(idxType=idxType, stridable=true);
+  var myFollowThis: rank*range(idxType=idxType, strides=strideKind.any);
   var lowIdx: rank*idxType;
 
   for param i in 1..rank {

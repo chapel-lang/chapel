@@ -493,12 +493,14 @@ AstNode* Builder::updateConfig(Variable* var, std::string configName,
   CHPL_ASSERT(!configName.empty());
   // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
   owned<AstNode> initNode = parseDummyNodeForInitExpr(var, configVal);
-  ret = initNode.get();
-  // create a last column value, add 1 for the initial column and 1 for the `=`
-  int lastColumn = configName.length() + configVal.length() + 2;
-  auto loc = Location(ret->id().symbolPath(), 1,1,1,lastColumn);
-  noteChildrenLocations(ret, loc);
-  addOrReplaceInitExpr(var->toVariable(), std::move(initNode));
+  if (initNode) {
+    ret = initNode.get();
+    // create a last column value, add 1 for the initial column and 1 for the `=`
+    int lastColumn = configName.length() + configVal.length() + 2;
+    auto loc = Location(ret->id().symbolPath(), 1,1,1,lastColumn);
+    noteChildrenLocations(ret, loc);
+    addOrReplaceInitExpr(var->toVariable(), std::move(initNode));
+  }
   return ret;
 }
 
@@ -529,6 +531,9 @@ Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
     initNode = std::move(mod->children_[0]->children_.back());
     // clean out the nullptr
     mod->children_[0]->children_.pop_back();
+  } else if (mod->stmt(0)->isErroneousExpression()) {
+    auto loc = Location();
+    context()->error(loc, "Error while trying to set config '%s'", var->name().c_str());
   } else {
     CHPL_ASSERT(false && "should only be an assignment or type initializer");
   }

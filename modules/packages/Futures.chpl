@@ -248,14 +248,12 @@ module Futures {
   } // record Future
 
   pragma "init copy fn"
-  @chpldoc.nodoc
   proc chpl__initCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(x: Future, definedConst: bool) {
     x.acquire();
     return x;

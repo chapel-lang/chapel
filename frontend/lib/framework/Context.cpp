@@ -61,6 +61,7 @@ using namespace chpl::querydetail;
 
 void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(chplHome, other.chplHome);
+  std::swap(compilationGlobals, other.compilationGlobals);
   std::swap(chplEnvOverrides, other.chplEnvOverrides);
   std::swap(tmpDir, other.tmpDir);
   std::swap(keepTmpDir, other.keepTmpDir);

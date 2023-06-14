@@ -1,3 +1,3 @@
 
-var x = new unmanaged object()?!;
+var x = new unmanaged RootClass()?!;
 compilerError(x.type:string);

@@ -40,12 +40,6 @@ class Type;
 namespace fcfs {
 
 /***
-  Determine if the 'fcfsUseLegacyBehavior' config param in the 'ChapelBase'
-  module is set to 'true'. The module must be resolved.
-*/
-bool useLegacyBehavior(void);
-
-/***
   Determine if the 'fcfsUsePointerImplementation' config param in the
   'ChapelBase' module is set to 'true'. The module must be resolved.
 */

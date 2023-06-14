@@ -44,7 +44,7 @@ proc mapAnd(a: map(?keyType, ?valueType, ?),
   return newMap;
 }
 
-var ops: list((int, unmanaged object?, int, int, int));
+var ops: list((int, unmanaged RootClass?, int, int, int));
 var opsLock$: sync bool = true;
 
 var counter: atomic int;
@@ -52,7 +52,7 @@ var counter: atomic int;
 require "gdb.h";
 config const breakOnAllocateId = -1;
 
-proc trackAllocation(c: object, id:int, x:int) {
+proc trackAllocation(c: RootClass, id:int, x:int) {
   opsLock$.readFE();
   ops.pushBack( (1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   if id == breakOnAllocateId {
@@ -62,7 +62,7 @@ proc trackAllocation(c: object, id:int, x:int) {
   opsLock$.writeEF(true);
 }
 
-proc trackFree(c: object, id:int, x:int) {
+proc trackFree(c: RootClass, id:int, x:int) {
   opsLock$.readFE();
   ops.pushBack( (-1, c:unmanaged, id, x, 1+counter.fetchAdd(1)) );
   opsLock$.writeEF(true);

@@ -22,7 +22,7 @@ module OuterModule {
   module M2 {
     use OuterModule;
     proc main {
-      var b, c: sync borrowed object?;
+      var b, c: sync borrowed RootClass?;
       begin with (ref a) {
         use M1;
         M1init();

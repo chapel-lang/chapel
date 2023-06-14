@@ -472,7 +472,7 @@ Closing notes
 // routine works only for unstrided ranges with the default index type
 // of ``int``.  These constraints could be relaxed with more effort.
 // 
-proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
+proc computeChunk(r: range, myChunk, numChunks) {
   const numElems = r.size;
   const elemsperChunk = numElems/numChunks;
   const rem = numElems%numChunks;

@@ -132,7 +132,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
-    var ret = gettimeofday(tv, c_nil);
+    var ret = gettimeofday(tv, nil);
     assert(ret == 0);
     return (tv.tv_sec, tv.tv_usec);
   }
@@ -274,7 +274,6 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
 /* A record representing a date */
   record date {
-    @chpldoc.nodoc
     var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
@@ -556,9 +555,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc date.init(f: fileReader) {
+  proc date.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
   /* Operators on date values */
@@ -605,9 +604,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* A record representing a time */
   record time {
-    @chpldoc.nodoc
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
-    @chpldoc.nodoc
     var chpl_tz: shared Timezone?;
 
     /* The hour represented by this `time` value */
@@ -869,9 +866,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc time.init(f: fileReader) {
+  proc time.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
 
@@ -1001,9 +998,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* A record representing a combined `date` and `time` */
   record dateTime {
-    @chpldoc.nodoc
     var chpl_date: date;
-    @chpldoc.nodoc
     var chpl_time: time;
 
     /* The minimum representable `date` and `time` */
@@ -1522,9 +1517,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   // TODO: need to get this to work with the Json formatter
   //
   @chpldoc.nodoc
-  proc dateTime.init(f: fileReader) {
+  proc dateTime.init(reader: fileReader, ref deserializer) throws {
     this.init();
-    readThis(f);
+    readThis(reader);
   }
 
 
@@ -1731,13 +1726,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      It is an overflow error if `days` is outside the given range.
    */
   record timeDelta {
-    @chpldoc.nodoc
     var chpl_days: int;
 
-    @chpldoc.nodoc
     var chpl_seconds: int;
 
-    @chpldoc.nodoc
     var chpl_microseconds: int;
 
     /* The number of days this `timeDelta` represents */

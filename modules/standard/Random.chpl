@@ -658,7 +658,7 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
      */
-     proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+     proc choice(x: range(strides=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
        compilerError("RandomStreamInterface.choice called");
      }
@@ -1172,16 +1172,13 @@ module Random {
                                    if ``size < 1 || size.size < 1``,
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
      */
-      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        var dom: domain(1,stridable=true);
-
         if x.bounds != boundKind.both {
           compilerError('input range must be bounded');
-        } else {
-          dom = {x};
         }
+        var dom = {x};
         return _choice(this, dom, size=size, replace=replace, prob=prob);
       }
 
@@ -1682,7 +1679,7 @@ module Random {
           myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if !innerRange.stridable {
+        if innerRange.hasUnitStride() {
           var cursor = randlc_skipto(resultType, seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
@@ -1735,7 +1732,7 @@ module Random {
           myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if !innerRange.stridable {
+        if innerRange.hasUnitStride() {
           var cursor = randlc_skipto(resultType, seed, myStart);
           var count = myStart;
           for i in innerRange {
@@ -2803,7 +2800,7 @@ module Random {
       }
 
       @chpldoc.nodoc
-      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -3012,7 +3009,7 @@ module Random {
           myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
         else
           myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if !innerRange.stridable {
+        if innerRange.hasUnitStride() {
           cursor = randlc_skipto(seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);

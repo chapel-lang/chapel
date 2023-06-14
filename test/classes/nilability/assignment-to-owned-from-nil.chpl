@@ -11,13 +11,13 @@ See also test/classes/nilability/issue-14147.chpl
 /* This is legal due to holes in static checking.
    When this hole is plugged, use a different hole.
    When all holes are plugged, remove altogether. */
-pragma "unsafe" var NILA: [1..2] owned object;
+pragma "unsafe" var NILA: [1..2] owned RootClass;
 
-var nilableNil: owned object?;
-var nonnlbLHS = new owned object();
+var nilableNil: owned RootClass?;
+var nonnlbLHS = new owned RootClass();
 var nonnlbLHSb = nonnlbLHS.borrow();
-var nilableLHS: owned object?;
-proc fillNilableLHS() { nilableLHS = new owned object(); }
+var nilableLHS: owned RootClass?;
+proc fillNilableLHS() { nilableLHS = new owned RootClass(); }
 
 proc main() {
   /* nilable <- nilable */
@@ -34,9 +34,9 @@ proc main() {
   /* nilable <- nonnilable */
 
   writeln("3a ", nilableLHS);
-  nilableLHS = new owned object();
+  nilableLHS = new owned RootClass();
   writeln("3b ", nilableLHS);
-  nilableLHS = new owned object();
+  nilableLHS = new owned RootClass();
   writeln("3c ", nilableLHS);
 
   /* nonnilable <- nilable reports compiler error - tested elsewhere */

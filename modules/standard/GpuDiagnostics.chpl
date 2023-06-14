@@ -48,6 +48,7 @@ module GpuDiagnostics
   /*
      Aggregated GPU operation counts.
    */
+  pragma "chpldoc ignore chpl prefix"
   extern record chpl_gpuDiagnostics {
     var kernel_launch: uint(64);
   };

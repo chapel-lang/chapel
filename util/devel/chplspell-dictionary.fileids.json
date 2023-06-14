@@ -1343,9 +1343,6 @@
   "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
     "modules/standard/Sys.chpl"
   ],
-  "d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5": [
-    "modules/standard/SysBasic.chpl"
-  ],
   "f5a43844-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/standard/Time.chpl"
   ],

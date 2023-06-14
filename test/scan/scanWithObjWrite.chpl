@@ -9,6 +9,6 @@ proc foo() {
   return 42;
 }
 
-var o: object = new object();
+var o: RootClass = new RootClass();
 writeln("o is: " + o:string);
 writeln("B is: ", B);
