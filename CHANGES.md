@@ -1,6 +1,14 @@
 Release Changes List
 ====================
 
+o spellcheck
+o check links
+o check for docs/1.31/ links
+o check forced linebreaks
+o check man page
+o check test/release/examples
+
+
 version 1.31.0
 ==============
 
@@ -20,12 +28,17 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
+* renamed the abstract root class from `object` to `RootClass`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#the-root-class)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for `isBounded()` queries on ranges
+* marked casts between ranges of enum types as being unstable
+* removed support for `%=` on `real`s (for now, because it didn't work)
 
 Namespace Changes
 -----------------
@@ -38,6 +51,8 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added initial support for redistributing `Block` distributions  
+  (e.g., `myBlockDist.redistribute({1..2*n});` or `myBlockDist = blockDist2;`)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -59,6 +74,7 @@ Platform-specific Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* restored the `--savec` Makefile's dependencies when using the C back-end
 
 Memory Improvements
 -------------------
@@ -68,6 +84,8 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* refreshed the primer on rectangular arrays  
+  (see https://chapel-lang.org/docs/1.31/primers/arrays.html)
 
 Example Codes
 -------------
@@ -77,6 +95,8 @@ Syntax Highlighting
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* improved portability to GCC 13.1
+* improved portability to Intel Classic Compiler 2023.1.0 with warnings enabled
 
 GPU Computing
 -------------
@@ -86,6 +106,8 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a new `--print-chpl-home` flag to query the location of `$CHPL_HOME`  
+  (see https://chapel-lang.org/docs/1.31/usingchapel/man.html#options)
 
 Generated Executable Flags
 --------------------------
@@ -98,12 +120,15 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* removed a warning about behavior changes for `zip()`s led by unbounded ranges
 
 Bug Fixes
 ---------
+* fixed a bug in which casting ranges of ints to enums used the ordinal values
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a bug in which Protocol Buffer support was omitted from the release
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -119,6 +144,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* fixed an issue where `amudprun` was built with GCC rather than `CHPL_HOST_CC`
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -137,12 +163,15 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* updated developer-oriented warnings for clang to more closely match gcc/g++
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added a `--print-chpl-loc` flag for determining the compiler's location
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* moved all 'chpl' flags into 'driver.cpp' now that 'chpldoc' doesn't use them
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
