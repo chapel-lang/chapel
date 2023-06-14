@@ -36,6 +36,8 @@ executing on a GPU sublocale.  Loops are eligible when:
 * They only make use of known compiler primitives that are fast and local. Here
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
+* The do not call out to ``extern`` functions (aside from those in an exempted
+  set of Chapel runtime functions).
 * They are free of any call to a function that fails to meet the above
   criteria or accesses outer variables.
 
@@ -81,23 +83,23 @@ that these are not packaged in the Chapel release but are accessible from our
 
 Tests of particular interest include:
 
-Benchmark examples:
-~~~~~~~~~~~~~~~~~~~
+Benchmark examples
+~~~~~~~~~~~~~~~~~~
 * `Jacobi <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/jacobi/jacobi.chpl>`_ -- Jacobi example (shown above)
 * `Stream <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/streamPrototype/stream.chpl>`_ -- GPU enabled version of Stream benchmark
 * `SHOC Triad (Direct) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triad.chpl>`_ -- a transliterated version of the SHOC Triad benchmark 
 * `SHOC Triad (Chapeltastic) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triadchpl.chpl>`_ -- a version of the SHOC benchmark simplified to use Chapel language features (such as promotion)
 * `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/sort.chpl>`_ -- SHOC radix sort benchmark
 
-Test examples:
-~~~~~~~~~~~~~~~
+Test examples
+~~~~~~~~~~~~~
 * `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
 * `math <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/math.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
 * `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
 * `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
 
-Examples with multiple GPUs:
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Examples with multiple GPUs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * `multiGPU <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiGPU/multiGPU.chpl>`_ -- simple example using all GPUs within a locale
 * `workSharing <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiGPU/worksharing.chpl>`_ -- stream-like example showing computation shared between GPUs and CPU
 * `onAllGpusOnAllLocales <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiLocale/onAllGpusOnAllLocales.chpl>`_ -- simple example using all GPUs and locales
@@ -118,10 +120,11 @@ Requirements
     NVIDIA GPUs and AMDGPU to target AMD GPUs).
 
   * If using a system install of ``LLVM`` we expect this to be the same
-    version as the bundled version (currently 14). Older versions may
+    version as the bundled version (currently 15). Older versions may
     work; however, we only make efforts to test GPU support with this version.
 
-* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed.
+* Unless using `CPU as Device mode`_, either the CUDA toolkit (for NVIDIA), or
+  ROCm (for AMD) must be installed.
 
   * If targeting NVIDIA GPUs, we require CUDA toolkit to be version 10.x or 11.x
     (inclusive). If using version 10.x you must set
@@ -136,39 +139,125 @@ GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel.
+before building Chapel. Several other variables affect how Chapel generates
+code for and interacts with GPUs. These variables include:
 
-Chapel's build system will automatically try and deduce what type of GPU you
-have and where your installation of relevant runtime (e.g. CUDA or ROCm) are.
-If the type of GPU is not detected you may set ``CHPL_GPU`` manually to either
-``nvidia``, ``amd`` or ``cpu`` (See :ref:`below <cpu-mode-label>` for more
-information on this mode). If the relevant runtime path is not automatically
-detected (or you would like to use a different installation) you may set
-``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH``.
+* ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd', or ``cpu``. If unset, as
+  part of its build process, Chapel will attempt to automatically determine
+  what type of GPU you're trying to target. Changing this variable requires
+  rebuilding Chapel. For more information, see the `Vendor Portability`_
+  section.
+* ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
+  If unset and targetting NVIDIA GPUs, will default to 'sm_60'. This may also
+  be set by passing the ``chpl`` compiler ``--gpu-arch=<architecture>``. For
+  more information, see the `Vendor Portability`_ section.
+* ``CHPL_CUDA_PATH`` --- specifies path to CUDA toolkit.  If unset, Chapel tries
+  to automatically determine this path based on the location of ``nvcc``. This
+  variable is unused if not targetting NVIDIA GPUs. For more information, see
+  the `Vendor Portability`_ section.
+* ``CHPL_ROCM_PATH`` --- specifiess path to ROCM library. If unset, Chapel tries
+  to automatically determine this path based on the location of ``hipcc``. This
+  variable is unused if not targetting AMD GPUs. For more information, see the
+  `Vendor Portability`_ section.
+* ``CHPL_RT_NUM_GPU_PER_LOCALE`` --- if using ``CHPL_GPU=cpu``, sets how many
+  GPU sublocales to have per locale. For more information, see the `CPU as
+  Device mode`_ section.
+* ``CHPL_GPU_MEM_STRATEGY`` --- dictates how to allocate data when on a GPU
+  locale.  May be set to ``unified_memory`` or ``array_on_device``. If unset,
+  defaults to ``unified_memory``. Changing this variable requires rebuilding
+  Chapel. For more information, see the `Memory Strategies`_ section.
+* ``CHPL_GPU_BLOCK_SIZE`` --- specifies default block size when launching
+  kernels. If unset, defaults to 512. This variable may also be set by passing
+  the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
+  overwritten on a per-kernel basis by using the :proc:`~GPU.setBlockSize`
+  function.
+* ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
+  and clones all functions reachable from that block. The 'on' statement is
+  rewritten to call the cloned version of the outlined function when on a  GPU
+  locale. This mode increases overall code size but allows the compiler to
+  assume that a given function will execute on the GPU locale and optimize
+  accordingly. This may also be set by passing the ``chpl`` compiler the
+  ``--gpu-specialization`` flag. This is an experimental mode subject to change
+  in the future.
+* ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
+  `CPU as Device mode`_ and if set causes it so that uses of
+  :proc:`~GPU.assertOnGpu` while in this mode will not generate a warning at
+  execution time. Alternatively, this can be done by passing
+  ``--gpuNoCpuModeWarning`` to your application. For more information, see the
+  `CPU as Device mode`_ section.
 
-``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
-architecture to compile for. For ``CHPL_GPU=nvidia``, this defaults to
-``sm_60``. For ``CHPL_GPU=amd`` it needs to be set explicitly. The environment
-setting can be overridden by the ``--gpu-arch`` compiler flag.  For a list of
-possible values please refer to "processor" values in `this table in the LLVM
-documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or
-the `CUDA Programming Guide
+Features
+--------------------
+
+In the following subsections we discuss various features of GPU supports.
+
+Vendor Portability
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Chapel is able to generate code that will execute on either NVIDIA or AMD GPUs.
+Chapel’s build system will automatically try and deduce what type of GPU you
+have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
+If the type of GPU is not detected you may set the ``CHPL_GPU`` environment
+variable manually to either ``nvidia`` or ``amd``.  ``CHPL_GPU`` may also
+manually be set to ``cpu`` to use `CPU as Device mode`_.
+
+Based on the value of 'CHPL_GPU', Chapel's build system will also attempt to
+automatically detect the path to the relevant runtime. If it is not
+automatically detected (or you would like to use a different installation) you
+may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
+
+The CHPL_GPU_ARCH environment variable can be set to control the desired GPU
+architecture to compile for. The default value is sm_60 for
+CHPL_GPU_CODEGEN=cuda. You may also use the --gpu-arch compiler flag to set GPU
+architecture. For a list of possible values please refer to "processor" values
+in `this table in the LLVM documentation
+<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or the `CUDA
+Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
 for NVIDIA.
 
-``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be used to control the number of GPU
-sublocales created. For example, in a system where 8 physical GPUs per node,
-setting this environment variable to 4 will make Chapel use only the first 4
-GPUs. Setting this number to a value higher than the number of GPUs per node
-results in an error; except for the ``CHPL_GPU==cpu`` mode, where this variable
-can be set to any non-negative number (See :ref:`below <cpu-mode-label>` for
-more information on this mode).
 
-GPU Support Features
---------------------
+CPU as Device Mode
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The ``CHPL_GPU`` environment variable can be set to ``cpu`` to enable many GPU
+features to be used without requiring any GPUs and/or vendor SDKs to be
+installed. This mode is mainly for initial development steps or quick feature
+tests where access to GPUs may be limited. In this mode:
 
-In the following subsections we discuss various features or aspects of
-GPU supports that are relatively new or otherwise noteworthy.
+* the compiler will generate GPU kernels from order-independent loops normally,
+
+* it will call the internal runtime API for GPU operations, so that features
+  outlined under `Diagnostics and Utilities`_ will work as expected
+
+  * e.g, :proc:`~GPU.assertOnGpu` will fail at compile time normally. This can
+    allow testing if a loop is GPU-eligible.
+
+  * but it will generate a warning per-iteration at execution time.
+
+  * ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress these
+    warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
+    application to the same effect.
+
+* even though the GPU diagnostics are collected, the loop will be executed for
+  correctness testing and there will not be any kernel launch
+
+* advanced features like ``syncThreads`` and ``createSharedArray`` will compile
+  and run, but in all likelihood code that uses those features will not
+  generate correct results
+
+* ``asyncGpuComm`` will do a blocking memcpy and ``gpuCommWait`` will return
+  immediately
+
+* there will be one GPU sublocale per locale by default.
+  ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
+  will be created per locale.
+
+
+.. warning::
+
+  This mode should not be used for performance studies. Application correctness
+  is not guaranteed in complex cases.
+
 
 Diagnostics and Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -188,6 +277,9 @@ the code with calls to :proc:`~GpuDiagnostics.startVerboseGpu` and
 :proc:`~GpuDiagnostics.stopVerboseGpu`. This output will directed to
 ``stdout``.
 
+To get a list of all GPU eligible loops at compile-time (regardless of if they
+will actually run on a GPU or not) pass ``chpl`` the ``--report-gpu`` flag.
+
 The :mod:`GPU` module contains additional utility functions. One particularly
 useful function is :proc:`~GPU.assertOnGpu()`.  This function will conduct a
 runtime assertion that will halt execution when not being performed on a GPU.
@@ -197,12 +289,12 @@ an error if one of the aforementioned requirements is not met.  This check
 might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
 depending on the presence of control flow.
 
-Utilities in the :mod:`MemDiagnostics` module can be used to
-monitor GPU memory allocations and detect memory leaks. For example,
-:proc:`startVerboseMem() <MemDiagnostics.startVerboseMem()>` and
-:proc:`stopVerboseMem() <MemDiagnostics.stopVerboseMem()>` can be used to enable
-and disable output from memory allocations and deallocations. GPU-based
-operations will be marked in the generated output.
+Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
+allocations and detect memory leaks. For example, :proc:`startVerboseMem()
+<MemDiagnostics.startVerboseMem()>` and :proc:`stopVerboseMem()
+<MemDiagnostics.stopVerboseMem()>` can be used to enable and disable output
+from memory allocations and deallocations. GPU-based operations will be marked
+in the generated output.
 
 Multi-Locale Support
 ~~~~~~~~~~~~~~~~~~~~
@@ -264,8 +356,9 @@ its own.
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
 
-The ``CHPL_GPU_MEM_STRATEGY`` environment variable can be used to choose between
-two different memory strategies.
+The ``CHPL_GPU_MEM_STRATEGY`` environment variable can be used to choose
+between two different memory strategies. Memory strategies determine how memory
+is allocated when on a GPU locale.
 
 The current default strategy is ``unified_memory``. The strategy applies to all
 data allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified memory
@@ -302,50 +395,6 @@ it thwarts optimizations done by the backend assembler. In our experience, this
 can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
-
-.. _cpu-mode-label:
-
-``CHPL_GPU=cpu``: Using ``CHPL_LOCALE_MODEL=gpu`` Without GPUs
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``CHPL_GPU`` environment variable can be set to ``cpu`` to enable many GPU
-features to be used without actual GPUs and/or vendors' SDKs not installed. This
-mode is mainly for initial development steps or quick feature tests where access
-to GPUs may be limited. In this mode:
-
-* the compiler will generate GPU kernels from order-independent loops normally,
-
-* it will call the internal runtime API for GPU operations, so that features
-  outlined under `Diagnostics and Utilities`_ will work as expected
-
-  * e.g, ``assertOnGpu`` will fail at compile time normally. This can allow
-    testing if a loop is GPU-eligible.
-
-  * but it will generate a warning per-iteration at execution time.
-
-  * ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress these
-    warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
-    application to the same effect.
-
-* even though the GPU diagnostics are collected, the loop will be executed for
-  correctness testing and there will not be any kernel launch
-
-* advanced features like ``syncThreads`` and ``createSharedArray`` will compile
-  and run, but in all likelihood code that uses those features will not
-  generate correct results
-
-* ``asyncGpuComm`` will do a blocking memcpy and ``gpuCommWait`` will return
-  immediately
-
-* there will be one GPU sublocale per locale by default.
-  ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
-  will be created per locale.
-
-
-.. warning::
-
-  This mode should not be used for performance studies. Application correctness
-  is not guaranteed in complex cases.
-
 
 Known Limitations
 -----------------
@@ -404,8 +453,8 @@ Further Information
   <https://github.com/chapel-lang/chapel/issues?q=is%3Aopen+label%3A%22area%3A+GPU+Support%22+label%3A%22type%3A+Bug%22>`_
   for known bugs only.
 
-* Additional information about GPU Support can be found in the "Ongoing Efforts"
-  slide decks of our `release notes
+* Additional information about GPU Support can be found in the "GPU Support"
+  slide decks from our `release notes
   <https://chapel-lang.org/releaseNotes.html>`_; however, be aware that
   information presented in release notes for prior releases may be out-of-date.
 
