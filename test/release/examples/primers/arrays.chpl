@@ -37,11 +37,11 @@ writeln("Initially, A is: ", A);  // prints 0.0 for each array element
 //
 // Arrays can also be declared using array literals.  These are
 // specified by enclosing a comma-separated list of expressions in
-// square brackets.  The domain of the array will be 0-based, and the
-// type of the array's elements will be that of the expressions if
-// they all have the same type.  If they do not, the array's element
-// type will be a type that can hold all of the values, if the
-// compiler can determine that one exists.
+// square brackets.  Unless otherwise specified, the domain of the new
+// array variable will be 0-based, and the type of its elements will
+// be that of the expressions if they all have the same type.  If they
+// do not, the array's element type will be a type that can hold all
+// of the values, if the compiler can determine that one exists.
 //
 var A2 = [-1.1, -2.2, -3.3, -4.4, -5.5];
 
@@ -115,8 +115,6 @@ forall b in B do
 
 writeln("After incrementing B's elements, B is:\n", B, "\n");
 
-// While the following loop negates ``A``'s elements:
-
 
 // Domains and Domain Queries
 // --------------------------
@@ -133,7 +131,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For
 // example, here's a loop that iterates over B's indices in parallel
-// by querying the domain:
+// by querying its domain:
 //
 
 forall (i,j) in B.domain do
@@ -189,8 +187,8 @@ const ProbSpace = {1..n, 1..n};
 // Note that we declare the domain as being ``const``, indicating that
 // we will never change the set of indices it represents.  Besides
 // indicating the programmer's intent, this can enable key compiler
-// optimizations, so is recommended whenever a domain's index set is
-// known to be invariant.
+// optimizations, and is therefore recommended whenever a domain's
+// index set is known to be invariant.
 //
 
 //
@@ -264,7 +262,7 @@ writeln("After being assigned 'true', E is:\n", E, "\n");
 //
 // Whole-array assignment can also be used for arrays or sub-arrays
 // whose index sets differ as long as they have the same number of
-// dimensions and shape (number of elements per dimension).
+// dimensions and the same shape (number of elements per dimension).
 //
 
 var F, G: [ProbSpace] real;
