@@ -36,7 +36,7 @@ executing on a GPU sublocale.  Loops are eligible when:
 * They only make use of known compiler primitives that are fast and local. Here
   "fast" means "safe to run in a signal handler" and "local" means "doesn't
   cause any network communication".
-* The do not call out to ``extern`` functions (aside from those in an exempted
+* They do not call out to ``extern`` functions (aside from those in an exempted
   set of Chapel runtime functions).
 * They are free of any call to a function that fails to meet the above
   criteria or accesses outer variables.
@@ -148,16 +148,16 @@ code for and interacts with GPUs. These variables include:
   rebuilding Chapel. For more information, see the `Vendor Portability`_
   section.
 * ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
-  If unset and targetting NVIDIA GPUs, will default to 'sm_60'. This may also
+  If unset and targeting NVIDIA GPUs, will default to 'sm_60'. This may also
   be set by passing the ``chpl`` compiler ``--gpu-arch=<architecture>``. For
   more information, see the `Vendor Portability`_ section.
 * ``CHPL_CUDA_PATH`` --- specifies path to CUDA toolkit.  If unset, Chapel tries
   to automatically determine this path based on the location of ``nvcc``. This
-  variable is unused if not targetting NVIDIA GPUs. For more information, see
+  variable is unused if not targeting NVIDIA GPUs. For more information, see
   the `Vendor Portability`_ section.
-* ``CHPL_ROCM_PATH`` --- specifiess path to ROCM library. If unset, Chapel tries
+* ``CHPL_ROCM_PATH`` --- specifies path to ROCm library. If unset, Chapel tries
   to automatically determine this path based on the location of ``hipcc``. This
-  variable is unused if not targetting AMD GPUs. For more information, see the
+  variable is unused if not targeting AMD GPUs. For more information, see the
   `Vendor Portability`_ section.
 * ``CHPL_RT_NUM_GPU_PER_LOCALE`` --- if using ``CHPL_GPU=cpu``, sets how many
   GPU sublocales to have per locale. For more information, see the `CPU as
@@ -196,21 +196,21 @@ Vendor Portability
 
 Chapel is able to generate code that will execute on either NVIDIA or AMD GPUs.
 Chapel’s build system will automatically try and deduce what type of GPU you
-have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
+have and where your installation of relevant runtime (e.g. CUDA or ROCm) are.
 If the type of GPU is not detected you may set the ``CHPL_GPU`` environment
 variable manually to either ``nvidia`` or ``amd``.  ``CHPL_GPU`` may also
 manually be set to ``cpu`` to use `CPU as Device mode`_.
 
-Based on the value of 'CHPL_GPU', Chapel's build system will also attempt to
+Based on the value of ``CHPL_GPU``, Chapel's build system will also attempt to
 automatically detect the path to the relevant runtime. If it is not
 automatically detected (or you would like to use a different installation) you
 may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
 
 The CHPL_GPU_ARCH environment variable can be set to control the desired GPU
-architecture to compile for. The default value is sm_60 for
-CHPL_GPU_CODEGEN=cuda. You may also use the --gpu-arch compiler flag to set GPU
-architecture. For a list of possible values please refer to "processor" values
-in `this table in the LLVM documentation
+architecture to compile for. The default value is ``sm_60`` for
+``CHPL_GPU_CODEGEN=cuda``. You may also use the ``--gpu-arch`` compiler flag to
+set GPU architecture. For a list of possible values please refer to "processor"
+values in `this table in the LLVM documentation
 <https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or the `CUDA
 Programming Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
