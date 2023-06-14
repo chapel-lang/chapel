@@ -211,7 +211,7 @@ proc commonPath(paths: string ...?n): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(pathSep, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
 
   var pos = prefixList.size;   // rightmost index of common prefix
   var minPathLength = prefixList.size;
@@ -220,7 +220,7 @@ proc commonPath(paths: string ...?n): string {
 
     var tempList = new list(string);
     for x in paths(i).split(pathSep, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
 
     var minimum = min(prefixList.size, tempList.size);
 
@@ -239,10 +239,10 @@ proc commonPath(paths: string ...?n): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
@@ -291,7 +291,7 @@ proc commonPath(paths: []): string {
 
   var prefixList = new list(string);
   for x in firstPath.split(delimiter, -1, false) do
-    prefixList.append(x);
+    prefixList.pushBack(x);
   // array of resultant prefix string
 
   var pos = prefixList.size;   // rightmost index of common prefix
@@ -301,7 +301,7 @@ proc commonPath(paths: []): string {
 
     var tempList = new list(string);
     for x in paths[i].split(delimiter, -1, false) do
-      tempList.append(x);
+      tempList.pushBack(x);
     // temporary array storing the current path under consideration
 
     var minimum = min(prefixList.size, tempList.size);
@@ -321,10 +321,10 @@ proc commonPath(paths: []): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
@@ -393,7 +393,7 @@ proc dirname(path: string): string {
              value = "${" + env_var + "}";
            } else {
              try! {
-               value = createStringWithNewBuffer(value_c,
+               value = string.createCopyingBuffer(value_c,
                                                  policy=decodePolicy.escape);
              }
            }
@@ -414,7 +414,7 @@ proc dirname(path: string): string {
            value = "$" + env_var;
          } else {
            try! {
-             value = createStringWithNewBuffer(value_c,
+             value = string.createCopyingBuffer(value_c,
                                                policy=decodePolicy.escape);
            }
          }
@@ -561,9 +561,9 @@ proc normPath(path: string): string {
     // Third case continues a chain of leading up-levels.
     if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
         (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
-      outComps.append(comp);
+      outComps.pushBack(comp);
     else if !outComps.isEmpty() then
-      try! outComps.pop();
+      try! outComps.popBack();
   }
 
   var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
@@ -593,7 +593,7 @@ proc realPath(path: string): string throws {
   var res: c_string;
   var err = chpl_fs_realpath(unescape(path).c_str(), res);
   if err then try ioerror(err, "realPath", path);
-  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
+  const ret = string.createCopyingBuffer(res, policy=decodePolicy.escape);
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret;
@@ -616,13 +616,13 @@ proc realPath(f: file): string throws {
   import OS.errorCode;
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): errorCode;
 
-  if (is_c_nil(f._file_internal)) then
+  if (f._file_internal == nil) then
     try ioerror(EBADF:errorCode, "in realPath with a file argument");
 
   var res: c_string;
   var err = chpl_fs_realpath_file(f._file_internal, res);
   if err then try ioerror(err, "in realPath with a file argument");
-  return createStringWithOwnedBuffer(res);
+  return string.createAdoptingBuffer(res);
 }
 
 /* Compute the common prefix length between two lists of path components. */
@@ -683,12 +683,12 @@ proc relPath(path: string, start:string=curDir): string throws {
   // Append up-levels until we reach the point where the paths diverge.
   var outComps = new list(string);
   for i in 1..(startComps.size - prefixLen) do
-    outComps.append(parentDir);
+    outComps.pushBack(parentDir);
 
   // Append the portion of path following the common prefix.
   if !pathComps.isEmpty() then
     for x in pathComps[prefixLen..<pathComps.size] do
-      outComps.append(x);
+      outComps.pushBack(x);
 
   if outComps.isEmpty() then
     return curDir;

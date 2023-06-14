@@ -76,6 +76,9 @@ proc send_number(test: borrowed Test) throws {
   }
 }
 
+/*
+ This test is commented out because test systems don't necessarily
+ have network connectivity to www.google.com.
 proc send_http(test: borrowed Test) throws {
   var port:uint(16) = 80;
   var host = "www.google.com";
@@ -92,5 +95,6 @@ proc send_http(test: borrowed Test) throws {
   reader.readLine(b);
   test.assertEqual(b.strip(), b"HTTP/1.1 200 OK");
 }
+*/
 
 UnitTest.main();

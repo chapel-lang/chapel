@@ -15,9 +15,9 @@
 
 //
 // We want to use block-distributed arrays (BlockDist), barrier
-// synchronization (AllLocalesBarriers), and timers (Time).
+// synchronization (AllLocalesBarriers), timers (Time), and log2 (Math).
 //
-use BlockDist, AllLocalesBarriers, Time;
+use BlockDist, AllLocalesBarriers, Time, Math;
 
 //
 // The type of key to use when sorting.

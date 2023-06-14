@@ -32,7 +32,7 @@
 
 #include "ofi_mr.h"
 
-#if HAVE_LIBZE
+#if HAVE_ZE
 
 #include "ofi_hmem.h"
 
@@ -50,18 +50,18 @@ static void ze_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 }
 
 static bool ze_mm_valid(struct ofi_mem_monitor *monitor,
-			const void *addr, size_t len,
-			union ofi_mr_hmem_info *hmem_info)
+			const struct ofi_mr_info *info,
+			struct ofi_mr_entry *entry)
 {
 	uint64_t id;
 	int ret;
 
-	ret = ze_hmem_get_id(addr, &id);
+	ret = ze_hmem_get_id(entry->info.iov.iov_base, &id);
 	if (ret)
 		return false;
 
 
-	return id == hmem_info->ze_id;
+	return id == entry->hmem_info.ze_id;
 }
 
 static int ze_monitor_start(struct ofi_mem_monitor *monitor)
@@ -85,8 +85,8 @@ static void ze_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 }
 
 static bool ze_mm_valid(struct ofi_mem_monitor *monitor,
-			const void *addr, size_t len,
-			union ofi_mr_hmem_info *hmem_info)
+			const struct ofi_mr_info *info,
+			struct ofi_mr_entry *entry)
 {
 	return false;
 }
@@ -96,7 +96,7 @@ static int ze_monitor_start(struct ofi_mem_monitor *monitor)
 	return -FI_ENOSYS;
 }
 
-#endif /* HAVE_LIBZE */
+#endif /* HAVE_ZE */
 
 void ze_monitor_stop(struct ofi_mem_monitor *monitor)
 {

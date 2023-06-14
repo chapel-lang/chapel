@@ -191,7 +191,7 @@ signature.
 
    .. code-block:: chapel
 
-      var D1 : domain(rank=3, idxType=int, stridable=false);
+      var D1 : domain(rank=3, idxType=int, strides=strideKind.one);
       var D2 : domain(3);
 
    

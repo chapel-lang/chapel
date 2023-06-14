@@ -2,7 +2,7 @@ config const doMemLeaksTest = true;
 config const verboseMem = false;
 config const verboseMemLeaks = false;
 
-public use Memory.Diagnostics;
+public use MemDiagnostics;
 private use ChplConfig;
 
 var totalMemLeaked = 0:uint(64);

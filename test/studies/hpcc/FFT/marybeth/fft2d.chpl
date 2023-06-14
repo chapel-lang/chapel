@@ -1,7 +1,7 @@
 use BitOps;
 use Random;
 use Time;
-
+use Math;
 
 // problem size configs
 config const logN = 8;

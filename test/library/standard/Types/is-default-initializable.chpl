@@ -31,7 +31,7 @@ if isDefaultInitializable(GenericContainingNonNilableOwnedAndInit(owned C)) != t
 }
 
 record ContainingNonNilableWithFieldDefault {
-  var c: unmanaged object = new	unmanaged object();
+  var c: unmanaged RootClass = new	unmanaged RootClass();
 }
 if isDefaultInitializable(ContainingNonNilableWithFieldDefault) != true {
   compilerError("error matching ContainingNonNilableWithFieldDefault");

@@ -79,7 +79,13 @@ endif
 # Flags for compiler, runtime, and generated code
 #
 COMP_CFLAGS = $(C_STD) $(CPPFLAGS) $(FLAGS)
-COMP_CXXFLAGS = $(CXX14_STD) $(CPPFLAGS) $(CXXFLAGS)
+ifeq ($(CHPL_MAKE_LLVM_VERSION),16)
+# get the C++ standard flag from CMake
+COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
+else
+COMP_CXXFLAGS += $(CXX14_STD) $(CPPFLAGS) $(CXXFLAGS)
+endif
+
 COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)

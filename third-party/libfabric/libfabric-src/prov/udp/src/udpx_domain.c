@@ -91,7 +91,8 @@ int udpx_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	if (!util_domain)
 		return -FI_ENOMEM;
 
-	ret = ofi_domain_init(fabric, info, util_domain, context);
+	ret = ofi_domain_init(fabric, info, util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (ret) {
 		free(util_domain);
 		return ret;

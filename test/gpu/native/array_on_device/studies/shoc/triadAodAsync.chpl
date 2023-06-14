@@ -2,7 +2,7 @@ use Time;
 use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
-use Memory.Diagnostics;
+use MemDiagnostics;
 use GPU;
 
 config const passes = 1; //10;

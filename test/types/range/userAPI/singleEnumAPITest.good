@@ -2,11 +2,9 @@ trivial enum range
 ------------
 red..red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -48,11 +46,9 @@ default trivial enum range
 ------------
 red..<red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -91,11 +87,9 @@ trivial strided enum range
 ------------
 red..red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -137,11 +131,9 @@ default trivial strided enum range
 ------------
 red..<red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
-isBoundedRange() = true
-isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1

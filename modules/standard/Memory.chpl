@@ -20,8 +20,9 @@
 
 /* Support for operations related to memory usage and initialization.
 
-.. warning:: The "Memory.Initialization" module is deprecated.
+.. warning:: The "Memory" module and all submodules are deprecated
 */
+@deprecated("The Memory module is deprecated")
 module Memory {
 
 include module Diagnostics;

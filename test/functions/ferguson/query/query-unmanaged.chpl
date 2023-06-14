@@ -43,18 +43,18 @@ proc m(type t : unmanaged MyClass) {
 proc m(type t : borrowed MyClass) {
   writeln("m borrowed MyClass");
 }
-proc m(type t : unmanaged object) {
-  writeln("m unmanaged object");
+proc m(type t : unmanaged RootClass) {
+  writeln("m unmanaged RootClass");
 }
-proc m(type t : borrowed object) {
-  writeln("m borrowed object");
+proc m(type t : borrowed RootClass) {
+  writeln("m borrowed RootClass");
 }
 
 proc n(arg : unmanaged MyClass) {
   writeln("n unmanaged MyClass");
 }
-proc n(arg : unmanaged object) {
-  writeln("n unmanaged object");
+proc n(arg : unmanaged RootClass) {
+  writeln("n unmanaged RootClass");
 }
 proc n(arg : borrowed MyClass) {
   writeln("n borrowed MyClass");

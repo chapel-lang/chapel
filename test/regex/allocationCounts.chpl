@@ -1,5 +1,5 @@
 use Regex;
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config type t = string;
 

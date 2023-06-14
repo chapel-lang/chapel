@@ -5,7 +5,7 @@ var i:c_int;
 var i_ptr = c_ptrTo(i); // now i_ptr has type c_ptr(c_int) == int* in C
 writeln(i_ptr.type:string);
 
-var cArray = c_calloc(c_int, 10);
+var cArray = allocate(c_int, 10, clear=true);
 assert(cArray != nil);
 assert(! (cArray == nil));
 for i in 0..#10 {
@@ -16,7 +16,7 @@ cArray.deref() = 17;
 for i in 0..#10 {
   writeln(cArray[i]);
 }
-c_free(cArray);
+deallocate(cArray);
 cArray = nil;
 
 // both of these correspond to void fn(int* x)

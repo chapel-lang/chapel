@@ -38,7 +38,7 @@ module ResultDB {
                 // Since the [] Access adds the mapping if it does not
                 // exist we do not have to initialize a new list when one
                 // does not exist which is neat
-                this.results[blockSize].append(value);
+                this.results[blockSize].pushBack(value);
             }
         }
 

@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 proc output(type retType) {
   const mem = Locales(0).physicalMemory(retType = retType),

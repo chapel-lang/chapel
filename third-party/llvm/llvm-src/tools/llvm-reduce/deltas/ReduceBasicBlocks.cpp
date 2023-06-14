@@ -1,4 +1,4 @@
-//===- ReduceArguments.cpp - Specialized Delta Pass -----------------------===//
+//===- ReduceBasicBlocks.cpp - Specialized Delta Pass ---------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,13 +7,15 @@
 //===----------------------------------------------------------------------===//
 //
 // This file implements a function which calls the Generic Delta pass in order
-// to reduce uninteresting Arguments from defined functions.
+// to reduce uninteresting BasicBlocks from defined functions.
 //
 //===----------------------------------------------------------------------===//
 
 #include "ReduceBasicBlocks.h"
+#include "Utils.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/LLVMContext.h"
@@ -28,13 +30,13 @@ using namespace llvm;
 static void replaceBranchTerminator(BasicBlock &BB,
                                     const DenseSet<BasicBlock *> &BBsToKeep) {
   auto *Term = BB.getTerminator();
-  std::vector<BasicBlock *> ChunkSucessors;
+  std::vector<BasicBlock *> ChunkSuccessors;
   for (auto *Succ : successors(&BB))
     if (BBsToKeep.count(Succ))
-      ChunkSucessors.push_back(Succ);
+      ChunkSuccessors.push_back(Succ);
 
   // BB only references Chunk BBs
-  if (ChunkSucessors.size() == Term->getNumSuccessors())
+  if (ChunkSuccessors.size() == Term->getNumSuccessors())
     return;
 
   bool IsBranch = isa<BranchInst>(Term) || isa<InvokeInst>(Term);
@@ -42,24 +44,37 @@ static void replaceBranchTerminator(BasicBlock &BB,
   if (auto *IndBI = dyn_cast<IndirectBrInst>(Term))
     Address = IndBI->getAddress();
 
-  Term->replaceAllUsesWith(UndefValue::get(Term->getType()));
+  Term->replaceAllUsesWith(getDefaultValue(Term->getType()));
   Term->eraseFromParent();
 
-  if (ChunkSucessors.empty()) {
+  if (ChunkSuccessors.empty()) {
+    // Scan forward in BB list to try find a block that is kept.
+    Function &F = *BB.getParent();
+    Function::iterator FI = BB.getIterator();
+    FI++;
+    while (FI != F.end()) {
+      auto &FIB = *FI;
+      if (BBsToKeep.count(&FIB) && !isa<PHINode>(FIB.begin())) {
+        BranchInst::Create(&FIB, &BB);
+        return;
+      }
+      FI++;
+    }
+    // If that fails then resort to replacing with a ret.
     auto *FnRetTy = BB.getParent()->getReturnType();
     ReturnInst::Create(BB.getContext(),
-                       FnRetTy->isVoidTy() ? nullptr : UndefValue::get(FnRetTy),
+                       FnRetTy->isVoidTy() ? nullptr : getDefaultValue(FnRetTy),
                        &BB);
     return;
   }
 
   if (IsBranch)
-    BranchInst::Create(ChunkSucessors[0], &BB);
+    BranchInst::Create(ChunkSuccessors[0], &BB);
 
   if (Address) {
     auto *NewIndBI =
-        IndirectBrInst::Create(Address, ChunkSucessors.size(), &BB);
-    for (auto *Dest : ChunkSucessors)
+        IndirectBrInst::Create(Address, ChunkSuccessors.size(), &BB);
+    for (auto *Dest : ChunkSuccessors)
       NewIndBI->addDestination(Dest);
   }
 }
@@ -73,7 +88,7 @@ removeUninterestingBBsFromSwitch(SwitchInst &SwInst,
   if (!BBsToKeep.count(SwInst.getDefaultDest())) {
     auto *FnRetTy = SwInst.getParent()->getParent()->getReturnType();
     ReturnInst::Create(SwInst.getContext(),
-                       FnRetTy->isVoidTy() ? nullptr : UndefValue::get(FnRetTy),
+                       FnRetTy->isVoidTy() ? nullptr : getDefaultValue(FnRetTy),
                        SwInst.getParent());
     SwInst.eraseFromParent();
   } else
@@ -119,7 +134,7 @@ static void extractBasicBlocksFromModule(Oracle &O, Module &Program) {
   for (auto &BB : BBsToDelete) {
     // Instructions might be referenced in other BBs
     for (auto &I : *BB)
-      I.replaceAllUsesWith(UndefValue::get(I.getType()));
+      I.replaceAllUsesWith(getDefaultValue(I.getType()));
     if (BB->getParent()->size() == 1) {
       // this is the last basic block of the function, thus we must also make
       // sure to remove comdat and set linkage to external

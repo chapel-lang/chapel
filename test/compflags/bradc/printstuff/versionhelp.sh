@@ -14,4 +14,6 @@ if [ "$CHPL_LLVM" != "none" ]
 then
   llvmver=`$compiler --version | grep 'built with LLVM' | awk '{print $5}'`
   echo "  built with LLVM version $llvmver"
+  llvmtgts=`$compiler --version | grep 'available LLVM targets'`
+  echo "$llvmtgts"
 fi

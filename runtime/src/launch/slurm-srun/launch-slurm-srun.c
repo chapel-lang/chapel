@@ -46,17 +46,10 @@ static char* walltime = NULL;
 static int generate_sbatch_script = 0;
 static char* nodelist = NULL;
 static char* partition = NULL;
+static char* reservation = NULL;
 static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
-
-
-typedef enum {
-  slurmpro,
-  uma,
-  slurm,
-  unknown
-} sbatchVersion;
 
 // /tmp is always available on cray compute nodes (it's a memory mounted dir.)
 // If we ever need this to run on non-cray machines, we should update this to
@@ -66,7 +59,8 @@ static const char* getTmpDir(void) {
 }
 
 // Check what version of slurm is on the system
-static sbatchVersion determineSlurmVersion(void) {
+// Returns 0 on success, 1 and prints an error message on failure
+static int checkSlurmVersion(void) {
   const int buflen = 256;
   char version[buflen];
   char *argv[3];
@@ -79,15 +73,12 @@ static sbatchVersion determineSlurmVersion(void) {
     chpl_error("Error trying to determine slurm version", 0, 0);
   }
 
-  if (strstr(version, "SBATCHPro")) {
-    return slurmpro;
-  } else if (strstr(version, "wrapper sbatch SBATCH UMA 1.0")) {
-    return uma;
-  } else if (strstr(version, "slurm")) {
-    return slurm;
-  } else {
-    return unknown;
+  if (!strstr(version, "slurm")) {
+    printf("Error: This launcher is only compatible with native slurm\n");
+    printf("Output of \"sbatch --version\" was: %s\n", version);
+    return 1;
   }
+  return 0;
 }
 
 static int nomultithread(int batch) {
@@ -110,6 +101,7 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   char buf[buflen];
   char partition_arg[128];
   char* argv[7];
+  char reservationBuf[128];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
   char* cpusPerTaskString = getenv("SLURM_CPUS_PER_TASK");
 
@@ -125,9 +117,14 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
     return numCores;
   }
 
-  argv[0] = (char *)  "sinfo";          // use sinfo to get num cpus
+  // We need the information about the partition that srun/sbatch will
+  // use.
+
+  argv[0] = (char *)  "sinfo";            // use sinfo to get num cpus
   argv[1] = (char *)  "--exact";        // get exact otherwise you get 16+, etc
-  argv[2] = (char *)  "--format=%c %Z"; // format for cpu/node and threads/cpu (%c %Z)
+  argv[2] = (char *)  "--format=%c %Z %i"; // format for cpu/node,
+                                           // threads/cpu, and reservation
+                                           // (%c %Z %i)
   argv[3] = (char *)  "--sort=+c";      // sort by num cpu (lower to higher)
   argv[4] = (char *)  "--noheader";     // don't show header (hide "CPU" header)
   argv[5] = NULL;
@@ -140,12 +137,45 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   }
 
   memset(buf, 0, buflen);
-  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0)
+  if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
     chpl_error("Error trying to determine number of cores per node", 0, 0);
+  }
 
-  if (sscanf(buf, "%d %d", &numCores, &threadsPerCore) != 2)
+  if (!strncmp("Invalid node format specification: i", buf,
+               strlen("Invalid node format specification: i"))) {
+    // older versions of sinfo don't support the %i format. Try again
+    // without it. We won't be able to exclude reservations, but there's
+    // not much we can do about that.
+    argv[2] = (char *)  "--format=%c %Z";
+    if (chpl_run_utility1K("sinfo", argv, buf, buflen) <= 0) {
+      chpl_error("Error trying to determine number of cores per node", 0, 0);
+    }
+  }
+
+  char *cursor = buf;
+  char *line;
+  chpl_bool found = false;
+  while ((line = strsep(&cursor, "\n")) != NULL) {
+    if (*line != '\0') {
+      int scanned = sscanf(line, "%d %d %127s", &numCores, &threadsPerCore,
+                         reservationBuf);
+      if (scanned == 2) {
+        if (!reservation) {
+          found = true;
+          break;
+        }
+      } else if (scanned == 3) {
+        if (reservation && (!strcmp(reservation, reservationBuf))) {
+          found = true;
+          break;
+        }
+      }
+    }
+  }
+  if (!found) {
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
+  }
 
   if (nomultithread) {
     if (localesPerNode == 1) {
@@ -227,15 +257,28 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     nodelist = getenv("CHPL_LAUNCHER_NODELIST");
   }
 
-  // command line partition takes precedence over env var
+  // command line partition takes precedence over Chapel env var
   if (!partition) {
     partition = getenv("CHPL_LAUNCHER_PARTITION");
+  }
+
+  // Chapel env var takes precedence over Slurm
+  if (!partition) {
+    partition = getenv("SLURM_PARTITION");
+  }
+
+  // job's partition trumps everything
+  char *tmp = getenv("SLURM_JOB_PARTITION");
+  if (tmp) {
+    partition = tmp;
   }
 
   // command line exclude takes precedence over env var
   if (!exclude) {
     exclude = getenv("CHPL_LAUNCHER_EXCLUDE");
   }
+
+  reservation = getenv("SLURM_RESERVATION");
 
   // request exclusive node access by default, but allow user to override
   if (nodeAccessEnv == NULL || strcmp(nodeAccessEnv, "exclusive") == 0) {
@@ -557,10 +600,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   int retcode;
 
   // check the slurm version before continuing
-  sbatchVersion sVersion = determineSlurmVersion();
-  if (sVersion != slurm) {
-    printf("Error: This launcher is only compatible with native slurm\n");
-    printf("Slurm version was %d\n", sVersion);
+  if (checkSlurmVersion()) {
     return 1;
   }
 

@@ -40,7 +40,7 @@ proc MASON_CACHED_REGISTRY {
   const masonHome = MASON_HOME;
   var cachedRegistry: list(string);
   for (name, _) in masonRegistry do
-    cachedRegistry.append(MASON_HOME + "/" + name);
+    cachedRegistry.pushBack(MASON_HOME + "/" + name);
 
   return cachedRegistry;
 }
@@ -73,7 +73,7 @@ proc MASON_REGISTRY {
   var registries: list(2*string);
 
   if env == "" {
-    registries.append(default);
+    registries.pushBack(default);
   } else {
     for str in env.split(',') {
       const regArr = str.split('|');
@@ -93,7 +93,7 @@ proc MASON_REGISTRY {
           // found a 'name|location' pair
           regTup = (regArr[0], regArr[1]);
         }
-        registries.append(regTup);
+        registries.pushBack(regTup);
       }
     }
 

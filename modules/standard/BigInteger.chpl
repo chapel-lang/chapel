@@ -409,32 +409,6 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead")
-    proc numLimbs : uint {
-      return chpl_gmp_mpz_nlimbs(this.mpz);
-    }
-
-    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead")
-    proc get_limbn(n: integral) : uint {
-      var   ret: uint;
-
-      if _local {
-        ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
-
-      } else if this.localeId == chpl_nodeID {
-        ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
-
-      } else {
-        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-        on __primitive("chpl_on_locale_num", thisLoc) {
-          ret = chpl_gmp_mpz_getlimbn(this.mpz, n);
-        }
-      }
-
-      return ret;
-    }
-
     @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
     proc mpzStruct() : __mpz_struct {
       return getImpl();
@@ -524,14 +498,14 @@ module BigInteger {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
         try! {
-          ret = createStringWithOwnedBuffer(tmpvar);
+          ret = string.createAdoptingBuffer(tmpvar);
         }
 
       } else if this.localeId == chpl_nodeID {
         var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
         try! {
-          ret = createStringWithOwnedBuffer(tmpvar);
+          ret = string.createAdoptingBuffer(tmpvar);
         }
 
       } else {
@@ -541,7 +515,7 @@ module BigInteger {
           var tmpvar = chpl_gmp_mpz_get_str(base_, this.mpz);
 
           try! {
-            ret = createStringWithOwnedBuffer(tmpvar);
+            ret = string.createAdoptingBuffer(tmpvar);
           }
         }
       }
@@ -4681,12 +4655,10 @@ module BigInteger {
     var localeId: chpl_nodeID_t;
   }
 
-  @chpldoc.nodoc
   proc bigint.chpl__serialize() {
     return new __serializeHelper(this.mpz, this.localeId);
   }
 
-  @chpldoc.nodoc
   proc type bigint.chpl__deserialize(data) {
     var ret: bigint;
     if data.localeId == chpl_nodeID {

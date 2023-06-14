@@ -56,20 +56,27 @@ static void maybeEmitWarningsForId(Context* context, ID idMention,
   parsing::reportUnstableWarningForId(context, idMention, idTarget);
 }
 
-static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
+static bool isField(const AstNode* d, bool atFieldLevel) {
   // anything declared directly in a record/class/union counts
   // for this purpose. (This covers nested classes / nested records).
+  if (d == nullptr) return false;
+
   if (atFieldLevel) {
-    return true;
+    return !d->isFunction();
   }
 
-  if (d != nullptr) {
-    if (auto fn = d->toFunction()) {
-      return fn->isMethod();
-    }
-    if (auto v = d->toVariable()) {
-      return v->isField();
-    }
+  if (auto v = d->toVariable()) {
+    return v->isField();
+  }
+
+  return false;
+}
+
+static bool isMethod(const AstNode* d, bool atFieldLevel) {
+  if (d == nullptr) return false;
+
+  if (auto fn = d->toFunction()) {
+    return atFieldLevel || fn->isMethod();
   }
 
   return false;
@@ -99,13 +106,15 @@ static void gather(DeclMap& declared,
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d, atFieldLevel),
+                                           isField(d, atFieldLevel),
+                                           isMethod(d, atFieldLevel),
                                            isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
     val.appendIdAndFlags(d->id(), visibility,
-                         isMethodOrField(d, atFieldLevel),
+                         isField(d, atFieldLevel),
+                         isMethod(d, atFieldLevel),
                          isParenfulFunction(d));
   }
 }
@@ -135,7 +144,7 @@ struct GatherDecls {
   bool atFieldLevel = false;
 
   GatherDecls(const AstNode* parentAst) {
-    if (parentAst && parentAst->isAggregateDecl()) {
+    if (parentAst && (parentAst->isAggregateDecl() || parentAst->isInterface())) {
       atFieldLevel = true;
     }
   }
@@ -206,7 +215,7 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, uast::Decl::PUBLIC, atFieldLevel);
+    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
     return false;
   }
   void exit(const Include* d) { }
@@ -296,13 +305,23 @@ isElseBlockOfConditionalWithIfVar(Context* context,
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
-static void populateScopeWithBuiltins(Context* context, Scope* scope) {
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+static void populateScopeWithBuiltinKeywords(Context* context, Scope* scope) {
+  scope->addBuiltin(UniqueString::get(context, "index"));
+}
 
-  for (const auto& pair : map) {
+static void populateScopeWithBuiltins(Context* context, Scope* scope) {
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
+
+  for (const auto& pair : typeMap) {
     scope->addBuiltin(pair.first);
   }
+  for (const auto& pair : globalMap) {
+    scope->addBuiltin(pair.first);
+  }
+
+  populateScopeWithBuiltinKeywords(context, scope);
 }
 
 // This query always constructs a scope
@@ -451,14 +470,15 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config,
                                 IdAndFlags::Flags filterFlags,
-                                IdAndFlags::Flags excludeFilter,
+                                const IdAndFlags::FlagSet& excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
                              bool onlyInnermost,
                              bool skipPrivateVisibilities,
-                             bool onlyMethodsFields);
+                             bool onlyMethodsFields,
+                             bool includeMethods);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -519,13 +539,14 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    UniqueString name,
                                    LookupConfig config,
                                    IdAndFlags::Flags filterFlags,
-                                   IdAndFlags::Flags excludeFilter,
+                                   const IdAndFlags::FlagSet& excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -576,6 +597,9 @@ bool LookupHelper::doLookupInImportsAndUses(
         if (onlyMethodsFields) {
           newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
         }
+        if (includeMethods) {
+          newConfig |= LOOKUP_METHODS;
+        }
         if (checkExternBlocks) {
           newConfig |= LOOKUP_EXTERN_BLOCKS;
         }
@@ -611,12 +635,14 @@ bool LookupHelper::doLookupInImportsAndUses(
         // Make sure the module / enum being renamed isn't private.
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
-        bool isMethodOrField = false; // target must be module/enum, not method
+        bool isField = false; // target must be module/enum, not field
+        bool isMethod = false; // target must be module/enum, not method
         bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
-                                                  isMethodOrField,
+                                                  isField,
+                                                  isMethod,
                                                   isParenfulFunction,
                                                   filterFlags,
                                                   excludeFilter);
@@ -637,7 +663,7 @@ bool LookupHelper::doLookupInImportsAndUses(
             traceResult->push_back(std::move(t));
           }
 
-          result.push_back(std::move(foundIds.getValue()));
+          result.push_back(std::move(*foundIds));
           found = true;
         }
       }
@@ -651,7 +677,8 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
                                          bool skipPrivateVisibilities,
-                                         bool onlyMethodsFields) {
+                                         bool onlyMethodsFields,
+                                         bool includeMethods) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -668,6 +695,10 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyMethodsFields) {
         newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+      }
+
+      if (includeMethods) {
+        newConfig |= LOOKUP_METHODS;
       }
 
       if (trace) {
@@ -817,10 +848,11 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
   for (const auto& exbId : exbIds) {
     if (externBlockContainsName(context, exbId, name)) {
       // note that this extern block can match 'name'
-      bool isMethodOrField = false; // not possible in an extern block
+      bool isField = false; // not possible in an extern block
+      bool isMethod = false; // not possible in an extern block
       bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
-      IdAndFlags::Flags excludeFlags = 0;
+      IdAndFlags::FlagSet excludeFlagSet;
 
       auto newId = ID::fabricateId(context, exbId, name,
                                    ID::ExternBlockElement);
@@ -828,10 +860,11 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
-                                                isMethodOrField,
+                                                isField,
+                                                isMethod,
                                                 isParenfulFunction,
                                                 filterFlags,
-                                                excludeFlags);
+                                                excludeFlagSet);
       if (foundIds) {
         if (traceCurPath && traceResult) {
           ResultVisibilityTrace t;
@@ -841,7 +874,7 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
           t.visibleThrough.push_back(std::move(elt));
           traceResult->push_back(std::move(t));
         }
-        result.push_back(std::move(foundIds.getValue()));
+        result.push_back(std::move(*foundIds));
       }
     }
   }
@@ -885,21 +918,24 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
-  IdAndFlags::Flags excludeFilter = 0;
+  IdAndFlags::FlagSet excludeFilter;
   if (skipPrivateVisibilities) {
     curFilter |= IdAndFlags::PUBLIC;
   }
   if (onlyMethodsFields) {
     curFilter |= IdAndFlags::METHOD_FIELD;
+  } else if (!includeMethods && receiverScopes.empty()) {
+    curFilter |= IdAndFlags::NOT_METHOD;
   }
-  // Note: curFilter can only represent combinations of positive flags;
-  // if it extended, it might no longer be possible to represent
-  // the combinedFilter below as a single bitset.
-  // Also note: setting excludeFilter in some way other than the
+  // note: setting excludeFilter in some way other than the
   // handling below with checkedScopes will require other adjustments.
+  // This is because the updated filter in checkedScopes will be assumed to
+  // contain all the past search information, but would be missing any
+  // additional information from modifying excludeFilter manually.
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -913,41 +949,30 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
   // update the checkedScopes map and return early if there is nothing to do.
   auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
-                                               curFilter));
+                                               IdAndFlags::FlagSet::singleton(curFilter)));
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
-    // Set flagsInMap to refer to the flags of the existing element
-    IdAndFlags::Flags& flagsInMap = p.first->second;
+    // Set flagsInMap to refer to the flag combinations of the existing element
+    IdAndFlags::FlagSet& flagsInMap = p.first->second;
 
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndFlags::Flags foundFilter = flagsInMap;
-    if ((curFilter & foundFilter) == foundFilter) {
+    if (flagsInMap.subsumes(curFilter)) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
       // (which, because these are filters, means that foundFilter is
-      //  less restricted / more general),
+      //  less restricted / more general / subsumes curFilter),
       // there is no need to visit this scope further.
       return false;
     }
 
     // ok, we can search for curFilter but exclude what was already found
-    excludeFilter = foundFilter;
+    excludeFilter = flagsInMap;
 
-    // Update checkedScopes to remove filter bits that weren't present
-    // in foundFilter (because we are going to update results
-    // with matches for the now-not-filtered-out cases).
-    // This is an approximation.
-    // Since we are storing only a single bit set, we cannot represent
-    // all combinations, e.g.:
-    //   if we had input foundFilter={PUBLIC} and curFilter={METHODS_OR_FIELDS},
-    //   we will search now for {PRIVATE,METHODS_OR_FIELDS},
-    //   but then we will have no way of recording that we have
-    //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
-    //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
-    IdAndFlags::Flags combinedFilter = foundFilter & curFilter;
-
-    flagsInMap = combinedFilter;
+    // Update checkedScopes to record that a search has occurred for
+    // curFilter. This means subsequent searches will not look at symbols
+    // that match curFilter, because those symbols would've already been found.
+    flagsInMap.addDisjunction(curFilter);
   }
 
   // if the scope has an extern block, note that fact.
@@ -999,7 +1024,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     got |= doLookupInAutoModules(scope, name,
                                  onlyInnermost,
                                  skipPrivateVisibilities,
-                                 onlyMethodsFields);
+                                 onlyMethodsFields,
+                                 includeMethods);
     if (onlyInnermost && got) return true;
   }
 
@@ -1424,7 +1450,8 @@ static void errorIfNameNotInScope(Context* context,
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_EXTERN_BLOCKS;
+                        LOOKUP_EXTERN_BLOCKS |
+                        LOOKUP_METHODS;
 
   bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
                                checkedScopes, result,
@@ -2117,8 +2144,8 @@ doWarnHiddenFormal(Context* context,
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
   IdAndFlags::Flags filterFlags = 0;
-  IdAndFlags::Flags excludeFlags = 0;
-  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
+  IdAndFlags::FlagSet excludeFlagSet;
+  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlagSet);
   for (const auto& b : ids) {
     for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);

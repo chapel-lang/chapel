@@ -69,8 +69,8 @@ module block_partition_iterators {
       // to allow submatrices with odd sized blocks on all sides.
       // -------------------------------------------------------------------
 
-    var block_leading_index_domain : domain (2, stridable=true) = 
-      matrix_domain by ( block_size, block_size );
+    var block_leading_index_domain : domain (2, strides=strideKind.positive) = 
+      matrix_domain by ( block_size: uint, block_size: uint );
 
     return block_leading_index_domain;
   }

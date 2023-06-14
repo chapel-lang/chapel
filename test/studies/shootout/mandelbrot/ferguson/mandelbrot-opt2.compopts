@@ -1,1 +1,1 @@
--suseNewFileWriterRegionBounds=true
+-suseNewFileWriterRegionBounds=true -sfileOffsetWithoutLocking=true

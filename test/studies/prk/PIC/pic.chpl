@@ -197,6 +197,7 @@ proc initializeGeometric() {
 }
 
 proc initializeSinusoidal() {
+  use Math;
 
   const step = pi/L;
 

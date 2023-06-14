@@ -143,9 +143,9 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
-# CXX11_STD is the flag to select C++11, or "unknown" for compilers
-# we don't know how to do that with yet.
-# If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
+# CXX11_STD is the flag to select C++11, blank for compilers that
+# don't know how to do that
+# Also, if a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
 
@@ -155,7 +155,11 @@ ifeq ($(GNU_GPP_MAJOR_VERSION),4)
 endif
 
 COMP_CFLAGS += $(C_STD)
+ifneq ($(CHPL_MAKE_LLVM_VERSION),16)
 COMP_CXXFLAGS += $(CXX14_STD)
+else
+# get the C++ standard flag from CMake
+endif
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -216,6 +220,19 @@ endif
 #
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
 SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
+endif
+
+#
+# This is similar to the use of -Wno-stringop-overflow just above, but
+# addressing a complaint that started showing up in gcc 13.1 about our
+# use of memmove() to implement local communications.  Given that we
+# haven't seen problems in practice and run testing with asan, I'm
+# squashing as in the previous case.
+#
+# Also skip this warning for GCC 12 since we saw the issue there in
+# some configurations.
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overread
 endif
 
 #
@@ -303,7 +320,19 @@ endif
 # that occur in GCC 12.
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 12; echo "$$?"),0)
+RUNTIME_CFLAGS += -Wno-use-after-free
 WARN_CXXFLAGS += -Wno-use-after-free
+SQUASH_WARN_GEN_CFLAGS += -Wno-use-after-free
+endif
+
+#
+# Avoid a GCC bug when combining -fsanitize=address -Wmaybe-uninitialized
+# As of May 2023, GCC 12 and 13 both had this bug.
+#
+ifneq ($(CHPL_MAKE_SANITIZE), none)
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-maybe-uninitialized
+endif
 endif
 
 #

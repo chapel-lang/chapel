@@ -87,6 +87,9 @@ test-venv: FORCE
 chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
+chpldef-venv: FORCE
+	cd chpl-venv && $(MAKE) chpldef-venv
+
 c2chapel-venv: FORCE
 	cd chpl-venv && $(MAKE) c2chapel-venv
 

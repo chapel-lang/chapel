@@ -303,6 +303,9 @@ struct Resolver {
                                                types::QualifiedType lhsType,
                                                types::QualifiedType rhsType);
 
+  const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
+                                            const types::CompositeType* ct);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
@@ -325,7 +328,9 @@ struct Resolver {
                                          const CallResolutionResult& c);
 
   // issue error for M.x where x is not found in a module M
-  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+  void issueErrorForFailedModuleDot(const uast::Dot* dot,
+                                    ID moduleId,
+                                    LookupConfig failedConfig);
 
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
@@ -391,6 +396,9 @@ struct Resolver {
 
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
+
+  // resolve a keyword call like index(D)
+  bool resolveSpecialKeywordCall(const uast::Call* call);
 
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
@@ -481,6 +489,9 @@ struct Resolver {
 
   bool enter(const uast::Range* decl);
   void exit(const uast::Range* decl);
+
+  bool enter(const uast::Domain* decl);
+  void exit(const uast::Domain* decl);
 
   // Note: Call cases here include Tuple
   bool enter(const uast::Call* call);

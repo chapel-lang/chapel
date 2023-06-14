@@ -2736,7 +2736,7 @@ type_alias_decl_stmt_inner:
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
     auto node = Variable::build(BUILDER, LOC(@$),
-                                context->buildAttributeGroup(@$),
+                                /*attributeGroup*/ nullptr,
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
@@ -2797,8 +2797,10 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
+      // delay building the attributes for a variable, then update it later
+      // in the context during the call to buildVarOrMultiDeclStmt
       auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     context->buildAttributeGroup(@$),
+                                     /*attributGroup*/nullptr,
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
@@ -2814,8 +2816,10 @@ var_decl_stmt_inner:
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
       auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
+      // delay building the attributes for a TupleDecl, then update it later
+      // in the context during the call to buildVarOrMultiDeclStmt
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->buildAttributeGroup(@$),
+                                        /*attributeGroup*/ nullptr,
                                         context->visibility,
                                         context->linkage,
                                         intentOrKind,

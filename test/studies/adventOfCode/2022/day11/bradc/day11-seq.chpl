@@ -33,7 +33,7 @@ for 1..numRounds {
   for m in MonkeySpace {
     NumInspected[m] += Items[m].size;
     for 1..Items[m].size {
-      var item = Items[m].pop();
+      var item = Items[m].popBack();
       select m {
         when 0 {
           if practice {
@@ -77,7 +77,7 @@ for 1..numRounds {
         }
       }
       item /= 3;
-      Items[TargetMonkey[m](item % divisor[m] == 0)].append(item);
+      Items[TargetMonkey[m](item % divisor[m] == 0)].pushBack(item);
     }
   }
 }

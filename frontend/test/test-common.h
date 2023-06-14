@@ -29,7 +29,9 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
+#include "chpl/uast/Module.h"
 #include <cassert>
 #include "./ErrorGuard.h"
 
@@ -45,5 +47,7 @@ parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
 chpl::uast::BuilderResult
 parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
                            const char* content);
+
+const chpl::uast::AstNode* findOnlyNamed(const chpl::uast::Module* mod, std::string name);
 
 #endif

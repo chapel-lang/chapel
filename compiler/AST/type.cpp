@@ -331,8 +331,14 @@ bool QualifiedType::isWideRefType() const {
 }
 
 const char* QualifiedType::qualStr() const {
-  if (isRefType())
-    return qualifierToStr(QUAL_REF);
+  if (isRefType()) {
+    if (_qual == QUAL_CONST_REF ||
+        _qual == QUAL_CONST) {
+      return qualifierToStr(QUAL_CONST_REF);
+    } else {
+      return qualifierToStr(QUAL_REF);
+    }
+  }
 
   if (isWideRefType())
     return qualifierToStr(QUAL_WIDE_REF);
@@ -1048,7 +1054,7 @@ void initPrimitiveTypes() {
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
@@ -1327,65 +1333,41 @@ void initChplProgram() {
 
 // Appends a VarSymbol to the root module and gives it the bool immediate
 // matching 'value'. For use in initCompilerGlobals.
-static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+
+template <typename T>
+VarSymbol* createCompilerGlobalParam(const char* name, T value);
+
+template <>
+VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
+  auto globalVar = new VarSymbol(name, dtBool);
+  globalVar->addFlag(FLAG_PARAM);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
 
   if (value) {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gTrue->immediate;
+    paramMap.put(globalVar, gTrue);
 
   } else {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gFalse->immediate;
+    paramMap.put(globalVar, gFalse);
   }
+
+  return globalVar;
 }
 
 void initCompilerGlobals() {
-
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
-
-  gCastChecking = new VarSymbol("castChecking", dtBool);
-  gCastChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCastChecking, !fNoCastChecks);
-
-  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
-  gNilChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
-  gOverloadSetsChecks->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
-
-  gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
-  gDivZeroChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
-
-  gCacheRemote = new VarSymbol("CHPL_CACHE_REMOTE", dtBool);
-  gCacheRemote->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCacheRemote, fCacheRemote);
-
-  gPrivatization = new VarSymbol("_privatization", dtBool);
-  gPrivatization->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
-
-  gLocal = new VarSymbol("_local", dtBool);
-  gLocal->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLocal, fLocal);
-
-  gWarnUnstable = new VarSymbol("chpl_warnUnstable", dtBool);
-  gWarnUnstable->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gWarnUnstable, fWarnUnstable);
+  auto& compilationGlobals = gContext->configuration().compilationGlobals;
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilationGlobals.FIELD__));
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
-
-  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
-  gUseIOFormatters->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
 
   initForTaskIntents();
 }
@@ -2262,12 +2244,4 @@ getDataClassType(TypeSymbol* ts) {
 void
 setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
   ts->type->setSubstitutionWithName(astr("eltType"), ets);
-}
-
-const char* getConstnessSpecifierForDataClass(TypeSymbol* ts) {
-  const char* constness = "";
-  if (ts->hasFlag(FLAG_C_PTRCONST_CLASS)) {
-    constness = "const ";
-  }
-  return constness;
 }

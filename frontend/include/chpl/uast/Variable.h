@@ -113,6 +113,7 @@ class Variable final : public VarLikeDecl {
    */
   void setInitExprForConfig(owned<AstNode> ie);
 
+
  public:
   ~Variable() override = default;
 

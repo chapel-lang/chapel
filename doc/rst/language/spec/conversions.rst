@@ -85,7 +85,7 @@ may result in a loss of precision.
    particularly given that floating point types are approximate by
    nature.
 
-Signed integral types ``int(s)`` can implicitly convert to ``uint(s)``
+Signed integral types ``int(s)`` can implicitly convert to ``uint(t)``
 where ``s <= t``.
 
    *Rationale*.

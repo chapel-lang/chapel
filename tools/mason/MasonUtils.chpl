@@ -36,7 +36,7 @@ extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
   var cname: c_string = name.c_str();
   var value = getenv(cname);
-  return createStringWithNewBuffer(value);
+  return string.createCopyingBuffer(value);
 }
 
 
@@ -557,10 +557,10 @@ proc getDepToml(depName: string, depVersion: string) throws {
         const ver = findLatest(searchDir + dir);
         const versionZero = new VersionInfo(0, 0, 0);
         if ver != versionZero {
-          results.append(name + " (" + ver.str() + ")");
-          packages.append(name);
-          versions.append(ver.str());
-          registries.append(registry);
+          results.pushBack(name + " (" + ver.str() + ")");
+          packages.pushBack(name);
+          versions.pushBack(ver.str());
+          registries.pushBack(registry);
         }
       }
     }

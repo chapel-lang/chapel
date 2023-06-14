@@ -39,7 +39,6 @@
 module Reflection {
 
 // Used to test "--warn-unstable-standard", ignore.
-pragma "no doc"
 @unstable
 var chpl_unstableStandardSymbolForTesting: int;
 chpl_unstableStandardSymbolForTesting;
@@ -274,29 +273,29 @@ inline proc getField(const ref x:?t, param s:string) const ref {
    types can be added to isImplementedWithRecords() as needed.
 */
 
-pragma "no doc"
+@chpldoc.nodoc
 proc isImplementedWithRecords(type t) param do
   return isRangeType(t) || isStringType(t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc numImplementationFields(type t) param : int
   where isImplementedWithRecords(t) do
   return __primitive("num fields", t);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getImplementationField(const ref x:?t, param i: int) type
   where isImplementedWithRecords(t) &&
         isType(__primitive("field by num", x, i)) do
   return __primitive("field by num", x, i);
 
-pragma "no doc"
+@chpldoc.nodoc
 proc getImplementationField(const ref x:?t, param i: int) param
   where isImplementedWithRecords(t) &&
         isParam(__primitive("field by num", x, i)) do
   return __primitive("field by num", x, i);
 
-pragma "no doc"
 pragma "unsafe"
+@chpldoc.nodoc
 proc getImplementationField(const ref x:?t, param i:int) const ref {
   if !isImplementedWithRecords(t) then
     compilerError("an argument of the type ", t:string,

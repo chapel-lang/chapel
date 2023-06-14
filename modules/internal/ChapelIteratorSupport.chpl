@@ -45,17 +45,17 @@ module ChapelIteratorSupport {
   //
   // module support for iterators
   //
-  pragma "no doc"
   pragma "allow ref" // needs to to return tuples with refs
   pragma "fn returns iterator"
+  @chpldoc.nodoc
   proc iteratorIndex(ic: _iteratorClass) {
     ic.advance();
     return ic.getValue();
   }
 
-  pragma "no doc"
   pragma "expand tuples with values"  // needs to return tuples with refs
   pragma "fn returns iterator"
+  @chpldoc.nodoc
   proc iteratorIndex(t: _tuple) {
     pragma "expand tuples with values"
     proc iteratorIndexHelp(t: _tuple, param dim: int) {
@@ -69,7 +69,7 @@ module ChapelIteratorSupport {
     return iteratorIndexHelp(t, 0);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc iteratorIndexType(x) type {
    // If the result is a runtime type, we do not want to call iteratorIndex()
    // - to avoid ic.advance(). We can do this for an array or a domain.
@@ -100,7 +100,7 @@ module ChapelIteratorSupport {
    }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc iteratorIndexTypeZip(xs...) type {
     proc iteratorIndexTypeZipHelp(param dim) type {
       if dim == xs.size-1 then
@@ -123,7 +123,6 @@ module ChapelIteratorSupport {
   //
   // This function IS executed at runtime - and 'x' is advanced once -
   // because the returned type is an array and so has a runtime component.
-  pragma "no doc"
   proc chpl_elemTypeForReducingIterables(x) type {
 
     // Part 1 - get the first element yielded by 'x'
@@ -166,7 +165,7 @@ module ChapelIteratorSupport {
   // RTT is **initialized**. Important: no accessing the uninitialized RTTs.
   //
   // It took some acrobatics to get the domain's distribution type,
-  // rank, idxType, stridable from 'domType', and the same plus
+  // rank, idxType, strides from 'domType', and the same plus
   // (even more acrobatics) eltType from 'arrType'.
   // Ideally we'd get them **directly** from domType/arrType.
   //
@@ -276,7 +275,7 @@ module ChapelIteratorSupport {
     // a BaseDist subclass. We use 'defaultDist' for that.
     // The other args are always compile-time only.
     return chpl__buildDomainRuntimeType(defaultDist, domInst.rank,
-                                        domInst.idxType, domInst.stridable);
+                                        domInst.idxType, domInst.strides);
   }
 
   // Other kinds of arrays/domains are not supported.
@@ -364,9 +363,9 @@ module ChapelIteratorSupport {
     }
   }
 
-  pragma "no doc"
-  proc _iteratorRecord.encodeTo(f) throws {
-    writeThis(f);
+  @chpldoc.nodoc
+  proc _iteratorRecord.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   operator =(ref ic: _iteratorRecord, xs) {
@@ -699,12 +698,12 @@ module ChapelIteratorSupport {
 
   // helper functions used by the below iterators to check if the argument is a
   // value or reference iterator.
-  pragma "no doc"
+  @chpldoc.nodoc
   proc singleValIter(iterables: _tuple) param {
     return iterables.size == 1 && !isRefIter(_getIterator(iterables(0)));
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc singleRefIter(iterables: _tuple) param  {
     return iterables.size == 1 && isRefIter(_getIterator(iterables(0)));
   }

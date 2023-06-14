@@ -37,6 +37,7 @@ int nQueryThreeRuns = 0;
 int nQueryFourRuns = 0;
 int nQueryFiveRuns = 0;
 int nQuerySixRuns = 0;
+int nQuerySevenRuns = 0;
 
 static const std::string& inputQuery(Context* context, int unused) {
   QUERY_BEGIN_INPUT(inputQuery, context, unused);
@@ -120,6 +121,16 @@ static const std::string& querySix(Context* context, int unused) {
   return QUERY_END(result);
 }
 
+static const int& querySeven(Context* context, int unused) {
+  QUERY_BEGIN(querySeven, context, unused);
+
+  int result = queryThree(context, 0);
+  result *= 2;
+  nQuerySevenRuns++;
+  printf("querySeven returning %d\n", result);
+
+  return QUERY_END(result);
+}
 
 
 static void test0() {
@@ -270,6 +281,7 @@ static void test4() {
   nQueryFourRuns = 0;
   nQueryFiveRuns = 0;
   nQuerySixRuns = 0;
+  nQuerySevenRuns = 0;
   std::string q6 = querySix(context, 0);
   assert(nInputQueryRuns == 1);
   assert(nQueryOneRuns == 1);
@@ -278,6 +290,7 @@ static void test4() {
   assert(nQueryFourRuns == 1);
   assert(nQueryFiveRuns == 0);
   assert(nQuerySixRuns == 1);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant worldhello there giant world");
 
   // run it again with no changes
@@ -291,6 +304,7 @@ static void test4() {
   assert(nQueryFourRuns == 1);
   assert(nQueryFiveRuns == 0);
   assert(nQuerySixRuns == 1);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant worldhello there giant world");
 
   // run it again with something that is still odd length
@@ -306,6 +320,7 @@ static void test4() {
   assert(nQueryFourRuns == 2);
   assert(nQueryFiveRuns == 0);
   assert(nQuerySixRuns == 2);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there worldhello there world");
 
   // now change to something that is of even length
@@ -321,6 +336,7 @@ static void test4() {
   assert(nQueryFourRuns == 2);
   assert(nQueryFiveRuns == 1);
   assert(nQuerySixRuns == 3);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "helloworld..");
 }
 
@@ -342,6 +358,7 @@ static void test5() {
   nQueryFourRuns = 0;
   nQueryFiveRuns = 0;
   nQuerySixRuns = 0;
+  nQuerySevenRuns = 0;
   std::string q6 = querySix(context, 0);
   assert(nInputQueryRuns == 1);
   assert(nQueryOneRuns == 1);
@@ -350,6 +367,7 @@ static void test5() {
   assert(nQueryFourRuns == 0);
   assert(nQueryFiveRuns == 1);
   assert(nQuerySixRuns == 1);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant world...");
 
   // run it again with no changes
@@ -363,6 +381,7 @@ static void test5() {
   assert(nQueryFourRuns == 0);
   assert(nQueryFiveRuns == 1);
   assert(nQuerySixRuns == 1);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant world...");
 
   // run it again with something that is still even length
@@ -378,6 +397,7 @@ static void test5() {
   assert(nQueryFourRuns == 0);
   assert(nQueryFiveRuns == 2);
   assert(nQuerySixRuns == 2);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant wrld..");
 
 
@@ -394,7 +414,107 @@ static void test5() {
   assert(nQueryFourRuns == 1);
   assert(nQueryFiveRuns == 2);
   assert(nQuerySixRuns == 3);
+  assert(nQuerySevenRuns == 0);
   assert(q6 == "hello there giant worldhello there giant world");
+}
+
+// Pre-test for test6b
+// query three's result doesn't change even when query one's result changes, so
+// query seven is not recomputed.
+static void test6a() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // get a baseline
+  printf("part 1\n");
+  inputString = "hello world";
+  nInputQueryRuns = 0;
+  nQueryOneRuns = 0;
+  nQueryTwoRuns = 0;
+  nQueryThreeRuns = 0;
+  nQueryFourRuns = 0;
+  nQueryFiveRuns = 0;
+  nQuerySixRuns = 0;
+  nQuerySevenRuns = 0;
+
+  std::ignore = querySeven(context, /* unused */ 0);
+  assert(nInputQueryRuns == 1);
+  assert(nQueryOneRuns == 1);
+  assert(nQueryTwoRuns == 0);
+  assert(nQueryThreeRuns == 1);
+  assert(nQueryFourRuns == 0);
+  assert(nQueryFiveRuns == 0);
+  assert(nQuerySixRuns == 0);
+  assert(nQuerySevenRuns == 1);
+
+  context->advanceToNextRevision(false);
+  printf("part 2\n");
+  inputString = "world hello"; /* Same parity as hello world, should not re-compute query 7. */
+  std::ignore = querySeven(context, /* unused */ 0);
+  assert(nInputQueryRuns == 2);
+  assert(nQueryOneRuns == 2);
+  assert(nQueryTwoRuns == 0);
+  assert(nQueryThreeRuns == 2);
+  assert(nQueryFourRuns == 0);
+  assert(nQueryFiveRuns == 0);
+  assert(nQuerySixRuns == 0);
+  assert(nQuerySevenRuns == 1);
+}
+
+// This is pretty much the same as 6a, except the sub-computation of 3->1->i
+// is computed separately before 7 is ever invoked. This is a regression test
+// for a bug in the query system in which query 7 could be made to depend on
+// query 1, thus making it be recomputed.
+static void test6b() {
+  Context ctx;
+  Context* context = &ctx;
+
+  // get a baseline
+  printf("part 1\n");
+  inputString = "hello world";
+  nInputQueryRuns = 0;
+  nQueryOneRuns = 0;
+  nQueryTwoRuns = 0;
+  nQueryThreeRuns = 0;
+  nQueryFourRuns = 0;
+  nQueryFiveRuns = 0;
+  nQuerySixRuns = 0;
+  nQuerySevenRuns = 0;
+
+  std::ignore = queryThree(context, /* unused */ 0);
+  assert(nInputQueryRuns == 1);
+  assert(nQueryOneRuns == 1);
+  assert(nQueryTwoRuns == 0);
+  assert(nQueryThreeRuns == 1);
+  assert(nQueryFourRuns == 0);
+  assert(nQueryFiveRuns == 0);
+  assert(nQuerySixRuns == 0);
+  assert(nQuerySevenRuns == 0);
+
+  context->advanceToNextRevision(false);
+  printf("part 2\n");
+  std::ignore = querySeven(context, /* unused */ 0);
+  assert(nInputQueryRuns == 2);
+  assert(nQueryOneRuns == 1);
+  assert(nQueryTwoRuns == 0);
+  assert(nQueryThreeRuns == 1);
+  assert(nQueryFourRuns == 0);
+  assert(nQueryFiveRuns == 0);
+  assert(nQuerySixRuns == 0);
+  assert(nQuerySevenRuns == 1);
+
+  context->advanceToNextRevision(false);
+  printf("part 3\n");
+  inputString = "world hello"; /* Same parity as hello world, should not re-compute query 7. */
+  std::ignore = querySeven(context, /* unused */ 0);
+  assert(nInputQueryRuns == 3);
+  assert(nQueryOneRuns == 2);
+  assert(nQueryTwoRuns == 0);
+  assert(nQueryThreeRuns == 2);
+  assert(nQueryFourRuns == 0);
+  assert(nQueryFiveRuns == 0);
+  assert(nQuerySixRuns == 0);
+  assert(nQuerySevenRuns == 1);
 }
 
 int main() {
@@ -404,6 +524,8 @@ int main() {
   test3();
   test4();
   test5();
+  test6a();
+  test6b();
 
   return 0;
 }

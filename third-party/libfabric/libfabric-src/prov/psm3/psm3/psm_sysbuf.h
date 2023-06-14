@@ -72,10 +72,10 @@ typedef struct psmi_mem_ctrl {
 /*
  * MQ unexpected buffer management
  */
-void  psmi_mq_sysbuf_init(psm2_mq_t mq);
-void  psmi_mq_sysbuf_fini(psm2_mq_t mq);
-void* psmi_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t nbytes);
-void  psmi_mq_sysbuf_free(psm2_mq_t mq, void *);
-void  psmi_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len);
+void  psm3_mq_sysbuf_init(psm2_mq_t mq);
+void  psm3_mq_sysbuf_fini(psm2_mq_t mq);
+void* psm3_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t nbytes);
+void  psm3_mq_sysbuf_free(psm2_mq_t mq, void *);
+void  psm3_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len);
 
 #endif /* SYSBUF_INT_H */

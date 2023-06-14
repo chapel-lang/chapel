@@ -208,6 +208,7 @@ module CommDiagnostics
      and forth between the two.  This first definition duplicates the
      one in the comm layer(s).
    */
+  pragma "chpldoc ignore chpl prefix"
   extern record chpl_commDiagnostics {
     /*
       blocking GETs, in which initiator waits for completion
@@ -465,7 +466,8 @@ module CommDiagnostics
     :type printEmptyColumns: `bool`
   */
   proc printCommDiagnosticsTable(printEmptyColumns=false) {
-    use Reflection;
+    use Reflection, Math;
+
     param unstable = "unstable";
 
     // grab all comm diagnostics

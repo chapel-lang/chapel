@@ -669,7 +669,6 @@ bool isNumericParamDefaultType(Type* type);
 
 TypeSymbol* getDataClassType(TypeSymbol* ts);
 void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
-const char* getConstnessSpecifierForDataClass(TypeSymbol* ts);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

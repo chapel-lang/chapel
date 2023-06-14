@@ -155,6 +155,72 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 #define OFI_OP_READ_COMPLEX		OFI_OP_READ
 #define OFI_OP_WRITE_COMPLEX		OFI_OP_WRITE
 
+#if defined(HAVE_BUILTIN_MM_INT128_ATOMICS)
+
+/*
+ * If the compiler supports 128-bit integer types and atomics,
+ *  then existing macros will just work.
+ */
+#define OFI_DEF_WRITE_INT128_NAME(op, type)	OFI_DEF_WRITE_NAME(op, type)
+#define OFI_DEF_WRITE_INT128_FUNC(op, type)	OFI_DEF_WRITE_FUNC(op, type)
+#define OFI_DEF_WRITEEXT_INT128_NAME(op, type)	OFI_DEF_WRITEEXT_NAME(op, type)
+#define OFI_DEF_WRITEEXT_INT128_FUNC(op, type)	OFI_DEF_WRITEEXT_FUNC(op, type)
+#define OFI_DEF_WRITEEXT_CMP_INT128_NAME(op, type)	\
+	OFI_DEF_WRITEEXT_CMP_NAME(op, type)
+#define OFI_DEF_WRITEEXT_CMP_INT128_FUNC(op, type)	\
+	OFI_DEF_WRITEEXT_CMP_FUNC(op, type)
+#define OFI_DEF_READ_INT128_NAME(op, type)	OFI_DEF_READ_NAME(op, type)
+#define OFI_DEF_READ_INT128_FUNC(op, type)	OFI_DEF_READ_FUNC(op, type)
+#define OFI_DEF_READWRITE_INT128_NAME(op, type)	OFI_DEF_READWRITE_NAME(op, type)
+#define OFI_DEF_READWRITE_INT128_FUNC(op, type)	OFI_DEF_READWRITE_FUNC(op, type)
+#define OFI_DEF_READWRITEEXT_INT128_NAME(op, type)	\
+	OFI_DEF_READWRITEEXT_NAME(op, type)
+#define OFI_DEF_READWRITEEXT_INT128_FUNC(op, type)	\
+	OFI_DEF_READWRITEEXT_FUNC(op, type)
+#define OFI_DEF_READWRITEEXT_CMP_INT128_NAME(op, type)	\
+	OFI_DEF_READWRITEEXT_CMP_NAME(op, type)
+#define OFI_DEF_READWRITEEXT_CMP_INT128_FUNC(op, type)	\
+	OFI_DEF_READWRITEEXT_CMP_FUNC(op, type)
+#define OFI_DEF_EXCHANGE_INT128_NAME(op, type)	OFI_DEF_EXCHANGE_NAME(op, type)
+#define OFI_DEF_EXCHANGE_INT128_FUNC(op, type)	OFI_DEF_EXCHANGE_FUNC(op, type)
+#define OFI_DEF_CSWAP_INT128_NAME(op, type)	OFI_DEF_CSWAP_NAME(op, type)
+#define OFI_DEF_CSWAP_INT128_FUNC(op, type)	OFI_DEF_CSWAP_FUNC(op, type)
+#define OFI_DEF_CSWAPEXT_INT128_NAME(op, type)	OFI_DEF_CSWAPEXT_NAME(op, type)
+#define OFI_DEF_CSWAPEXT_INT128_FUNC(op, type)	OFI_DEF_CSWAPEXT_FUNC(op, type)
+#define OFI_DEF_CSWAPEXT_CMP_INT128_NAME(op, type)	\
+	OFI_DEF_CSWAPEXT_CMP_NAME(op, type)
+#define OFI_DEF_CSWAPEXT_CMP_INT128_FUNC(op, type)	\
+	OFI_DEF_CSWAPEXT_CMP_FUNC(op, type)
+
+#else /* HAVE_BUILTIN_MM_INT128_ATOMICS */
+
+/* Otherwise, we support only nothing */
+
+#define OFI_DEF_WRITE_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_WRITE_INT128_FUNC(op, type)
+#define OFI_DEF_WRITEEXT_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_WRITEEXT_INT128_FUNC(op, type)
+#define OFI_DEF_WRITEEXT_CMP_INT128_NAME(op, type) NULL,
+#define OFI_DEF_WRITEEXT_CMP_INT128_FUNC(op, type)
+#define OFI_DEF_READ_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_READ_INT128_FUNC(op, type)
+#define OFI_DEF_READWRITE_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_READWRITE_INT128_FUNC(op, type)
+#define OFI_DEF_READWRITEEXT_INT128_NAME(op, type) NULL,
+#define OFI_DEF_READWRITEEXT_INT128_FUNC(op, type)
+#define OFI_DEF_READWRITEEXT_CMP_INT128_NAME(op, type) NULL,
+#define OFI_DEF_READWRITEEXT_CMP_INT128_FUNC(op, type)
+#define OFI_DEF_EXCHANGE_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_EXCHANGE_INT128_FUNC(op, type)
+#define OFI_DEF_CSWAP_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_CSWAP_INT128_FUNC(op, type)
+#define OFI_DEF_CSWAPEXT_INT128_NAME(op, type)	NULL,
+#define OFI_DEF_CSWAPEXT_INT128_FUNC(op, type)
+#define OFI_DEF_CSWAPEXT_CMP_INT128_NAME(op, type) NULL,
+#define OFI_DEF_CSWAPEXT_CMP_INT128_FUNC(op, type)
+
+#endif /* HAVE_BUILTIN_MM_INT128_ATOMICS */
+
 /********************************
  * ATOMIC TYPE function templates
  ********************************/
@@ -730,11 +796,13 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
-	OFI_DEF_NOOP_##FUNCNAME
+	OFI_DEF_NOOP_##FUNCNAME                                         \
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_int128_t)	\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_uint128_t)
 
 #ifdef HAVE_BUILTIN_MM_ATOMICS
 
-/* Only support 8 byte and under datatypes */
+/* Only support 8 byte and under datatypes and non-complex 16 byte types */
 #define OFI_DEFINE_ALL_HANDLERS(ATOMICTYPE, FUNCNAME, op)		\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, int8_t)			\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, uint8_t)			\
@@ -749,7 +817,9 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 	OFI_DEF_##ATOMICTYPE##_COMPLEX_##FUNCNAME(op ##_COMPLEX, float)	\
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
-	OFI_DEF_NOOP_##FUNCNAME
+	OFI_DEF_NOOP_##FUNCNAME						\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_int128_t)	\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_uint128_t)
 
 #define OFI_DEFINE_REALNO_HANDLERS(ATOMICTYPE, FUNCNAME, op)		\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, int8_t)			\
@@ -765,7 +835,9 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
-	OFI_DEF_NOOP_##FUNCNAME
+	OFI_DEF_NOOP_##FUNCNAME						\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_int128_t)	\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_uint128_t)
 
 #else /* HAVE_BUILTIN_MM_ATOMICS */
 
@@ -783,7 +855,9 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 	OFI_DEF_##ATOMICTYPE##_COMPLEX_##FUNCNAME(op ##_COMPLEX, float)	\
 	OFI_DEF_##ATOMICTYPE##_COMPLEX_##FUNCNAME(op ##_COMPLEX, double)\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, long_double)		\
-	OFI_DEF_##ATOMICTYPE##_COMPLEX_##FUNCNAME(op ##_COMPLEX, long_double)
+	OFI_DEF_##ATOMICTYPE##_COMPLEX_##FUNCNAME(op ##_COMPLEX, long_double) \
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_int128_t)	\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_uint128_t)
 
 #define OFI_DEFINE_REALNO_HANDLERS(ATOMICTYPE, FUNCNAME, op)		\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, int8_t)			\
@@ -799,12 +873,18 @@ size_t ofi_datatype_size(enum fi_datatype datatype)
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_NOOP_##FUNCNAME						\
 	OFI_DEF_##ATOMICTYPE##_##FUNCNAME(op, long_double)		\
-	OFI_DEF_NOOP_##FUNCNAME
+	OFI_DEF_NOOP_##FUNCNAME						\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_int128_t)	\
+	OFI_DEF_##ATOMICTYPE##_INT128_##FUNCNAME(op, ofi_uint128_t)
 
 #endif /* HAVE_BUILTIN_MM_ATOMICS */
 
-#define OFI_OP_NOT_SUPPORTED(op)	NULL, NULL, NULL, NULL, NULL,	\
-			NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+/* 5 per line to be easily counted by inspection. */
+#define OFI_OP_NOT_SUPPORTED(op)		\
+	NULL, NULL, NULL, NULL, NULL,		\
+	NULL, NULL, NULL, NULL, NULL,		\
+	NULL, NULL, NULL, NULL, NULL,		\
+	NULL
 
 #ifdef HAVE_BUILTIN_MM_ATOMICS
 
@@ -824,7 +904,7 @@ OFI_DEFINE_ALL_HANDLERS(WRITEEXT, FUNC, OFI_OP_LXOR)
 OFI_DEFINE_INT_HANDLERS(WRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(WRITEEXT_CMP, NAME, OFI_OP_MIN) },
@@ -858,7 +938,7 @@ OFI_DEFINE_INT_HANDLERS(READWRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(READ, FUNC, OFI_OP_READ)
 OFI_DEFINE_ALL_HANDLERS(EXCHANGE, FUNC, OFI_OP_READWRITE)
 
-void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(READWRITEEXT_CMP, NAME, OFI_OP_MIN) },
@@ -887,7 +967,7 @@ OFI_DEFINE_REALNO_HANDLERS(CSWAPEXT_CMP, FUNC, OFI_OP_CSWAP_GE)
 OFI_DEFINE_REALNO_HANDLERS(CSWAPEXT_CMP, FUNC, OFI_OP_CSWAP_GT)
 OFI_DEFINE_INT_HANDLERS(CSWAPEXT, FUNC, OFI_OP_MSWAP)
 
-void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, const void *cmp, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_ALL_HANDLERS(CSWAP, NAME, OFI_OP_CSWAP_EQ) },
@@ -922,7 +1002,7 @@ OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_LXOR)
 OFI_DEFINE_INT_HANDLERS(WRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(WRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(WRITE, NAME, OFI_OP_MIN) },
@@ -956,7 +1036,7 @@ OFI_DEFINE_INT_HANDLERS(READWRITE, FUNC, OFI_OP_BXOR)
 OFI_DEFINE_ALL_HANDLERS(READ, FUNC, OFI_OP_READ)
 OFI_DEFINE_ALL_HANDLERS(READWRITE, FUNC, OFI_OP_WRITE)
 
-void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_REALNO_HANDLERS(READWRITE, NAME, OFI_OP_MIN) },
@@ -985,7 +1065,7 @@ OFI_DEFINE_REALNO_HANDLERS(CSWAP, FUNC, OFI_OP_CSWAP_GE)
 OFI_DEFINE_REALNO_HANDLERS(CSWAP, FUNC, OFI_OP_CSWAP_GT)
 OFI_DEFINE_INT_HANDLERS(CSWAP, FUNC, OFI_OP_MSWAP)
 
-void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][FI_DATATYPE_LAST])
+void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][OFI_DATATYPE_CNT])
 	(void *dst, const void *src, const void *cmp, void *res, size_t cnt) =
 {
 	{ OFI_DEFINE_ALL_HANDLERS(CSWAP, NAME, OFI_OP_CSWAP_EQ) },
@@ -1026,7 +1106,7 @@ int ofi_atomic_valid(const struct fi_provider *prov,
 		return -FI_EBADFLAGS;
 	}
 
-	if (datatype >= FI_DATATYPE_LAST) {
+	if (datatype >= OFI_DATATYPE_CNT) {
 		FI_INFO(prov, FI_LOG_DOMAIN, "Invalid datatype\n");
 		return -FI_EOPNOTSUPP;
 	}

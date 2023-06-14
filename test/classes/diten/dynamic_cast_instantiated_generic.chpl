@@ -5,6 +5,6 @@ class C {
 
 proc main {
   var c = (new owned C(int, 1, 2)).borrow();
-  var o: object = c;
+  var o: RootClass = c;
   writeln((o:c.type).a);
 }

@@ -29,6 +29,7 @@ module ChapelSyncvar {
   use SyncVarRuntimeSupport;
 
   use CTypes;
+  use OS.POSIX;
 
   /************************************ | *************************************
   *                                                                           *
@@ -73,7 +74,7 @@ module ChapelSyncvar {
       compilerError("sync/single types cannot contain generic types");
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param useNativeSyncVar = true;
 
   // use native sync vars if they're enabled and supported for the valType
@@ -87,25 +88,24 @@ module ChapelSyncvar {
 
   // TODO: Should we replace this with functionality from 'MemMove'? Would
   // that cause problems with the module initialization order?
-  pragma "no doc"
   pragma "unsafe"
+  @chpldoc.nodoc
   private inline proc _moveSet(ref dst: ?t, ref src: t) lifetime src == dst {
     __primitive("=", dst, src);
   }
 
-  pragma "no doc"
   pragma "unsafe"
+  @chpldoc.nodoc
   private inline proc _retEmptyVal(type t) {
     pragma "no init"
     pragma "no auto destroy"
     var ret: t;
     // It will be an error to read the empty value
     // but we zero it just in case
-    c_memset(c_ptrTo(ret), 0, c_sizeof(t));
+    memset(c_addrOf(ret), 0, c_sizeof(t));
     return ret;
   }
 
-  pragma "no doc"
   proc chpl__readXX(x) do return x;
 
   /************************************ | *************************************
@@ -116,7 +116,7 @@ module ChapelSyncvar {
 
   pragma "sync"
   pragma "default intent is ref"
-  pragma "no doc"
+  @chpldoc.nodoc
   record _syncvar {
     type valType;                              // The compiler knows this name
 
@@ -185,7 +185,8 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
-    proc type decodeFrom(r) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
       return ret;
@@ -289,86 +290,86 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator =(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'sync' variables is deprecated; apply a 'write??()' method to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
     return new _syncvar(from);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="Casting sync variables is deprecated")
   inline operator :(from: _syncvar, type toType:_syncvar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator +=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() +  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator -=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() -  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator *=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() *  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator /=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() /  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator %=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() %  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator **=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ** rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator &=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() &  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator |=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() |  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator ^=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() ^  rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator >>=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() >> rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <<=(ref lhs : _syncvar(?t), rhs : t) {
     compilerWarning("'op=' assignments to 'sync' variables are deprecated; add explicit '.read??'/'.write??' methods to modify one");
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
@@ -393,7 +394,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
@@ -409,10 +409,9 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  pragma "no doc"
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=>(lhs : _syncvar, ref rhs) {
     const tmp = lhs;
 
@@ -420,7 +419,7 @@ module ChapelSyncvar {
     rhs = tmp;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=>(ref lhs, rhs : _syncvar) {
     const tmp = lhs;
 
@@ -428,7 +427,7 @@ module ChapelSyncvar {
     rhs = tmp;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator <=>(lhs : _syncvar, rhs : _syncvar) {
     compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
     const tmp = lhs.readFE();
@@ -442,7 +441,7 @@ module ChapelSyncvar {
   *                                                                           *
   ************************************* | ************************************/
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _synccls {
     type valType;
 
@@ -554,7 +553,7 @@ module ChapelSyncvar {
         var localRet : valType;
 
         if isPODType(valType) ||
-           chpl_sync_isFull(c_ptrTo(value), syncAux) {
+           chpl_sync_isFull(c_addrOf(value), syncAux) {
           localRet = value;
         } else {
           // otherwise, just use the default value:
@@ -598,7 +597,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         _moveSet(value, localVal);
@@ -618,7 +617,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         _moveSet(value, localVal);
@@ -633,7 +632,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+        if chpl_sync_isFull(c_addrOf(value), syncAux) {
           chpl__autoDestroy(value);
         }
         if isPODType(valType) {
@@ -652,7 +651,7 @@ module ChapelSyncvar {
 
       on this {
         chpl_rmem_consist_release();
-        b = chpl_sync_isFull(c_ptrTo(value), syncAux);
+        b = chpl_sync_isFull(c_addrOf(value), syncAux);
         chpl_rmem_consist_acquire();
       }
 
@@ -660,7 +659,7 @@ module ChapelSyncvar {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _qthreads_synccls {
     type valType;
 
@@ -792,7 +791,7 @@ module ChapelSyncvar {
 
   pragma "single"
   pragma "default intent is ref"
-  pragma "no doc"
+  @chpldoc.nodoc
   record _singlevar {
     type valType;                              // The compiler knows this name
 
@@ -858,6 +857,13 @@ module ChapelSyncvar {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      compilerError("single variables cannot currently be read - use writeEF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
@@ -913,19 +919,19 @@ module ChapelSyncvar {
     return wrapped.isFull;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator =(ref lhs : _singlevar(?t), rhs : t) {
     compilerWarning("Direct assignment to 'single' variables is deprecated; apply '.writeEF()' to modify one");
     lhs.wrapped.writeEF(rhs);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator :(from, type t:_singlevar)
   where from.type == t.valType {
     return new _singlevar(from);
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="Casting single variables is deprecated")
   inline operator :(from: _singlevar, type toType:_singlevar) {
     // TODO: this doesn't seem right - it doesn't use toType
@@ -951,7 +957,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
     return new _singlevar(rhs);
   }
@@ -965,7 +970,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  pragma "no doc"
   proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************
@@ -974,7 +978,7 @@ module ChapelSyncvar {
   *                                                                           *
   ************************************* | ************************************/
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _singlecls {
     type valType;
 
@@ -1099,7 +1103,7 @@ module ChapelSyncvar {
 
       on this {
         chpl_rmem_consist_release();
-        b = chpl_single_isFull(c_ptrTo(value), singleAux);
+        b = chpl_single_isFull(c_addrOf(value), singleAux);
         chpl_rmem_consist_acquire();
       }
 
@@ -1235,8 +1239,9 @@ private module AlignedTSupport {
     this = f.read(uint(64)) : aligned_t;
   }
 
-  proc aligned_t.encodeTo(f) throws {
-    writeThis(f);
+  @chpldoc.nodoc
+  proc aligned_t.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
   proc type aligned_t.readThis(f) throws {
     var ret : aligned_t;

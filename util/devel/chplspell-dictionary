@@ -803,6 +803,7 @@ ntasks
 ntddk
 ntifs
 ntokens
+nullopt
 nullptr
 numberof
 numbytes
@@ -2796,6 +2797,7 @@ iidx
 intpart
 multipledestructor
 otharrs
+ptrconst
 pullrequestreview
 replmt
 rhsv
@@ -3182,10 +3184,6 @@ waitany
 waitsome
 wtick
 wtime
-
-FILEID: d41572f2-1f2c-11e6-a3a6-10ddb1d4c3d5
-basedefs
-sektion
 
 FILEID: 55301aa8-1f2e-11e6-a3a6-10ddb1d4c3d5
 abspath
@@ -4924,6 +4922,7 @@ casttmp
 
 FILEID: e22d9978-8645-11e8-ad82-10ddb1d4c3d5
 distpid
+locdist
 locdoms
 
 FILEID: 203d644e-8648-11e8-ad82-10ddb1d4c3d5
@@ -5022,6 +5021,7 @@ isysroot
 lessless
 libdevice
 lineinfo
+lstdc
 maino
 mcpu
 mfile
@@ -5458,6 +5458,7 @@ FILEID: ca2e1636-f55f-11eb-bb15-35b7469d4b43
 blockdim
 blockidx
 ctaid
+ddatas
 griddim
 inalloca
 irgen
@@ -5502,6 +5503,7 @@ strcount
 
 FILEID: e818580e-f560-11eb-bb15-35b7469d4b43
 parenless
+scopeful
 tcsymbol
 tnew
 tunmanaged
@@ -6122,6 +6124,7 @@ clst
 
 FILEID: 202a65c2-e3ac-11ec-a8be-cd81bce0efc4
 attribs
+externblock
 
 FILEID: 2c60856a-e3ac-11ec-a8be-cd81bce0efc4
 copyfmt
@@ -6242,6 +6245,7 @@ FILEID: a1dfe432-12c0-11ed-a8be-cd81bce0efc4
 truthiness
 
 FILEID: b4d7b308-12c0-11ed-a8be-cd81bce0efc4
+closeval
 errc
 
 FILEID: eda6a798-12c0-11ed-a8be-cd81bce0efc4
@@ -6260,6 +6264,7 @@ vprint
 
 FILEID: 079d1948-12c1-11ed-a8be-cd81bce0efc4
 postparse
+pragmatags
 vbuild
 
 FILEID: 22756090-12c1-11ed-a8be-cd81bce0efc4
@@ -6404,6 +6409,7 @@ postparse
 yyerror
 
 FILEID: 5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac
+deduplication
 idvs
 
 FILEID: 806baa5e-ac5b-11ed-b67e-4d191cd16eac
@@ -6463,6 +6469,44 @@ smatch
 FILEID: cb0197c8-d464-11ed-ae82-c11fabc62016
 aname
 bname
+
+FILEID: 1f55a268-ff50-11ed-8448-7105b32efc83
+temporaryfileresult
+
+FILEID: 37ae1872-ff50-11ed-8448-7105b32efc83
+cstrs
+xclang
+
+FILEID: 5f829238-ff50-11ed-8448-7105b32efc83
+typedecl
+
+FILEID: b3ec2a6e-ff50-11ed-8448-7105b32efc83
+ctaid
+nctaid
+ntid
+nvvm
+sreg
+
+FILEID: bc38f4c2-ff50-11ed-8448-7105b32efc83
+amdgcn
+
+FILEID: bff59fde-ff50-11ed-8448-7105b32efc83
+memhostregister
+memorytype
+ucontext
+udevice
+udeviceptr
+ufunction
+umodule
+uresult
+ustream
+
+FILEID: d235b12a-ff50-11ed-8448-7105b32efc83
+deviceptr
+hipification
+
+FILEID: ed52c7a0-ff54-11ed-8448-7105b32efc83
+ptrconst
 
 NATURAL:
 aarch
@@ -7077,6 +7121,7 @@ disambiguates
 discernable
 discontiguous
 discoverability
+disjuncts
 distribs
 dists
 distutils

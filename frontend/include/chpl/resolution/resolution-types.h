@@ -418,12 +418,14 @@ class CallInfo {
                          const uast::Call* call,
                          const ResolutionResultByPostorderID& byPostorder,
                          bool raiseErrors = true,
-                         std::vector<const uast::AstNode*>* actualAsts=nullptr);
+                         std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         UniqueString rename = UniqueString());
 
   /** Construct a CallInfo by adding a method receiver argument to
       the passed CallInfo. */
   static CallInfo createWithReceiver(const CallInfo& ci,
-                                     types::QualifiedType receiverType);
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -444,7 +446,7 @@ class CallInfo {
 
 
   /** return the name of the called thing */
-  UniqueString name() const { return name_; }
+  const UniqueString name() const { return name_; }
 
   /** return the type of the called thing */
   types::QualifiedType calledType() const { return calledType_; }
@@ -1067,6 +1069,8 @@ class CallResolutionResult {
   PoiInfo poiInfo_;
 
  public:
+  CallResolutionResult() {}
+
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
     : exprType_(std::move(exprType)) {
@@ -1130,6 +1134,7 @@ class AssociatedAction {
     ITERATE,      // aka "these"
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
+    INFER_TYPE,
   };
 
  private:
@@ -1178,6 +1183,8 @@ class ResolvedExpression {
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
   ID toId_;
+  // Is this a reference to a compiler-created primitive?
+  bool isBuiltin_ = false;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
@@ -1207,6 +1214,9 @@ class ResolvedExpression {
    * refers to */
   ID toId() const { return toId_; }
 
+  /** check whether this resolution result refers to a compiler builtin like `bool`. */
+  bool isBuiltin() const { return isBuiltin_; }
+
   /** For a function call, what is the most specific candidate, or when using
    * return intent overloading, what are the most specific candidates? The
    * choice between these needs to happen later than the main function
@@ -1223,6 +1233,9 @@ class ResolvedExpression {
   const ResolvedParamLoop* paramLoop() const {
     return paramLoop_;
   }
+
+  /** set the isPrimitive flag */
+  void setIsBuiltin(bool isBuiltin) { isBuiltin_ = isBuiltin; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
@@ -1250,6 +1263,7 @@ class ResolvedExpression {
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
            toId_ == other.toId_ &&
+           isBuiltin_ == other.isBuiltin_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
            associatedActions_ == other.associatedActions_ &&
@@ -1261,6 +1275,7 @@ class ResolvedExpression {
   void swap(ResolvedExpression& other) {
     type_.swap(other.type_);
     toId_.swap(other.toId_);
+    std::swap(isBuiltin_, other.isBuiltin_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
     std::swap(associatedActions_, other.associatedActions_);
@@ -1455,6 +1470,9 @@ class ResolvedFunction {
   }
   const ResolvedExpression& byAst(const uast::AstNode* ast) const {
     return resolutionById_.byAst(ast);
+  }
+  const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
+    return resolutionById_.byAstOrNull(ast);
   }
 
   const ID& id() const {

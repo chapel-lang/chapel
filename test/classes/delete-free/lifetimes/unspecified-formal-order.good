@@ -13,4 +13,4 @@ unspecified-formal-order.chpl:38: error: Setting borrowed formal illegal without
 unspecified-formal-order.chpl:37: note: consider scope of rhs
 unspecified-formal-order.chpl:39: error: Setting borrowed formal illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:37: note: consider scope of rhs
-  unspecified-formal-order.chpl:51: called as setA(lhs: [domain(1,int(64),false)] borrowed C?, rhs: [domain(1,int(64),false)] borrowed C?)
+  unspecified-formal-order.chpl:51: called as setA(lhs: [domain(1,int(64),one)] borrowed C?, rhs: [domain(1,int(64),one)] borrowed C?)

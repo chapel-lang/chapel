@@ -286,7 +286,8 @@ CallInfo CallInfo::create(Context* context,
                           const Call* call,
                           const ResolutionResultByPostorderID& byPostorder,
                           bool raiseErrors,
-                          std::vector<const uast::AstNode*>* actualAsts) {
+                          std::vector<const uast::AstNode*>* actualAsts,
+                          UniqueString rename) {
 
   // Pieces of the CallInfo we need to prepare.
   UniqueString name;
@@ -369,6 +370,13 @@ CallInfo CallInfo::create(Context* context,
     CHPL_ASSERT(actualAsts->size() == actuals.size());
   }
 
+  if (!rename.isEmpty()) {
+    // Whatever we were calling was a value, and is now and actual. Can't
+    // rename an argument to a function...
+    CHPL_ASSERT(name != "this");
+    name = rename;
+  }
+
   auto ret = CallInfo(name, calledType, isMethodCall,
                       /* hasQuestionArg */ questionArg != nullptr,
                       /* isParenless */ false, actuals);
@@ -377,13 +385,15 @@ CallInfo CallInfo::create(Context* context,
 }
 
 CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
-                                      QualifiedType receiverType) {
+                                      QualifiedType receiverType,
+                                      UniqueString rename) {
   std::vector<CallInfoActual> newActuals;
   newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
   // append the other actuals
   newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
 
-  return CallInfo(ci.name_, receiverType,
+  auto name = rename.isEmpty() ? ci.name_ : rename;
+  return CallInfo(name, receiverType,
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
@@ -860,6 +870,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "new-init";
     case REDUCE_SCAN:
       return "reduce-scan";
+    case INFER_TYPE:
+      return "infer-type";
     // no default to get a warning if new Actions are added
   }
 

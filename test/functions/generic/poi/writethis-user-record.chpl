@@ -39,7 +39,7 @@ module Application {
 }
 
 module ReproIO {
-  const reproChannel = new object();
+  const reproChannel = new RootClass();
 
   // IO.chpl has ~5 levels of indirection, here we make just one level.
   proc reproWriteln(arg) {

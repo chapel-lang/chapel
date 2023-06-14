@@ -626,5 +626,24 @@ void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy) {
   #endif
 }
 
+bool isOpaquePointer(llvm::Type* ty) {
+#if HAVE_LLVM_VER >= 140
+  return ty->isOpaquePointerTy();
+#else
+  return false; // older LLVMs did not have opaque pointers
 #endif
+}
 
+llvm::Type* tryComputingPointerElementType(llvm::Value* ptr) {
+  llvm::Type* eltType = nullptr;
+  if (llvm::AllocaInst* locVar = llvm::dyn_cast<llvm::AllocaInst>(ptr)) {
+    eltType = locVar->getAllocatedType();
+  }
+  if (llvm::GlobalValue* globVar = llvm::dyn_cast<llvm::GlobalValue>(ptr)) {
+    eltType = globVar->getValueType();
+  }
+
+  return eltType;
+}
+
+#endif

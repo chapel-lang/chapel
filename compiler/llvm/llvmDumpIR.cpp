@@ -33,45 +33,41 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-//#define DEBUG_TYPE "hello"
+void DumpIR::run(Function &F) {
+  std::string str = F.getName().str();
+  if (shouldLlvmPrintIrName(str.c_str())) {
+    printLlvmIr(str.c_str(), &F, stage);
+  } else if (shouldLlvmPrintIrCName(str.c_str())) {
+    printLlvmIr(str.c_str(), &F, stage);
+  }
+}
 
-namespace {
-  struct DumpIR : public FunctionPass {
-    static char ID; // Pass identification, replacement for typeid
-    llvmStageNum_t stage; // which stage we dump from
+PreservedAnalyses DumpIRPass::run(Function& function,
+                                  FunctionAnalysisManager& analysisManager) {
+  pass.run(function);
+  // We don't modify the program, so we preserve all analyses.
+  return llvm::PreservedAnalyses::all();
+}
 
-    // Default constructor for creating this pass on command line
-    // (doesn't get the right pass name)
-    DumpIR() : FunctionPass(ID), stage(llvmStageNum::NOPRINT) {}
+bool LegacyDumpIRPass::runOnFunction(llvm::Function& function) {
+  pass.run(function);
+  return false;
+}
 
-    DumpIR(llvmStageNum_t stage) : FunctionPass(ID), stage(stage) {}
-
-    bool runOnFunction(Function &F) override {
-      std::string str = F.getName().str();
-      if (shouldLlvmPrintIrName(str.c_str())) {
-        printLlvmIr(str.c_str(), &F, stage);
-      } else if (shouldLlvmPrintIrCName(str.c_str())) {
-        printLlvmIr(str.c_str(), &F, stage);
-      }
-      return false;
-    }
-
-    // We don't modify the program, so we preserve all analyses.
-    void getAnalysisUsage(AnalysisUsage &AU) const override {
-      AU.setPreservesAll();
-    }
-  };
+void LegacyDumpIRPass::getAnalysisUsage(AnalysisUsage &AU) const {
+  // We don't modify the program, so we preserve all analyses.
+  AU.setPreservesAll();
 }
 
 // createDumpIrPass - The public interface to this file...
-FunctionPass *createDumpIrPass(llvmStageNum_t stage)
+FunctionPass* createLegacyDumpIrPass(llvmStageNum_t stage)
 {
-  return new DumpIR(stage);
+  return new LegacyDumpIRPass(stage);
 }
 
 
-char DumpIR::ID = 0;
-static RegisterPass<DumpIR>
+char LegacyDumpIRPass::ID = 0;
+static RegisterPass<LegacyDumpIRPass>
 X("dump-ir", "Dump LLVM IR from Chapel compilation");
 
 #endif

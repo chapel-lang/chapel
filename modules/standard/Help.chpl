@@ -42,6 +42,7 @@
    that explains which config variables are available. To do so, this module
    includes the :proc:`printUsage` function.
  */
+@unstable("The 'Help' module is unstable")
 module Help {
 
   /*

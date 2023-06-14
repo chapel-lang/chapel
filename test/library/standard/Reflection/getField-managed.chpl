@@ -22,8 +22,16 @@ test(new shared CCon());
 test((new shared CCon()):shared class?);
 test((new owned CCon()).borrow());
 test(((new owned CCon()):owned class?).borrow());
-test(new unmanaged CCon());
-test((new unmanaged CCon()):unmanaged class?);
+{
+  var un = new unmanaged CCon();
+  test(un);
+  delete un;
+}
+{
+  var un = (new unmanaged CCon()):unmanaged class?;
+  test(un);
+  delete un;
+}
 var a = new CCon();
 test(a.borrow());
 var b = new CCon():class?;

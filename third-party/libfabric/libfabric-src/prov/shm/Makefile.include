@@ -14,17 +14,20 @@ _shm_files = \
 	prov/shm/src/smr_init.c		\
 	prov/shm/src/smr_av.c		\
 	prov/shm/src/smr_signal.h	\
-	prov/shm/src/smr.h
+	prov/shm/src/smr.h		\
+	prov/shm/src/smr_dsa.h		\
+	prov/shm/src/smr_dsa.c
+
 
 if HAVE_SHM_DL
 pkglib_LTLIBRARIES += libshm-fi.la
 libshm_fi_la_SOURCES = $(_shm_files) $(common_srcs)
-libshm_fi_la_LIBADD = $(linkback) $(shm_lib_LIBS)
+libshm_fi_la_LIBADD = $(linkback) $(shm_LIBS)
 libshm_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
 libshm_fi_la_DEPENDENCIES = $(linkback)
 else !HAVE_SHM_DL
 src_libfabric_la_SOURCES += $(_shm_files)
-src_libfabric_la_LIBADD += $(shm_lib_LIBS)
+src_libfabric_la_LIBADD += $(shm_LIBS)
 endif !HAVE_SHM_DL
 
 prov_install_man_pages += man/man7/fi_shm.7

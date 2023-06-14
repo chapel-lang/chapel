@@ -1,0 +1,5 @@
+timeFactoryFunctions.chpl:3: warning: 'date.fromTimestamp' is deprecated, please use 'date.createFromTimestamp' instead
+timeFactoryFunctions.chpl:4: warning: 'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead
+timeFactoryFunctions.chpl:5: warning: 'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead
+timeFactoryFunctions.chpl:6: warning: 'dateTime.fromOrdinal' is deprecated, please use 'dateTime.createFromOrdinal' instead
+timeFactoryFunctions.chpl:7: warning: 'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead

@@ -1,4 +1,4 @@
-use IO;
+use IO, FileSystem;
 use ChplConfig;
 
 config param useNonUTF8 = true;
@@ -17,3 +17,4 @@ var f = open(filename1, ioMode.cw);
 var p = f.path;
 writeln("file.path works: ", p == CHPL_HOME + "/test/library/standard/IO/nonUTF8/" + filename1);
 f.close();
+FileSystem.remove(filename1);

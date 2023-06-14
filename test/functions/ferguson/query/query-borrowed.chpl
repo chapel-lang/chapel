@@ -37,15 +37,15 @@ proc ll(arg) {
 proc m(type t : borrowed MyClass) {
   writeln("m borrowed MyClass");
 }
-proc m(type t : borrowed object) {
-  writeln("m object");
+proc m(type t : borrowed RootClass) {
+  writeln("m RootClass");
 }
 
 proc n(arg : borrowed MyClass) {
   writeln("n borrowed MyClass");
 }
-proc n(arg : borrowed object) {
-  writeln("n object");
+proc n(arg : borrowed RootClass) {
+  writeln("n RootClass");
 }
 
 

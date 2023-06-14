@@ -169,7 +169,7 @@ class CholeskyDecomposition {
    /* Row and column dimension (square matrix). */
    var n:int;
 
-   pragma "no doc"
+   @chpldoc.nodoc
    var lDom = {0..1,0..1};
 
    /* Array for internal storage of decomposition. internal array storage. */

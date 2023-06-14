@@ -83,11 +83,21 @@ class Context {
     virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
+  /** Information about the program's compilation state that's available to
+      the programs themselves via global variables. */
+  struct CompilationGlobals {
+    #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__) TYPE__ NAME__;
+    #include "chpl/uast/compiler-globals-list.h"
+    #undef COMPILER_GLOBAL
+  };
+
   /** This struct stores configuration information to use when
       constructing a Context. */
   struct Configuration {
     /** Used for determining Chapel environment variables */
     std::string chplHome;
+
+    CompilationGlobals compilationGlobals;
 
     std::unordered_map<std::string, std::string> chplEnvOverrides;
 
@@ -106,6 +116,111 @@ class Context {
 
     void swap(Configuration& other);
   };
+
+  class RunResultBase {
+   private:
+    std::vector<owned<ErrorBase>> errors_;
+
+   public:
+    ~RunResultBase();
+
+    RunResultBase();
+    // Should not be called due to copy elision, but it's not guaranteed..
+    RunResultBase(const RunResultBase& other);
+
+    /** The errors that occurred while running. */
+    std::vector<owned<ErrorBase>>& errors() { return errors_; };
+    const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnings do not cause this method to return false.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T>
+  class RunResult : public RunResultBase {
+   private:
+    T result_;
+
+   public:
+    /** The result of the execution. */
+    T& result() { return result_; }
+  };
+
+  class ErrorCollectionEntry {
+   private:
+    std::vector<owned<ErrorBase>>* storeInto_;
+    const querydetail::QueryMapResultBase* collectingQuery_;
+
+    ErrorCollectionEntry(std::vector<owned<ErrorBase>>* storeInto,
+                         const querydetail::QueryMapResultBase* collectingQuery) :
+      storeInto_(storeInto), collectingQuery_(collectingQuery) {}
+
+   public:
+    /**
+      When a parent query starts tracking errors, the tracking entry contains
+      this parent query and the vector. Errors occurring within child
+      queries are stored into the vector, and not reporter to the user.
+     */
+    static ErrorCollectionEntry
+    createForTrackingQuery(std::vector<owned<ErrorBase>>*,
+                           const querydetail::QueryMapResultBase*);
+
+    /**
+      When recomputing queries (to determine if a cached result should be used),
+      a parent query may not be running that expects to receive an error
+      list back, because computations are done bottom-up. Thus, simply
+      track the query that enabled error collection, but do not store the
+      errors anywhere. They will be added to a vector, if necessary, when
+      the saved query result is used when the parent query is re-run.
+     */
+    static ErrorCollectionEntry
+    createForRecomputing(const querydetail::QueryMapResultBase*);
+
+    const querydetail::QueryMapResultBase* collectingQuery() const { return collectingQuery_; }
+    void storeError(owned<ErrorBase> toStore) const;
+  };
+
+  class RecomputeMarker {
+   friend class Context;
+
+   private:
+    Context* context_;
+    bool oldValue_;
+
+    RecomputeMarker(Context* context, bool isRecomputing) :
+      context_(context), oldValue_(isRecomputing) {
+        std::swap(context_->isRecomputing, oldValue_);
+    }
+
+   public:
+    RecomputeMarker(RecomputeMarker&& other) {
+      *this = std::move(other);
+    }
+
+    RecomputeMarker& operator=(RecomputeMarker&& other) {
+      this->context_ = other.context_;
+      this->oldValue_ = other.oldValue_;
+      other.context_ = nullptr;
+      return *this;
+    }
+
+    void restore() {
+      if (context_) {
+        std::swap(context_->isRecomputing, oldValue_);
+      }
+      context_ = nullptr;
+    }
+
+    ~RecomputeMarker() {
+      restore();
+    }
+  };
+
+  RecomputeMarker markRecomputing(bool isRecomputing) {
+    return RecomputeMarker(this, isRecomputing);
+  }
 
  private:
 
@@ -177,6 +292,23 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
 
+  // tracks whether or not we are re-running a previously-executed query.
+  //
+  // When a query is being initially executed, its dependencies are evaluated
+  // in the order they're discovered. However, when it's re-executed, the
+  // dependencies are evaluated in a bottom-up order. Certain features
+  // of the query framework behave differently depending on whether a query
+  // is being executed "regularly" or "bottom-up" (most notably, a re-executed
+  // dependency is not used to modify the dependency graph).
+  bool isRecomputing = false;
+
+  // If this vector is non-empty, the back element is a collection into
+  // which to store emitted errors, instead of reporting them to the
+  // error handler. Errors reported to the collection stack are
+  // re-reported to the error handler if they are encountered again, even
+  // if they occurred in a cached query.
+  std::vector<ErrorCollectionEntry> errorCollectionStack;
+
   // list of query names to ignore when tracing
   std::vector<std::string>
   queryTraceIgnoreQueries = {"idToTagQuery", "idToParentId"};
@@ -230,6 +362,9 @@ class Context {
 
   bool shouldMarkUnownedPointer(const void* ptr);
   bool shouldMarkOwnedPointer(const void* ptr);
+
+  void emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result);
+  void storeErrorsFor(const querydetail::QueryMapResultBase* result);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -403,6 +538,22 @@ class Context {
   */
   ErrorHandler* errorHandler() {
     return this->handler_.get();
+  }
+
+  /**
+    Execute a function or lambda using the context, and track whether or not
+    errors occurred while doing so. Errors emitted from inside the function are
+    not shown to the user.
+   */
+  template <typename F>
+  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
+    RunResult<decltype(f(this))> result;
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(
+        ErrorCollectionEntry::createForTrackingQuery(&result.errors(), collectionRoot));
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
   }
 
   /**

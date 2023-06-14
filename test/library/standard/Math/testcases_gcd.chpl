@@ -1,3 +1,5 @@
+use Math;
+
 writeln(gcd(4,8));
 
 writeln(gcd(2,8));

@@ -234,17 +234,17 @@ proc test_tzinfo_fromtimestamp() {
 
   var ts = getTimeOfDay()(1);
   // Ensure it doesn't require tz (i.e., that this doesn't blow up).
-  var base = dateTime.fromTimestamp(ts);
+  var base = dateTime.createFromTimestamp(ts);
   // Try with and without naming the keyword.
   var off42 = new shared FixedOffset(42, "42");
-  var another = dateTime.fromTimestamp(ts, off42);
-  var again = dateTime.fromTimestamp(ts, tz=off42);
+  var another = dateTime.createFromTimestamp(ts, off42);
+  var again = dateTime.createFromTimestamp(ts, tz=off42);
   assert(another.timezone == again.timezone);
   assert(another.utcOffset() == new timeDelta(minutes=42));
 
   // Try to make sure tz= actually does some conversion.
   var timestamp = 1000000000;
-  var utcdateTime = dateTime.utcFromTimestamp(timestamp);
+  var utcdateTime = dateTime.createUtcFromTimestamp(timestamp);
   // In POSIX (epoch 1970), that's 2001-09-09 01:46:40 UTC, give or take.
   // But on some flavor of Mac, it's nowhere near that.  So we can't have
   // any idea here what time that actually is, we can only test that
@@ -252,7 +252,7 @@ proc test_tzinfo_fromtimestamp() {
   var utcoffset = new timeDelta(hours=-15, minutes=39); // arbitrary, but not zero
   var tz = new shared FixedOffset(utcoffset, "tz", new timeDelta());
   var expected = utcdateTime + utcoffset;
-  var got = dateTime.fromTimestamp(timestamp, tz);
+  var got = dateTime.createFromTimestamp(timestamp, tz);
   assert(expected == got.replace(tz=nil));
 }
 

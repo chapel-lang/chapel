@@ -4,7 +4,7 @@ module m {
     use IO;
     use CTypes;
 
-    extern proc openTestFile(): c_FILE;
+    extern proc openTestFile(): c_ptr(c_FILE);
 
     try! {
         var f = new file(openTestFile(), own=true);

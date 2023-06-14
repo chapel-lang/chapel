@@ -1099,10 +1099,6 @@ val const_nsw_add : llvalue -> llvalue -> llvalue
     See the method [llvm::ConstantExpr::getNSWAdd]. *)
 val const_nuw_add : llvalue -> llvalue -> llvalue
 
-(** [const_fadd c1 c2] returns the constant sum of two constant floats.
-    See the method [llvm::ConstantExpr::getFAdd]. *)
-val const_fadd : llvalue -> llvalue -> llvalue
-
 (** [const_sub c1 c2] returns the constant difference, [c1 - c2], of two
     constants. See the method [llvm::ConstantExpr::getSub]. *)
 val const_sub : llvalue -> llvalue -> llvalue
@@ -1117,10 +1113,6 @@ val const_nsw_sub : llvalue -> llvalue -> llvalue
     See the method [llvm::ConstantExpr::getNSWSub]. *)
 val const_nuw_sub : llvalue -> llvalue -> llvalue
 
-(** [const_fsub c1 c2] returns the constant difference, [c1 - c2], of two
-    constant floats. See the method [llvm::ConstantExpr::getFSub]. *)
-val const_fsub : llvalue -> llvalue -> llvalue
-
 (** [const_mul c1 c2] returns the constant product of two constants.
     See the method [llvm::ConstantExpr::getMul]. *)
 val const_mul : llvalue -> llvalue -> llvalue
@@ -1134,45 +1126,6 @@ val const_nsw_mul : llvalue -> llvalue -> llvalue
     no unsigned wrapping. The result is undefined if the sum overflows.
     See the method [llvm::ConstantExpr::getNSWMul]. *)
 val const_nuw_mul : llvalue -> llvalue -> llvalue
-
-(** [const_fmul c1 c2] returns the constant product of two constants floats.
-    See the method [llvm::ConstantExpr::getFMul]. *)
-val const_fmul : llvalue -> llvalue -> llvalue
-
-(** [const_udiv c1 c2] returns the constant quotient [c1 / c2] of two unsigned
-    integer constants.
-    See the method [llvm::ConstantExpr::getUDiv]. *)
-val const_udiv : llvalue -> llvalue -> llvalue
-
-(** [const_sdiv c1 c2] returns the constant quotient [c1 / c2] of two signed
-    integer constants.
-    See the method [llvm::ConstantExpr::getSDiv]. *)
-val const_sdiv : llvalue -> llvalue -> llvalue
-
-(** [const_exact_sdiv c1 c2] returns the constant quotient [c1 / c2] of two
-    signed integer constants. The result is undefined if the result is rounded
-    or overflows. See the method [llvm::ConstantExpr::getExactSDiv]. *)
-val const_exact_sdiv : llvalue -> llvalue -> llvalue
-
-(** [const_fdiv c1 c2] returns the constant quotient [c1 / c2] of two floating
-    point constants.
-    See the method [llvm::ConstantExpr::getFDiv]. *)
-val const_fdiv : llvalue -> llvalue -> llvalue
-
-(** [const_urem c1 c2] returns the constant remainder [c1 MOD c2] of two
-    unsigned integer constants.
-    See the method [llvm::ConstantExpr::getURem]. *)
-val const_urem : llvalue -> llvalue -> llvalue
-
-(** [const_srem c1 c2] returns the constant remainder [c1 MOD c2] of two
-    signed integer constants.
-    See the method [llvm::ConstantExpr::getSRem]. *)
-val const_srem : llvalue -> llvalue -> llvalue
-
-(** [const_frem c1 c2] returns the constant remainder [c1 MOD c2] of two
-    signed floating point constants.
-    See the method [llvm::ConstantExpr::getFRem]. *)
-val const_frem : llvalue -> llvalue -> llvalue
 
 (** [const_and c1 c2] returns the constant bitwise [AND] of two integer
     constants.
@@ -1218,6 +1171,12 @@ val const_ashr : llvalue -> llvalue -> llvalue
     constant integers indices from the array [indices].
     See the method [llvm::ConstantExpr::getGetElementPtr]. *)
 val const_gep : llvalue -> llvalue array -> llvalue
+
+(** [const_gep2 srcty pc indices] returns the constant [getElementPtr] of [pc]
+    with source element type [srcty] and the constant integers indices from the
+    array [indices].
+    See the method [llvm::ConstantExpr::getGetElementPtr]. *)
+val const_gep2 : lltype -> llvalue -> llvalue array -> llvalue
 
 (** [const_in_bounds_gep pc indices] returns the constant [getElementPtr] of [pc]
     with the constant integers indices from the array [indices].
@@ -1340,16 +1299,6 @@ val const_insertelement : llvalue -> llvalue -> llvalue -> llvalue
     instruction.
     See the method [llvm::ConstantExpr::getShuffleVector]. *)
 val const_shufflevector : llvalue -> llvalue -> llvalue -> llvalue
-
-(** [const_extractvalue agg idxs] returns the constant [idxs]th value of
-    constant aggregate [agg]. Each [idxs] must be less than the size of the
-    aggregate.  See the method [llvm::ConstantExpr::getExtractValue]. *)
-val const_extractvalue : llvalue -> int array -> llvalue
-
-(** [const_insertvalue agg val idxs] inserts the value [val] in the specified
-    indexs [idxs] in the aggregate [agg]. Each [idxs] must be less than the size
-    of the aggregate. See the method [llvm::ConstantExpr::getInsertValue]. *)
-val const_insertvalue : llvalue -> llvalue -> int array -> llvalue
 
 (** [const_inline_asm ty asm con side align] inserts a inline assembly string.
     See the method [llvm::InlineAsm::get]. *)
@@ -1564,6 +1513,10 @@ val set_externally_initialized : bool -> llvalue -> unit
     See the constructor for [llvm::GlobalAlias]. *)
 val add_alias : llmodule -> lltype -> llvalue -> string -> llvalue
 
+(** [add_alias m vt as a n] inserts an alias in the module [m] with the value
+    type [vt] the address space [as] the aliasee [a] with the name [n].
+    See the constructor for [llvm::GlobalAlias]. *)
+val add_alias2 : llmodule -> lltype -> int -> llvalue -> string -> llvalue
 
 (** {7 Operations on functions} *)
 
@@ -2150,6 +2103,13 @@ val add_destination : llvalue -> llbasicblock -> unit
 val build_invoke : llvalue -> llvalue array -> llbasicblock ->
                         llbasicblock -> string -> llbuilder -> llvalue
 
+(** [build_invoke2 fnty fn args tobb unwindbb name b] creates an
+    [%name = invoke %fn(args) to %tobb unwind %unwindbb]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateInvoke]. *)
+val build_invoke2 : lltype -> llvalue -> llvalue array -> llbasicblock ->
+                        llbasicblock -> string -> llbuilder -> llvalue
+
 (** [build_landingpad ty persfn numclauses name b] creates an
     [landingpad]
     instruction at the position specified by the instruction builder [b].
@@ -2390,6 +2350,12 @@ val build_array_alloca : lltype -> llvalue -> string -> llbuilder ->
     See the method [llvm::LLVMBuilder::CreateLoad]. *)
 val build_load : llvalue -> string -> llbuilder -> llvalue
 
+(** [build_load2 ty v name b] creates a
+    [%name = load %ty, %v]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateLoad]. *)
+val build_load2 : lltype -> llvalue -> string -> llbuilder -> llvalue
+
 (** [build_store v p b] creates a
     [store %v, %p]
     instruction at the position specified by the instruction builder [b].
@@ -2410,6 +2376,13 @@ val build_atomicrmw : AtomicRMWBinOp.t -> llvalue -> llvalue ->
     See the method [llvm::LLVMBuilder::CreateGetElementPtr]. *)
 val build_gep : llvalue -> llvalue array -> string -> llbuilder -> llvalue
 
+(** [build_gep2 srcty p indices name b] creates a
+    [%name = getelementptr srcty, %p, indices...]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateGetElementPtr]. *)
+val build_gep2 : lltype -> llvalue -> llvalue array -> string -> llbuilder ->
+                       llvalue
+
 (** [build_in_bounds_gep p indices name b] creates a
     [%name = gelementptr inbounds %p, indices...]
     instruction at the position specified by the instruction builder [b].
@@ -2417,11 +2390,25 @@ val build_gep : llvalue -> llvalue array -> string -> llbuilder -> llvalue
 val build_in_bounds_gep : llvalue -> llvalue array -> string -> llbuilder ->
                                llvalue
 
+(** [build_in_bounds_gep2 srcty p indices name b] creates a
+    [%name = gelementptr inbounds srcty, %p, indices...]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateInBoundsGetElementPtr]. *)
+val build_in_bounds_gep2 : lltype -> llvalue -> llvalue array -> string ->
+                                llbuilder -> llvalue
+
 (** [build_struct_gep p idx name b] creates a
     [%name = getelementptr %p, 0, idx]
     instruction at the position specified by the instruction builder [b].
     See the method [llvm::LLVMBuilder::CreateStructGetElementPtr]. *)
 val build_struct_gep : llvalue -> int -> string -> llbuilder ->
+                            llvalue
+
+(** [build_struct_gep2 srcty p idx name b] creates a
+    [%name = getelementptr srcty, %p, 0, idx]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateStructGetElementPtr]. *)
+val build_struct_gep2 : lltype -> llvalue -> int -> string -> llbuilder ->
                             llvalue
 
 (** [build_global_string str name b] creates a series of instructions that adds
@@ -2583,6 +2570,13 @@ val build_empty_phi : lltype -> string -> llbuilder -> llvalue
     See the method [llvm::LLVMBuilder::CreateCall]. *)
 val build_call : llvalue -> llvalue array -> string -> llbuilder -> llvalue
 
+(** [build_call2 fnty fn args name b] creates a
+    [%name = call %fn(args...)]
+    instruction at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreateCall]. *)
+val build_call2 : lltype -> llvalue -> llvalue array -> string -> llbuilder ->
+                        llvalue
+
 (** [build_select cond thenv elsev name b] creates a
     [%name = select %cond, %thenv, %elsev]
     instruction at the position specified by the instruction builder [b].
@@ -2648,6 +2642,13 @@ val build_is_not_null : llvalue -> string -> llbuilder -> llvalue
     instruction builder [b].
     See the method [llvm::LLVMBuilder::CreatePtrDiff]. *)
 val build_ptrdiff : llvalue -> llvalue -> string -> llbuilder -> llvalue
+
+(** [build_ptrdiff2 elemty lhs rhs name b] creates a series of instructions
+    that measure the difference between two pointer values in multiples of
+    [elemty] at the position specified by the instruction builder [b].
+    See the method [llvm::LLVMBuilder::CreatePtrDiff]. *)
+val build_ptrdiff2 : lltype -> llvalue -> llvalue -> string -> llbuilder ->
+                     llvalue
 
 (** [build_freeze x name b] creates a
     [%name = freeze %x]

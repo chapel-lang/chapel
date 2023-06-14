@@ -31,6 +31,7 @@
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/Job.h"
+#include "clang/Driver/Options.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/FrontendActions.h"
@@ -75,6 +76,24 @@ void initializeLlvmTargets() {
   }
 #endif
 }
+
+#ifdef HAVE_LLVM
+std::unique_ptr<clang::DiagnosticOptions>
+wrapCreateAndPopulateDiagOpts(llvm::ArrayRef<const char *> Argv) {
+#if LLVM_VERSION_MAJOR >= 14
+  return clang::CreateAndPopulateDiagOpts(Argv);
+#else
+  auto diagOpts = std::make_unique<clang::DiagnosticOptions>();
+  unsigned missingArgIndex, missingArgCount;
+  llvm::opt::InputArgList Args =
+    clang::driver::getDriverOptTable().ParseArgs(Argv.slice(1),
+                                                 missingArgIndex,
+                                                 missingArgCount);
+  clang::ParseDiagnosticArgs(*diagOpts, Args);
+  return diagOpts;
+#endif
+}
+#endif
 
 #ifdef HAVE_LLVM
 static std::string getChplLocaleModel(Context* context) {
@@ -232,32 +251,31 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     clFlags.push_back(tmpOutput);
     const std::vector<std::string>& cc1args =
         getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
+
     std::vector<const char*> cc1argsCstrs;
     for (const auto& arg : cc1args) {
       cc1argsCstrs.push_back(arg.c_str());
     }
 
-    // setup diagnostics options
-    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient =
         new clang::TextDiagnosticPrinter(llvm::errs(), &*diagOptions);
-    auto diagID = new clang::DiagnosticIDs();
-    auto diags =
-        new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-    Clang->setDiagnostics(diags);
+
+    auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+    Clang->setDiagnostics(&*clangDiags);
 
     // replace current compiler invocation with one including args and diags
     bool success = clang::CompilerInvocation::CreateFromArgs(
-        Clang->getInvocation(), cc1argsCstrs, *diags);
+        Clang->getInvocation(), cc1argsCstrs, *clangDiags);
     CHPL_ASSERT(success);
 
     CHPL_ASSERT(Clang->getFrontendOpts().IncludeTimestamps == false);
 
     // create GeneratePCHAction
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
-    std::string outputFileNameFromClang;
-    genPchAction->CreateOutputFile(*Clang, tmpInput, outputFileNameFromClang);
-
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
       context->error(externBlockId, "error running clang on extern block");
@@ -321,18 +339,18 @@ precompiledHeaderContainsNameQuery(Context* context,
     }
 
     clang::CompilerInstance* Clang = new clang::CompilerInstance();
-
-    auto diagOptions = new clang::DiagnosticOptions();
+    auto diagOptions = wrapCreateAndPopulateDiagOpts(cc1argsCstrs);
     auto diagClient = new clang::TextDiagnosticPrinter(llvm::errs(),
                                                        &*diagOptions);
-    auto diagID = new clang::DiagnosticIDs();
-    auto diags = new clang::DiagnosticsEngine(diagID, &*diagOptions, diagClient);
-
-    Clang->setDiagnostics(diags);
+    auto clangDiags =
+      clang::CompilerInstance::createDiagnostics(diagOptions.release(),
+                                                 diagClient,
+                                                 /* owned */ true);
+    Clang->setDiagnostics(&*clangDiags);
 
     bool success =
       clang::CompilerInvocation::CreateFromArgs(Clang->getInvocation(),
-                                                cc1argsCstrs, *diags);
+                                                cc1argsCstrs, *clangDiags);
     CHPL_ASSERT(success);
 
     Clang->setTarget(clang::TargetInfo::CreateTargetInfo(Clang->getDiagnostics(), Clang->getInvocation().TargetOpts));

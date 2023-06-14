@@ -412,7 +412,7 @@ module Sys {
     :throws IllegalArgumentError: Upon failure to provide a compatible
                                   `host` and `family`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: c_string, port: c_uint, family: c_int) throws {
       var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
       if err_out != 1 {
@@ -432,7 +432,7 @@ module Sys {
     :arg port: port number
     :type port: `c_uint`
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: sys_in_addr_t, port: c_uint) {
       sys_set_sys_sockaddr_in_t(this, host, port);
     }
@@ -449,7 +449,7 @@ module Sys {
     :arg port: port number
     :type port: `c_uint`
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc set(host: sys_in6_addr_t, port: c_uint) {
       sys_set_sys_sockaddr_in6_t(this, host, port);
     }
@@ -463,10 +463,10 @@ module Sys {
     :throws Error: If record was uninitialized and has no information
                    about `host` or `port`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref numericHost() throws {
 
-      var buffer = c_calloc(c_char, NI_MAXHOST);
+      var buffer = allocate(c_char, NI_MAXHOST, clear=true);
       var length:c_int;
 
       var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
@@ -474,7 +474,7 @@ module Sys {
         throw createSystemError(err_out);
       }
 
-      return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+      return string.createAdoptingBuffer(buffer, length, NI_MAXHOST);
     }
 
     /*
@@ -486,7 +486,7 @@ module Sys {
     :throws Error: If record was uninitialized and has no information
                    about `host` or `port`.
     */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const ref port() throws {
       var port:c_uint;
 
@@ -554,7 +554,7 @@ module Sys {
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
-  @deprecated(notes="'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead")
+  @deprecated(notes="'Sys.sys_getenv' is deprecated")
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
   /* The type corresponding to C's mode_t */

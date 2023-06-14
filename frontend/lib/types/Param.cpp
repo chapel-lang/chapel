@@ -326,11 +326,8 @@ QualifiedType Param::fold(Context* context,
                           QualifiedType a,
                           QualifiedType b) {
   CHPL_ASSERT(a.hasTypePtr() && a.hasParamPtr());
-  CHPL_ASSERT(b.hasTypePtr() && b.hasParamPtr());
-
   // convert Param to Immediate
   Immediate aImm = paramToImmediate(a.param(), a.type());
-  Immediate bImm = paramToImmediate(b.param(), b.type());
   Immediate result;
 
   // fold
@@ -340,7 +337,14 @@ QualifiedType Param::fold(Context* context,
     CHPL_ASSERT(false && "param primitive op not foldable");
   }
 
-  fold_constant(context, immOp, &aImm, &bImm, &result);
+  if (b.isUnknown()) {
+    fold_constant(context, immOp, &aImm, nullptr, &result);
+  } else {
+    CHPL_ASSERT(b.hasTypePtr() && b.hasParamPtr());
+
+    Immediate bImm = paramToImmediate(b.param(), b.type());
+    fold_constant(context, immOp, &aImm, &bImm, &result);
+  }
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);

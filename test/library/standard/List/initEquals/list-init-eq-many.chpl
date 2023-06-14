@@ -4,7 +4,7 @@ use List;
 proc newCopyFromList() {
   writeln("newCopyFromList");
   var x:list(int);
-  x.append(1); x.append(2);
+  x.pushBack(1); x.pushBack(2);
   writeln("x:", x.type:string, " = ", x);
 
 
@@ -16,7 +16,7 @@ proc newCopyFromList() {
   writeln("c:", c.type:string, " = ", c);
   
   var y:list(int, parSafe=true);
-  y.append(1); y.append(2);
+  y.pushBack(1); y.pushBack(2);
   writeln("y:", y.type:string, " = ", y);
 
   var d = new list(y);
@@ -31,7 +31,7 @@ newCopyFromList();
 proc initCopyFromList() {
   writeln("initCopyFromList");
   var x:list(int);
-  x.append(1); x.append(2);
+  x.pushBack(1); x.pushBack(2);
   writeln("x:", x.type:string, " = ", x);
 
   var a: list = x;
@@ -42,7 +42,7 @@ proc initCopyFromList() {
   writeln("c:", c.type:string, " = ", c);
 
   var y:list(parSafe=true, int);
-  y.append(1); y.append(2);
+  y.pushBack(1); y.pushBack(2);
   writeln("y:", y.type:string, " = ", y);
 
   var d: list = y;
@@ -61,7 +61,7 @@ proc initCopyFromList() {
   writeln("i:", i.type:string, " = ", i);
 
   var z:list(int(8));
-  z.append(1); z.append(2);
+  z.pushBack(1); z.pushBack(2);
   writeln("z:", z.type:string, " = ", z);
 
   var j: list(int) = z;

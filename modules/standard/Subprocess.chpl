@@ -182,7 +182,7 @@ module Subprocess {
        for any channels that are necessary. */
     param locking:bool;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var home:locale = here;
 
     /* The Process ID number of the spawned process */
@@ -192,19 +192,19 @@ module Subprocess {
        is the file descriptor for the write end of a pipe
        connected to the child's standard input.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var inputfd:c_int;
     /* If the subprocess is configured to use pipes, outputfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard output.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var outputfd:c_int;
     /* If the subprocess is configured to use pipes, errorfd
        is the file descriptor for the read end of a pipe
        connected to the child's standard error.
      */
-    pragma "no doc"
+    @chpldoc.nodoc
     var errorfd:c_int;
 
 
@@ -216,43 +216,43 @@ module Subprocess {
 
     // the channels
     // TODO -- these could be private to this module
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_pipe:bool;
     // true if we are currently buffering up stdin, meaning that
     // we need to 'commit' in order to actually send the data.
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_buffering:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdin_channel:fileWriter(kind=kind, locking=locking);
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_pipe:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_file:file;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stdout_channel:fileReader(kind=kind, locking=locking);
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_pipe:bool;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_file:file;
-    pragma "no doc"
+    @chpldoc.nodoc
     var stderr_channel:fileReader(kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
     // for the file are updated.
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var spawn_error:errorCode;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _stop_stdin_buffering() {
       if this.stdin_buffering && this.stdin_pipe {
-        this.stdin_channel._commit();
+        this.stdin_channel.commit();
         this.stdin_buffering = false; // Don't commit again on close again
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc _throw_on_launch_error() throws {
       if !running {
         try ioerror(spawn_error,
@@ -491,7 +491,7 @@ module Subprocess {
           var env_c_str:c_string;
           var env_str:string;
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
-            env_str = createStringWithNewBuffer(env_c_str);
+            env_str = string.createCopyingBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw createSystemError(
                   EINVAL,
@@ -580,7 +580,7 @@ module Subprocess {
         // mark stdin so that we don't actually send any data
         // until communicate() is called.
 
-        err = ret.stdin_channel._mark();
+        err = ret.stdin_channel.mark();
         if err {
           ret.spawn_error = err; return ret;
         }

@@ -132,7 +132,7 @@ module MemMove {
     :arg rhs: A value to move-initialize from
   */
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead")
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
@@ -198,7 +198,7 @@ module MemMove {
 
     :return: The contents of ``arg`` moved into a new value
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="'moveToValue' is deprecated; please use 'moveFrom' instead")
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
@@ -252,7 +252,7 @@ module MemMove {
     :arg rhs: A variable to swap
   */
   pragma "last resort"
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead")
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
     moveSwap(x=lhs, y=rhs);

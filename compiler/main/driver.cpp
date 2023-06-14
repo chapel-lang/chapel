@@ -57,6 +57,12 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
+#if HAVE_LLVM_VER >= 140
+#include "llvm/MC/TargetRegistry.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
+#endif
+#include "llvm/Support/TargetSelect.h"
 #endif
 
 
@@ -81,7 +87,7 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_TARGET_CPU = NULL;
 const char* CHPL_RUNTIME_CPU = NULL;
-const char* CHPL_TARGET_BACKEND_CPU = NULL;
+const char* CHPL_LLVM_TARGET_CPU = NULL;
 const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER_PRGENV = NULL;
@@ -119,8 +125,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
-const char* CHPL_ROCM_PATH = NULL;
-const char* CHPL_GPU_CODEGEN = NULL;
+const char* CHPL_GPU = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -274,6 +279,7 @@ bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
+bool fReportGpu = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
 bool fReportGpuTransformTime = false;
@@ -341,7 +347,9 @@ bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
-bool fUseIOFormatters = false;
+bool fNoIOGenSerialization = false;
+bool fNoIOSerializeWriteThis = false;
+bool fNoIODeserializeReadThis = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
@@ -351,9 +359,11 @@ std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
 int fGPUBlockSize = 0;
-char fGpuArch[16];
+char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
+bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
+char gpuArch[gpuArchNameLen+1] = "";
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1225,6 +1235,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
+ {"report-gpu", ' ', NULL, "Print information about what loops are and are not GPU eligible", "F", &fReportGpu, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
@@ -1255,6 +1266,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
+ {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1307,7 +1319,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
- {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
+ {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
+ {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
+ {"io-deserialize-readThis", ' ', NULL, "Enable [disable] use of 'readThis' as default for 'deserialize' methods", "n", &fNoIODeserializeReadThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
  {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
   {0}
 };
@@ -1330,6 +1344,15 @@ static void printStuff(const char* argv0) {
 
 #ifdef HAVE_LLVM
     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+    llvm::InitializeAllTargets();
+    std::string availableTargets;
+    bool first = true;
+    for (auto target : llvm::TargetRegistry::targets()) {
+      if(!first) { availableTargets += ", "; }
+      first = false;
+      availableTargets += target.getName();
+    }
+    fprintf(stdout, "  available LLVM targets: %s\n", availableTargets.c_str());
 #endif
 
     fPrintCopyright  = true;
@@ -1491,7 +1514,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_TARGET_CPU      = envMap["CHPL_TARGET_CPU"];
   CHPL_RUNTIME_CPU     = envMap["CHPL_RUNTIME_CPU"];
-  CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
+  CHPL_LLVM_TARGET_CPU = envMap["CHPL_LLVM_TARGET_CPU"];
   CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
   CHPL_TARGET_COMPILER_PRGENV = envMap["CHPL_TARGET_COMPILER_PRGENV"];
@@ -1530,8 +1553,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
-    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
-    CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
+    CHPL_GPU= envMap["CHPL_GPU"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -1540,8 +1562,9 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
         break;
-      default:
-        INT_ASSERT(0 && "Should be unreachable");
+      case GpuCodegenType::GPU_CG_CPU:
+        gGpuSdkPath = "";
+        break;
     }
   }
 
@@ -1664,7 +1687,28 @@ static void setGPUFlags() {
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
     }
+    //
+    // set up gpuArch
+    if (strlen(fGpuArch) > 0) {
+      // using memcpy and setting the null byte to avoid errors from older GCCs
+      memcpy(gpuArch, fGpuArch, gpuArchNameLen);
+      gpuArch[gpuArchNameLen] = 0;
+    }
+    else {
+      if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
+        USR_FATAL("CHPL_GPU_ARCH must be set. See "
+                  "https://chapel-lang.org/docs/technotes/gpu.html "
+                  "for more information");
+      }
+      else {
+        // using memcpy and setting the null byte to avoid errors from older
+        // GCCs
+        memcpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
+        gpuArch[gpuArchNameLen] = 0;
+      }
+    }
   }
+
 }
 
 static void checkLLVMCodeGen() {
@@ -1872,6 +1916,20 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static chpl::Context::CompilationGlobals dynoBuildCompilationGlobals() {
+  return {
+    .boundsChecking = !fNoBoundsChecks,
+    .castChecking = !fNoCastChecks,
+    .nilDerefChecking = !fNoNilChecks,
+    .overloadSetsChecking = fOverloadSetsChecks,
+    .divByZeroChecking = !fNoDivZeroChecks,
+    .cacheRemote = fCacheRemote,
+    .privatization = !(fNoPrivatization || fLocal),
+    .local = fLocal,
+    .warnUnstable = fWarnUnstable,
+  };
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
 
@@ -1887,6 +1945,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.keepTmpDir = true;
   }
   config.toolName = "chpl";
+  config.compilationGlobals = dynoBuildCompilationGlobals();
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;
@@ -1948,6 +2007,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);
+  flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
+            fPermitUnhandledModuleErrors);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);

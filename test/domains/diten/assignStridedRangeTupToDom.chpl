@@ -1,4 +1,4 @@
-var D1: domain(2, stridable=true);
+var D1: domain(2, strides=strideKind.any);
 D1 = (1..6 by 2, 1..6 by 2);
 writeln(D1);
 

@@ -214,6 +214,35 @@ void setModuleSearchPath(Context* context,
                          std::vector<UniqueString> searchPath);
 
 /**
+  Return a list of paths to be prepended to the internal module path. This is
+  likely to be empty unless using --prepend-internal-module-dir when compiling
+*/
+const std::vector<UniqueString>& prependedInternalModulePath(Context* context);
+
+/**
+  Set a list of paths to be prepended to the internal module path. This is
+  typically set using the compiler flag --prepend-internal-module-dir and will
+  be called during setupModuleSearchPaths
+*/
+void setPrependedInternalModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
+  Return a list of paths to be prepended to the standard module path. This is
+  likely to be empty unless using --prepend-standard-module-dir when compiling
+*/
+const std::vector<UniqueString>& prependedStandardModulePath(Context* context);
+
+
+/**
+  Set a list of paths to be prepended to the standard module path. This is
+  typically set using the compiler flag --prepend-standard-module-dir and will
+  be called during setupModuleSearchPaths
+*/
+void setPrependedStandardModulePath(Context* context,
+                                    std::vector<UniqueString> paths);
+
+/**
   Return the current internal module path, i.e. CHPL_HOME/modules/internal/
  */
 UniqueString internalModulePath(Context* context);
@@ -307,6 +336,13 @@ bool idIsInBundledModule(Context* context, ID id);
  If the bundled module path is empty, this function returns false.
  */
 bool idIsInStandardModule(Context* context, ID id);
+
+
+bool
+filePathIsInInternalModule(Context* context, UniqueString filePath);
+
+bool
+filePathIsInStandardModule(Context* context, UniqueString filePath);
 
 /**
  This query parses a toplevel module by name. Returns nullptr
@@ -434,10 +470,19 @@ void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
 const AttributeToolNamesList& AttributeToolNames(Context* context);
 
 /**
-  Given an ID, returns the attributes associated with the ID. Only
-  declarations can have associated attributes.
+  Given an ID, returns the attributes associated with the ID. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
  */
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
+
+/**
+  Given an AstNode, returns the attributes associated with it. This is important
+  to use or else attributes for children of MultiDecls or TupleDecls will not
+  be found.
+ */
+const uast::AttributeGroup*
+astToAttributeGroup(Context* context, const uast::AstNode* node);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an
@@ -472,6 +517,11 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
 */
 void reportUnstableWarningForId(Context* context, ID idMention,
                                 ID idTarget);
+
+/*
+  Given an ID, returns the module kind for the ID.
+*/
+uast::Module::Kind idToModuleKind(Context* context, ID id);
 
 } // end namespace parsing
 } // end namespace chpl

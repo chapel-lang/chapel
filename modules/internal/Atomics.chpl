@@ -143,12 +143,11 @@ module Atomics {
   use ChapelBase;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
 
-  pragma "no doc"
   pragma "local fn" pragma "fast-on safe extern function"
   extern proc chpl_atomic_thread_fence(order:memory_order);
 
   // non user-facing fence that is called by the compiler
-  pragma "no doc"
+  @chpldoc.nodoc
   proc atomic_fence(order:memory_order = memory_order_seq_cst) {
     chpl_atomic_thread_fence(order);
     if CHPL_CACHE_REMOTE then
@@ -213,7 +212,6 @@ module Atomics {
                 else return "atomic_" + s + "_"          + externTString(T);
   }
 
-  pragma "no doc"
   proc chpl__processorAtomicType(type T) type {
     if T == bool           then return AtomicBool;
     else if isSupported(T) then return AtomicT(T);
@@ -221,7 +219,6 @@ module Atomics {
   }
 
   // Parser hook
-  pragma "no doc"
   proc chpl__atomicType(type T) type {
     use ChplConfig;
     if CHPL_NETWORK_ATOMICS == "none" {
@@ -234,10 +231,10 @@ module Atomics {
   pragma "atomic type"
   pragma "ignore noinit"
   record AtomicBool {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _v:externT(bool);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init_helper(value:bool) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
@@ -248,26 +245,26 @@ module Atomics {
       atomic_init(_v, value);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       this.complete();
       const default: bool;
       init_helper(default);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(other:AtomicBool) {
       this.complete();
       init_helper(other.read());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(other:bool) {
       this.complete();
       init_helper(other);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
@@ -408,7 +405,7 @@ module Atomics {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const writeThis(x) throws {
       x.write(read());
     }
@@ -416,7 +413,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicBool.: ?
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
@@ -425,13 +422,13 @@ module Atomics {
   pragma "atomic type"
   pragma "ignore noinit"
   record AtomicT {
-    pragma "no doc"
+    @chpldoc.nodoc
     type T;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var _v:externT(T);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init_helper(value:T) {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
@@ -442,7 +439,7 @@ module Atomics {
       atomic_init(_v, value);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type T) {
       this.T = T;
       this.complete();
@@ -450,21 +447,21 @@ module Atomics {
       init_helper(default);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(const ref other:this.type) {
       this.T = other.T;
       this.complete();
       init_helper(other.read());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(other:this.type.T) {
       this.T = other.type;
       this.complete();
       init_helper(other);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       pragma "fn synchronization free"
       pragma "local fn" pragma "fast-on safe extern function"
@@ -747,7 +744,7 @@ module Atomics {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const writeThis(x) throws {
       x.write(read());
     }
@@ -755,7 +752,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicT.: ?
-  pragma "no doc"
+  @chpldoc.nodoc
   operator :(rhs, type t:AtomicT)
   where rhs.type == t.T {
     var lhs: t = rhs; // use init=
@@ -774,44 +771,44 @@ module Atomics {
   // to the normal record version of the function.  Sigh.
 
   /* Equivalent to ``a.write(b.read())`` */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicBool.=(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicBool.=(ref a:AtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
   /* Equivalent to ``a.write(b.read())`` */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.=(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.=(ref a:AtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.+(a:AtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.-(a:AtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.*(a:AtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT./(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   inline operator AtomicT.%(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;

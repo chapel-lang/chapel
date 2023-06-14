@@ -39,7 +39,7 @@ module testmodule {
     writeln(arg.type:string, " ", arg);
   }
 
- 
+
   // accepts non-nilable borrowed any-class
   proc acceptsBorrowedNonNilable( arg: borrowed class ) {
     writeln(arg.type:string, " ", arg);
@@ -89,8 +89,8 @@ module testmodule {
     var mySharedNilable:shared MyClass? = new shared MyClass();
     var myBorrowedNonNilable:borrowed MyClass = (new owned MyClass()).borrow();
     var myBorrowedNilable:borrowed MyClass? = (new owned MyClass()).borrow();
-    var myUnmanagedNonNilable:unmanaged MyClass = myBorrowedNonNilable:unmanaged;
-    var myUnmanagedNilable:unmanaged MyClass? = myBorrowedNilable:unmanaged;
+    var myUnmanagedNonNilable:unmanaged MyClass = new unmanaged MyClass();
+    var myUnmanagedNilable:unmanaged MyClass? = new unmanaged MyClass?();
     var myInt = 1;
 
     {
@@ -114,7 +114,7 @@ module testmodule {
       assert(!canResolve(fnName, myUnmanagedNilable));
       assert(!canResolve(fnName, myInt));
     }
-    
+
     {
       param fnName = "acceptsOwnedNilable";
       writeln(fnName);
@@ -421,5 +421,7 @@ module testmodule {
       assert(canResolve(fnName, myUnmanagedNilable));
       assert(!canResolve(fnName, myInt));
     }
+    delete myUnmanagedNonNilable;
+    delete myUnmanagedNilable;
   }
 }

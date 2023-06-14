@@ -64,7 +64,7 @@ static void toggleCompilerFlag(Context* ctx, CompilerFlags::Name flag,
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "var a, b, c = 0;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -78,11 +78,13 @@ static void test0(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  assert(parentAttr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                              "chpldoc.nodoc"));
+  assert(noDoc);
 
   for (auto decl : multiVar->decls()) {
     assert(decl->isVariable());
-    assert(areAttributesEqual(multiVar, decl));
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
   }
 }
 
@@ -90,7 +92,7 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "var (a, b, c) = foo;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -104,12 +106,128 @@ static void test1(Parser* parser) {
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
-  assert(parentAttr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                              "chpldoc.nodoc"));
+  assert(noDoc);
 
   for (auto decl : tupleVar->decls()) {
     assert(decl->isVariable());
-    assert(areAttributesEqual(tupleVar, decl));
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
   }
+}
+
+// Make sure nested TupleDecl with attributeGroup parses and places the
+// attribute group on the outermost TupleDecl.
+static void test1a(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
+      "@chpldoc.nodoc\n"
+      "var (a, (x, y), c);\n");
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+
+  auto tupleVar = mod->stmt(0)->toTupleDecl();
+  assert(tupleVar);
+
+  auto parentAttr = tupleVar->attributeGroup();
+  assert(parentAttr);
+  assert(!parentAttr->isDeprecated());
+  assert(parentAttr->deprecationMessage().isEmpty());
+  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                              "chpldoc.nodoc"));
+  assert(noDoc);
+
+  for (auto decl : tupleVar->decls()) {
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
+  }
+  assert(tupleVar->decl(0)->isVariable());
+  assert(tupleVar->decl(1)->isTupleDecl());
+  assert(tupleVar->decl(2)->isVariable());
+}
+
+// Make sure multiDecl with nested TupleDecl parses and places the
+// attributeGroup on the outer multiDecl
+static void test1b(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1b.chpl",
+      "@chpldoc.nodoc\n"
+      "var z, v, (a, (x, y), c);\n");
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto multiDecl = mod->stmt(0)->toMultiDecl();
+  assert(multiDecl);
+  auto parentAttr = multiDecl->attributeGroup();
+  assert(parentAttr);
+  auto tupleVar = multiDecl->declOrComment(2)->toTupleDecl();
+  assert(tupleVar);
+  for (auto decl : tupleVar->decls()) {
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
+  }
+  assert(tupleVar->decl(0)->isVariable());
+  assert(tupleVar->decl(1)->isTupleDecl());
+  assert(tupleVar->decl(2)->isVariable());
+  auto tupleVarInner = tupleVar->decl(1)->toTupleDecl();
+  assert(tupleVarInner);
+  for (auto decl : tupleVarInner->decls()) {
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
+  }
+  assert(tupleVarInner->decl(0)->isVariable());
+  assert(tupleVarInner->decl(1)->isVariable());
+
+  assert(!parentAttr->isDeprecated());
+  assert(parentAttr->deprecationMessage().isEmpty());
+  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                              "chpldoc.nodoc"));
+  assert(noDoc);
+
+  for (auto decl : multiDecl->decls()) {
+    assert(decl->attributeGroupChildNum() == AstNode::NO_CHILD);
+  }
+  assert(multiDecl->declOrComment(0)->isVariable());
+  assert(multiDecl->declOrComment(1)->isVariable());
+  assert(multiDecl->declOrComment(2)->isTupleDecl());
+}
+
+// It's an error to have an attribute on a multi-decl where the first element
+// is a tuple. This is because we can't detect that we're in a multi-decl in
+// time to prevent consuming the attribute as a tuple attribute instead of
+// placing it on the multi-decl.
+static void test1c(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1c.chpl",
+      "@chpldoc.nodoc\n"
+      "var (a, (x, y), c), z, v;\n");
+
+  assert(!guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto multiDecl = mod->stmt(0)->toMultiDecl();
+  assert(multiDecl);
+  auto parentAttr = multiDecl->attributeGroup();
+  assert(parentAttr);
+  assert(!parentAttr->isDeprecated());
+  assert(parentAttr->deprecationMessage().isEmpty());
+  auto noDoc = parentAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                              "chpldoc.nodoc"));
+  assert(noDoc);
+  auto tupleDecl = multiDecl->declOrComment(0)->toTupleDecl();
+  assert(tupleDecl);
+  assert(tupleDecl->attributeGroupChildNum() == AstNode::NO_CHILD);
+  assert(tupleDecl->decl(0)->isVariable());
+  assert(tupleDecl->decl(1)->isTupleDecl());
+  assert(tupleDecl->decl(2)->isVariable());
+  auto tupleDeclInner = tupleDecl->decl(1)->toTupleDecl();
+  assert(tupleDeclInner);
+  assert(tupleDeclInner->attributeGroupChildNum() == AstNode::NO_CHILD);
+  assert(tupleDeclInner->decl(0)->isVariable());
+  assert(tupleDeclInner->decl(1)->isVariable());
+  assert(multiDecl->declOrComment(1)->isVariable());
+  assert(multiDecl->declOrComment(2)->isVariable());
 }
 
 static PragmaTag genPragmaTag(int idx) {
@@ -294,7 +412,7 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "@deprecated(\"Thingy is deprecated\")\n"
       "var x = 0;\n");
   assert(!guard.realizeErrors());
@@ -308,7 +426,9 @@ static void test3(Parser* parser) {
   auto varAttr = var->attributeGroup();
   assert(varAttr);
 
-  assert(varAttr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = varAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                            "chpldoc.nodoc"));
+  assert(noDoc);
   assert(varAttr->isDeprecated());
   assert(varAttr->deprecationMessage() == "Thingy is deprecated");
 }
@@ -317,7 +437,7 @@ static void test3(Parser* parser) {
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "@deprecated(notes=\"Module is deprecated\")\n"
       "module Foo {\n"
       "  var x = 0;\n"
@@ -334,14 +454,16 @@ static void test4(Parser* parser) {
   assert(modAttr);
   assert(modAttr->isDeprecated());
   assert(modAttr->deprecationMessage() == "Module is deprecated");
-  assert(modAttr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = modAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                            "chpldoc.nodoc"));
+  assert(noDoc);
 }
 
 // Procedures, formals, nested procedures.
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "@deprecated(\"P1 is deprecated\")\n"
       "proc p1() {}\n"
       "proc p2() {}\n"
@@ -352,12 +474,12 @@ static void test5(Parser* parser) {
       "  @deprecated(\"N2 is deprecated\")\n"
       "  proc n2() {}\n"
       "}\n"
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "@deprecated(\"P4 is deprecated\")\n"
       "proc p4(pragma \"no init\" x, y) {}\n"
       "@deprecated(\"P5 is deprecated\")\n"
       "proc p5(x, pragma \"no init\" y) {}\n"
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "proc p6() { var x = 0; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -370,7 +492,9 @@ static void test5(Parser* parser) {
   assert(p1Attr);
   assert(p1Attr->isDeprecated());
   assert(p1Attr->deprecationMessage() == "P1 is deprecated");
-  assert(p1Attr->hasPragma(PRAGMA_NO_DOC));
+  auto noDoc = p1Attr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                           "chpldoc.nodoc"));
+  assert(noDoc);
 
   auto p2 = mod->stmt(1)->toFunction();
   assert(!p2->attributeGroup());
@@ -401,7 +525,9 @@ static void test5(Parser* parser) {
   assert(p4Attr);
   assert(p4Attr->isDeprecated());
   assert(p4Attr->deprecationMessage() == "P4 is deprecated");
-  assert(p4Attr->hasPragma(PRAGMA_NO_DOC));
+  auto p4noDoc = p4Attr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                             "chpldoc.nodoc"));
+  assert(p4noDoc);
   assert(p4->numFormals() == 2);
   auto p4f1 = p4->formal(0)->toFormal();
   assert(p4f1);
@@ -438,7 +564,9 @@ static void test5(Parser* parser) {
   auto p6Attr = p6->attributeGroup();
   assert(p6Attr);
   assert(!p6Attr->isDeprecated());
-  assert(p6Attr->hasPragma(PRAGMA_NO_DOC));
+  auto p6noDoc = p6Attr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                             "chpldoc.nodoc"));
+  assert(p6noDoc);
   assert(p6->numStmts() == 1);
   auto p6v1 = p6->stmt(0)->toVariable();
   assert(p6v1);
@@ -449,7 +577,7 @@ static void test5(Parser* parser) {
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
-      "pragma \"no doc\"\n"
+      "@chpldoc.nodoc\n"
       "@deprecated(\"Enum is deprecated\")\n"
       "enum Foo {\n"
       "  a,\n"
@@ -467,7 +595,9 @@ static void test6(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isDeprecated());
   assert(enAttr->deprecationMessage() == "Enum is deprecated");
-  assert(enAttr->hasPragma(PRAGMA_NO_DOC));
+  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                             "chpldoc.nodoc"));
+  assert(enNoDoc);
   assert(en->numDeclOrComments() == 3);
   auto ee1 = en->declOrComment(0)->toEnumElement();
   assert(ee1);
@@ -488,7 +618,7 @@ static void test6(Parser* parser) {
 static void test7(Parser* parser) {
   ErrorGuard guard(parser->context());
   std::string program = R""""(
-    pragma "no doc"
+    @chpldoc.nodoc
     @deprecated("Enum is deprecated")
     enum Foo {
       a,
@@ -509,7 +639,9 @@ static void test7(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isDeprecated());
   assert(enAttr->deprecationMessage() == "Enum is deprecated");
-  assert(enAttr->hasPragma(PRAGMA_NO_DOC));
+  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(parser->context(),
+                                                             "chpldoc.nodoc"));
+  assert(enNoDoc);
   assert(en->numDeclOrComments() == 3);
   auto ee1 = en->declOrComment(0)->toEnumElement();
   assert(ee1);
@@ -531,7 +663,7 @@ static void test7(Parser* parser) {
 static void test8(Parser* parser) {
   ErrorGuard guard(parser->context());
   std::string program = R""""(
-    pragma "no doc"
+    @chpldoc.nodoc
     @unstable(category="to be deprecated", reason="Foo contains b and d", issue="1234")
     enum Foo {
       a,
@@ -555,7 +687,8 @@ static void test8(Parser* parser) {
   assert(enAttr);
   assert(enAttr->isUnstable());
   assert(enAttr->unstableMessage() == "Foo contains b and d");
-  assert(enAttr->hasPragma(PRAGMA_NO_DOC));
+  auto enNoDoc = enAttr->getAttributeNamed(UniqueString::get(ctx, "chpldoc.nodoc"));
+  assert(enNoDoc);
   auto enumAttribute = enAttr->getAttributeNamed(USTR("unstable"));
   assert(enumAttribute);
   assert(enumAttribute->isNamedActual(0));
@@ -960,6 +1093,9 @@ int main() {
 
   test0(p);
   test1(p);
+  test1a(p);
+  test1b(p);
+  test1c(p);
   test2(p);
   test3(p);
   test4(p);

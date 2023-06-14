@@ -61,7 +61,8 @@ bool Builder::checkAllConfigVarsAssigned(Context* context) {
      auto usedId = nameToConfigSettingId(context, config.first);
      if (usedId.isEmpty()) {
        auto loc = Location();
-       context->error(loc,"Trying to set unrecognized config '%s' via -s flag", config.first.c_str());
+       context->error(loc,"Trying to set unrecognized config '%s' via -s flag",
+                          config.first.c_str());
        anyBadConfigs = true;
      }
    }
@@ -278,11 +279,12 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     return;
   }
 
-  // check if this is a config var/param/type and if a value was set from the command line
-  // and update the initExpr for this node if so
+  // check if this is a config var/param/type and if a value was set from the
+  // command line and update the initExpr for this node if so
   std::string configName;
   std::string configValue;
   AstNode* ieNode = nullptr;
+
   if (auto var = ast->toVariable()) {
     if (var->isConfig()) {
      lookupConfigSettingsForVar(var, pathVec, configName, configValue);
@@ -405,14 +407,16 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 }
 
-void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed) {
+void
+Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& configNameUsed) {
   // If you're reading this and confused about how we can call useConfigSetting
   // and then call nameToConfigSetting, essentially setting a value and then
   // asking for it back and comparing against the value we just used, you're not alone.
   // See the docs in query-impl.h (QUERY_STORE_INPUT_RESULT) that describes
   // why this works.
-  // An important aspect is that calling a "Getter" type input query also stores the results and will
-  // return those saved results on subsequent calls to during the same revision.
+  // An important aspect is that calling a "Getter" type input query also stores
+  // the results and will return those saved results on subsequent calls to
+  // the "Getter" query during the same revision.
   // "If called multiple times __within the same revision__, only the first
   // stored result in that revision will be saved."
   useConfigSetting(context(), configNameUsed, var->id());
@@ -424,9 +428,12 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
 }
 
 /**
- * Check if a config var has a setting passed from the command line and save the name/value into ref args
+ * Check if a config var has a setting passed from the command line and save
+ * the name/value into ref args
  */
-void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value) {
+void
+Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec,
+                                    std::string& name, std::string& value) {
   std::pair<std::string, std::string> configMatched;
   CHPL_ASSERT(var->isConfig());
   const auto &configs = parsing::configSettings(this->context());
@@ -443,18 +450,22 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
   }
   // for config vars, check if they were set from the command line
   for (auto configPair: configs) {
-    if ((var->name().str() == configPair.first && var->visibility() != Decl::PRIVATE)
-        || configPair.first == possibleModule + var->name().str()) {
+    if ((var->name().str() == configPair.first &&
+         var->visibility() != Decl::PRIVATE) ||
+        configPair.first == possibleModule + var->name().str()) {
       // found a config that was set via cmd line
       // handle deprecations
       if (auto attribs = var->attributeGroup()) {
         if (attribs->isDeprecated()) {
           // TODO: Need proper message handling here
-          std::string msg = "'" + var->name().str() + "' was set via a compiler flag";
+          std::string msg = "'" + var->name().str() +
+                            "' was set via a compiler flag";
           if (attribs->deprecationMessage().isEmpty()) {
-            std::cerr << "warning: " + var->name().str() + " is deprecated" << std::endl;
+            std::cerr << "warning: " + var->name().str() + " is deprecated"
+                      << std::endl;
           } else {
-            std::cerr << "warning: " + attribs->deprecationMessage().str() << std::endl;
+            std::cerr << "warning: " + attribs->deprecationMessage().str()
+                      << std::endl;
           }
           std::cerr << "note: " + msg << std::endl;
         }
@@ -475,25 +486,29 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
 /*
  * Update the initExpr for a config var/param/type
  */
-AstNode* Builder::updateConfig(Variable* var, std::string configName, std::string configVal) {
+AstNode* Builder::updateConfig(Variable* var, std::string configName,
+                               std::string configVal) {
   AstNode* ret = nullptr;
   CHPL_ASSERT(var->isConfig());
   CHPL_ASSERT(!configName.empty());
   // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
   owned<AstNode> initNode = parseDummyNodeForInitExpr(var, configVal);
-  ret = initNode.get();
-  // create a last column value, add 1 for the initial column and 1 for the `=`
-  int lastColumn = configName.length() + configVal.length() + 2;
-  auto loc = Location(ret->id().symbolPath(), 1,1,1,lastColumn);
-  noteChildrenLocations(ret, loc);
-  addOrReplaceInitExpr(var->toVariable(), std::move(initNode));
+  if (initNode) {
+    ret = initNode.get();
+    // create a last column value, add 1 for the initial column and 1 for the `=`
+    int lastColumn = configName.length() + configVal.length() + 2;
+    auto loc = Location(ret->id().symbolPath(), 1,1,1,lastColumn);
+    noteChildrenLocations(ret, loc);
+    addOrReplaceInitExpr(var->toVariable(), std::move(initNode));
+  }
   return ret;
 }
 
 /**
  * Create a dummy input for a variable and parse it to extract the initExpr
  */
-owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
+owned <AstNode>
+Builder::parseDummyNodeForInitExpr(Variable* var, std::string value) {
   std::string inputText;
   // for types, it's important for the parser to see that it's a type
   if (var->kind() == uast::Variable::TYPE) {
@@ -516,6 +531,9 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
     initNode = std::move(mod->children_[0]->children_.back());
     // clean out the nullptr
     mod->children_[0]->children_.pop_back();
+  } else if (mod->stmt(0)->isErroneousExpression()) {
+    auto loc = Location();
+    context()->error(loc, "Error while trying to set config '%s'", var->name().c_str());
   } else {
     CHPL_ASSERT(false && "should only be an assignment or type initializer");
   }

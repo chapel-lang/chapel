@@ -140,6 +140,44 @@ static void psmx3_wait_stop_progress(void)
 static struct fi_ops_wait *psmx3_wait_ops_save;
 static struct fi_ops_wait psmx3_wait_ops;
 
+static int psmx3_wait_wait_wait(struct fid_wait *wait_fid, int timeout)
+{
+	struct ofi_epollfds_event event;
+	struct util_wait_fd *wait;
+	uint64_t endtime;
+	int ret;
+
+	wait = container_of(wait_fid, struct util_wait_fd, util_wait.wait_fid);
+	endtime = ofi_timeout_time(timeout);
+
+	while (1) {
+		ret = wait->util_wait.wait_try(&wait->util_wait);
+		if (ret) {
+			return ret == -FI_EAGAIN ? 0 : ret;
+		}
+
+		if (ofi_adjust_timeout(endtime, &timeout))
+			return -FI_ETIMEDOUT;
+
+		ret = (wait->util_wait.wait_obj == FI_WAIT_FD) ?
+		      ofi_epoll_wait(wait->epoll_fd, &event, 1, 100) :
+		      ofi_pollfds_wait(wait->pollfds, &event, 1, 100);
+		if (ret > 0)
+			return FI_SUCCESS;
+
+		if (ret < 0) {
+#if ENABLE_DEBUG
+			/* ignore interrupts in order to enable debugging */
+			if (ret == -FI_EINTR)
+				continue;
+#endif
+			FI_WARN(wait->util_wait.prov, FI_LOG_FABRIC,
+				"poll failed\n");
+			return ret;
+		}
+	}
+}
+
 DIRECT_FN
 STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 {
@@ -152,7 +190,7 @@ STATIC int psmx3_wait_wait(struct fid_wait *wait, int timeout)
 
 	psmx3_wait_start_progress(fabric);
 
-	err = psmx3_wait_ops_save->wait(wait, timeout);
+	err = psmx3_wait_wait_wait(wait, timeout);
 
 	psmx3_wait_stop_progress();
 

@@ -22,6 +22,7 @@ ALL_SRCS += ../frontend/lib/types/*.cpp
 
 FRONTEND_TYPES_SRCS = \
   AnyType.cpp \
+  ArrayType.cpp \
   BasicClassType.cpp \
   BoolType.cpp \
   BuiltinType.cpp \
@@ -30,6 +31,7 @@ FRONTEND_TYPES_SRCS = \
   ClassTypeDecorator.cpp \
   ComplexType.cpp \
   CompositeType.cpp \
+  DomainType.cpp \
   EnumType.cpp \
   ErroneousType.cpp \
   ImagType.cpp \

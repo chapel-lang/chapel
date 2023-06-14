@@ -25,7 +25,7 @@ extern {
   // make puts available for the example below
   #include <stdio.h>
 
-  // make gethostname available for example below 
+  // make gethostname available for example below
   #include <unistd.h>
 
    // this function can be inlined into the Chapel code that uses
@@ -69,7 +69,7 @@ var hostname_ptr: c_ptr(c_char);
 var hostname_len = 100;
 var result:c_int;
 
-hostname_ptr = c_calloc(c_char, hostname_len);
+hostname_ptr = allocate(c_char, hostname_len, clear=true);
 
 result = gethostname(hostname_ptr:c_ptr(c_char), hostname_len:c_size_t);
 if !quiet {
@@ -83,8 +83,8 @@ if !quiet {
   }
 }
 
-// Demonstrate c_calloc and c_free
-c_free(hostname_ptr);
+// Demonstrate allocate and deallocate
+deallocate(hostname_ptr);
 
 
 
@@ -93,13 +93,13 @@ c_free(hostname_ptr);
 // but should be in the standard modules.
 
 // allow casts from c_ptr(c_char) to c_string
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x, type t) where isSubtype(t,c_string) && isSubtype(x.type,c_ptr(c_char)) {
     return __primitive("cast", t, x);
 }
 
 // allow casts from c_string to c_ptr(c_char)
-pragma "no doc"
+@chpldoc.nodoc
 inline operator :(x, type t) where isSubtype(t,c_ptr(c_char)) && isSubtype(x.type,c_string) {
     return __primitive("cast", t, x);
 }

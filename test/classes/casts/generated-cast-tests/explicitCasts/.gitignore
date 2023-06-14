@@ -1,0 +1,5 @@
+*.chpl
+*.good
+NOEXEC
+COMPOPTS
+PREDIFF

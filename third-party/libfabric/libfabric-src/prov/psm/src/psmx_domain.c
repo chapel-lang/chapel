@@ -195,9 +195,9 @@ static int psmx_domain_close(fid_t fid)
 	if (domain->am_initialized)
 		psmx_am_fini(domain);
 
-	fastlock_destroy(&domain->poll_lock);
+	ofi_spin_destroy(&domain->poll_lock);
 	rbtDelete(domain->mr_map);
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 
 #if 0
 	/* AM messages could arrive after MQ is finalized, causing segfault
@@ -294,10 +294,10 @@ static int psmx_domain_init(struct psmx_fid_domain *domain,
 		goto err_out_close_ep;
 	}
 
-	err = fastlock_init(&domain->mr_lock);
+	err = ofi_spin_init(&domain->mr_lock);
 	if (err) {
 		FI_WARN(&psmx_prov, FI_LOG_CORE,
-			"fastlock_init(mr_lock) returns %d\n", err);
+			"ofi_spin_init(mr_lock) returns %d\n", err);
 		goto err_out_finalize_mq;
 	}
 
@@ -310,10 +310,10 @@ static int psmx_domain_init(struct psmx_fid_domain *domain,
 
 	domain->mr_reserved_key = 1;
 
-	err = fastlock_init(&domain->poll_lock);
+	err = ofi_spin_init(&domain->poll_lock);
 	if (err) {
 		FI_WARN(&psmx_prov, FI_LOG_CORE,
-			"fastlock_init(poll_lock) returns %d\n", err);
+			"ofi_spin_init(poll_lock) returns %d\n", err);
 		goto err_out_delete_mr_map;
 	}
 
@@ -335,13 +335,13 @@ static int psmx_domain_init(struct psmx_fid_domain *domain,
 
 err_out_reset_active_domain:
 	fabric->active_domain = NULL;
-	fastlock_destroy(&domain->poll_lock);
+	ofi_spin_destroy(&domain->poll_lock);
 
 err_out_delete_mr_map:
 	rbtDelete(domain->mr_map);
 
 err_out_destroy_mr_lock:
-	fastlock_destroy(&domain->mr_lock);
+	ofi_spin_destroy(&domain->mr_lock);
 
 err_out_finalize_mq:
 	psm_mq_finalize(domain->psm_mq);
@@ -385,7 +385,8 @@ int psmx_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		goto err_out;
 	}
 
-	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context);
+	err = ofi_domain_init(fabric, info, &domain_priv->util_domain, context,
+			      OFI_LOCK_MUTEX);
 	if (err)
 		goto err_out_free_domain;
 

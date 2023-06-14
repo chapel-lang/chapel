@@ -27,7 +27,6 @@
 #include "llvm/Support/FileUtilities.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/InitLLVM.h"
-#include "llvm/Support/ManagedStatic.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/PrettyStackTrace.h"
@@ -124,13 +123,14 @@ std::string createTempFile(const Twine &Prefix, StringRef Suffix) {
   return static_cast<std::string>(FileName);
 }
 
-ErrorOr<std::string> findClang(const char *Argv0) {
+ErrorOr<std::string> findClang(const char *Argv0, StringRef Triple) {
   StringRef Parent = llvm::sys::path::parent_path(Argv0);
   ErrorOr<std::string> Path = std::error_code();
+  std::string TargetClang = (Triple + "-clang").str();
   if (!Parent.empty()) {
     // First look for the tool with all potential names in the specific
     // directory of Argv0, if known
-    for (const auto *Name : {"clang", "clang-cl"}) {
+    for (const auto *Name : {TargetClang.c_str(), "clang", "clang-cl"}) {
       Path = sys::findProgramByName(Name, Parent);
       if (Path)
         return Path;
@@ -219,7 +219,7 @@ bool preprocess(StringRef Src, StringRef Dst, const RcOptions &Opts,
   if (Opts.PrintCmdAndExit) {
     Clang = "clang";
   } else {
-    ErrorOr<std::string> ClangOrErr = findClang(Argv0);
+    ErrorOr<std::string> ClangOrErr = findClang(Argv0, Opts.Triple);
     if (ClangOrErr) {
       Clang = *ClangOrErr;
     } else {

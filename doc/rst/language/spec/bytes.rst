@@ -23,7 +23,7 @@ prepended by a ``b`` character:
 
    var b = b"my bytes";
 
-The factory functions shown below, such as :proc:`~Bytes.createBytesWithNewBuffer`,
+The factory functions shown below, such as :proc:`bytes.createBorrowingBuffer <Bytes.bytes.createBorrowingBuffer>`,
 allow you to create a ``bytes`` using a specific buffer (i.e. data in another
 ``bytes``, a ``c_string`` or a :class:`~CTypes.c_ptr`).
 

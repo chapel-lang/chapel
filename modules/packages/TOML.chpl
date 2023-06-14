@@ -143,10 +143,10 @@ module TomlParser {
   config const debugTomlParser = false;
 
   /* Number of spaces in an indentation for JSON output */
-  pragma "no doc"
+  @chpldoc.nodoc
   const tabSpace = 4;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class Parser {
 
     var source: Source;
@@ -335,7 +335,7 @@ module TomlParser {
             }
             else {
               var toParse = parseValue();
-              array.append(toParse);
+              array.pushBack(toParse);
             }
           }
           skipNext(source);
@@ -448,7 +448,7 @@ module TomlParser {
   }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 // Enum for Toml class field: tag
  enum fieldtag {
    fieldBool,
@@ -463,7 +463,7 @@ pragma "no doc"
    fieldDateTime };
  private use fieldtag;
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, s: string) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -474,7 +474,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, i: int) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -485,7 +485,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, b: bool) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -496,7 +496,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, r: real) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -507,7 +507,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, ld: date) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -518,7 +518,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, ti: time) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -529,7 +529,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, dt: dateTime) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
@@ -540,13 +540,13 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml,
                  A: [?D] shared Toml) where D.isAssociative() {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
- pragma "no doc"
+ @chpldoc.nodoc
  proc setupToml(ref t: shared Toml, A: [?D] shared Toml) where D.isAssociative() {
    if t == nil {
      t = new shared Toml(A);
@@ -557,7 +557,7 @@ pragma "no doc"
    }
  }
 
- pragma "no doc"
+ @chpldoc.nodoc
  proc setupToml(ref t: shared Toml, arr: [?dom] shared Toml) where !dom.isAssociative(){
    if t == nil {
      t = new shared Toml(arr);
@@ -569,7 +569,7 @@ pragma "no doc"
  }
 
 
- pragma "no doc"
+ @chpldoc.nodoc
  operator Toml.=(ref t: shared Toml, arr: [?dom] shared Toml) where !dom.isAssociative(){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
@@ -582,7 +582,7 @@ used to recursively hold tables and respective values
 */
   class Toml {
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var i: int,
       boo: bool,
       re: real,
@@ -613,7 +613,7 @@ used to recursively hold tables and respective values
       this.tag = fieldToml;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(A: [?D] shared Toml?) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
@@ -663,7 +663,7 @@ used to recursively hold tables and respective values
       this.tag = fieldArr;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(arr: [?dom] shared Toml?) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
@@ -676,7 +676,7 @@ used to recursively hold tables and respective values
       this.init(lst.toArray());
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(lst: list(shared Toml?)) {
       // Cheat by translating directly into an array for now.
       this.init(lst.toArray());
@@ -723,7 +723,7 @@ used to recursively hold tables and respective values
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Returns true if table path exists in rootTable */
     proc pathExists(tblpath: string) : bool {
       try! {
@@ -895,7 +895,7 @@ used to recursively hold tables and respective values
 
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Flatten tables into flat associative array for writing */
     proc flatten(ref flat: map(string, shared Toml?, false), rootKey = '') : flat.type {
       for (k, v) in zip(this.A.keys(), this.A.values()) {
@@ -909,7 +909,7 @@ used to recursively hold tables and respective values
       return flat;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc printTables(ref flat: map(string, shared Toml?, false), f:fileWriter) {
       if flat.contains('root') {
         f.writeln('[root]');
@@ -922,7 +922,7 @@ used to recursively hold tables and respective values
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Send values from table to toString for writing  */
     proc printValues(f: fileWriter, v: borrowed Toml) throws {
       var keys = v.A.keysToArray();
@@ -979,7 +979,7 @@ used to recursively hold tables and respective values
       f.writeln();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Send values from table to toString for writing  */
     proc printValuesJSON(f: fileWriter, v: borrowed Toml, in indent=0) throws {
       var keys = v.A.keysToArray();
@@ -1044,7 +1044,7 @@ used to recursively hold tables and respective values
     }
 
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* Return String representation of a value in a node */
     proc toString(val: borrowed Toml) : string throws {
       select val.tag {
@@ -1121,7 +1121,7 @@ used to recursively hold tables and respective values
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
  /*
  Reader module for use in the Parser Class.
  */
@@ -1251,21 +1251,21 @@ module TomlReader {
             strippedToken = dateTimeToken[0];
           var isComment = (new regex(comments)).match(strippedToken);
           if isComment.matched && idx <= 1 {
-            linetokens.append(strippedToken);
+            linetokens.pushBack(strippedToken);
           } else if !isComment.matched {
-            linetokens.append(strippedToken);
+            linetokens.pushBack(strippedToken);
           }
         }
       }
 
       // If no non-empty-chars => token is a blank line
       if(nonEmptyChar == false){
-        linetokens.append("\n");
+        linetokens.pushBack("\n");
       }
 
       if !linetokens.isEmpty() {
         var tokens = new unmanaged Tokens(linetokens);
-        tokenlist.append(tokens);
+        tokenlist.pushBack(tokens);
       }
     }
 
@@ -1277,7 +1277,7 @@ module TomlReader {
         }
         else {
           var ptrhold = currentLine;
-          tokenlist.pop(0);
+          tokenlist.getAndRemove(0);
           currentLine = tokenlist[0];
           delete ptrhold;
           return true;
@@ -1327,11 +1327,11 @@ module TomlReader {
     }
 
     proc skip() {
-      A.pop(0);
+      A.getAndRemove(0);
     }
 
     proc next() {
-      var toke = A.pop(0);
+      var toke = A.getAndRemove(0);
       return toke;
     }
 
@@ -1353,17 +1353,18 @@ module TomlReader {
       }
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc init(r: fileReader) {
+    @chpldoc.nodoc
+    proc init(reader: fileReader, ref deserializer) {
       this.complete();
       compilerError("Reading a Tokens type is not supported");
     }
 
-    proc writeThis(f) throws {
+    override proc writeThis(f) throws {
       f.write(this.A.toArray());
     }
   }

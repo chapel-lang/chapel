@@ -68,7 +68,7 @@ struct ips_epstate_entry {
 };
 
 struct ips_epstate {
-	const psmi_context_t *context;
+	psm2_ep_t ep;
 	ips_epstate_idx eps_base_idx;
 	int eps_tabsize;
 	int eps_tabsizeused;
@@ -77,14 +77,13 @@ struct ips_epstate {
 	struct ips_epstate_entry *eps_tab;
 };
 
-psm2_error_t ips_epstate_init(struct ips_epstate *eps,
-			     const psmi_context_t *contextj);
-psm2_error_t ips_epstate_fini(struct ips_epstate *eps);
+psm2_error_t psm3_ips_epstate_init(struct ips_epstate *eps, psm2_ep_t ep);
+psm2_error_t psm3_ips_epstate_fini(struct ips_epstate *eps);
 
-psm2_error_t ips_epstate_add(struct ips_epstate *eps,
+psm2_error_t psm3_ips_epstate_add(struct ips_epstate *eps,
 			    struct ips_epaddr *ipsaddr,
 			    ips_epstate_idx *connidx);
-psm2_error_t ips_epstate_del(struct ips_epstate *eps, ips_epstate_idx connidx);
+psm2_error_t psm3_ips_epstate_del(struct ips_epstate *eps, ips_epstate_idx connidx);
 
 /* Use this to debug EP issues. */
 void ips_epstate_dump(struct ips_epstate *eps);

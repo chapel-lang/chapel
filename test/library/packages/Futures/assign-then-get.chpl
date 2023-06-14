@@ -6,6 +6,6 @@ var G: Future(int);
 assert(G.isValid() == false);
 
 // G is now a valid future
-G = async(lambda(x: int) { return 10 + x; }, 1);
+G = async(proc(x: int) { return 10 + x; }, 1);
 const g = G.get();
 writeln(g);
