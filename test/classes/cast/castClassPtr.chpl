@@ -30,4 +30,6 @@ proc main() {
   writeln(c3());
   assert(c_ptrTo(c) == c_ptrTo(c3));
   writeln("Addresses match!");
+
+  delete c;
 }
