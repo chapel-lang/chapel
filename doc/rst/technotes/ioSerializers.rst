@@ -15,7 +15,7 @@ writing values in non-standard formats via the ``readf`` and ``writef`` methods
 user-defined formatting with ``fileReader`` and ``fileWriter``, rather than
 relying solely on built-in support in the standard library. This new API allows
 for the configuration of ``fileReader`` and ``fileWriter`` with user-defined
-types can define the format used by methods like ``read`` and ``write``.
+types that can define the format used by methods like ``read`` and ``write``.
 
 For example, if a user wishes to write a record in JSON format they can now
 use the ``Json`` package module in Chapel 1.31:
@@ -75,7 +75,7 @@ Creating fileReaders and fileWriters
 
 The ``fileReader`` and ``fileWriter`` types can now be created with a specified
 Serializer or Deserializer. The following methods now contain new optional
-``serializer`` or ``deserializer`` arguments that accepts a record by the
+``serializer`` or ``deserializer`` arguments that accept a record by the
 ``in`` intent. The copy of the record will be stored inside of the
 ``fileReader/Writer``. The default value for these arguments when
 ``-suseIOSerializers`` is used will be an instance of ``DefaultSerializer`` or
