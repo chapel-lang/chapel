@@ -1365,7 +1365,7 @@ module Yaml {
     // ----------------------------------------------------
 
     private extern proc yaml_emitter_initialize(emitter: c_ptr(yaml_emitter_t)): c_int;
-    private extern proc yaml_emitter_set_output_file(emitter: c_ptr(yaml_emitter_t), file: c_ptr(c_FILE)): c_int;
+    private extern proc yaml_emitter_set_output_file(emitter: c_ptr(yaml_emitter_t), file: c_ptr(c_FILE));
     private extern proc yaml_emitter_set_canonical(emitter: c_ptr(yaml_emitter_t), isC: c_int);
     private extern proc yaml_emitter_set_unicode(emitter: c_ptr(yaml_emitter_t), isU: c_int);
     private extern proc yaml_emitter_emit(emitter: c_ptr(yaml_emitter_t), event: c_ptr(yaml_event_t)): c_int;
@@ -1379,7 +1379,7 @@ module Yaml {
     private extern proc yaml_parser_initialize(parser: c_ptr(yaml_parser_t)): c_int;
     private extern proc yaml_parser_set_input_file(parser: c_ptr(yaml_parser_t), file: c_ptr(c_FILE));
     private extern proc yaml_parser_parse(parser: c_ptr(yaml_parser_t), event: c_ptr(yaml_event_t)): c_int;
-    private extern proc yaml_parser_delete(parser: c_ptr(yaml_parser_t)): c_int;
+    private extern proc yaml_parser_delete(parser: c_ptr(yaml_parser_t));
 
     // ----------------------------------------------------
     // event API
