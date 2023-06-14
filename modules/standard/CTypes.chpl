@@ -68,7 +68,7 @@ module CTypes {
   /* Chapel type alias for a C ``FILE`` */
   proc c_FILE type {
     if cFileTypeHasPointer {
-      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
+      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Wrap instances of 'c_FILE' with 'c_ptr()' and recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
       return chpl_cFilePtr;
     } else {
       return chpl_cFile;
