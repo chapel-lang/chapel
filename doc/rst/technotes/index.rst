@@ -62,6 +62,14 @@ Interoperability
    Fortran Interoperability <fortranInterop>
    Using the Chapel Allocator from C <allocators>
 
+IO
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   IO Serializers and Deserializers <ioSerializers>
+
 Compiler Features
 -----------------
 
