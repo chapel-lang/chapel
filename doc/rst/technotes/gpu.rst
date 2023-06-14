@@ -209,8 +209,8 @@ Multi-Locale Support
 
 As of Chapel 1.27.0 the GPU locale model may be used alongside communication
 layers (values of ``CHPL_COMM``) other than ``none``. This enables programs to
-use GPUs across nodes.  We have only tested multi-locale support with NVIDIA
-GPUs although we intend to support it with AMD GPUs in a future release.
+use GPUs across nodes. We have tested multi-locale support with both NVIDIA and
+AMD GPUs.
 
 In this mode, normal remote access is supported outside of loops that are
 offloaded to the GPU; however, remote access within a kernel is not supported.
@@ -232,6 +232,34 @@ For more examples see the tests under |multi_locale_dir|_ available from our `pu
 
 .. |multi_locale_dir| replace:: ``test/gpu/native/multiLocale``
 .. _multi_locale_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/multiLocale
+
+Device-to-Device Communication Support
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel supports direct communication between interconnected GPUs. The supported
+connection types are dictated by the GPU vendor; PCIe and NVLink (on NVIDIA
+GPUs) are known to work.
+
+This feature is disabled by default; it can be enabled by
+setting the ``enableGpuP2P`` configuration constant using the compiler
+flag ``-senableGpuP2P=true``. The following example demonstrates using
+Device-to-Device communication to send data between two GPUs:
+
+.. code-block:: chapel
+
+  var dev1 = here.gpus[0],
+      dev2 = here.gpus[1];
+  on dev1 {
+    var dev1Data: [0..#1024] int;
+    on dev2 {
+      var dev2Data: [0..#1024] int;
+      dev2Data = dev1Data;
+    }
+  }
+
+Notice that in this example, the GPU locales were stored into variables
+``dev1`` and ``dev2``. Writing ``on here.gpus[1]`` in the second ``on`` statement
+directly would not be correct, since neither GPU locale has GPU sublocales of
+its own.
 
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
@@ -328,8 +356,6 @@ improvements in the future.
 * Intel GPUs are not supported, yet.
 
 * For AMD GPUs:
-
-    * Can only be used with local builds (i.e., CHPL_COMM=none)
 
     * Certain 64-bit math functions are unsupported. To see what does
       and doesn't work see `this test
