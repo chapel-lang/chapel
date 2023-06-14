@@ -886,17 +886,21 @@ CHPL_UNWIND
 
 CHPL_LIB_PIC
 ~~~~~~~~~~~~
-   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to build
-   position independent or position dependent code.  This is intended for use
-   when :ref:`readme-libraries`, especially when :ref:`readme-libraries.Python`
-   or when building with ``--dynamic``. Current options are:
+
+   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to
+   build position independent code suitable for shared libraries.  This
+   is intended for use when :ref:`readme-libraries`, especially when
+   :ref:`readme-libraries.Python` or when building with ``--dynamic``.
+   This setting affects the runtime build as well as programs compiled
+   with ``chpl``. Current options are:
 
        ===== ================================
        Value Description
        ===== ================================
-       pic   build position independent code
+       pic   build position-independent code suitable for a shared library
        none  use the system default, which might be
-             position independent or position dependent
+             position-dependent or position-independent but not
+             suitable for a shared library
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``
