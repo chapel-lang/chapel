@@ -1103,6 +1103,12 @@ struct RstSignatureVisitor {
     // throws
     if (f->throws()) os_ << " throws";
 
+    // Where Clause
+    if (const AstNode* wc = f->whereClause()) {
+      os_ << " where";
+      wc->traverse(*this);
+    }
+    
     return false;
   }
 
