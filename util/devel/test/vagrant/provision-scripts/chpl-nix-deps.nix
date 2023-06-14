@@ -23,6 +23,7 @@
     {
       devShells.default = (pkgs.mkShell.override { stdenv = pkgs.llvmPackages_14.stdenv; }) {
         nativeBuildInputs = with pkgs; [
+          automake
           bash
           cmake
           file
@@ -42,21 +43,15 @@
           which
         ];
         shellHook = with pkgs; ''
-          #export CC=${llvmPackages_14.clang}/bin/cc
-          #export CXX=${llvmPackages_14.clang}/bin/c++
-          #export CHPL_LLVM=system
-          #export CHPL_LLVM_CONFIG=${llvmPackages_14.llvm.dev}/bin/llvm-config
-          #export CHPL_HOST_COMPILER=llvm
-          #export CHPL_HOST_CC=${llvmPackages_14.clang}/bin/clang
-          #export CHPL_HOST_CXX=${llvmPackages_14.clang}/bin/clang++
-          #export CHPL_TARGET_CPU=none
-          #export CHPL_TARGET_CC=${llvmPackages_14.clang}/bin/clang
-          #export CHPL_TARGET_CXX=${llvmPackages_14.clang}/bin/clang++
-          #export CHPL_GMP=system
-          #export CHPL_RE2=bundled
-          #export CHPL_UNWIND=system
+          export CHPL_LLVM=system
+          export CHPL_LLVM_CONFIG=${llvmPackages_14.llvm.dev}/bin/llvm-config
+          export CHPL_HOST_COMPILER=llvm
+          export CHPL_HOST_CC=${llvmPackages_14.clang}/bin/clang
+          export CHPL_HOST_CXX=${llvmPackages_14.clang}/bin/clang++
+          export CHPL_TARGET_CC=${llvmPackages_14.clang}/bin/clang
+          export CHPL_TARGET_CXX=${llvmPackages_14.clang}/bin/clang++
+          export CHPL_CLANG_INCLUDES="-I ${llvmPackages_15.bintools.libc.dev}/include -I ${llvmPackages_15.clang-unwrapped.lib}/lib/clang/${llvmPackages_15.clang.version}/include"
         '';
       };
     });
 }
-
