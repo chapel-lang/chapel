@@ -6,11 +6,14 @@
 
 import argparse, glob, os, subprocess, shutil
 
-def gatherDirs():
+def gatherDirs(skip_nollvm):
     dirs = [ ]
     for d in glob.glob('current/*'):
         if os.path.exists(os.path.join(d, 'image.def')):
-            dirs.append(d)
+            if skip_nollvm and 'nollvm' in d:
+                pass # skip -nollvm versions if requested
+            else:
+                dirs.append(d)
     dirs.sort()
     return dirs
 
@@ -49,6 +52,10 @@ def main():
                         help='rebuild each image before running it')
     parser.add_argument('--only', dest='only', action='store',
                         help='only run one configuration')
+    parser.add_argument('--start', dest='start', action='store',
+                        help='run configurations starting with the passed one')
+    parser.add_argument('--skip-nollvm', dest='skip_nollvm', action='store_true',
+                        help='skip nollvm configurations')
     parser.add_argument('command', nargs='+', help='command to run')
 
     args = parser.parse_args()
@@ -60,9 +67,24 @@ def main():
     status = { }
 
     with open(logpath, 'w', encoding="utf-8") as log:
-        dirs = gatherDirs()
+        dirs = gatherDirs(args.skip_nollvm)
         if args.only != None:
-            dirs = [ args.only ]
+            hadDirs = dirs
+            dirs = [ ]
+            for d in hadDirs:
+                if dirNameToConfigName(d) == dirNameToConfigName(args.only):
+                    dirs.append(d)
+
+
+        if args.start != None:
+            hadDirs = dirs
+            dirs = [ ]
+            started = False
+            for d in hadDirs:
+                if dirNameToConfigName(d) == dirNameToConfigName(args.start):
+                    started = True
+                if started:
+                    dirs.append(d)
 
         # compute the longest length for padding
         maxNameLen = 0
