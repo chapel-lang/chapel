@@ -71,6 +71,7 @@ Tool Improvements
 Performance Optimizations / Improvements
 ----------------------------------------
 * added support for remote-value-forwarding `bigint` values across on-clauses
+* eliminated needless communication from many routines in the 'Time' module
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
