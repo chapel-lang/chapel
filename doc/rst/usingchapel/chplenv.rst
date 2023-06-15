@@ -284,10 +284,19 @@ CC and Similar
    inferred from ``/path/to/gcc-10``, for example.
 
    Please note that setting ``CC`` and ``CXX`` or ``CHPL_TARGET_CC`` and
-   ``CHPL_TARGET_CXX`` will not change the target compiler used when the
+   ``CHPL_TARGET_CXX`` will not change ``CHPL_TARGET_COMPILER`` when the
    LLVM backend is in use or when working with a PrgEnv compiler. In
    these cases, it is necessary to also set ``CHPL_TARGET_COMPILER`` in
    order for the ``CC`` / ``CHPL_TARGET_CC`` variables to take effect.
+
+   In some cases, it is useful to configure additional arguments for the
+   associated ``clang`` command to use with the LLVM backend. For
+   example, the ``clang`` compiler might need additional arguments in
+   order to function properly. To support these cases, overriding
+   ``CHPL_TARGET_CC`` and ``CHPL_TARGET_CXX`` will impact the ``clang``
+   commands used by the LLVM backend. Please note that setting these
+   variables will override the normal process to find a bundled or
+   system-wide installation of ``clang``.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
