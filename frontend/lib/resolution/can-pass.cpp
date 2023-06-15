@@ -818,6 +818,17 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   } else if (auto actualCt = actualT->toCompositeType()) {
     // check for instantiating records/unions/tuples
     if (auto formalCt = formalT->toCompositeType()) {
+      // Quick check to disallow passing tuples of mismatching sizes when the
+      // sizes are known.
+      if (actualCt->isTupleType() && formalCt->isTupleType()) {
+        auto at = actualCt->toTupleType();
+        auto ft = formalCt->toTupleType();
+        if (at->isKnownSize() && ft->isKnownSize() &&
+            at->numElements() != ft->numElements()) {
+          return fail();
+        }
+      }
+
       if (actualCt->isInstantiationOf(context, formalCt)) {
         return instantiate();
       }

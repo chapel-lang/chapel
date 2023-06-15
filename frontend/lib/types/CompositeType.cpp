@@ -39,6 +39,8 @@ CompositeType::areSubsInstantiationOf(Context* context,
                                       const CompositeType* partial) const {
   // Check to see if the substitutions of `this` are all instantiations
   // of the field types of `partial`
+  //
+  // Note: Assumes 'this' and 'partial' share a root instantiation.
 
   const SubstitutionsMap& mySubs = substitutions();
   const SubstitutionsMap& pSubs = partial->substitutions();
@@ -62,6 +64,16 @@ CompositeType::areSubsInstantiationOf(Context* context,
         // it was not an instantiation
         return false;
       }
+    } else {
+      // If the ID isn't found, then that means the generic component doesn't
+      // exist in the other type, which means this cannot be an instantiation
+      // of the other type.
+      //
+      // Currently this check assumes that 'this' and 'partial' share a root
+      // instantiation, so how could we reach this condition? One path here
+      // involves passing a tuple to a tuple formal with a fewer number of
+      // elements. For example, passing "(1, 2, 3)" to "(int, ?)".
+      return false;
     }
   }
 
