@@ -1,0 +1,6 @@
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: error: cannot initialize a value of type 'int(64)' from a 'uint(64)'
+$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: error: cannot initialize a value of type 'int(64)' from a 'uint(64)'
+  $CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: called as range.init(type idxType = color, param bounds = boundKind.both, param strides = strideKind.one, _low: uint(64), _high: uint(64), _stride: int(64), _alignment: uint(64), _aligned: bool, param normalizeAlignment = true)
+  within internal functions (use --print-callstack-on-error to see)
+illegal-bug-3.chpl:14: error: OK

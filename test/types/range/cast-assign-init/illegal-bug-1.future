@@ -1,0 +1,2 @@
+bug: assignment and initialization into `range(u/int(?))` from `range(bool)` should be allowed
+#22559
