@@ -142,26 +142,29 @@ To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
 before building Chapel. Several other variables affect how Chapel generates
 code for and interacts with GPUs. These variables include:
 
-* ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd', or ``cpu``. If unset, as
+* ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
   part of its build process, Chapel will attempt to automatically determine
   what type of GPU you're trying to target. Changing this variable requires
-  rebuilding Chapel. For more information, see the `Vendor Portability`_
+  rebuilding the Chapel runtime. For more information, see the `Vendor Portability`_
   section.
 * ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
-  If unset and targeting NVIDIA GPUs, will default to 'sm_60'. This may also
+  If unset and targeting NVIDIA GPUs, will default to ``sm_60``. This may also
   be set by passing the ``chpl`` compiler ``--gpu-arch=<architecture>``. For
   more information, see the `Vendor Portability`_ section.
 * ``CHPL_CUDA_PATH`` --- specifies path to CUDA toolkit.  If unset, Chapel tries
   to automatically determine this path based on the location of ``nvcc``. This
   variable is unused if not targeting NVIDIA GPUs. For more information, see
   the `Vendor Portability`_ section.
-* ``CHPL_ROCM_PATH`` --- specifies path to ROCm library. If unset, Chapel tries
-  to automatically determine this path based on the location of ``hipcc``. This
-  variable is unused if not targeting AMD GPUs. For more information, see the
+* ``CHPL_ROCM_PATH`` --- specifies the path to the ROCm library. If unset, Chapel
+  tries to automatically determine this path based on the location of ``hipcc``.
+  This variable is unused if not targeting AMD GPUs. For more information, see the
   `Vendor Portability`_ section.
-* ``CHPL_RT_NUM_GPU_PER_LOCALE`` --- if using ``CHPL_GPU=cpu``, sets how many
-  GPU sublocales to have per locale. For more information, see the `CPU as
-  Device mode`_ section.
+* ``CHPL_RT_NUM_GPUS_PER_LOCALE`` --- sets how many GPU sublocales to have per
+  locale. If using ``CHPL_GPU=cpu``, may be set to any non negative value,
+  otherwise it may be set to any value equal-to or lower than the number of GPUs
+  available on each node.  If unset, defaults to the number of GPUs available on
+  each node, except for when ``CHPL_GPU=cpu``, in which case it defaults to 1.
+  For more information, see the `CPU as Device mode`_ section.
 * ``CHPL_GPU_MEM_STRATEGY`` --- dictates how to allocate data when on a GPU
   locale.  May be set to ``unified_memory`` or ``array_on_device``. If unset,
   defaults to ``unified_memory``. Changing this variable requires rebuilding
@@ -181,8 +184,8 @@ code for and interacts with GPUs. These variables include:
   in the future.
 * ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
   `CPU as Device mode`_ and if set causes it so that uses of
-  :proc:`~GPU.assertOnGpu` while in this mode will not generate a warning at
-  execution time. Alternatively, this can be done by passing
+  :proc:`~GPU.assertOnGpu` to not generate a warning at
+  execution time. Alternatively, this behavior can be enabled by passing
   ``--gpuNoCpuModeWarning`` to your application. For more information, see the
   `CPU as Device mode`_ section.
 
@@ -206,15 +209,14 @@ automatically detect the path to the relevant runtime. If it is not
 automatically detected (or you would like to use a different installation) you
 may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
 
-The CHPL_GPU_ARCH environment variable can be set to control the desired GPU
-architecture to compile for. The default value is ``sm_60`` for
+The ``CHPL_GPU_ARCH`` environment variable can be set to control the desired
+GPU architecture to compile for. The default value is ``sm_60`` for
 ``CHPL_GPU_CODEGEN=cuda``. You may also use the ``--gpu-arch`` compiler flag to
-set GPU architecture. For a list of possible values please refer to "processor"
-values in `this table in the LLVM documentation
-<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ for AMD or the `CUDA
-Programming Guide
-<https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_
-for NVIDIA.
+set GPU architecture.  If using AMD, `this table in the LLVM documentation
+<https://llvm.org/docs/AMDGPUUsage.html#processors>`_ has possible architecture
+values (see the "processor" column). For NVIDIA, see the `CUDA Programming
+Guide
+<https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_.
 
 
 CPU as Device Mode
@@ -224,34 +226,33 @@ features to be used without requiring any GPUs and/or vendor SDKs to be
 installed. This mode is mainly for initial development steps or quick feature
 tests where access to GPUs may be limited. In this mode:
 
-* the compiler will generate GPU kernels from order-independent loops normally,
+* The compiler will generate GPU kernels from order-independent loops normally.
 
-* it will call the internal runtime API for GPU operations, so that features
-  outlined under `Diagnostics and Utilities`_ will work as expected
+* It will call the internal runtime API for GPU operations, so that features
+  outlined under `Diagnostics and Utilities`_ will work as expected.
 
-  * e.g, :proc:`~GPU.assertOnGpu` will fail at compile time normally. This can
-    allow testing if a loop is GPU-eligible.
+  * For example, :proc:`~GPU.assertOnGpu` will fail at compile time normally.
+    This can allow testing if a loop is GPU-eligible.
 
-  * but it will generate a warning per-iteration at execution time.
+  * It will generate a warning per-iteration at execution time.
 
-  * ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress these
-    warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
+  * The ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress
+    these warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
     application to the same effect.
 
-* even though the GPU diagnostics are collected, the loop will be executed for
+* Even though the GPU diagnostics are collected, the loop will be executed for
   correctness testing and there will not be any kernel launch
 
-* advanced features like ``syncThreads`` and ``createSharedArray`` will compile
+* Advanced features like ``syncThreads`` and ``createSharedArray`` will compile
   and run, but in all likelihood code that uses those features will not
   generate correct results
 
-* ``asyncGpuComm`` will do a blocking memcpy and ``gpuCommWait`` will return
-  immediately
+* The ``asyncGpuComm`` procedure will do a blocking ``memcpy`` and
+  ``gpuCommWait`` will return immediately
 
-* there will be one GPU sublocale per locale by default.
+* There will be one GPU sublocale per locale by default.
   ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
   will be created per locale.
-
 
 .. warning::
 
