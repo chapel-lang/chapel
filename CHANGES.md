@@ -117,6 +117,7 @@ Runtime Library Changes
 
 Launchers
 ---------
+* made 'slurm-srun' respect Slurm reservations when querying node properties
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -144,6 +145,8 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled copy of 'libfabric' to version 1.17.1
+* removed the 'qthreads' config-time check of 'hwloc' linking
 * fixed an issue where `amudprun` was built with GCC rather than `CHPL_HOST_CC`
 
 Developer-oriented changes: Process
@@ -178,6 +181,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added `CHPL_HWLOC_DEBUG`/`CHPL_TASKS_DEBUG` to help debug hwloc/tasking code
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
