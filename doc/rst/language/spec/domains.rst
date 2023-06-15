@@ -39,8 +39,6 @@ represent sparse index subsets efficiently. Simple subdomains are
 subdomains that are not sparse. These relationships can be represented
 as follows:
 
-
-
 .. code-block:: syntax
 
    domain-type:
@@ -127,8 +125,6 @@ Base domain types can be classified as regular or irregular. Dense and
 strided rectangular domains are regular domains. Irregular base domain
 types include all of the associative domain types.
 
-
-
 .. code-block:: syntax
 
    base-domain-type:
@@ -158,13 +154,13 @@ Rectangular domain types are parameterized by three things:
 -  ``idxType`` a type member representing the index type for each
    dimension; and
 
--  ``stridable`` a ``bool`` parameter indicating whether any of the
-   domain’s dimensions will be characterized by a strided range.
+-  ``strides`` a parameter of the type :enum:`strideKind` defining
+   what strides are allowed in each dimension.
 
 If ``rank`` is :math:`1`, the index type represented by a rectangular
 domain is ``idxType``. Otherwise, the index type is the homogeneous
 tuple type ``rank*idxType``. If unspecified, ``idxType`` defaults to
-``int`` and ``stridable`` defaults to ``false``.
+``int`` and ``strides`` defaults to ``strideKind.one``.
 
    *Open issue*.
 
@@ -181,7 +177,7 @@ The syntax of a rectangular domain type is summarized as follows:
      'domain' ( named-expression-list )
 
 where ``named-expression-list`` permits the values of ``rank``,
-``idxType``, and ``stridable`` to be specified using standard type
+``idxType``, and ``strides`` to be specified using standard type
 signature.
 
    *Example (typeFunctionDomain.chpl)*.
@@ -213,14 +209,15 @@ signature.
 Rectangular Domain Values
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Each dimension of a rectangular domain is a range of type
-``range(idxType, boundKind.both, stridable)``. The index set
+Each dimension of a rectangular domain ``d`` is a range of type
+``range(d.idxType, boundKind.both, d.strides)``. The index set
 for a rank 1 domain is the set of indices described by its singleton
 range. The index set for a rank \ :math:`n` domain is the set of all
 ``n*idxType`` tuples described by the tensor product of its ranges. When
 expanded (as by an iterator), rectangular domain indices are ordered
 according to the lexicographic order of their values. That is, the index
-with the highest rank is listed first and changes most slowly. [3]_
+with the highest rank is listed first and changes most slowly.
+This is also known as row-major ordering.
 
    .. note::
 
@@ -231,8 +228,6 @@ with the highest rank is listed first and changes most slowly. [3]_
 Literal rectangular domain values are represented by a comma-separated
 list of range expressions of matching ``idxType`` enclosed in curly
 braces:
-
-
 
 .. code-block:: syntax
 
@@ -249,8 +244,8 @@ The type of a rectangular domain literal is defined as follows:
 
 -  ``idxType`` = the type of the range expressions;
 
--  ``stridable`` = ``true`` if any of the range expressions are
-   stridable, otherwise ``false``.
+-  ``strides`` = the most specific value that accepts all the strides
+   that are accepted by the ``strides`` parameters of the range expressions.
 
 If the index types in the ranges differ and all of them can be promoted
 to the same type, then that type is used as the ``idxType``. Otherwise,
@@ -259,8 +254,8 @@ the domain literal is invalid.
    *Example*.
 
    The expression ``{1..5, 1..5}`` defines a rectangular domain with
-   type ``domain(rank=2,`` ``idxType=int,`` ``stridable=false)``. It is
-   a :math:`5 \times 5` domain with the indices:
+   type ``domain(rank=2,`` ``idxType=int,`` ``strides=strideKind.one)``.
+   It is a :math:`5 \times 5` domain with the indices:
 
    .. math:: (1, 1), (1, 2), \ldots, (1, 5), (2, 1), \ldots (5, 5).
 
@@ -274,7 +269,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 
       var D: domain(2) = {1..n, 1..n};
 
-   ``D`` is defined as a two-dimensional, nonstridable rectangular
+   ``D`` is defined as a two-dimensional rectangular
    domain with an index type of ``2*int`` and is initialized to contain
    the set of indices :math:`(i,j)` for all :math:`i` and :math:`j` such
    that :math:`i \in {1, 2, \ldots, n}` and
@@ -283,7 +278,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 The default value of a domain type is the ``rank`` default range values
 for type:
 
-   ``range(idxType, boundKind.both, stridable)``
+   ``range(idxType, boundKind.both, strides)``
 
 ..
 
@@ -329,8 +324,6 @@ Associative Domain Types
 An associative domain type is parameterized by ``idxType``, the type of
 the indices that it stores. The syntax is as follows:
 
-
-
 .. code-block:: syntax
 
    associative-domain-type:
@@ -361,8 +354,6 @@ syntax as rectangular domain literal values. What differentiates the two
 are the types of expressions specified in the comma separated list. Use
 of values of a type other than ranges will result in the construction of
 an associative domain.
-
-
 
 .. code-block:: syntax
 
@@ -494,8 +485,6 @@ parent domain.
 Sparse Subdomain Types and Values
 ---------------------------------
 
-
-
 .. code-block:: syntax
 
    sparse-subdomain-type:
@@ -553,8 +542,6 @@ Domain Index Types
 Each domain value has a corresponding compiler-provided *index type*
 which can be used to represent values belonging to that domain’s index
 set. Index types are described using the following syntax:
-
-
 
 .. code-block:: syntax
 
@@ -667,13 +654,6 @@ manipulate domains. Unless otherwise noted, these operations are
 applicable to a domain of any type, whether a base domain or a
 subdomain.
 
-.. _Domain_Assignment:
-
-Domain Assignment
-~~~~~~~~~~~~~~~~~
-
-All domain types support domain assignment.
-
 .. code-block:: syntax
 
    domain-expression:
@@ -694,6 +674,13 @@ All domain types support domain assignment.
    domain-name:
      identifier
 
+.. _Domain_Assignment:
+
+Domain Assignment
+~~~~~~~~~~~~~~~~~
+
+All domain types support domain assignment.
+
 Domain assignment is by value and causes the target domain variable to
 take on the index set of the right-hand side expression. In practice,
 the right-hand side expression is often another domain value; a tuple of
@@ -702,8 +689,8 @@ enumerates indices (for irregular domains). If the domain variable being
 assigned was used to declare arrays, these arrays are reallocated as
 discussed in :ref:`Association_of_Arrays_to_Domains`.
 
-It is an error to assign a stridable domain to an unstridable domain
-without an explicit conversion.
+When assigning between two rectangular domains, they must have the same
+rank and assignment between the ranges in each dimension must be legal.
 
    *Example*.
 
@@ -747,23 +734,23 @@ Domain Striding
 
 The ``by`` operator can be applied to a rectangular domain value in
 order to create a strided rectangular domain value. The right-hand
-operand to the ``by`` operator can either be an integral value or an
+operand to the ``by`` operator is the stride value,
+which can be either an integral value or an
 integral tuple whose size matches the domain’s rank.
-
-
 
 .. code-block:: syntax
 
    domain-striding-expression:
      domain-expression 'by' expression
 
-The type of the resulting domain is the same as the original domain but
-with ``stridable`` set to true. In the case of an integer stride value,
-the value of the resulting domain is computed by applying the integer
-value to each range in the value using the ``by`` operator. In the case
-of a tuple stride value, the resulting domain’s value is computed by
-applying each tuple component to the corresponding range using the
-``by`` operator.
+The type of the resulting domain is the same as the original domain,
+with the ``strides`` parameter adjusted to accept all the strides
+that are accepted by the ``strides`` parameters of the resulting
+domain's ranges.
+The resulting domain's range in each dimension is obtained
+by applying the ``by`` operator to the corresponding dimension
+of the operand domain and the stride value if it is an integer,
+or the corresponding component of the stride value if it is a tuple.
 
 .. _Domain_Alignment:
 
@@ -771,24 +758,21 @@ Domain Alignment
 ~~~~~~~~~~~~~~~~
 
 The ``align`` operator can be applied to a rectangular domain value in
-order to change the alignment of a rectangular domain value. The
-right-hand operand to the ``align`` operator can either be an integral
+order to create a domain with different alignment(s).
+The right-hand operand to the ``align`` operator is the alignment value,
+which can be either an integral
 value or an integral tuple whose size matches the domain’s rank.
-
-
 
 .. code-block:: syntax
 
    domain-alignment-expression:
      domain-expression 'align' expression
 
-The type of the resulting domain is the same as the original domain but
-with ``stridable`` set to true. In the case of an integer alignment
-value, the value of the resulting domain is computed by applying the
-integer value to each range in the value using the ``align`` operator.
-In the case of a tuple alignment value, the resulting domain’s value is
-computed by applying each tuple component to the corresponding range
-using the ``align`` operator.
+The type of the resulting domain is the same as the original domain.
+The resulting domain's range in each dimension is obtained
+by applying the ``align`` operator to the corresponding dimension
+of the operand domain and the alignment value if it is an integer,
+or the corresponding component of the alignment value if it is a tuple.
 
 .. _Domain_Slicing:
 
@@ -798,8 +782,6 @@ Domain Slicing
 Slicing is the application of an index set to a domain. It can be
 written using either parentheses or square brackets. The index set can
 be defined with either a domain or a list of ranges.
-
-
 
 .. code-block:: syntax
 
@@ -848,8 +830,6 @@ sets is applied for slicing.
    the inner indices of D, ``Col2OfD`` describes the 2nd column of
    ``D``, and ``AllButLastRow`` describes all of ``D`` except for the
    last row.
-
-   
 
    .. code-block:: chapel
 
@@ -928,6 +908,3 @@ Predefined Routines on Domains
 ------------------------------
 
 .. include:: ../../builtins/ChapelDomain.rst
-
-.. [3]
-   This is also known as row-major ordering.
