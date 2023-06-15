@@ -42,6 +42,12 @@ Deprecated / Unstable / Removed Language Features
 
 Namespace Changes
 -----------------
+* moved several automatically-included math symbols from 'AutoMath' to 'Math'  
+  (e.g., `e`, `[half_|quarter_|[twice_]recipr_][sqrt_]pi`, `[recipr_]sqrt_2`,  
+   `log[10|2][_e]()`, `ln_[2|10]()`, `[ld]exp[2|m1]()`, `[l|t]gamma()`,  
+   `[a][cos|sin|tan][2|h]()`, `gcd()`, `erf[c]()`)  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Math.html  
+   and https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html)
 
 Standard Library Modules
 ------------------------
@@ -90,6 +96,10 @@ Other Documentation Improvements
 --------------------------------
 * refreshed the primer on rectangular arrays  
   (see https://chapel-lang.org/docs/1.31/primers/arrays.html)
+* added quick link categories to the 'AutoMath' and 'Math' library modules  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html  
+   and https://chapel-lang.org/docs/1.31/modules/standard/Math.html)
+
 
 Example Codes
 -------------
@@ -130,6 +140,8 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed a bug in which casting ranges of ints to enums used the ordinal values
+* fixed a bug where promotion would squash deprecation and unstable warnings
+* fixed a bug with types that cannot be default-initialized
 
 Bug Fixes for Build Issues
 --------------------------
@@ -142,6 +154,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug preventing default `map` accessors from returning references
 * fixed a bug preventing the use of `socket.close()` in the 'ZMQ' module
+* fixed a bug with `SortedSet.kth()`
 
 Bug Fixes for Tools
 -------------------
@@ -160,6 +173,10 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* cleaned up the developer document on deprecating features  
+  (see https://chapel-lang.org/docs/1.31/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* fixed a typo in the Chapel Testing System best practices documentation  
+  (see https://chapel-lang.org/docs/1.31/developer/bestPractices/TestSystem.html#readme-testsystem)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
