@@ -2937,7 +2937,8 @@ void Resolver::exit(const Call* call) {
                              /* raiseErrors */ true,
                              &actualAsts);
 
-  // With two exceptions (see below), don't try to resolve a call that accepts:
+  // With these exceptions (see below), don't try to resolve a call that
+  // accepts:
   //  * an unknown param
   //  * a type that is a generic type unless there are substitutions
   //  * a value of generic type
@@ -2946,9 +2947,11 @@ void Resolver::exit(const Call* call) {
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
   // EXCEPT, type construction can work with unknown or generic types
+  // EXCEPT, tuple type construction also works with unknown/generic types
 
   bool skip = false;
-  if (!ci.calledType().isType()) {
+  if (!ci.calledType().isType() &&
+      !call->isTuple()) {
     int actualIdx = 0;
     for (const auto& actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?
