@@ -62,12 +62,15 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* marked `set.parSafe` as unstable  
+  (see https://chapel-lang.org/docs/main/modules/standard/Set.html#Set.set.parSafe)
 
 Tool Improvements
 -----------------
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* added support for remote-value-forwarding `bigint` values across on-clauses
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -136,6 +139,8 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug preventing default `map` accessors from returning references
+* fixed a bug preventing the use of `socket.close()` in the 'ZMQ' module
 
 Bug Fixes for Tools
 -------------------
