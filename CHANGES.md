@@ -32,12 +32,19 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* changed `range.stridable` bool to `range.strides` of type `enum strideKind`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-types  
+   and https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-type-queries)
 * stabilized `.count()` on arrays
 * the const-ness of C pointers in `extern` blocks is now respected  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
 
 Syntactic / Naming Changes
 --------------------------
+* renamed the `BoundedRangeType` enum to `boundKind`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-types)
+* renamed `range.boundedType` to `range.bounds`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-type-queries)
 * renamed the abstract root class from `object` to `RootClass`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#the-root-class)
 * changed factories for creating `string`/`bytes` to type methods and renamed  
@@ -57,6 +64,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated the `stridable` field in the `range` type
 * deprecated `.head()` and `.tail()` on arrays
 * deprecated casts from `owned` to `shared` in favor of `shared.adopt(owned)`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.adopt)
@@ -68,6 +76,7 @@ Deprecated / Unstable / Removed Language Features
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#OwnedObject.owned.clear  
    and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.clear)
 * deprecated support for `isBounded()` queries on ranges
+* marked the `const` return and yield intents as being unstable
 * marked casts between ranges of enum types as being unstable
 * removed the deprecated method `domain.makeIndexBuffer()`
 * removed support for `%=` on `real`s (for now, because it didn't work)
@@ -190,6 +199,8 @@ Performance Optimizations / Improvements
 * eliminated needless communication from many routines in the 'Time' module
 * optimized IO performance for large read/write operations
 * improved the compiler's ability to optimize 'BitOps' procedures
+* `range.alignment` and `range.aligned` are now `param`s when possible
+* `domain.stride` is now a `param` for 1D domains with `strides==one`/`negOne`
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
