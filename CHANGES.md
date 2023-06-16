@@ -23,7 +23,6 @@ Highlights (see subsequent sections for further details)
 * improved performance for `bigint`s, 'Time' routines, and large IO operations
 * prototype support for redistributing `Block` arrays and domains
 * a prototype IO serialization framework with JSON, YAML, and binary formats
-* a prototypical version of a Chapel language server, 'chpldef'
 * numerous improvements in terms of portability, documentation, bug fixes, ...
 
 Configuration / Build / Packaging Changes
@@ -235,7 +234,6 @@ Memory Improvements
 
 Tool Improvements
 -----------------
-* added a prototypical version of the Chapel language server 'chpldef'
 * updated `chpldoc` to squash documentation for symbols beginning with `chpl_`
 * added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
   (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
@@ -439,6 +437,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* added a prototypical version of the Chapel language server 'chpldef'
 * changed 'c2chapel' to generate `c_ptrConst` rather than `c_ptr` where correct
 
 
