@@ -261,6 +261,7 @@ Portability / Platform-specific Improvements
 --------------------------------------------
 * improved portability to GCC 12 and 13
 * improved portability to Intel Classic Compiler 2023.1.0 with warnings enabled
+* added the ability to build with GCC as the host compiler on Macs
 * fixed a portability problem with finding `addr2line` for stack unwinding
 * improved logic for finding dependencies within NixOS
 
@@ -273,6 +274,8 @@ GPU Computing
   (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
   (see https://chapel-lang.org/docs/technotes/gpu.html#diagnostics-and-utilities)
+* fixed support for modifying arrays passed by `ref` intent on GPUs
+* added an error for `createSharedArray()` when arguemnts have unknown size
 * added a check to validate the CUDA and ROCM versions when building `chpl`
 * added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#device-to-device-communication-support)
@@ -280,6 +283,7 @@ GPU Computing
 Compiler Improvements
 ---------------------
 * the compiler now supports LLVM 15 in addition to versions 11 through 14
+* the 'dyno' scope resolver is now the default, featuring better error messages
 
 Compiler Flags
 --------------
@@ -299,6 +303,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* several error messages are improved by virtue of the 'dyno' error framework
+  (use `--detailed-errors` to opt into more detailed error messages)
 * improved errors when an `extern` block' is missing relevant `#include`s
 * added an error if an `extern` block is not at module scope
 * improved an error message for malformed `config var`s set at compile-time
@@ -366,6 +372,7 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * cleaned up the developer document on deprecating features  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* added developer-oriented documentation for the 'dyno' query system
 * updated the required 'sphinxcontrib-chapeldomain' version to 0.0.25
 * changed remaining references to the 'Compiler Library' to 'Frontend Library'
 * fixed a typo in the Chapel Testing System best practices documentation  
@@ -381,6 +388,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* stamped out built-in routines using the `x: t(?w), y: t(w)` argument pattern
 * reimplemented `bigint` operators to share code with the procedure versions
 * simplified `bigint` locality checks to reduce duplicated code
 
@@ -409,12 +417,22 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* improved several aspects of the 'dyno' scope resolver
+  - fixed auto-used modules being preferred over regular modules
+  - fixed corner cases in which adding a `use` statement hid a symbol
+  - fixed private module `include`s and report related errors in production
+  - added support for compiler-generated constants like `boundsChecking`
+* improved detailed error message output to avoid printing too much code
 * improved several aspects of 'dyno's resolution of types and calls:
   - added basic support for arrays and domains
   - added support for tuple types using the `*` operator (e.g. `3*int`)
   - added support for compile-time folding involving unary operators
   - added basic support for the `locale` type
   - added name resolution for `extern` blocks
+  - added support for compile-time reflection
+  - added support for the `super` and `index` keywords
+  - added support for detecting dead `return` and `yield` statements
+  - added support for the `return` keyword within iterators
   - added validation for `try`/`catch` blocks
   - fixed bugs involving optional type arguments
   - fixed bugs involving type methods in generic types
