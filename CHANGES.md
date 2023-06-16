@@ -473,7 +473,7 @@ Developer-oriented changes: Tool Improvements
 * changed 'c2chapel' to generate `c_ptrConst` rather than `c_ptr` where correct
 
 Developer-oriented changes: Utilities
--------------------------------------~
+-------------------------------------
 
 
 version 1.30.0
