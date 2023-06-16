@@ -33,9 +33,19 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* `.alignment` on strided ranges now returns a value within `0..<abs(stride)`
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated casts from `owned` to `shared` in favor of `shared.adopt(owned)`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.adopt)
+* deprecated casts from `owned`, `shared`, or `borrowed` to `unmanaged`
+* deprecated `.create`/`.retain` on `owned` and `shared` in favor of `.adopt`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#OwnedObject.owned.adopt  
+   and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.adopt)
+* deprecated `.clear` on `owned` and `shared` in favor of assigning `nil`  
+  (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#OwnedObject.owned.clear  
+   and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.clear)
 * deprecated support for `isBounded()` queries on ranges
 * marked casts between ranges of enum types as being unstable
 * removed support for `%=` on `real`s (for now, because it didn't work)
@@ -48,9 +58,15 @@ Namespace Changes
    `[a][cos|sin|tan][2|h]()`, `gcd()`, `erf[c]()`)  
   (see https://chapel-lang.org/docs/1.31/modules/standard/Math.html  
    and https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html)
+* renamed and moved 'Memory.Diagnostics' to 'MemDiagnostics'  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/MemDiagnostics.html)
 
 Standard Library Modules
 ------------------------
+* added a `stripNewline` option to `fileReader.lines()`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.lines)
+* relaxed locking needs for `file[Reader|Writer].[mark|revert|commit|offset]`
+  (e.g., see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.mark)
 
 Package Modules
 ---------------
@@ -62,22 +78,54 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* changed many `bigint` methods into standalone procedures taking `ref` args  
+  (e.g., `divexact()`, `pow[Mod]()`, `root[rem]()`, `sqrt[rem]()`,
+   `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,
+   `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,
+   `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,
+   `[i|x]or()`, `com()`)
+
 
 Name Changes in Libraries
 -------------------------
-
+* changed factories for creating `string`/`bytes` to type methods and renamed  
+  (see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createCopyingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createCopyingBuffer)
+* renamed `BitOps.popcount` to `BitOps.popCount`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/BitOps.html#BitOps.popCount)
+  
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated `isAnyCPtr()`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.isAnyCPtr)
 * marked `set.parSafe` as unstable  
   (see https://chapel-lang.org/docs/main/modules/standard/Set.html#Set.set.parSafe)
+* deprecated `_mark|_revert|_commit|_offset` in favor of no underscores  
+  (e.g., see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader._offset)
+* deprecated `.offset` on `fileReader|Writer` automatically taking a lock  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileOffsetWithoutLocking)
+* deprecated the now-empty `Memory` module  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Memory.html)
 
 Tool Improvements
 -----------------
+* added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
+  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
+* added support for filtering `chpldoc` deprecations that use `~` or `!`  
+  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
+
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * added support for remote-value-forwarding `bigint` values across on-clauses
 * eliminated needless communication from many routines in the 'Time' module
+* improved the compiler's ability to optimize 'BitOps' procedures
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -91,6 +139,7 @@ Memory Improvements
 
 Language Specification Improvements
 -----------------------------------
+* removed previously deprecated `new borrowed MyClass()` from the spec
 
 Other Documentation Improvements
 --------------------------------
@@ -99,7 +148,10 @@ Other Documentation Improvements
 * added quick link categories to the 'AutoMath' and 'Math' library modules  
   (see https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html  
    and https://chapel-lang.org/docs/1.31/modules/standard/Math.html)
-
+* unified two distinct documents with debugging tips into one  
+  (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
+* added an example of multi-argument promotion to the user's guide  
+  (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
 
 Example Codes
 -------------
@@ -135,11 +187,13 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved an error message for malformed `config var`s set at compile-time
 * removed a warning about behavior changes for `zip()`s led by unbounded ranges
 
 Bug Fixes
 ---------
 * fixed a bug in which casting ranges of ints to enums used the ordinal values
+* removed extra null when creating `string`/`bytes` from remote borrowed data
 * fixed a bug where promotion would squash deprecation and unstable warnings
 * fixed a bug with types that cannot be default-initialized
 
@@ -152,7 +206,11 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug where `regex.match('$')` returned an incorrect offset
 * fixed a bug preventing default `map` accessors from returning references
+* fixed several bugs in `fileReader.search` and `fileReader.matches`
+* fixed a `bigint` memory corruption  when multiple arguments shared a value
+* fixed a bug where `Reflection.getField[Ref]` didn't work with wrapper fields
 * fixed a bug preventing the use of `socket.close()` in the 'ZMQ' module
 * fixed a bug with `SortedSet.kth()`
 
@@ -183,6 +241,8 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* reimplemented `bigint` operators to share code with the procedure versions
+* simplified `bigint` locality checks to reduce duplicated code
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -211,6 +271,7 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added support for a directory-wide `PRETEST` script to enable generated tests
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
