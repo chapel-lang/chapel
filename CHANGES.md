@@ -190,6 +190,7 @@ Deprecated / Unstable / Removed Library Features
 Tool Improvements
 -----------------
 * added a prototypical version of the Chapel language server 'chpldef'
+* updated `chpldoc` to squash documentation for symbols beginning with `chpl_`
 * added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
   (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
 * added support for filtering `chpldoc` deprecations that use `~` or `!`  
@@ -233,6 +234,7 @@ Other Documentation Improvements
 * added a section about the use of `SystemError` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#error-handling)
 * improved the accuracy of thrown error types in the 'IO' module
+* improved the consistency of formatting procedures that throw
 * added information to the C interop technote about `c_ptr`s to classes
   (see https://chapel-lang.org/docs/1.31/technotes/extern.html#working-with-c-ptr)
 * clarified `CHPL_LIB_PIC` in the documentation  
@@ -307,6 +309,8 @@ Bug Fixes
 * fixed a bug in which casting ranges of ints to enums used the ordinal values
 * removed extra null when creating `string`/`bytes` from remote borrowed data
 * fixed a bug with first-class functions that caused crashes
+* fixed a bug in which attributes on certain statements would cause segfaults
+* fixed a bug in which replacement modules were not suppressing warnings
 * fixed a bug where promotion would squash deprecation and unstable warnings
 * fixed a bug with types that cannot be default-initialized
 * fixed a bug preventing the use of `forall` in `chpl_deserialize()` routines
@@ -362,6 +366,7 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * cleaned up the developer document on deprecating features  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* updated the required 'sphinxcontrib-chapeldomain' version to 0.0.25
 * changed remaining references to the 'Compiler Library' to 'Frontend Library'
 * fixed a typo in the Chapel Testing System best practices documentation  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/TestSystem.html#readme-testsystem)
@@ -372,6 +377,7 @@ Developer-oriented changes: GPU Features
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
+* deprecated `pragma "no doc"` in favor of the `@chpldoc.nodoc` attribute
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -384,6 +390,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * updated developer-oriented warnings for clang to more closely match gcc/g++
+* updated the Makefiles to remove the compiler as a dependency for `chpldoc`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -408,6 +415,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for compile-time folding involving unary operators
   - added basic support for the `locale` type
   - added name resolution for `extern` blocks
+  - added validation for `try`/`catch` blocks
   - fixed bugs involving optional type arguments
   - fixed bugs involving type methods in generic types
 * fixed a bug where `testQueryTimingAndTrace` query tracing tool could not run
