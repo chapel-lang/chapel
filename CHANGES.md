@@ -45,7 +45,6 @@ Language Feature Improvements
 * `domain.stride` is now a `param` for 1D domains with `strides==one`/`negOne`
 * stabilized `.count()` on arrays
 * the const-ness of C pointers in `extern` blocks is now respected  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
 
 Syntactic / Naming Changes
 --------------------------
@@ -56,14 +55,9 @@ Syntactic / Naming Changes
 * renamed the abstract root class from `object` to `RootClass`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#the-root-class)
 * changed `string`/`bytes` factory routines to type methods and renamed them  
-  (see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
+  (e.g., see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
    https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createCopyingBuffer,  
-   and https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createCopyingBuffer)
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -85,7 +79,7 @@ Deprecated / Unstable / Removed Language Features
 * deprecated `.clear()` on `owned` and `shared` in favor of assigning `nil`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#OwnedObject.owned.clear  
    and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.clear)
-* deprecated `lambda` and `func` in favor of `proc`-based first-class functions
+* deprecated `lambda` and `func` in favor of the new `proc`-based syntax
 * marked the first-class function `retType` and `argTypes` methods as unstable
 * marked the `const` return and yield intents as being unstable
 * marked casts between ranges of enum types as being unstable
@@ -107,7 +101,8 @@ Namespace Changes
 Standard Library Modules
 ------------------------
 * added `c_ptrConst` and `c_ptrToConst()` to represent `const` C pointers  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst
+   and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrToConst)
 * introduced user-defined serialization that can integrate with standard IO  
   (see https://chapel-lang.org/docs/1.31/technotes/ioSerializers.html)
 * added a `stripNewline` option to `fileReader.lines()`  
@@ -138,7 +133,8 @@ Changes / Feature Improvements in Libraries
    `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,  
    `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,  
    `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,  
-   `[i|x]or()`, `com()`)
+   `[i|x]or()`, `com()`;
+   see https://chapel-lang.org/docs/1.31/modules/standard/BigInteger.html)
 * changed `CTypes.c_ptrTo()` to point to the object for a class variable  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * changed `CTypes.c_ptrTo()` to point to the buffer for a `string`/`bytes`  
@@ -166,10 +162,7 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.allocate  
    and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.deallocate)
 * dropped `c_` prefixes from `mem[move|cpy|cmp|set]`, moving them to 'OS.POSIX'  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memmove,  
-   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcpy,  
-   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcmp, and  
-   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memset)
+  (see https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memmove)
 * updated 'Time' symbols to use preferred capitalization styles  
   (see https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime,  
    https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.timeDelta,  
@@ -214,7 +207,7 @@ GPU Computing
 -------------
 * added multi-locale support for computing with AMD GPUs
 * added a new mode to enable using the GPU locale model on CPUs w/out GPUs  
-  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#cpu-as-device-mode)
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
   (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#diagnostics-and-utilities)
 * added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
@@ -265,10 +258,10 @@ Other Documentation Improvements
 * unified two distinct documents with debugging tips into one  
   (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
 * added an example of multi-argument promotion to the user's guide  
-  (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
+  (see https://chapel-lang.org/docs/1.31/users-guide/datapar/promotion.html#multi-argument-promotion)
 * added quick link categories to the 'AutoMath' and 'Math' library modules  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html  
-   and https://chapel-lang.org/docs/1.31/modules/standard/Math.html)
+  (see https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html#roots  
+   and https://chapel-lang.org/docs/1.31/modules/standard/Math.html#constants)
 * added a section about the use of `SystemError` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#error-handling)
 * improved the accuracy of thrown error types in the 'IO' module
