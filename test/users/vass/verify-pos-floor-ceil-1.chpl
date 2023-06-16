@@ -1,4 +1,5 @@
 // Testing divceilpos() and divfloorpos()
+use Math;
 
 var testcount = 0, errcount = 0;
 
