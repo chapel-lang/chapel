@@ -56,8 +56,7 @@ Syntactic / Naming Changes
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#the-root-class)
 * changed `string`/`bytes` factory routines to type methods and renamed them  
   (e.g., see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer)
+   and https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -101,7 +100,7 @@ Namespace Changes
 Standard Library Modules
 ------------------------
 * added `c_ptrConst` and `c_ptrToConst()` to represent `const` C pointers  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst  
    and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrToConst)
 * introduced user-defined serialization that can integrate with standard IO  
   (see https://chapel-lang.org/docs/1.31/technotes/ioSerializers.html)
@@ -133,7 +132,7 @@ Changes / Feature Improvements in Libraries
    `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,  
    `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,  
    `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,  
-   `[i|x]or()`, `com()`;
+   `[i|x]or()`, `com()`;  
    see https://chapel-lang.org/docs/1.31/modules/standard/BigInteger.html)
 * changed `CTypes.c_ptrTo()` to point to the object for a class variable  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
