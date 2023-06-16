@@ -10,6 +10,7 @@ o check test/release/examples
 o check initial '*'
 o check initial 'A-Z'
 o check for changes put too far down in file
+o move string/bytes factories to language
 
 version 1.31.0
 ==============
@@ -27,6 +28,8 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* the const-ness of C pointers in `extern` blocks is now respected  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
 
 Syntactic / Naming Changes
 --------------------------
@@ -50,6 +53,7 @@ Deprecated / Unstable / Removed Language Features
    and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.clear)
 * deprecated support for `isBounded()` queries on ranges
 * marked casts between ranges of enum types as being unstable
+* removed the deprecated method `domain.makeIndexBuffer()`
 * removed support for `%=` on `real`s (for now, because it didn't work)
 
 Namespace Changes
@@ -69,6 +73,8 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.lines)
 * relaxed locking needs for `file[Reader|Writer].[mark|revert|commit|offset]`
   (e.g., see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.mark)
+* added `c_ptrConst` and `c_ptrToConst()` to represent `const` C pointers  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
 
 Package Modules
 ---------------
@@ -90,7 +96,9 @@ Changes / Feature Improvements in Libraries
    `[i|x]or()`, `com()`)
 * changed `CTypes.c_FILE` to represent a C `FILE` rather than a `FILE*`  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cFileTypeHasPointer)
-- changed `CTypes.c_ptrTo()` to point the buffer storing a `string`/`bytes`  
+- changed `CTypes.c_ptrTo()` to point to the logical object of a class  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
+- changed `CTypes.c_ptrTo()` to point to the buffer for a `string`/`bytes`  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * added support for creating an uninitialized `weak` value for a given class  
   (see https://chapel-lang.org/docs/1.31/builtins/WeakPointer.html#WeakPointer.weak)
@@ -116,16 +124,22 @@ Name Changes in Libraries
   (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.replace)
 * renamed `BitOps.popcount()` to `BitOps.popCount()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/BitOps.html#BitOps.popCount)
+* renamed `c_*alloc()` and `c_free()` to `allocate()` and `deallocate()`
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.allocate
+   and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.deallocate)
 * dropped `c_` prefixes from `mem[move|cpy|cmp|set]`, moving them to 'OS.POSIX'
   (see https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memmove,  
    https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcpy,  
    https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcmp, and  
    https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memset)
+* added a warning for `c_ptr()` casts that may violate C's aliasing rules  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptr)
   
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated `isAnyCPtr()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.isAnyCPtr)
+* deprecated `c_nil` and `is_c_nil` in favor of using `nil` and `== nil`
 * marked `set.parSafe` as unstable  
   (see https://chapel-lang.org/docs/main/modules/standard/Set.html#Set.set.parSafe)
 - marked `readln()` as unstable  
@@ -144,6 +158,8 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileOffsetWithoutLocking)
 * deprecated the now-empty `Memory` module  
   (see https://chapel-lang.org/docs/1.31/modules/standard/Memory.html)
+* removed the deprecated 'SysBasic' module
+* removed the deprecated procedure `IO.unicodeSupported`
 
 Tool Improvements
 -----------------
@@ -174,6 +190,7 @@ Memory Improvements
 Language Specification Improvements
 -----------------------------------
 * removed previously deprecated `new borrowed MyClass()` from the spec
+* fixed other various typos and spelling issues
 
 Other Documentation Improvements
 --------------------------------
@@ -185,6 +202,15 @@ Other Documentation Improvements
 * added a section about the use of `SystemError` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#error-handling)
 * improved the accuracy of thrown error types in the 'IO' module
+* added information to the C interop technote about `c_ptr`s to classes
+  (see https://chapel-lang.org/docs/1.31/technotes/extern.html#working-with-c-ptr)
+* hid the underlying implementation types of `c_ptr` and `c_array` in docs  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_ptr  
+  and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_array)
+* updated an assertion that `fileReader` can produce `EEOF` to `OS.EofError`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.file.reader)
+
+
 * unified two distinct documents with debugging tips into one  
   (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
 * added an example of multi-argument promotion to the user's guide  
@@ -206,6 +232,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* the compiler now supports LLVM 15 in addition to versions 11 through 14
 
 Compiler Flags
 --------------
@@ -273,6 +300,7 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * cleaned up the developer document on deprecating features  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* changed remaining references to the 'Compiler Library' to 'Frontend Library'
 * fixed a typo in the Chapel Testing System best practices documentation  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/TestSystem.html#readme-testsystem)
 
@@ -301,6 +329,8 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* fixed a bug where `testQueryTimingAndTrace` query tracing tool could not run
+* reduced memory consumed by `ResolutionResultByPostorderID`s
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -315,6 +345,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* changed 'c2chapel' to generate `c_ptrConst` rather than `c_ptr` where correct
 
 Developer-oriented changes: Utilities
 -------------------------------------~
