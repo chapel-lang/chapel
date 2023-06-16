@@ -170,15 +170,13 @@ tuple type ``rank*idxType``. If unspecified, ``idxType`` defaults to
 
 The syntax of a rectangular domain type is summarized as follows:
 
-
 .. code-block:: syntax
 
    rectangular-domain-type:
      'domain' ( named-expression-list )
 
-where ``named-expression-list`` permits the values of ``rank``,
-``idxType``, and ``strides`` to be specified using standard type
-signature.
+where ``named-expression-list`` allows specifying the values of ``rank``,
+``idxType``, and ``strides``.
 
    *Example (typeFunctionDomain.chpl)*.
 
@@ -244,8 +242,8 @@ The type of a rectangular domain literal is defined as follows:
 
 -  ``idxType`` = the type of the range expressions;
 
--  ``strides`` = the most specific value that accepts all the strides
-   that are accepted by the ``strides`` parameters of the range expressions.
+-  ``strides`` = the most narrow :enum:`strideKind` that can represent
+   all ``strides`` parameters of the range expressions.
 
 If the index types in the ranges differ and all of them can be promoted
 to the same type, then that type is used as the ``idxType``. Otherwise,
@@ -395,7 +393,6 @@ the indices does not match a compiler error will be issued.
       var D : domain(string) = {"bar", "foo"};
       writeln(D);
 
-
    produces the output 
 
    .. code-block:: printoutput
@@ -446,7 +443,6 @@ Simple Subdomain Types
 ~~~~~~~~~~~~~~~~~~~~~~
 
 A simple subdomain type is specified using the following syntax:
-
 
 .. code-block:: syntax
 
@@ -744,9 +740,9 @@ integral tuple whose size matches the domain’s rank.
      domain-expression 'by' expression
 
 The type of the resulting domain is the same as the original domain,
-with the ``strides`` parameter adjusted to accept all the strides
-that are accepted by the ``strides`` parameters of the resulting
-domain's ranges.
+with the ``strides`` parameter adjusted to the most narrow
+:enum:`strideKind` that can represent all ``strides`` parameters
+of the resulting domain's ranges.
 The resulting domain's range in each dimension is obtained
 by applying the ``by`` operator to the corresponding dimension
 of the operand domain and the stride value if it is an integer,
@@ -902,7 +898,6 @@ set manipulations.  The supported set operators are:
   \-       Difference
   ^        Symmetric Difference
   =======  ====================
-
 
 Predefined Routines on Domains
 ------------------------------

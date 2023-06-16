@@ -615,7 +615,7 @@ range, with the ``strides`` parameter updated according to the step.
 For example:
 
 - If the base range has ``strides=strideKind.one`` and the step is
-  the literal ``-2``, the result has ``strides=strideKind.positive``.
+  the literal ``-2``, the result has ``strides=strideKind.negative``.
 
 - If the base range has ``strides=strideKind.one`` and the step has
   the type ``uint``, the result has ``strides=strideKind.positive``.
