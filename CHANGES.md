@@ -81,6 +81,8 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* introduced user-defined serialization that can integrate with standard IO  
+  (see https://chapel-lang.org/docs/1.31/technotes/ioSerializers.html)
 * added a `stripNewline` option to `fileReader.lines()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.lines)
 * relaxed locking needs for `file[Reader|Writer].[mark|revert|commit|offset]`
@@ -90,8 +92,14 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new 'Json' module that implements IO serialization of JSON
+  (see https://chapel-lang.org/docs/1.31/modules/packages/Json.html)
+* added a new 'BinaryIO' module that implements binary IO serialization  
+  (see https://chapel-lang.org/docs/1.31/modules/packages/BinaryIO.html)
 * added a new 'Yaml' package supporting YAML IO including [de]serialization  
   (see https://chapel-lang.org/docs/1.31/modules/packages/Yaml.html)
+* added a new 'ChplFormat' module that implements `%ht` IO serialization
+  (see https://chapel-lang.org/docs/1.31/modules/packages/ChplFormat.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -274,6 +282,7 @@ Bug Fixes
 * removed extra null when creating `string`/`bytes` from remote borrowed data
 * fixed a bug where promotion would squash deprecation and unstable warnings
 * fixed a bug with types that cannot be default-initialized
+* fixed a bug preventing the use of `forall` in `chpl_deserialize()` routines
 
 Bug Fixes for Build Issues
 --------------------------
@@ -293,6 +302,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug where `regex.match('$')` returned an incorrect offset
 * fixed a bug preventing default `map` accessors from returning references
+* fixed support for reading/writing `map` and `list` types as JSON (`%jt`)
 * fixed a bug in which `fileWriter` could write past its region's upper bound
 * prevented region upper bounds from overflowing for `fileReader|Writer` types
 * fixed a bug in which `fileWriter.writeBinary()` assumed 0-based indexing
@@ -346,6 +356,10 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added flags to control the default implementation of IO serialization:  
+  - `--[no-]io-gen-serialization` controls the generation of default methods
+  - flags to replace `serialize`/`deserialize` with `writeThis`/`readThis`
+    (see `--[no-]io-serialize-writeThis`, `--[no-]io-deserialize-readThis`)
 * added a `--print-chpl-loc` flag for determining the compiler's location
 
 Developer-oriented changes: Compiler improvements / changes
@@ -354,6 +368,13 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* improved several aspects of 'dyno's resolution of types and calls:
+  - added basic support for arrays and domains
+  - added support for tuple types using the `*` operator (e.g. `3*int`)
+  - added support for compile-time folding involving unary operators
+  - added basic support for the `locale` type
+  - fixed bugs involving optional type arguments
+  - fixed bugs involving type methods in generic types
 * fixed a bug where `testQueryTimingAndTrace` query tracing tool could not run
 * reduced memory consumed by `ResolutionResultByPostorderID`s
 
