@@ -38,6 +38,7 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* disallowed `break`, `return`, and labeled `continue` in `foreach` loops
 * `.alignment` on strided ranges now returns a value within `0..<abs(stride)`
 
 Deprecated / Unstable / Removed Language Features
@@ -229,6 +230,10 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* added a new mode to enable using the GPU locale model on GPU-less CPUs  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
+* introduced a new `CHPL_GPU` setting to replace `CHPL_GPU_[CODEGEN|RUNTIME`  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
 
 Compiler Improvements
 ---------------------
@@ -267,6 +272,10 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed the behavior of `.locale` queries within GPU kernels
+* fixed a bug with `string`/`bytes` config variables with the GPU locale model
+* fixed a bug that prevented compiling `.c` files with the GPU locale model
+* fixed a bug with loops whose bounds didn't fit into 32-bit integers
 
 Bug Fixes for Libraries
 -----------------------
