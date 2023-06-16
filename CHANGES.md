@@ -97,7 +97,7 @@ Namespace Changes
 -----------------
 * moved several automatically-included math symbols from 'AutoMath' to 'Math'  
   (e.g., `e`, `[half_|quarter_|[twice_]recipr_][sqrt_]pi`, `[recipr_]sqrt_2`,  
-   `log[10|2]()`, `log[2|10]_e`, `ln_[2|10]`, `[ld]exp[2|m1]()`,
+   `log[10|2]()`, `log[2|10]_e`, `ln_[2|10]`, `[ld]exp[2|m1]()`,  
    `[a][cos|sin|tan][2|h]()`, `[l|t]gamma()`, `gcd()`, `erf[c]()`)  
   (see https://chapel-lang.org/docs/1.31/modules/standard/Math.html  
    and https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html)
@@ -330,7 +330,6 @@ Bug Fixes
 * fixed a bug in which casting ranges of ints to enums used the ordinal values
 * fixed a bug in which replacement modules were not suppressing warnings
 * fixed a bug where promotion would squash deprecation and unstable warnings
-* fixed a bug with types that cannot be default-initialized
 * fixed a bug in which extra line number arguments were added to routines
 
 Bug Fixes for Build Issues
@@ -1516,6 +1515,7 @@ Error Messages / Semantic Checks
   (e.g., `var x: int; proc foo(y: x) ...` now generates an error as intended)
 * added a warning for misleading uses of `new`  
   (e.g., `var x: borrowed MyClass = new owned MyClass();`)
+* added an error when fields with runtime types cannot be default-initialized
 
 Bug Fixes
 ---------
