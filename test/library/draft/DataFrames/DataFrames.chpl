@@ -65,7 +65,7 @@ module DataFrames {
     }
 
     @chpldoc.nodoc
-    proc writeThis(f) throws {
+    override proc writeThis(f) throws {
       halt("cannot writeThis on generic Index");
     }
 

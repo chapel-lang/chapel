@@ -1,2 +1,2 @@
 domain64-badworkaround.chpl:8: error: invalid copy-initialization
-domain64-badworkaround.chpl:8: error: range(bounds=both) cannot be initialized from range(bounds=neither)
+domain64-badworkaround.chpl:8: error: initializing a range with boundKind.both from a range with boundKind.neither

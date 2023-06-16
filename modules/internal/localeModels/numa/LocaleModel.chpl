@@ -86,11 +86,6 @@ module LocaleModel {
       f.write('.'+ndName);
     }
 
-    override proc getChildCount(): int { return 0; }
-    iter getChildIndices() : int {
-      halt("No children to iterate over.");
-      yield -1;
-    }
     override proc _getChildCount(): int { return 0; }
     iter getChildIndices() : int {
       halt("No children to iterate over.");
@@ -101,12 +96,6 @@ module LocaleModel {
       halt("Cannot add children to this locale type.");
     }
 
-    pragma "unsafe"
-    override proc getChild(idx:int) : locale {
-      halt("Cannot getChild with this locale type");
-      var ret: locale; // default-initialize
-      return ret;
-    }
     pragma "unsafe"
     override proc _getChild(idx:int) : locale {
       halt("Cannot getChild with this locale type");
@@ -188,7 +177,6 @@ module LocaleModel {
 
     proc getChildSpace() return childSpace;
 
-    override proc getChildCount() return numSublocales;
     override proc _getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
@@ -196,12 +184,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) : locale {
-      if boundsChecking then
-        if (idx < 0) || (idx >= numSublocales) then
-          halt("sublocale child index out of bounds (",idx,")");
-      return new locale(childLocales[idx]);
-    }
     override proc _getChild(idx:int) : locale {
       if boundsChecking then
         if (idx < 0) || (idx >= numSublocales) then
@@ -276,7 +258,6 @@ module LocaleModel {
       f.write(name);
     }
 
-    override proc getChildCount() return this.myLocaleSpace.size;
     override proc _getChildCount() return this.myLocaleSpace.size;
 
     proc getChildSpace() return this.myLocaleSpace;
@@ -286,7 +267,6 @@ module LocaleModel {
         yield idx;
     }
 
-    override proc getChild(idx:int) return this.myLocales[idx];
     override proc _getChild(idx:int) return this.myLocales[idx];
 
     iter getChildren() : locale  {

@@ -681,20 +681,42 @@ module Map {
       }
     }
 
-    //
-    // TODO: rewrite to use formatter interface
-    //
     @chpldoc.nodoc
-    proc init(type keyType, type valType, r: fileReader) {
+    proc _readHelper(r: fileReader, ref des) throws {
+      _enter(); defer _leave();
+
+      des.startMap(r);
+
+      var done = false;
+      while !done {
+        try {
+          add(des.readKey(r, keyType), des.readValue(r, valType));
+        } catch e: BadFormatError {
+          done = true;
+        }
+      }
+
+      des.endMap(r);
+    }
+
+    @chpldoc.nodoc
+    proc deserialize(reader: fileReader, ref deserializer) throws {
+      _readHelper(reader, deserializer);
+    }
+
+    @chpldoc.nodoc
+    proc init(type keyType, type valType,
+              reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
-      readThis(r);
+      _readHelper(reader, deserializer);
     }
 
     @chpldoc.nodoc
     @unstable("'Map.parSafe' is unstable")
-    proc init(type keyType, type valType, param parSafe, r: fileReader) {
+    proc init(type keyType, type valType, param parSafe,
+              reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
-      readThis(r);
+      _readHelper(reader, deserializer);
     }
 
     /*
@@ -741,11 +763,29 @@ module Map {
     }
 
     @chpldoc.nodoc
+    proc serialize(writer: fileWriter(?), ref serializer) throws {
+      _enter(); defer _leave();
+
+      ref ser = serializer;
+      ser.startMap(writer, _size);
+
+      for slot in table.allSlots() {
+        if table.isSlotFull(slot) {
+          ref tabEntry = table.table[slot];
+          ser.writeKey(writer, tabEntry.key);
+          ser.writeValue(writer, tabEntry.val);
+        }
+      }
+
+      ser.endMap(writer);
+    }
+
+    @chpldoc.nodoc
     proc _readWriteHelper(ch) throws {
       _enter(); defer _leave();
       var first = true;
       proc rwLiteral(lit:string) throws {
-        if ch.writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
+        if ch._writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
       }
       rwLiteral("{");
       for slot in table.allSlots() {
@@ -758,9 +798,9 @@ module Map {
           ref tabEntry = table.table[slot];
           ref key = tabEntry.key;
           ref val = tabEntry.val;
-          if ch.writing then ch.write(key); else key = ch.read(key.type);
+          if ch._writing then ch.write(key); else key = ch.read(key.type);
           rwLiteral(": ");
-          if ch.writing then ch.write(val); else val = ch.read(val.type);
+          if ch._writing then ch.write(val); else val = ch.read(val.type);
         }
       }
       rwLiteral("}");

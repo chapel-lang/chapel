@@ -144,7 +144,6 @@ module Atomics {
   public use MemConsistency;  // OK: to get and propagate memoryOrder
 
   pragma "local fn" pragma "fast-on safe extern function"
-  @chpldoc.nodoc
   extern proc chpl_atomic_thread_fence(order:memory_order);
 
   // non user-facing fence that is called by the compiler
@@ -213,7 +212,6 @@ module Atomics {
                 else return "atomic_" + s + "_"          + externTString(T);
   }
 
-  @chpldoc.nodoc
   proc chpl__processorAtomicType(type T) type {
     if T == bool           then return AtomicBool;
     else if isSupported(T) then return AtomicT(T);
@@ -221,7 +219,6 @@ module Atomics {
   }
 
   // Parser hook
-  @chpldoc.nodoc
   proc chpl__atomicType(type T) type {
     use ChplConfig;
     if CHPL_NETWORK_ATOMICS == "none" {

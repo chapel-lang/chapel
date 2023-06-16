@@ -1670,6 +1670,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SIMPLE_TYPE_NAME: {
+    Type* t = call->get(1)->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      const char* typeName = toString(at->getRootInstantiation());
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    } else {
+      const char* typeName = toString(t);
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    }
+    break;
+  }
+
   case PRIM_NUM_FIELDS: {
     Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
@@ -2799,16 +2815,25 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: given `range(boundedType=?b),
-// redirect it to `range(bounds=?b)`, with a deprecation warning.
-static void checkRangeDeprecations(AggregateType* at, VarSymbol* var,
-                                   Symbol*& retval) {
+// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
+// from `range(boundedType=?b)` or `range(stridable=?s`)`
+// to   `range(bounds=?b)`      or `s = <arg>.stridable`
+static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
+                                   VarSymbol* var, Symbol*& retval) {
   if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
     const char* requested = var->immediate->v_string.c_str();
     if (!strcmp(requested, "boundedType")) {
-      USR_WARN(var,
+      USR_WARN(call,
         "range.boundedType is deprecated; please use '.bounds' instead");
       retval = at->getField("bounds");
+    } else if (!strcmp(requested, "stridable")) {
+      USR_WARN(call,
+        "range.stridable is deprecated; please use '.strides' instead");
+
+      // White lie: return a bogus value just so that the PRIM_QUERY case
+      // in preFoldPrimOp() generates the call 'var.stridable'.
+      retval = new VarSymbol(requested);
+      retval->addFlag(FLAG_PARAM);
     }
   }
 }
@@ -2825,7 +2850,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, var, retval); // may update 'retval'
+    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

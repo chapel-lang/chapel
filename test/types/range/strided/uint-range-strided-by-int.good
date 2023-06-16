@@ -8,4 +8,4 @@
 3
 2
 1
-0..10 by -1 : range(uint(8),both,true)
+0..10 by -1 : range(uint(8),both,any)

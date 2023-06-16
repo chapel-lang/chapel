@@ -43,6 +43,71 @@ handling in the AutoMath module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+.. _automath-roots:
+
+Roots
+-----
+:proc:`cbrt`
+:proc:`sqrt`
+
+.. _automath-rounding:
+
+Rounding
+--------
+:proc:`ceil`
+:proc:`divceil`
+:proc:`divceilpos`
+:proc:`divfloor`
+:proc:`divfloorpos`
+:proc:`floor`
+:proc:`nearbyint`
+:proc:`rint`
+:proc:`round`
+:proc:`trunc`
+
+.. _automath-complex:
+
+Computations Involving Complex Numbers
+--------------------------------------
+:proc:`carg`
+:proc:`conjg`
+:proc:`cproj`
+
+.. _automath-inf-nan:
+
+Infinity and NaN
+----------------
+:var:`INFINITY`
+:var:`NAN`
+:proc:`isfinite`
+:proc:`isinf`
+:proc:`isnan`
+
+.. _automath-comparison:
+
+Comparison Functions
+--------------------
+:proc:`max`
+:proc:`min`
+:proc:`isclose`
+
+.. _automath-sign:
+
+Sign Functions
+--------------
+:proc:`sgn`
+:proc:`signbit`
+
+.. _automath-other:
+
+Remaining Functions
+-------------------
+:proc:`abs`
+:proc:`mod`
+
+Constant and Function Definitions
+---------------------------------
+
 */
 pragma "module included by default"
 module AutoMath {
@@ -251,7 +316,6 @@ module AutoMath {
     return chpl_acos(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acos(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -275,7 +339,6 @@ module AutoMath {
     return chpl_acos(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acos(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -293,7 +356,6 @@ module AutoMath {
     return chpl_acos(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acos(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -311,7 +373,6 @@ module AutoMath {
     return chpl_acos(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acos(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -333,7 +394,6 @@ module AutoMath {
     return chpl_acosh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acosh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -357,7 +417,6 @@ module AutoMath {
     return chpl_acosh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -375,7 +434,6 @@ module AutoMath {
     return chpl_acosh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -393,7 +451,6 @@ module AutoMath {
     return chpl_acosh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_acosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -415,7 +472,6 @@ module AutoMath {
     return chpl_asin(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asin(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -439,7 +495,6 @@ module AutoMath {
     return chpl_asin(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asin(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -457,7 +512,6 @@ module AutoMath {
     return chpl_asin(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -475,7 +529,6 @@ module AutoMath {
     return chpl_asin(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -494,7 +547,6 @@ module AutoMath {
     return chpl_asinh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asinh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -515,7 +567,6 @@ module AutoMath {
     return chpl_asinh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -533,7 +584,6 @@ module AutoMath {
     return chpl_asinh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -551,7 +601,6 @@ module AutoMath {
     return chpl_asinh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_asinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -571,7 +620,6 @@ module AutoMath {
     return chpl_atan(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -592,7 +640,6 @@ module AutoMath {
     return chpl_atan(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -610,7 +657,6 @@ module AutoMath {
     return chpl_atan(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -628,7 +674,6 @@ module AutoMath {
     return chpl_atan(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -651,7 +696,6 @@ module AutoMath {
     return chpl_atan2(y, x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan2(y: real(64), x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -676,7 +720,6 @@ module AutoMath {
     return chpl_atan2(y, x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atan2(y : real(32), x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -697,7 +740,6 @@ module AutoMath {
     return chpl_atanh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atanh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -720,7 +762,6 @@ module AutoMath {
     return chpl_atanh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -738,7 +779,6 @@ module AutoMath {
     return chpl_atanh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -756,7 +796,6 @@ module AutoMath {
     return chpl_atanh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_atanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -859,7 +898,6 @@ module AutoMath {
     return chpl_cos(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cos(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -880,7 +918,6 @@ module AutoMath {
     return chpl_cos(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cos(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -898,7 +935,6 @@ module AutoMath {
     return chpl_cos(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cos(z : complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -916,7 +952,6 @@ module AutoMath {
     return chpl_cos(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cos(z : complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -935,7 +970,6 @@ module AutoMath {
     return chpl_cosh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cosh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -956,7 +990,6 @@ module AutoMath {
     return chpl_cosh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -974,7 +1007,6 @@ module AutoMath {
     return chpl_cosh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -992,7 +1024,6 @@ module AutoMath {
     return chpl_cosh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_cosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1089,7 +1120,6 @@ module AutoMath {
     return chpl_erf(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_erf(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1109,7 +1139,6 @@ module AutoMath {
     return chpl_erf(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_erf(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1126,7 +1155,6 @@ module AutoMath {
     return chpl_erfc(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_erfc(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1146,7 +1174,6 @@ module AutoMath {
     return chpl_erfc(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_erfc(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1166,7 +1193,6 @@ module AutoMath {
     return chpl_exp(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1188,7 +1214,6 @@ module AutoMath {
     return chpl_exp(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1207,7 +1232,6 @@ module AutoMath {
     return chpl_exp(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1226,7 +1250,6 @@ module AutoMath {
     return chpl_exp(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1245,7 +1268,6 @@ module AutoMath {
     return chpl_exp2(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp2(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1266,7 +1288,6 @@ module AutoMath {
     return chpl_exp2(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_exp2(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1286,7 +1307,6 @@ module AutoMath {
     return chpl_expm1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_expm1(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1308,7 +1328,6 @@ module AutoMath {
     return chpl_expm1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_expm1(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1370,7 +1389,6 @@ module AutoMath {
     return chpl_ldexp(x, n);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_ldexp(x:real(64), n:int(32)):real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1390,7 +1408,6 @@ module AutoMath {
     return chpl_ldexp(x, n);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_ldexp(x:real(32), n:int(32)):real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1407,7 +1424,6 @@ module AutoMath {
     return chpl_lgamma(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_lgamma(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1427,7 +1443,6 @@ module AutoMath {
     return chpl_lgamma(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_lgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1449,7 +1464,6 @@ module AutoMath {
     return chpl_log(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1473,7 +1487,6 @@ module AutoMath {
     return chpl_log(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1491,7 +1504,6 @@ module AutoMath {
     return chpl_log(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1509,7 +1521,6 @@ module AutoMath {
     return chpl_log(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1531,7 +1542,6 @@ module AutoMath {
     return chpl_log10(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log10(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1555,7 +1565,6 @@ module AutoMath {
     return chpl_log10(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log10(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1565,7 +1574,6 @@ module AutoMath {
 
   // To prevent this auto-included module from using a non-auto-included module
   // (Math)
-  @chpldoc.nodoc
   inline proc chpl_log1p(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1575,7 +1583,6 @@ module AutoMath {
 
   // To prevent this auto-included module from using a non-auto-included module
   // (Math)
-  @chpldoc.nodoc
   inline proc chpl_log1p(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1627,7 +1634,6 @@ module AutoMath {
     return chpl_log2(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log2(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1651,7 +1657,6 @@ module AutoMath {
     return chpl_log2(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log2(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -1683,7 +1688,6 @@ module AutoMath {
     return lg2 / baseLog2;
   }
 
-  @chpldoc.nodoc
   inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
     if (val < 1) {
       halt("Can't take the log() of a non-positive integer");
@@ -1691,7 +1695,6 @@ module AutoMath {
     return _logBasePow2Help(val, baseLog2);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_logBasePow2(val: uint(?w), baseLog2) {
     return _logBasePow2Help(val, baseLog2);
   }
@@ -1712,7 +1715,6 @@ module AutoMath {
     return chpl_log2(val);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log2(val: int(?w)) {
     return chpl_logBasePow2(val, 1);
   }
@@ -1733,7 +1735,6 @@ module AutoMath {
     return chpl_log2(val);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_log2(val: uint(?w)) {
     return chpl_logBasePow2(val, 1);
   }
@@ -1743,15 +1744,45 @@ module AutoMath {
   //
 
   @chpldoc.nodoc
-  inline proc max(x: int(?w), y: int(w)) do return if x > y then x else y;
+  inline proc max(x: int(8), y: int(8)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: uint(?w), y: uint(w)) do return if x > y then x else y;
+  inline proc max(x: int(16), y: int(16)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: real(?w), y: real(w)) do return if (x > y) | isnan(x) then x else y;
+  inline proc max(x: int(32), y: int(32)) do return if x > y then x else y;
   @chpldoc.nodoc
-  inline proc max(x: int(?w), y: uint(w)) do return if x > y then x:uint(w) else y;
+  inline proc max(x: int(64), y: int(64)) do return if x > y then x else y;
+
   @chpldoc.nodoc
-  inline proc max(x: uint(?w), y: int(w)) do return if x > y then x else y:uint(w);
+  inline proc max(x: uint(8), y: uint(8)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(16), y: uint(16)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(32), y: uint(32)) do return if x > y then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: uint(64), y: uint(64)) do return if x > y then x else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: real(32), y: real(32)) do return if (x > y) | isnan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc max(x: real(64), y: real(64)) do return if (x > y) | isnan(x) then x else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: int(8), y: uint(8)) do return if x > y then x : uint(8) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(16), y: uint(16)) do return if x > y then x : uint(16) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(32), y: uint(32)) do return if x > y then x : uint(32) else y;
+  @chpldoc.nodoc
+  inline proc max(x: int(64), y: uint(64)) do return if x > y then x : uint(64) else y;
+
+  @chpldoc.nodoc
+  inline proc max(x: uint(8), y: int(8)) do return if x > y then x else y : uint(8);
+  @chpldoc.nodoc
+  inline proc max(x: uint(16), y: int(16)) do return if x > y then x else y : uint(16);
+  @chpldoc.nodoc
+  inline proc max(x: uint(32), y: int(32)) do return if x > y then x else y : uint(32);
+  @chpldoc.nodoc
+  inline proc max(x: uint(64), y: int(64)) do return if x > y then x else y : uint(64);
 
   pragma "last resort"
   @chpldoc.nodoc
@@ -1782,15 +1813,45 @@ module AutoMath {
   }
 
   @chpldoc.nodoc
-  inline proc min(x: int(?w), y: int(w)) do return if x < y then x else y;
+  inline proc min(x: int(8), y: int(8)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: uint(?w), y: uint(w)) do return if x < y then x else y;
+  inline proc min(x: int(16), y: int(16)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: real(?w), y: real(w)) do return if (x < y) | isnan(x) then x else y;
+  inline proc min(x: int(32), y: int(32)) do return if x < y then x else y;
   @chpldoc.nodoc
-  inline proc min(x: int(?w), y: uint(w)) do return if x < y then x else y:int(w);
+  inline proc min(x: int(64), y: int(64)) do return if x < y then x else y;
+
   @chpldoc.nodoc
-  inline proc min(x: uint(?w), y: int(w)) do return if x < y then x:int(w) else y;
+  inline proc min(x: uint(8), y: uint(8)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(16), y: uint(16)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(32), y: uint(32)) do return if x < y then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(64), y: uint(64)) do return if x < y then x else y;
+
+  @chpldoc.nodoc
+  inline proc min(x: real(32), y: real(32)) do return if (x < y) | isnan(x) then x else y;
+  @chpldoc.nodoc
+  inline proc min(x: real(64), y: real(64)) do return if (x < y) | isnan(x) then x else y;
+
+  @chpldoc.nodoc
+  inline proc min(x: int(8), y: uint(8)) do return if x < y then x else y : int(8);
+  @chpldoc.nodoc
+  inline proc min(x: int(16), y: uint(16)) do return if x < y then x else y : int(16);
+  @chpldoc.nodoc
+  inline proc min(x: int(32), y: uint(32)) do return if x < y then x else y : int(32);
+  @chpldoc.nodoc
+  inline proc min(x: int(64), y: uint(64)) do return if x < y then x else y : int(64);
+
+  @chpldoc.nodoc
+  inline proc min(x: uint(8), y: int(8)) do return if x < y then x : int(8) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(16), y: int(16)) do return if x < y then x : int(16) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(32), y: int(32)) do return if x < y then x : int(32) else y;
+  @chpldoc.nodoc
+  inline proc min(x: uint(64), y: int(64)) do return if x < y then x : int(64) else y;
 
   pragma "last resort"
   @chpldoc.nodoc
@@ -1867,10 +1928,16 @@ module AutoMath {
 
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
-
-     The return value has the same type as `x`.
   */
-  proc mod(x: real(?w), y: real(w)): real(w) {
+  proc mod(x: real(32), y: real(32)): real(32) {
+    // This codes up the standard definition, according to Wikipedia.
+    // Is there a more efficient implementation for reals?
+    return x - y*floor(x/y);
+  }
+  /* Computes the mod operator on the two numbers, defined as
+     ``mod(x,y) = x - y * floor(x / y)``.
+  */
+  proc mod(x: real(64), y: real(64)): real(64) {
     // This codes up the standard definition, according to Wikipedia.
     // Is there a more efficient implementation for reals?
     return x - y*floor(x/y);
@@ -1972,7 +2039,6 @@ module AutoMath {
     return chpl_sin(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sin(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -1993,7 +2059,6 @@ module AutoMath {
     return chpl_sin(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sin(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2011,7 +2076,6 @@ module AutoMath {
     return chpl_sin(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2029,7 +2093,6 @@ module AutoMath {
     return chpl_sin(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2048,7 +2111,6 @@ module AutoMath {
     return chpl_sinh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sinh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2069,7 +2131,6 @@ module AutoMath {
     return chpl_sinh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2087,7 +2148,6 @@ module AutoMath {
     return chpl_sinh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2105,7 +2165,6 @@ module AutoMath {
     return chpl_sinh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_sinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2160,7 +2219,6 @@ module AutoMath {
     return chpl_tan(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tan(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2181,7 +2239,6 @@ module AutoMath {
     return chpl_tan(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tan(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2199,7 +2256,6 @@ module AutoMath {
     return chpl_tan(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2217,7 +2273,6 @@ module AutoMath {
     return chpl_tan(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2236,7 +2291,6 @@ module AutoMath {
     return chpl_tanh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tanh(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2257,7 +2311,6 @@ module AutoMath {
     return chpl_tanh(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2275,7 +2328,6 @@ module AutoMath {
     return chpl_tanh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2293,7 +2345,6 @@ module AutoMath {
     return chpl_tanh(z);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2310,7 +2361,6 @@ module AutoMath {
     return chpl_tgamma(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tgamma(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2330,7 +2380,6 @@ module AutoMath {
     return chpl_tgamma(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_tgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2365,7 +2414,6 @@ module AutoMath {
     return chpl_gcd(a, b);
   }
 
-  @chpldoc.nodoc
   proc chpl_gcd(in a: int,in b: int): int {
      a = abs(a);
      b = abs(b);
@@ -2388,7 +2436,6 @@ module AutoMath {
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
   }
 
-  @chpldoc.nodoc
   inline proc chpl_j0(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2396,7 +2443,6 @@ module AutoMath {
     return chpl_float_j0(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_j0(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2424,7 +2470,6 @@ module AutoMath {
     return chpl_j0(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_j1(x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2432,7 +2477,6 @@ module AutoMath {
     return chpl_float_j1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_j1(x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2460,7 +2504,6 @@ module AutoMath {
     return chpl_j1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_jn(n: int, x: real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2468,7 +2511,6 @@ module AutoMath {
     return chpl_float_jn(n.safeCast(c_int), x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_jn(n: int, x: real(64)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2496,7 +2538,6 @@ module AutoMath {
     return chpl_jn(n, x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_y0(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
@@ -2507,7 +2548,6 @@ module AutoMath {
     return chpl_float_y0(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_y0(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
@@ -2538,7 +2578,6 @@ module AutoMath {
     return chpl_y0(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_y1(x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
@@ -2549,7 +2588,6 @@ module AutoMath {
     return chpl_float_y1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_y1(x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
@@ -2580,7 +2618,6 @@ module AutoMath {
     return chpl_y1(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_yn(n: int, x: real(32)): real(32) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
@@ -2591,7 +2628,6 @@ module AutoMath {
     return chpl_float_yn(n.safeCast(c_int), x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_yn(n: int, x: real(64)): real(64) {
     if boundsChecking && x < 0 then
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");

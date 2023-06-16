@@ -27,15 +27,16 @@
 //
 
 CHPLDEF_MESSAGE(Initialize, 0, 0, initialize)
+CHPLDEF_MESSAGE(Initialized, 0, 1, initialized)
+CHPLDEF_MESSAGE(Shutdown, 0, 0, shutdown)
+CHPLDEF_MESSAGE(Exit, 0, 1, exit)
 
 /*
-CHPLDEF_MESSAGE(Initialized, initialized)
 CHPLDEF_MESSAGE(RegisterCapability, client/registerCapability)
 CHPLDEF_MESSAGE(UnregisterCapability, client/unregisterCapability)
 CHPLDEF_MESSAGE(SetTrace, $/setTrace)
 CHPLDEF_MESSAGE(LogTrace, $/logTrace)
-CHPLDEF_MESSAGE(Shutdown, shutdown)
-CHPLDEF_MESSAGE(Exit, exit)
+
 */
 
 //

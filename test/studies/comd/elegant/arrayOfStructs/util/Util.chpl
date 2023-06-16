@@ -74,6 +74,7 @@ proc computeBoxInfo(PotLat, PotCutoff) {
   * :rtype: real
  **/
 proc gasdev(inout seed: uint(64)): real {
+  use Math; // for log()
   var rsq, v1, v2: real;
 
   do

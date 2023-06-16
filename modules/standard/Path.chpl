@@ -239,10 +239,10 @@ proc commonPath(paths: string ...?n): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
@@ -321,10 +321,10 @@ proc commonPath(paths: []): string {
 
   if (flag == 1) {
     for i in pos..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
   } else {
     for i in minPathLength..prefixList.size-1 by -1 do
-      try! prefixList.pop(i);
+      try! prefixList.getAndRemove(i);
     // in case all paths are subsets of the longest path thus pos was never
     // updated
   }
@@ -616,7 +616,7 @@ proc realPath(f: file): string throws {
   import OS.errorCode;
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): errorCode;
 
-  if (is_c_nil(f._file_internal)) then
+  if (f._file_internal == nil) then
     try ioerror(EBADF:errorCode, "in realPath with a file argument");
 
   var res: c_string;

@@ -1,5 +1,5 @@
-proc object.myName: string do return "object";
-proc object.ddName(): string { return "object"; }
+proc RootClass.myName: string do return "object";
+proc RootClass.ddName(): string { return "object"; }
 
 class A {
   override proc myName { return "A"; }
@@ -46,7 +46,7 @@ proc get_cdr(type car, type cdr...?k) type {
 
 proc getSuperType(type t) type {
   proc st(v:t? = nil) type {
-    if (t == object) then
+    if (t == RootClass) then
       return t;
     else
       return v!.super.type;

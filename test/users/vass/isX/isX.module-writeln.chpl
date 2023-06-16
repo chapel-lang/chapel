@@ -88,7 +88,7 @@ var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
-var rng2: range(uint(8), boundKind.neither, true);
+var rng2: range(uint(8), boundKind.neither, strideKind.negative);
 var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;

@@ -259,7 +259,6 @@ proc isDefaultInitializableType(type t) param {
 }
 
 // Returns the unsigned equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__unsignedType(type t) type
 {
   return uint(numBits(t));
@@ -267,13 +266,11 @@ proc chpl__unsignedType(type t) type
 
 
 // Returns the signed equivalent of the input type.
-@chpldoc.nodoc
 proc chpl__signedType(type t) type
 {
   return int(numBits(t));
 }
 
-@chpldoc.nodoc
 proc chpl__maxIntTypeSameSign(type t) type {
   if ! isIntegralType(t) then
     compilerError("type t is non-integral: ", t:string);
@@ -644,7 +641,6 @@ proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 
 
 // for internal use until we have a better name
-@chpldoc.nodoc
 proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
   isSingleType(t) ||
@@ -653,7 +649,6 @@ proc chpl_isSyncSingleAtomic(e: ?t) param do return
 // isSubtype(), isProperSubtype() are now directly handled by compiler
 
 // Returns true if it is legal to coerce t1 to t2, false otherwise.
-@chpldoc.nodoc
 proc chpl__legalIntCoerce(type t1, type t2) param
 {
   if (isIntType(t2)) {
@@ -870,18 +865,17 @@ private proc chpl_enum_minbits(type t: enum) param {
 }
 // TODO - maybe this function can be useful for the user, for C interop?
 // If so, give it a different name.
-@chpldoc.nodoc
 proc chpl_enum_mintype(type t: enum) type {
   return uint(chpl_enum_minbits(t));
 }
 
 
 /*
-Returns ``this``, cast to the type ``T``.
-Generates a run-time error if ``this`` cannot be represented by ``T``,
+The following ``safeCast()`` methods return ``this`` cast to the type ``T``.
+At present, these halt the program if ``this`` cannot be represented by ``T``,
 for example ``(-1).safeCast(uint)`` or ``256.safeCast(uint(8))``.
 
-This method performs the minimum number of runtime checks.
+These methods perform the minimum number of runtime checks.
 For example, when casting from ``uint(8)`` to ``uint(64)``,
 no checks at all will be done.
 */
@@ -935,9 +929,24 @@ inline proc integral.safeCast(type T: integral) : T {
   }
 }
 
+proc integral.safeCast(type T: bool) {
+  if this != 0 && this != 1 then
+    HaltWrappers.safeCastCheckHalt("casting "+this.type:string+" to 'bool' requires it to have a value of either 0 or 1, but the current value is " + this:string);
+  return this: bool;
+}
+
+proc bool.safeCast(type T: integral) {
+  return this: T;
+}
+
+proc bool.safeCast(type T: bool) {
+  return this;
+}
+
 @chpldoc.nodoc // documented with the other safeCast above
 proc integral.safeCast(type T) {
-  compilerError("safeCast is only supported between integral types");
+  compilerError("safeCasts are not supported from " + this.type:string +
+                " to " + T:string);
 }
 
 //

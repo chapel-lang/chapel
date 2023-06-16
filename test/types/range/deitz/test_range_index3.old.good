@@ -1,3 +1,9 @@
+test_range_index3.chpl:1: In function 'testRangeIndexing':
+test_range_index3.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+  test_range_index3.chpl:15: called as testRangeIndexing(r1: range(int(64),both,negative), r2: range(int(64),both,negative))
+test_range_index3.chpl:1: In function 'testRangeIndexing':
+test_range_index3.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+  test_range_index3.chpl:17: called as testRangeIndexing(r1: range(int(64),both,positive), r2: range(int(64),both,negative))
 (1..10 by -3)(3..9) = 7 4 
 (1..10 by -3)(3..8) = 7 4 
 (1..10 by -3)(3..7) = 7 4 

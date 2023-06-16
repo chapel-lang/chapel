@@ -855,6 +855,29 @@ static bool callSpecifiesClassKind(CallExpr* call) {
           call->isNamed("chpl__distributed"));
 }
 
+// Supports deprecation by Vass in 1.31 to implement #17131.
+static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use) {
+  CallExpr* pCall = toCallExpr(use->parentExpr);
+  if (pCall == nullptr)
+    if (NamedExpr* pNamed = toNamedExpr(use->parentExpr))
+      pCall = toCallExpr(pNamed->parentExpr);
+  return tryReplaceStridable(pCall, name, use);
+}
+
+// Supports deprecation by Vass in 1.31 to implement #17131.
+// Sometimes lookupAndCount() will return a type method 'stridable'.
+// This is more likely a bug. So we steamroll over it.
+static bool tryReplaceStridableSR(const char* name, UnresolvedSymExpr* use,
+                                Symbol* sym) {
+  if (!strcmp(name, "stridable"))
+    if (FnSymbol* symFn = toFnSymbol(sym))
+      if (symFn->thisTag == INTENT_TYPE)
+        if (symFn->getModule()->modTag == MOD_INTERNAL)
+          // ignore 'sym'
+          return tryReplaceStridableSR(name, use);
+  return false;
+}
+
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
   SET_LINENO(usymExpr);
@@ -892,7 +915,12 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
   Symbol* sym = lookupAndCount(name, usymExpr, nSymbols, returnRename,
                                &renameLoc);
   if (sym != NULL) {
-    resolveUnresolvedSymExpr(usymExpr, sym);
+    if (!tryReplaceStridableSR(name, usymExpr, sym))
+      resolveUnresolvedSymExpr(usymExpr, sym);
+
+  } else if (tryReplaceStridableSR(name, usymExpr)) {
+    // handled
+
   } else {
     updateMethod(usymExpr);
   }

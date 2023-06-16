@@ -8,6 +8,6 @@ var domain4: domain(2, idxType=int(8));
 
 var domain5: domain(2, int(8));
 
-var domain6: domain(2, stridable=true);
+var domain6: domain(2, strides=strideKind.any);
 
-var domain7: domain(rank=3, idxType=int, stridable=false);
+var domain7: domain(rank=3, idxType=int, strides=strideKind.one);

@@ -56,6 +56,7 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
+Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -72,22 +73,14 @@ Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol *gBoundsChecking = NULL;
-VarSymbol *gCastChecking = NULL;
-VarSymbol *gNilChecking = NULL;
-VarSymbol *gOverloadSetsChecks = NULL;
-VarSymbol *gDivZeroChecking = NULL;
-VarSymbol* gCacheRemote = NULL;
-VarSymbol* gPrivatization = NULL;
-VarSymbol* gLocal = NULL;
-VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
-VarSymbol *gUseIOFormatters = NULL;
+
+llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {

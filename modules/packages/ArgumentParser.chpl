@@ -977,8 +977,13 @@ module ArgumentParser {
       _exitAfterHelp = exitAfterHelp;
 
       var _helpHandler = new shared HelpHandler();
-      if !isNothingType(h) then
-        _helpHandler = helpHandler: shared h.chpl_t;
+      if !isNothingType(h) {
+        if isBorrowedClass(helpHandler)
+          then compilerError("Cannot initialize a help handler from a 'borrowed' class");
+        if !isSharedClass(helpHandler)
+          then _helpHandler = shared.adopt(helpHandler);
+          else _helpHandler = helpHandler;
+      }
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then
@@ -1675,7 +1680,7 @@ module ArgumentParser {
           var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
           var idx = argsList.find(arrElt);
-          argsList.pop(idx);
+          argsList.getAndRemove(idx);
           argsList.insert(idx, elems.toArray());
         }
       }

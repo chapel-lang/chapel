@@ -97,7 +97,7 @@ bool Transport::sendJsonBlocking(Server* ctx, std::ostream& os,
                                  const JsonValue& json) {
   const bool pretty = false;
   std::string s = jsonToString(json, pretty);
-  os << std::move(s);
+  os << "Content-Length: " << s.size() << "\r\n\r\n" << s;
   os.flush();
   bool ret = !os.bad() && !os.fail();
   return ret;

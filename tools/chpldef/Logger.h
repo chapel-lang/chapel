@@ -64,6 +64,8 @@ public:
   bool isLoggingToBuiltin() const;
   bool isLogging() const;
   inline Level level() const { return level_; }
+  static const char* levelToString(Level level);
+  inline const char* levelToString() const { return levelToString(level_); }
   inline Output output() const { return output_; }
   inline void setLevel(Level level) { this->level_ = level; }
   void setFlushImmediately(bool flushImmediately);

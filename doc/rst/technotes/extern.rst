@@ -714,7 +714,8 @@ You can refer to other external pointer-based C types that cannot be
 described in Chapel using the "opaque" keyword.  As the name implies,
 these types are opaque as far as Chapel is concerned and cannot be
 used for operations other than argument passing and assignment
-(to/from other similarly opaque types).
+(to/from other similarly opaque types). This includes ``==`` comparison to
+``nil`` for opaque C pointer types; for that one can use a ``c_ptr(opaque)``.
 
 For example, Chapel could be used to call an external C function that
 returns a pointer to a structure (that we can't or won't describe as
@@ -1014,8 +1015,53 @@ c_ptr. See the following example:
   }
   c_free(cArray);
 
-Variables of type c_ptr can be compared against or set to nil.
+Variables of type ``c_ptr``/``c_ptrConst`` can be compared against or set to
+``nil``.
 
+The ``c_ptrTo()`` function and its const equivalent provide special behavior on
+some types to make them more amenable to common use cases. This includes
+pointers to ``string`` or ``bytes`` types, for which it returns a pointer to the
+underlying buffer as opposed to the Chapel variable descriptor, and pointers
+to class types as described below. To get a "naive" pointer to a Chapel
+variable without any special behavior, one can use
+``c_addrOf``/``c_addrOfConst``; this is the Chapel equivalent to the ``&``
+operator in C.
+
+There is also special behavior for ``c_ptrTo`` on class types. In Chapel, a
+class variable is actually some information on the stack containing a pointer to
+the "real" instance on the heap. Calling ``c_ptrTo()`` on a class type will give
+a ``c_void_ptr`` to the instance on the heap. Memory-managed heap instances will
+still be deallocated according to Chapel memory-management rules regardless of
+any pointer created to them this way. In the case of an ``unmanaged`` instance,
+it is possible to safely go back the other direction:
+
+.. code-block:: chapel
+
+  class Foo {
+    var x: int;
+    proc getX() const {
+      return x;
+    }
+  }
+
+  proc main() {
+    // create an unmanaged Foo
+    var c = new unmanaged Foo(42);
+    writeln((c, c_addrOf(c), c_ptrTo(c)));
+    writeln(c.getX());
+
+    // get pointer to instance
+    var p: c_void_ptr = c_ptrTo(c);
+    writeln(p);
+
+    // create another unmanaged Foo pointing to the same instance
+    var c2: unmanaged Foo = (p: unmanaged Foo?)!;
+    writeln((c2, c_addrOf(c2), c_ptrTo(c2)));
+    writeln(c2.getX());
+
+    // there's just one heap instance, so only free once
+    delete c;
+  }
 
 Working with strings
 --------------------

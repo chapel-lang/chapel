@@ -16,7 +16,7 @@ proc checkit(d1, d2) {
   var init_range: rank*range;
   for param i in 0..rank-1 do
     init_range(i) = 1..n*i;
-  const D1: domain(rank, stridable=true) = init_range;
-  const D2: domain(rank, stridable=false) = init_range;
+  const D1: domain(rank, strides=strideKind.any) = init_range;
+  const D2: domain(rank, strides=strideKind.one) = init_range;
   checkit(D1, D2);
 }

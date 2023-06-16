@@ -27,7 +27,9 @@
 namespace chpldef {
 
 bool Message::isIdValid(const JsonValue& id) {
-  return id.kind() == JsonValue::Number || id.kind() == JsonValue::String;
+  return id.kind() == JsonValue::Number ||
+         id.kind() == JsonValue::String ||
+         id.kind() == JsonValue::Null;
 }
 
 // TODO: Need to build an error message or record what went wrong. Create
@@ -36,10 +38,31 @@ bool Message::isIdValid(const JsonValue& id) {
 chpl::owned<BaseRequest> Message::request(Server* ctx, const JsonValue& j) {
   auto objPtr = j.getAsObject();
   if (!objPtr) {
-    ctx->verbose("Failed to unpack JSON object, found: %s\n",
-                 jsonTagStr(j));
+    ctx->verbose("Failed to unpack JSON object from %s\n",
+                 jsonKindToString(j));
     return nullptr;
   }
+
+  // Determine what method is to be called.
+  Message::Tag tag = Message::UNSET;
+  if (auto optMethod = objPtr->getString("method")) {
+    auto str = optMethod->str();
+
+    // Compare against RPC names in 'message-macro-list.h'.
+    tag = Message::jsonRpcMethodNameToTag(str);
+
+    // TODO: We can create an 'Invalid' request to represent this failure.
+    const bool hasTag = tag != Message::UNSET && tag != Message::INVALID;
+
+    if (!hasTag) {
+      CHPLDEF_FATAL(ctx, "Unrecognized method '%s'\n", str.c_str());
+      return nullptr;
+    }
+  }
+
+  CHPL_ASSERT(tag != Message::RESPONSE);
+
+  ctx->verbose("Constructing message with tag '%s'\n", tagToString(tag));
 
   // Get the ID as a JSON value.
   JsonValue id = nullptr;
@@ -47,42 +70,34 @@ chpl::owned<BaseRequest> Message::request(Server* ctx, const JsonValue& j) {
     if (Message::isIdValid(*idPtr)) id = *idPtr;
   }
 
-  // Failed to get the ID.
-  if (id.kind() == JsonValue::Null) {
-    ctx->verbose("Failed to get message ID\n");
+  auto k = id.kind();
+  bool ok = true;
+  ok &= !isNotification(tag) || k == JsonValue::Null;
+  ok &= Message::isIdValid(id);
+
+  // Error if we failed to get the ID.
+  if (!ok) {
+    ctx->verbose("Invalid message ID type '%s'\n",
+                 jsonKindToString(k));
     return nullptr;
   }
 
-  // Determine what method is to be called.
-  Message::Tag tag = Message::UNSET;
-  if (auto optMethod = objPtr->getString("method")) {
-    tag = Message::jsonRpcMethodNameToTag(optMethod->str());
-
-    // TODO: We can create an 'Invalid' request to represent this failure.
-    bool hasTag = tag != Message::UNSET && tag != Message::INVALID;
-    if (!hasTag) {
-      CHPLDEF_TODO();
-      return nullptr;
-    }
-  }
-
-  CHPL_ASSERT(tag != Message::RESPONSE);
-
   // Before building a specific request, get the params.
-  const JsonValue* params = nullptr;
+  const JsonValue params(nullptr);
+  const JsonValue* p = &params;
   if (auto ptr = objPtr->get("params")) {
     auto k = ptr->kind();
     if (k != JsonValue::Array && k != JsonValue::Object) {
       CHPLDEF_TODO();
       return nullptr;
     } else {
-      params = ptr;
+      p = ptr;
     }
   }
 
   switch (tag) {
     #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-      case name__: return name__::create(std::move(id), *params);
+      case name__: return name__::create(std::move(id), *p);
     #include "./message-macro-list.h"
     #undef CHPLDEF_MESSAGE
     default: break;
@@ -149,10 +164,10 @@ bool Message::isOutbound() const {
   return false;
 }
 
-bool Message::isNotification() const {
-  if (tag_ == Message::RESPONSE) return true;
+bool Message::isNotification(Tag tag) {
+  if (tag == Message::RESPONSE) return true;
   #define CHPLDEF_MESSAGE(name__, x1__, notification__, x3__) \
-    if (tag_ == Message::name__) return notification__;
+    if (tag == Message::name__) return notification__;
   #include "./message-macro-list.h"
   #undef CHPLDEF_MESSAGE
   return false;
@@ -190,6 +205,7 @@ Message::Tag Message::jsonRpcMethodNameToTag(std::string str) {
 std::string Message::idToString() const {
   if (auto optStr = id().getAsString()) return optStr->str();
   if (auto optInt = id().getAsInteger()) return std::to_string(*optInt);
+  if (id().kind() == JsonValue::Null) return "<>";
   CHPLDEF_IMPOSSIBLE();
   return {};
 }
@@ -315,43 +331,64 @@ const char* Message::errorToString(Error error) {
   return nullptr;
 }
 
-namespace {
-template <typename T, typename X>
-static bool doHandleMessage(Server* ctx, T* msg, X& x) {
+template <typename M, typename P, typename CR>
+static bool
+doHandleNotification(Server* ctx, M* msg, const P& p, CR& cr) {
   if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
-  if (msg->status() != Message::PENDING) return true;
+  if (msg->status() != Message::PENDING) return false;
 
-  ctx->message("Handling request '%s' with ID '%s'\n",
+  ctx->message("Handling notification '%s'\n", msg->tagToString());
+
+  cr = M::compute(ctx, p);
+
+  if (cr.isProgressingCallAgain) CHPLDEF_TODO();
+
+  ctx->message("Notification complete...\n");
+
+  return true;
+}
+
+template <typename M, typename P, typename CR>
+static bool
+doHandleRequest(Server* ctx, M* msg, const P& p, CR& cr) {
+  if (msg->status() == Message::PROGRESSING) CHPLDEF_TODO();
+  if (msg->status() != Message::PENDING) return false;
+
+  ctx->message("Handling request '%s' with ID %s\n",
                msg->tagToString(),
                msg->idToString().c_str());
 
-  x = msg->compute(ctx);
+  cr = M::compute(ctx, p);
 
-  if (x.isProgressingCallAgain) CHPLDEF_TODO();
+  if (cr.isProgressingCallAgain) CHPLDEF_TODO();
 
-  if (x.error != Message::OK) {
-    auto cstr = Message::errorToString(x.error);
+  if (cr.error != Message::OK) {
+    auto cstr = Message::errorToString(cr.error);
     ctx->message("Request failed with code '%s'\n", cstr);
+    return false;
   }
 
-  if (ctx->logger().level() != Logger::OFF) {
-    auto str = x.result.toString();
-    ctx->message("Request completed with result %s\n", str.c_str());
-  }
+  ctx->message("Request '%s' complete...\n", msg->idToString().c_str());
 
-  return false;
+  return true;
 }
+
+template <typename M, typename P, typename R>
+static bool
+doHandleMessage(Server* ctx, M* msg, const P& p, R& r) {
+  if (msg->isNotification()) return doHandleNotification(ctx, msg, p, r);
+  return doHandleRequest(ctx, msg, p, r);
 }
 
 /** Call the request handler above and then mark completed or failed. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
   void name__::handle(Server* ctx) { \
-    ComputedResult x; \
-    if (doHandleMessage(ctx, this, x)) { \
-      this->r = std::move(x.result); \
+    ComputedResult r; \
+    if (doHandleMessage(ctx, this, p, r)) { \
+      this->r = std::move(r.result); \
       this->markCompleted(); \
     } else { \
-      this->markFailed(x.error, std::move(x.note)); \
+      this->markFailed(r.error, std::move(r.note)); \
     } \
   }
 #include "./message-macro-list.h"
@@ -361,15 +398,11 @@ opt<Response> Message::handle(Server* ctx, Message* msg) {
   if (!ctx || !msg || msg->isResponse()) return {};
   if (msg->status() != Message::PENDING) return {};
 
-  // TODO: Notification will have empty 'Result' type.
-  if (msg->isNotification()) {
-    CHPLDEF_TODO();
-    return {};
-  }
-
   msg->handle(ctx);
 
-  if (msg->status() == Message::COMPLETED) {
+  CHPL_ASSERT(msg->status() != Message::PENDING);
+
+  if (!msg->isNotification() && msg->status() != Message::PROGRESSING) {
     if (auto ret = Message::response(ctx, msg)) {
       CHPL_ASSERT(ret->id() == msg->id());
       CHPL_ASSERT(ret->status() == Message::COMPLETED);

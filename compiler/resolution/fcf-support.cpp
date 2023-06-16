@@ -317,8 +317,8 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
                                   retType,
                                   throws);
   std::ignore = attachSuperWriteMethod(v->type, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachSuperWriteMethod(v->type, "encodeTo");
+  if (!fNoIOGenSerialization) {
+    std::ignore = attachSuperWriteMethod(v->type, "serialize");
   }
 
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
@@ -419,6 +419,9 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
                     "_",
                     ret->cname);
 
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'retType' method is unstable";
+
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
 
@@ -451,6 +454,9 @@ attachSuperArgTypeGetter(AggregateType* super,
   ret->cname = astr("chpl_get_",
                     super->symbol->cname, "_",
                     ret->cname);
+
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'argTypes' method is unstable";
 
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
@@ -789,8 +795,8 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   std::ignore = attachChildThis(info, child, fn);
 
   std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteMethod(info, child, fn, "encodeTo");
+  if (!fNoIOGenSerialization) {
+    std::ignore = attachChildWriteMethod(info, child, fn, "serialize");
   }
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
@@ -977,12 +983,6 @@ readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
 
   bool ret = (cachedValue == gTrue);
   return ret;
-}
-
-bool useLegacyBehavior(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUseLegacyBehavior",
-                             cachedValue);
 }
 
 bool usePointerImplementation(void) {

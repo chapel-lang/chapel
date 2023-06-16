@@ -33,13 +33,11 @@ module OwnedObject {
   pragma "copy mutates"
   pragma "managed pointer"
   record _owned {
-    @chpldoc.nodoc
     type chpl_t;                // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that the compiler also allows coercion to the borrow type.
@@ -355,7 +353,6 @@ module OwnedObject {
   // initCopy is defined explicitly as a workaround
   // for problems with initializers in this case
   pragma "init copy fn"
-  @chpldoc.nodoc
   proc chpl__initCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -366,7 +363,6 @@ module OwnedObject {
   // autoCopy is defined explicitly as a workaround
   // for problems with initializers in this case
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(pragma "leaves arg nil" pragma "nil from arg"
                       ref src: _owned,
                       definedConst: bool) {
@@ -376,7 +372,6 @@ module OwnedObject {
   // This is a workaround - compiler was resolving
   // chpl__autoDestroy(x:object) from internal coercions.
   pragma "auto destroy fn"
-  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _owned) {
     __primitive("call destructor", __primitive("deref", x));
   }
@@ -396,12 +391,12 @@ module OwnedObject {
   proc _owned._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp == nil then halt("internal error - read nil");
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
       var tmp = this.chpl_p : borrowed class?;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
         this = nil;
@@ -412,7 +407,7 @@ module OwnedObject {
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class?)    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
   {
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -423,7 +418,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class?, type t:owned class?)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a nilable type
     return new _owned(castPtr);
@@ -434,7 +429,7 @@ module OwnedObject {
   inline operator :(pragma "nil from arg" in x:owned class, type t:owned class)
     where isSubtype(x.chpl_t,t.chpl_t)
   {
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     // t stores a non-nilable type
     return new _owned(castPtr!);
@@ -445,7 +440,7 @@ module OwnedObject {
   inline operator :(in x:owned class?, type t:owned class) throws
     where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
   {
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr == nil {
       throw new owned NilClassError();
     }
@@ -463,7 +458,7 @@ module OwnedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
-    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -472,7 +467,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
-    var castPtr = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    var castPtr = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
     x.chpl_p = nil;
     return new _owned(castPtr);
   }
@@ -484,7 +479,7 @@ module OwnedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }
@@ -496,7 +491,7 @@ module OwnedObject {
     where isProperSubtype(_to_nonnil(t.chpl_t),x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var castPtr = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var castPtr = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     if castPtr != nil {
       x.chpl_p = nil;
     }

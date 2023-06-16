@@ -279,6 +279,7 @@ bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
+bool fReportGpu = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
 bool fReportGpuTransformTime = false;
@@ -346,7 +347,9 @@ bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
-bool fUseIOFormatters = false;
+bool fNoIOGenSerialization = false;
+bool fNoIOSerializeWriteThis = false;
+bool fNoIODeserializeReadThis = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
@@ -358,6 +361,7 @@ std::vector<std::string> gDynoPrependStandardModulePaths;
 int fGPUBlockSize = 0;
 char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
+bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
 char gpuArch[gpuArchNameLen+1] = "";
 
@@ -1231,6 +1235,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
+ {"report-gpu", ' ', NULL, "Print information about what loops are and are not GPU eligible", "F", &fReportGpu, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
@@ -1261,6 +1266,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
+ {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1313,7 +1319,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
- {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
+ {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
+ {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
+ {"io-deserialize-readThis", ' ', NULL, "Enable [disable] use of 'readThis' as default for 'deserialize' methods", "n", &fNoIODeserializeReadThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
  {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
   {0}
 };
@@ -1682,7 +1690,9 @@ static void setGPUFlags() {
     //
     // set up gpuArch
     if (strlen(fGpuArch) > 0) {
-      strncpy(gpuArch, fGpuArch, gpuArchNameLen);
+      // using memcpy and setting the null byte to avoid errors from older GCCs
+      memcpy(gpuArch, fGpuArch, gpuArchNameLen);
+      gpuArch[gpuArchNameLen] = 0;
     }
     else {
       if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
@@ -1691,7 +1701,10 @@ static void setGPUFlags() {
                   "for more information");
       }
       else {
-        strncpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
+        // using memcpy and setting the null byte to avoid errors from older
+        // GCCs
+        memcpy(gpuArch, CHPL_GPU_ARCH, gpuArchNameLen);
+        gpuArch[gpuArchNameLen] = 0;
       }
     }
   }
@@ -1903,6 +1916,20 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static chpl::Context::CompilationGlobals dynoBuildCompilationGlobals() {
+  return {
+    .boundsChecking = !fNoBoundsChecks,
+    .castChecking = !fNoCastChecks,
+    .nilDerefChecking = !fNoNilChecks,
+    .overloadSetsChecking = fOverloadSetsChecks,
+    .divByZeroChecking = !fNoDivZeroChecks,
+    .cacheRemote = fCacheRemote,
+    .privatization = !(fNoPrivatization || fLocal),
+    .local = fLocal,
+    .warnUnstable = fWarnUnstable,
+  };
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
 
@@ -1918,6 +1945,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
     config.keepTmpDir = true;
   }
   config.toolName = "chpl";
+  config.compilationGlobals = dynoBuildCompilationGlobals();
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;

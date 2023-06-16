@@ -14,7 +14,6 @@ proc mytest_no_return() {
   // CHECK: %c_chpl = alloca double
   // CHECK-NEXT: %[[REG3:[0-9]+]] = bitcast double* %c_chpl to i8*
   // CHECK-NEXT: call void @llvm.lifetime.start.p0i8(i64 8, i8* %[[REG3]])
-  // CHECK: {{[0-9]+}} = bitcast i64* %a_chpl to i8*
   const a : int = 32;
   refidentity(a);
   var b : real = 3.99;

@@ -2057,28 +2057,32 @@ bool Resolver::enter(const uast::Conditional* cond) {
   }
 
   auto& condType = byPostorder.byAst(cond->condition()).type();
-  if (condType.isParamTrue()) {
-    // condition is param true, might as well only resolve `then` branch
-    cond->thenBlock()->traverse(*this);
-    if (cond->isExpressionLevel()) {
-      auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
-      r.setType(thenType);
-    }
-    // No need to visit children again, or visit `else` branch.
-    return false;
-  } else if (condType.isParamFalse()) {
-    auto elseBlock = cond->elseBlock();
-    if (elseBlock == nullptr) {
-      // no else branch. leave the type unknown.
+  if (!scopeResolveOnly) {
+    // Only do short-circuiting for regular resolution, not scope-resolution
+
+    if (condType.isParamTrue()) {
+      // condition is param true, might as well only resolve `then` branch
+      cond->thenBlock()->traverse(*this);
+      if (cond->isExpressionLevel()) {
+        auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
+        r.setType(thenType);
+      }
+      // No need to visit children again, or visit `else` branch.
+      return false;
+    } else if (condType.isParamFalse()) {
+      auto elseBlock = cond->elseBlock();
+      if (elseBlock == nullptr) {
+        // no else branch. leave the type unknown.
+        return false;
+      }
+      elseBlock->traverse(*this);
+      if (cond->isExpressionLevel()) {
+        auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
+        r.setType(elseType);
+      }
+      // No need to visit children again, especially `then` branch.
       return false;
     }
-    elseBlock->traverse(*this);
-    if (cond->isExpressionLevel()) {
-      auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
-      r.setType(elseType);
-    }
-    // No need to visit children again, especially `then` branch.
-    return false;
   }
 
   // We might as well visit the rest of the children here,
@@ -2458,7 +2462,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
         // whether the call is valid, but the production scope resolver doesn't
         // care and assumes `ident` points to this parenless function. Setting
         // the toId also helps determine if this is a method call and should
-        // have `this` inserted, as well as wehther or not to turn this
+        // have `this` inserted, as well as whether or not to turn this
         // into a parenless call.
         validateAndSetToId(r, ident, id);
       }
@@ -2725,7 +2729,7 @@ void Resolver::exit(const Range* range) {
       DefaultsPolicy::USE_DEFAULTS);
   CHPL_ASSERT(resolvedFields.fieldName(0) == "idxType");
   CHPL_ASSERT(resolvedFields.fieldName(1) == "bounds");
-  CHPL_ASSERT(resolvedFields.fieldName(2) == "stridable");
+  CHPL_ASSERT(resolvedFields.fieldName(2) == "strides");
 
   // Determine index type, either via inference or by using the default.
   QualifiedType idxType;
@@ -2850,6 +2854,11 @@ bool Resolver::enter(const Call* call) {
     initResolver->doDetectPossibleAssignmentToField(op);
   }
 
+  // Scope resolve without short-circuiting if we're only scope resolving.
+  if (scopeResolveOnly) {
+    return true;
+  }
+
   // handle && and || to not bother to evaluate the RHS
   // if the LHS is param and false/true, respectively.
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
@@ -2893,8 +2902,10 @@ void Resolver::exit(const Call* call) {
 
   auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    // these are handled in 'enter' to do param folding
-    return;
+    if (!scopeResolveOnly) {
+      // these are handled in 'enter' to do param folding
+      return;
+    }
   }
 
   if (op && (op->op() == USTR("==") || op->op() == USTR("!=") ||
@@ -2990,6 +3001,15 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+  } else {
+    // For practical development/debugging, set the ResolvedExpression for
+    // this call in case resolution proceeds to the point where some other
+    // part of resolution assumes there is an entry for this call.
+    //
+    // Otherwise we would run into out_of_range exceptions when accessing
+    // the resolution result.
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;

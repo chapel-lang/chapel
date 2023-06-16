@@ -40,12 +40,12 @@ test(constDomNoInit2);
 writeln();
 
 writeln("var domain no init expr");
-var varDomNoInit3: domain(1, int, false);
+var varDomNoInit3: domain(1, int);
 test(varDomNoInit3);
 writeln();
 
 writeln("const domain no init expr");
-const constDomNoInit3: domain(1, int, false);
+const constDomNoInit3: domain(1, int);
 test(constDomNoInit3);
 writeln();
 

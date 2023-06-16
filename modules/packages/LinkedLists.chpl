@@ -43,6 +43,23 @@ class listNode {
       l1.append(i);
   }
 
+  @chpldoc.nodoc
+  operator LinkedList.==(const ref A : LinkedList(?t), const ref B: LinkedList(?t2)) {
+    var match = true;
+    if A.size != B.size {
+      match = false;
+    } else {
+      for (a, b) in zip(A, B) {
+        if a != b {
+          match = false;
+          break;
+        }
+      }
+    }
+
+    return match;
+  }
+
   use IO;
 
 /*
@@ -306,6 +323,18 @@ record LinkedList {
 
   }
 
+  proc serialize(writer, ref serializer) throws {
+    if writer.serializerType == IO.DefaultSerializer {
+      writeThis(writer);
+    } else {
+      ref ser = serializer;
+      ser.startList(writer, size);
+      for e in this do
+        ser.writeListElement(writer, e);
+      ser.endList(writer);
+    }
+  }
+
   @chpldoc.nodoc
   proc readThis(f) throws {
     use OS;
@@ -376,11 +405,53 @@ record LinkedList {
       if isJson || isChpl then f._readLiteral("]");
   }
 
+  proc deserialize(reader: fileReader, ref deserializer) throws
+  where reader.deserializerType == IO.DefaultDeserializer {
+    destroy();
+
+    // Default format works as a 1D array
+    ref des = deserializer;
+    des.startArray(reader);
+    des.startArrayDim(reader);
+
+    var done = false;
+    while !done {
+      try {
+        append(des.readArrayElement(reader, eltType));
+      } catch {
+        done = true;
+      }
+    }
+
+    des.endArrayDim(reader);
+    des.endArray(reader);
+  }
+
+  proc deserialize(reader: fileReader, ref deserializer) throws {
+    // Clear out existing elements in the list.
+    destroy();
+
+    ref des = deserializer;
+    des.startList(reader);
+
+    var done = false;
+    while !done {
+      try {
+        append(des.readListElement(reader, eltType));
+      } catch {
+        done = true;
+      }
+    }
+
+    des.endList(reader);
+  }
+
   // TODO: temporary implementation to get some tests passing, but needs to
   // go through the formatter eventually.
-  proc init(type eltType, r: fileReader) throws {
+  @chpldoc.nodoc
+  proc init(type eltType, reader: fileReader, ref deserializer) throws {
     this.init(eltType);
-    readThis(r);
+    deserialize(reader, deserializer);
   }
 }
 

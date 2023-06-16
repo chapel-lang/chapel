@@ -148,7 +148,7 @@ static QualifiedType primFieldNumToName(Context* context, const CallInfo& ci) {
   return type;
 }
 
-static QualifiedType primFieldNametoNum(Context* context, const CallInfo& ci) {
+static QualifiedType primFieldNameToNum(Context* context, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
 
@@ -292,9 +292,15 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   // handle param folding
   auto prim = call->prim();
-  if (Param::isParamOpFoldable(prim) && allParam && ci.numActuals() == 2) {
+  if (Param::isParamOpFoldable(prim) && allParam) {
+    if (ci.numActuals() == 2) {
       type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
-      return CallResolutionResult(candidates, type, poi);
+    } else if (ci.numActuals() == 1) {
+      type = Param::fold(context, prim, ci.actual(0).type(), QualifiedType());
+    } else {
+      CHPL_ASSERT(false && "unsupported param folding");
+    }
+    return CallResolutionResult(candidates, type, poi);
   }
 
   // otherwise, handle each primitive individually
@@ -318,6 +324,10 @@ CallResolutionResult resolvePrimCall(Context* context,
       CHPL_ASSERT(false && "not implemented yet");
       break;
 
+    case PRIM_SIMPLE_TYPE_NAME:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
+
     case PRIM_NUM_FIELDS:
       type = primNumFields(context, ci);
       break;
@@ -327,7 +337,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_FIELD_NAME_TO_NUM:
-      type = primFieldNametoNum(context, ci);
+      type = primFieldNameToNum(context, ci);
       break;
 
     case PRIM_FIELD_BY_NUM:

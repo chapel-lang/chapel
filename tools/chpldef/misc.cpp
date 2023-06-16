@@ -23,8 +23,12 @@
 
 namespace chpldef {
 
-const char* jsonTagStr(const JsonValue& json) {
-  switch (json.kind()) {
+const char* jsonKindToString(const JsonValue& json) {
+  return jsonKindToString(json.kind());
+}
+
+const char* jsonKindToString(JsonValue::Kind kind) {
+  switch (kind) {
     case JsonValue::Null: return "null";
     case JsonValue::Boolean: return "boolean";
     case JsonValue::Number: return "number";

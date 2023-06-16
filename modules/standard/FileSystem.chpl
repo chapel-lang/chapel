@@ -1098,8 +1098,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  extern type DIRptr;
-  extern type direntptr;
+  extern record DIR {}
+  extern type DIRptr = c_ptr(DIR);
+  extern "struct dirent" record chpl_dirent {}
+  extern type direntptr = c_ptr(chpl_dirent);
   extern proc opendir(name: c_string): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
@@ -1111,9 +1113,9 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     var ent: direntptr = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       var filename: string;
       try! {
         filename = string.createCopyingBuffer(ent.d_name(),

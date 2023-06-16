@@ -6,7 +6,7 @@ module test {
   proc abd(arg:borrowed)  { writeln("abd ", arg.type:string); }
   proc abq(arg:borrowed class?) { writeln("abq ", arg.type:string); }
   proc abb(arg:borrowed class) { writeln("abb ", arg.type:string); }
-  
+
   proc aud(arg:unmanaged)  { writeln("aud ", arg.type:string); }
   proc auq(arg:unmanaged class?) { writeln("auq ", arg.type:string); }
   proc aub(arg:unmanaged class) { writeln("aub ", arg.type:string); }
@@ -14,8 +14,8 @@ module test {
   proc main() {
     var c = (new owned Child(1, 2)).borrow();
 
-    var cu = c:unmanaged;
-    var cuq = c:unmanaged class?;
+    var cu = new unmanaged Child(1, 2);
+    var cuq = cu:unmanaged class?;
     var cb = c:borrowed;
     var cbq = c:borrowed class?;
     writeln();
@@ -48,5 +48,7 @@ module test {
     writeln("Passing cbq");
     abd(cbq);
     abq(cbq);
+
+    delete cu;
   }
 }

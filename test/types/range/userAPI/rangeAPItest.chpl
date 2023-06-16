@@ -5,7 +5,7 @@ proc testRangeAPI(lbl, r: range(?), idx, subr, offset=3, count=2) {
   writeln("------------");
   writeln(r);
   writeln("idxType          = ", r.idxType:string);
-  writeln("stridable        = ", r.stridable);
+  writeln("strides          = ", r.strides);
   writeln("bounds           = ", r.bounds);
 
 

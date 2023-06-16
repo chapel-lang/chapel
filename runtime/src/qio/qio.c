@@ -2834,7 +2834,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       err = qbuffer_copyout(&ch->buf, start, end, ptr, gotlen);
       if( err ) return err;
 
-      // advance the ptr, start of aviliabe data, etc.
+      // advance the ptr, start of available data, etc.
       ptr = qio_ptr_add(ptr, gotlen);
       _set_right_mark_start(ch, end.offset);
       ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
@@ -4626,6 +4626,16 @@ qioerr qio_get_fd(qio_file_t* fl, int* out)
   return 0;
 }
 
+qioerr qio_get_fp(qio_file_t* fl, FILE** out) {
+  if(fl != NULL && fl->fp != NULL)
+    *out = fl->fp;
+  else {
+    *out = NULL;
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fp");
+  }
+
+  return 0;
+}
 
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 {

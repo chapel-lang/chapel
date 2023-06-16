@@ -199,7 +199,6 @@ GenRet SymExpr::codegen() {
     }
 #endif
   }
-  ret.canBeMarkedAsConstAfterStore = var->isConstValWillNotChange();
   return ret;
 }
 
@@ -534,7 +533,7 @@ llvm::Type* computePointerElementType(llvm::Value* ptr, Type* chplType) {
   }
 
   // otherwise, try to compute it from the pointer element type.
-  // Note that while this works in simple cases, it is innaccurate for
+  // Note that while this works in simple cases, it is inaccurate for
   // more complex cases like e.g. a GEP of the 1st element in a global
   // of struct type -- that can return the global since the opaque pointer
   // value is the same as an opaque pointer pointing to the 1st field.
@@ -582,7 +581,6 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
                                   llvm::MDNode* fieldTbaaTypeDescriptor = NULL,
                                   llvm::MDNode* aliasScope = NULL,
                                   llvm::MDNode* noalias = NULL,
-                                  bool addInvariantStart = false,
                                   bool isStoreOfLocalVar = true)
 {
   GenInfo *info = gGenInfo;
@@ -612,9 +610,6 @@ llvm::StoreInst* codegenStoreLLVM(llvm::Value* val,
     if (loopData.markMemoryOps)
       ret->setMetadata("llvm.access.group", loopData.accessGroup);
   }
-
-  if(addInvariantStart)
-    codegenInvariantStart(val->getType(), ptr);
 
   return ret;
 }
@@ -646,13 +641,10 @@ llvm::StoreInst* codegenStoreLLVM(GenRet val,
     val.val = v;
   }
 
-  INT_ASSERT(!(ptr.alreadyStored && ptr.canBeMarkedAsConstAfterStore));
-  ptr.alreadyStored = true;
   return codegenStoreLLVM(val.val, ptr.val, valType, ptr.surroundingStruct,
                           ptr.fieldOffset, ptr.fieldTbaaTypeDescriptor,
                           ptr.aliasScope,
                           ptr.noalias,
-                          ptr.canBeMarkedAsConstAfterStore,
                           !ptr.mustPointOutsideOrderIndependentLoop);
 }
 // Create an LLVM load instruction possibly adding
@@ -4078,25 +4070,6 @@ static GenRet codegenCallStaticAddress(CallExpr* call) {
     }
 
     ret = codegenCallExprWithArgs(base, args, fn->cname, fn, nullptr, true);
-
-    #ifdef HAVE_LLVM
-    // Handle setting LLVM invariant on const records after
-    // they are initialized
-    if (fn && (fn->isInitializer() || fn->isCopyInit())) {
-      if (typeNeedsCopyInitDeinit(call->get(1)->typeInfo())) {
-        if (SymExpr* initedSe = toSymExpr(call->get(1))) {
-          if (initedSe->symbol()->isConstValWillNotChange()) {
-            GenRet genSe = args[0];
-            llvm::Value* ptr = genSe.val;
-            INT_ASSERT(ptr);
-            llvm::Type* ptrTy = ptr->getType();
-            INT_ASSERT(ptrTy && ptrTy->isPointerTy());
-            codegenInvariantStart(nullptr, ptr);
-          }
-        }
-      }
-    }
-    #endif
   }
 
   return ret;

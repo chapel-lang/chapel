@@ -30,6 +30,10 @@
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;  \
   virtual JsonValue toJson() const override;
 
+/** Use this to declare protocol types that are empty. */
+#define CHPLDEF_PROTOCOL_EMPTY_TYPE(name__) \
+  struct name__ : EmptyProtocolType {}
+
 /** This header contains types which help form the Microsoft language server
     protocol. The types attempt to follow the specification as faithfully
     as possible, but liberty is taken in cases where definitions are too
@@ -41,6 +45,8 @@
 */
 namespace chpldef {
 
+using OPT_TODO_TYPE = opt<int>;
+
 struct ProtocolType {
   virtual bool fromJson(const JsonValue& j, JsonPath p) = 0;
   virtual JsonValue toJson() const = 0;
@@ -48,6 +54,12 @@ struct ProtocolType {
   /** By default, convert to JSON and then print the JSON. */
   virtual std::string toString() const;
   virtual ~ProtocolType() = default;
+};
+
+struct EmptyProtocolType : ProtocolType {
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+  virtual JsonValue toJson() const override;
+  virtual ~EmptyProtocolType() = default;
 };
 
 /** Information about the client. */
@@ -103,9 +115,50 @@ struct InitializeParams : ProtocolType {
   opt<std::vector<WorkspaceFolder>> workspaceFolders;
 };
 
-/** TODO: Build this up in conjunction with 'ClientCapabilities'. */
+struct TextDocumentSyncOptions : ProtocolType {
+  CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+};
+
+/** Some of the 'provider' queries have more advanced types we can swap
+    in to configure further -- see 'DeclarationRegistrationOptions'. */
 struct ServerCapabilities : ProtocolType {
   CHPLDEF_PROTOCOL_TYPE_OVERRIDES();
+
+  opt<std::string> positionEncoding;
+  OPT_TODO_TYPE textDocumentSync;
+  OPT_TODO_TYPE notebookDocumentSync;
+  OPT_TODO_TYPE completionProvider;
+  opt<bool> hoverProvider;
+  OPT_TODO_TYPE signatureHelpProvider;
+  opt<bool> declarationProvider;
+  opt<bool> definitionProvider;
+  opt<bool> typeDefinitionProvider;
+  opt<bool> implementationProvider;
+  opt<bool> referencesProvider;
+  opt<bool> documentHighlightProvider;
+  opt<bool> documentSymbolProvider;
+  opt<bool> codeActionProvider;
+  OPT_TODO_TYPE codeLensProvider;
+  OPT_TODO_TYPE documentLinkProvider;
+  opt<bool> colorProvider;
+  opt<bool> documentFormattingProvider;
+  opt<bool> documentRangeFormattingProvider;
+  OPT_TODO_TYPE documentOnTypeFormattingProvider;
+  opt<bool> renameProvider;
+  opt<bool> foldingRangeProvider;
+  OPT_TODO_TYPE executeCommandProvider;
+  opt<bool> selectionRangeProvider;
+  opt<bool> linkEditingRangeProvider;
+  opt<bool> callHierarchyProvider;
+  OPT_TODO_TYPE semanticTokensProvider;
+  opt<bool> monikerProvider;
+  opt<bool> typeHierarchyProvider;
+  opt<bool> inlineValueProvider;
+  opt<bool> inlayHintProvider;
+  OPT_TODO_TYPE diagnosticProvider;
+  opt<bool> workspaceSymbolProvider;
+  OPT_TODO_TYPE workspace;
+  OPT_TODO_TYPE experimental;
 };
 
 struct ServerInfo : ProtocolType {
@@ -121,6 +174,15 @@ struct InitializeResult : ProtocolType {
   ServerCapabilities capabilities;
   opt<ServerInfo> serverInfo;
 };
+
+CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(InitializedResult);
+
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ShutdownResult);
+
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitParams);
+CHPLDEF_PROTOCOL_EMPTY_TYPE(ExitResult);
 
 /** Instantiate only if 'T' is derived from 'ProtocolType'. */
 template <typename T>

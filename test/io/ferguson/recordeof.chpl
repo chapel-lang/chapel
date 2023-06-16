@@ -16,17 +16,14 @@ config const debug = true;
 // Note that fileName not exist or have no contents
 var f = open(fileName, ioMode.cwr);
 
-proc MyRecord.readThis(f) throws {
-  readWriteHelper(f);
+proc MyRecord.readThis(r: fileReader) throws {
+  i = r.read(int);
+  r.readNewline();
 }
 
-proc MyRecord.writeThis(f) throws {
-  readWriteHelper(f);
-}
-
-proc MyRecord.readWriteHelper(f) throws {
-  if f.writing then f.write(i); else i = f.read(int);
-  if f.writing then f.writeNewline(); else f.readNewline();
+proc MyRecord.writeThis(w: fileWriter) throws {
+  w.write(i);
+  w.writeNewline();
 }
 
 {
@@ -47,5 +44,3 @@ proc MyRecord.readWriteHelper(f) throws {
 
   reader.close();
 }
-
-

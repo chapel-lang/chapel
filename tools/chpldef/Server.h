@@ -37,19 +37,39 @@
 
 namespace chpldef {
 
+class Initialize;
+class Initialized;
+class Shutdown;
+
 class Server {
 public:
+  enum State {
+    UNINIT,             /** Client has not sent 'Initialize' yet. */
+    INIT,               /** We have responded to 'Initialize'. */
+    READY,              /** Client has sent us 'Initialized'. */
+    SHUTDOWN            /** Client has sent us 'Shutdown'. */
+  };
+
   class Configuration {};
 
 private:
+  State state_ = UNINIT;
   Logger logger_;
   chpl::owned<chpl::Context> chplctx_ = nullptr;
   int revision_;
+
+protected:
+  friend class chpldef::Shutdown;
+  friend class chpldef::Initialize;
+  friend class chpldef::Initialized;
+
+  inline void setState(State state) { state_ = state; }
 
 public:
   Server();
  ~Server() = default;
 
+  inline State state() const { return state_; }
   inline int revision() const { return revision_; }
   inline const chpl::Context* chplctx() const { return chplctx_.get(); }
 

@@ -1,11 +1,18 @@
 rangeAPItest.chpl:3: In function 'testRangeAPI':
 rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
-  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,false), idx: int(64), subr: range(int(64),both,false), offset: int(64), count: int(64))
+  simpleRangeTest.chpl:4: called as testRangeAPI(lbl: string, r: range(int(64),both,one), idx: int(64), subr: range(int(64),both,one), offset: int(64), count: int(64))
+rangeAPItest.chpl:3: In function 'testRangeAPI':
+rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+  simpleRangeTest.chpl:6: called as testRangeAPI(lbl: string, r: range(int(64),both,negative), idx: int(64), subr: range(int(64),both,negative), offset: int(64), count: int(64))
+rangeAPItest.chpl:3: In function 'testRangeAPI':
+rangeAPItest.chpl:89: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+rangeAPItest.chpl:90: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
+  simpleRangeTest.chpl:9: called as testRangeAPI(lbl: string, r: range(int(64),high,negOne), idx: int(64), subr: range(int(64),both,negOne), offset: int(64), count: int(64))
 basic range
 ------------
 1..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -55,7 +62,7 @@ strided range
 ------------
 1..20 by 2
 idxType          = int(64)
-stridable        = true
+strides          = positive
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -105,7 +112,7 @@ neg. str. range
 ------------
 1..20 by -2
 idxType          = int(64)
-stridable        = true
+strides          = negative
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -155,7 +162,7 @@ unbounded range
 ------------
 1..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = low
 isRangeType()    = true
 hasLowBound()    = true
@@ -200,7 +207,7 @@ upper unbnd range
 ------------
 ..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -241,7 +248,7 @@ neg upper unbnd range
 ------------
 ..10 by -1
 idxType          = int(64)
-stridable        = true
+strides          = negOne
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -286,7 +293,7 @@ unbounded range
 ------------
 ..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = neither
 isRangeType()    = true
 hasLowBound()    = false
