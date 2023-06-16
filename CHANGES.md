@@ -10,19 +10,19 @@ Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 * many language and library improvements in support of Chapel 2.0:
   - improved naming, ergonomics, and precision for the `range` type
-  - improved APIs in the 'BigInteger', 'CTypes', 'List', and 'Time' modules
-  - improved sorting of math symbols between the 'Math' and 'AutoMath' modules
+  - improved APIs in the 'BigInteger', 'CTypes', 'List', 'Time', ... modules
+  - improved the organization of math symbols between 'Math' and 'AutoMath'
 * significant improvements to Chapel's GPU support, including:
   - support for multilocale computing with AMD GPUs
-  - increased flexibility and generality for what code can run on the GPU
+  - increased flexibility and generality for code patterns that run on GPUs
   - a new mode for using the GPU locale model on CPUs
   - a `--report-gpu` flag to get feedback about GPU-eligible loops
   - prototype support for NVIDIA peer-to-peer accesses
 * LLVM 15 is now supported and the preferred compiler back-end
 * the 'dyno' scope resolver is now the default, featuring improved errors
 * improved performance for `bigint`s, 'Time' routines, and large IO operations
-* prototype support for redistributing `Block` arrays and domains
 * a prototype IO serialization framework with JSON, YAML, and binary formats
+* prototype support for redistributing `Block` arrays and domains
 * numerous improvements in terms of portability, documentation, bug fixes, ...
 
 Configuration / Build / Packaging Changes
@@ -210,6 +210,8 @@ GPU Computing
   (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#diagnostics-and-utilities)
 * added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
   (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#device-to-device-communication-support)
+* added atomic operations to the GPU module  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/GPU.html#GPU.gpuAtomicAdd)
 * added support for calling recursive functions from GPU code
 * fixed support for modifying arrays passed by `ref` intent on GPUs
 * introduced a new `CHPL_GPU` setting to replace `CHPL_GPU_[CODEGEN|RUNTIME`  
@@ -368,10 +370,6 @@ Developer-oriented changes: Documentation
 * added developer-oriented documentation for the 'dyno' query system
 * updated the required 'sphinxcontrib-chapeldomain' version to 0.0.25
 * updated remaining references to the 'Compiler Library' to 'Frontend Library'
-
-Developer-oriented changes: GPU Features
-----------------------------------------
-* added (undocumented) atomic operations to the GPU module
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
