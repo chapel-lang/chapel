@@ -15,8 +15,8 @@ Highlights (see subsequent sections for further details)
 * significant improvements to Chapel's GPU support, including:
   - support for multilocale computing with AMD GPUs
   - increased flexibility and generality for what code can run on the GPU
-  - a mode for using the GPU locale model on CPUs
-  - a `--report-gpu` flag to get feedback on GPU-eligible loops
+  - a new mode for using the GPU locale model on CPUs
+  - a `--report-gpu` flag to get feedback about GPU-eligible loops
   - prototype support for NVIDIA peer-to-peer accesses
 * LLVM 15 is now supported and the preferred compiler back-end
 * the 'dyno' scope resolver is now the default, featuring improved errors
@@ -29,7 +29,7 @@ Highlights (see subsequent sections for further details)
 Configuration / Build / Packaging Changes
 -----------------------------------------
 * added a new `CHPL_GPU` environment variable to specify GPU targets  
-  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#gpu-related-environment-variables)
 * improved error messages when the build is unable to find LLVM
 * `CHPL_[HOST|TARGET]_COMPILER` can now be inferred from `CHPL_*_[CC|CXX]`  
   (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-compiler)
@@ -218,11 +218,11 @@ GPU Computing
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
   (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#diagnostics-and-utilities)
 * added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
-  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#device-to-device-communication-support)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#device-to-device-communication-support)
 * added support for calling recursive functions from GPU code
 * fixed support for modifying arrays passed by `ref` intent on GPUs
 * introduced a new `CHPL_GPU` setting to replace `CHPL_GPU_[CODEGEN|RUNTIME`  
-  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#gpu-related-environment-variables)
 * added a check to validate the CUDA and ROCM versions when building `chpl`
 * added an error for `createSharedArray()` when arguments have unknown size
 
@@ -276,8 +276,8 @@ Other Documentation Improvements
 * added information to the C interop technote about `c_ptr`s to classes  
   (see https://chapel-lang.org/docs/1.31/technotes/extern.html#working-with-c-ptr)
 * hid the underlying implementation types of `c_ptr` and `c_array` in docs  
-  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_ptr  
-  and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_array)
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptr  
+  and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_array)
 * clarified `CHPL_LIB_PIC` in the documentation  
   (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-lib-pic)
 * updated an assertion that `fileReader` can produce `EEOF` to `OS.EofError`  
@@ -1708,7 +1708,7 @@ Name Changes in Libraries
 * renamed `[channel.]readline()` to `[channel.]readLine()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.readLine)
 * renamed `channel.isclosed()` to `channel.isClosed()`  
-  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html?highlight=closed#IO.channel.isClosed)
+  (see https://chapel-lang.org/docs/1.27/modules/standard/IO.html#IO.channel.isClosed)
 * renamed `timedelta.total_seconds()` with `timedelta.totalSeconds()`  
   (see https://chapel-lang.org/docs/1.27/modules/standard/DateTime.html#DateTime.timedelta.totalSeconds)
 * renamed a number of other symbols in 'DateTime' to use preferred camelCasing
