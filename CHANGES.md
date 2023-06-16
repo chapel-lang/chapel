@@ -22,6 +22,10 @@ Highlights (see subsequent sections for further details)
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* `CHPL_TARGET_CC|CXX` now impacts the `clang` commands used by LLVM  
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#cc-and-similar)
+* `CHPL_[HOST|TARGET]_COMPILER` can now be inferred from `CHPL_*_[CC|CXX]`  
+  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-compiler)
 
 New Language Features
 ---------------------
@@ -205,6 +209,8 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* refreshed the sample installation commands in the prerequisites docs  
+  (see https://chapel-lang.org/docs/usingchapel/prereqs.html#installation)
 * refreshed the primer on rectangular arrays  
   (see https://chapel-lang.org/docs/1.31/primers/arrays.html)
 * added quick link categories to the 'AutoMath' and 'Math' library modules  
@@ -215,6 +221,8 @@ Other Documentation Improvements
 * improved the accuracy of thrown error types in the 'IO' module
 * added information to the C interop technote about `c_ptr`s to classes
   (see https://chapel-lang.org/docs/1.31/technotes/extern.html#working-with-c-ptr)
+* clarified `CHPL_LIB_PIC` in the documentation  
+  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-lib-pic)
 * hid the underlying implementation types of `c_ptr` and `c_array` in docs  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_ptr  
   and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_array)
@@ -235,8 +243,10 @@ Syntax Highlighting
 
 Portability / Platform-specific Improvements
 --------------------------------------------
-* improved portability to GCC 13.1
+* improved portability to GCC 12 and 13
 * improved portability to Intel Classic Compiler 2023.1.0 with warnings enabled
+* fixed a portability problem with finding `addr2line` for stack unwinding
+* improved logic for finding dependencies within NixOS
 
 GPU Computing
 -------------
@@ -273,6 +283,8 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* improved errors when an `extern` block' is missing relevant `#include`s
+* added an error if an `extern` block is not at module scope
 * improved an error message for malformed `config var`s set at compile-time
 * removed a warning about behavior changes for `zip()`s led by unbounded ranges
 
@@ -283,10 +295,12 @@ Bug Fixes
 * fixed a bug where promotion would squash deprecation and unstable warnings
 * fixed a bug with types that cannot be default-initialized
 * fixed a bug preventing the use of `forall` in `chpl_deserialize()` routines
+* fixed a bug in which extra line number arguments were added to routines
 
 Bug Fixes for Build Issues
 --------------------------
 * fixed a bug in which Protocol Buffer support was omitted from the release
+* fixed a problem building `chpl` with `CC` and `CXX` set
 * improved errors when the build is unable to find LLVM
 
 Bug Fixes for GPU Computing
@@ -314,12 +328,14 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug in which `chpldoc` was not deleting its temporary directory
 
 Platform-specific Bug Fixes
 ---------------------------
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of LLVM to 15.0.7
 * updated the bundled copy of 'libfabric' to version 1.17.1
 * removed the 'qthreads' config-time check of 'hwloc' linking
 * fixed an issue where `amudprun` was built with GCC rather than `CHPL_HOST_CC`
@@ -364,6 +380,8 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* adjusted the compiler's use of LLVM's Support Library to prepare for LLVM 16
+* migrated Chapel's LLVM pass implementations to the new pass manager
 * moved all 'chpl' flags into 'driver.cpp' now that 'chpldoc' doesn't use them
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
@@ -373,6 +391,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added support for tuple types using the `*` operator (e.g. `3*int`)
   - added support for compile-time folding involving unary operators
   - added basic support for the `locale` type
+  - added name resolution for `extern` blocks
   - fixed bugs involving optional type arguments
   - fixed bugs involving type methods in generic types
 * fixed a bug where `testQueryTimingAndTrace` query tracing tool could not run
