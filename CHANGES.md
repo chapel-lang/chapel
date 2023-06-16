@@ -1,17 +1,6 @@
 Release Changes List
 ====================
 
-o spellcheck
-o check links
-o check for docs/1.31/ links
-o check forced linebreaks
-o check man page
-o check test/release/examples
-o check initial '*'
-o check initial 'A-Z'
-o check for changes put too far down in file
-o move string/bytes factories to language
-
 version 1.31.0
 ==============
 
@@ -39,13 +28,13 @@ Highlights (see subsequent sections for further details)
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
-* added a new `CHPL_GPU` environment variable to specify GPU targets
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
+* added a new `CHPL_GPU` environment variable to specify GPU targets  
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
 * improved error messages when the build is unable to find LLVM
 * `CHPL_[HOST|TARGET]_COMPILER` can now be inferred from `CHPL_*_[CC|CXX]`  
-  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-compiler)
+  (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-compiler)
 * `CHPL_TARGET_CC|CXX` now impacts the `clang` commands used by LLVM  
-  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#cc-and-similar)
+  (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#cc-and-similar)
 
 Language Feature Improvements
 -----------------------------
@@ -85,7 +74,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated the `range` type's `stridable` field
 * deprecated support for `isBounded[Range]()` queries for ranges  
-  (see https://chapel-lang.org/docs/main/language/spec/ranges.html#ChapelRange.isBoundedRange)
+  (see https://chapel-lang.org/docs/1.31/language/spec/ranges.html#ChapelRange.isBoundedRange)
 * deprecated `.head()` and `.tail()` on arrays
 * deprecated casts from `owned`, `shared`, or `borrowed` to `unmanaged`
 * deprecated casts from `owned` to `shared` in favor of `shared.adopt(owned)`  
@@ -123,18 +112,18 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.31/technotes/ioSerializers.html)
 * added a `stripNewline` option to `fileReader.lines()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.lines)
-* relaxed locking needs for `file[Reader|Writer].[mark|revert|commit|offset]`
+* relaxed locking needs for `file[Reader|Writer].[mark|revert|commit|offset]`  
   (e.g., see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.mark)
 
 Package Modules
 ---------------
-* added a new 'Json' module that implements IO serialization of JSON
+* added a new 'Json' module that implements IO serialization of JSON  
   (see https://chapel-lang.org/docs/1.31/modules/packages/Json.html)
 * added a new 'BinaryIO' module that implements binary IO serialization  
   (see https://chapel-lang.org/docs/1.31/modules/packages/BinaryIO.html)
 * added a new 'Yaml' package supporting YAML IO including [de]serialization  
   (see https://chapel-lang.org/docs/1.31/modules/packages/Yaml.html)
-* added a new 'ChplFormat' module that implements `%ht` IO serialization
+* added a new 'ChplFormat' module that implements `%ht` IO serialization  
   (see https://chapel-lang.org/docs/1.31/modules/packages/ChplFormat.html)
 
 Standard Domain Maps (Layouts and Distributions)
@@ -145,14 +134,14 @@ Standard Domain Maps (Layouts and Distributions)
 Changes / Feature Improvements in Libraries
 -------------------------------------------
 * changed many `bigint` methods into standalone procedures taking `ref` args  
-  (e.g., `divexact()`, `pow[Mod]()`, `root[rem]()`, `sqrt[rem]()`,
-   `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,
-   `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,
-   `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,
+  (e.g., `divexact()`, `pow[Mod]()`, `root[rem]()`, `sqrt[rem]()`,  
+   `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,  
+   `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,  
+   `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,  
    `[i|x]or()`, `com()`)
-- changed `CTypes.c_ptrTo()` to point to the object for a class variable  
+* changed `CTypes.c_ptrTo()` to point to the object for a class variable  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
-- changed `CTypes.c_ptrTo()` to point to the buffer for a `string`/`bytes`  
+* changed `CTypes.c_ptrTo()` to point to the buffer for a `string`/`bytes`  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * added a warning for `c_ptr()` casts that may violate C's aliasing rules  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptr)
@@ -173,10 +162,10 @@ Name Changes in Libraries
   (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.replace)
 * renamed `BitOps.popcount()` to `BitOps.popCount()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/BitOps.html#BitOps.popCount)
-* renamed `c_*alloc()` and `c_free()` to `allocate()` and `deallocate()`
-  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.allocate
+* renamed `c_*alloc()` and `c_free()` to `allocate()` and `deallocate()`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.allocate  
    and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.deallocate)
-* dropped `c_` prefixes from `mem[move|cpy|cmp|set]`, moving them to 'OS.POSIX'
+* dropped `c_` prefixes from `mem[move|cpy|cmp|set]`, moving them to 'OS.POSIX'  
   (see https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memmove,  
    https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcpy,  
    https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcmp, and  
@@ -187,13 +176,13 @@ Name Changes in Libraries
    https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.day,  
    https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.getDate,  
    and https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.getTime)
-* updated 'Time' factory procedures to start with `create*()`
-  (see https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromTimestamp,
-   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromOrdinal,
-   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createFromTimestamp,
-   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createUtcFromTimestamp,
+* updated 'Time' factory procedures to start with `create*()`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromTimestamp,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromOrdinal,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createFromTimestamp,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createUtcFromTimestamp,  
    and https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createFromOrdinal)
-  
+
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * marked standard modules that are not a focus for Chapel 2.0 as unstable
@@ -201,8 +190,8 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `isAnyCPtr()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.isAnyCPtr)
 * marked `set.parSafe` as unstable  
-  (see https://chapel-lang.org/docs/main/modules/standard/Set.html#Set.set.parSafe)
-- marked `readln()` as unstable  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Set.html#Set.set.parSafe)
+* marked `readln()` as unstable  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.readln)
 * deprecated `.writing` on `file[Reader|Writer]` in favor of a type query  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.writing  
@@ -225,17 +214,17 @@ GPU Computing
 -------------
 * added multi-locale support for computing with AMD GPUs
 * added a new mode to enable using the GPU locale model on CPUs w/out GPUs  
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
-  (see https://chapel-lang.org/docs/technotes/gpu.html#diagnostics-and-utilities)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html#diagnostics-and-utilities)
 * added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#device-to-device-communication-support)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#device-to-device-communication-support)
 * added support for calling recursive functions from GPU code
 * fixed support for modifying arrays passed by `ref` intent on GPUs
 * introduced a new `CHPL_GPU` setting to replace `CHPL_GPU_[CODEGEN|RUNTIME`  
-  (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
+  (see https://chapel-lang.org/docs/1.31/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
 * added a check to validate the CUDA and ROCM versions when building `chpl`
-* added an error for `createSharedArray()` when arguemnts have unknown size
+* added an error for `createSharedArray()` when arguments have unknown size
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -270,7 +259,7 @@ Language Specification Improvements
 Other Documentation Improvements
 --------------------------------
 * refreshed the sample installation commands in the prerequisites docs  
-  (see https://chapel-lang.org/docs/usingchapel/prereqs.html#installation)
+  (see https://chapel-lang.org/docs/1.31/usingchapel/prereqs.html#installation)
 * refreshed the primer on rectangular arrays  
   (see https://chapel-lang.org/docs/1.31/primers/arrays.html)
 * unified two distinct documents with debugging tips into one  
@@ -284,13 +273,13 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#error-handling)
 * improved the accuracy of thrown error types in the 'IO' module
 * improved the consistency of how throwing procedures are formatted
-* added information to the C interop technote about `c_ptr`s to classes
+* added information to the C interop technote about `c_ptr`s to classes  
   (see https://chapel-lang.org/docs/1.31/technotes/extern.html#working-with-c-ptr)
 * hid the underlying implementation types of `c_ptr` and `c_array` in docs  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_ptr  
   and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html?highlight=cptr#CTypes.c_array)
 * clarified `CHPL_LIB_PIC` in the documentation  
-  (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-lib-pic)
+  (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-lib-pic)
 * updated an assertion that `fileReader` can produce `EEOF` to `OS.EofError`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.file.reader)
 
@@ -414,7 +403,7 @@ Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added flags to control the default implementation of IO serialization:  
   - `--[no-]io-gen-serialization` controls the generation of default methods
-  - flags to replace `serialize`/`deserialize` with `writeThis`/`readThis`
+  - flags to replace `serialize`/`deserialize` with `writeThis`/`readThis`  
     (see `--[no-]io-serialize-writeThis`, `--[no-]io-deserialize-readThis`)
 * added a `--print-chpl-loc` flag for determining the compiler's location
 
