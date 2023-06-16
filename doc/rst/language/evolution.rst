@@ -17,7 +17,7 @@ expected to change meaning in the future.
 version 1.31, June 2023
 -----------------------
 
-Version 1.31 renames and adjusts range's parameters,
+Version 1.31 renames and adjusts two of range's parameters,
 formerly ``range.boundedType`` and ``range.stridable``,
 as well as the former domain parameter ``domain.stridable``.
 For details please see `Range Types` in the online documentation for `Version 1.30 <https://chapel-lang.org/docs/1.30/language/spec/ranges.html#range-types>`_ and `Version 1.31 <https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-types>`_.
@@ -71,7 +71,8 @@ for example in the cases where the range's stride is known at compile time
 to be positive or to be -1.
 This also avoids a terminology problem where ``stridable=false`` implied,
 incorrectly, that a range could not be strided. The ``strides`` values
-are now self-explanatory instead of the non-specific ``true`` and ``false``.
+are now self-explanatory instead of the non-specific values
+``true`` and ``false``.
 
 When updating your code, update the field name and replace boolean
 values with enum values. For example:
