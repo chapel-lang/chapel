@@ -7,7 +7,9 @@ o check for docs/1.31/ links
 o check forced linebreaks
 o check man page
 o check test/release/examples
-
+o check initial '*'
+o check initial 'A-Z'
+o check for changes put too far down in file
 
 version 1.31.0
 ==============
@@ -70,6 +72,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new 'Yaml' package supporting YAML IO including [de]serialization  
+  (see https://chapel-lang.org/docs/1.31/modules/packages/Yaml.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -84,7 +88,12 @@ Changes / Feature Improvements in Libraries
    `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,
    `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,
    `[i|x]or()`, `com()`)
-
+* changed `CTypes.c_FILE` to represent a C `FILE` rather than a `FILE*`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cFileTypeHasPointer)
+- changed `CTypes.c_ptrTo()` to point the buffer storing a `string`/`bytes`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
+* added support for creating an uninitialized `weak` value for a given class  
+  (see https://chapel-lang.org/docs/1.31/builtins/WeakPointer.html#WeakPointer.weak)
 
 Name Changes in Libraries
 -------------------------
@@ -97,8 +106,21 @@ Name Changes in Libraries
    https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
    https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createCopyingBuffer,  
    https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createCopyingBuffer)
-* renamed `BitOps.popcount` to `BitOps.popCount`  
+* renamed `list.append()` to `list.pushBack()`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.pushBack)
+* renamed `list.pop()` for the end of a list to `list.popBack()`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.popBack)
+* renamed `list.pop(idx)` for a specific index to `list.getAndRemove(idx)`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.getAndRemove)
+* renamed `list.set()` to `list.replace()`  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.replace)
+* renamed `BitOps.popcount()` to `BitOps.popCount()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/BitOps.html#BitOps.popCount)
+* dropped `c_` prefixes from `mem[move|cpy|cmp|set]`, moving them to 'OS.POSIX'
+  (see https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memmove,  
+   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcpy,  
+   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memcmp, and  
+   https://chapel-lang.org/docs/1.31/modules/standard/OS/POSIX.html#POSIX.memset)
   
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -106,6 +128,16 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.isAnyCPtr)
 * marked `set.parSafe` as unstable  
   (see https://chapel-lang.org/docs/main/modules/standard/Set.html#Set.set.parSafe)
+- marked `readln()` as unstable  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.readln)
+* deprecated `.writing` on `file[Reader|Writer]` in favor of a type query  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.writing  
+   and https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileWriter.writing)
+* marked `readWriteThisFromLocale` as unstable  
+  (see: https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.readWriteThisFromLocale)
+* removed the deprecated `locale.getChild()` method
+* removed the deprecated `locale.getChildCount()` method
+* removed the deprecated `locale.callStackSize()` method
 * deprecated `_mark|_revert|_commit|_offset` in favor of no underscores  
   (e.g., see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader._offset)
 * deprecated `.offset` on `fileReader|Writer` automatically taking a lock  
@@ -125,6 +157,7 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * added support for remote-value-forwarding `bigint` values across on-clauses
 * eliminated needless communication from many routines in the 'Time' module
+* optimized IO performance for large read/write operations
 * improved the compiler's ability to optimize 'BitOps' procedures
 
 Platform-specific Performance Optimizations / Improvements
@@ -136,6 +169,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
+* fixed a sporadic memory leak when deinitializing `shared` variables
 
 Language Specification Improvements
 -----------------------------------
@@ -148,6 +182,9 @@ Other Documentation Improvements
 * added quick link categories to the 'AutoMath' and 'Math' library modules  
   (see https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html  
    and https://chapel-lang.org/docs/1.31/modules/standard/Math.html)
+* added a section about the use of `SystemError` in the 'IO' module  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#error-handling)
+* improved the accuracy of thrown error types in the 'IO' module
 * unified two distinct documents with debugging tips into one  
   (see https://chapel-lang.org/docs/1.31/usingchapel/debugging.html)
 * added an example of multi-argument promotion to the user's guide  
@@ -208,6 +245,9 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug where `regex.match('$')` returned an incorrect offset
 * fixed a bug preventing default `map` accessors from returning references
+* fixed a bug in which `fileWriter` could write past its region's upper bound
+* prevented region upper bounds from overflowing for `fileReader|Writer` types
+* fixed a bug in which `fileWriter.writeBinary()` assumed 0-based indexing
 * fixed several bugs in `fileReader.search` and `fileReader.matches`
 * fixed a `bigint` memory corruption  when multiple arguments shared a value
 * fixed a bug where `Reflection.getField[Ref]` didn't work with wrapper fields
