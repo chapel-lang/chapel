@@ -76,6 +76,8 @@ Deprecated / Unstable / Removed Language Features
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#OwnedObject.owned.clear  
    and https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.clear)
 * deprecated support for `isBounded()` queries on ranges
+* deprecated the `lambda` keyword and `func` procedure type constructor
+* marked the first-class function `retType` and `argTypes` methods as unstable
 * marked the `const` return and yield intents as being unstable
 * marked casts between ranges of enum types as being unstable
 * removed the deprecated method `domain.makeIndexBuffer()`
@@ -187,6 +189,7 @@ Deprecated / Unstable / Removed Library Features
 
 Tool Improvements
 -----------------
+* added a prototypical version of the Chapel language server 'chpldef'
 * added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
   (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
 * added support for filtering `chpldoc` deprecations that use `~` or `!`  
@@ -303,6 +306,7 @@ Bug Fixes
 ---------
 * fixed a bug in which casting ranges of ints to enums used the ordinal values
 * removed extra null when creating `string`/`bytes` from remote borrowed data
+* fixed a bug with first-class functions that caused crashes
 * fixed a bug where promotion would squash deprecation and unstable warnings
 * fixed a bug with types that cannot be default-initialized
 * fixed a bug preventing the use of `forall` in `chpl_deserialize()` routines
@@ -393,6 +397,7 @@ Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * adjusted the compiler's use of LLVM's Support Library to prepare for LLVM 16
 * migrated Chapel's LLVM pass implementations to the new pass manager
+* stopped showing deprecation/unstable warnings in standard modules
 * moved all 'chpl' flags into 'driver.cpp' now that 'chpldoc' doesn't use them
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
