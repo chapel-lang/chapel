@@ -19,6 +19,23 @@ released June 22, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* many language and library improvements in support of Chapel 2.0:
+  - improved naming, ergonomics, and precision for the `range` type
+  - improved APIs in the 'BigInteger', 'CTypes', 'List', and 'Time' modules
+  - improved sorting of math symbols between the 'Math' and 'AutoMath' modules
+* significant improvements to Chapel's GPU support, including:
+  - support for multilocale computing with AMD GPUs
+  - increased flexibility and generality for what code can run on the GPU
+  - a mode for using the GPU locale model on CPUs
+  - a `--report-gpu` flag to get feedback on GPU-eligible loops
+  - prototype support for NVIDIA peer-to-peer accesses
+* LLVM 15 is now supported and the preferred compiler back-end
+* the 'dyno' scope resolver is now the default, featuring improved errors
+* improved performance for `bigint`s, 'Time' routines, and large IO operations
+* prototype support for redistributing `Block` arrays and domains
+* a prototype IO serialization framework with JSON, YAML, and binary formats
+* a prototypical version of a Chapel language server, 'chpldef'
+* numerous improvements in terms of portability, documentation, bug fixes, ...
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
@@ -29,9 +46,6 @@ Configuration / Build / Packaging Changes
   (see https://chapel-lang.org/docs/usingchapel/chplenv.html#chpl-compiler)
 * `CHPL_TARGET_CC|CXX` now impacts the `clang` commands used by LLVM  
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#cc-and-similar)
-
-New Language Features
----------------------
 
 Language Feature Improvements
 -----------------------------
@@ -210,7 +224,7 @@ Deprecated / Unstable / Removed Library Features
 GPU Computing
 -------------
 * added multi-locale support for computing with AMD GPUs
-* added a new mode to enable using the GPU locale model on GPU-less CPUs  
+* added a new mode to enable using the GPU locale model on CPUs w/out GPUs  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
   (see https://chapel-lang.org/docs/technotes/gpu.html#diagnostics-and-utilities)
@@ -223,24 +237,12 @@ GPU Computing
 * added a check to validate the CUDA and ROCM versions when building `chpl`
 * added an error for `createSharedArray()` when arguemnts have unknown size
 
-Tool Improvements
------------------
-* added a prototypical version of the Chapel language server 'chpldef'
-* updated `chpldoc` to squash documentation for symbols beginning with `chpl_`
-* added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
-  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
-* added support for filtering `chpldoc` deprecations that use `~` or `!`  
-  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
-
 Performance Optimizations / Improvements
 ----------------------------------------
 * added support for remote-value-forwarding `bigint` values across on-clauses
 * eliminated needless communication from many routines in the 'Time' module
 * optimized IO performance for large read/write operations
 * improved the compiler's ability to optimize 'BitOps' procedures
-
-Platform-specific Performance Optimizations / Improvements
-----------------------------------------------------------
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -249,6 +251,15 @@ Compilation-Time / Generated Code Improvements
 Memory Improvements
 -------------------
 * fixed a sporadic memory leak when deinitializing `shared` variables
+
+Tool Improvements
+-----------------
+* added a prototypical version of the Chapel language server 'chpldef'
+* updated `chpldoc` to squash documentation for symbols beginning with `chpl_`
+* added `chpldoc` support for rst hyperlinks of the form `nicename<target>`  
+  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
+* added support for filtering `chpldoc` deprecations that use `~` or `!`  
+  (see https://chapel-lang.org/docs/1.31/tools/chpldoc/chpldoc.html#inline-markup-2)
 
 Language Specification Improvements
 -----------------------------------
@@ -288,9 +299,6 @@ Example Codes
 * added a new user's guide example program for promoted procedure calls
 * updated example codes with respect to language and library changes in 1.31
 
-Syntax Highlighting
--------------------
-
 Portability / Platform-specific Improvements
 --------------------------------------------
 * improved portability to GCC 12 and 13
@@ -310,12 +318,6 @@ Compiler Flags
 * added a new `--print-chpl-home` flag to query the location of `$CHPL_HOME`  
   (see https://chapel-lang.org/docs/1.31/usingchapel/man.html#options)
 * made the `--version` output print available LLVM targets
-
-Generated Executable Flags
---------------------------
-
-Runtime Library Changes
------------------------
 
 Launchers
 ---------
@@ -374,18 +376,12 @@ Bug Fixes for Tools
 -------------------
 * fixed a bug in which `chpldoc` was not deleting its temporary directory
 
-Platform-specific Bug Fixes
----------------------------
-
 Third-Party Software Changes
 ----------------------------
 * updated the bundled version of LLVM to 15.0.7
 * updated the bundled copy of 'libfabric' to version 1.17.1
 * removed the 'qthreads' config-time check of 'hwloc' linking
 * fixed an issue where `amudprun` was built with GCC rather than `CHPL_HOST_CC`
-
-Developer-oriented changes: Process
------------------------------------
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -408,9 +404,6 @@ Developer-oriented changes: Module changes
 * stamped out built-in routines using the `x: t(?w), y: t(w)` argument pattern
 * reimplemented `bigint` operators to share code with the procedure versions
 * simplified `bigint` locality checks to reduce duplicated code
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -460,9 +453,6 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added `CHPL_HWLOC_DEBUG`/`CHPL_TASKS_DEBUG` to help debug hwloc/tasking code
 
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * added support for directory-wide `PRETEST` scripts to support generated tests
@@ -470,9 +460,6 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * changed 'c2chapel' to generate `c_ptrConst` rather than `c_ptr` where correct
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 1.30.0
