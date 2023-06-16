@@ -160,7 +160,6 @@ Procedures are defined with the following syntax:
      'type'
 
    return-intent:
-     'const'
      'const ref'
      'ref'
      'param'
@@ -845,13 +844,6 @@ When no ``return-intent`` is specified explicitly, the function returns
 a value that cannot be used as an lvalue. This value is obtained
 by copy-initialization from the returned expression,
 see :ref:`Copy_and_Move_Initialization`.
-
-.. _Const_Return_Intent:
-
-The Const Return Intent
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``const`` return intent is identical to the default return intent.
 
 .. _Ref_Return_Intent:
 
@@ -1613,7 +1605,7 @@ The compiler can choose between overloads differing in return intent
 when:
 
 -  there are zero or one best functions for each of ``ref``,
-   ``const ref``, ``const``, or the default (blank) return intent
+   ``const ref``, or the default (blank) return intent
 
 -  at least two of the above return intents have a best function.
 
