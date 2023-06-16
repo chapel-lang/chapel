@@ -35,6 +35,15 @@ Syntactic / Naming Changes
 --------------------------
 * renamed the abstract root class from `object` to `RootClass`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#the-root-class)
+* changed factories for creating `string`/`bytes` to type methods and renamed  
+  (see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createCopyingBuffer,  
+   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createCopyingBuffer)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -106,15 +115,6 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
-* changed factories for creating `string`/`bytes` to type methods and renamed  
-  (see https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createBorrowingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createAdoptingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/strings.html#String.string.createCopyingBuffer,  
-   https://chapel-lang.org/docs/1.31/language/spec/bytes.html#Bytes.bytes.createCopyingBuffer)
 * renamed `list.append()` to `list.pushBack()`  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.pushBack)
 * renamed `list.pop()` for the end of a list to `list.popBack()`  
