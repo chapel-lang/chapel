@@ -97,8 +97,8 @@ Namespace Changes
 -----------------
 * moved several automatically-included math symbols from 'AutoMath' to 'Math'  
   (e.g., `e`, `[half_|quarter_|[twice_]recipr_][sqrt_]pi`, `[recipr_]sqrt_2`,  
-   `log[10|2][_e]()`, `ln_[2|10]()`, `[ld]exp[2|m1]()`, `[l|t]gamma()`,  
-   `[a][cos|sin|tan][2|h]()`, `gcd()`, `erf[c]()`)  
+   `log[10|2]()`, `log[2|10]_e`, `ln_[2|10]`, `[ld]exp[2|m1]()`,
+   `[a][cos|sin|tan][2|h]()`, `[l|t]gamma()`, `gcd()`, `erf[c]()`)  
   (see https://chapel-lang.org/docs/1.31/modules/standard/Math.html  
    and https://chapel-lang.org/docs/1.31/modules/standard/AutoMath.html)
 * renamed 'Memory.Diagnostics' to 'MemDiagnostics'  
@@ -359,7 +359,7 @@ Bug Fixes for Libraries
 * fixed a `bigint` memory corruption  when multiple arguments shared a value
 * fixed a bug where `Reflection.getField[Ref]` didn't work with wrapper fields
 * fixed a bug preventing the use of `socket.close()` in the 'ZMQ' module
-* fixed a bug with `SortedSet.kth()`
+* fixed a bug with `SortedSet.kth()` for types that can't be default-init'ed
 
 Bug Fixes for Tools
 -------------------
@@ -1516,7 +1516,6 @@ Error Messages / Semantic Checks
   (e.g., `var x: int; proc foo(y: x) ...` now generates an error as intended)
 * added a warning for misleading uses of `new`  
   (e.g., `var x: borrowed MyClass = new owned MyClass();`)
-* added an error when fields with runtime types cannot be default-initialized
 
 Bug Fixes
 ---------
