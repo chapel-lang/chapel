@@ -123,7 +123,6 @@ static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwa
       return -1;
   // TODO: unsafe cast! We're just lucky because we generate the same "shape" for each node type
   auto astObject = (AstNodeObject*) astObjectPy;
-  auto contextObject = (ContextObject*) astObject->contextObject;
 
   auto iterPair = astObject->astNode->children();
   Py_INCREF(astObject->contextObject);
@@ -316,8 +315,6 @@ static int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwa
   PyObject* contextObjectPy;
   if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
       return -1;
-  auto contextObject = (ContextObject*) contextObjectPy;
-  auto context = &contextObject->context;
 
   Py_INCREF(contextObjectPy);
   self->astNode = nullptr;
@@ -434,6 +431,7 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
 PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return chpl::uast::qualifierToString(node->storageKind()))
 PLAIN_GETTER(NamedDecl, name, "s", return node->name());
 PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
+PLAIN_GETTER(Variable, kind, "s", return chpl::uast::qualifierToString((chpl::uast::Qualifier) node->kind()));
 PLAIN_GETTER(Attribute, name, "s", return node->name());
 PLAIN_GETTER(Comment, text, "s", return node->c_str());
 
@@ -506,6 +504,7 @@ METHOD_TABLE(START_NamedDecl,
 
 METHOD_TABLE(Variable,
   {"is_config", VariableObject_is_config, METH_NOARGS, "Check if the given Variable node is a config variable"},
+  {"kind", VariableObject_kind, METH_NOARGS, "Get the kind of this Variable node"},
 );
 
 METHOD_TABLE(Comment,
