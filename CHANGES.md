@@ -150,6 +150,18 @@ Name Changes in Libraries
   (see: https://chapel-lang.org/docs/1.31/modules/standard/List.html#List.list.replace)
 * renamed `BitOps.popcount()` to `BitOps.popCount()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/BitOps.html#BitOps.popCount)
+* updated 'Time' symbols to use preferred capitalization  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.timeDelta,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.day,  
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.getDate,  
+   and https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.getTime)
+* updated 'Time' factory procedures to start with `create*()`
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromTimestamp,
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.date.createFromOrdinal,
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createFromTimestamp,
+   https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createUtcFromTimestamp,
+   and https://chapel-lang.org/docs/1.31/modules/standard/Time.html#Time.dateTime.createFromOrdinal)
 * renamed `c_*alloc()` and `c_free()` to `allocate()` and `deallocate()`
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.allocate
    and https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.deallocate)
@@ -163,6 +175,7 @@ Name Changes in Libraries
   
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* marked standard modules that are not a focus for Chapel 2.0 as unstable
 * deprecated `isAnyCPtr()`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.isAnyCPtr)
 * deprecated `c_nil` and `is_c_nil` in favor of using `nil` and `== nil`
@@ -175,6 +188,9 @@ Deprecated / Unstable / Removed Library Features
    and https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileWriter.writing)
 * marked `readWriteThisFromLocale` as unstable  
   (see: https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.fileReader.readWriteThisFromLocale)
+* deprecated support for non-reusable barriers from the 'Collectives' module
+* deprecated `barrier.check()` in favor of `barrier.pending()`  
+  (see https://chapel-lang.org/docs/1.31/modules/standard/Collectives.html#Collectives.barrier.pending)
 * removed the deprecated `locale.getChild()` method
 * removed the deprecated `locale.getChildCount()` method
 * removed the deprecated `locale.callStackSize()` method
@@ -264,6 +280,7 @@ Portability / Platform-specific Improvements
 * added the ability to build with GCC as the host compiler on Macs
 * fixed a portability problem with finding `addr2line` for stack unwinding
 * improved logic for finding dependencies within NixOS
+* improved the portability of the HDF5 module w.r.t. integer sizes
 
 GPU Computing
 -------------
@@ -274,6 +291,7 @@ GPU Computing
   (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
 * added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
   (see https://chapel-lang.org/docs/technotes/gpu.html#diagnostics-and-utilities)
+* added support for calling recursive functions from GPU code
 * fixed support for modifying arrays passed by `ref` intent on GPUs
 * added an error for `createSharedArray()` when arguemnts have unknown size
 * added a check to validate the CUDA and ROCM versions when building `chpl`
