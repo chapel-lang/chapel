@@ -2231,7 +2231,8 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+    && Adom.strides == strideKind.one {
   if isDistributed(A) then
     compilerError("svd does not support distributed vectors/matrices");
 
@@ -2248,11 +2249,11 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [0..<min((...A.shape))] realType;
+  var s: [0..<min(m,n)] realType;
   // Unitary matrix, U, inherits row offset of A
-  var u: [A.dom.ranges(0), 0..<m] t;
+  var u: [Adom.dim(0), 0..<m] t;
   // Unitary matrix V^T (or V^H), inherits column offset of A
-  var vt: [0..<n, A.dom.ranges(1)] t;
+  var vt: [0..<n, Adom.dim(1)] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.

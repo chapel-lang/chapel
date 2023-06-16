@@ -57,6 +57,6 @@ use TestUtils;
 
   var (u, s, vt) = svd(A);
 
-  assertEqual(u.dom.ranges(0),  A.dom.ranges(0), 'svd - index offset of u');
-  assertEqual(vt.dom.ranges(1), A.dom.ranges(1), 'svd - index offset of vt');
+  assertEqual(u.domain.dim(0),  A.domain.dim(0), 'svd - index offset of u');
+  assertEqual(vt.domain.dim(1), A.domain.dim(1), 'svd - index offset of vt');
 }
