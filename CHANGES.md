@@ -28,6 +28,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* stabilized `.count()` on arrays
 * the const-ness of C pointers in `extern` blocks is now respected  
   (see https://chapel-lang.org/docs/1.31/modules/standard/CTypes.html#CTypes.c_ptrConst)
 
@@ -52,6 +53,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated `.head()` and `.tail()` on arrays
 * deprecated casts from `owned` to `shared` in favor of `shared.adopt(owned)`  
   (see https://chapel-lang.org/docs/1.31/language/spec/classes.html#SharedObject.shared.adopt)
 * deprecated casts from `owned`, `shared`, or `borrowed` to `unmanaged`
@@ -230,10 +232,16 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* added multi-locale support for computing with AMD GPUs
 * added a new mode to enable using the GPU locale model on GPU-less CPUs  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html#chpl-gpu-cpu-using-chpl-locale-model-gpu-without-gpus)
 * introduced a new `CHPL_GPU` setting to replace `CHPL_GPU_[CODEGEN|RUNTIME`  
   (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#gpu-related-environment-variables)
+* added a `--report-gpu` compiler flag to list GPU-[in]eligible loops  
+  (see https://chapel-lang.org/docs/technotes/gpu.html#diagnostics-and-utilities)
+* added a check to validate the CUDA and ROCM versions when building `chpl`
+* added an `enableGpuP2P` config const to enable NVIDIA peer-to-peer accesses  
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html?highlight=chpl_gpu#device-to-device-communication-support)
 
 Compiler Improvements
 ---------------------
@@ -243,6 +251,7 @@ Compiler Flags
 --------------
 * added a new `--print-chpl-home` flag to query the location of `$CHPL_HOME`  
   (see https://chapel-lang.org/docs/1.31/usingchapel/man.html#options)
+* made the `--version` output print available LLVM targets
 
 Generated Executable Flags
 --------------------------
@@ -269,13 +278,16 @@ Bug Fixes
 Bug Fixes for Build Issues
 --------------------------
 * fixed a bug in which Protocol Buffer support was omitted from the release
+* improved errors when the build is unable to find LLVM
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug involving querying grid dimensions when using AMD GPUs
 * fixed the behavior of `.locale` queries within GPU kernels
 * fixed a bug with `string`/`bytes` config variables with the GPU locale model
 * fixed a bug that prevented compiling `.c` files with the GPU locale model
 * fixed a bug with loops whose bounds didn't fit into 32-bit integers
+* fixed a bug in which certain values of `CHPL_GPU_ARCH` crashed the compiler
 
 Bug Fixes for Libraries
 -----------------------
@@ -312,6 +324,10 @@ Developer-oriented changes: Documentation
 * changed remaining references to the 'Compiler Library' to 'Frontend Library'
 * fixed a typo in the Chapel Testing System best practices documentation  
   (see https://chapel-lang.org/docs/1.31/developer/bestPractices/TestSystem.html#readme-testsystem)
+
+Developer-oriented changes: GPU Features
+----------------------------------------
+* added atomic operation functions to the GPU module
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
