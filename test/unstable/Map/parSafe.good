@@ -1,11 +1,3 @@
-$CHPL_HOME/modules/standard/Map.chpl:503: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:528: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:544: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:636: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:503: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:528: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:544: warning: 'const' return intent is unstable and may work differently in the future
-$CHPL_HOME/modules/standard/Map.chpl:636: warning: 'const' return intent is unstable and may work differently in the future
 parSafe.chpl:4: warning: 'Map.parSafe' is unstable
 parSafe.chpl:5: warning: 'Map.parSafe' is unstable
 parSafe.chpl:12: warning: 'Map.parSafe' is unstable
