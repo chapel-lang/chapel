@@ -7,4 +7,4 @@ config type to, from;
 var rFrom: range(from);
 var rTo:   range(to) = rFrom;  // initialization
 
-compilerError("OK");           // no need to compile further
+writeln("OK");

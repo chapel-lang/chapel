@@ -10,4 +10,5 @@ rTo; rFrom;                    // no split init, please
 
 rTo = rFrom;                   // assignment
 
-compilerError("OK");           // no need to compile further
+writeln("OK");
+

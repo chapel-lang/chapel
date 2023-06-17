@@ -14,4 +14,4 @@ var c2: range(color) = b;  // illegal initialization
 var i1: range(int)  = c1;  // illegal initialization
 var i2: range(uint) = c2;  // illegal initialization
 
-compilerError("OK");       // should not happen
+writeln("OK");             // should not happen

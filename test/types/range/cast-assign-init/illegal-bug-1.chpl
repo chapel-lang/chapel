@@ -15,4 +15,4 @@ r2 = b;
 r3 = b;
 r4 = b;
 
-compilerError("OK"); // no need for further compilation
+writeln("OK");

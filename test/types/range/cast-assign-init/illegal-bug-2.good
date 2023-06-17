@@ -1,1 +1,10 @@
+illegal-bug-2.chpl:8: error: invalid copy-initialization
 illegal-bug-2.chpl:8: error: initializing a range with idxType bool from a range with idxType uint(64)
+illegal-bug-2.chpl:12: error: invalid copy-initialization
+illegal-bug-2.chpl:12: error: initializing a range with idxType color from a range with idxType uint(64)
+illegal-bug-2.chpl:13: error: invalid copy-initialization
+illegal-bug-2.chpl:13: error: initializing a range with idxType color from a range with idxType bool
+illegal-bug-2.chpl:14: error: invalid copy-initialization
+illegal-bug-2.chpl:14: error: initializing a range with idxType int(64) from a range with idxType color
+illegal-bug-2.chpl:15: error: invalid copy-initialization
+illegal-bug-2.chpl:15: error: initializing a range with idxType uint(64) from a range with idxType color

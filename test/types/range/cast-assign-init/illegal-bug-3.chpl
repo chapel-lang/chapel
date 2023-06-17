@@ -11,4 +11,4 @@ enum color { red };
 var u: range(uint);
 var c: range(color) = u; // illegal initialization
 
-compilerError("OK");    // should not happen
+writeln("OK");           // should not happen
