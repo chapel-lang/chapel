@@ -1,2 +1,0 @@
-bug: initialization of range(bool) from non-bool ranges should be disallowed
-#22559

@@ -1,2 +1,0 @@
-illegal-bug-3.chpl:12: error: invalid copy-initialization
-illegal-bug-3.chpl:12: error: initializing a range with idxType color from a range with idxType uint(64)
