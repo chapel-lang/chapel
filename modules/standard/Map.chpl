@@ -290,7 +290,7 @@ module Map {
       for already-existing keys.
 
       :arg m: The other map
-      :type m: map(this.keyType, this.valType)
+      :type m: map(keyType, valType)
     */
     proc extend(pragma "intent ref maybe const formal"
                 m: map(keyType, valType, parSafe)) {
@@ -762,10 +762,10 @@ module Map {
       in the map, makes no changes and returns `false`.
 
      :arg k: The key to add to the map
-     :type k: keyType
+     :type k: ``keyType``
 
      :arg v: The value that maps to ``k``
-     :type v: valType
+     :type v: ``valType``
 
      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.
@@ -793,10 +793,10 @@ module Map {
       key `k` is not in the map, makes no changes and returns `false`.
 
      :arg k: The key whose value needs to change
-     :type k: keyType
+     :type k: ``keyType``
 
      :arg v: The desired value to the key ``k``
-     :type v: valType
+     :type v: ``valType``
 
      :returns: `true` if `k` was in the map and its value is updated with `v`.
                `false` otherwise.
@@ -951,10 +951,10 @@ module Map {
     Returns `true` if the contents of two maps are the same.
 
     :arg a: A map to compare.
-    :type a: map
+    :type a: ``map``
 
     :arg b: A map to compare.
-    :type b: map(a.keyType, a.valType)
+    :type b: ``map(a.keyType, a.valType)``
 
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
@@ -985,10 +985,10 @@ module Map {
     Returns `true` if the contents of two maps are not the same.
 
     :arg a: A map to compare.
-    :type a: map
+    :type a: ``map``
 
     :arg b: A map to compare.
-    :type b: map(a.keyType, a.valType)
+    :type b: ``map(a.keyType, a.valType)``
 
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
