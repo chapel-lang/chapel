@@ -1191,34 +1191,30 @@ static void outlineEligibleLoop(FnSymbol *fn, GpuizableLoop &gpuLoop) {
 }
 
 static void outlineGpuKernelsInFn(FnSymbol *fn) {
-  std::vector<BaseAST*> asts;
-  collect_asts(fn, asts);
+  std::vector<CForLoop*> asts;
+  collectCForLoopStmts(fn, asts);
 
-  for_vector(BaseAST, ast, asts) {
-    if (CForLoop* loop = toCForLoop(ast)) {
-      // In the case of a nested foreach loop we may end up replacing the
-      // outer loop with a kernel call and in doing so making the loop no
-      // longer in the tree.
-      if (!loop->inTree()) {
-        continue;
-      }
+  for_vector(CForLoop, loop, asts) {
+    // In the case of a nested foreach loop we may end up replacing the
+    // outer loop with a kernel call and in doing so making the loop no
+    // longer in the tree.
+    if (!loop->inTree()) {
+      continue;
+    }
 
-      GpuizableLoop gpuLoop(loop);
-      if (gpuLoop.isEligible()) {
-        outlineEligibleLoop(fn, gpuLoop);
-      }
+    GpuizableLoop gpuLoop(loop);
+    if (gpuLoop.isEligible()) {
+      outlineEligibleLoop(fn, gpuLoop);
     }
   }
 }
 
 // We need to strip any GPU specific primitives that remain
 static void cleanupForeachLoopsGauranteedToRunOnCpu(FnSymbol *fn) {
-  std::vector<BaseAST*> asts;
-  collect_asts(fn, asts);
-  for_vector(BaseAST, ast, asts) {
-    if (CForLoop* loop = toCForLoop(ast)) {
-      CpuBoundLoopCleanup::doit(loop);
-    }
+  std::vector<CForLoop*> asts;
+  collectCForLoopStmts(fn, asts);
+  for_vector(CForLoop, loop, asts) {
+    CpuBoundLoopCleanup::doit(loop);
   }
 }
 
