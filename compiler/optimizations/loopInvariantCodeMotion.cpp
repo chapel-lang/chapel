@@ -1333,7 +1333,8 @@ void loopInvariantCodeMotion(void) {
   // rather than in its own pass in order to avoid disruption/overhead of
   // adding a new pass (though we may wish to change this at some point in the
   // future).
-  gpuTransforms();
+  earlyGpuTransforms();
+  lateGpuTransforms();
 
   // Compute array element alias sets.
   //

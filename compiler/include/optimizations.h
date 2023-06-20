@@ -92,5 +92,6 @@ void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
-void gpuTransforms();
+void earlyGpuTransforms();
+void lateGpuTransforms();
 #endif
