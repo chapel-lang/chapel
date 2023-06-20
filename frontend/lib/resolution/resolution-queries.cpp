@@ -2212,6 +2212,8 @@ doIsCandidateApplicableInitial(Context* context,
     }
   }
 
+  CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
+
   if (ci.isMethodCall() && ci.name() == "init") {
     // TODO: test when record has defaults for type/param fields
     auto recv = ci.calledType();
@@ -2227,7 +2229,6 @@ doIsCandidateApplicableInitial(Context* context,
     }
   }
 
-  CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);

@@ -85,7 +85,6 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
       if (auto fn = node->toFunction()) {
         if (!fn->isMethod()) continue;
 
-        // TODO: way to just compute formal type instead of whole TFS?
         ResolutionResultByPostorderID r;
         auto vis = Resolver::createForInitialSignature(context, fn, r);
         fn->thisFormal()->traverse(vis);
