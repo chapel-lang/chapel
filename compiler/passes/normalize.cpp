@@ -2572,6 +2572,10 @@ static bool containedInRuntimeTypeInit(CallExpr* call,
                (ignorePosition || cur->get(2) == sub)) {
       break;
 
+    } else if (cur->isNamed("chpl__distributed") &&
+               (ignorePosition || cur->get(1) == sub)) {
+      break;
+
     } else {
       sub = cur;
       cur = toCallExpr(cur->parentExpr);
