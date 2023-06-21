@@ -1108,7 +1108,7 @@ struct RstSignatureVisitor {
       os_ << " where";
       wc->traverse(*this);
     }
-    
+
     return false;
   }
 
