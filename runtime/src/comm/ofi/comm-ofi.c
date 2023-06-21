@@ -1097,10 +1097,13 @@ int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status) {
 void chpl_comm_post_task_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
-  if (chpl_numNodes == 1)
-    return;
-  init_ofi();
-  init_bar();
+  if (chpl_numNodes == 1) {
+    // We might need to create the heap even if there is only one locale.
+    chpl_comm_regMemHeapInfo(NULL, NULL);
+  } else {
+    init_ofi();
+    init_bar();
+  }
 }
 
 
@@ -3355,8 +3358,12 @@ void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
 
   PTHREAD_CHK(pthread_once(&fixedHeapOnce, init_fixedHeap));
-  *start_p = fixedHeapStart;
-  *size_p  = fixedHeapSize;
+  if (start_p != NULL) {
+    *start_p = fixedHeapStart;
+  }
+  if (size_p != NULL) {
+    *size_p  = fixedHeapSize;
+  }
 }
 
 
@@ -3370,182 +3377,187 @@ void init_fixedHeap(void) {
   // may need to configure itself differently with or without a fixed
   // heap.
   //
+  struct fi_info* infoList = NULL;
+  chpl_bool createHeap = false;
 
   //
-  // Get hints describing our base requirements, the ones that are
-  // independent of which MCM conformance mode we'll eventually use.
+  // Create a fixed heap if the user needs one.
   //
-  chpl_bool txAttrsForced;
-  struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
+  createHeap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP", false);
 
-  //
-  // If hint construction didn't at least tentatively say we'll use a
-  // fixed heap, we definitely won't.  The checks it does are based on
-  // run-invariant info such as environment settings, whether this is
-  // a multi-node program, etc.
-  //
-  if ((hints->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
-    DBG_PRINTF_NODE0(DBG_HEAP, "fixedHeap: base hints say no");
-    return;
-  }
+  if (!createHeap && (chpl_numNodes > 1)) {
+    //
+    // Get hints describing our base requirements, the ones that are
+    // independent of which MCM conformance mode we'll eventually use.
+    //
+    chpl_bool txAttrsForced;
+    struct fi_info* hints = getBaseProviderHints(&txAttrsForced);
 
-  //
-  // Now do further checks.  We default to using a fixed heap on Cray XC
-  // and (for now) HPE Cray EX systems unless the user explicitly says
-  // not to.  That was checked in base hint construction.  On other
-  // platforms, we'll use a fixed heap if the best-performing "good"
-  // provider (not sockets, not tcp, not verbs;ofi_rxd) out of those
-  // that can meet our base requirements has FI_MR_ALLOCATED set to
-  // indicate it wants one.
-  //
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") != 0
-      && strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") != 0) {
-    struct fi_info* infoList;
-    int ret;
-    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoList),
-              ret, -FI_ENODATA);
-    if (infoList == NULL) {
-      //
-      // We found no providers at all, thus none requiring a fixed heap.
-      //
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, because no providers (?)");
-      return;
+    //
+    // If hint construction didn't at least tentatively say we'll use a
+    // fixed heap, we definitely won't.  The checks it does are based on
+    // run-invariant info such as environment settings, whether this is
+    // a multi-node program, etc.
+    //
+    if ((hints->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+      DBG_PRINTF_NODE0(DBG_HEAP, "fixedHeap: base hints say no");
+      goto done;
     }
 
-    struct fi_info* info;
-    for (info = infoList; info != NULL; info = info->next) {
-      if (isGoodCoreProvider(info)
-          && (!isInProvider("verbs", info)
-              || !isInProvider("ofi_rxd", info))
-          && isUseableProvider(info)) {
-        break;
-      }
-    }
-
-    chpl_bool useHeap;
-    if (info == NULL) {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, no provider needs it");
-      useHeap = false;
-    } else if ((info->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: no, best provider '%s' doesn't need it",
-                       info->fabric_attr->prov_name);
-      useHeap = false;
+    //
+    // Now do further checks.  We default to using a fixed heap on Cray XC
+    // and (for now) HPE Cray EX systems unless the user explicitly says
+    // not to.  That was checked in base hint construction.  On other
+    // platforms, we'll use a fixed heap if the best-performing "good"
+    // provider (not sockets, not tcp, not verbs;ofi_rxd) out of those
+    // that can meet our base requirements has FI_MR_ALLOCATED set to
+    // indicate it wants one.
+    //
+    if (!strcmp(CHPL_TARGET_PLATFORM, "cray-xc") ||
+        !strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
+      createHeap = true;
     } else {
-      DBG_PRINTF_NODE0(DBG_HEAP,
-                       "fixedHeap: yes, best provider '%s' needs it",
-                       info->fabric_attr->prov_name);
-      useHeap = true;
+      int ret;
+      OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoList),
+                ret, -FI_ENODATA);
+      if (infoList == NULL) {
+        //
+        // We found no providers at all, thus none requiring a fixed heap.
+        //
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, because no providers (?)");
+        goto done;
+      }
+
+      struct fi_info* info;
+      for (info = infoList; info != NULL; info = info->next) {
+        if (isGoodCoreProvider(info)
+            && (!isInProvider("verbs", info)
+                || !isInProvider("ofi_rxd", info))
+            && isUseableProvider(info)) {
+          break;
+        }
+      }
+
+      if (info == NULL) {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, no provider needs it");
+      } else if ((info->domain_attr->mr_mode & FI_MR_ALLOCATED) == 0) {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: no, best provider '%s' doesn't need it",
+                         info->fabric_attr->prov_name);
+      } else {
+        DBG_PRINTF_NODE0(DBG_HEAP,
+                         "fixedHeap: yes, best provider '%s' needs it",
+                         info->fabric_attr->prov_name);
+        createHeap = true;
+      }
+    }
+  }
+  if (createHeap) {
+
+
+    //
+    // Don't use more than 85% of the total memory for heaps.
+    //
+    uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+    uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
+
+    int num_locales_on_node = chpl_get_num_locales_on_node();
+    size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
+
+
+    //
+    // If the maximum heap size is not specified or it's greater than the maximum heap per
+    // locale, set it to the maximum heap per locale.
+    //
+    ssize_t size = envMaxHeapSize;
+    CHK_TRUE(size != 0);
+    if ((size < 0) || (size > max_heap_per_locale)) {
+      size = max_heap_per_locale;
     }
 
+    //
+    // Check for hugepages.  On certain systems you really ought to use
+    // them.  But if you're on such a system and don't, we'll emit the
+    // message later.
+    //
+    void *start;
+    size_t page_size;
+    chpl_bool have_hugepages;
+
+    if ((page_size = get_hugepageSize()) == 0) {
+      have_hugepages = false;
+    } else {
+      have_hugepages = true;
+    }
+    if (!have_hugepages) {
+      page_size = chpl_getSysPageSize();
+      //
+      // We'll make a fixed heap, on whole pages.
+      //
+      size = ALIGN_UP(size, page_size);
+
+      //
+      // Work our way down from the starting size in (roughly) 5% steps
+      // until we can actually allocate a heap that size.
+      //
+      size_t decrement;
+      if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
+        decrement = page_size;
+      }
+
+      size += decrement;
+      do {
+        size -= decrement;
+#ifdef CHPL_COMM_DEBUG
+        if (DBG_TEST_MASK(DBG_HEAP)) {
+          char buf[10];
+          DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
+                     chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+        }
+#endif
+        CHK_SYS_MEMALIGN(start, page_size, size);
+      } while (start == NULL && size > decrement);
+
+      if (start == NULL)
+        chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
+    } else {
+      //
+      // We'll make a fixed heap on whole hugepages.
+      //
+      size = ALIGN_UP(size, page_size);
+#ifdef CHPL_COMM_DEBUG
+        if (DBG_TEST_MASK(DBG_HEAP)) {
+          char buf[10];
+          DBG_PRINTF(DBG_HEAP, "try allocating fixed hugepage heap, size %s (%#zx)",
+                     chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+        }
+#endif
+      start = chpl_comm_ofi_hp_get_huge_pages(size);
+      if (start == NULL) {
+        chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
+      }
+    }
+
+    chpl_comm_regMemHeapTouch(start, size);
+
+#ifdef CHPL_COMM_DEBUG
+    if (DBG_TEST_MASK(DBG_HEAP)) {
+      char buf[10];
+      DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
+                 have_hugepages ? "huge" : "regular ", start,
+                 chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
+    }
+#endif
+    fixedHeapSize  = size;
+    fixedHeapStart = start;
+  }
+
+done:
+  if (infoList != NULL) {
     fi_freeinfo(infoList);
-
-    if (!useHeap) {
-      return;
-    }
   }
-
-  //
-  // If we get this far we'll use a fixed heap.
-  //
-  uint64_t total_memory = chpl_sys_physicalMemoryBytes();
-
-  //
-  // Don't use more than 85% of the total memory for heaps.
-  //
-  uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
-
-  int num_locales_on_node = chpl_get_num_locales_on_node();
-  size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
-
-
-  //
-  // If the maximum heap size is not specified or it's greater than the maximum heap per
-  // locale, set it to the maximum heap per locale.
-  //
-  ssize_t size = envMaxHeapSize;
-  CHK_TRUE(size != 0);
-  if ((size < 0) || (size > max_heap_per_locale)) {
-    size = max_heap_per_locale;
-  }
-
-  //
-  // Check for hugepages.  On certain systems you really ought to use
-  // them.  But if you're on such a system and don't, we'll emit the
-  // message later.
-  //
-  void *start;
-  size_t page_size;
-  chpl_bool have_hugepages;
-
-  if ((page_size = get_hugepageSize()) == 0) {
-    have_hugepages = false;
-  } else {
-    have_hugepages = true;
-  }
-  if (!have_hugepages) {
-    page_size = chpl_getSysPageSize();
-    //
-    // We'll make a fixed heap, on whole pages.
-    //
-    size = ALIGN_UP(size, page_size);
-
-    //
-    // Work our way down from the starting size in (roughly) 5% steps
-    // until we can actually allocate a heap that size.
-    //
-    size_t decrement;
-    if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
-      decrement = page_size;
-    }
-
-    size += decrement;
-    do {
-      size -= decrement;
-#ifdef CHPL_COMM_DEBUG
-      if (DBG_TEST_MASK(DBG_HEAP)) {
-        char buf[10];
-        DBG_PRINTF(DBG_HEAP, "try allocating fixed heap, size %s (%#zx)",
-                   chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
-      }
-#endif
-      CHK_SYS_MEMALIGN(start, page_size, size);
-    } while (start == NULL && size > decrement);
-
-    if (start == NULL)
-      chpl_error("cannot create fixed heap: cannot get memory", 0, 0);
-  } else {
-    //
-    // We'll make a fixed heap on whole hugepages.
-    //
-    size = ALIGN_UP(size, page_size);
-#ifdef CHPL_COMM_DEBUG
-      if (DBG_TEST_MASK(DBG_HEAP)) {
-        char buf[10];
-        DBG_PRINTF(DBG_HEAP, "try allocating fixed hugepage heap, size %s (%#zx)",
-                   chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
-      }
-#endif
-    start = chpl_comm_ofi_hp_get_huge_pages(size);
-    if (start == NULL) {
-      chpl_error("cannot create fixed heap: cannot get huge pages", 0, 0);
-    }
-  }
-
-  chpl_comm_regMemHeapTouch(start, size);
-
-#ifdef CHPL_COMM_DEBUG
-  if (DBG_TEST_MASK(DBG_HEAP)) {
-    char buf[10];
-    DBG_PRINTF(DBG_HEAP, "fixed heap on %spages, start=%p size=%s (%#zx)\n",
-               have_hugepages ? "huge" : "regular ", start,
-               chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
-  }
-#endif
-  fixedHeapSize  = size;
-  fixedHeapStart = start;
 }
 
 
@@ -3570,7 +3582,10 @@ static
 void init_hugepageSize(void) {
   chpl_bool use_hugepages = chpl_env_rt_get_bool("COMM_OFI_USE_HUGEPAGES",
                                                  false);
-  if ((chpl_numNodes > 1) && use_hugepages &&
+  chpl_bool need_heap = chpl_env_rt_get_bool("COMM_OFI_NEED_FIXED_HEAP",
+                                              false);
+
+  if (use_hugepages && ((chpl_numNodes > 1) || need_heap) &&
       (getenv("HUGETLB_DEFAULT_PAGE_SIZE") != NULL)) {
     hugepageSize = chpl_comm_ofi_hp_gethugepagesize();
   }
