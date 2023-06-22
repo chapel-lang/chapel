@@ -682,7 +682,7 @@ void Visitor::checkBorrowFromNew(const Variable* node) {
           if (auto receiver = dot->receiver())
             if (auto call = receiver->toFnCall())
               if (auto called = call->calledExpression())
-                if (auto n = called->toNew())
+                if (called->isNew())
                   warn(node, "Class created by nested 'new' will be "
                              "deinitialized before the borrow can be used. "
                              "Please update this code to use a separate "
