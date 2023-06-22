@@ -113,11 +113,21 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
 
   return var;
 }
-static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
+
+template <size_t Size>
+bool isEqualToAnyOfTheLoops(LoopStmt* loop, CForLoop* const (&loops)[Size]) {
+  for (size_t i = 0; i < Size; i++) {
+    if (loops[i] == loop) return true;
+  }
+  return false;
+}
+
+template <size_t Size>
+static bool isDefinedInTheLoops(Symbol* sym, CForLoop* const (&loops)[Size]) {
   LoopStmt* curLoop = LoopStmt::findEnclosingLoop(sym->defPoint);
 
   while (curLoop != nullptr) {
-    if (curLoop == loop) {
+    if (isEqualToAnyOfTheLoops(curLoop, loops)) {
       return true;
     }
     curLoop = LoopStmt::findEnclosingLoop(curLoop->parentExpr);
@@ -135,25 +145,26 @@ static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
 // passing that as an argument to the GPU kernel.  TODO: investigate whether
 // that def is removed later in the compilation.  Ideally move GPU transforms
 // after that pass
-static bool isDegenerateOuterRef(Symbol* sym, CForLoop* loop) {
-  if (isDefinedInTheLoop(sym, loop) ||
-      !sym->hasFlag(FLAG_TEMP)      ||
-      !sym->isRef()                 ||
+template <size_t Size>
+static bool isDegenerateOuterRef(Symbol* sym, CForLoop* const (&loops)[Size]) {
+  if (isDefinedInTheLoops(sym, loops) ||
+      !sym->hasFlag(FLAG_TEMP)        ||
+      !sym->isRef()                   ||
       !isVarSymbol(sym)) {
     return false;
   }
 
   for_SymbolUses(use, sym) {
-      if (LoopStmt::findEnclosingLoop(use) != loop) {
-        return false;
-      }
+    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(use), loops)) {
+      return false;
     }
+  }
 
   for_SymbolDefs(def, sym) {
-      if (LoopStmt::findEnclosingLoop(def) != loop) {
-        return false;
-      }
+    if (!isEqualToAnyOfTheLoops(LoopStmt::findEnclosingLoop(def), loops)) {
+      return false;
     }
+  }
 
   return true;
 }
@@ -651,7 +662,7 @@ class GpuKernel {
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
   void determineBlockSize();
   static bool isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call);
-  void populateBody(CForLoop *loop, FnSymbol *outlinedFunction);
+  void populateBody(FnSymbol *outlinedFunction);
   void normalizeOutlinedFunction();
   void finalize();
 
@@ -670,7 +681,7 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   buildStubOutlinedFunction(insertionPoint);
   normalizeOutlinedFunction();
   determineBlockSize();
-  populateBody(gpuLoop.gpuLoop(), fn_);
+  populateBody(fn_);
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -822,10 +833,17 @@ bool GpuKernel::isCallToPrimitiveWeShouldNotCopyIntoKernel(CallExpr *call) {
      call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE));
 }
 
-void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
+void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
   std::set<Symbol*> handledSymbols;
 
-  for_alist(node, loop->body) {
+  // Some of the conditions below are intended to check for "things that
+  // only happen in the loop body". However, the pre-LICM cloning means
+  // there are actually two loop bodies. Use both for these checks to avoid
+  // throwing off various checks.
+  CForLoop* loopForBody = gpuLoop.gpuLoop();
+  CForLoop* cloneOfLoop = gpuLoop.cpuLoop();
+
+  for_alist(node, loopForBody->body) {
     bool copyNode = true;
     std::vector<SymExpr*> symExprsInBody;
     collectSymExprs(node, symExprsInBody);
@@ -863,14 +881,14 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
         }
         handledSymbols.insert(sym);
 
-        if (isDefinedInTheLoop(sym, loop)) {
+        if (isDefinedInTheLoops(sym, {loopForBody})) {
           // looks like this symbol was declared within the loop body,
           // so do nothing. TODO: I am hoping that we don't need to
           // check the type of the variable here, and we'll know that it
           // is a valid variable to declare on the gpu via the loop body
           // analysis
         }
-        else if (isDegenerateOuterRef(sym, loop)) {
+        else if (isDegenerateOuterRef(sym, {loopForBody, cloneOfLoop})) {
           addLocalVariable(sym);
         }
         else if (sym->isImmediate()) {
