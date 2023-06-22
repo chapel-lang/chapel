@@ -48,7 +48,7 @@ export CHPL_WHICH_RELEASE_FOR_ARKOUDA="1.30.0"
 # test against Chapel release (checking out current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  export CHPL_TEST_PERF_CONFIGS="release,nightly:v"
   currentSha=`git rev-parse HEAD`
   git checkout $CHPL_WHICH_RELEASE_FOR_ARKOUDA
   git checkout $currentSha -- $CHPL_HOME/test/
@@ -62,7 +62,7 @@ function test_release() {
 # test against Chapel nightly
 function test_nightly() {
   export CHPL_TEST_PERF_DESCRIPTION=nightly
-  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  export CHPL_TEST_PERF_CONFIGS="release,nightly:v"
   $CWD/nightly -cron ${nightly_args}
 }
 
