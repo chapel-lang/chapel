@@ -1140,6 +1140,7 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
 
     VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
     checkSym->addFlag(FLAG_PARAM);
+    checkSym->addFlag(FLAG_TEMP);
     optInfo.staticCheckSymForSymMap[baseSym] = checkSym;
 
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
