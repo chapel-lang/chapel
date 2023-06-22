@@ -1,0 +1,37 @@
+.. default-domain:: chpl
+
+.. module:: M
+
+M
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use M;
+
+
+or
+
+.. code-block:: chapel
+
+   import M;
+
+.. record:: MyRecord
+
+   .. attribute:: var x: int
+
+.. function:: proc processArr(arr: [1..n] int) where n != 0
+
+.. function:: proc processArr(arr: []) where arr.elemType == int
+
+.. function:: proc processDom(dom: domain) where dom.rank == 2
+
+.. function:: proc processRec(r: MyRecord) where r.x > 0
+
+.. function:: proc processRange(r: [1..n] int) where n > 0
+
+.. function:: proc processRange(r: range) where r.low > 1
+
+.. function:: operator +(a: int, b: int) where a > 0
+
