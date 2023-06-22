@@ -20,10 +20,10 @@ proc testList(type t) where isBorrowedClass(t) {
 
   var x: useT = new useT(1);
 
-  l.append(x.borrow());
+  l.pushBack(x.borrow());
   assert(l.size == 1);
 
-  var value = l.pop();
+  var value = l.popBack();
   assert(l.size == 0);
 }
 
