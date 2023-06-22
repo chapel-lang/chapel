@@ -1498,8 +1498,22 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
             }
           }
         }
-        if (definedOutsideOfNode)
-          call->insertAtTail(new SymExpr(se->symbol()));
+        if (definedOutsideOfNode) {
+          bool alreadyThere = false;
+          // a cheap peephole optimization to avoid redundant variables
+          if (call->numActuals() > 0) {
+            if (SymExpr* haveSe = toSymExpr(call->get(1)))
+              if (haveSe->symbol() == se->symbol())
+                alreadyThere = true;
+            if (call->numActuals() > 1)
+              if (SymExpr* haveSe = toSymExpr(call->get(call->numActuals())))
+                if (haveSe->symbol() == se->symbol())
+                  alreadyThere = true;
+          }
+          if (!alreadyThere) {
+            call->insertAtTail(new SymExpr(se->symbol()));
+          }
+        }
       }
     }
   }
