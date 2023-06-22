@@ -22,8 +22,8 @@ config const Lx : real(rp) = 1.008e7;
 config const Ly : real(rp) = 1.008e7;
 
 /* Grid: Horizontal part must be divisible by 3. */
-config const nx : int  = 1008;
-config const ny : int  = 1008;
+config const nx : int  = 24;
+config const ny : int  = 24;
 
 var nx3p : int = (nx/3)+1;
 var ny3p : int = (ny/3)+1;

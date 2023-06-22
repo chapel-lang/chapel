@@ -21,6 +21,8 @@ proc main() {
 
       Diagnostics(i);
 
+      writeln(+ reduce q);
+
     } // Timestepping loop
 
 } // main
