@@ -2223,7 +2223,18 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   .. note::
 
-   A temporary copy of ``A`` will be created within this computation.
+    A temporary copy of ``A`` will be created within this computation.
+
+  .. note::
+
+    Arrays with strided domains are not supported.
+
+  .. note::
+
+    Arrays whose domains have nonzero offsets are supported. ``U`` inherits the
+    row indexing of ``A``, while ``Vh`` inherits the column indexing of ``A``.
+    The columns of ``U``, rows of ``Vh``, and ``s`` all share the same 0-based
+    indexing.
 
   .. note::
 
