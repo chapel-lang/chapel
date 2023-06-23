@@ -16,6 +16,7 @@ var w = new owned Foo();
 var x = new unmanaged Foo();
 /* Double check documentation */
 var yy = new Foo();
+/* Double check documentation */
 var y = yy.borrow();
 /* Double check documentation */
 var z = new shared Foo();
@@ -26,6 +27,7 @@ var wq = new owned Foo()?;
 var xq = new unmanaged Foo()?;
 /* Double check documentation */
 var yyq = new owned Foo()?;
+/* Double check documentation */
 var yq = yyq.borrow();
 /* Double check documentation */
 var zq = new shared Foo()?;
