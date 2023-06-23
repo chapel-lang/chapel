@@ -200,6 +200,7 @@ proc main(args: [] string) {
   }
 
 //  WriteOutput(out_file, OutputArray, varid);
+  writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 
 }
 
