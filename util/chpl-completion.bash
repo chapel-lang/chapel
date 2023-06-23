@@ -145,7 +145,6 @@ _chpl ()
 --log-dir \
 --log-ids \
 --log-module \
---log-node \
 --log-pass \
 --loop-invariant-code-motion \
 --main-module \
