@@ -49,7 +49,7 @@ Contributors to previous releases
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
 * Kyle Brady, [Cray Inc.]
-o Gabriel Brown, individual contributor
+* Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
@@ -192,7 +192,7 @@ o Gabriel Brown, individual contributor
 * Branch Vincent, individual contributor
 * Chris Wailes, [Indiana University]
 * Tony Wallace, [Cray Inc.]
-o Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
+* Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 * Wayne Wong, [Cray Inc.]
 * Tong Xu, individual contributor
