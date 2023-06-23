@@ -170,7 +170,6 @@ bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
 }
 
 const ClassType* CompositeType::getErrorType(Context* context) {
-  auto manager = AnyManagementNonNilableType::get(context);
   auto symbolPath = UniqueString::get(context, "Errors.Error");
   auto name = UniqueString::get(context, "Error");
   auto id = ID(symbolPath, -1, 0);
@@ -180,7 +179,7 @@ const ClassType* CompositeType::getErrorType(Context* context) {
                                 BasicClassType::getObjectType(context),
                                 /* instantiatedFrom */ nullptr,
                                 SubstitutionsMap());
-  return ClassType::get(context, bct, manager, dec);
+  return ClassType::get(context, bct, /* manager */ nullptr, dec);
 }
 
 

@@ -453,6 +453,9 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     if (classType != nullptr && classType->manager() != nullptr) {
       // when default-initializing a shared C? or owned C?,
       // call e.g. shared.init(chpl_t=borrowed C?).
+      //
+      // Safe to use basicClassType() here because the type would otherwise
+      // be generic, but we know it's concrete.
       auto dec = classType->decorator().toBorrowed();
       auto t = ClassType::get(context,
                               classType->basicClassType(),

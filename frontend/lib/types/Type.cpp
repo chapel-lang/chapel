@@ -19,6 +19,7 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
@@ -122,6 +123,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
+
+  gatherType(context, map, "class", AnyClassType::get(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
