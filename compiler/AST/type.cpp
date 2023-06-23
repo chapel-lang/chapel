@@ -46,6 +46,8 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/framework/compiler-configuration.h"
+
 #include <cmath>
 
 static bool isDerivedType(Type* type, Flag flag);
@@ -1358,9 +1360,9 @@ VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
 }
 
 void initCompilerGlobals() {
-  auto& compilationGlobals = gContext->configuration().compilationGlobals;
+  auto& compilerGlobals = chpl::compilerGlobals(gContext);
   #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
-    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilationGlobals.FIELD__));
+    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilerGlobals.FIELD__));
   #include "chpl/uast/compiler-globals-list.h"
   #undef COMPILER_GLOBAL
 

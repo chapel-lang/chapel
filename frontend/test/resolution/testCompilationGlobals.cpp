@@ -45,8 +45,8 @@ static std::unordered_map<std::string, QualifiedType> compilationGlobalTypes(Con
   return resolveTypesOfVariables(context, allGlobalsProgram, variables);
 }
 
-static Context::CompilationGlobals defaultGlobals() {
-  Context::CompilationGlobals globals;
+static CompilerGlobals defaultGlobals() {
+  CompilerGlobals globals;
   // For the time being, all globals are bools so just set them to false.
   #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) globals.FIELD__ = false;
   #include "chpl/uast/compiler-globals-list.h"
@@ -65,15 +65,14 @@ void verifyGlobal<bool>(const QualifiedType& type, bool expected) {
 
 template <typename F>
 void verifyCompilerGlobals(F&& function) {
-  // Configure the globals (including running user code to set them)
-  Context::CompilationGlobals myGlobals = defaultGlobals();
-  function(myGlobals);
-  Context::Configuration config;
-  config.compilationGlobals = myGlobals;
-
   // Create the context
-  Context ctx(std::move(config));
+  Context ctx;
   Context* context = &ctx;
+
+  // Configure the globals (including running user code to set them)
+  CompilerGlobals myGlobals = defaultGlobals();
+  function(myGlobals);
+  setCompilerGlobals(context, myGlobals);
 
   std::cout << "--- verifying globals ---" << std::endl;
 
@@ -93,13 +92,13 @@ void verifyCompilerGlobals(F&& function) {
 static void test1() {
   // Default configuration, everything is false.
 
-  verifyCompilerGlobals([](Context::CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     // Do not change the globals; all should be false.
   });
 }
 
 static void test2() {
-  verifyCompilerGlobals([](Context::CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     globals.boundsChecking = true;
   });
 }
@@ -107,7 +106,7 @@ static void test2() {
 static void test3() {
   // Default configuration, everything is false.
 
-  verifyCompilerGlobals([](Context::CompilationGlobals& globals) {
+  verifyCompilerGlobals([](CompilerGlobals& globals) {
     globals.boundsChecking = true;
     globals.cacheRemote = true;
   });

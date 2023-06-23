@@ -20,6 +20,7 @@
 #include "chpl/resolution/resolution-queries.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/global-strings.h"
@@ -3595,11 +3596,11 @@ const std::unordered_map<UniqueString, QualifiedType>&
 getCompilerGeneratedGlobals(Context* context) {
   QUERY_BEGIN(getCompilerGeneratedGlobals, context);
 
+  auto& globals = compilerGlobals(context);
   std::unordered_map<UniqueString, QualifiedType> result;
   #define COMPILER_GLOBAL(TYPE__, IDENT__, NAME__)\
     result[UniqueString::get(context, IDENT__)] = \
-      paramTypeFromValue<TYPE__>(context, \
-                                 context->configuration().compilationGlobals.NAME__);
+      paramTypeFromValue<TYPE__>(context, globals.NAME__);
   #include "chpl/uast/compiler-globals-list.h"
   #undef COMPILER_GLOBAL
 
