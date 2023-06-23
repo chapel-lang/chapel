@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.30.0
+        export CHPL_HOME=~/chapel-1.31.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -284,10 +284,19 @@ CC and Similar
    inferred from ``/path/to/gcc-10``, for example.
 
    Please note that setting ``CC`` and ``CXX`` or ``CHPL_TARGET_CC`` and
-   ``CHPL_TARGET_CXX`` will not change the target compiler used when the
+   ``CHPL_TARGET_CXX`` will not change ``CHPL_TARGET_COMPILER`` when the
    LLVM backend is in use or when working with a PrgEnv compiler. In
    these cases, it is necessary to also set ``CHPL_TARGET_COMPILER`` in
    order for the ``CC`` / ``CHPL_TARGET_CC`` variables to take effect.
+
+   In some cases, it is useful to configure additional arguments for the
+   associated ``clang`` command to use with the LLVM backend. For
+   example, the ``clang`` compiler might need additional arguments in
+   order to function properly. To support these cases, overriding
+   ``CHPL_TARGET_CC`` and ``CHPL_TARGET_CXX`` will impact the ``clang``
+   commands used by the LLVM backend. Please note that setting these
+   variables will override the normal process to find a bundled or
+   system-wide installation of ``clang``.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -886,17 +895,21 @@ CHPL_UNWIND
 
 CHPL_LIB_PIC
 ~~~~~~~~~~~~
-   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to build
-   position independent or position dependent code.  This is intended for use
-   when :ref:`readme-libraries`, especially when :ref:`readme-libraries.Python`
-   or when building with ``--dynamic``. Current options are:
+
+   Optionally, the ``CHPL_LIB_PIC`` environment variable can be used to
+   build position independent code suitable for shared libraries.  This
+   is intended for use when :ref:`readme-libraries`, especially when
+   :ref:`readme-libraries.Python` or when building with ``--dynamic``.
+   This setting affects the runtime build as well as programs compiled
+   with ``chpl``. Current options are:
 
        ===== ================================
        Value Description
        ===== ================================
-       pic   build position independent code
+       pic   build position-independent code suitable for a shared library
        none  use the system default, which might be
-             position independent or position dependent
+             position-dependent or position-independent but not
+             suitable for a shared library
        ===== ================================
 
    If unset, ``CHPL_LIB_PIC`` defaults to ``none``

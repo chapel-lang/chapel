@@ -882,11 +882,12 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {
-    actualClassType = classType->basicClassType();
-    while (auto instFrom = actualClassType->instantiatedFrom()) {
-      actualClassType = instFrom;
+    if (auto actualClassType = classType->basicClassType()) {
+      while (auto instFrom = actualClassType->instantiatedFrom()) {
+        actualClassType = instFrom;
+      }
+      actualType = types::QualifiedType(actualType.kind(), actualClassType);
     }
-    actualType = types::QualifiedType(actualType.kind(), actualClassType);
   }
   wr.message("The operation must be a type extending 'ReduceScanOp', but "
              "it is ", actualType);

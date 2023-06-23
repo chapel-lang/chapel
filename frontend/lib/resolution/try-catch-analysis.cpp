@@ -89,6 +89,7 @@ struct TryCatchAnalyzer {
       auto errType = CompositeType::getErrorType(context);
       auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
       auto manager = AnyOwnedType::get(context);
+      CHPL_ASSERT(errType->basicClassType());
       return ClassType::get(context, errType->basicClassType(), manager, dec);
   }
 

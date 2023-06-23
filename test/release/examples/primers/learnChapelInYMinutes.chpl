@@ -325,7 +325,7 @@ var reverse2to10by2 = 2..10 by -2; // 10, 8, 6, 4, 2
 var trapRange = 10..1 by -1; // Do not be fooled, this is still an empty range
 writeln("Size of range '", trapRange, "' = ", trapRange.size);
 
-// Note: ``range(bounds= ...)`` and ``range(stridable= ...)`` are necessary
+// Note: ``range(bounds= ...)`` and ``range(strides= ...)`` are necessary
 // only if we give the variable a type explicitly.
 
 // The end point of a range can be computed by specifying the total size
@@ -338,7 +338,7 @@ writeln(rangeCountBy);
 
 // Properties of the range can be queried.
 // In this example, printing the first index, last index, number of indices,
-// stride, and if 2 is include in the range.
+// stride, and if 2 is included in the range.
 writeln((rangeCountBy.first, rangeCountBy.last, rangeCountBy.size,
            rangeCountBy.stride, rangeCountBy.contains(2)));
 

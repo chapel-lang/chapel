@@ -146,7 +146,16 @@ module Futures {
     proc init(type retType) {
       this.retType = retType;
       this.complete();
+      // sets this=classRef = the new one and bumps the ref count
+      // from 0 to 1
       acquire(new unmanaged FutureClass(retType));
+    }
+
+    proc init=(x: Future) {
+      this.retType = x.retType;
+      this.complete();
+      // set this.classRef = x.classRef and bumps the reference count
+      this.acquire(x.classRef);
     }
 
     @chpldoc.nodoc
@@ -213,15 +222,24 @@ module Futures {
         compilerError("cannot determine return type of andThen() task function");
       var f: Future(taskFn.retType);
       f.classRef!.valid = true;
-      begin with (in taskFn) f.set(taskFn(this.get()));
+
+      // it isn't necessary to copy 'f' because the Future.deinit
+      // will wait for the task if needed
+      //
+      // it is necessary to copy 'this' in to the task
+      // to ensure that the class exists as long as the task runs
+      // (by incrementing and decrementing reference counts).
+      begin with (in taskFn, in this) {
+        f.set(taskFn(this.get()));
+      }
       return f;
     }
 
     @chpldoc.nodoc
-    proc acquire(newRef: unmanaged FutureClass) {
+    proc acquire(newRef: unmanaged FutureClass?) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
-      newRef.incRefCount();
+      if classRef then classRef!.incRefCount();
     }
 
     @chpldoc.nodoc
@@ -247,18 +265,6 @@ module Futures {
 
   } // record Future
 
-  pragma "init copy fn"
-  proc chpl__initCopy(x: Future, definedConst: bool) {
-    x.acquire();
-    return x;
-  }
-
-  pragma "auto copy fn"
-  proc chpl__autoCopy(x: Future, definedConst: bool) {
-    x.acquire();
-    return x;
-  }
-
   @chpldoc.nodoc
   operator Future.=(ref lhs: Future, rhs: Future) {
     if lhs.classRef == rhs.classRef then return;
@@ -281,6 +287,8 @@ module Futures {
       compilerError("cannot determine return type of andThen() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
+    // it is not necessary to copy f / bump reference counts
+    // because Future.deinit will wait for the task before deleting
     begin with (in taskFn) f.set(taskFn());
     return f;
   }
@@ -300,7 +308,11 @@ module Futures {
       compilerError("cannot determine return type of async() task function");
     var f: Future(taskFn.retType);
     f.classRef!.valid = true;
-    begin with (in taskFn) f.set(taskFn((...args)));
+    // it is not necessary to copy f / bump reference counts
+    // because Future.deinit will wait for the task before deleting
+    begin with (in taskFn) {
+      f.set(taskFn((...args)));
+    }
     return f;
   }
 
@@ -326,10 +338,11 @@ module Futures {
     type retTypes = getRetTypes((...futures));
     var f: Future(retTypes);
     f.classRef!.valid = true;
-    begin {
+    begin with (in futures) {
       var result: retTypes;
-      for param i in 0..N-1 do
+      for param i in 0..<N {
         result[i] = futures[i].get();
+      }
       f.set(result);
     }
     return f;
