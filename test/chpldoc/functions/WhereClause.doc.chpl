@@ -1,7 +1,7 @@
 module M {
 
     use CTypes;
-    
+
     record MyRecord {
         var x: int;
     }
