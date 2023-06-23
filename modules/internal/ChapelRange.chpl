@@ -289,8 +289,8 @@ module ChapelRange {
     this.idxType     = idxType;
     this.bounds      = bounds;
     this.strides     = strides;
-    this._low        = _low;
-    this._high       = _high;
+    this._low        = _low: chpl__idxTypeToIntIdxType(idxType);
+    this._high       = _high: chpl__idxTypeToIntIdxType(idxType);
 
     if ! hasParamStrideAltvalAld() {
       this._stride    = _stride;
@@ -2030,8 +2030,8 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
-    r1._low = r2._low;
-    r1._high = r2._high;
+    r1._low = r2._low: r1.intIdxType;
+    r1._high = r2._high: r1.intIdxType;
 
     if ! r1.hasParamStrideAltvalAld() {
       r1._stride = r2.stride;
