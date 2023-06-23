@@ -239,4 +239,3 @@ tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3
 tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint _e1_tests > this
 tuple-vararg-in-lt-clause.errors.chpl:37: note: called function Test.dependsOnY3(_e0_tests: borrowed RootClass, _e1_tests: borrowed RootClass)
 tuple-vararg-in-lt-clause.errors.chpl:37: note: includes lifetime constraint this < _e1_tests
-tuple-vararg-in-lt-clause.errors.chpl:4: error: Scoped variable global would outlive the value it is set to

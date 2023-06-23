@@ -11,6 +11,6 @@ class InParallel {
 }
 
 proc main() {
-  var c: borrowed InParallel = (new owned InParallel(1, 2.0)).borrow();
+  var c = new InParallel(1, 2.0);
   writeln(c);
 }

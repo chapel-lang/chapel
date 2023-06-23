@@ -33,13 +33,15 @@ class E : C {
   }
 }
 
-var d:borrowed C = (new owned D(4)).borrow();
+var dd = new D(4);
+var d:borrowed C = dd.borrow();
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));
 writeln(d.bbox(4));
 
-var e:borrowed C = (new owned E(4)).borrow();
+var ee = new E(4);
+var e:borrowed C = ee.borrow();
 writeln(e.bbox(1));
 writeln(e.bbox(2));
 writeln(e.bbox(3));

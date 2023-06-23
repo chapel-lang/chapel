@@ -1,7 +1,7 @@
 // This is the counterpart to tuple-vararg-in-lt-clause.chpl
 // that ensures that these constraints fire when they should.
 
-var global = (new owned Test()).borrow();
+var globalObj = new Test(); var global = globalObj.borrow();
 
 class Test {
   /** a single constraint **/
