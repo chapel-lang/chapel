@@ -3530,6 +3530,27 @@ void Resolver::exit(const IndexableLoop* loop) {
   }
 }
 
+bool Resolver::enter(const DoWhile* loop) {
+  enterScope(loop);
+
+  // traversing the block directly will push its scope onto the stack, which would
+  // duplicate the enter we'll do here. So we just visit the children manually.
+  enterScope(loop->body());
+  for (auto child : loop->body()->children()) {
+    child->traverse(*this);
+  }
+  // traverse the condition in the same scope as the loop body.
+  loop->condition()->traverse(*this);
+  exitScope(loop->body());
+
+  return false;
+}
+
+void Resolver::exit(const DoWhile* loop) {
+  exitScope(loop);
+}
+
+
 // Returns 'true' if a single Id was scope-resolved, in which case the function
 // will also return via the ID and QualifiedType formals.
 static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,

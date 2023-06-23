@@ -506,6 +506,9 @@ struct Resolver {
   bool enter(const uast::IndexableLoop* loop);
   void exit(const uast::IndexableLoop* loop);
 
+  bool enter(const uast::DoWhile* loop);
+  void exit(const uast::DoWhile* loop);
+
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);
 

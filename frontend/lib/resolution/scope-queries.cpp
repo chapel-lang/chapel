@@ -276,15 +276,17 @@ isElseBlockOfConditionalWithIfVarQuery(Context* context, ID id) {
 
   bool result = false;
 
-  ID parentId = parsing::idToParentId(context, id);
-  if (!parentId.isEmpty()) {
-    if (asttags::isConditional(parsing::idToTag(context, parentId))) {
-      auto parentAst = parsing::idToAst(context, parentId);
-      auto cond = parentAst->toConditional();
-      CHPL_ASSERT(cond); // should have checked it was a conditional already
-      if (cond->condition()->isVariable() && cond->elseBlock() != nullptr) {
-        if (cond->elseBlock()->id() == id) {
-          result = true;
+  if (!id.isEmpty() && asttags::isBlock(parsing::idToTag(context, id))) {
+    ID parentId = parsing::idToParentId(context, id);
+    if (!parentId.isEmpty()) {
+      if (asttags::isConditional(parsing::idToTag(context, parentId))) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        auto cond = parentAst->toConditional();
+        CHPL_ASSERT(cond); // should have checked it was a conditional already
+        if (cond->condition()->isVariable() && cond->elseBlock() != nullptr) {
+          if (cond->elseBlock()->id() == id) {
+            result = true;
+          }
         }
       }
     }
@@ -301,6 +303,41 @@ isElseBlockOfConditionalWithIfVar(Context* context,
   if (!ast->isBlock()) return false;
 
   return isElseBlockOfConditionalWithIfVarQuery(context, ast->id());
+}
+
+static const Block* const&
+isConditionOfDoWhileLoopQuery(Context* context, ID id) {
+  QUERY_BEGIN(isConditionOfDoWhileLoopQuery, context, id);
+
+  const Block* result = nullptr;
+
+  if (!id.isEmpty()) {
+    ID parentId = parsing::idToParentId(context, id);
+    if (!parentId.isEmpty()) {
+      if (asttags::isDoWhile(parsing::idToTag(context, parentId))) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        auto doWhile = parentAst->toDoWhile();
+        CHPL_ASSERT(doWhile);
+        if (doWhile->condition()->id() == id) {
+          result = doWhile->body();
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+/**
+  If the current AST node is the condition of a do-while loop, return the
+  loop's body, whose scope would be the "parent" scope for the current node.
+  Otherwise, return nullptr.
+ */
+static const Block*
+isConditionOfDoWhileLoop(Context* context, const uast::AstNode* ast) {
+  if (!ast) return nullptr;
+
+  return isConditionOfDoWhileLoopQuery(context, ast->id());
 }
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
@@ -425,6 +462,11 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         // Construct the new scope.
         const owned<Scope>& newScope = constructScopeQuery(context, id);
         result = newScope.get();
+      } else if (auto loopBody = isConditionOfDoWhileLoop(context, ast)) {
+        // If this is a condition in do-while loop, its next scope should
+        // be the loop body, even though structurally it's not inside
+        // the loop body.
+        result = scopeForIdQuery(context, loopBody->id());
       } else {
         // find the scope for the parent node and return that.
         ID parentId = parsing::idToParentId(context, id);
@@ -882,13 +924,44 @@ bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
   return true;
 }
 
-static bool
-isScopeElseBlockOfConditionalWithIfVar(Context* context, const Scope* scope) {
-  if (!scope->id().isEmpty() && asttags::isBlock(scope->tag())) {
-    return isElseBlockOfConditionalWithIfVarQuery(context, scope->id());
+/**
+  Similar to just calling parentScope() on scope, but does additional work
+  to semantically find the "next scope to be searched". In particular, skips
+  if-var-statement scopes if we're in the else block and jumps to the scope of
+  a do-while body if we're in the do-while condition.
+
+  The 'if-vars' trickiness is required to implement correct scoping behavior
+  for 'if-vars' in conditionals. The 'if-var' lives in the scope
+  for the conditional, but it is not visible within the 'else'
+  branch. Without this hack, we'd be able to see the 'if-var' in
+  both branches.
+
+  The do-while logic is required because code like the following is valid:
+
+      do {
+        var x = false;
+      } while x;
+
+  Even though the loop body is not the parent of the conditional, its scope
+  should be visible.
+
+ */
+static const Scope* nextHigherScope(Context* context, const Scope* scope) {
+  auto scopeId = scope->id();
+
+  if (isElseBlockOfConditionalWithIfVarQuery(context, scopeId)) {
+    // We're the else block of an if-statement. Skip the scope of the
+    // if-statement, and go for the next thing up.
+    return nextHigherScope(context, scope->parentScope());
   }
 
-  return false;
+  if (auto loopBody = isConditionOfDoWhileLoopQuery(context, scopeId)) {
+    // We're the condition of a do-while loop. The scope we should go to
+    // next is the scope of the do-while body.
+    return scopeForIdQuery(context, loopBody->id());
+  }
+
+  return scope->parentScope();
 }
 
 // appends to result
@@ -1057,38 +1130,15 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
-    bool skipClosestConditional = false;
-
-    // This trickiness is required to implement correct scoping behavior
-    // for 'if-vars' in conditionals. The 'if-var' lives in the scope
-    // for the conditional, but it is not visible within the 'else'
-    // branch. Without this hack, we'd be able to see the 'if-var' in
-    // both branches. First, detect if the start scope is the else-block.
-    skipClosestConditional =
-      isScopeElseBlockOfConditionalWithIfVar(context, scope);
 
     if (!asttags::isModule(scope->tag()) || goPastModules) {
-      for (cur = scope->parentScope();
+      for (cur = nextHigherScope(context, scope);
            cur != nullptr;
-           cur = cur->parentScope()) {
+           cur = nextHigherScope(context, cur)) {
 
         if (asttags::isModule(cur->tag()) && !goPastModules) {
           reachedModule = true;
           break;
-        }
-
-        // We could be in a nested block, so check for the else-block to
-        // trigger the pattern matching as we walk up...
-        if (!skipClosestConditional)
-          if (isScopeElseBlockOfConditionalWithIfVar(context, cur))
-            skipClosestConditional = true;
-
-        // Skip the first conditional's scope if we need to.
-        if (skipClosestConditional) {
-          if (asttags::isConditional(cur->tag())) {
-            skipClosestConditional = false;
-            continue;
-          }
         }
 
         if (trace) {
@@ -1116,9 +1166,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
         }
       }
     }
-
-    // Skip should have been performed if needed, at least once.
-    CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
       // check the containing module scope
