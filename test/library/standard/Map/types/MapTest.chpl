@@ -19,9 +19,11 @@ proc testMap(type t, param testIndexing = false) {
 
   ret = m.add(1, y);
   assert(!ret);
+  for v in m.values() do writeln(v);  // still '1'
 
   ret = m.remove(1);
   assert(ret);
+  assert(!m.contains(1));
   assert(!m.contains(2));
 
   if isNilableClass(t) {
