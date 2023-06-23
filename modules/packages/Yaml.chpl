@@ -70,8 +70,8 @@ flags to specify the location of the library.
 
 */
 
-@unstable("The Yaml module is considered unstable pending various name and design changes.")
-module Yaml {
+@unstable("The YAML module is considered unstable pending various name and design changes.")
+module YAML {
   @chpldoc.nodoc
   config param YamlVerbose = false;
 

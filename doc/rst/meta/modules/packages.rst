@@ -54,11 +54,11 @@ File Formats and I/O
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
-   Json <packages/Json>
+   JSON <packages/JSON>
    NetCDF <packages/NetCDF>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
-   Yaml <packages/Yaml>
+   YAML <packages/YAML>
 
 Math / Numerical Computing
 --------------------------
