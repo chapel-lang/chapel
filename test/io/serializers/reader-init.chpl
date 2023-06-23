@@ -1,6 +1,6 @@
 
 use IO;
-use Json;
+use JSON;
 
 record R {
   var x : int;
