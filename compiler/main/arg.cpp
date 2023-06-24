@@ -55,6 +55,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #endif
 
 #include <cstdio>
+#include <cstring>
 #include <inttypes.h>
 
 extern bool developer;
