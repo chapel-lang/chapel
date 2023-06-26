@@ -131,7 +131,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/Json.chpl \
+	packages/JSON.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
@@ -156,7 +156,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnorderedCopy.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
-	packages/Yaml.chpl \
+	packages/YAML.chpl \
 	packages/ZMQ.chpl \
 
 

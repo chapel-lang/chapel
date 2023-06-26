@@ -1,4 +1,4 @@
-use IO, Yaml;
+use IO, YAML;
 
 var FormatWriter = new YamlSerializer();
 var FormatReader = new YamlDeserializer();

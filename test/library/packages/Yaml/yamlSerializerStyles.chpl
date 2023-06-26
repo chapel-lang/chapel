@@ -1,4 +1,4 @@
-use Yaml, List, IO;
+use YAML, List, IO;
 
 record R1 {
   var item: R2;

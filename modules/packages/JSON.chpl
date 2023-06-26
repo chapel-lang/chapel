@@ -21,8 +21,8 @@
  The Json module provides a JsonSerializer and JsonDeserializer that allow
  for reading and writing data in the JSON format.
  */
-@unstable("Json module is considered unstable pending naming changes")
-module Json {
+@unstable("JSON module is considered unstable pending naming changes")
+module JSON {
   private use IO;
   private use CTypes;
   private use Map;
