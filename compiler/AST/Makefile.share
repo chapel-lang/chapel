@@ -64,7 +64,6 @@ AST_SRCS =                                          \
            AstLogger.cpp                            \
            AstDump.cpp                              \
            AstDumpToHtml.cpp                        \
-           AstDumpToNode.cpp                        \
                                                     \
            AstCount.cpp                             \
                                                     \
