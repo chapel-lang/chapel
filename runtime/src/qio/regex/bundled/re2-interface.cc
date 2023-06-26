@@ -298,7 +298,7 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
       submatch[i].len = 0;
     } else {
       intptr_t diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
-      assert( diff >= startpos && diff <= endpos );
+      assert( diff == 0 || diff >= startpos && diff <= endpos );
       int64_t length = spPtr[i].length();
 
       submatch[i].offset = diff;
