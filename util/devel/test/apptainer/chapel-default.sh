@@ -3,4 +3,8 @@
 # Checks if a default build basses make check
 # Prints a summary at the end.
 
-./tryit.sh ../../provision-scripts/chapel-default.sh
+# apptainer forwards env vars to container by default, so unset
+# CHPL_DEVELOPER b/c it can change warning behavior
+unset CHPL_DEVELOPER
+
+./tryit.py --skip-nollvm ../../provision-scripts/chapel-default.sh

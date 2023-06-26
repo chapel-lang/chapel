@@ -8,4 +8,4 @@ From: debian:bullseye
     /provision-scripts/apt-get-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

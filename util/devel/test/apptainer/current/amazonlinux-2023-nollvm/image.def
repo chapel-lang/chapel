@@ -9,4 +9,4 @@ From: amazonlinux:2023
     /provision-scripts/dnf-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"
