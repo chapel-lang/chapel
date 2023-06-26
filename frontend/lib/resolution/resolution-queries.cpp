@@ -2224,6 +2224,22 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
+
+  if (ci.isMethodCall() && ci.name() == "init") {
+    // TODO: test when record has defaults for type/param fields
+    auto recv = ci.calledType();
+    auto fn = parsing::idToAst(context, candidateId)->toFunction();
+    ResolutionResultByPostorderID r;
+    auto vis = Resolver::createForInitialSignature(context, fn, r);
+    fn->thisFormal()->traverse(vis);
+    auto res = vis.byPostorder.byAst(fn->thisFormal());
+
+    auto got = canPass(context, recv, res.type());
+    if (!got.passes()) {
+      return nullptr;
+    }
+  }
+
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
