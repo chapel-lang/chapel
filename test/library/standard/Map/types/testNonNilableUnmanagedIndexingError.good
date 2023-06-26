@@ -1,4 +1,4 @@
 {value = 1}
 uncaught KeyNotFoundError: key '3' not found
-  MapTest.chpl:88: thrown here
-  MapTest.chpl:88: uncaught here
+  MapTest.chpl:90: thrown here
+  MapTest.chpl:90: uncaught here
