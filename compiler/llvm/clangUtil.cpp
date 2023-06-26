@@ -2247,14 +2247,10 @@ static LlvmOptimizationLevel translateOptLevel(int optLevel=-1) {
 }
 
 static
-llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses,
-                                                  int optLevel = -1) {
+llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
   INT_ASSERT(clangInfo);
   clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
-
-  if (optLevel < 0)
-    optLevel = CodeGenOpts.OptimizationLevel;
 
   // Based on clang's EmitAssemblyHelper::RunOptimizationPipeline
   PipelineTuningOptions PTO;
@@ -2469,7 +2465,7 @@ void prepareCodegenLLVM()
   info->LAM = new LoopAnalysisManager();
   info->FAM = new FunctionAnalysisManager();
   info->CGAM = new CGSCCAnalysisManager();
-  info->MAM = new ModuleAnalysisManager;
+  info->MAM = new ModuleAnalysisManager();
 
   info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
 
@@ -4057,8 +4053,8 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
         case llvmStageNum::ModuleOptimizerEarly:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
             // do nothing, don't see an equivalent
-            printf("Cannot use llvm-print-ir-stage module-optimizer-early "
-                   "with the new pass manager\n");
+            USR_FATAL("Cannot use llvm-print-ir-stage module-optimizer-early "
+                      "with the new pass manager\n");
           }
           break;
         case llvmStageNum::LoopOptimizerEnd:
@@ -4088,8 +4084,8 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
         case llvmStageNum::EnabledOnOptLevel0:
           if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
             // do nothing, don't see an equivalent
-            printf("Cannot use llvm-print-ir-stage module-optimizer-early "
-                   "with the new pass manager\n");
+            USR_FATAL("Cannot use llvm-print-ir-stage enabled-on-opt-level0 "
+                      "with the new pass manager\n");
           }
           break;
         case llvmStageNum::Peephole:
