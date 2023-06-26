@@ -35,6 +35,8 @@
 #include "qio_regex.h"
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
+#include "chpltypes.h" // must be before "error.h" to prevent include errors
+#include "error.h"
 #undef printf
 
 #include "re2/re2.h"
@@ -298,7 +300,9 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
       submatch[i].len = 0;
     } else {
       intptr_t diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
-      assert( diff == 0 || diff >= startpos && diff <= endpos );
+      if( !(diff == 0 || (diff >= startpos && diff <= endpos)) ) {
+        chpl_internal_error("Invalid offset from regex match");
+      }
       int64_t length = spPtr[i].length();
 
       submatch[i].offset = diff;
@@ -376,7 +380,9 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   qio_channel_advance_unlocked(ch, off - min);
 
   // error checking.
-  assert( qio_channel_offset_unlocked(ch) == off );
+  if ( qio_channel_offset_unlocked(ch) != off ) {
+    chpl_internal_error("failed to advance to offset");
+  }
 }
 
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
