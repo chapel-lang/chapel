@@ -1458,12 +1458,6 @@ void MarkTempsVisitor::handleStmtGroup() {
   // Is it initializing a user-level ref/const ref?
   // If so, make everything end-of-block.
 
-  /*
-  printf("Handling statement group:\n");
-  for_vector(VarSymbol, v, vars) {
-    printf("  v %s [%i]\n", v->name, v->id);
-  }*/
-
   bool allEndOfBlock = fNoEarlyDeinit;
   bool allCanBeGlobal = true;
 
