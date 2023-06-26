@@ -35,6 +35,8 @@
 #include "qio_regex.h"
 #include "qbuffer.h" // qio_strdup, refcount functions, qio_ptr_diff, etc
 #include "qio.h" // for channel operations
+#include "chpltypes.h" // must be before "error.h" to prevent include errors
+#include "error.h"
 #undef printf
 
 #include "re2/re2.h"
