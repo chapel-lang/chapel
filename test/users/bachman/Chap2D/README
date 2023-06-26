@@ -1,0 +1,7 @@
+## These are the compile instructions on NCAR's Cheyenne cluster.   This program needs the FFTW and NetCDF libraries
+
+DOUBLE-PRECISION VERSION
+source /glade/u/home/bachman/.chapel_QG_64_nightly
+chpl -srp=64 -scp=128 -lfftw3 -lnetcdf -L/glade/u/apps/ch/opt/fftw/3.3.9/gnu/10.1.0/lib -L/glade/u/apps/ch/opt/netcdf/4.8.1/gnu/10.1.0/lib -I/glade/u/apps/ch/opt/fftw/3.3.9/gnu/10.1.0/include -I/glade/u/apps/ch/opt/netcdf/4.8.1/gnu/10.1.0/include --ldflags="-Wl,-rpath,/glade/u/apps/ch/opt/fftw/3.3.9/gnu/10.1.0/lib -Wl,-rpath,/glade/u/apps/ch/opt/netcdf/4.8.1/gnu/10.1.0/lib" Chap2D_Driver.chpl --fast
+
+
