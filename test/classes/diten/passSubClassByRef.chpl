@@ -1,5 +1,5 @@
 class C {}
-var c = (new owned C()).borrow();
+var obj = new C(); var c = obj.borrow();
 proc foo(ref obj: RootClass) {
   writeln("called foo(obj)");
 }

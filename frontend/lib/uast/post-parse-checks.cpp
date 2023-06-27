@@ -115,6 +115,7 @@ struct Visitor {
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
+  void checkBorrowFromNew(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -658,6 +659,31 @@ void Visitor::checkExportVar(const Variable* node) {
   if (node->linkage() == Decl::EXPORT) {
     error(node, "export variables are not yet supported.");
   }
+}
+
+void Visitor::checkBorrowFromNew(const Variable* node) {
+  // look for either of the following patterns:
+  //   const x = (new C()).borrow()
+  //   var x = (new owned C()).borrow()
+  // These worked in 1.31 but will no longer work in 1.32.
+  // This warning can be removed in 1.33.
+  if (!node->initExpression()) return;
+
+  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST)
+    return;
+
+  if (auto c = node->initExpression()->toFnCall())
+    if (auto r = c->calledExpression())
+      if (auto dot = r->toDot())
+        if (dot->field() == USTR("borrow"))
+          if (auto receiver = dot->receiver())
+            if (auto call = receiver->toFnCall())
+              if (auto called = call->calledExpression())
+                if (called->isNew())
+                  warn(node, "Class created by nested 'new' will be "
+                             "deinitialized before the borrow can be used. "
+                             "Please update this code to use a separate "
+                             "variable to store the new class");
 }
 
 void Visitor::checkOperatorNameValidity(const Function* node) {
@@ -1224,6 +1250,7 @@ void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
+  checkBorrowFromNew(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {

@@ -3,7 +3,8 @@ class C {
   var x: (t, tt, ttt, tttt);
 }
 
-var c = (new owned C(imag, complex, int, real)).borrow();
+var ownC = new owned C(imag, complex, int, real);
+var c = ownC.borrow();
 
 writeln(c);
 writeln(c.type:string);

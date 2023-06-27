@@ -32,7 +32,8 @@ class C {
 }
 
 proc badlt() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setClt(own.borrow());
@@ -42,7 +43,8 @@ proc badlt() {
 badlt();
 
 proc badlt2() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setClt2(own.borrow());
@@ -52,7 +54,8 @@ proc badlt2() {
 badlt2();
 
 proc badlte() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setClte(own.borrow());
@@ -62,7 +65,8 @@ proc badlte() {
 badlte();
 
 proc badgt() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setCgt(own.borrow());
@@ -72,7 +76,8 @@ proc badgt() {
 badgt();
 
 proc badgte() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setCgte(own.borrow());
@@ -82,7 +87,8 @@ proc badgte() {
 badgte();
 
 proc callsBad() {
-  var b = (new owned C()).borrow();
+  var ownB = new owned C();
+  var b = ownB.borrow();
   {
     var own = new owned C();
     b.setCbad(own.borrow());

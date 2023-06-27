@@ -1,7 +1,7 @@
 // This is the counterpart to tuple-vararg-in-lt-clause.chpl
 // that ensures that these constraints fire when they should.
 
-var global = (new owned Test()).borrow();
+var globalObj = new Test(); var global = globalObj.borrow();
 
 class Test {
   /** a single constraint **/
@@ -39,10 +39,10 @@ class Test {
 }
 
 proc main {
-  const ttt = (new owned Test()).borrow();
-  const jbo = (new owned RootClass()).borrow();
+  const ownedTtt = new owned Test();        const ttt = ownedTtt.borrow();
+  const ownedJbo = new owned RootClass();   const jbo = ownedJbo.borrow();
   {
-    const obj = (new owned RootClass()).borrow();
+    const ownedObj = new owned RootClass(); const obj = ownedObj.borrow();
 
     /* dependsOnN1 */
     ttt.dependsOnN1(obj);

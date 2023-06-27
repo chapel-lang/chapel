@@ -13,6 +13,7 @@ class C {
   }
 }
 
-var c: borrowed C = (new owned C(true)).borrow();
+var ownC = new owned C(true);
+var c: borrowed C = ownC.borrow();
 
 writeln("Got back: x=", c.x, " y=", c.y);

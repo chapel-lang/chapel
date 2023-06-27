@@ -12,6 +12,6 @@ class C {
   }
 }
 
-var c = (new owned C(2, 3)).borrow();
+var c = new C(2, 3);
 
 writeln(c.x);

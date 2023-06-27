@@ -4,6 +4,6 @@ class C {
   }
 }
 
-var c = (new owned C()).borrow();
+var c = new C();
 
 c.f();

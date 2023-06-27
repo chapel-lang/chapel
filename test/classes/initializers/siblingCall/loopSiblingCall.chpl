@@ -23,6 +23,6 @@ class Looper {
 proc main() {
   var arr = [3, -5, 2, 7, 1, 2, 5, 8, 3, 0];
 
-  var c: borrowed Looper = (new owned Looper(arr)).borrow();
+  var c = new Looper(arr);
   writeln(c);
 }
