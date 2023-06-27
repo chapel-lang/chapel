@@ -23,7 +23,7 @@
  */
 module CVoidPtr {
   use ChapelStandard;
-  use CTypes;
+  // use CTypes;
 
   // @chpldoc.nodoc
   // type _c_void_ptr = c_ptr(void);
@@ -60,11 +60,11 @@ module CVoidPtr {
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
-    inline proc writeThis(ch) throws {
-      (this:c_void_ptr).writeThis(ch);
-    }
-    inline proc serialize(writer, ref serializer) throws {
-      (this:c_void_ptr).writeThis(writer);
-    }
+    // inline proc writeThis(ch) throws {
+    //   this.writeThis(ch);
+    // }
+    // inline proc serialize(writer, ref serializer) throws {
+    //   this.writeThis(writer);
+    // }
   }
 }

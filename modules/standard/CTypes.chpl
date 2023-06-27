@@ -376,11 +376,11 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc c_void_ptr.writeThis(ch) throws {
+  inline proc _c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
   }
   @chpldoc.nodoc
-  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
+  inline proc _c_void_ptr.serialize(writer, ref serializer) throws {
     this.writeThis(writer);
   }
 
