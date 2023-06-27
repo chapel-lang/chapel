@@ -966,7 +966,9 @@ module ArgumentParser {
     */
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
               in helpHandler:?h=none, helpMessage:?t=none)
-      lifetime return globalLifetime /* indicate result has global lifetime */
+      lifetime return globalLifetime
+      /* lifetime clause indicate result has global lifetime and is
+         a work-around for issue #22599. */
     {
 
       if (!isNothingType(h) && !isNothingType(t)) then

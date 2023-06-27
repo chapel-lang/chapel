@@ -662,9 +662,6 @@ void Visitor::checkExportVar(const Variable* node) {
 }
 
 void Visitor::checkBorrowFromNew(const Variable* node) {
-  if (node->id().str() == "aa.main@5")
-    gdbShouldBreakHere();
-
   // look for either of the following patterns:
   //   const x = (new C()).borrow()
   //   var x = (new owned C()).borrow()

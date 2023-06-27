@@ -204,7 +204,7 @@ namespace {
   typedef std::map<Stmt*, DeinitOrderNode> DeinitOrderBlockMap;
 
   enum struct LifetimeComparisonResult {
-    UNKNOWN,
+    UNKNOWN, // means it could be either/both (possible in a conditional)
     SHORTER,
     LONGER,
   };

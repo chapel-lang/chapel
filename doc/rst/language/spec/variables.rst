@@ -714,8 +714,8 @@ Regular local variables are destroyed at the end of the containing block.
 Temporary local variables have a different rule as described below.
 
 The compiler adds temporary local variables to contain the result of
-nested call expressions. For example, ``g()`` in the statement ``f(g());`` is an
-example of a nested call expression. If the containing statement is an
+nested call expressions. For example, ``g()`` in the statement ``f(g());`` is
+a nested call expression. If the containing statement is an
 initialization expression for a ``ref`` or ``const ref``,
 such as ``const ref x = f(g());``,
 then the temporary local variables for that statement are deinitialized at

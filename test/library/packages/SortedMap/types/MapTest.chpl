@@ -17,6 +17,7 @@ proc testMap(type t) where isTupleType(t) {
 
   ret = m.remove(1);
   assert(ret);
+  assert(!m.contains(1));
   assert(!m.contains(2));
 }
 
@@ -40,6 +41,7 @@ proc testMap(type t) where isBorrowedClass(t) {
 
   ret = m.remove(1);
   assert(ret);
+  assert(!m.contains(1));
   assert(!m.contains(2));
 }
 
@@ -59,6 +61,7 @@ proc testMap(type t) {
 
   ret = m.remove(1);
   assert(ret);
+  assert(!m.contains(1));
   assert(!m.contains(2));
 
   if isUnmanagedClass(t) {

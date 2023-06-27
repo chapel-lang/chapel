@@ -1356,10 +1356,8 @@ class MarkTempsVisitor final : public AstVisitorTraverse {
   MarkTempsVisitor() { }
 
   bool enterFnSym(FnSymbol* node) override;
-
   bool enterDefExpr(DefExpr* node) override;
   bool enterCallExpr(CallExpr* node) override;
-
 
   bool enterStmt();
   void exitStmt();
@@ -1393,7 +1391,6 @@ class MarkTempsVisitor final : public AstVisitorTraverse {
 
   bool isStmtGroupInLoopImplementation();
   void handleStmtGroup();
-
 };
 
 bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
