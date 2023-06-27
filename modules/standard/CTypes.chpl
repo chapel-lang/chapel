@@ -91,6 +91,8 @@ module CTypes {
 
   */
   type c_void_ptr = c_ptr(void);
+  @chpldoc.nodoc
+  type _c_void_ptr = c_ptr(void);
 
 
   /* A Chapel version of a C NULL pointer. */

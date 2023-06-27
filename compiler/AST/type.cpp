@@ -1071,6 +1071,9 @@ void initPrimitiveTypes() {
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
+  dtCVoidPtr                           = new AggregateType(AGGREGATE_CLASS);
+  dtCVoidPtr->symbol                   = new TypeSymbol("_c_void_ptr", dtCVoidPtr);
+
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
