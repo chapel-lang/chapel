@@ -267,9 +267,15 @@ static void setRecordCopyableFlags(AggregateType* at) {
       }
 
     } else {
-      // Try resolving a test init= to set the flags
-      const char* err = NULL;
-      FnSymbol* initEq = findCopyInitFn(at, err);
+      // TODO Jade:
+      // special case since while implicit reads of sync/single are not yet removed
+      // with their removal, the init= that throws a warning will be gone
+      FnSymbol* initEq = NULL;
+      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+        // Try resolving a test init= to set the flags
+        const char* err = NULL;
+        initEq = findCopyInitFn(at, err);
+      }
       if (initEq == NULL) {
         ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
       } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
