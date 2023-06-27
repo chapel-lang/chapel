@@ -3,7 +3,7 @@ proc testit2(d:domain) {
 }
 
 proc testit(r: range(stridable=?)) throws {
-  var dom: domain(1, stridable=true);
+  var dom: domain(1, strides=strideKind.any);
   if r.bounds != boundKind.both {
     throw new owned IllegalArgumentError('input range must be bounded');
     // unfortunate workaround: dom = {1..2};

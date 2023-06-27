@@ -39,7 +39,6 @@
 module Reflection {
 
 // Used to test "--warn-unstable-standard", ignore.
-@chpldoc.nodoc
 @unstable
 var chpl_unstableStandardSymbolForTesting: int;
 chpl_unstableStandardSymbolForTesting;

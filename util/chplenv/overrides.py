@@ -65,6 +65,8 @@ chplvars = [
              'CHPL_LLVM',
              'CHPL_LLVM_SUPPORT',
              'CHPL_LLVM_CONFIG',
+             'CHPL_LLVM_CLANG_C',
+             'CHPL_LLVM_CLANG_CXX',
              # CHPL_LLVM_VERSION -- doesn't make sense to override it
              'CHPL_LLVM_GCC_PREFIX', # not in printchplenv --all
 

@@ -24,13 +24,13 @@ proc clusterFlags (
 
   //---- Create stack of unprocessed domains ----
   
-  var unprocessed_domain_stack = new unmanaged Stack( domain(rank,stridable=true) );
+  var unprocessed_domain_stack = new unmanaged Stack( domain(rank,strides=strideKind.any) );
   unprocessed_domain_stack.push(full_domain);
   
   
   //---- List of finished domains ----
   
-  var finished_domain_list = new unmanaged List( domain(rank, stridable=true) );
+  var finished_domain_list = new unmanaged List( domain(rank, strides=strideKind.any) );
   
   
   while !unprocessed_domain_stack.isEmpty()
@@ -49,7 +49,7 @@ proc clusterFlags (
 
       //---- Generate new domains ----
       
-      var D1, D2: domain(rank,stridable=true);
+      var D1, D2: domain(rank,strides=strideKind.any);
       (D1,D2) = candidate.split();
 
       
@@ -99,14 +99,14 @@ proc clusterFlags (
 // helper class
 class ArrayWrapper
 {
-  var Domain: domain(1,stridable=true);
+  var Domain: domain(1,strides=strideKind.any);
   var array: [Domain] int;
 }
 
 class CandidateDomain {
   
   param rank:       int;
-  var D:          domain(rank,stridable=true);
+  var D:          domain(rank,strides=strideKind.any);
   var flags:      [D] bool;
   const min_width:  rank*int;
   var   signatures: rank*unmanaged ArrayWrapper;
@@ -206,7 +206,7 @@ class CandidateDomain {
 proc CandidateDomain.trim()
 {    
   //===> Find bounds of trimmed domain ===>
-  var trimmed_ranges:      rank*range(stridable=true);
+  var trimmed_ranges:      rank*range(strides=strideKind.any);
   var trim_low, trim_high: int;
   
   for d in 0..rank-1 {
@@ -284,7 +284,7 @@ proc CandidateDomain.trim()
 proc CandidateDomain.split()
 {
   
-  var D1, D2: domain(rank, stridable=true);
+  var D1, D2: domain(rank, strides=strideKind.any);
   
   (D1,D2) = removeHole();
   
@@ -308,17 +308,17 @@ proc CandidateDomain.split()
 proc CandidateDomain.removeHole()
 {
 
-  var D1, D2: domain(rank, stridable=true);
+  var D1, D2: domain(rank, strides=strideKind.any);
   D1 = D;
 
-  var ranges:      rank*range(stridable=true);
+  var ranges:      rank*range(strides=strideKind.any);
   var hole_low:    int;
   var hole_high:   int;
   var low_active:  bool;
   var high_active: bool;
-  var hole:        domain(rank,stridable=true);
+  var hole:        domain(rank,strides=strideKind.any);
   
-  var max_hole:    domain(rank, stridable=true);
+  var max_hole:    domain(rank, strides=strideKind.any);
   var d_cut:       int;
   var stride:      int;
 
@@ -416,9 +416,9 @@ proc CandidateDomain.removeHole()
 proc CandidateDomain.inflectionCut ()
 {
 
-  var ranges: rank*range(stridable=true);
+  var ranges: rank*range(strides=strideKind.any);
 
-  var D1, D2: domain(rank, stridable=true);
+  var D1, D2: domain(rank, strides=strideKind.any);
   D1 = D;
 
   var magnitude: int;

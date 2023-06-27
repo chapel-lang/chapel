@@ -38,20 +38,16 @@ module GPU
   use ChplConfig;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_write(const str : c_string) : void;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_printTimeDelta(
     msg : c_string, start : uint, stop : uint) : void;
 
   pragma "codegen for CPU and GPU"
-  @chpldoc.nodoc
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
   /*
@@ -355,26 +351,33 @@ module GPU
     chpl_atomicTernOp(c_ptrTo(x), cmp, val);
   }
 
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically add 'val' to 'x' (result is stored in 'x'). */
   inline proc gpuAtomicAdd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("add", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically subtract 'val' from 'x' (result is stored in 'x'). */
   inline proc gpuAtomicSub(  ref x : ?T, val : T) : void { gpuAtomicBinOp("sub", x, val); }
   @chpldoc.nodoc
   inline proc gpuAtomicExch( ref x : ?T, val : T) : void { gpuAtomicBinOp("exch", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the minimum in 'x'. */
   inline proc gpuAtomicMin(  ref x : ?T, val : T) : void { gpuAtomicBinOp("min", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically compare 'x' and 'val' and store the maximum in 'x'. */
   inline proc gpuAtomicMax(  ref x : ?T, val : T) : void { gpuAtomicBinOp("max", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically increments x if the original value of x is
+     greater-than or equal to val, if so the result is stored in 'x'. */
   inline proc gpuAtomicInc(  ref x : ?T, val : T) : void { gpuAtomicBinOp("inc", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically determine if 'x' equals 0 or is greater than 'val'.
+     If so store 'val' in 'x' otherwise decrement 'x' by 1. */
   inline proc gpuAtomicDec(  ref x : ?T, val : T) : void { gpuAtomicBinOp("dec", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically perform a bitwise 'and' operation on 'x' and 'val' and store
+     the result in 'x'. */
   inline proc gpuAtomicAnd(  ref x : ?T, val : T) : void { gpuAtomicBinOp("and", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically perform a bitwise 'or' operation on 'x' and 'val' and store
+     the result in 'x'.  */
   inline proc gpuAtomicOr(   ref x : ?T, val : T) : void { gpuAtomicBinOp("or", x, val); }
-  @chpldoc.nodoc
+  /* When run on a GPU, atomically perform a bitwise 'xor' operation on 'x' and 'val' and store
+     the result in 'x'. */
   inline proc gpuAtomicXor(  ref x : ?T, val : T) : void { gpuAtomicBinOp("xor", x, val); }
-  @chpldoc.nodoc
+
+  /* When run on a GPU, atomically compare the value in 'x' and 'cmp', if they
+     are equal store 'val' in 'x'.  */
   inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : void { gpuAtomicTernOp("CAS", x, cmp, val); }
 }

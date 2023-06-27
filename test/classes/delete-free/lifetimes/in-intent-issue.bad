@@ -1,0 +1,3 @@
+in-intent-issue.chpl:18: In function 'main':
+in-intent-issue.chpl:26: error: Scoped variable y reachable after lifetime ends
+in-intent-issue.chpl:30: error: Scoped variable z reachable after lifetime ends

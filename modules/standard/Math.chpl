@@ -41,6 +41,96 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+.. _math-constants:
+
+Constants
+---------
+:var:`e`
+:var:`log2_e`
+:var:`log10_e`
+:var:`ln_2`
+:var:`ln_10`
+:var:`pi`
+:var:`half_pi`
+:var:`quarter_pi`
+:var:`recipr_pi`
+:var:`twice_recipr_pi`
+:var:`twice_recipr_sqrt_pi`
+:var:`sqrt_2`
+:var:`recipr_sqrt_2`
+
+.. _math-trigonometry:
+
+Trigonometric Functions
+-----------------------
+:proc:`acos`
+:proc:`acosh`
+:proc:`asin`
+:proc:`asinh`
+:proc:`atan`
+:proc:`atan2`
+:proc:`atanh`
+:proc:`cos`
+:proc:`cosh`
+:proc:`sin`
+:proc:`sinh`
+:proc:`tan`
+:proc:`tanh`
+
+.. _math-log:
+
+Log Functions
+-------------
+:proc:`log`
+:proc:`log10`
+:proc:`log1p`
+:proc:`logBasePow2`
+:proc:`log2`
+
+.. _math-exponential:
+
+Exponential Functions
+---------------------
+:proc:`exp`
+:proc:`exp2`
+:proc:`expm1`
+:proc:`ldexp`
+
+.. _math-gamma:
+
+Gamma Functions
+---------------
+:proc:`lgamma`
+:proc:`tgamma`
+
+.. _math-error:
+
+Error Functions
+---------------
+:proc:`erf`
+:proc:`erfc`
+
+.. _math-algorithms:
+
+Algorithms
+----------
+:proc:`gcd`
+
+.. _math-bessel:
+
+Bessel Functions
+----------------
+:proc:`j0`
+:proc:`j1`
+:proc:`jn`
+:proc:`y0`
+:proc:`y1`
+:proc:`yn`
+
+
+Constant and Function Definitions
+---------------------------------
+
 */
 module Math {
   private use CTypes;

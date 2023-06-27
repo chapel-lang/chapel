@@ -106,7 +106,6 @@ module ChapelSyncvar {
     return ret;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(x) do return x;
 
   /************************************ | *************************************
@@ -186,7 +185,8 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
-    proc type decodeFrom(r) throws {
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
       return ret;
@@ -394,7 +394,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
     // Does it make sense to have a const sync? If so, can we make use of that
     // information here?
@@ -410,7 +409,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   @chpldoc.nodoc
@@ -859,6 +857,13 @@ module ChapelSyncvar {
       compilerError("single variables cannot currently be read - use writeEF instead");
     }
 
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      compilerError("single variables cannot currently be read - use writeEF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of single vars.
     proc writeThis(x) throws {
       compilerError("single variables cannot currently be written - apply readFF() to those variables first");
@@ -952,7 +957,6 @@ module ChapelSyncvar {
   }
 
   pragma "auto copy fn"
-  @chpldoc.nodoc
   proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
     return new _singlevar(rhs);
   }
@@ -966,7 +970,6 @@ module ChapelSyncvar {
       delete x.wrapped;
   }
 
-  @chpldoc.nodoc
   proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************
@@ -1236,8 +1239,9 @@ private module AlignedTSupport {
     this = f.read(uint(64)) : aligned_t;
   }
 
-  proc aligned_t.encodeTo(f) throws {
-    writeThis(f);
+  @chpldoc.nodoc
+  proc aligned_t.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
   proc type aligned_t.readThis(f) throws {
     var ret : aligned_t;

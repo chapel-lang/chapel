@@ -13,16 +13,16 @@ const BSD: sparse subdomain(BD);
 
 const SDCS: sparse subdomain({1..n, 1..n by 2}) dmapped CS();
 
-if SD.stridable then
+if SD.strides != strideKind.one then
   compilerError("SD should not be stridable");
 
-if !SD2.stridable then
+if SD2.strides != strideKind.positive then
   compilerError("SD2 should be stridable");
 
-if !SDCS.stridable then
+if SDCS.strides != strideKind.positive then
   compilerError("SD2CS should be stridable");
 
-if BSD.stridable then
+if BSD.strides != strideKind.one then
   compilerError("BSD should not be stridable");
 
-writeln((SD.stridable, SD2.stridable, SDCS.stridable, BSD.stridable));
+writeln((SD.strides, SD2.strides, SDCS.strides, BSD.strides));

@@ -113,20 +113,17 @@ module SharedObject {
    */
   pragma "managed pointer"
   record _shared {
-    @chpldoc.nodoc
     type chpl_t;         // contained type (class type)
 
     // contained pointer (class type)
     // uses primitive as a workaround for compiler issues
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p:__primitive("to nilable class", chpl_t);
 
     // Note that compiler also allows coercion to the borrow type.
     forwarding borrow();
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn:unmanaged ReferenceCount?; // reference counter
 
     /*
@@ -212,7 +209,7 @@ module SharedObject {
     @chpldoc.nodoc
     proc init(_private: bool, type t, ref src:_shared) {
       this.chpl_t = t;
-      this.chpl_p = src.chpl_p:_to_nilable(_to_unmanaged(t));
+      this.chpl_p = _to_unmanaged(src.chpl_p):_to_nilable(_to_unmanaged(t));
       this.chpl_pn = src.chpl_pn;
 
       src.chpl_p = nil;
@@ -223,7 +220,7 @@ module SharedObject {
        count if the stored pointer is not nil. */
     @chpldoc.nodoc
     proc init(_private: bool, type t, p, pn) {
-      var ptr = p:_to_nilable(_to_unmanaged(t));
+      var ptr = _to_unmanaged(p):_to_nilable(_to_unmanaged(t));
       var count = pn;
       if ptr != nil {
         // increment the reference count
@@ -534,7 +531,6 @@ module SharedObject {
 
   // This is a workaround
   pragma "auto destroy fn"
-  @chpldoc.nodoc
   proc chpl__autoDestroy(ref x: _shared) {
     __primitive("call destructor", __primitive("deref", x));
   }
@@ -554,12 +550,12 @@ module SharedObject {
   proc _shared._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp == nil then halt("internal error - read nil");
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
       var tmp = this.chpl_p : borrowed class?;
-      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
+      if f._writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
         this.doClear();
@@ -619,7 +615,7 @@ module SharedObject {
       throw new owned NilClassError();
     }
     // the following line can throw ClassCastError
-    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    var p = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -628,7 +624,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // the following line can throw ClassCastError
-    var p = try x.chpl_p:_to_nonnil(_to_unmanaged(t.chpl_t));
+    var p = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
 
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
@@ -640,7 +636,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t,x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
-    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
   @chpldoc.nodoc
@@ -648,7 +644,7 @@ module SharedObject {
     where isProperSubtype(t.chpl_t,_to_nilable(x.chpl_t))
   {
     // this cast returns nil if the dynamic type is not compatible
-    var p = x.chpl_p:_to_nilable(_to_unmanaged(t.chpl_t));
+    var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
     return new _shared(true, _to_borrowed(p.type), p, x.chpl_pn);
   }
 
@@ -665,7 +661,7 @@ module SharedObject {
   }
 
   // cast from owned to shared
-  @chpldoc.nodoc
+  @deprecated("casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead")
   inline operator :(pragma "nil from arg" pragma "leaves arg nil" in x:owned, type t:_shared) {
     if t.chpl_t != ? && t.chpl_t != x.chpl_t then
       compilerError("Cannot change class type in conversion from '",
@@ -743,11 +739,9 @@ module WeakPointer {
     type classType;
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_p: __primitive("to nilable class", _to_unmanaged(classType)); // instance pointer
 
     pragma "owned"
-    @chpldoc.nodoc
     var chpl_pn: unmanaged ReferenceCount?; // reference counter
 
     // ---------------- Initializers ----------------
@@ -788,7 +782,7 @@ module WeakPointer {
     */
     @unstable("The `weak` type is experimental; expect this API to change in the future.")
     proc init(c : shared) {
-        var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
+        var ptr = _to_unmanaged(c.chpl_p): _to_nilable(_to_unmanaged(c.chpl_t));
         var count = c.chpl_pn;
 
         // increment the weak reference count (or store nil if the class is nil)

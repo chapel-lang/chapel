@@ -524,7 +524,13 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   bool converts = decResult.conversionKind_ != NONE;
   bool instantiates = decResult.instantiates_;
 
-  if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+  if (formalCt->manageableType()->isAnyClassType()) {
+    // Formal is the generic `class`. This is an instantiation since
+    // that's always generic.
+    return instantiate();
+  } else if (actualCt->manageableType()->isAnyClassType()) {
+    CHPL_ASSERT(false && "probably shouldn't happen");
+  } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
     // the basic class types are the same
     // or there was a subclass relationship
     // or there was instantiation
@@ -728,11 +734,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
       if (ct->decorator().isNilable())
         return true;
 
-  if (formalT->isAnyManagementNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isNonNilable())
-        return true;
-
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
 
@@ -801,6 +802,11 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   CHPL_ASSERT(actualT && formalT);
 
   // check for builtin generic types
+  //
+  // note: 'class' generic handling is down in canPassClassTypes, because it shares
+  // some logic for owned -> shared and nilable -> nonnilable conversions (etc.).
+  // It might need to be copied / moved up here, but for now, it's identical to
+  // regular parent / child logic, so leave it there.
   if (canInstantiateBuiltin(context, actualT, formalT)) {
     return instantiate();
   }

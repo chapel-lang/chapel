@@ -13,9 +13,9 @@ use IO.FormattedIO;
 /* Command line arguments. */
 config const in_name : string;
 config const map_type : string;
-config const window_size : real(64);
-config const dx : real(64) = 5.0;
-
+config const window_size : real(32);
+config const dx : real(32) = 5.0;
+config const printReduce = true;
 
 proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(64), Output: [] real(64), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
 
@@ -201,14 +201,7 @@ proc main(args: [] string) {
 
 //  WriteOutput(out_file, OutputArray, varid);
 
-  writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
-
-  //var ff = open("OutputArray.bin", ioMode.cw);
-  //var rr = ff.writer(kind=ionative);
-  //for (i,j) in Inner {
-  //  rr.writeBinary(OutputArray[i,j]);
-  //}
-  //rr.close();
-
+  if printReduce then
+    writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
 

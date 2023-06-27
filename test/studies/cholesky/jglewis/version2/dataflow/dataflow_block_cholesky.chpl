@@ -97,7 +97,7 @@ module dataflow_block_cholesky {
     //   then is three words per block.
     // --------------------------------------------------------------------
 
-    var block_leading_index_domain : domain (2, stridable=true) 
+    var block_leading_index_domain : domain (2, strides=strideKind.positive) 
       = block_leading_indices ( A.domain );
 
     var all_schur_complement_mods_done$  : [block_leading_index_domain] single 

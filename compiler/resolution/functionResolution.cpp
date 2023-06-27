@@ -10218,6 +10218,20 @@ finalLoweringForFunctionCapture(FnSymbol* fn, Expr* use, bool useClass) {
   }
 }
 
+static bool
+maybeErrorForInvalidCaptureReturnIntent(FunctionType* ft, Expr* use) {
+  auto ri = ft->returnIntent();
+  bool disallowedRetIntent = ri == RET_PARAM || ri == RET_TYPE;
+  if (disallowedRetIntent) {
+    USR_FATAL_CONT(use, "a captured %s cannot return by '%s' intent",
+                   FunctionType::kindToString(ft->kind()),
+                   FunctionType::returnIntentToString(ri));
+    return true;
+  }
+
+  return false;
+}
+
 // Create either a function pointer, a closure, or a 'c_fn_ptr' depending
 // on the function to be captured (or an error, if it does not exist or
 // could not be disambiguated to a single symbol).
@@ -10260,6 +10274,11 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
   // 'functions/vass/passing-iterator-as-argument'
   if (ft->kind() == FunctionType::ITER) {
     USR_FATAL_CONT(use, "passing iterators by name is not yet supported");
+    return swapInErrorSinkForCapture(ft->kind(), use);
+  }
+
+  // Make sure the return intent is acceptable.
+  if (maybeErrorForInvalidCaptureReturnIntent(ft, use)) {
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
 
@@ -10360,16 +10379,6 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
 
     // TODO: Need to have this compute a function type.
     case PRIM_CREATE_FN_TYPE: {
-      if (!fcfs::useLegacyBehavior()) {
-        USR_WARN(call, "the 'func(...)' function type constructor has "
-                       "been deprecated");
-        USR_PRINT(call, "consider the builtin 'proc(...)' syntax "
-                        "instead");
-      } else if (fWarnUnstable) {
-        USR_WARN(call, "the 'func(...)' function type constructor is "
-                       "unstable");
-      }
-
       if (fcfs::usePointerImplementation()) {
         INT_FATAL(call, "Not supported!");
       }
@@ -12164,6 +12173,8 @@ static void insertReturnTemps() {
             if (typeNeedsCopyInitDeinit(fn->retType) == true)
               tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
+            tmp->addFlag(FLAG_DEAD_LAST_MENTION);
+
             contextCallOrCall->insertBefore(def);
             def->insertAfter(new CallExpr(PRIM_MOVE,
                                           tmp,
@@ -12193,10 +12204,6 @@ static void insertReturnTemps() {
               tmp->addFlag(FLAG_MAYBE_TYPE);
               tmp->addFlag(FLAG_MAYBE_PARAM);
             }
-
-            // Mark the variable as last-mention or end-of-block
-            // (because this runs after fixPrimInitsAndAddCasts).
-            markTempDeadLastMention(tmp);
           }
         }
       }

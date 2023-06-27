@@ -42,23 +42,13 @@ module CTypes {
   use HaltWrappers;
   public use ChapelSysCTypes;
 
-  @chpldoc.nodoc
-  proc chpl_typeMoveWarning(param name: string, param mod: string,
-                            param newmod: string = "CTypes") {
-    compilerWarning("type '" + name + "' has moved from '" + mod +
-                    "' to '" + newmod + "'; please update your " +
-                    "'use'/'import' statements accordingly.", errorDepth=2);
-  }
-
   /* The Chapel type corresponding to the C 'float' type */
   extern type c_float = real(32);
 
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  @chpldoc.nodoc
   extern "_cfile" type chpl_cFilePtr; // can be removed when deprecation is complete
-  @chpldoc.nodoc
   extern "_cfiletype" type chpl_cFile; // direct uses of this type in the IO module
                                       // can be replaced with c_FILE when deprecation is complete
 
@@ -78,7 +68,7 @@ module CTypes {
   /* Chapel type alias for a C ``FILE`` */
   proc c_FILE type {
     if cFileTypeHasPointer {
-      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
+      compilerWarning("in an upcoming release 'c_FILE' will represent a 'FILE' rather than a 'FILE*'. Wrap instances of 'c_FILE' with 'c_ptr()' and recompile with '-scFileTypeHasPointer=false' to opt-in to the new behavior.");
       return chpl_cFilePtr;
     } else {
       return chpl_cFile;
@@ -93,8 +83,6 @@ module CTypes {
   @chpldoc.nodoc
   type c_FILE_internal = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
 
-  // Former CPtr contents start here
-
   /*
 
     A Chapel type alias for ``void*`` in C. Casts from integral types to
@@ -106,26 +94,26 @@ module CTypes {
 
 
   /* A Chapel version of a C NULL pointer. */
+  @deprecated(notes="c_nil is deprecated, use just 'nil' instead.")
   inline proc c_nil {
-    // TODO: this routine should be deprecated
     return nil;
   }
 
   /*
      :returns: true if the passed value is a NULL pointer (ie 0).
    */
+  @deprecated(notes="is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_void_ptr first if needed.")
   inline proc is_c_nil(x):bool {
-    // TODO: this routine should be deprecated
     return __primitive("cast", c_void_ptr, x) == c_nil;
   }
 
   /*
 
-    Represents a local C pointer for the purpose of C integration. This class
-    represents the equivalent to a C language pointer. Instances of this class
-    support assignment to other instances or nil, == or != comparison with a
-    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
-    the ``c_void_ptr`` type.
+    Represents a local C pointer for the purpose of C integration. This type
+    represents the equivalent to a C language pointer ``eltType*``. Instances of
+    this type support assignment to other instances or ``nil``, ``==`` or ``!=``
+    comparison with a ``c_void_ptr`` or with ``nil``, and casting to another
+    ``c_ptr`` type or to the ``c_void_ptr`` type.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
@@ -160,7 +148,14 @@ module CTypes {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
-    /* The type that this pointer points to */
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptr = c_ptrTo(...);
+         if x.eltType == c_int then do writeln("x is an int pointer");
+    */
     type eltType;
     /* Retrieve the i'th element (zero based) from a pointer to an array.
       Does the equivalent of ptr[i] in C.
@@ -178,13 +173,16 @@ module CTypes {
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
+    }
   }
 
-  /*
-    Like ``c_ptr``, but for a pointer to const data. In C, this is equivalent to
-    the type `const eltType*`.
-  */
   // TODO: avoid redundant c_ptr pragma with c_ptrConst pragma
+  /*
+    Like :type:`c_ptr`, but for a pointer to const data. In C, this is
+    equivalent to the type `const eltType*`.
+  */
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -192,35 +190,70 @@ module CTypes {
   pragma "c_ptr class"
   pragma "c_ptrConst class"
   class c_ptrConst {
+    /*
+       The type that this pointer points to, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_ptrConst = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is a const int pointer");
+    */
     type eltType;
+    /* Retrieve the i'th element (zero based) from a pointer to an array.
+       Does the equivalent of ptr[i] in C.
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc this(i: integral) const ref {
       return __primitive("array_get", this, i);
     }
+    /* Get element pointed to directly by this pointer. If the pointer
+       refers to an array, this will return ptr[0].
+       Provides a ``const ref`` which cannot be used to modify the element.
+    */
     inline proc deref() const ref {
       return __primitive("array_get", this, 0);
     }
+    /* Print this pointer */
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
+    }
+    inline proc serialize(writer, ref serializer) throws {
+      (this:c_void_ptr).writeThis(writer);
     }
   }
 
   /*
-  This class represents a C array with fixed size.  A variable of type c_array
-  can coerce to a c_ptr with the same element type.  In that event, the
-  pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
-  similarly to a homogeneous tuple except that its indices start at 0 and it is
-  guaranteed to be stored in contiguous memory.  A c_array variable has value
-  semantics. Declaring one as a function local variable will create the array
-  elements in the function's stack. Assigning or copy initializing will result
-  in copying the elements (vs resulting in two pointers that refer to the same
-  elements).  A `nil` c_array is not representable in Chapel.
+  This type represents a C array with fixed size.  A variable of type
+  ``c_array`` can coerce to a ``c_ptr`` with the same element type.  In that
+  event, the pointer will be equivalent to ``c_ptrTo(array[0])``.  A ``c_array``
+  behaves similarly to a homogeneous tuple except that its indices start at 0
+  and it is guaranteed to be stored in contiguous memory.  A ``c_array``
+  variable has value semantics. Declaring one as a function-local variable will
+  create the array elements in the function's stack. Assigning or copy
+  initializing will result in copying the elements (vs resulting in two pointers
+  that refer to the same elements).  A ``nil`` ``c_array`` is not representable
+  in Chapel.
   */
   pragma "c_array record"
   pragma "default intent is ref if modified"
   record c_array {
-    /* The array element type */
+    /*
+       The array element type, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         if x.eltType == c_int then do writeln("x is an array of ints");
+    */
     type eltType;
-    /* The fixed number of elements */
+    /*
+       The fixed number of elements, which can be queried like so:
+
+       .. code-block:: chapel
+
+         var x: c_array = c_ptrToConst(...);
+         writeln("x has ", x.size, " elements.");
+    */
     param size;
 
     proc init(type eltType, param size) {
@@ -305,6 +338,10 @@ module CTypes {
       ch.readWriteLiteral("]");
     }
 
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
@@ -318,7 +355,7 @@ module CTypes {
     }
   }
 
-  /* Copy the elements from one c_array to another.
+  /* Copy the elements from one :type:`c_array` to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
   operator c_array.=(ref lhs:c_array, rhs:c_array) {
@@ -340,6 +377,10 @@ module CTypes {
   @chpldoc.nodoc
   inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
+  }
+  @chpldoc.nodoc
+  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
+    this.writeThis(writer);
   }
 
   @chpldoc.nodoc
@@ -667,7 +708,7 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
+  inline operator c_ptr.!(x: c_ptr) do return x == nil;
 
   @chpldoc.nodoc
   inline operator c_ptr.+(a: c_ptr, b: integral) do return __primitive("+", a, b);
@@ -676,7 +717,7 @@ module CTypes {
   inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
   @chpldoc.nodoc
-  inline operator c_ptrConst.!(x: c_ptrConst) do return x == c_nil;
+  inline operator c_ptrConst.!(x: c_ptrConst) do return x == nil;
 
   @chpldoc.nodoc
   inline operator c_ptrConst.+(a: c_ptrConst, b: integral) do
@@ -738,8 +779,8 @@ module CTypes {
     return c_pointer_return(arr[arr.domain.low]);
   }
   /*
-   Like c_ptrTo for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -773,9 +814,9 @@ module CTypes {
 
     The deprecated behavior is on by default. To opt in to the new behavior,
     compile your program with the following argument:
-    ``-s cPtrToStringBytesClassLogicalAddress=true``.
+    ``-s cPtrToLogicalValue=true``.
   */
-  config param cPtrToStringBytesClassLogicalAddress = false;
+  config param cPtrToLogicalValue = false;
 
   /*
     Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
@@ -787,7 +828,7 @@ module CTypes {
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -796,19 +837,19 @@ module CTypes {
     return c_pointer_return(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref s: string): c_ptr(string)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(s);
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~String.string`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~String.string`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (s.buffLen == 0) then
@@ -817,9 +858,9 @@ module CTypes {
     return c_pointer_return_const(s.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(s);
   }
@@ -834,7 +875,7 @@ module CTypes {
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
   inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -843,19 +884,19 @@ module CTypes {
     return c_pointer_return(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(b);
   }
 
   /*
-   Like ``c_ptrTo`` for :type:`~Bytes.bytes`, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
-    where cPtrToStringBytesClassLogicalAddress == true
+    where cPtrToLogicalValue == true
   {
     if boundsChecking {
       if (b.buffLen == 0) then
@@ -864,68 +905,67 @@ module CTypes {
     return c_pointer_return_const(b.buff[0]);
   }
 
-  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(b);
   }
 
   /*
-    Returns a :type:`c_ptr` to the heap instance of a class type.
+    Returns a :type:`c_void_ptr` to the heap instance of a class type.
 
-    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
-    the instance.  The returned pointer will be invalid if the instance is
+    Note that the existence of this ``c_void_ptr`` has no impact on the lifetime
+    of the instance.  The returned pointer will be invalid if the instance is
     freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+  inline proc c_ptrTo(ref c: class): c_void_ptr
+    where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptr(c.type);
+    return c : c_void_ptr;
   }
-  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+  inline proc c_ptrTo(ref c: class?): c_void_ptr
+    where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptr(c.type);
+    return c : c_void_ptr;
   }
 
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
   }
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOf(c);
   }
 
   /*
-   Like ``c_ptrTo`` for class types, but returns a :type:`c_ptrConst`
-   which disallows direct modification of the pointee.
+   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+  inline proc c_ptrToConst(const ref c: class): c_void_ptr
+    where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptrConst(c.type);
+    return c : c_void_ptr;
   }
-  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == true
+  inline proc c_ptrToConst(const ref c: class?): c_void_ptr
+    where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr : c_ptrConst(c.type);
+    return c : c_void_ptr;
   }
 
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(c);
   }
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToStringBytesClassLogicalAddress=true' to opt-in to the new behavior.")
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToStringBytesClassLogicalAddress == false
+    where cPtrToLogicalValue == false
   {
     return c_addrOfConst(c);
   }
@@ -948,7 +988,7 @@ module CTypes {
   }
 
   /*
-    Like c_ptrTo, but returns a :type:`c_ptrConst` which disallows direct
+    Like :proc:`c_ptrTo`, but returns a :type:`c_ptrConst` which disallows direct
     modification of the pointee.
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
@@ -984,8 +1024,8 @@ module CTypes {
   }
 
   /*
-   Like c_addrOf for arrays, but returns a :type:`c_ptrConst` which disallows
-   direct modification of the pointee.
+   Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
+   disallows direct modification of the pointee.
   */
   inline proc c_addrOfConst(arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
@@ -1013,8 +1053,8 @@ module CTypes {
   }
 
   /*
-    Like c_addrOf, but returns a :type:`c_ptrConst` which disallows direct
-    modification of the pointee.
+    Like :proc:`c_addrOf`, but returns a :type:`c_ptrConst` which disallows
+    direct modification of the pointee.
   */
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
@@ -1250,13 +1290,9 @@ module CTypes {
   // using the internal name.
   // After the deprecated function is removed, we can remove the extra
   // definition and just have `isAnyCPtr` as a private nodoc function
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
-  @chpldoc.nodoc
   proc chpl_isAnyCPtr(type t) param do return false;
 
   /*

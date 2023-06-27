@@ -61,7 +61,7 @@ class Dimensional {
   // mapped to that locale for that dimension within the range
   // min(idxType)..max(idxType)
   proc getLocRanges(loc: nDims*int) {
-    var ranges: nDims*range(stridable=true);
+    var ranges: nDims*range(strides=strideKind.any);
     for param dim in 0..nDims-1 {
       ranges(dim) = dimensionDistributors(dim).localPart(localeDomain, loc, idxType);
     }
@@ -83,7 +83,7 @@ class DimensionalDomain {
       on dist.localeArray(loc) {
         var locDist = dist.getLocRanges(loc);
         // the cast to domain supports deprecation by Vass in 1.31 for #17131
-        locDoms(loc) = new unmanaged LocDimensionalDomain(nDims, idxType, _to_unmanaged(this), whole((...locDist)): domain(nDims, idxType, true));
+        locDoms(loc) = new unmanaged LocDimensionalDomain(nDims, idxType, _to_unmanaged(this), whole((...locDist)): domain(nDims, idxType, strideKind.any));
       }
     }
   }
@@ -125,7 +125,7 @@ class LocDimensionalDomain {
   param nDims: int;
   type idxType;
   var whole: unmanaged DimensionalDomain(nDims, idxType);
-  var myElems: domain(nDims, idxType, true);
+  var myElems: domain(nDims, idxType, strideKind.any);
 }
 
 class DimensionalArray {

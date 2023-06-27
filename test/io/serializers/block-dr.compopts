@@ -1,0 +1,3 @@
+-sformat=FormatKind.default # block-dr.default.good
+-sformat=FormatKind.json # block-dr.json.good
+-sformat=FormatKind.little # block-dr.little.good

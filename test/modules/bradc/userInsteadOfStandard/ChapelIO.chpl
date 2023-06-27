@@ -23,6 +23,18 @@ use IO;
     try! stdout.writeln();
   }
 
+  //
+  // Used by the compiler to support the compiler-generated initializers that
+  // accept a 'fileReader'. The type 'fileReader' may not be readily
+  // available, but the ChapelIO module generally is available and so
+  // we place the check here. For example:
+  //
+  //   proc R.init(r) where chpl__isFileReader(r.type) { ... }
+  //
+  proc chpl__isFileReader(type T) param : bool {
+    return isSubtype(T, fileReader(?));
+  }
+
 // function to test if this was the ChapelIO that got used
 proc testchapelio() {
   writeln("In my ChapelIO!");

@@ -33,13 +33,13 @@ proc main() {
   chpl__testParStop();
 }
 
-
 //
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
 proc initVectors(B, C) {
-  var randlist = (new owned RandomStream(real, seed)).borrow();
+  var ownRandlist = new owned RandomStream(real, seed);
+  var randlist = ownRandlist.borrow();
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 }

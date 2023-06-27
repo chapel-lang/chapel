@@ -143,6 +143,30 @@ static void test10() {
   guard.realizeErrors();
 }
 
+static void testUnary() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    param val = false;
+
+    record R {
+      proc type foo(x:int) {
+        return x;
+      }
+    }
+
+    if __primitive("u!", val) {
+      var x = R.foo(5);
+    } else {
+      var x = R.foo("hello");
+    })""";
+
+  auto m = parseModule(context, program);
+  std::ignore = resolveModule(context, m->id());
+}
+
 int main() {
   test1();
   test2();
@@ -154,6 +178,8 @@ int main() {
   test8();
   test9();
   test10();
+
+  testUnary();
 
   return 0;
 }

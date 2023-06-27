@@ -1,0 +1,24 @@
+===== writing: =====
+{ east : west , hello : goodbye , north : south , day : night }
+--------------------
+["east" => "west", "hello" => "goodbye", "north" => "south", "day" => "night"]
+====================
+SUCCESS: map(string,string,false)
+===== writing: =====
+{ 713 : Houston , 212 : NYC , 206 : Seattle }
+--------------------
+[713 => "Houston", 212 => "NYC", 206 => "Seattle"]
+====================
+SUCCESS: map(int(64),string,false)
+===== writing: =====
+{ Banana : (x = 1, y = -10.0) , Apple : (x = 5, y = 42.0) , Orange : (x = 13, y = 106.7) }
+--------------------
+["Banana" => new R(x = 1, y = -1.000000e+01), "Apple" => new R(x = 5, y = 4.200000e+01), "Orange" => new R(x = 13, y = 1.067000e+02)]
+====================
+SUCCESS: map(string,R,false)
+===== writing: =====
+{ (x = 1, y = -10.0) : Banana , (x = 5, y = 42.0) : Apple , (x = 13, y = 106.7) : Orange }
+--------------------
+[new R(x = 1, y = -1.000000e+01) => "Banana", new R(x = 5, y = 4.200000e+01) => "Apple", new R(x = 13, y = 1.067000e+02) => "Orange"]
+====================
+SUCCESS: map(R,string,false)

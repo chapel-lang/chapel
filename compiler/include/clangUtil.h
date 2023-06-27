@@ -132,6 +132,9 @@ void print_clang(const clang::ValueDecl* vd);
 
 const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
 
+// simplify the function using the function simplification pipeline
+void simplifyFunction(llvm::Function* func);
+
 #endif // HAVE_LLVM
 
 #endif //CLANGUTIL_H

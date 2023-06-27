@@ -141,9 +141,13 @@ set_target_properties(ChplFrontend PROPERTIES
 if (INSTALLATION_MODE STREQUAL "prefix")
   install(TARGETS ChplFrontend
           LIBRARY DESTINATION
+          "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler"
+          ARCHIVE DESTINATION
           "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
 else()
   install(TARGETS ChplFrontend
           LIBRARY DESTINATION
+          "lib/compiler/${CHPL_HOST_BIN_SUBDIR}"
+          ARCHIVE DESTINATION
           "lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
 endif()

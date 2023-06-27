@@ -64,14 +64,13 @@ record ReplicatedDim {
 record Replicated1dom {
   // REQ the parameters of our dimension of the domain being created
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   // convenience
-  proc rangeT type do  return range(idxType, boundKind.both, stridable);
-//todo-remove?  proc domainT type return domain(1, idxType, stridable);
+  proc rangeT type do  return range(idxType, boundKind.both, strides);
 
   // our range
-  var wholeR: range(idxType, boundKind.both, stridable);
+  var wholeR: range(idxType, boundKind.both, strides);
 
   // locale ID in our dimension of the locale this instance is on
   var localLocID = invalidLocID;
@@ -83,9 +82,9 @@ record Replicated1dom {
 
 record Replicated1locdom {
   type stoIndexT;
-  param stridable;
+  param strides;
   // our copy of wholeR
-  var locWholeR: range(stoIndexT, stridable=stridable);
+  var locWholeR: range(stoIndexT, strides=strides);
 }
 
 
@@ -142,7 +141,7 @@ proc Replicated1dom.dsiGetPrivatizeData1d() {
 proc type Replicated1dom.dsiPrivatize1d(privDist, privatizeData) {
   assert(privDist.locale == here); // sanity check
   return new Replicated1dom(idxType   = this.idxType,
-                            stridable = this.stridable,
+                            strides   = this.strides,
                             wholeR    = privatizeData(0));
 }
 
@@ -197,13 +196,13 @@ proc Replicated1locdom.dsiStoreLocalDescToPrivatizedGlobalDesc1d(privGlobDesc) {
 
 
 // REQ create a 1-d global domain descriptor for dsiNewRectangularDom()
-// where our dimension is a range(idxType, bounded, stridable)
+// where our dimension is a range(idxType, bounded, strides)
 // stoIndexT is the same as in Replicated1dom.dsiNewLocalDom1d.
-proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
+proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param strides,
                                           type stoIndexT)
 {
   // ignore stoIndexT - all we need is for other places to work out
-  return new Replicated1dom(idxType, stridable);
+  return new Replicated1dom(idxType, strides);
 }
 
 // A nicety: produce a string showing the parameters.
@@ -221,7 +220,7 @@ proc Replicated1dom.dsiIsReplicated1d() param do return true;
 // stoIndexT must be the index type of the range returned by
 // dsiSetLocalIndices1d().
 proc Replicated1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  return new Replicated1locdom(stoIndexT, wholeR.stridable);
+  return new Replicated1locdom(stoIndexT, wholeR.strides);
 }
 
 // REQ given our dimension of the array index, on which locale is it located?

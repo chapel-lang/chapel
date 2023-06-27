@@ -14,6 +14,7 @@ class InLoop {
 proc main() {
   var arr = [3, -5, 2, 7, 1, 2, 5, 8, 3, 0];
 
-  var c: borrowed InLoop = (new owned InLoop(arr)).borrow();
+  var ownC = new owned InLoop(arr);
+  var c: borrowed InLoop = ownC.borrow();
   writeln(c);
 }

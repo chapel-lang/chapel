@@ -62,6 +62,8 @@ follows.
    ambiguous alignment means that the represented sequence is undefined.
    In such a case, certain operations discussed later result in an
    error.
+   The alignment is always between zero and :math:`|stride|-1`,
+   inclusively.
 
 More formally, the represented sequence for the range
 :math:`(low, high, stride, alignmt)` contains all indices :math:`ix`
@@ -167,13 +169,12 @@ The type of a range is characterized by three properties:
 
 -  ``bounds`` indicates which of the range’s bounds are not
    :math:`\infty`. ``bounds`` is an enumeration constant of the
-   type ``BoundedRangeType``. It is discussed further below.
+   type ``boundKind``. It is discussed further below.
 
--  ``stridable`` is a boolean that determines whether the range’s stride
-   can take on values other than 1. ``stridable`` is ``false`` by
-   default. A range is called *stridable* if its type’s ``stridable``
-   field is ``true``.
-
+-  ``strides`` indicates what values of ``stride`` are allowed
+   for this type. ``strides`` is an enumeration constant of the
+   type ``strideKind``. It is discussed further below.
+   
 ``bounds`` is one of the constants of the following enumeration:
 
 .. enum::  enum boundKind { both, low, high, neither };
@@ -194,14 +195,33 @@ corresponding direction(s)) as follows:
 
 ``bounds`` is ``boundKind.both`` by default. 
 
-The parameters ``idxType``, ``bounds``, and ``stridable`` affect
+``strides`` is one of the constants of the following enumeration:
+
+.. enum::   enum strideKind { one, negOne, positive, negative, any };
+
+The value of ``strides`` determines what values of ``stride`` this
+range can have as follows:
+
+-  ``one``: ``stride`` must be :math:`1`.
+
+- ``negOne``: ``stride`` must be :math:`-1`.
+
+- ``positive``: ``stride`` must be positive.
+
+- ``negative``: ``stride`` must be negative.
+
+- ``any``: ``stride`` can take on any value other than zero.
+
+``strides`` is ``strideKind.one`` by default. 
+
+The parameters ``idxType``, ``bounds``, and ``strides`` affect
 all values of the corresponding range type. For example, the range’s low
 bound is -:math:`\infty` if and only if the ``bounds`` of that
 range’s type is either ``high`` or ``neither``.
 
    *Rationale*.
 
-   Providing ``bounds`` and ``stridable`` in a range’s type
+   Providing ``bounds`` and ``strides`` in a range’s type
    allows the compiler to identify and optimize the common cases where
    the range is bounded in both directions and/or its stride is 1.
 
@@ -218,13 +238,13 @@ header:
 
 .. code-block:: chapel
 
-     proc range(type idxType = int,
-                param bounds = boundKind.both,
-                param stridable = false) type
+     proc range(type idxType  = int,
+                param bounds  = boundKind.both,
+                param strides = strideKind.one) type
 
 As a special case, the keyword ``range`` without a parenthesized
 argument list refers to the range type with the default values of all
-its parameters, i.e., ``range(int, boundKind.both, false)``.
+its parameters, i.e., ``range(int, boundKind.both, strideKind.one)``.
 
    *Example (rangeVariable.chpl)*.
 
@@ -234,7 +254,7 @@ its parameters, i.e., ``range(int, boundKind.both, false)``.
 
    .. code-block:: chapel
 
-      var r: range(int(32), boundKind.both, stridable=true);
+      var r: range(int(32), boundKind.both, strides=strideKind.any);
 
    .. BLOCK-test-chapelpost
 
@@ -310,7 +330,7 @@ The type of a range literal is a range with the following parameters:
 
    -  ``neither``, if neither bound expression is given.
 
--  ``stridable`` is ``false``.
+-  ``strides`` is ``strideKind.one``.
 
 The value of a range literal is as follows:
 
@@ -403,8 +423,8 @@ Range assignment is legal when:
 
 -  the two range types have the same ``bounds``, and
 
--  either the destination range is stridable or the source range is not
-   stridable.
+-  the ``strides`` parameter of the destination range is the same
+   or more permissive than that of the source range.
 
 .. _Range_Comparisons:
 
@@ -591,7 +611,17 @@ values are interpreted as 0 or 1, respectively.  It is an error for
 the step to be zero.
 
 The type of the result of the ``by`` operator is the type of the base
-range, but with the ``stridable`` parameter set to ``true``.
+range, with the ``strides`` parameter updated according to the step.
+For example:
+
+- If the base range has ``strides=strideKind.one`` and the step is
+  the literal ``-2``, the result has ``strides=strideKind.negative``.
+
+- If the base range has ``strides=strideKind.one`` and the step has
+  the type ``uint``, the result has ``strides=strideKind.positive``.
+
+- If the step has the type ``int`` and is not a ``param``,
+  the result has ``strides=strideKind.any``.
 
 Formally, the result of the ``by`` operator is a range with the
 following primary properties:
@@ -652,8 +682,9 @@ following primary properties:
 Align Operator
 ~~~~~~~~~~~~~~
 
-The ``align`` operator can be applied to any range, and creates a new
-range with the given alignment.
+The ``align`` operator takes a base range and an alignment operand.
+It produces a copy of the base range with alignment set
+to the alignment argument, taken mod :math:`{|stride|}`.
 
 The syntax for the ``align`` operator is: 
 
@@ -663,12 +694,11 @@ The syntax for the ``align`` operator is:
      range-expression 'align' expression
 
 The type of the resulting range expression is the same as that of the
-range appearing as the left operand, but with the ``stridable``
-parameter set to ``true``. An implicit conversion from the type of the
-right operand to the index type of the operand range must be allowed.
+base range. An implicit conversion from the type of the
+alignment operand to the index type of the base range must be allowed.
 The resulting range has the same low and high bounds and stride as the
-source range. The alignment equals the ``align`` operator’s right
-operand and therefore is not ambiguous.
+base range. The alignment equals the alignment operand mod :math:`{|stride|}`
+and therefore is not ambiguous.
 
    *Example (alignedStride.chpl)*.
 
@@ -726,8 +756,8 @@ When the stride is negative, the same indices are printed in reverse:
       | 9 6 3 0
       | 10 7 4 1
 
-To create a range aligned relative to its ``first`` index, see
-``range.offset`` below.
+To set the alignment relative to the range's ``first`` index,
+use the method :proc:`~ChapelRange.range.offset`.
 
 .. _Count_Operator:
 
@@ -831,8 +861,6 @@ Arithmetic Operators
 The following arithmetic operators are defined on ranges and integral
 types:
 
-
-
 .. code-block:: chapel
 
    proc +(r: range, s: integral): range
@@ -844,7 +872,7 @@ range’s low and high bounds, producing a shifted version of the range.
 If the operand range is unbounded above or below, the missing bounds are
 ignored. The index type of the resulting range is the type of the value
 that would result from an addition between the scalar value and a value
-with the range’s index type. The ``bounds`` and ``stridable`` parameters for
+with the range’s index type. The ``bounds`` and ``strides`` parameters for
 the result range are the same as for the input range.
 
 The stride of the resulting range is the same as the stride of the
@@ -855,12 +883,12 @@ resulting range is also ambiguously aligned.
 
    *Example (rangeAdd.chpl)*.
 
-   The following code creates a bounded, non-stridable range ``r`` which
-   has an index type of ``int`` representing the indices
+   The following code creates a range ``r`` which
+   has an index type of ``int`` and represents the indices
    :math:`{0, 1, 2, 3}`. It then uses the ``+`` operator to create a
    second range ``r2`` representing the indices :math:`{1, 2, 3, 4}`.
-   The ``r2`` range is bounded, non-stridable, and is represented by
-   indices of type ``int``. 
+   Like ``r``, the range ``r2`` is bounded, its ``stride`` is 1 and
+   cannot be changed, and its indices have the type ``int``. 
 
    .. code-block:: chapel
 
@@ -952,25 +980,19 @@ Predefined Routines on Ranges
 Range Type Queries
 ~~~~~~~~~~~~~~~~~~
 
-
-
 .. function:: proc range.idxType type
 
    Returns the type of the range's indices (its ``idxType``).
 
-
-
-.. function:: proc range.bounds param : BoundedRangeType
+.. function:: proc range.bounds param : boundKind
 
    Returns which bounds the range explicitly represents
-   (its ``bounds`` value).
+   (its ``bounds`` parameter).
 
+.. function:: proc range.strides param : strideKind
 
-
-.. function:: proc range.stridable param : bool
-
-   Returns whether or not the range can have non-unit strides (its
-   ``stridable`` value).
+   Returns what strides the range can have
+   (its ``strides`` parameter).
 
 
 .. include:: ../../builtins/ChapelRange.rst

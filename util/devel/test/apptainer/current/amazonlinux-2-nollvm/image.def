@@ -9,4 +9,4 @@ From: amazonlinux:2
     /provision-scripts/yum-deps-amazonlinux-2.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

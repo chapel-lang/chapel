@@ -77,7 +77,7 @@ module ChapelDomain {
   }
 
   // deprecated by Vass in 1.31 to implement #17131
-  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  @deprecated("domain.stridable is deprecated; use domain.strides instead")
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
                                     type idxType = int,
                                     param stridable: bool) type {
@@ -136,7 +136,7 @@ module ChapelDomain {
   }
 
   // deprecated by Vass in 1.31 to implement #17131
-  //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+  @deprecated("domain.stridable is deprecated; use domain.strides instead")
   proc chpl__convertRuntimeTypeToValue(dist: _distribution,
                                        param rank: int,
                                        type idxType = int,
@@ -218,7 +218,6 @@ module ChapelDomain {
     return d;
   }
 
-  @chpldoc.nodoc
   private proc chpl__setDomainConst(dom: domain) {
     dom._value.definedConst = true;
   }
@@ -753,9 +752,10 @@ module ChapelDomain {
 
     proc strideSafe(d, rt, param dim: int=0) param {
       return if dim == d.rank-1 then
-               d.dim(dim).stridable || !rt(dim).stridable
+               chpl_assignStrideIsSafe(d.dim(dim), rt(dim))
              else
-               (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+               chpl_assignStrideIsSafe(d.dim(dim), rt(dim)) &&
+               strideSafe(d, rt, dim+1);
     }
     return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
   }
@@ -793,7 +793,7 @@ module ChapelDomain {
     if isTuple(b) then return allUintTup(0);
     return false; // an error will be issued by _makeIndexTuple()
     proc allUintTup(param dim) param do
-      if dim == b.size then return false;
+      if dim == b.size then return true;
       else if ! isUint(b(dim)) then return false;
       else return allUintTup(dim+1);
   }
@@ -1046,7 +1046,7 @@ module ChapelDomain {
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
@@ -1056,7 +1056,7 @@ module ChapelDomain {
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc init(d: _distribution,
               param rank : int,
               type idxType = int,
@@ -1084,7 +1084,8 @@ module ChapelDomain {
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
     proc init=(const ref other : domain) where other.isRectangular() {
-      this.init(other.dist, other.rank, other.idxType, other.stridable, other.dims());
+      this.init(other.dist, other.rank, other.idxType, other.strides,
+                other.dims());
     }
 
     proc init=(const ref other : domain) {
@@ -1112,7 +1113,6 @@ module ChapelDomain {
 
     forwarding _value except chpl__serialize, chpl__deserialize;
 
-    @chpldoc.nodoc
     proc chpl__serialize()
       where this._value.isDefaultRectangular() {
       return this._value.chpl__serialize();
@@ -1121,7 +1121,6 @@ module ChapelDomain {
     // TODO: we *SHOULD* be allowed to query the type of '_instance' directly
     // This function may not use any run-time type information passed to it
     // in the form of the 'this' argument. Static/param information is OK.
-    @chpldoc.nodoc
     proc type chpl__deserialize(data) {
       type valueType = __primitive("static field type", this, "_instance");
       return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
@@ -1199,18 +1198,19 @@ module ChapelDomain {
 
     /* Return true if this is a stridable domain */
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc stridable param where this.isRectangular() {
       return _value.strides.toStridable();
     }
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     @chpldoc.nodoc
     proc stridable param where this.isSparse() {
       return _value.parentDom.strides.toStridable();
     }
 
+    // deprecated by Vass in 1.31 to implement #17131
     @chpldoc.nodoc
     proc stridable param where this.isAssociative() {
       compilerError("associative domains do not support .stridable");
@@ -1347,7 +1347,7 @@ module ChapelDomain {
 
       return new _domain(rcdistRec, uprank,
                                     upranges(0).idxType,
-                                    upranges(0).stridable,
+                                    upranges(0).strides,
                                     upranges);
     }
 
@@ -1941,9 +1941,6 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    @deprecated(notes="makeIndexBuffer has been renamed to createIndexBuffer")
-    inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
-
     /*
      Creates an index buffer which can be used for faster index addition.
 
@@ -2110,10 +2107,19 @@ module ChapelDomain {
     proc high where this.isAssociative() {
       compilerError("associative domains do not support '.high'");
     }
+
     /* Return the stride of the indices in this domain */
     proc stride do return _value.dsiStride;
+    @chpldoc.nodoc proc stride param where rank==1 &&
+      (isRectangular() || isSparse()) && strides.isPosNegOne() do
+      return if strides.isOne() then 1 else -1;
+
     /* Return the alignment of the indices in this domain */
     proc alignment do return _value.dsiAlignment;
+
+    @chpldoc.nodoc proc alignment param where rank==1 &&
+      (isRectangular() || isSparse()) && strides.isPosNegOne() do return 0;
+
     /* Return the first index in this domain */
     proc first do return _value.dsiFirst;
     /* Return the last index in this domain */
@@ -2291,7 +2297,7 @@ module ChapelDomain {
         }
       }
 
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain expanded by
@@ -2305,7 +2311,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc
@@ -2335,7 +2341,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the exterior portion of the
@@ -2387,7 +2393,7 @@ module ChapelDomain {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the interior portion of the
@@ -2438,7 +2444,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain translated by
@@ -2468,7 +2474,7 @@ module ChapelDomain {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      return new _domain(dist, rank, _value.idxType, stridable, ranges);
+      return new _domain(dist, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc
@@ -2488,8 +2494,8 @@ module ChapelDomain {
       _value.dsiSerialWrite(f);
     }
     @chpldoc.nodoc
-    proc encodeTo(f) throws {
-      _value.dsiSerialWrite(f);
+    proc serialize(writer, ref serializer) throws {
+      _value.dsiSerialWrite(writer);
     }
 
     @chpldoc.nodoc
@@ -2500,9 +2506,9 @@ module ChapelDomain {
     // TODO: Can we convert this to an initializer despite the potential issues
     // with runtime types?
     @chpldoc.nodoc
-    proc type decodeFrom(f) throws {
+    proc type deserializeFrom(reader, ref deserializer) throws {
       var ret : this;
-      ret.readThis(f);
+      ret.readThis(reader);
       return ret;
     }
 
@@ -2575,24 +2581,27 @@ module ChapelDomain {
       where chpl__isRectangularDomType(t) && this.isRectangular() {
       var tmpD: t;
       if tmpD.rank != this.rank then
-        compilerError("rank mismatch in cast");
+        compilerError("safeCast to a domain with rank=", tmpD.rank,
+                            " from a domain with rank=", this.rank);
       if tmpD.idxType != this.idxType then
-        compilerError("idxType mismatch in cast");
-      if tmpD.stridable == this.stridable then
+        // todo: relax this restriction
+        compilerError("safeCast to a domain with idxType=", tmpD.idxType,
+                            " from a domain with idxType=", this.idxType);
+      if tmpD.strides == this.strides then
         return this;
-      else if !tmpD.stridable && this.stridable {
+      else if chpl_assignStrideIsUnsafe(tmpD.strides, this.strides) then
+        compilerError("safeCast to a domain with strides=", tmpD.strides,
+                            " from a domain with strides=", this.strides);
+      else if ! chpl_assignStrideIsSafe(tmpD.strides, this.strides) {
         const inds = this.getIndices();
-        var unstridableInds: rank*range(tmpD.idxType, stridable=false);
+        var newInds: tmpD.getIndices().type;
 
         for param dim in 0..inds.size-1 {
-          if inds(dim).stride != 1 then
-            halt("non-stridable domain assigned non-unit stride in dimension ", dim);
-          unstridableInds(dim) = inds(dim).safeCast(range(tmpD.idxType,
-                                                          stridable=false));
+          newInds(dim) = inds(dim).safeCast(newInds(dim).type);
         }
-        tmpD.setIndices(unstridableInds);
+        tmpD.setIndices(newInds);
         return tmpD;
-      } else /* if tmpD.stridable && !this.stridable */ {
+      } else { // cast is always safe
         tmpD = this;
         return tmpD;
       }
@@ -2665,20 +2674,21 @@ module ChapelDomain {
       if tmpD.rank != d.rank then
         compilerError("rank mismatch in cast");
       if tmpD.idxType != d.idxType then
+        // todo: relax this restriction
         compilerError("idxType mismatch in cast");
 
       if tmpD.strides == d.strides then
         return d;
       else if ! chpl_assignStrideIsSafe(tmpD.strides, d.strides) {
         var inds = d.getIndices();
-        var unstridableInds: tmpD.getIndices().type;
+        var newInds: tmpD.getIndices().type;
 
         for param i in 0..tmpD.rank-1 {
-          unstridableInds(i) = inds(i): unstridableInds(i).type;
+          newInds(i) = inds(i): newInds(i).type;
         }
-        tmpD.setIndices(unstridableInds);
+        tmpD.setIndices(newInds);
         return tmpD;
-      } else /* if tmpD.stridable && !d.stridable */ {
+      } else { // cast is always safe
         tmpD = d;
         return tmpD;
       }

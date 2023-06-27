@@ -1,5 +1,5 @@
-proc object.myName: string do return "object";
-proc object.ddName(): string { return "object"; }
+proc RootClass.myName: string do return "object";
+proc RootClass.ddName(): string { return "object"; }
 
 class A {
   override proc myName { return "A"; }
@@ -46,7 +46,7 @@ proc get_cdr(type car, type cdr...?k) type {
 
 proc getSuperType(type t) type {
   proc st(v:t? = nil) type {
-    if (t == object) then
+    if (t == RootClass) then
       return t;
     else
       return v!.super.type;
@@ -71,8 +71,10 @@ proc nearestMutualParentClass(type car, type cdr...?k) type where k != 1 {
 }
 
 proc main {
-  var c: nearestMutualParentClass(borrowed E, borrowed D, borrowed C, borrowed C2, borrowed F) = (new owned E()).borrow();
-  var d: nearestMutualParentClass(borrowed E, borrowed D, borrowed C) = (new owned E()).borrow();
+  var ownCE = new owned E();
+  var c: nearestMutualParentClass(borrowed E, borrowed D, borrowed C, borrowed C2, borrowed F) = ownCE.borrow();
+  var ownDE = new owned E();
+  var d: nearestMutualParentClass(borrowed E, borrowed D, borrowed C) = ownDE.borrow();
   writeln(c.myName);
   writeln(c.ddName());
   writeln(d.myName);

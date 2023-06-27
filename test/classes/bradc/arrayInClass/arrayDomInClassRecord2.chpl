@@ -12,7 +12,8 @@ class C {
 
 
 var myR = new R();
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 //baz(myR, 19); -- illegal, but not checked: can't modify const record field
 writeln("myR is: ", myR);

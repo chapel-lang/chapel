@@ -988,7 +988,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
         }
       }
 
-      if (isClass(state->type())) {
+      if (isClass(state->type()) && call->isPrimitive() == false) {
         node->setSymbol(state->getThisAsParent());
       }
     }

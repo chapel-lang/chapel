@@ -210,9 +210,12 @@ module User {
 
   proc main {
     import MyRandom.createRandomStream;
-    const rs1 = createRandomStream(int, 123).borrow(),
-          rs2 = createRandomStream(int, 123).borrow(),
-          rs3 = createRandomStream(int, 123).borrow();
+    const ownRs1 = createRandomStream(int, 123);
+    const ownRs2 = createRandomStream(int, 123);
+    const ownRs3 = createRandomStream(int, 123);
+    const rs1 = ownRs1.borrow(),
+          rs2 = ownRs2.borrow(),
+          rs3 = ownRs3.borrow();
     writeln("created three of ", rs1.type:string);
     testGetNth(rs1, rs2, rs3);
 

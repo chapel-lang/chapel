@@ -16,5 +16,6 @@ proc outsideFunc(x: borrowed ThisPhase2) {
 }
 
 proc main() {
-  var c: borrowed ThisPhase2(true) = (new owned ThisPhase2(2.5 + 1.3i, true)).borrow();
+  var ownC = new owned ThisPhase2(2.5 + 1.3i, true);
+  var c: borrowed ThisPhase2(true) = ownC.borrow();
 }

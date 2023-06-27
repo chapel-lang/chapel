@@ -104,7 +104,6 @@ System/Interoperability
    OS <standard/OS>
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
 
 Utilities
 ---------

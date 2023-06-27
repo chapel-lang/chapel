@@ -2067,7 +2067,7 @@ void init_ofiFabricDomain(void) {
 // Reserve cores for the AM handler(s).
 //
 static
-void init_ofiReserveCores() {
+void init_ofiReserveCores(void) {
   for (int i = 0; i < numAmHandlers; i++) {
     reservedCPUs[i] = envUseDedicatedAmhCores ?
       chpl_topo_reserveCPUPhysical() : -1;

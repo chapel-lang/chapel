@@ -90,7 +90,7 @@ proc main() {
 
 proc do_local_domain() {
   var D, D_copy, D_slice, D_expand, D_exterior, D_interior, D_translate: domain(1);
-  var D_strided: domain(1, stridable=true);
+  var D_strided: domain(1, strides=strideKind.any);
 
   if printProgress then writeln("Initializing D");
   D = {1..n};   // add ref count and decrement in destructor

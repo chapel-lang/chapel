@@ -175,7 +175,7 @@ static bool buildVirtualMaps() {
 // Add overrides of pfn to virtual maps down the inheritance hierarchy
 static void addAllToVirtualMaps(FnSymbol* pfn, AggregateType* pct) {
   forv_Vec(AggregateType, ct, pct->dispatchChildren) {
-    if (ct && ct->isGeneric() == false) {
+    if (ct && ct->symbol->hasFlag(FLAG_GENERIC) == false) {
       if (ct->mayHaveInstances() == true) {
         std::vector<FnSymbol*> methods;
 

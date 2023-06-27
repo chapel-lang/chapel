@@ -430,9 +430,9 @@ module ChapelDistribution {
     param strides: strideKind;
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc stridable param do return strides.toStridable();
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
@@ -978,9 +978,9 @@ module ChapelDistribution {
     param strides: strideKind;
 
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("[array].stridable is deprecated; use [array].strides instead")
+    @deprecated("[array].stridable is deprecated; use [array].strides instead")
     proc stridable param do return strides.toStridable();
-    //RSDW: @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @deprecated("[array].stridable is deprecated; use [array].strides instead")
     proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
@@ -1191,13 +1191,14 @@ module ChapelDistribution {
 
   // domain assignment helpers
 
-  private proc doCastIndices(from, type idxType, param strides) {
-    type resultType = range(idxType, boundKind.both, strides);
+  private proc castIndices(from, lhs) {
+    param rank = lhs.rank;
+    compilerAssert(rank == from.size);
+
+    type resultType = range(lhs.idxType, boundKind.both, lhs.strides);
     if from(0).type == resultType then
       return from;
 
-    // set result = inds with some error checking
-    param rank = from.size;
     var result: rank * resultType;
     for param i in 0..rank-1 do
       result(i) = from(i).safeCast(resultType);
@@ -1213,25 +1214,22 @@ module ChapelDistribution {
   proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
     where isSubtype(_to_borrowed(t),BaseRectangularDom)
   {
+    const rhsInds = rhs.getIndices();
     type arrType = lhs.getBaseArrType();
-    param rank = lhs.rank;
-    type idxType = lhs.idxType;
-    param strides = lhs.strides;
-    compilerAssert(rank == rhs.rank);
 
-    const castIndices = doCastIndices(rhs.getIndices(), idxType, strides);
     for e in lhs._arrs do {
       on e {
         if const eCast = e:arrType? then
-          eCast.dsiReallocate(castIndices);
+          eCast.dsiReallocate(castIndices(rhsInds, lhs));
+          // castIndices() is not hoisted because 'lhs' may not have any arrays
         else
           halt("internal error: ", t:string,
                " contains a bad array type ", arrType:string);
       }
     }
 
-    // todo: why we cast indices for dsiReallocate and not for dsiSetIndices?
-    lhs.dsiSetIndices(rhs.getIndices());
+    // todo: should we cast indices for dsiSetIndices like for dsiReallocate?
+    lhs.dsiSetIndices(rhsInds);
 
     for e in lhs._arrs do {
       var eCastQ = e:arrType?;

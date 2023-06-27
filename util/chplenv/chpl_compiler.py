@@ -264,6 +264,9 @@ COMPILERS = [('gnu', 'gcc', 'g++'),
 # figure out the compiler family (e.g. gnu or clang),
 # and the C and C++ variants of that command
 def get_compiler_from_command(command):
+    if not command:
+        return 'unknown'
+
     # the following adjustments are to handle a command like
     #    /path/to/gcc-10.exe --some-option
     # where we are looking for just the 'gcc' part.
@@ -382,7 +385,7 @@ def get_compiler_command(flag, lang):
                 pass
 
             else:
-                command = chpl_llvm.get_llvm_clang(lang_upper)
+                command = chpl_llvm.get_llvm_clang(lang)
 
     return command
 

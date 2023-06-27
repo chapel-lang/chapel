@@ -15,9 +15,12 @@ proc test1() {
   var b: borrowed MyClass = myClass2;
   var myClass3 = new MyClass(3);
   var c: borrowed MyClass = myClass3;
-  var d = (new owned MyClass(4)): borrowed MyClass; 
-  var e = (new owned MyClass(5)): borrowed MyClass; 
-  var f = (new owned MyClass(6)).borrow();
+  var dOwn = new owned MyClass(4);
+  var d = dOwn: borrowed MyClass; 
+  var eOwn = new owned MyClass(5);
+  var e = eOwn: borrowed MyClass; 
+  var fOwn = new owned MyClass(6);
+  var f = fOwn.borrow();
   writeln(a.type:string);
   writeln(b.type:string);
   writeln(c.type:string);

@@ -15,7 +15,7 @@
     }
 
     proc main() {
-      var instance = (new owned Widget()).borrow();
+      var obj = new Widget(); var instance = obj.borrow();
       var x = 1;
       instance.run(x);
     }

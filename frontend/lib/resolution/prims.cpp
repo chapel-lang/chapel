@@ -292,9 +292,15 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   // handle param folding
   auto prim = call->prim();
-  if (Param::isParamOpFoldable(prim) && allParam && ci.numActuals() == 2) {
+  if (Param::isParamOpFoldable(prim) && allParam) {
+    if (ci.numActuals() == 2) {
       type = Param::fold(context, prim, ci.actual(0).type(), ci.actual(1).type());
-      return CallResolutionResult(candidates, type, poi);
+    } else if (ci.numActuals() == 1) {
+      type = Param::fold(context, prim, ci.actual(0).type(), QualifiedType());
+    } else {
+      CHPL_ASSERT(false && "unsupported param folding");
+    }
+    return CallResolutionResult(candidates, type, poi);
   }
 
   // otherwise, handle each primitive individually
@@ -315,6 +321,10 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TYPE_TO_STRING:
     case PRIM_HAS_LEADER:
     case PRIM_IS_TUPLE_TYPE:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
+
+    case PRIM_SIMPLE_TYPE_NAME:
       CHPL_ASSERT(false && "not implemented yet");
       break;
 

@@ -4,7 +4,7 @@
 rank             = 2
 idxType          = color
 fullIdxType      = 2*color
-stridable        = false
+strides          = one
 size             = 9
 isEmpty()        = false
 lowBound         = (orange, yellow)
@@ -67,7 +67,7 @@ strided 2D enum domain
 rank             = 2
 idxType          = color
 fullIdxType      = 2*color
-stridable        = true
+strides          = positive
 size             = 4
 isEmpty()        = false
 lowBound         = (orange, yellow)

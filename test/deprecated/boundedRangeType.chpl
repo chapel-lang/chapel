@@ -18,7 +18,7 @@ var r: range(boundedType =              // d: boundedType
 compilerWarning(r.boundedType:string);  // d: boundedType
 
 // NB deprecating `range(boundedType=?B)` required changing preFold.cpp
-proc query(arg: range(?,boundedType=?B,stridable=?S)) {     // d: boundedType
+proc query(arg: range(?,boundedType=?B,strides=?S)) {     // d: boundedType
   compilerWarning(B:string, S:string, 0);
   writeln(arg);
 }
@@ -33,3 +33,5 @@ query(r);
   writeln(boundedHigh);                 // d: boundedHigh
   writeln(boundedNone);                 // d: boundedNone
 }
+
+writeln(r.type.boundedType);            // d: boundedType

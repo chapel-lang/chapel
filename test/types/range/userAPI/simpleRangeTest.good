@@ -5,7 +5,7 @@ basic range
 ------------
 1..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -55,7 +55,7 @@ strided range
 ------------
 1..20 by 2
 idxType          = int(64)
-stridable        = true
+strides          = positive
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -105,7 +105,7 @@ neg. str. range
 ------------
 1..20 by -2
 idxType          = int(64)
-stridable        = true
+strides          = negative
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -155,7 +155,7 @@ unbounded range
 ------------
 1..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = low
 isRangeType()    = true
 hasLowBound()    = true
@@ -200,7 +200,7 @@ upper unbnd range
 ------------
 ..10
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -241,7 +241,7 @@ neg upper unbnd range
 ------------
 ..10 by -1
 idxType          = int(64)
-stridable        = true
+strides          = negOne
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false
@@ -286,7 +286,7 @@ unbounded range
 ------------
 ..
 idxType          = int(64)
-stridable        = false
+strides          = one
 bounds           = neither
 isRangeType()    = true
 hasLowBound()    = false

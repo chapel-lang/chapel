@@ -56,6 +56,10 @@
 
 #endif // else (HAVE_LLVM_VER>=150)
 
+#if HAVE_LLVM_VER < 160
+#define LLVM_USE_OLD_PASSES 1
+#endif
+
 #endif //HAVE_LLVM
 
 #endif //LLVMVER_H

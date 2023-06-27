@@ -17,5 +17,6 @@ class Child : Parent {
   var indices : index(rank, idxType);
 }
 
-var c = (new owned Child(1, int)).borrow();
+var ownC = new owned Child(1, int);
+var c = ownC.borrow();
 writeln("c = ", c);

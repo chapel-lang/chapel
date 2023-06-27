@@ -769,16 +769,18 @@ expression or a type expression.
 Explicit Range Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An expression of stridable range type can be explicitly converted to an
-unstridable range type, changing the stride to 1 in the process.
+An expression of a range type with ``strides=strideKind.any``
+can be explicitly converted to a range type with ``strides=strideKind.one``,
+changing the stride to 1 in the process.
 
 .. _Explicit_Domain_Conversions:
 
 Explicit Domain Conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-An expression of stridable domain type can be explicitly converted to an
-unstridable domain type, changing all strides to 1 in the process.
+An expression of a domain type with ``strides=strideKind.any``
+can be explicitly converted to a domain type with ``strides=strideKind.one``,
+changing all strides to 1 in the process.
 
 .. _Explicit_String_to_Bytes_Conversions:
 

@@ -2840,7 +2840,7 @@ void FnSymbol::codegenDef() {
 
     // (note, in particular, the default pass manager's
     //  populateFunctionPassManager does not include vectorization)
-    info->FPM_postgen->run(*func);
+    simplifyFunction(func);
 #endif
   }
 

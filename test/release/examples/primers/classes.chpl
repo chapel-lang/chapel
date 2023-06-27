@@ -113,10 +113,6 @@ var share: shared C = new shared C(1, 10);
 // several ``shared C`` variables can refer to the same instance and
 // will be reclaimed when the last one goes out of scope.
 
-var tmp: borrowed C = (new owned C(1, 10)).borrow();
-// The instance referred to by ``tmp`` will be deleted when it is no longer in
-// scope. The ownership can't be transferred to another variable.
-
 // It is possible to ``borrow`` from another class pointer.
 // One way to do that is by calling the ``borrow()`` method directly:
 

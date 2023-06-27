@@ -7,7 +7,8 @@ proc main () {
     halt ("arraySize must be even!");
   // Each point consists of two coordinates.
   const numberOfPoints = arraySize/2;
-  var r = (new owned Random ()).borrow(),
+  var ownR = new owned Random ();
+  var r = ownR.borrow(),
       rArray: [1..arraySize] real;
   ref x = rArray[1..numberOfPoints],
       y = rArray[numberOfPoints+1 ..];

@@ -294,13 +294,47 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   }
 }
 
+/* helper to check if a symbol name starts with chpl_. Typically used to see
+   if we should ignore documentation for this symbol by default
+*/
+static bool symbolNameBeginsWithChpl(const Decl* node) {
+  if (auto namedDecl = node->toNamedDecl()) {
+    auto chplPrefix = UniqueString::get(gContext, "chpl_");
+    // check if this symbol itself starts with chpl_
+    if (namedDecl->name().startsWith(chplPrefix)) {
+      return true;
+    }
+    // check if this is a method on a type that starts with chpl_
+    if (auto func = namedDecl->toFunction()) {
+      if (func->isMethod() && !func->isPrimaryMethod()) {
+        if (auto typeExpr = func->thisFormal()->typeExpression()) {
+          if (auto ident = typeExpr->toIdentifier()) {
+            if (ident->name().startsWith(chplPrefix)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = parsing::astToAttributeGroup(gContext, e)) {
+  auto attrs = parsing::astToAttributeGroup(gContext, e);
+  if (attrs) {
     auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
                                                            "chpldoc.nodoc"));
     if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
       return true;
     }
+  }
+  if (symbolNameBeginsWithChpl(e)) {
+    // TODO: Remove this check and the pragma once we have an attribute that
+    // can be used to document chpl_ symbols or otherwise remove the
+    // chpl_ prefix from symbols we want documented
+    return !(attrs &&
+             attrs->hasPragma(PragmaTag::PRAGMA_CHPLDOC_IGNORE_CHPL_PREFIX));
   }
   return false;
 }
@@ -1103,6 +1137,12 @@ struct RstSignatureVisitor {
     // throws
     if (f->throws()) os_ << " throws";
 
+    // Where Clause
+    if (const AstNode* wc = f->whereClause()) {
+      os_ << " where ";
+      wc->traverse(*this);
+    }
+
     return false;
   }
 
@@ -1622,6 +1662,7 @@ struct RstResultBuilder {
     std::queue<const AstNode*> expressions;
 
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (decl->toVariable()->typeExpression() ||
           decl->toVariable()->initExpression()) {
         expressions.push(decl);
@@ -1631,6 +1672,7 @@ struct RstResultBuilder {
     std::string prevTypeExpression;
     std::string prevInitExpression;
     for (auto decl : md->decls()) {
+      if (isNoDoc(decl)) continue;
       if (kind=="attribute" && decl != md->decls().begin()->toDecl()) {
         indentStream(os_, 1 * indentPerDepth);
       }

@@ -279,6 +279,7 @@ bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
+bool fReportGpu = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
 bool fReportGpuTransformTime = false;
@@ -346,7 +347,9 @@ bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
-bool fUseIOFormatters = false;
+bool fNoIOGenSerialization = false;
+bool fNoIOSerializeWriteThis = false;
+bool fNoIODeserializeReadThis = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
@@ -358,6 +361,7 @@ std::vector<std::string> gDynoPrependStandardModulePaths;
 int fGPUBlockSize = 0;
 char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
+bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
 char gpuArch[gpuArchNameLen+1] = "";
 
@@ -1204,7 +1208,6 @@ static ArgumentDescription arg_desc[] = {
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
- {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
@@ -1231,6 +1234,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
+ {"report-gpu", ' ', NULL, "Print information about what loops are and are not GPU eligible", "F", &fReportGpu, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
@@ -1261,6 +1265,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
+ {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1313,7 +1318,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
- {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
+ {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
+ {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
+ {"io-deserialize-readThis", ' ', NULL, "Enable [disable] use of 'readThis' as default for 'deserialize' methods", "n", &fNoIODeserializeReadThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
  {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
   {0}
 };
@@ -1908,6 +1915,20 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
+  return {
+    .boundsChecking = !fNoBoundsChecks,
+    .castChecking = !fNoCastChecks,
+    .nilDerefChecking = !fNoNilChecks,
+    .overloadSetsChecking = fOverloadSetsChecks,
+    .divByZeroChecking = !fNoDivZeroChecks,
+    .cacheRemote = fCacheRemote,
+    .privatization = !(fNoPrivatization || fLocal),
+    .local = fLocal,
+    .warnUnstable = fWarnUnstable,
+  };
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
 
@@ -1989,6 +2010,9 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);
+
+  // Set the compilation globals all at once using a query.
+  chpl::setCompilerGlobals(gContext, dynoBuildCompilerGlobals());
 }
 
 

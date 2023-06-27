@@ -877,22 +877,14 @@ extern Symbol *gDummyRef;
 extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gBoundsChecking;
-extern VarSymbol *gCastChecking;
-extern VarSymbol *gNilChecking;
-extern VarSymbol *gOverloadSetsChecks;
-extern VarSymbol *gDivZeroChecking;
-extern VarSymbol *gCacheRemote;
-extern VarSymbol *gPrivatization;
-extern VarSymbol *gLocal;
-extern VarSymbol *gWarnUnstable;
 extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
-extern VarSymbol *gUseIOFormatters;
+
+extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

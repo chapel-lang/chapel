@@ -6,4 +6,3 @@ assert(x1);
 
 var x2 = proc(ref x: real): int:string:string == "proc(ref x: real): int";
 assert(x2);
-

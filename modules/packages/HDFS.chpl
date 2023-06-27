@@ -194,7 +194,7 @@ module HDFS {
 
   proc connect(nameNode: string = "default", port:int=0) throws {
     var fs = new unmanaged HDFSFileSystem(nameNode, port);
-    if fs.hfs == c_nil {
+    if fs.hfs == nil {
       var err = qio_mkerror_errno();
       delete fs;
       throw createSystemError(err, "in hdfsConnect");
@@ -256,7 +256,7 @@ module HDFS {
     proc deinit() {
       if verbose then
         writeln("hdfsDisconnect");
-      if this.hfs != c_nil then
+      if this.hfs != nil then
         hdfsDisconnect(this.hfs);
     }
     @chpldoc.nodoc
@@ -366,13 +366,13 @@ module HDFS {
       if verbose then
         writeln("after hdfsOpenFile");
 
-      if hfile == c_nil {
+      if hfile == nil {
         throw createSystemError(qio_mkerror_errno(), "in hdfsOpenFile");
       }
 
       // Create an HDFSFile and return the QIO file containing it
       // this initializer bumps the reference count to this
-      var fl = new unmanaged HDFSFile(this:unmanaged, hfile, path);
+      var fl = new unmanaged HDFSFile(_to_unmanaged(this), hfile, path);
 
       var ret: file;
       try {
@@ -413,7 +413,7 @@ module HDFS {
       if verbose then
         writeln("HDFSFile.setupChannel");
 
-      var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
+      var hdfsch = new unmanaged HDFSChannel(_to_unmanaged(this), qioChannelPtr);
       pluginChannel = hdfsch;
       return 0;
     }
@@ -507,7 +507,7 @@ module HDFS {
 
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_void_ptr = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_allocated_ptr_unlocked(qio_ch, amt, ptr, len, offset);
@@ -546,7 +546,7 @@ module HDFS {
       var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
-        var ptr:c_void_ptr = c_nil;
+        var ptr:c_void_ptr = nil;
         var len = 0:c_ssize_t;
         var offset = 0;
         err = qio_channel_get_write_behind_ptr_unlocked(qio_ch, ptr, len, offset);

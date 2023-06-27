@@ -1003,8 +1003,9 @@ module DefaultRectangular {
       targetLocDom=newTargetLocDom;
     }
 
-    //RSDW remove this once Block, Cyclick, Stencil use 'strides'
+    // supports deprecation by Vass in 1.31 to implement #17131
     pragma "dont disable remote value forwarding"
+    @deprecated("'LocRADCache' initializer with 'stridable: bool' is deprecated; please use 'strides: strideKind' instead")
     proc init(type eltType, param rank: int, type idxType,
               param stridable: bool, newTargetLocDom: domain(rank)) {
       this.init(eltType, rank, idxType, chpl_strideKind(stridable),
@@ -1685,7 +1686,7 @@ module DefaultRectangular {
 
   proc DefaultRectangularDom.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     rwLiteral("{");
@@ -1694,7 +1695,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f.write(ranges(i));
+      if f._writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1742,6 +1743,102 @@ module DefaultRectangular {
     chpl_serialReadWriteRectangularHelper(f, arr, dom);
   }
 
+  proc _supportsBulkElements(f, arr) param : bool {
+    use Reflection;
+    var temp : c_ptr(arr.eltType);
+    if f._writing then
+      return Reflection.canResolveMethod(f.serializer, "writeBulkElements", f, temp, 0:uint);
+    else
+      return Reflection.canResolveMethod(f.deserializer, "readBulkElements", f, temp, 0:uint);
+  }
+
+  proc _supportsSerializers(f) param : bool {
+    if f._writing then return f.serializerType != nothing;
+    else return f.deserializerType != nothing;
+  }
+
+  proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws
+  where _supportsSerializers(f) {
+    if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
+       _isSimpleIoType(arr.eltType) && _supportsBulkElements(f, arr) &&
+       arr.isDataContiguous(dom) {
+      _readWriteBulk(f, arr, dom);
+    } else {
+      _readWriteHelper(f, arr, dom);
+    }
+  }
+
+  proc _readWriteHelper(f, arr, dom) throws {
+    param rank = arr.rank;
+    type idxType = arr.idxType;
+    type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
+
+    ref fmt = if f._writing then f.serializer else f.deserializer;
+
+    proc recursiveArrayReaderWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
+      type strType = idxSignedType;
+      const makeStridePositive = if dom.dsiDim(dim).stride > 0 then 1:strType else (-1):strType;
+
+      if f._writing then
+        fmt.startArrayDim(f, dom.dsiDim(dim).sizeAs(uint));
+      else
+        fmt.startArrayDim(f);
+
+      // The simple 1D case
+      if dim == rank-1 {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          idx(dim) = j;
+          if f._writing then
+            fmt.writeArrayElement(f, arr.dsiAccess(idx));
+          else {
+            arr.dsiAccess(idx) = fmt.readArrayElement(f, arr.eltType);
+          }
+        }
+      } else {
+        for j in dom.dsiDim(dim) by makeStridePositive {
+          var lastIdx =  dom.dsiDim(dim).last;
+          idx(dim) = j;
+
+          recursiveArrayReaderWriter(idx, dim=dim+1,
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
+
+        }
+      }
+
+      fmt.endArrayDim(f);
+    }
+
+    if f._writing then
+      fmt.startArray(f, dom.dsiNumIndices:uint);
+    else
+      fmt.startArray(f);
+
+    const zeroTup: rank*idxType;
+    recursiveArrayReaderWriter(zeroTup);
+
+    fmt.endArray(f);
+  }
+
+  proc _readWriteBulk(f, arr, dom) throws {
+    ref fmt = if f._writing then f.serializer else f.deserializer;
+
+    const len = dom.dsiNumIndices:uint;
+    if f._writing then
+      fmt.startArray(f, len);
+    else
+      fmt.startArray(f);
+
+    var ptr = c_ptrTo(arr.dsiAccess(dom.dsiFirst));
+    if f._writing {
+      fmt.writeBulkElements(f, ptr, len);
+    } else {
+      fmt.readBulkElements(f, ptr, len);
+    }
+
+    fmt.endArray(f);
+  }
+
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
     type idxType = arr.idxType;
@@ -1751,7 +1848,7 @@ module DefaultRectangular {
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     proc rwSpaces(dim:int) throws {
@@ -1780,13 +1877,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f._writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f.write(arr.dsiAccess(idx));
+          if f._writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
@@ -1830,7 +1927,7 @@ module DefaultRectangular {
       // byte order is set to native or its equivalent.
       const elemSize = c_sizeof(arr.eltType);
       if boundsChecking {
-        var rw = if f.writing then "write" else "read";
+        var rw = if f._writing then "write" else "read";
         assert((dom.dsiNumIndices:uint*elemSize:uint) <= max(c_ssize_t):uint,
                "length of array to ", rw, " is greater than c_ssize_t can hold");
       }
@@ -1840,7 +1937,7 @@ module DefaultRectangular {
       const idx = arr.getDataIndex(dom.dsiLow);
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
-        if f.writing {
+        if f._writing {
           f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
@@ -1910,7 +2007,7 @@ module DefaultRectangular {
 
   private proc transferHelper(A, aView, B, bView) : bool {
     if A.rank == B.rank &&
-       aView.hasPosNegUnitStride() && (bView.strides == aView.strides) &&
+       aView.hasUnitStride() && bView.hasUnitStride() &&
        _canDoSimpleTransfer(A, aView, B, bView) {
       if debugDefaultDistBulkTransfer then
         chpl_debug_writeln("Performing simple DefaultRectangular transfer");

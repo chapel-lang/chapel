@@ -15,8 +15,8 @@ class A {
   }
   // initializer for class 'A' requires a generic argument called 't'
 }
-
-var a = (new owned A(real)).borrow();
+var ownA = new owned A(real);
+var a = ownA.borrow();
 
 writeln(a);
 
@@ -34,8 +34,8 @@ class B {
   }
   // initializer for class 'B' requires a generic argument called 'p'
 }
-
-var b = (new owned B("hello-user")).borrow();
+var ownB = new owned B("hello-user");
+var b = ownB.borrow();
 
 writeln("{p = ", b.p, "}");
 
@@ -52,8 +52,8 @@ class C {
   }
   // initializer for class 'C' requires a generic argument called 'cst'
 }
-
-var c = (new owned C(1.2)).borrow();
+var ownC = new owned C(1.2);
+var c = ownC.borrow();
 
 writeln(c);
 
@@ -72,8 +72,8 @@ class D {
   }
   // initializer for class 'D' requires a generic argument called 'vbl'
 }
-
-var d = (new owned D(7)).borrow();
+var ownD = new owned D(7);
+var d = ownD.borrow();
 
 writeln(d);
 
@@ -93,8 +93,8 @@ class Ad {
   type t;
   var x:t;
 }
-
-var ad = (new owned Ad(real)).borrow();
+var ownAd = new owned Ad(real);
+var ad = ownAd.borrow();
 
 writeln(ad);
 
@@ -108,8 +108,8 @@ writeln(ad);
 class Bd {
   param p;
 }
-
-var bd = (new owned Bd("hello-default")).borrow();
+var ownBd = new owned Bd("hello-default");
+var bd = ownBd.borrow();
 
 writeln("{p = ", bd.p, "}");
 
@@ -124,8 +124,8 @@ writeln("{p = ", bd.p, "}");
 class Cd {
   const cst;
 }
-
-var cd = (new owned Cd(1.33)).borrow();
+var ownCd = new owned Cd(1.33);
+var cd = ownCd.borrow();
 
 writeln(cd);
 
@@ -142,9 +142,7 @@ writeln(cd);
 class Dd {
   var vbl;
 }
-
-var dd = (new owned Dd(55)).borrow();
+var ownDd = new owned Dd(55);
+var dd = ownDd.borrow();
 
 writeln(dd);
-
-
