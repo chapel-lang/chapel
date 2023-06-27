@@ -2524,23 +2524,51 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
 
   void emit(const llvm::remarks::Remark &Remark) override {
 
-    // if not developer, skip all non user functions
-    if (!developer) {
-      auto funcName = Remark.FunctionName;
-      auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr(funcName.str()));
-      if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
-        auto mod = funcIt->second->getModule();
-        if(mod == nullptr || mod->modTag != MOD_USER)
-        return;
+    llvm::StringRef funcCName = Remark.FunctionName;
+    const char* astr_funcCName = astr(funcCName.str());
+    auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr_funcCName);
+    FnSymbol* fn = nullptr;
+    if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
+      fn = funcIt->second;
+    }
+
+    // couldn't get from map, do the slow way with a loop through the FnSymbols
+    if(fn == nullptr) {
+      for_alive_in_Vec(FnSymbol, gFn, gFnSymbols) {
+        const char* cname = astr(gFn->cname);
+        if(astr_funcCName == cname) {
+          fn = gFn;
+          break;
+        }
       }
     }
 
+    // if fn is still nullptr and not developer, skip it
+    if(fn == nullptr && !developer) return;
+
+    // if not developer, skip all non user functions
+    if (fn != nullptr && !developer) {
+        auto mod = fn->getModule();
+        if(mod == nullptr || mod->modTag != MOD_USER)
+        return;
+    }
+    // if we declared any filter functions, we need to filter based on them
+    if(fn != nullptr && !llvmRemarksFunctionsToShow.empty()) {
+      bool shouldSkip = true;
+      for (auto filterFuncName: llvmRemarksFunctionsToShow) {
+        if(filterFuncName == std::string(fn->name)) shouldSkip = false;
+      }
+      if(shouldSkip) return;
+    }
+
     if (auto Loc = Remark.Loc) {
-      OS << "" << Loc->SourceFilePath << ":" << Loc->SourceLine << ":"
-         << Loc->SourceColumn << "";
+      OS << Loc->SourceFilePath << ":" << Loc->SourceLine << ":" << Loc->SourceColumn;
     } else {
-      // no file location available, use generated LLVM function name
-      OS << "" << Remark.FunctionName << "";
+      // no file location available, deduce a best guess from FunctionName if possible
+      const char* filename = fn ? cleanFilename(fn->fname()) : nullptr;
+      int linenum = fn ? fn->linenum() : 0;
+      if(filename) OS << filename << ":" << linenum << ":0";
+      else OS << fn->cname;
     }
     OS << ": opt " << typeToString(Remark.RemarkType);
     OS << " for '" << Remark.PassName << "'";
@@ -2590,6 +2618,10 @@ static llvm::Error setupRemarks(llvm::LLVMContext &Context,
 }
 #endif
 
+static bool shouldShowLLVMRemarks() {
+  return *llvmRemarksFilters != '\0' || !llvmRemarksFunctionsToShow.empty();
+}
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
   // Initialize the global gGenInfo for C code generation.
@@ -2601,8 +2633,8 @@ static void codegenPartTwo() {
 
 #ifdef HAVE_LLVM
   if (fLlvmCodegen) {
-    if(*llvmRemarksFilters != 0) {
-      auto err = setupRemarks(gGenInfo->llvmContext, llvm::errs(), llvmRemarksFilters);
+    if(shouldShowLLVMRemarks()) {
+      auto err = setupRemarks(gGenInfo->llvmContext, llvm::outs(), llvmRemarksFilters);
       if (err) {
         USR_FATAL("failed to add optimization remarks reporting");
       }
