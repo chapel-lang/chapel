@@ -285,6 +285,15 @@ def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT'
             time.sleep(1)
             waited += 1
 
+# If CHPL_TEST_LIMIT_RUNNING_EXECUTABLES is set, use a file lock to serialize
+# process execution.
+def create_exec_limiter():
+    exec_limiter = execution_limiter.NoLock()
+    if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
+        exec_limiter = execution_limiter.FileLock()
+    return exec_limiter
+
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
@@ -1870,6 +1879,13 @@ for testname in testsrc:
 
             cleanup(execname)
             cleanup(printpassesfile)
+
+            # no-op exec limiter for the case where a lot of consecutive tests
+            # are compile only, in which case the non-stop chpl runs could
+            # cause interference with a running executable
+            with create_exec_limiter():
+                pass
+
             continue # on to next compopts
         else:
             compoutput = output # save for diff
@@ -2153,12 +2169,7 @@ for testname in testsrc:
                 if skip_remaining_trials:
                     break
 
-                exec_limiter = execution_limiter.NoLock()
-                if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
-                    exec_name = os.path.join(localdir, test_filename)
-                    exec_limiter = execution_limiter.FileLock()
-
-                with exec_limiter:
+                with create_exec_limiter():
                     exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
                     launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
                     sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
