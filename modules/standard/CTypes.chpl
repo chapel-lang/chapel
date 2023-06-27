@@ -90,8 +90,7 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
-  type c_void_ptr = _c_void_ptr;
-  // type _c_void_ptr = c_ptr(void);
+  extern type c_void_ptr = chpl__c_void_ptr;
 
 
   /* A Chapel version of a C NULL pointer. */
@@ -376,11 +375,11 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc _c_void_ptr.writeThis(ch) throws {
+  inline proc c_void_ptr.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
   }
   @chpldoc.nodoc
-  inline proc _c_void_ptr.serialize(writer, ref serializer) throws {
+  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
     this.writeThis(writer);
   }
 

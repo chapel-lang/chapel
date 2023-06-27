@@ -8961,6 +8961,7 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 
   } else if (rhsType == dtNil) {
     bool lhsIsPointer = isClassLikeOrPtr(lhsType) ||
+                        lhsType == dtCVoidPtr ||
                         lhsType == dtCFnPtr;
 
     if (lhsType != dtNil && !lhsIsPointer) {

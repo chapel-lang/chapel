@@ -1598,9 +1598,6 @@ DefExpr* buildClassDefExpr(const char*  name,
   } else if (strcmp("_shared", name) == 0) {
     ct = installInternalType(ct, dtShared);
     ts = ct->symbol;
-  } else if (strcmp("_c_void_ptr", name) == 0) {
-    ct = installInternalType(ct, dtCVoidPtr);
-    ts = ct->symbol;
   } else {
     ts = new TypeSymbol(name, ct);
   }

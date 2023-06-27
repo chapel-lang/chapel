@@ -42,6 +42,7 @@ IntentTag constIntentForType(Type* t) {
       t == dtTaskID ||
       t == dtNil ||
       t == dtStringC ||
+      t == dtCVoidPtr ||
       t == dtCFnPtr ||
       t == dtNothing ||
       t == dtVoid ||
@@ -143,6 +144,7 @@ IntentTag blankIntentForType(Type* t) {
              is_complex_type(t)                      ||
              is_enum_type(t)                         ||
              t == dtStringC                          ||
+             t == dtCVoidPtr                         ||
              t == dtCFnPtr                           ||
              isClass(t)                              ||
              isDecoratedClassType(t)                 ||

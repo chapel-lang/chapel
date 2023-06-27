@@ -302,6 +302,5 @@ extern AggregateType* dtString;
 extern AggregateType* dtLocale;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
-extern AggregateType* dtCVoidPtr;
 
 #endif

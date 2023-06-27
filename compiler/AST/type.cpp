@@ -272,6 +272,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
+    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
+      retval = "c_void_ptr";
     }
 
     if (retval == NULL)
@@ -1071,12 +1073,6 @@ void initPrimitiveTypes() {
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
-  /* dtCVoidPtr = nullptr; */
-  dtCVoidPtr                           = new AggregateType(AGGREGATE_CLASS);
-  dtCVoidPtr->symbol                   = new TypeSymbol("_c_void_ptr", dtCVoidPtr);
-  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
-  /* gdbShouldBreakHere(); */
-
   gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
   gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
 
@@ -1166,6 +1162,13 @@ void initPrimitiveTypes() {
   gNan->immediate->const_kind = NUM_KIND_REAL;
   gNan->immediate->num_index = FLOAT_SIZE_DEFAULT;
 
+
+
+  // Could be == c_ptr(int(8)) e.g.
+  // used in some runtime interfaces
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
+  dtCVoidPtr->defaultValue = gNil;
 
   dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
@@ -1602,6 +1605,7 @@ bool isClassLikeOrManaged(Type* t) {
 bool isClassLikeOrPtr(Type* t) {
   return isClassLike(t) || (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
                             t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+                            t == dtCVoidPtr ||
                             t == dtStringC ||
                             t == dtCFnPtr);
 }

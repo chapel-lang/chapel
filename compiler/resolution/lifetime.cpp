@@ -3006,6 +3006,7 @@ static bool typeHasInfiniteBorrowLifetime(Type* type) {
   // Types for C compatibility are assumed to have infinite lifetime.
   if (type->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       type->symbol->hasFlag(FLAG_EXTERN) ||
+      type == dtCVoidPtr ||
       type == dtCFnPtr)
     return true;
 

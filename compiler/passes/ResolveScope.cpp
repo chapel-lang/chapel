@@ -225,6 +225,7 @@ void ResolveScope::addBuiltIns() {
   extend(dtComplex[COMPLEX_SIZE_64]->symbol);
   extend(dtComplex[COMPLEX_SIZE_128]->symbol);
 
+  extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
   extend(dtOpaque->symbol);
