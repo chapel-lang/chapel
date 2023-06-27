@@ -60,10 +60,12 @@
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/Path.h"
-#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
@@ -75,8 +77,11 @@
 
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Passes/OptimizationLevel.h"
+using LlvmOptimizationLevel = llvm::OptimizationLevel;
 #else
 #include "llvm/Support/TargetRegistry.h"
+using LlvmOptimizationLevel = llvm::PassBuilder::OptimizationLevel;
 #endif
 
 #if HAVE_LLVM_VER >= 90
@@ -2123,6 +2128,36 @@ static void setupModule()
       /*IsConstant=*/true);
 }
 
+static void cleanupFunctionOptManagers() {
+  GenInfo* info = gGenInfo;
+
+  // note: the order of deleting these is important
+  if (info->FunctionSimplificationPM) {
+    delete info->FunctionSimplificationPM;
+    info->FunctionSimplificationPM = nullptr;
+  }
+
+  if (info->MAM) {
+    delete info->MAM;
+    info->MAM = nullptr;
+  }
+
+  if (info->CGAM) {
+    delete info->CGAM;
+    info->CGAM = nullptr;
+  }
+
+  if (info->FAM) {
+    delete info->FAM;
+    info->FAM = nullptr;
+  }
+
+  if (info->LAM) {
+    delete info->LAM;
+    info->LAM = nullptr;
+  }
+}
+
 void finishCodegenLLVM() {
   GenInfo* info = gGenInfo;
 
@@ -2130,11 +2165,16 @@ void finishCodegenLLVM() {
   setupForGlobalToWide();
 
   // Finish up our cleanup optimizers...
-  info->FPM_postgen->doFinalization();
+  if (info->FPM_postgen) {
+    info->FPM_postgen->doFinalization();
 
-  // We don't need our postgen function pass manager anymore.
-  delete info->FPM_postgen;
-  info->FPM_postgen = NULL;
+    // We don't need our postgen function pass manager anymore.
+    delete info->FPM_postgen;
+    info->FPM_postgen = nullptr;
+  }
+
+  // clean up new pass manager values
+  cleanupFunctionOptManagers();
 
   // Now finish any Clang code generation.
   finishClang(info->clangInfo);
@@ -2170,6 +2210,62 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
     printf("Adding RV passes\n");
 
   rv::addRVPasses(PM);
+}
+#endif
+
+void simplifyFunction(llvm::Function* func) {
+  // Run per-function optimization / simplification
+  // to potentially keep the fn in cache while it is simplified.
+  // Big optimizations happen later.
+#ifdef LLVM_USE_OLD_PASSES
+  gGenInfo->FPM_postgen->run(*func);
+#else
+  if (gGenInfo->FunctionSimplificationPM) {
+    gGenInfo->FunctionSimplificationPM->run(*func, *gGenInfo->FAM);
+  }
+#endif
+}
+
+#ifndef LLVM_USE_OLD_PASSES
+// if optLevel is provided, use that; otherwise use the value
+// from clangInfo->codegenOptions.
+static LlvmOptimizationLevel translateOptLevel(int optLevel=-1) {
+  if (optLevel < 0) {
+    ClangInfo* clangInfo = gGenInfo->clangInfo;
+    INT_ASSERT(clangInfo);
+    clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
+    optLevel = CodeGenOpts.OptimizationLevel;
+  }
+
+  switch (optLevel) {
+    case 0: return LlvmOptimizationLevel::O0;
+    case 1: return LlvmOptimizationLevel::O1;
+    case 2: return LlvmOptimizationLevel::O2;
+    case 3: return LlvmOptimizationLevel::O3;
+    default: return LlvmOptimizationLevel::O0;
+  }
+}
+
+static
+llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
+  ClangInfo* clangInfo = gGenInfo->clangInfo;
+  INT_ASSERT(clangInfo);
+  clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
+
+  // Based on clang's EmitAssemblyHelper::RunOptimizationPipeline
+  PipelineTuningOptions PTO;
+  PTO.LoopUnrolling = CodeGenOpts.UnrollLoops;
+  // For historical reasons, loop interleaving is set to mirror setting for loop
+  // unrolling.
+  PTO.LoopInterleaving = CodeGenOpts.UnrollLoops;
+  PTO.LoopVectorization = CodeGenOpts.VectorizeLoop;
+  PTO.SLPVectorization = CodeGenOpts.VectorizeSLP;
+  PTO.MergeFunctions = CodeGenOpts.MergeFunctions;
+  // Only enable CGProfilePass when using integrated assembler, since
+  // non-integrated assemblers don't recognize .cgprofile section.
+  PTO.CallGraphProfile = !CodeGenOpts.DisableIntegratedAS;
+
+  return PTO;
 }
 #endif
 
@@ -2235,6 +2331,78 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
 
+#ifndef LLVM_USE_OLD_PASSES
+
+static void registerDumpIrExtensions(PassBuilder& PB);
+
+static void runModuleOptPipeline(bool addWideOpts) {
+  GenInfo* info = gGenInfo;
+
+  LoopAnalysisManager LAM;
+  FunctionAnalysisManager FAM;
+  CGSCCAnalysisManager CGAM;
+  ModuleAnalysisManager MAM;
+
+  PassInstrumentationCallbacks PIC;
+  StandardInstrumentations SI(
+#if HAVE_LLVM >= 160
+                              info->llvmContext,
+#endif
+                              /* DebugLogging */ false);
+  SI.registerCallbacks(PIC, &FAM);
+
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(info->targetMachine, createPipelineOptions(false),
+                 PGOOpt, &PIC);
+
+
+  // some FAM add-ins
+  std::unique_ptr<TargetLibraryInfoImpl> TLII(
+      new TargetLibraryInfoImpl(llvm::Triple(info->targetMachine->getTargetTriple())));
+  // TODO: handle CodeGenOptions::LIBMVEC etc to support
+  // vectorizing the math library.
+
+  // not sure if this one is needed
+  FAM.registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
+
+  // clang does this one
+  FAM.registerPass([&] { return TargetLibraryAnalysis(*TLII); });
+
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  // note: registerFunctionAnalyses creates and registers
+  // the default alias analysis pipeline (from buildDefaultAAPipeline)
+  PB.registerLoopAnalyses(LAM);
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  // Add IR dumping pass(es) if necessary
+  if (llvmPrintIrStageNum != llvmStageNum::NOPRINT) {
+    registerDumpIrExtensions(PB);
+  }
+
+  // Build the pipeline
+  auto optLvl = translateOptLevel();
+  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+
+  // Add the Global to Wide optimization if necessary.
+  // This is done in this way to be added even with -O0
+  if (addWideOpts) {
+    if (optLvl != LlvmOptimizationLevel::O0) {
+      auto globalSpace = info->globalToWideInfo.globalSpace;
+      MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
+                           AggregateGlobalOpsOptPass(globalSpace)));
+    }
+    MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
+                                 info->clangInfo->asmTargetLayoutStr));
+  }
+
+  // Run the opts
+  MPM.run(*info->module, MAM);
+}
+
+#endif
+
 void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
@@ -2257,9 +2425,11 @@ void prepareCodegenLLVM()
   configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
-  info->FPM_postgen = fpm;
-
-  info->FPM_postgen->doInitialization();
+  // Even when using the new pass manager,
+  // we run doInitialization with the legacy passes to make sure to
+  // update the module's DataLayout based on the target information.
+  // TODO: there is probably a nicer way to do this using the new pass manager
+  fpm->doInitialization();
 
   // Set the floating point optimization level
   // see also code setting targetOptions.UnsafeFPMath etc
@@ -2282,6 +2452,39 @@ void prepareCodegenLLVM()
   }
 
   checkAdjustedDataLayout();
+
+#ifdef LLVM_USE_OLD_PASSES
+  info->FPM_postgen = fpm;
+#else
+  // if not using the old optimization pipeline, we didn't save
+  // fpm in info, so need to delete it now.
+  delete fpm;
+
+  // if using the new optimization pipeline, set up the various
+  // AnalysisManagers
+  info->LAM = new LoopAnalysisManager();
+  info->FAM = new FunctionAnalysisManager();
+  info->CGAM = new CGSCCAnalysisManager();
+  info->MAM = new ModuleAnalysisManager();
+
+  info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
+
+  // Construct a function simplification pass manager
+  PassBuilder PB(info->targetMachine, createPipelineOptions(true));
+
+  // Register all the basic analyses with the managers.
+  PB.registerModuleAnalyses(*info->MAM);
+  PB.registerCGSCCAnalyses(*info->CGAM);
+  PB.registerFunctionAnalyses(*info->FAM);
+  PB.registerLoopAnalyses(*info->LAM);
+  PB.crossRegisterProxies(*info->LAM, *info->FAM, *info->CGAM, *info->MAM);
+
+  auto lvl = translateOptLevel();
+  if (lvl != LlvmOptimizationLevel::O0) {
+    info->FunctionSimplificationPM = new FunctionPassManager(
+        PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+  }
+#endif
 }
 
 #if HAVE_LLVM_VER >= 140
@@ -3819,6 +4022,93 @@ bool isBuiltinExternCFunction(const char* cname)
   else return false;
 }
 
+#ifndef LLVM_USE_OLD_PASSES
+static void addDumpIrModule(ModulePassManager& MPM,
+                            LlvmOptimizationLevel v,
+                            llvmStageNum::llvmStageNum_t stage) {
+  MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
+}
+static void addDumpIrFunction(FunctionPassManager& FPM,
+                              LlvmOptimizationLevel v,
+                              llvmStageNum::llvmStageNum_t stage) {
+  FPM.addPass(DumpIRPass(stage));
+}
+static void addDumpIrLoop(LoopPassManager& LPM,
+                        LlvmOptimizationLevel v,
+                        llvmStageNum::llvmStageNum_t stage) {
+  LPM.addPass(DumpIRPass(stage));
+}
+static void registerDumpIrExtensions(PassBuilder& PB) {
+  for (int i = 0; i < llvmStageNum::LAST; i++) {
+    llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
+    if (llvmPrintIrStageNum == llvmStageNum::EVERY ||
+        llvmPrintIrStageNum == stage) {
+      switch (stage) {
+        case llvmStageNum::EarlyAsPossible:
+          PB.registerPipelineStartEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::ModuleOptimizerEarly:
+          if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+            // do nothing, don't see an equivalent
+            USR_FATAL("Cannot use llvm-print-ir-stage module-optimizer-early "
+                      "with the new pass manager\n");
+          }
+          break;
+        case llvmStageNum::LoopOptimizerEnd:
+          PB.registerLoopOptimizerEndEPCallback(
+            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
+                      addDumpIrLoop(LPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::ScalarOptimizerLate:
+          PB.registerScalarOptimizerLateEPCallback(
+            [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
+                      addDumpIrFunction(FPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::OptimizerLast:
+          PB.registerOptimizerLastEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::VectorizerStart:
+          PB.registerVectorizerStartEPCallback(
+              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
+                      addDumpIrFunction(FPM, v, stage);
+                      });
+          break;
+        case llvmStageNum::EnabledOnOptLevel0:
+          if (llvmPrintIrStageNum != llvmStageNum::EVERY) {
+            // do nothing, don't see an equivalent
+            USR_FATAL("Cannot use llvm-print-ir-stage enabled-on-opt-level0 "
+                      "with the new pass manager\n");
+          }
+          break;
+        case llvmStageNum::Peephole:
+          PB.registerPeepholeEPCallback(
+              [stage](FunctionPassManager &FPM, LlvmOptimizationLevel v) {
+                      addDumpIrFunction(FPM, v, stage);
+                      });
+          break;
+        case llvmStageNum::NOPRINT:
+        case llvmStageNum::NONE:
+        case llvmStageNum::BASIC:
+        case llvmStageNum::FULL:
+        case llvmStageNum::EVERY:
+        case llvmStageNum::ASM:
+        case llvmStageNum::LAST:
+          break; // no action needed here for these
+      }
+    }
+  }
+}
+
+#else
+
 static
 void addAggregateGlobalOps(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
@@ -3886,6 +4176,7 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
     llvm::legacy::PassManagerBase &PM) {
   PM.add(createLegacyDumpIrPass(llvmPrintIrStageNum));
 }
+#endif
 
 static void linkBitCodeFile(const char *bitCodeFilePath) {
   GenInfo* info = gGenInfo;
@@ -4251,12 +4542,33 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
 
-void makeBinaryLLVM(void) {
+static void saveIrToBcFileIfNeeded(const std::string& filename) {
+  GenInfo* info = gGenInfo;
+  if (saveCDir[0] != '\0') {
+    std::error_code tmpErr;
+    // Save the generated LLVM IR to the given file
+#if HAVE_LLVM_VER >= 120
+    ToolOutputFile output (filename.c_str(), tmpErr, sys::fs::OF_None);
+#else
+    ToolOutputFile output (filename.c_str(), tmpErr, sys::fs::F_None);
+#endif
+    if (tmpErr) {
+      USR_FATAL("Could not open output file %s", filename.c_str());
+    }
+    WriteBitcodeToFile(*info->module, output.os());
+    output.keep();
+    output.os().flush();
+  }
+}
 
+void makeBinaryLLVM(void) {
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
+
+  // the per-function optimization pipeline is no longer needed
+  cleanupFunctionOptManagers();
 
   std::string moduleFilename;
   std::string preOptFilename;
@@ -4296,24 +4608,7 @@ void makeBinaryLLVM(void) {
     }
   }
 
-  if( saveCDir[0] != '\0' ) {
-    std::error_code tmpErr;
-    // Save the generated LLVM before optimization.
-#if HAVE_LLVM_VER >= 120
-    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
-#else
-    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
-#endif
-    if (tmpErr)
-      USR_FATAL("Could not open output file %s", preOptFilename.c_str());
-#if HAVE_LLVM_VER < 70
-    WriteBitcodeToFile(info->module, output.os());
-#else
-    WriteBitcodeToFile(*info->module, output.os());
-#endif
-    output.keep();
-    output.os().flush();
-  }
+  saveIrToBcFileIfNeeded(preOptFilename);
 
   // Handle --llvm-print-ir-stage=basic
 #ifdef HAVE_LLVM
@@ -4330,8 +4625,7 @@ void makeBinaryLLVM(void) {
   }
 #endif
 
-
-  // Open the output file
+  // Prepare to open the output file(s)
   std::error_code error;
 #if HAVE_LLVM_VER >= 120
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
@@ -4339,6 +4633,10 @@ void makeBinaryLLVM(void) {
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
 #endif
 
+  // Run optimizations, either with the old pass manager or with
+  // the new one.
+
+#ifdef LLVM_USE_OLD_PASSES
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
     // Add IR dumping pass if necessary
@@ -4412,28 +4710,7 @@ void makeBinaryLLVM(void) {
     // Run the optimizations now!
     mpm.run(*info->module);
 
-    if( saveCDir[0] != '\0' ) {
-      // Save the generated LLVM after first chunk of optimization
-      std::error_code tmpErr;
-#if HAVE_LLVM_VER >= 120
-      ToolOutputFile output1 (opt1Filename.c_str(),
-                               tmpErr, sys::fs::OF_None);
-#else
-      ToolOutputFile output1 (opt1Filename.c_str(),
-                               tmpErr, sys::fs::F_None);
-#endif
-
-      if (tmpErr)
-        USR_FATAL("Could not open output file %s", opt1Filename.c_str());
-#if HAVE_LLVM_VER < 70
-      WriteBitcodeToFile(info->module, output1.os());
-#else
-      WriteBitcodeToFile(*info->module, output1.os());
-#endif
-      output1.keep();
-      output1.os().flush();
-    }
-
+    saveIrToBcFileIfNeeded(opt1Filename);
 
     if (fLLVMWideOpt) {
       // the GlobalToWide pass creates calls to inline functions, among
@@ -4455,28 +4732,26 @@ void makeBinaryLLVM(void) {
       // Run the optimizations now!
       mpm2.run(*info->module);
 
-      if( saveCDir[0] != '\0' ) {
-        // Save the generated LLVM after second chunk of optimization
-        std::error_code tmpErr;
-#if HAVE_LLVM_VER >= 120
-        ToolOutputFile output2 (opt2Filename.c_str(),
-                                 tmpErr, sys::fs::OF_None);
-#else
-        ToolOutputFile output2 (opt2Filename.c_str(),
-                                 tmpErr, sys::fs::F_None);
-#endif
-        if (tmpErr)
-          USR_FATAL("Could not open output file %s", opt2Filename.c_str());
-#if HAVE_LLVM_VER < 70
-        WriteBitcodeToFile(info->module, output2.os());
-#else
-        WriteBitcodeToFile(*info->module, output2.os());
-#endif
-        output2.keep();
-        output2.os().flush();
-      }
+      saveIrToBcFileIfNeeded(opt2Filename);
     }
   }
+
+#else
+
+  // Run optimizations with the new PassManager
+  runModuleOptPipeline(fLLVMWideOpt);
+  saveIrToBcFileIfNeeded(opt1Filename);
+
+  if (fLLVMWideOpt) {
+    // the GlobalToWide pass creates calls to inline functions, among
+    // other things, that will need to be optimized. So run an additional
+    // battery of optimizations now.
+    runModuleOptPipeline(/* don't add global to wide opts */ false);
+
+    saveIrToBcFileIfNeeded(opt2Filename);
+  }
+
+#endif
 
   // Handle --llvm-print-ir-stage=full
 #ifdef HAVE_LLVM
