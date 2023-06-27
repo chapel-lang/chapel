@@ -278,9 +278,10 @@ static void setRecordCopyableFlags(AggregateType* at) {
         ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
       }
       if (initEq != NULL) {
-        if (initEq->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !recordContainsNonNilableOwned(at)) {
-          if (recordContainsOwned(at))
+        if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
             ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
           else
             ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
@@ -326,9 +327,10 @@ static void setRecordAssignableFlags(AggregateType* at) {
       FnSymbol* assign = findAssignFn(at);
       if (assign != NULL) {
         
-        if (assign->hasFlag(FLAG_COMPILER_GENERATED) &&
-            !recordContainsNonNilableOwned(at)) {
-          if (recordContainsOwned(at))
+        if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
             ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
           else
             ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
