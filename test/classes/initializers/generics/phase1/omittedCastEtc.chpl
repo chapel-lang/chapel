@@ -14,4 +14,3 @@ class Foo {
 
 var a: Foo(4:uint, 5.0, 0:int(32), 7) = new Foo(7);
 writeln(a.type: string);
-delete a;

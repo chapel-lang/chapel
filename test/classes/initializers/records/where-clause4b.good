@@ -1,2 +1,0 @@
-where-clause4.chpl:12: error: unresolved call 'Foo.init(3.4)'
-where-clause4.chpl:5: note: candidates are: Foo.init(xVal)
