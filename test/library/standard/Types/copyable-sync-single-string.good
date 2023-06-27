@@ -1,0 +1,2 @@
+copyable-sync-single-string.chpl:3: warning: isCopyableType(sync string) = false
+copyable-sync-single-string.chpl:6: warning: isCopyableType(single string) = false
