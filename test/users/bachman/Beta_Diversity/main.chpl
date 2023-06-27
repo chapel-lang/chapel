@@ -15,7 +15,7 @@ config const in_name : string;
 config const map_type : string;
 config const window_size : real(32);
 config const dx : real(32) = 5.0;
-
+config const printReduce = false;
 
 proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(32), Output: [] real(32), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
 
@@ -200,7 +200,7 @@ proc main(args: [] string) {
   }
 
 //  WriteOutput(out_file, OutputArray, varid);
-  writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
-
+  if printReduce then
+    writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
 
