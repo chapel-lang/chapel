@@ -247,12 +247,10 @@ static bool isNonNilableOwned(Type* t) {
 static void setRecordCopyableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
         setRecordCopyableFlags(eltTypeAt);
@@ -260,8 +258,6 @@ static void setRecordCopyableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
       }
@@ -276,26 +272,25 @@ static void setRecordCopyableFlags(AggregateType* at) {
         const char* err = NULL;
         initEq = findCopyInitFn(at, err);
       }
-      if (initEq == NULL) {
-        ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-      } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-      } else {
-        // formals are mt, this, other
-        ArgSymbol* other = initEq->getFormal(3);
-        IntentTag intent = concreteIntentForArg(other);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      if (initEq != NULL) {
+        if (initEq->hasFlag(FLAG_COMPILER_GENERATED) &&
+            !recordContainsNonNilableOwned(at)) {
+          if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          // formals are mt, this, other
+          ArgSymbol* other = initEq->getFormal(3);
+          IntentTag intent = concreteIntentForArg(other);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          }
         }
       }
     }
@@ -305,12 +300,10 @@ static void setRecordCopyableFlags(AggregateType* at) {
 static void setRecordAssignableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -320,8 +313,6 @@ static void setRecordAssignableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       }
@@ -329,33 +320,33 @@ static void setRecordAssignableFlags(AggregateType* at) {
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
-      if (assign == NULL) {
-        ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-      } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-      } else {
-        // formals are lhs, rhs
-        int rhsNum = 2;
-        if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
-          // Sometimes operators are defined as operator methods, in which case
-          // there are an extra two arguments and we need to adjust where we
-          // look for the rhs
-          rhsNum += 2;
-        }
-        ArgSymbol* rhs = assign->getFormal(rhsNum);
-        IntentTag intent = concreteIntentForArg(rhs);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      if (assign != NULL) {
+        
+        if (assign->hasFlag(FLAG_COMPILER_GENERATED) &&
+            !recordContainsNonNilableOwned(at)) {
+          if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          // formals are lhs, rhs
+          int rhsNum = 2;
+          if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
+            // Sometimes operators are defined as operator methods, in which case
+            // there are an extra two arguments and we need to adjust where we
+            // look for the rhs
+            rhsNum += 2;
+          }
+          ArgSymbol* rhs = assign->getFormal(rhsNum);
+          IntentTag intent = concreteIntentForArg(rhs);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          }
         }
       }
     }

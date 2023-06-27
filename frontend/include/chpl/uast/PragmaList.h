@@ -573,10 +573,8 @@ PRAGMA(STAR_TUPLE_ACCESSOR, ypr, "star tuple accessor", "this function for star 
 
 PRAGMA(TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs")
 PRAGMA(TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs")
-PRAGMA(TYPE_ASSIGN_MISSING, npr, "type has no =", "type has no assign overload")
 PRAGMA(TYPE_INIT_EQUAL_FROM_CONST,  npr, "type has init= from const", "type supports init= with const other")
 PRAGMA(TYPE_INIT_EQUAL_FROM_REF,  npr, "type has init= from ref", "type supports init= from a potentially non-const other argument")
-PRAGMA(TYPE_INIT_EQUAL_MISSING, npr, "type has no init=", "type has no init=")
 PRAGMA(TYPE_DEFAULT_VALUE, npr, "type has default value", "type has a default value")
 PRAGMA(TYPE_NO_DEFAULT_VALUE, npr, "type has no default value", "type has no default value")
 
