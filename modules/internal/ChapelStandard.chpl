@@ -38,6 +38,7 @@ module ChapelStandard {
   public use String;
   public use OwnedObject;
   public use SharedObject;
+  public use CVoidPtr;
   public use ChapelBase;
   public use Atomics;
   public use NetworkAtomics;

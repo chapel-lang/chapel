@@ -1530,8 +1530,18 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
+  // coerce c_ptr(t) to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+      /* formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) && getDataClassType(formalType->symbol)->typeInfo() == dtVoid */
+      formalType == dtCVoidPtr
+      )
+    return true;
+
   // coerce c_array to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && formalType == dtCVoidPtr)
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
+      /* formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) && getDataClassType(formalType->symbol)->typeInfo() == dtVoid */
+      formalType == dtCVoidPtr
+      )
     return true;
 
   // coerce c_array to c_ptr

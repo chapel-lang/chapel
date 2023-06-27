@@ -311,6 +311,7 @@ void gatherWellKnownTypes() {
     removeIfUndefinedGlobalType(dtLocale);
     removeIfUndefinedGlobalType(dtOwned);
     removeIfUndefinedGlobalType(dtShared);
+    removeIfUndefinedGlobalType(dtCVoidPtr);
   }
 }
 

@@ -284,6 +284,10 @@ void cleanAst() {
         if (at == dtLocale) dtLocale = NULL;
         if (at == dtOwned) dtOwned = NULL;
         if (at == dtShared) dtShared = NULL;
+        if (at == dtCVoidPtr) {
+          gdbShouldBreakHere();
+          dtCVoidPtr = NULL;
+        }
       }
     }
   }

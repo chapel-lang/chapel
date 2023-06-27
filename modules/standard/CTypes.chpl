@@ -90,9 +90,8 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
-  type c_void_ptr = c_ptr(void);
-  @chpldoc.nodoc
-  type _c_void_ptr = c_ptr(void);
+  type c_void_ptr = _c_void_ptr;
+  // type _c_void_ptr = c_ptr(void);
 
 
   /* A Chapel version of a C NULL pointer. */
