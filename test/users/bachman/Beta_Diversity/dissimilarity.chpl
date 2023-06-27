@@ -13,7 +13,7 @@ module dissimilarity {
     var m = reader.read(int);
 
     // Declare an array of the specified dimensions.
-    var X: [1..m, 1..m] real(32);
+    var X: [1..m, 1..m] real(64);
 
     // Read in the array (row-major order is used for whole-array reads
     // like this).
