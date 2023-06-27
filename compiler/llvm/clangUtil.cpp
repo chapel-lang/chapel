@@ -1931,7 +1931,11 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.UniqueBasicBlockSectionNames;
   Options.TLSSize = CodeGenOpts.TLSSize;
   Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
+#if HAVE_LLVM_VER >= 160
   Options.ExplicitEmulatedTLS = true;
+#else
+  Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+#endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
 #if HAVE_LLVM_VER >= 130
