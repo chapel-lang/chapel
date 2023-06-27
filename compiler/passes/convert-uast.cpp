@@ -3937,6 +3937,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
 
     // concrete builtin types
     case typetags::CFnPtrType:    return dtCFnPtr;
+    case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
