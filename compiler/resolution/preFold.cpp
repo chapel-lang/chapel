@@ -267,7 +267,7 @@ static void setRecordCopyableFlags(AggregateType* at) {
       }
 
     } else {
-      // TODO Jade:
+      // TODO Jade 6/27/23:
       // special case since while implicit reads of sync/single are not yet removed
       // with their removal, the init= that throws a warning will be gone
       FnSymbol* initEq = NULL;
