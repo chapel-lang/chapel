@@ -326,7 +326,7 @@ static void setRecordAssignableFlags(AggregateType* at) {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
       if (assign != NULL) {
-        
+
         if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
           if (recordContainsNonNilableOwned(at))
             ; // do nothing for this case
