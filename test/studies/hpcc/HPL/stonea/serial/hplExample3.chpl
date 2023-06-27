@@ -136,11 +136,11 @@ proc panelSolve(
         // Swap the current row with the pivot row
         piv[k] <=> piv[pivotRow];
         A[k, ..] <=> A[pivotRow, ..];
-        
+
         if(pivot == 0) then {
             halt("Matrix can not be factorized");
         }
-        
+
         // divide all values below and in the same col as the pivot by
         // the pivot
         if k+1 <= pnlRows.high {
@@ -204,14 +204,14 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
        |....| tl  |      tr        |  1    |         5: unfactoredCols
        |....|     |                |  |    |  7      6: ARows
        |....+-----+----------------| ---             7: ACols
-       |....|     |                |  |    3  |      
-       |....|     |                |          |      
+       |....|     |                |  |    3  |
+       |....|     |                |          |
        |....| bl  |      br        |  2    |  |
        |....|     |                |       |  |
        |....|     |                |  |    |  |
        +----+-----+----------------+ ------------
 
-       |    |    |                 |    
+       |    |    |                 |
        |    |-1 -|------ 4 --------|
        |    |                      |
        |    `--------- 5 ----------|
@@ -234,7 +234,7 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
         var bl = A.domain[trailingRows, blockRange];
         var br = A.domain[trailingRows, trailingCols];
         var l  = A.domain[unfactoredRows, blockRange];
-        
+
         // Now that we've sliced and diced A properly do the blocked-LU
         // computation:
         panelSolve(A, l, piv);
@@ -248,9 +248,9 @@ proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
       }
 }
 
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 //   TESTING SYSTEM:
-// -------------------------------------------------------------------------- 
+// --------------------------------------------------------------------------
 // matrix-vector multiplication, solve equation A*x-y
 proc gaxpyMinus(
     n : int,
@@ -329,8 +329,7 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true) : bool {
     // construct a 100x100 matrix filled with random values
-    var ownRand = new owned RandomStream(real, seed); 
-    var rand = ownRand.borrow();
+    var rand = new RandomStream(real, seed);
     var A : [1..n, 1..n+1] real;
     for idx in A.domain do A[idx] = rand.getNext();
 
@@ -340,7 +339,7 @@ proc test_LUFactorize(rprt = true) : bool {
     var piv : [1..n] int;
 
     LUFactorize(n, A, piv);
-    
+
     // test using norms
 
     var arg_A    : [1..n, 1..n] real;
