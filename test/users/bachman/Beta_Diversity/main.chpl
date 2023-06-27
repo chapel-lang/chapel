@@ -15,9 +15,9 @@ config const in_name : string;
 config const map_type : string;
 config const window_size : real(32);
 config const dx : real(32) = 5.0;
-config const printReduce = false;
+config const printReduce = true;
 
-proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(32), Output: [] real(32), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
+proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain : ?, CenterMaskDomain : ?, RightMaskDomain : ?, dissimilarity : [] real(64), Output: [] real(64), d_size : int, Mask_Size : int,  t: stopwatch) : [] {
 
   // This 'eps' makes sure that we differentiate between land points (zero) and ocean points (nonzero), even
   // if the beta diversity at the ocean point is zero.
@@ -29,9 +29,9 @@ proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain :
   forall center in centerPoints[..,first_point] {
 
       // Calculate masks and beta diversity for leftmost point in subdomain
-      var B_left: [0..(d_size-1)] real(32) = 0;
-      var B_center: [0..(d_size-1)] real(32) = 0;
-      var B_right: [0..(d_size-1)] real(32) = 0;
+      var B_left: [0..(d_size-1)] real(64) = 0;
+      var B_center: [0..(d_size-1)] real(64) = 0;
+      var B_right: [0..(d_size-1)] real(64) = 0;
 
       for m in LeftMaskDomain do {
         var tmp = Image[(center,first_point) + m];
@@ -59,13 +59,13 @@ proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain :
       }
       // If we are on a reef point, calculate beta diversity
       else {
-        var num_habitat_pixels = (+ reduce B[1..(d_size-2)]) : real(32);
+        var num_habitat_pixels = (+ reduce B[1..(d_size-2)]) : real(64);
         var habitat_frac = num_habitat_pixels / Mask_Size;
 
         var P = B / num_habitat_pixels;
 
         var beta = + reduce (dissimilarity * outer(P,P));
-        Output[center,first_point] = (habitat_frac * beta) : real(32);
+        Output[center,first_point] = (habitat_frac * beta) : real(64);
       }
 
       for point in (first_point+1)..last_point do {
@@ -95,13 +95,13 @@ proc convolve_and_calculate(Image: [] int(8), centerPoints : ?, LeftMaskDomain :
         }
         // If we are on a reef point, calculate beta diversity
         else {
-          var num_habitat_pixels = (+ reduce B[1..(d_size-2)]) : real(32);
+          var num_habitat_pixels = (+ reduce B[1..(d_size-2)]) : real(64);
           var habitat_frac = num_habitat_pixels / Mask_Size;
 
           var P = B / num_habitat_pixels;
 
           var beta = + reduce (dissimilarity * outer(P,P));
-          Output[center,point] = (habitat_frac * beta + eps) : real(32);
+          Output[center,point] = (habitat_frac * beta + eps) : real(64);
         }
       }
   }
@@ -149,7 +149,7 @@ proc main(args: [] string) {
   const Inner = ImageSpace.expand(-offset);
   const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
   const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
-  var OutputArray : [D] real(32);
+  var OutputArray : [D] real(64);
 
   // Create NetCDF
   var varid : int;
@@ -200,6 +200,7 @@ proc main(args: [] string) {
   }
 
 //  WriteOutput(out_file, OutputArray, varid);
+
   if printReduce then
     writeln("Sum reduce of OutputArray: ", (+ reduce OutputArray));
 }
