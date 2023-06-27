@@ -100,9 +100,9 @@ where tag == iterKind.leader
   // int(64).  Then we can call divceilpos() with it and any chunkSize
   // type, since then we know at least one arg is signed.
   if c.idxType == uint(64) then
-    numChunks = divceil(c.sizeAs(uint(64)), chunkSize:uint(64)): int;
+    numChunks = divceil(c.size, chunkSize:uint(64)): int;
   else
-    numChunks = divceilpos(c.sizeAs(int), chunkSize): int;
+    numChunks = divceilpos(c.size, chunkSize): int;
 
   // Check if the number of tasks is 0, in that case it returns a default value
   const nTasks = min(numChunks, defaultNumTasks(numTasks));
@@ -291,7 +291,7 @@ iter guided(param tag:iterKind, c:range(?), numTasks:int=0)
 where tag == iterKind.leader
 {
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.sizeAs(c.intIdxType), defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
   var remain:rType = densify(c,c);
   // If the number of tasks is insufficient, yield in serial
@@ -494,7 +494,7 @@ where tag == iterKind.leader
     compilerError("methodStealing value must be between 0 and 2");*/
 
   // Check if the number of tasks is 0, in that case it returns a default value
-  const nTasks=min(c.sizeAs(c.intIdxType), defaultNumTasks(numTasks));
+  const nTasks=min(c.size, defaultNumTasks(numTasks));
   type rType=c.type;
 
   // If the number of tasks is insufficient, yield in serial
@@ -525,10 +525,10 @@ where tag == iterKind.leader
       // Step 1: Initial range per Thread/Task
 
       // Initial Local range in localWork[tid]
-      const chunkSize = c.sizeAs(c.intIdxType)/nTasks;
+      const chunkSize = c.size/nTasks;
       localWork[tid]=
       if tid==nTasks-1 then
-        r#(chunkSize*(nTasks-1)-r.sizeAs(r.intIdxType))
+        r#(chunkSize*(nTasks-1)-r.size)
       else
         (r+tid*chunkSize)#chunkSize;
       barrier.add(1);
@@ -545,7 +545,7 @@ where tag == iterKind.leader
         // There is local work
         // The current range we get after splitting locally
         const zeroBasedIters:rType=adaptSplit(localWork[tid], factorSteal, moreLocalWork[tid], locks[tid]);
-        if zeroBasedIters.sizeAs(zeroBasedIters.intIdxType) !=0 then {
+        if zeroBasedIters.size !=0 then {
           if debugDynamicIters then
             writeln("Parallel adaptive Iterator. Working locally at tid ", tid, " with range yielded as ", zeroBasedIters);
           yield (zeroBasedIters,);
@@ -568,7 +568,7 @@ where tag == iterKind.leader
           if moreLocalWork[victim] then {
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim]);
-            if zeroBasedIters2.sizeAs(zeroBasedIters2.intIdxType) !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -581,7 +581,7 @@ where tag == iterKind.leader
             // There is work in victim
             const zeroBasedIters2:rType=adaptSplit(localWork[victim], factorSteal, moreLocalWork[victim], locks[victim], methodStealing==Method.WholeTail);
                                           //after splitting from a victim range
-            if zeroBasedIters2.sizeAs(zeroBasedIters2.intIdxType) !=0 then {
+            if zeroBasedIters2.size !=0 then {
               if debugDynamicIters then
                 writeln("Range stolen at victim ", victim," yielded as ", zeroBasedIters2," by tid ", tid);
               yield (zeroBasedIters2,);
@@ -727,12 +727,11 @@ private proc defaultNumTasks(nTasks:int)
 private proc adaptSplit(ref rangeToSplit:range(?), splitFactor:int, ref itLeft, lock:chpl_LocalSpinlock, splitTail:bool=false)
 {
   type rType=rangeToSplit.type;
-  type lenType=rangeToSplit.sizeAs(rangeToSplit.intIdxType).type;
-  var totLen, size:lenType;
+  var totLen, size:int;
   const profThreshold=1;
 
   lock.lock();
-  totLen=rangeToSplit.sizeAs(rangeToSplit.intIdxType);
+  totLen=rangeToSplit.size;
   if totLen > profThreshold then
     size=max(totLen/splitFactor, profThreshold);
   else {

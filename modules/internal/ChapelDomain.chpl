@@ -1192,7 +1192,12 @@ module ChapelDomain {
     /* The ``idxType`` as represented by an integer type.  When
        ``idxType`` is an enum type, this evaluates to ``int``.
        Otherwise, it evaluates to ``idxType``. */
+    @deprecated("'domain.intIdxType' is deprecated; please let us know if you are relying on it")
     proc intIdxType type {
+      return chpl_intIdxType;
+    }
+
+    proc chpl_intIdxType type {
       return chpl__idxTypeToIntIdxType(_value.idxType);
     }
 
@@ -2260,7 +2265,7 @@ module ChapelDomain {
 
     @chpldoc.nodoc
     proc position(i) {
-      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*intIdxType;
+      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*chpl_intIdxType;
       for d in 0..rank-1 do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
@@ -2470,7 +2475,7 @@ module ChapelDomain {
     // intended for internal use only:
     //
     proc chpl__unTranslate(off: integral ...rank) do return chpl__unTranslate(off);
-    proc chpl__unTranslate(off: rank*intIdxType) {
+    proc chpl__unTranslate(off: rank*chpl_intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).chpl__unTranslate(off(i));

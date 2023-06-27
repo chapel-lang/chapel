@@ -840,7 +840,7 @@ module ChapelIO {
     }
 
     if f.matchLiteral(" align ") {
-      const alignVal = f.read(intIdxType);
+      const alignVal = f.read(chpl_intIdxType);
       if hasParamStrideAltvalAld() {
         // It is valid to align this range. We do not store its alignment
         // at runtime because the alignment always normalizes to 0.
