@@ -2568,7 +2568,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
       const char* filename = fn ? cleanFilename(fn->fname()) : nullptr;
       int linenum = fn ? fn->linenum() : 0;
       if(filename) OS << filename << ":" << linenum << ":0";
-      else OS << fn->cname;
+      else OS << Remark.FunctionName;
     }
     OS << ": opt " << typeToString(Remark.RemarkType);
     OS << " for '" << Remark.PassName << "'";
