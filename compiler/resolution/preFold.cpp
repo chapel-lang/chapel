@@ -272,6 +272,11 @@ static void setRecordCopyableFlags(AggregateType* at) {
         const char* err = NULL;
         initEq = findCopyInitFn(at, err);
       }
+      else {
+        // sync/single variables are technically copyable until after the
+        // deprecation is removed, mark then as such
+        ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
       if (initEq != NULL) {
         if (initEq->hasFlag(FLAG_COMPILER_GENERATED) &&
             !recordContainsNonNilableOwned(at)) {
@@ -316,7 +321,6 @@ static void setRecordAssignableFlags(AggregateType* at) {
       } else {
         at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       }
-
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);

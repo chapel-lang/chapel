@@ -1,2 +1,2 @@
-isCopyableType(sync string) = false
-isCopyableType(single string) = false
+isCopyableType(sync string) = true
+isCopyableType(single string) = true
