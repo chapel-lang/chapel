@@ -1,0 +1,4 @@
+intIdxType.chpl:4: warning: 'domain.intIdxType' is deprecated; please let us know if you are relying on it
+intIdxType.chpl:5: warning: '.intIdxType' on arrays is deprecated; please let us know if you're relying on it
+int(64)
+int(64)
