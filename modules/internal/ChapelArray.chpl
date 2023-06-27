@@ -2773,7 +2773,7 @@ module ChapelArray {
   lifetime a < b {
 
       type idxType = a.domain.idxType,
-           strType = chpl__signedType(a.domain.chpl_intIdxType);
+           strType = chpl__signedType(a.domain.chpl_integralIdxType);
 
       const stride = a.domain.dim(a.rank-rank).stride,
       start = a.domain.dim(a.rank-rank).firstAsInt;

@@ -167,7 +167,7 @@ module DefaultRectangular {
       this.dist = dist;
     }
 
-    proc chpl_intIdxType type {
+    proc chpl_integralIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
@@ -279,7 +279,7 @@ module DefaultRectangular {
     iter these(tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, chpl_intIdxType, 0:chpl_intIdxType)) {
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType)) {
       if rank == 1 {
         for i in ranges(0) do
           yield i;
@@ -293,7 +293,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, chpl_intIdxType, 0:chpl_intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.standalone {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain standalone invoked on ", ranges);
@@ -356,7 +356,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, chpl_intIdxType, 0:chpl_intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.leader {
 
       const numSublocs = here._getChildCount();
@@ -399,11 +399,11 @@ module DefaultRectangular {
             const numSublocTasks = (if chunk < dptpl % numChunks
                                     then dptpl / numChunks + 1
                                     else dptpl / numChunks);
-            var locBlock: rank*range(chpl_intIdxType);
+            var locBlock: rank*range(chpl_integralIdxType);
             for param i in 0..rank-1 do
-              locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_intIdxType));
-            var followMe: rank*range(chpl_intIdxType) = locBlock;
-            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_intIdxType),
+              locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_integralIdxType));
+            var followMe: rank*range(chpl_integralIdxType) = locBlock;
+            const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_integralIdxType),
                                           numChunks, chunk,
                                           locBlock(parDim)._high,
                                           locBlock(parDim)._low,
@@ -414,13 +414,13 @@ module DefaultRectangular {
                                                              minIndicesPerTask,
                                                              followMe);
             coforall chunk2 in 0..#numChunks2 {
-              var locBlock2: rank*range(chpl_intIdxType);
+              var locBlock2: rank*range(chpl_integralIdxType);
               for param i in 0..rank-1 do
                 locBlock2(i) = followMe(i).lowBound..followMe(i).highBound;
-              var followMe2: rank*range(chpl_intIdxType) = locBlock2;
+              var followMe2: rank*range(chpl_integralIdxType) = locBlock2;
               const low  = locBlock2(parDim2)._low,
                 high = locBlock2(parDim2)._high;
-              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(chpl_intIdxType),
+              const (lo,hi) = _computeBlock(locBlock2(parDim2).sizeAs(chpl_integralIdxType),
                                             numChunks2, chunk2,
                                             high, low, low);
               followMe2(parDim2) = lo..hi;
@@ -461,14 +461,14 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        var locBlock: rank*range(chpl_intIdxType);
+        var locBlock: rank*range(chpl_integralIdxType);
         for param i in 0..rank-1 do
-          locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_intIdxType));
+          locBlock(i) = offset(i)..#(ranges(i).sizeAs(chpl_integralIdxType));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(chpl_intIdxType) = locBlock;
-          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_intIdxType),
+          var followMe: rank*range(chpl_integralIdxType) = locBlock;
+          const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(chpl_integralIdxType),
                                         numChunks, chunk,
                                         locBlock(parDim)._high,
                                         locBlock(parDim)._low,
@@ -485,7 +485,7 @@ module DefaultRectangular {
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
-               offset=createTuple(rank, chpl_intIdxType, 0:chpl_intIdxType))
+               offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.follower {
 
       if followThis.size != this.rank then
@@ -501,27 +501,27 @@ module DefaultRectangular {
       param newStrides = chpl_strideProduct(this.strides,
                                             chpl_strideUnion(followThis));
 
-      var block: rank*range(idxType=chpl_intIdxType, strides=newStrides);
+      var block: rank*range(idxType=chpl_integralIdxType, strides=newStrides);
       if boundsChecking then
         for param i in 0..rank-1 do
           if followThis(i).highBound >= ranges(i).sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
 
       if ! newStrides.isPosNegOne() {
-        type strType = chpl__signedType(chpl_intIdxType);
+        type strType = chpl__signedType(chpl_integralIdxType);
         for param i in 0..rank-1 {
           const rStride = ranges(i).stride;
           const rSignedStride = rStride:strType,
                 fSignedStride = followThis(i).stride:strType;
           if ranges(i).hasPositiveStride() {
-            const riStride = rStride:chpl_intIdxType;
+            const riStride = rStride:chpl_integralIdxType;
             const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride,
                   stride = (rSignedStride * fSignedStride):strType;
             block(i).chpl_setFields(low, high, stride);
 
           } else {
-            const irStride = (-rStride):chpl_intIdxType;
+            const irStride = (-rStride):chpl_integralIdxType;
             const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride,
                   stride = (rSignedStride * fSignedStride):strType;
@@ -530,20 +530,20 @@ module DefaultRectangular {
         }
       } else {
         // else-branch duplicates then-branch, except here strides are params
-        type strType = chpl__signedType(chpl_intIdxType);
+        type strType = chpl__signedType(chpl_integralIdxType);
         for param i in 0..rank-1 {
           param rStride = ranges(i).stride;
           param rSignedStride = rStride:strType,
                 fSignedStride = followThis(i).stride:strType;
           if ranges(i).hasPositiveStride() {
-            param riStride = rStride:chpl_intIdxType;
+            param riStride = rStride:chpl_integralIdxType;
             const low = ranges(i).alignedLowAsInt + followThis(i).lowBound*riStride,
                   high = ranges(i).alignedLowAsInt + followThis(i).highBound*riStride;
             param stride = (rSignedStride * fSignedStride):strType;
             block(i).chpl_setFields(low, high);
 
           } else {
-            param irStride = (-rStride):chpl_intIdxType;
+            param irStride = (-rStride):chpl_integralIdxType;
             const low = ranges(i).alignedHighAsInt - followThis(i).highBound*irStride,
                   high = ranges(i).alignedHighAsInt - followThis(i).lowBound*irStride;
             param stride = (rSignedStride * fSignedStride):strType;
@@ -576,7 +576,7 @@ module DefaultRectangular {
       for param d in 0..rank-1 by -1 {
         const orderD = ranges(d).indexOrder(ind(d));
         // NOTE: This follows from the implementation of indexOrder()
-        if (orderD == (-1):chpl_intIdxType) then return orderD;
+        if (orderD == (-1):chpl_integralIdxType) then return orderD;
         totOrder += orderD * blk;
         blk *= ranges(d).sizeAs(int);
       }
@@ -652,7 +652,7 @@ module DefaultRectangular {
       if rank == 1 {
         return ranges(0).stride;
       } else {
-        var result: rank*chpl__signedType(chpl_intIdxType);
+        var result: rank*chpl__signedType(chpl_integralIdxType);
         for param i in 0..rank-1 do
           result(i) = ranges(i).stride;
         return result;
@@ -942,8 +942,8 @@ module DefaultRectangular {
   //
   proc _remoteAccessData.toRankChange(newDom, cd, idx) {
     compilerAssert(this.rank == idx.size && this.rank != newDom.rank);
-    type chpl_intIdxType = newDom.chpl_intIdxType;
-    type idxSignedType = chpl__signedType(chpl_intIdxType);
+    type chpl_integralIdxType = newDom.chpl_integralIdxType;
+    type idxSignedType = chpl__signedType(chpl_integralIdxType);
 
     // Unconditionally sets 'blkChanged'
     //
@@ -1078,7 +1078,7 @@ module DefaultRectangular {
       this.setupFieldsAndAllocate(initElts);
     }
 
-    proc chpl_intIdxType type {
+    proc chpl_integralIdxType type {
       return chpl__idxTypeToIntIdxType(idxType);
     }
 
@@ -2039,7 +2039,7 @@ module DefaultRectangular {
     for param i in 0..rank-1 do
       Blo(i) = Bdims(i).first;
 
-    const len = aView.sizeAs(aView.chpl_intIdxType).safeCast(c_size_t);
+    const len = aView.sizeAs(aView.chpl_integralIdxType).safeCast(c_size_t);
 
     if len == 0 then return;
 
@@ -2169,7 +2169,7 @@ module DefaultRectangular {
   private proc complexTransferCore(LHS, LViewDom, RHS, RViewDom) {
     param minRank = min(LHS.rank, RHS.rank);
     type  idxType = LHS.idxType;
-    type  chpl_intIdxType = LHS.chpl_intIdxType;
+    type  chpl_integralIdxType = LHS.chpl_integralIdxType;
 
     if debugDefaultDistBulkTransfer {
       writeln("Transferring views :", LViewDom, " <-- ", RViewDom);
