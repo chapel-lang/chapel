@@ -189,7 +189,7 @@ module Set {
                                       initialCapacity);
     }
 
-    @unstable("'Set.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable")
     proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
@@ -243,7 +243,7 @@ module Set {
       for elem in iterable do _addElem(elem);
     }
 
-    @unstable("'Set.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable")
     proc init(type eltType, iterable, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
