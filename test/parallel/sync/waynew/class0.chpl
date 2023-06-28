@@ -2,6 +2,7 @@
 
 class D {
   var s: sync int;
+  proc init() {}
 }
 
 var d: unmanaged D = new unmanaged D();
@@ -14,6 +15,7 @@ writeln( "i is ", i);
 
 class E {
   var sf: sync real;
+  proc init() {}
 }
 
 var e: unmanaged E = new unmanaged E();

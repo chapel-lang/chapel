@@ -91,6 +91,16 @@ class Chameneos {
       meetingsWithSelf: int;           // the number of meetings with itself
   var meetingCompleted: atomic bool;   // used to coordinate meeting endings
 
+  proc init(id: int = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
+
   //
   // Have meetings in a given 'place' with other 'chameneos' as long
   // as more meetings remain by reading the current state and then

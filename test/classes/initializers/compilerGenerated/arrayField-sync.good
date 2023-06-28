@@ -1,2 +1,2 @@
-arrayField-sync.chpl:5: warning: relying on a compiler default initializer for a class with sync elements is deprecated
+arrayField-sync.chpl:2: warning: relying on a compiler default initializer for a class with sync elements is deprecated
 0 0 0 0 0 0 0 0 0 0
