@@ -2550,15 +2550,6 @@ module ChapelBase {
       chpl__delete(args(i));
   }
 
-  // c_void_ptr operations
-  inline operator =(ref a: c_void_ptr, b: c_void_ptr) { __primitive("=", a, b); }
-  inline operator ==(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  inline operator !=(a: c_void_ptr, b: c_void_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-
   // Type functions for representing function types
 
   @deprecated("The 'func' procedure type constructor is deprecated, please use 'proc' syntax instead")

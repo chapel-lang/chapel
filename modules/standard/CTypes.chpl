@@ -369,7 +369,7 @@ module CTypes {
     }
   }
   operator =(ref lhs:c_ptr, ref rhs:c_array) {
-    if lhs.eltType != rhs.eltType then
+    if lhs.eltType != rhs.eltType && lhs.eltType != void then
       compilerError("element type mismatch in c_array assignment");
     lhs = c_ptrTo(rhs[0]);
   }
@@ -385,14 +385,16 @@ module CTypes {
 
   @chpldoc.nodoc
   inline operator c_ptr.=(ref lhs:c_ptr, rhs:c_ptr) {
-    if lhs.eltType != rhs.eltType then
+    if lhs.eltType != rhs.eltType
+       && lhs.eltType != void && rhs.eltType != void then
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
   }
 
   @chpldoc.nodoc
   inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:c_ptrConst) {
-    if lhs.eltType != rhs.eltType then
+    if lhs.eltType != rhs.eltType
+       && lhs.eltType != void && rhs.eltType != void then
       compilerError("element type mismatch in c_ptrConst assignment");
     __primitive("=", lhs, rhs);
   }
@@ -424,10 +426,7 @@ module CTypes {
       : bool {
     // special checking when either to or from is a pointer
     if (chpl_isAnyCPtr(from) || chpl_isAnyCPtr(to)) {
-      // allow casting to and from void pointer pointee type
-      if (from == c_void_ptr || to == c_void_ptr) {
-        return true;
-      } else if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
+      if (chpl_isAnyCPtr(from) && chpl_isAnyCPtr(to)) {
         // if from and to are both pointer types themselves, recurse into their
         // respective pointee types (strip a layer of indirection)
         return pointeeCastStrictAliasingAllowed(from.eltType, to.eltType);
@@ -437,6 +436,10 @@ module CTypes {
       } else if (to == c_string) {
         return pointeeCastStrictAliasingAllowed(from.eltType, c_char);
       }
+    }
+    // allow casting to and from void pointee type
+    if (from == void || to == void) {
+      return true;
     }
     // allow identical types
     if (from == to) {
@@ -514,28 +517,6 @@ module CTypes {
     return c_ptrTo(x[0]):c_void_ptr;
   }
   @chpldoc.nodoc
-  inline operator :(x:c_ptr, type t:c_void_ptr) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator :(x:c_ptrConst, type t:c_void_ptr) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator :(x:c_void_ptr, type t:c_ptr) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator :(x:c_void_ptr, type t:c_ptrConst) {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:string) {
-    try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x));
-    }
-  }
-  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
       return string.createAdoptingBuffer(__primitive("ref to string", x));
@@ -578,11 +559,8 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr, type t:_ddata) where t.eltType == x.eltType {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:_ddata) {
+  inline operator c_ptr.:(x:c_ptr, type t:_ddata)
+      where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
@@ -591,13 +569,6 @@ module CTypes {
   }
 
   // casts from c pointer to c_intptr / c_uintptr
-  @chpldoc.nodoc
-  inline operator :(x:c_void_ptr, type t:c_intptr) do
-    return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator :(x:c_void_ptr, type t:c_uintptr) do
-    return __primitive("cast", t, x);
-
   @chpldoc.nodoc
   inline operator :(x:c_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
@@ -614,13 +585,6 @@ module CTypes {
 
   // casts from c pointer to int / uint
   // note that these are only used if c_intptr != int / c_uintptr != uint
-  @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int do
-    return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint do
-    return __primitive("cast", t, x);
-
   @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
@@ -653,57 +617,27 @@ module CTypes {
 
 
   @chpldoc.nodoc
-  inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator c_ptr.==(a: c_ptr, b: c_ptr)
+      where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_eq", a, b);
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.==(a: c_ptrConst, b: c_ptrConst)
-      where a.eltType == b.eltType {
+      where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_eq", a, b);
   }
 
-  @chpldoc.nodoc
-  inline operator ==(a: c_ptr, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator ==(a: c_void_ptr, b: c_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator ==(a: c_ptrConst, b: c_void_ptr) {
-    return __primitive("ptr_eq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator ==(a: c_void_ptr, b: c_ptrConst) {
-    return __primitive("ptr_eq", a, b);
-  }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
   @chpldoc.nodoc
-  inline operator c_ptr.!=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator c_ptr.!=(a: c_ptr, b: c_ptr)
+      where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_neq", a, b);
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.!=(a: c_ptrConst, b: c_ptrConst)
-      where a.eltType == b.eltType {
-    return __primitive("ptr_neq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator !=(a: c_ptr, b: c_void_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator !=(a: c_void_ptr, b: c_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator !=(a: c_ptrConst, b: c_void_ptr) {
-    return __primitive("ptr_neq", a, b);
-  }
-  @chpldoc.nodoc
-  inline operator !=(a: c_void_ptr, b: c_ptrConst) {
+      where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_neq", a, b);
   }
 
@@ -731,7 +665,6 @@ module CTypes {
   inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
-
   @chpldoc.nodoc
   inline operator c_ptrConst.-(a: c_ptrConst(?t), b: c_ptrConst(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
@@ -1292,7 +1225,6 @@ module CTypes {
   // definition and just have `isAnyCPtr` as a private nodoc function
   proc chpl_isAnyCPtr(type t:c_ptr) param do return true;
   proc chpl_isAnyCPtr(type t:c_ptrConst) param do return true;
-  proc chpl_isAnyCPtr(type t:c_void_ptr) param do return true;
   proc chpl_isAnyCPtr(type t) param do return false;
 
   /*
