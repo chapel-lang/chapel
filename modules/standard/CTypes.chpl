@@ -91,7 +91,8 @@ module CTypes {
 
   */
   type c_void_ptr = c_ptr(void);
-  extern type internal_c_void_ptr = chpl__c_void_ptr;
+  @chpldoc.nodoc
+  extern type raw_c_void_ptr = chpl__c_void_ptr;
 
 
   /* A Chapel version of a C NULL pointer. */

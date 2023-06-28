@@ -1530,8 +1530,8 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
-  // coerce from c_ptr(void) to primitive C void* and vice-versa
-  if (isCVoidPtr(actualType) && isCVoidPtr(formalType))
+  // coerce raw_c_void_ptr to c_ptr(void)
+  if (actualType == dtCVoidPtr && isCVoidPtr(formalType))
     return true;
 
   // coerce c_ptr(t) to c_ptr(void)

@@ -48,7 +48,7 @@ module NetworkAtomics {
     }
 
     inline proc _addr(): c_void_ptr {
-      return __primitive("_wide_get_addr", _v);
+      return __primitive("cast", c_void_ptr, __primitive("_wide_get_addr", _v));
     }
 
     inline proc const read(param order: memoryOrder = memoryOrder.seqCst): bool {
