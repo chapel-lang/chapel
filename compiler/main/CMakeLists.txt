@@ -16,6 +16,7 @@
 # limitations under the License.
 set(SRCS
     arg.cpp
+    arg-helpers.cpp
     checks.cpp
     config.cpp
     driver.cpp
