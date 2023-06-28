@@ -29,6 +29,7 @@
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
   private use ChapelStandard, CTypes;
+  extern type raw_c_void_ptr = chpl__c_void_ptr;
 
   //////////////////////////////////////////
   //
