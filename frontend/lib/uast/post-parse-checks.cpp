@@ -597,11 +597,6 @@ void Visitor::checkBorrowFromNew(const FnCall* node) {
   //   const x = (new C()).borrow()
   //   var x = f((new owned C()).borrow())
   // These worked in 1.31 but will no longer work in 1.32.
-  // This warning can be removed in 1.33.
-
-  if (node->id().str() == "borrow-from-new-linkedlist.main@5")
-    gdbShouldBreakHere();
-
   bool emitWarning = false;
 
   if (auto c = node->toFnCall())
