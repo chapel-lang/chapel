@@ -90,6 +90,11 @@ static Expr* convertPointerToChplType(ModuleSymbol* module,
     return tryCResolveExpr(module, "c_fn_ptr");
   }
 
+  // Pointers to void (aka void*) convert to c_void_ptr
+  if (pointeeType.getTypePtr()->isVoidType()) {
+    return tryCResolveExpr(module, "chpl__c_void_ptr");
+  }
+
   Expr* pointee = convertToChplType(module, pointeeType.getTypePtr());
 
   // Other pointers are represented as a call to c_ptr or c_ptrConst.

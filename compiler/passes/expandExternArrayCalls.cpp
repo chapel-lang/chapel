@@ -97,7 +97,7 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
       SET_LINENO(formal);
       formal->typeExpr->replace(
           new BlockStmt(
-            new CallExpr("c_ptr", dtVoid)));
+            new UnresolvedSymExpr("chpl__c_void_ptr")));
     }
   }
 

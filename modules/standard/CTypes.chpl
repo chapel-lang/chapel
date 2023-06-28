@@ -90,7 +90,8 @@ module CTypes {
     supported and behave similarly to those operations in C.
 
   */
-  extern type c_void_ptr = c_ptr(void);
+  type c_void_ptr = c_ptr(void);
+  extern type internal_c_void_ptr = chpl__c_void_ptr;
 
 
   /* A Chapel version of a C NULL pointer. */

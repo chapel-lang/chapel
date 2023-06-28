@@ -92,10 +92,10 @@ module LocaleModelHelpMem {
 
   pragma "allocator"
   pragma "always propagate line file info"
-  proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+  proc chpl_here_realloc(ptr:internal_c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_realloc(ptr:c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+      extern proc chpl_mem_realloc(ptr:internal_c_void_ptr, size:c_size_t, md:chpl_mem_descInt_t) : c_void_ptr;
     return chpl_mem_realloc(ptr, size.safeCast(c_size_t), md + chpl_memhook_md_num());
   }
 
@@ -110,10 +110,10 @@ module LocaleModelHelpMem {
 
   pragma "locale model free"
   pragma "always propagate line file info"
-  proc chpl_here_free(ptr:c_void_ptr): void {
+  proc chpl_here_free(ptr:internal_c_void_ptr): void {
     pragma "fn synchronization free"
     pragma "insert line file info"
-      extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+      extern proc chpl_mem_free(ptr:internal_c_void_ptr) : void;
     chpl_mem_free(ptr);
   }
 }
