@@ -741,6 +741,15 @@ module ChapelArray {
     return x;
   }
 
+  proc chpl__buildDistDMapValue(x: record) {
+    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
+    return chpl__buildDistValue(x);
+  }
+
+  proc chpl__buildDistDMapValue(x) {
+    return chpl__buildDistValue(x);
+  }
+
   proc chpl__buildDistValue(x) {
     compilerError("illegal domain map value specifier - must be a subclass of BaseDist");
   }

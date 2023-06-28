@@ -38,7 +38,7 @@ inspectDist(A);
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
-  B = new Block({1..n});
+  B = if useDmap then new dmap(new Block({1..n})) else new Block({1..n});
   D = {1..n};
   inspectDist(A);
 

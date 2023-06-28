@@ -1,2 +1,2 @@
---warn-unstable -suseDmap=true
+--warn-unstable -suseDmap=true  # redistBlock-dmap.good
 --warn-unstable -suseDmap=false

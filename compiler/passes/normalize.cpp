@@ -1127,7 +1127,7 @@ static void processSyntacticDistributions(CallExpr* call) {
     if (CallExpr* type = toCallExpr(call->get(1))) {
       if (SymExpr* base = toSymExpr(type->baseExpr)) {
         if (base->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION) == true) {
-          const char* name = "chpl__buildDistValue";
+          const char* name = "chpl__buildDistDMapValue";
 
           type->baseExpr->replace(new UnresolvedSymExpr(name));
 
