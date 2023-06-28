@@ -628,7 +628,7 @@ Parallel Loops
   parallel loops with races is that it can be difficult to determine
   whether a given loop is safe to parallelize or not.  For example,
   the following variation on the original loop would be safe since it
-  only writes to even elemnents and reads from odd ones:
+  only writes to even elements and reads from odd ones:
 
 */
 
@@ -644,7 +644,7 @@ Parallel Loops
 
   Distinguishing between loops that are parallel-safe versus not is
   generally intractable, so rather than attempting to make that
-  judgemeent, Chapel trusts the programmer to use the loop form they
+  judgment, Chapel trusts the programmer to use the loop form they
   want.  Moreover, for some parallel computations, race conditions can
   be benign or acceptable, so Chapel does not want to prevent a user
   from writing such computations.
