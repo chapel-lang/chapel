@@ -146,7 +146,7 @@ static void checkSyncSingleAtomicDefaultInit() {
                fn->name == astrInit ||
                fn->name == astrInitEquals);
     };
-    
+
     bool hasCompilerGeneratedInit = false;
     for(auto fn : at->methods) {
       if(fn && isCompilerGeneratedInit(fn)) hasCompilerGeneratedInit = true;
