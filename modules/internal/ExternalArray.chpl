@@ -88,11 +88,13 @@ module ExternalArray {
   }
 
   pragma "no copy return"
-  proc makeArrayFromExternArray(value: chpl_external_array, type eltType, dom: domain) {
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType, dom: domain) where dom.isRectangular() {
+    if dom.size != value.num_elts then
+      halt("tried to create array with domain of size ", dom.size, " with external array of ", value.num_elts, " elements");
     var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                   rank=dom.rank,
                                                   idxType=dom.idxType,
-                                                  stridable=dom.stridable,
+                                                  strides=dom.strides,
                                                   dom=dom._value,
                                                   data=value.elts: _ddata(eltType),
                                                   externFreeFunc=value.freer,
