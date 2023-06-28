@@ -21,7 +21,7 @@
 //
 // The Block distribution is defined with six classes:
 //
-//   Block       : distribution class
+//   BlockGuts       : distribution class
 //   BlockDom    : domain class
 //   BlockArr    : array class
 //   LocBlock    : local distribution class (per-locale instances)
@@ -80,7 +80,7 @@ config param testFastFollowerOptimization = false;
 config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 
 //
-// Block Distribution Class
+// BlockGuts Distribution Class
 //
 //   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
 //   dataParMinGranularity can be changed, but changes are
@@ -319,7 +319,238 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 
 */
-class Block : BaseDist {
+
+pragma "ignore noinit"
+@chpldoc.nodoc
+record Block {
+  var _pid:int;  // only used when privatized
+  pragma "owned"
+  var _instance; // generic, but an instance of a subclass of BaseDist
+  var _unowned:bool; // 'true' for the result of 'getDistribution',
+                     // in which case, the record destructor should
+                     // not attempt to delete the _instance.
+
+  proc init(boundingBox: domain,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
+            dataParMinGranularity=getDataParMinGranularity(),
+            param rank = boundingBox.rank,
+            type idxType = boundingBox.idxType,
+            type sparseLayoutType = unmanaged DefaultDist) {
+    const value = new unmanaged BlockGuts(boundingBox, targetLocales,
+                                          dataParTasksPerLocale,
+                                          dataParIgnoreRunningTasks,
+                                          dataParMinGranularity,
+                                          rank, idxType, sparseLayoutType);
+    this._pid = _newPrivatizedClass(value);
+    this._instance = value;
+  }
+
+  
+  /*
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this._pid      = _pid;
+      this._instance = _instance;
+      this._unowned  = _unowned;
+    }
+
+    proc init(value) {
+      this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
+      this._instance = _to_unmanaged(value);
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : _distribution) {
+      var value = other._value.dsiClone();
+      this.init(value);
+    }
+  */
+    inline proc _value {
+      if _isPrivatized(_instance) {
+        return chpl_getPrivatizedCopy(_instance.type, _pid);
+      } else {
+        return _instance;
+      }
+    }
+
+    forwarding _value except targetLocales;
+  /*
+    inline proc _do_destroy() {
+      if ! _unowned && ! _instance.singleton() {
+        on _instance {
+          // Count the number of domains that refer to this distribution.
+          // and mark the distribution to be freed when that number reaches 0.
+          // If the number is 0, .remove() returns the distribution
+          // that should be freed.
+          var distToFree = _instance.remove();
+          if distToFree != nil {
+            _delete_dist(distToFree!, _isPrivatized(_instance));
+          }
+        }
+      }
+    }
+
+    proc deinit() {
+      _do_destroy();
+    }
+
+    proc clone() {
+      return new _distribution(_value.dsiClone());
+    }
+  */
+    /* This is a workaround for an internal failure I experienced when
+       this code was part of newRectangularDom() and relied on split init:
+       var x;
+       if __prim(...) then x = ...;
+       else if __prim(...) then x = ...;
+       else compilerError(...); */
+    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
+
+      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
+      // we use "method call resolves" instead of just "resolves".
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, strides, ranges) {
+        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
+      }
+
+      // The following supports deprecation by Vass in 1.31 to implement #17131
+      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
+      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
+      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
+
+      param stridable = strides.toStridable();
+      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
+      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
+                     rank, idxType, stridable, ranges2) {
+
+        compilerWarning("the domain map '", _value.type:string,
+          "' needs to be updated from 'stridable: bool' to",
+          " 'strides: strideKind' because 'stridable' is deprecated");
+
+        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
+      }
+
+      compilerError("rectangular domains are not supported by",
+                    " the distribution ", this.type:string);
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
+                           definedConst: bool = false) {
+      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
+
+      x.definedConst = definedConst;
+
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc newRectangularDom(param rank: int, type idxType,
+                           param strides: strideKind,
+                           definedConst: bool = false) {
+      var ranges: rank*range(idxType, boundKind.both, strides);
+      return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+    }
+  /*
+    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc newSparseDom(param rank: int, type idxType, dom: domain) {
+      var x = _value.dsiNewSparseDom(rank, idxType, dom);
+      if x.linksDistribution() {
+        _value.add_dom(x);
+      }
+      return x;
+    }
+
+    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
+
+    proc readThis(f) throws {
+      f.read(_value);
+    }
+
+    // TODO: Can't this be an initializer?
+    @chpldoc.nodoc
+    proc type deserializeFrom(reader, ref deserializer) throws {
+      var ret : this;
+      ret.readThis(reader);
+      return ret;
+    }
+
+    proc writeThis(f) throws {
+      f.write(_value);
+    }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writer.write(_value);
+    }
+
+    proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
+    /*
+       Return an array of locales over which this distribution was declared.
+    */
+    proc targetLocales() const ref {
+      return _value.dsiTargetLocales();
+    }
+  }  // record _distribution
+
+  @chpldoc.nodoc
+  inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
+    return !(d1 == d2);
+  }
+
+  // This alternative declaration of Sort.defaultComparator
+  // prevents transitive use of module Sort.
+  proc chpl_defaultComparator() {
+    use Sort;
+    return defaultComparator;
+  }
+
+  @chpldoc.nodoc
+  proc shouldReturnRvalueByValue(type t) param {
+    if !PODValAccess then return false;
+    if isPODType(t) then return true;
+    return false;
+  }
+
+  // supports deprecation by Vass in 1.31 to implement #17131
+  // A compatibility wrapper that allows code to work with domain maps
+  // whether they have been converted from stridable to strides or not.
+  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
+                           param strides: strideKind,
+                           ranges: rank*range(idxType, boundKind.both, strides),
+                           definedConst: bool = false) {
+    if __primitive("resolves",
+                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
+    then
+      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
+    else
+      return dist.dsiNewRectangularDom(rank, idxType,
+                                       strides.toStridable(), ranges);
+  }
+*/
+}
+
+class BlockGuts : BaseDist {
   param rank: int;
   type idxType = int;
   var boundingBox: domain(rank, idxType);
@@ -335,8 +566,8 @@ class Block : BaseDist {
 //
 // Local Block Distribution Class
 //
-// rank : generic rank that matches Block.rank
-// idxType: generic index type that matches Block.idxType
+// rank : generic rank that matches BlockGuts.rank
+// idxType: generic index type that matches BlockGuts.idxType
 // myChunk: a non-distributed domain that defines this locale's indices
 //
 class LocBlock {
@@ -357,7 +588,7 @@ class LocBlock {
 //
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
-  const dist: unmanaged Block(rank, idxType, sparseLayoutType);
+  const dist: unmanaged BlockGuts(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, strides);
   var whole: domain(rank, idxType, strides);
 }
@@ -451,12 +682,12 @@ class LocBlockArr {
 }
 
 
-////// Block and LocBlock methods ///////////////////////////////////////////
+////// BlockGuts and LocBlock methods ///////////////////////////////////////////
 
 //
-// Block initializer for clients of the Block distribution
+// BlockGuts initializer for clients of the Block distribution
 //
-proc Block.init(boundingBox: domain,
+proc BlockGuts.init(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -531,7 +762,7 @@ proc Block.init(boundingBox: domain,
 }
 
 @unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
-proc Block.redistribute(const in newBbox) {
+proc BlockGuts.redistribute(const in newBbox) {
   const newBboxDims = newBbox.dims();
   const pid = this.pid;
   coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist) {
@@ -546,7 +777,7 @@ proc Block.redistribute(const in newBbox) {
 }
 
 
-proc Block.dsiAssign(other: this.type) {
+proc BlockGuts.dsiAssign(other: this.type) {
   if (this.targetLocDom != other.targetLocDom ||
       || reduce (this.targetLocales != other.targetLocales)) {
     halt("Block distribution assignments currently require the target locale arrays to match");
@@ -559,7 +790,7 @@ proc Block.dsiAssign(other: this.type) {
 // Block distributions are equivalent if they share the same bounding
 // box and target locale set.
 //
-proc Block.dsiEqualDMaps(that: Block(?)) {
+proc BlockGuts.dsiEqualDMaps(that: Block(?)) {
   return (this.rank == that.rank &&
           this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales));
@@ -568,12 +799,12 @@ proc Block.dsiEqualDMaps(that: Block(?)) {
 //
 // Block distributions are not equivalent to other domain maps.
 //
-proc Block.dsiEqualDMaps(that) param {
+proc BlockGuts.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc Block.dsiClone() {
-  return new unmanaged Block(boundingBox, targetLocales,
+proc BlockGuts.dsiClone() {
+  return new unmanaged BlockGuts(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity,
                    rank,
@@ -581,14 +812,14 @@ proc Block.dsiClone() {
                    sparseLayoutType);
 }
 
-override proc Block.dsiDestroyDist() {
+override proc BlockGuts.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
   }
 }
 
-override proc Block.dsiDisplayRepresentation() {
+override proc BlockGuts.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -599,7 +830,7 @@ override proc Block.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
+override proc BlockGuts.dsiNewRectangularDom(param rank: int, type idxType,
                                          param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
@@ -631,7 +862,7 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
-override proc Block.dsiNewSparseDom(param rank: int, type idxType,
+override proc BlockGuts.dsiNewSparseDom(param rank: int, type idxType,
                                     dom: domain) {
   var ret =  new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
@@ -645,7 +876,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc Block.writeThis(x) throws {
+proc BlockGuts.writeThis(x) throws {
   x.writeln("Block");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -657,11 +888,11 @@ proc Block.writeThis(x) throws {
       " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc Block.dsiIndexToLocale(ind: idxType) where rank == 1 {
+proc BlockGuts.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc Block.dsiIndexToLocale(ind: rank*idxType) {
+proc BlockGuts.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -669,7 +900,7 @@ proc Block.dsiIndexToLocale(ind: rank*idxType) {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-proc Block.getChunk(inds, locid) {
+proc BlockGuts.getChunk(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -699,11 +930,11 @@ proc Block.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
-proc Block.targetLocsIdx(ind: idxType) where rank == 1 {
+proc BlockGuts.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx((ind,));
 }
 
-proc Block.targetLocsIdx(ind: rank*idxType) {
+proc BlockGuts.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
     result(i) = max(0, min(targetLocDom.dim(i).sizeAs(int)-1,
@@ -714,7 +945,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
-iter Block.activeTargetLocales(const space : domain = boundingBox) {
+iter BlockGuts.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low  = chpl__tuplify(targetLocsIdx(locSpace.low));
   const high = chpl__tuplify(targetLocsIdx(locSpace.high));
@@ -1361,7 +1592,7 @@ override proc BlockDom.dsiSupportsAutoLocalAccess() param {
 
 ///// Privatization and serialization ///////////////////////////////////////
 
-proc Block.init(other: Block, privateData,
+proc BlockGuts.init(other: BlockGuts, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 type sparseLayoutType = other.sparseLayoutType) {
@@ -1377,20 +1608,20 @@ proc Block.init(other: Block, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-override proc Block.dsiSupportsPrivatization() param do return true;
+override proc BlockGuts.dsiSupportsPrivatization() param do return true;
 
-proc Block.dsiGetPrivatizeData() {
+proc BlockGuts.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
           dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
-proc Block.dsiPrivatize(privatizeData) {
-  return new unmanaged Block(_to_unmanaged(this), privatizeData);
+proc BlockGuts.dsiPrivatize(privatizeData) {
+  return new unmanaged BlockGuts(_to_unmanaged(this), privatizeData);
 }
 
-proc Block.dsiGetReprivatizeData() do return boundingBox.dims();
+proc BlockGuts.dsiGetReprivatizeData() do return boundingBox.dims();
 
-proc Block.dsiReprivatize(other, reprivatizeData) {
+proc BlockGuts.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -1505,11 +1736,11 @@ proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Block.dsiTargetLocales() const ref {
+proc BlockGuts.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
-proc Block.chpl__locToLocIdx(loc: locale) {
+proc BlockGuts.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
       return (true, locIdx);

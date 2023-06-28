@@ -470,10 +470,45 @@ module ChapelArray {
     }
   }
 
+  proc chpl__distributed(d, dom: domain,
+                         definedConst: bool) {
+    if definedConst {
+      if dom.isRectangular() {
+        const distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
+                              dom._value.idxType,
+                              dom._value.strides,
+                              dom.dims(),
+                              definedConst));
+        return distDom;
+      } else {
+        const distDom: domain(dom._value.idxType) dmapped d = dom;
+        return distDom;
+      }
+    }
+    else {
+      if dom.isRectangular() {
+        var distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
+                              dom._value.idxType,
+                              dom._value.strides,
+                              dom.dims(),
+                              definedConst));
+
+        return distDom;
+      } else {
+        var distDom: domain(dom._value.idxType) dmapped d = dom;
+        return distDom;
+      }
+    }
+  }
+
+/*
   pragma "last resort"
   proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
+  */
 
   //
   // Array-view utility functions
@@ -551,7 +586,26 @@ module ChapelArray {
   // End of DomainView utility functions
   //
   // this is a type function and as such, definedConst has no effect
+/*
   proc chpl__distributed(d: _distribution, type domainType,
+                         definedConst: bool) type {
+    if !isDomainType(domainType) then
+      compilerError("cannot apply 'dmapped' to the non-domain type ",
+                    domainType:string);
+    if chpl__isRectangularDomType(domainType) {
+      var dom: domainType;
+      return chpl__buildDomainRuntimeType(d, dom._value.rank, dom._value.idxType,
+                                          dom._value.strides);
+    } else if chpl__isSparseDomType(domainType) {
+      const ref parentDom = chpl__parentDomainFromDomainRuntimeType(domainType);
+      return chpl__buildSparseDomainRuntimeType(d, parentDom);
+    } else {
+      var dom: domainType;
+      return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
+    }
+  }
+*/
+  proc chpl__distributed(d, type domainType,
                          definedConst: bool) type {
     if !isDomainType(domainType) then
       compilerError("cannot apply 'dmapped' to the non-domain type ",
