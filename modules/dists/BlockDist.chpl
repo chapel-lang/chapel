@@ -354,7 +354,7 @@ record Block {
       this._instance = _instance;
       this._unowned  = _unowned;
     }
-
+  */
     proc init(value) {
       this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
       this._instance = _to_unmanaged(value);
@@ -363,11 +363,11 @@ record Block {
     // Note: This does not handle the case where the desired type of 'this'
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
-    proc init=(const ref other : _distribution) {
+    proc init=(const ref other : Block(?)) {
       var value = other._value.dsiClone();
       this.init(value);
     }
-  */
+
     inline proc _value {
       if _isPrivatized(_instance) {
         return chpl_getPrivatizedCopy(_instance.type, _pid);
@@ -396,11 +396,11 @@ record Block {
     proc deinit() {
       _do_destroy();
     }
-
-    proc clone() {
-      return new _distribution(_value.dsiClone());
-    }
   */
+    proc clone() {
+      return new Block(_value.dsiClone());
+    }
+
     /* This is a workaround for an internal failure I experienced when
        this code was part of newRectangularDom() and relied on split init:
        var x;
@@ -504,17 +504,17 @@ record Block {
     proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
-  }  // record _distribution
+  }
 
   @chpldoc.nodoc
-  inline operator ==(d1: _distribution(?), d2: _distribution(?)) {
+  inline operator ==(d1: Block(?), d2: Block(?)) {
     if (d1._value == d2._value) then
       return true;
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
   @chpldoc.nodoc
-  inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
+  inline operator !=(d1: Block(?), d2: Block(?)) {
     return !(d1 == d2);
   }
 
@@ -549,6 +549,24 @@ record Block {
   }
 */
 }
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: Block(?), b: Block(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
 
 class BlockGuts : BaseDist {
   param rank: int;

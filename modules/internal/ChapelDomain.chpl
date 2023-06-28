@@ -76,6 +76,14 @@ module ChapelDomain {
     return new _domain(dist, rank, idxType, strides);
   }
 
+  pragma "runtime type init fn"
+  proc chpl__buildDomainRuntimeType(dist, param rank: int,
+                                    type idxType = int,
+                                    param strides: strideKind = strideKind.one
+                                    ) type {
+    return new _domain(dist, rank, idxType, strides);
+  }
+
   // deprecated by Vass in 1.31 to implement #17131
   @deprecated("domain.stridable is deprecated; use domain.strides instead")
   proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
@@ -87,6 +95,14 @@ module ChapelDomain {
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
+                                    param parSafe: bool = true) type {
+    if isDomainType(idxType) then
+      compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
+    return new _domain(dist, idxType, parSafe);
+  }
+
+  pragma "runtime type init fn"
+  proc chpl__buildDomainRuntimeType(dist, type idxType,
                                     param parSafe: bool = true) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");

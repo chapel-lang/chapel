@@ -503,12 +503,12 @@ module ChapelArray {
     }
   }
 
-/*
+
   pragma "last resort"
   proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
-  */
+
 
   //
   // Array-view utility functions
@@ -586,7 +586,6 @@ module ChapelArray {
   // End of DomainView utility functions
   //
   // this is a type function and as such, definedConst has no effect
-/*
   proc chpl__distributed(d: _distribution, type domainType,
                          definedConst: bool) type {
     if !isDomainType(domainType) then
@@ -604,7 +603,7 @@ module ChapelArray {
       return chpl__buildDomainRuntimeType(d, dom._value.idxType, dom._value.parSafe);
     }
   }
-*/
+
   proc chpl__distributed(d, type domainType,
                          definedConst: bool) type {
     if !isDomainType(domainType) then
@@ -737,6 +736,9 @@ module ChapelArray {
   }
   proc chpl__buildDistValue(in x:owned) where isSubtype(x.borrow().type, BaseDist) {
     return new _distribution(owned.release(x));
+  }
+  proc chpl__buildDistValue(x:record) {
+    return x;
   }
 
   proc chpl__buildDistValue(x) {

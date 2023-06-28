@@ -1,7 +1,7 @@
 use BlockDist;
-
+config param useDmap = false;
 var n = 10;
-var B = new Block({1..n});
+var B = if useDmap then new dmap(new Block({1..n})) else new Block({1..n});
 var D = {1..n} dmapped B;
 var A: [D] real;
 

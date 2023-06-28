@@ -1,1 +1,2 @@
---warn-unstable
+--warn-unstable -suseDmap=true
+--warn-unstable -suseDmap=false
