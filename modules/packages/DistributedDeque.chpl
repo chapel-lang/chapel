@@ -246,6 +246,7 @@ module DistributedDeque {
   @chpldoc.nodoc
   class DistributedDequeCounter {
     var _value : atomic int;
+    proc init() {}
 
     forwarding _value;
   }
