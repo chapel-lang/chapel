@@ -2451,7 +2451,7 @@ for testname in testsrc:
                                                 execoptsnum, execoptslist);
                             sys.stdout.write(']\n')
                     else:
-                        sys.stdout.write('[Program exited with non-zero exit code — skipping perf key collection]\n')
+                        sys.stdout.write('[Error execution failed for %s]\n'%(test_name))
 
                     if exectimeout or status != 0 or exec_status != 0:
                         break
