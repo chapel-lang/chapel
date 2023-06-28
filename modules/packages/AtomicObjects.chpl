@@ -498,11 +498,9 @@ prototype module AtomicObjects {
       this.objType = other.objType;
       this.hasABASupport = other.hasABASupport;
       this.hasGlobalSupport = other.hasGlobalSupport;
-      if hasABASupport {
-        this.atomicVar = other.atomicVar
-      } else {
-        this.atomicVar = other.atomicVar.read();
-      }
+      if hasABASupport
+        then this.atomicVar = other.atomicVar;
+        else this.atomicVar = other.atomicVar.read();
     }
 
     @chpldoc.nodoc
