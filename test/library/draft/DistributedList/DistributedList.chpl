@@ -17,7 +17,7 @@ Note: in the future, it is unlikely that we will add a distributed list data
        we'd eventually like to have a distributed version of all (or most) of
        the collection types supported by the standard library. However, in some
        discussions about the `list` data structure, we decided it would be
-       okay to keep list as a single-locale-only collection, and to add a queue
+       okay to keep list as a single-locale-only collection, and to add a queue,
        stack, and/or dequeue (along with their distributed versions) to the library.
 
   (see: https://github.com/chapel-lang/chapel/issues/21933, for more discussion)
