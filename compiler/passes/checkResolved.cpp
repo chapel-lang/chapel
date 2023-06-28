@@ -76,6 +76,98 @@ static void checkForClassAssignOps(FnSymbol* fn) {
   }
 }
 
+// Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while(ts == NULL) {
+    if(Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if(ts != NULL) eltType = ts->type;
+
+  return eltType;
+}
+
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = NULL;
+  do {
+    eltType = arrayElementType(arrayType);
+    arrayType = toAggregateType(eltType);
+  } while (arrayType != NULL && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+  return eltType;
+}
+
+static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+  if(type == NULL) return false;
+  else if(type->symbol->hasFlag(flag) ||
+          (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE))) {
+    return true;
+  } else {
+    Type* vt = type->getValType();
+    if(isDecoratedClassType(vt)) {
+      vt = canonicalClassType(vt)->getValType();
+    }
+    if(AggregateType* at = toAggregateType(vt)) {
+      // get backing array instance and recurse
+      if(at->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* eltType = finalArrayElementType(at);
+        if(isOrContains(eltType, flag, true /*can be type var*/)) return true;
+      } else if(at->symbol->hasFlag(FLAG_TUPLE)) {
+        // if its a tuple, search the tuple type substitutions
+        for(const auto& ns: at->substitutionsPostResolve) {
+          Type* eltType = ns.value->type;
+          if(isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+static bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
+static bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
+static bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+
+static void checkSyncSingleAtomicDefaultInit() {
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    auto isCompilerGeneratedInit = [](FnSymbol* fn) {
+      return fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+              (fn->hasFlag(FLAG_DEFAULT_INIT) ||
+               fn->hasFlag(FLAG_COPY_INIT) ||
+               fn->name == astrInit ||
+               fn->name == astrInitEquals);
+    };
+    
+    bool hasCompilerGeneratedInit = false;
+    for(auto fn : at->methods) {
+      if(fn && isCompilerGeneratedInit(fn)) hasCompilerGeneratedInit = true;
+    }
+
+    if(hasCompilerGeneratedInit) {
+      for_fields(field, at) {
+        bool isSync = isOrContainsSyncType(field->type);
+        bool isSingle = isOrContainsSingleType(field->type);
+        bool isAtomic = isOrContainsAtomicType(field->type);
+        if (isSync || isSingle || isAtomic) {
+          USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is deprecated", at->aggregateString(), isSync ? "sync" : (isSingle ? "single" : "atomic"));
+        }
+      }
+    }
+  }
+
+}
+
+
+
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
@@ -135,6 +227,8 @@ checkResolved() {
   checkConstLoops();
   checkExternProcs();
   checkExportedProcs();
+
+  checkSyncSingleAtomicDefaultInit();
 }
 
 
