@@ -1,2 +1,2 @@
 grandparentAccess.chpl:21: In initializer:
-grandparentAccess.chpl:22: error: cannot access parent field "a" before super.init() or this.init()
+grandparentAccess.chpl:24: error: cannot access parent field "a" before super.init() or this.init()
