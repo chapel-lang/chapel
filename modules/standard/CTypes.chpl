@@ -622,13 +622,18 @@ module CTypes {
     return __primitive("ptr_eq", a, b);
   }
   @chpldoc.nodoc
+  inline operator c_ptr.==(a: c_ptr, b: _nilType) {
+    return __primitive("ptr_eq", a, b);
+  }
+  @chpldoc.nodoc
   inline operator c_ptrConst.==(a: c_ptrConst, b: c_ptrConst)
       where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_eq", a, b);
   }
-
-  // Don't need _nilType versions -
-  // Rely on coercions from nil to c_ptr / c_void_ptr
+  @chpldoc.nodoc
+  inline operator c_ptrConst.==(a: c_ptrConst, b: _nilType) {
+    return __primitive("ptr_eq", a, b);
+  }
 
   @chpldoc.nodoc
   inline operator c_ptr.!=(a: c_ptr, b: c_ptr)
@@ -636,8 +641,16 @@ module CTypes {
     return __primitive("ptr_neq", a, b);
   }
   @chpldoc.nodoc
+  inline operator c_ptr.!=(a: c_ptr, b: _nilType) {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
   inline operator c_ptrConst.!=(a: c_ptrConst, b: c_ptrConst)
       where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator c_ptrConst.!=(a: c_ptrConst, b: _nilType) {
     return __primitive("ptr_neq", a, b);
   }
 
