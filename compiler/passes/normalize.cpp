@@ -1150,7 +1150,13 @@ static void processSyntacticDistributions(CallExpr* call) {
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
             processManagedNew(newExpr);
-          }
+          } else {  // handle new cases where we use a record insteax
+            CallExpr* newExpr = new CallExpr(PRIM_NEW, distCall->remove());
+
+            call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
+
+            processManagedNew(newExpr);
+          }            
         }
       }
     }
