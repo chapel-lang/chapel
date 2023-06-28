@@ -10,6 +10,7 @@ Language Basics
    :maxdepth: 1
 
    Variables <variables>
+   Loops <loops>
    Procedures <procedures>
    Classes <classes>
    Records <records>

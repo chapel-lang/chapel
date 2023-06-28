@@ -59,10 +59,10 @@ Component 1 of 'tup' has type real(64)
 Component 2 of 'tup' has type string
 After our first foreach-loop, A is: 4.8 13.6 22.4 31.2
 After our first zippered foreach-loop, A is: 4.81 13.62 22.43 31.24
-After the first forall loop over a range, B is: 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0
-After the second forall loop over a domain, B is: 13.62 22.43 31.24 4.81 13.62 22.43 31.24 4.81
-After the third forall loop over an array, B is: -13.62 -22.43 -31.24 -4.81 -13.62 -22.43 -31.24 -4.81
-After the fourth forall loop over a distributed domain, C is:
+After the forall loop over a range, B is: 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0
+After the forall loop over a domain, B is: 13.62 22.43 31.24 4.81 13.62 22.43 31.24 4.81
+After the forall loop over an array, B is: -13.62 -22.43 -31.24 -4.81 -13.62 -22.43 -31.24 -4.81
+After the forall loop over a distributed domain, C is:
 1.001 1.002 1.003 1.004 1.005 1.006 1.007 1.008
 2.001 2.002 2.003 2.004 2.005 2.006 2.007 2.008
 3.001 3.002 3.003 3.004 3.005 3.006 3.007 3.008
@@ -71,7 +71,7 @@ After the fourth forall loop over a distributed domain, C is:
 6.001 6.002 6.003 6.004 6.005 6.006 6.007 6.008
 7.001 7.002 7.003 7.004 7.005 7.006 7.007 7.008
 8.001 8.002 8.003 8.004 8.005 8.006 8.007 8.008
-After the fourth forall loop over a distributed array, C is:
+After the forall loop over a distributed array, C is:
 2.002 2.004 2.006 2.008 2.01 2.012 2.014 2.016
 4.002 4.004 4.006 4.008 4.01 4.012 4.014 4.016
 6.002 6.004 6.006 6.008 6.01 6.012 6.014 6.016

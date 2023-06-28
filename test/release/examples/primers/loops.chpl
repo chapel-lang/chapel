@@ -2,24 +2,24 @@
 
 /*
 
-  This primer teaches about Chapel's various loop forms, both serial
+  This primer teaches the loop forms supported by Chapel, both serial
   and parallel.
 
 */
 
-use IO;
+use IO;  // enable access to the readln() call that we use below
 
 /*
 
   Like most imperative programming languages, Chapel supports loops.
-  A loop is designed to run the statement or statements making up its
-  code body a number of times (where that number could be one time, or
-  even zero).  Chapel supports traditional serial loops, which execute
-  the loop's iterations one after another.  It also supports parallel
-  loops in which the loop's iterations may run simultaneously using
-  parallelism available in the target system.  This primer is designed
-  to introduce these loop forms and to provide guidance as to when
-  each might be used.
+  A loop statement is designed to run the statement or statements
+  making up its body a number of times (where that number could be one
+  time, or even zero).  Chapel supports traditional serial loops,
+  which execute the loop's iterations one after another.  It also
+  supports parallel loops in which the loop's iterations may run
+  simultaneously using hardware parallelism available in the target
+  system.  This primer is designed to introduce these loop forms and
+  to provide guidance as to when each might be appropriate.
 
   Serial Loops
   ============
@@ -27,7 +27,7 @@ use IO;
   While-Loops
   -----------
 
-  We'll start with Chapel's _while-loops_, which execute as long as a
+  We'll start with Chapel's *while-loops*, which execute as long as a
   boolean condition remains true.  While loops come in two forms, the
   ``while...`` loop and the ``do...while`` loop.  These are similar to
   their counterparts in other languages.
@@ -46,8 +46,8 @@ use IO;
 /*
 
   In the event that the loop body only consists of a single statement,
-  you can use the ``do`` keyword to define the loop body rather than
-  curly brackets (a _compound statement_).  For example:
+  you can use the ``do`` keyword to define it rather than curly
+  brackets (a *compound statement*).  For example:
 
 */
 
@@ -76,7 +76,7 @@ use IO;
   refer to symbols declared within the loop.  For example, the test
   against ``i`` in the following loop refers to the local
   per-iteration constant declared within the loop's body rather than
-  the variable defined earlier to drive the original loop.
+  the variable defined above to drive our first while-loop.
 
 */
 
@@ -90,7 +90,7 @@ use IO;
   For-Loops
   ---------
 
-  Chapel's other serial loop form is the _for-loop_.  Here is a sample
+  Chapel's other serial loop form is the *for-loop*.  Here is a sample
   for-loop that iterates over the integers 1 through 10, inclusive:
 
 */
@@ -102,24 +102,25 @@ use IO;
 /*
 
   Though this example may look and act a lot like the C loop ``for
-  (i=1; i<=10; i++)``, the way it works is somewhat different.
-  Specifically, in Chapel a for-loop always invokes a _serial
-  iterator_.  In more detail:
+  (i=1; i<=3; i++)``, the way it works is somewhat different.
+  Specifically, in Chapel a for-loop always invokes a *serial
+  iterator*.  In more detail:
 
   Chapel for-loops generally take the form: ``for [inds] in [expr]``
-  where ``[expr]`` is the _iterand_ expression that the loop is
-  traversing.  When this iterand expression is a call to a Chapel
-  iterator, the loop will invoke that iterator (see the
-  :ref:`Iterators Primer <primers-iterators>` for more on defining
-  iterators).  If the iterand is a variable or value of a given type,
-  the loop invokes that type's default serial iterator method.  The
-  iterand in the loop above is the range value ``1..3``, so the loop
-  invokes the ``range`` type's default serial iterator method, which
-  yields the range's indices one at a time.  For more about ranges,
-  see the :ref:`Ranges Primer <primers-ranges>`.
+  where ``[expr]`` is the *iterand expression* that the loop is
+  traversing.  When this iterand is a call to a Chapel iterator, the
+  loop will invoke that iterator (see the :ref:`Iterators Primer
+  <primers-iterators>` for more about defining iterators).  If the
+  iterand is a variable or value of a given type, the loop invokes
+  that type's default serial iterator method.
+
+  The iterand in the loop above is the range value ``1..3``, so the
+  loop invokes the ``range`` type's default serial iterator method,
+  which yields the range's indices one at a time.  For more about
+  ranges, see the :ref:`Ranges Primer <primers-ranges>`.
 
   As values are yielded back to a for-loop, they are bound to the
-  loop's _index variable(s)_.  In this case, the index variable is
+  loop's *index variable(s)*.  In this case, the index variable is
   ``i``.  A for-loop's index or indices are brand new identifiers
   introduced by the loop, and each iteration of the loop can be
   thought of as getting its own private copy of the index variable.
@@ -128,11 +129,11 @@ use IO;
   is new and distinct from previous ``i`` variables that appeared
   earlier in this primer.  Another implication is that a for-loop's
   index values will not be carried from one iteration of the loop to
-  the next, nor persist after the loop completes.  If you want this
-  behavior, use additional variables declared manually outside of the
-  for-loop or a while-loop.
+  the next, nor persist after the loop completes.  If you want such
+  behaviors, you'll need to use additional variables declared manually
+  outside of the for-loop or a while-loop.
 
-  Moreover, the ``range`` iterator yields its indices by ``const``
+  The ``range`` type's iterators yield its indices by ``const out``
   intent, so the loop's ``i`` index variable cannot be re-assigned
   within the loop body.  In effect, the loop above can be thought of
   as being equivalent to:
@@ -162,8 +163,8 @@ use IO;
   For-Loops over Arrays and Domains
   ---------------------------------
 
-  In addition to looping over ranges and explicit iterators, it is
-  common for Chapel for-loops to iterate over arrays or domains (see
+  In addition to looping over ranges and explicit iterators, for-loops
+  in Chapel are commonly used to iterate over arrays or domains (see
   the :ref:`Arrays <primers-arrays>` and :ref:`Domains
   <primers-domains>` Primers for details on these types).  When
   iterating over an array variable, its serial iterator yields
@@ -225,10 +226,10 @@ use IO;
   Zippered For-Loops
   ------------------
 
-  For-loops support _zippered_ iteration, in which multiple iterand
-  expressions are invoked in a coordinated manner, yielding multiple
-  indices.  For example, the following loop iterates over two ranges
-  and an array in a zippered manner:
+  For-loops also support *zippered* iteration, in which multiple
+  iterand expressions are invoked in a coordinated manner, yielding
+  multiple indices.  For example, the following loop iterates over two
+  ranges and an array in a zippered manner:
 
 */
 
@@ -239,8 +240,8 @@ use IO;
 
   Note that the iterands in a zippered loop need to have compatible
   sizes and shapes.  In this case, each of the two ranges represent
-  four indices, and the array has four elements and is similarly
-  1-dimensional, so this is a legal zippering.
+  four indices, and the array is 1-dimensional and has four elements,
+  so this is a legal zippering.
 
   A zippered loop generates a tuple index, storing one component for
   each iterand expression being zipped together.  As a result, in the
@@ -266,10 +267,10 @@ use IO;
   ---------------------------------------
 
   One last case to know about is that Chapel has a few for-loop forms
-  that support distinct static types or values in each iteration.
-  This is achieved by unrolling the for-loop at compile-time to create
-  distinct copies of the loop body to represent the different static
-  properties.
+  that support the ability of having distinct static types or values
+  per iteration.  This is achieved by unrolling the for-loop at
+  compile-time to create distinct copies of the loop body that
+  represent the different static properties.
 
   The two primary ways to write such for-loops today are by iterating
   over:
@@ -291,17 +292,31 @@ use IO;
 /*
 
   For each of these loops, the compiler will fully unroll the loop,
-  where each copy of the loop body will be specialized to the types of
+  and each copy of the loop body will be specialized to the types of
   the tuple components (``int``, ``real``, and ``string``,
   respectively).  The second loop will also be specialized to the
   ``param`` values of ``i`` (0, 1, and 2, respectively).
 
   This concludes this primer's summary of Chapel's serial loop forms.
+
+Parallel Loops
+  ==============
+
   Next, let's look at Chapel's parallel loop forms, all of which are
-  written very similarly to the serial for-loops shown here, yet using
-  different keywords.  Each supports per-iteration index variables,
-  zippered iteration, a ``do`` keyword form for single-statement
-  bodies, etc.
+  written very similarly to the serial for-loops shown here, simply
+  using different keywords.  Specifically, each parallel loop form
+  supports per-iteration index variables, zippered iteration, a ``do``
+  keyword form for single-statement bodies, etc.
+
+  A key property of parallel loops in Chapel is that the programmer is
+  asserting that the loop's iterations are order-independent and that
+  they can/should execute in parallel.  The Chapel compiler will take
+  the programmer's word for this and do its best to implement the loop
+  in parallel rather than trying to prove that the loop is
+  parallel-safe or race-free before doing so.  As a result, it is
+  possible for a user to write parallel loops that contain races or
+  are otherwise unsafe, though Chapel's design takes steps to reduce
+  the chances of inadvertently doing so.
 
   In the following discussion, we'll divide Chapel's parallel loop
   forms into two categories: data-parallel loops (e.g., ``foreach``
@@ -312,43 +327,36 @@ use IO;
   ===================
 
   Data-parallel loops in Chapel can be thought of as indicating "the
-  iterations of this loop can, and should, be performed in parallel",
-  yet in a way that avoids specifying how that parallelism is
-  implemented.  This is in contrast with task-parallel loops, where
-  the loop is explicitly creating distinct parallel tasks.
+  iterations of this loop can, and should, be performed in parallel."
+  Unlike task-parallel loops, the specifics of how a data-parallel
+  loop will execute in parallel are abstracted away from the loop, as
+  we will see.
 
-  A key property of data-parallel loops in Chapel is that the
-  programmer is essentially asserting that the loop is safe to run in
-  parallel—specifically, that the iterations of the loop are
-  order-independent.  The Chapel compiler will take the programmer's
-  word for it and do its best to implement the loop in parallel rather
-  than complaining or balking if the loop contains a race.
-
-  Because the parallel implementation of data-parallel loops is
-  unspecified by the language, the programmer shouldn't assume
-  anything about the amount of parallelism that will be used to
-  implement the loop, nor how its iterations will be parallelized.
-  The loop could even be executed completely serially like a for-loop.
-  For these reasons, performing any sort of blocking/synchronized
-  operation between distinct iterations of a single data-parallel loop
-  would violate the order-independent property and not be considered
-  legal.  Using a task-parallel loop in such cases would be more
-  appropriate.
+  Because the specific implementation of a data-parallel loop is
+  abstract, the programmer shouldn't assume anything about the amount
+  of parallelism that will be used to implement the loop, nor how its
+  iterations will be parallelized or scheduled.  The loop could even
+  be executed completely serially like a for-loop.  For these reasons,
+  performing any sort of blocking/synchronized operation between
+  distinct iterations of a single data-parallel loop would violate the
+  order-independent property and not be a legal use of the loop form
+  (using a task-parallel loop in such cases would be more appropriate,
+  as we will see).
 
   foreach-loops
   -------------
 
   The first, and simplest, data-parallel loop is the ``foreach`` loop.
-  This loop form asserts that the loop meets the data-parallel
-  criteria above, and specifies that its iterations should be
-  implemented using hardware parallelism if possible.  When executing
-  a foreach-loop on a conventional processor or GPU, the compiler will
-  attempt to implement its iteration using any SIMD/SIMT parallelism
-  that's available.  For example, if executing the loop on a processor
-  with vector instructions, it will attempt to implement the loop
-  using those instructions if possible.  Notably, a foreach-loop will
-  not implement its iterations using multiple Chapel tasks or software
-  threads (the forall-loop, below, does this).
+  This loop form asserts that the loop meets the order-independent and
+  unsynchronized properties above, and specifies that its iterations
+  should be implemented using hardware parallelism if possible.  When
+  executing a foreach-loop on a conventional processor or GPU, the
+  compiler will attempt to implement its iterations using any
+  SIMD/SIMT parallelism that's available.  For example, if executing
+  the loop on a processor with vector instructions, it will attempt to
+  implement the loop using those instructions if possible.  Notably, a
+  foreach-loop will not implement its iterations using multiple Chapel
+  tasks or software threads (the forall-loop, below, does this).
 
   Syntactically, foreach-loops are identical to for-loops, simply
   using the ``foreach`` keyword.  For example, the following
@@ -367,13 +375,14 @@ use IO;
   Because each iteration is performing its own operations on its own
   elements of A, this loop is trivially parallel-safe, and completely
   reasonable to write using ``foreach``.  When running the computation
-  on a processor that can vectorize floating point multiplications,
-  the ``foreach`` improves the compiler's ability to implement the
-  loop using those instructions, by asserting that the loop is legal
-  to parallelize.
+  on a processor that supports vector instructions for performing
+  floating point multiplications, the ``foreach`` keyword's assertion
+  that the loop is legal to parallelize improves the compiler's
+  ability to implement the loop using those instructions.
 
   Like the for-loops above, Chapel's foreach-loops support zippered
-  iteration.  For example, given a second array, B, we could write:
+  iteration.  For example, the following loop performs a zippered
+  iteration over the array `A` and an unbounded range `1..`.
 
 */
 
@@ -384,53 +393,51 @@ use IO;
 
 /*
 
-  Note that if a Chapel program were only ever to use foreach-loops to
-  express its parallelism, it would never make use of the multiple
-  processor cores of a modern processor nor the distinct compute nodes
-  of a cluster or HPC system.  This is because foreach-loops don't
-  ever introduce new Chapel tasks, and tasks are the only way to run
-  in parallel at system scales beyond a single processor.  As a
-  result, to leverage the full power of most parallel platforms, we
-  need to look to Chapel's other parallel loop forms.
-
-  Before doing so, though, does that imply that foreach-loops are not
-  important or useful?  Not at all!  They are very useful for
-  expressing parallelism in contexts where the program has already
-  created as many tasks as it wants or needs to to make use of the
-  available hardware processors.  In such cases, it may not be wise to
-  create additional tasks, so the foreach-loop represents a way to
-  take advantage of processor-level parallelism in the hardware
-  without the overhead of potentially creating additional software
-  tasks.
+  Note that if a Chapel program only used foreach-loops to express its
+  parallelism, it would never make use of the multiple processor cores
+  of a modern processor nor the distinct compute nodes of a cluster or
+  HPC system.  This is because foreach-loops don't ever introduce new
+  Chapel tasks, and tasks are the only way to run in parallel at
+  system scales beyond a single processor.  As a result, to leverage
+  the full power of most parallel platforms, we need to look to
+  Chapel's other parallel loop forms.
 
 
   forall-loops
   ------------
 
-  Forall-loops are very similar to foreach-loops except that they have
-  the potential to be implemented using multiple Chapel tasks.  This
+  Forall-loops are similar to foreach-loops, except that they have the
+  potential to be implemented using multiple Chapel tasks.  This
   permits them to use multiple cores and/or compute nodes to execute
   the loop's iterations.
 
-  Similar to how a Chapel for-loop invokes a serial iterator, the
-  forall-loop invokes a parallel iterator.  Where serial iterators may
+  Just as Chapel's for-loops invoke a serial iterator, its
+  forall-loops invoke a parallel iterator.  Where serial iterators may
   only yield values sequentially, a parallel iterator's yield
-  statements may occur within parallel loops and constructrs,
-  resulting in parallel execution.  For details about writing a
-  parallel iterator, see the :ref:`Parallel Iterators Primer
-  <primers-parIter>`.
+  statements may occur within parallel loops and constructs, resulting
+  in parallel execution.  When using a forall-loop with zippered
+  iterands, the first iterand in the zippering controls the loop's
+  parallelism.  For details about writing such parallel iterators, see
+  the :ref:`Parallel Iterators Primer <primers-parIters>`.
 
-  A parallel iterator can create as many tasks as it wants, and to run
-  them where it wants, but by convention, most will create an amount
-  that is appropriate for the available hardware parallelism that it
-  is targeting.  For example, the default parallel iterator for a
-  range, local domain, or local array will typically implement its
+  A parallel iterator can create as many tasks as it wants, and can
+  specify where they should run.  By convention, most will create as
+  many tasks as are appropriate for the hardware parallelism that the
+  loop iterand targets.  For example, the default parallel iterator
+  for a range, local domain, or local array typically implements its
   iterations using a number of tasks equal to the number of local
-  available processor cores, since those data structures are stored by
-  a single locale.  Meanwhile, the default parallel iterator for a
-  distributed domain or array will typically implement the iterations
-  using all of the available processor cores on all of the locales
-  that own a piece of the domain or array.
+  processor cores that are available, since those data structures are
+  stored on a single locale.  In contrast, the default parallel
+  iterator for a distributed domain or array will typically implement
+  the iterations using all of the available processor cores on all of
+  the locales that own a subset of the domain's indices or array's
+  elements.
+
+  It is guaranteed that all tasks created by the parallel iterator to
+  run the loop's iterations will complete before the original task
+  encountering the forall-loop proceeds.  Logically, you can think of
+  there as being a logical *join* operation on all tasks that are
+  helping to implement the forall-loop.
 
   Looking at some simple examples, when run on a k-core processor, for
   large enough values of ``n``, each of the following loops will
@@ -447,23 +454,24 @@ use IO;
   forall i in 1..n do
     B[i] = i: real;
 
-  writeln("After the first forall loop over a range, B is: ", B);
+  writeln("After the forall loop over a range, B is: ", B);
 
 
   forall i in B.domain do
     B[i] = A[i % A.size];
 
-  writeln("After the second forall loop over a domain, B is: ", B);
+  writeln("After the forall loop over a domain, B is: ", B);
+
 
   forall b in B do
     b = -b;
 
-  writeln("After the third forall loop over an array, B is: ", B);
+  writeln("After the forall loop over an array, B is: ", B);
 
 /*
 
   Similarly, if we iterate over a domain or array that's distributed
-  across ``nl`` locales with ``k`` cores each, each locale will tend
+  across multiple locales with ``k`` cores each, each locale will tend
   to use its ``k`` cores to iterate over the subset of the domain or
   array that it owns locally:
   
@@ -477,12 +485,12 @@ use IO;
   forall (i,j) in BlockDom do
     C[i,j] = (100 * here.id) + i + j/1000.0;
 
-  writeln("After the fourth forall loop over a distributed domain, C is:\n",C);
+  writeln("After the forall loop over a distributed domain, C is:\n",C);
 
   forall c in C do
     c *= 2;
 
-  writeln("After the fourth forall loop over a distributed array, C is:\n", C);
+  writeln("After the forall loop over a distributed array, C is:\n", C);
 
 /*
 
@@ -511,22 +519,22 @@ use IO;
   replacing the ``for[each|all]`` and ``do`` keywords, respectively.
   This loop is both a shorthand for a data parallel loop, while also
   supporting a "sliding scale" of parallelism.  Specifically, it will
-  be equivalent to a ``forall`` loop if its iterand has (or is) a
-  parallel iterator, and a ``foreach`` loop otherwise.
+  be equivalent to a ``forall`` loop if its iterand has/is a parallel
+  iterator, and a ``foreach`` loop otherwise.
 
   
-  Promotion and Parallel Loops
-  ----------------------------
+  Promotion and Data-Parallel Loops
+  ---------------------------------
 
   In Chapel, an operator or procedure accepting a formal argument of
-  type ``t`` can be _promoted_ by invoking the procedure with:
+  type ``t`` can be *promoted* by invoking the procedure with:
 
   * an array whose elements are of type ``t``
 
   * a range or domain whose indices are of type ``t``
 
   Such promotions are equivalent to ``forall`` loops that iterate over
-  each of the promoting actual arguemnts in a zippered manner, passing
+  each of the promoted actual arguments in a zippered manner, passing
   the respective elements into the operator or procedure.  For
   example, given the procedure:
 
@@ -560,7 +568,8 @@ use IO;
 
   As a result, the parallel calls to ``foo()`` will be executed using
   the available processor cores on each of the locales that own a
-  portion of ``C``.
+  portion of ``C`` since ``C`` is the first iterand in the `zip`
+  expression..
   
 
   A final note on data-parallel loops and legality / races
@@ -572,10 +581,10 @@ use IO;
   that is not parallel-safe or that creates a race, the outcome is
   their responsibility rather than Chapel's.  As an example, the
   following loop may appear to replace the interior elements of an
-  array with the average of its neighbors, yet because the same
+  array with the average of their neighbors; yet, because the same
   elements may be read and written simultaneously by distinct parallel
-  iterations, the results will be unpredictable depending on how
-  the iterations are executed:
+  iterations, the results will be unpredictable depending on how the
+  iterations are scheduled at execution time:
 
 */
 
@@ -593,12 +602,13 @@ use IO;
 /*
 
   The programmer is still permitted to write such loops in Chapel, and
-  the compiler will dutifully implement it as requested; but it will
+  the compiler will dutifully implement them as requested; but it will
   not protect the user from such races.
 
-  Note that one way to write the above computation safely would be to
-  store the results into a distinct array to avoid reading and writing
-  and writing the same elements within a single parallel loop:
+  One way to write the averaging computation above in a correct, but
+  still parallel, manner would be to store the results into a distinct
+  array to avoid reading and writing and writing the same elements
+  within a single parallel loop:
 
 */
 
@@ -606,6 +616,7 @@ use IO;
   var F: [1..n] real;
 
   writeln("Before the safe averaging loop, E is: ", E);
+
   forall i in 2..<n do
     F[i] = (E[i-1] + E[i+1]) / 2;
 
@@ -613,11 +624,11 @@ use IO;
 
 /* 
 
-  Part of the reason that Chapel compiler does not prevent writing
+  Part of the reason the Chapel compiler does not prevent writing
   parallel loops with races is that it can be difficult to determine
   whether a given loop is safe to parallelize or not.  For example,
-  the following variation on the original loop would be safe since
-  it only writes to even elemnents and reads from odd ones:
+  the following variation on the original loop would be safe since it
+  only writes to even elemnents and reads from odd ones:
 
 */
 
@@ -632,17 +643,17 @@ use IO;
 /*
 
   Distinguishing between loops that are parallel-safe versus not is
-  intractable in general, so rather than attempting to make that
+  generally intractable, so rather than attempting to make that
   judgemeent, Chapel trusts the programmer to use the loop form they
-  want.  Finally, in some cases, loops with benign or acceptable races
-  can be valuable to parallel computations, so Chapel does not want to
-  outlaw such computations.
+  want.  Moreover, for some parallel computations, race conditions can
+  be benign or acceptable, so Chapel does not want to prevent a user
+  from writing such computations.
 
-  At the end of the day, an important thing to remember about Chapel's
-  forall-loops is that they are essentially invocations of parallel
-  iterators.  In practice, those parallel iterators are themselves
-  often written in terms of forall-loops, or the more explicit
-  task-parallel coforall-loops.
+  An important thing to remember about Chapel's forall-loops is that
+  they are essentially invocations of parallel iterators.  In
+  practice, those parallel iterators are themselves often written in
+  terms of the data-parallel loop forms above, or the more explicit
+  task-parallel coforall-loops that we'll cover next.
 
 
   Task-Parallel Loops
@@ -655,11 +666,11 @@ use IO;
 
   In most respects, the coforall-loop is the simplest parallel loop
   form to explain in Chapel.  It literally creates a distinct Chapel
-  task for each iteration of the loop and then waits to proceed until
-  those tasks have all completed executing their copy of the loop
-  body.  Mnemonically, ``coforall` can be thought of as a "concurrent
-  forall-loop".  For example, the following coforall loop will create
-  four tasks, one for each iteration of the loop:
+  task for each iteration of the loop and then waits until those tasks
+  have each completed executing their copy of the loop body before
+  proceeding.  Mnemonically, ``coforall`` can be thought of as a
+  "concurrent forall-loop".  For example, the following coforall loop
+  will create four tasks, one for each iteration of the loop:
 
 */
 
@@ -680,10 +691,34 @@ use IO;
   tasks that are independently doing the same, or similar, things.  In
   practice, the parallel iterators used to define ``forall`` loops are
   often implemented in terms of coforall-loops that create a task per
-  available processor core and/or locale.
-  
+  processor core and/or locale.  As an example, the following
+  coforall-loop creates a task per processor core across all locales:
+
+*/
+
+
+  coforall loc in Locales {
+    on loc {
+      coforall tid in 1..numTasks {
+        /* This loop body will be executed once per core per locale */
+      }
+    }
+  }
+
+/*
+
   For further information about tasks in Chapel, see the :ref:`Task
   Parallelism Primer <primers-taskParallel>`.
+
+  When using coforall loops, keep in mind that a task will be created
+  for each iteration, and that each task will consume memory and
+  processing resources.  For example, a coforall loop with a million
+  iterations will literally create a million tasks.  If you don't have
+  a million cores to run them on, this is likely to be overkill,
+  requiring more memory and processing power than may be warranted.
+  If there is no explicit synchronization between the iterations,
+  perhaps a forall loop would be a better choice, since it would use a
+  number of tasks proportional to the targeted hardware parallelism?
 
 
   Closing Discussions
@@ -691,7 +726,7 @@ use IO;
 
   At this point, you've learned about all of Chapel's loop forms.  The
   remaining sections cover some loop-related discussion topics that
-  often come up in practice.
+  come up frequently in practice.
 
 
   Nesting Loops
@@ -702,8 +737,9 @@ use IO;
   nested for-loop will perform nested serial iterations as in other
   languages.  A nested coforall-loop will create a number of tasks
   equal to outer loop's trip count and the sum of all the inner loops'
-  counts.  For example, the following loop would logically create
-  `x + x*(x+1)/2` tasks:
+  counts.  For example, the following loop will logically create
+  ~`x**2` tasks, since each iteration of both loops will create its
+  own task.
 
 */
 
@@ -711,27 +747,24 @@ use IO;
 
   writeln();
   coforall i in 1..x do
-    coforall j in 1..#i do
+    coforall j in 1..x do
       writeln("Here's a message from one of the nested coforall tasks");
 
 /*
 
-  That said, since the outer tasks effectively have nothing to do but
-  wait once they've created the inner ``coforall`` tasks, the
-  implementation can potentially optimize things by re-using them to
-  serve as one of the inner-loop tasks, reducing the total number of
-  tasks to `x*(x+1)/2`.
+  A tricky case to reason about in a nested loop situation is the
+  forall-loop since its implementation is essentially "Do whatever the
+  parallel iterator says to."  If a parallel iterator were to always
+  create ``x`` tasks (say), then a nested forall loop that invoked
+  that iterator for both loops would create ``x**2`` tasks as in the
+  coforall example above.
 
-  The most tricky case to reason about in a nested loop situation is
-  the forall-loop since its implementation is essentially "Do whatever
-  the parallel iterator says to."  If a parallel iterator were to
-  always create a number of tasks equal to the local node's number of
-  cores then a nested loop that invoked that iterator would create
-  ``numCores**2`` tasks.  In practice, the default iterators for
-  ranges, domains, and arrays attempt to take stock of the number of
-  tasks running on the current locale and to throttle the number of
-  tasks created to not overwhelm the node.  As a result, a nested
-  forall-loop over a pair of ranges, like:
+  In practice, however, most parallel iterators (including those
+  defined on ranges, domains, and arrays) will take stock of the
+  number of tasks running on the current locale and then throttle the
+  number of tasks they create to avoid overwhelming the node.  As a
+  result, a nested forall-loop over a pair of ranges, like:
+  
 */
 
   forall i in 1..500 do
@@ -740,13 +773,16 @@ use IO;
 
 /*      
 
-  will typically create only ``numCores`` tasks since the outer loop
-  will create ``numCores`` tasks, then each of the inner loops will
-  see that all the cores are busy and execute sequentially to avoid
-  creating more tasks than the hardware can run concurrently.  If the
-  inner loop body was not computationally intensive, it might make
-  sense to rewrite the inner loop using ``foreach`` in order to avoid
-  the overhead of determining whether or not to create tasks at all:
+  will typically create only ``numCores`` tasks in total.
+  Specifically, the outer loop will create ``numCores`` tasks, then
+  each of the inner loops will see that all the cores are busy and
+  avoid creating additional tasks to avoid creating needless
+  parallelism.
+  
+  In such cases, if the inner loop body was not computationally
+  intensive, it could make sense to rewrite the inner loop as a
+  ``foreach`` in order to avoid the overhead of having the iterator
+  determine whether or not to create tasks at all:
 
 */
 
@@ -756,8 +792,23 @@ use IO;
 
 /*
 
-  That said, such overheads are modest, so for many computations,
-  the penalty for using nested forall-loops will be modest in practice.
+  That said, such overheads are relatively modest, so loop bodies that
+  are computationally intense, the benefit for changing the inner loop
+  from ``forall`` to ``foreach`` may be negligible.
+
+  In summary, there is nothing magical about nested loops.  When
+  reasoning about what a given loop nest does, simply consider the
+  loops one at a time.  For example, what does the outer loop do?
+  ("It's a ``forall``, so it will invoke the parallel iterator
+  specified by its iterand.")  OK, what about the next loop?  ("It's a
+  `coforall`, so it will literally create a task per iteration
+  regardless of how many are already running).  What about the next
+  loop?  ("It's a ``foreach``, so it will try to use SIMD/SIMT
+  features in the task's current target processor to implement its
+  iterations").  Chapel's implementation of parallel loops is very
+  imperative, where the most complex case is being familiar with the
+  parallelism implemented by any iterand expressions of a ``forall``
+  loop.
 
 
   When to Use Which Loop Form?
@@ -767,52 +818,54 @@ use IO;
 
   Starting with the obvious, if you have a loop that wants or needs to
   be serial, such as a loop spanning the time steps of a simulation,
-  you should use one of the serial loop forms.  If you are invoking an
-  existing iterator or iterating over a type that supports iteration,
-  like an array, domain, range, or list, the for-loop can often be the
-  clearest and most elegant loop form.  But if you want to do
-  something more general, or not linked to an iterator, the while-loop
-  can serve as a more general fallback.  Or, a hybrid solution would
-  be to abstract the while-loop into a new iterator of your own and
-  then use a for-loop to invoke the iterator.
+  you should use one of the serial loop forms.  When writing a serial
+  loop, if you are iterating over a type that supports iteration, like
+  an array, domain, range, or list, the for-loop can often be the
+  clearest and most elegant loop form.  Or, if a serial iterator
+  exists that does what you want, the for-loop is also an obvious
+  choice.  But if you want to do something more general, or unrelated
+  to an iterator, the while-loop can serve as a more general fallback.
+  Alternatively, you can abstract your loop structure into a new
+  iterator that you write yourself and then use a for-loop to invoke
+  it.
 
   When choosing between the parallel loop forms, one consideration
   should be how many iterations the loop has.  For example, if you're
   iterating over an array with a million elements, you typically
   wouldn't want to use a coforall-loop, since that would literally
   create a million tasks.  Unless you happen to have a million
-  processor cores, this is probably overkill; and even if you do, each
-  task will only own one element, so unless your loop body has massive
-  computational intensity, you may spend more time creating and
-  destroying tasks than actually getting useful work done.  In such
-  cases, the forall- or foreach-loops would be a better choice since
-  they will create parallelism proportional to the computational
-  resources that are storing the array.
+  processor cores, this is probably overkill.  And even if you do have
+  a million cores, each would only own one element; so if your loop's
+  body was not computationally intensive, you may spend more time
+  creating and destroying tasks than actually getting useful work
+  done.  In such cases, the forall- or foreach-loops could be a better
+  choice since they will create parallelism proportional to the
+  computational resources that are storing the array.
 
   Another consideration is whether you require synchronization or
   coordination between distinct iterations of the loop.  If you do,
   the coforall-loop is probably the right choice since it's the only
-  one that guarantees that each iteration will be executed with a
-  distinct task.  When you do not require synchronization between
-  iterations, the forall-loop or square-bracket loop are generally
-  good defaults to reach for since they will make best use of the
-  hardware parallelism corresponding to the iterand expression.  The
-  foreach loop can also be used as an alternative if you either know
-  that you're running a number of tasks that will saturate your
-  hardware parallelism, or the loop itself is of sufficiently small
-  size or computational intensity that creating tasks to execute it
-  would likely be overkill.
+  one that guarantees each iteration will be executed with a distinct
+  task.  When you do not require synchronization between iterations,
+  the forall-loop or square-bracket loop are generally good defaults
+  to reach for since they will make best use of the hardware
+  parallelism corresponding to the iterand expression.  The foreach
+  loop can serve as an alternative if you know that you're already
+  running a number of tasks that will saturate your hardware
+  parallelism, or if the loop itself is of sufficiently modest size or
+  computational intensity that creating new tasks to execute it would
+  be overkill.
   
   A Common Mistake
   ----------------
 
   Wrapping up, one of Chapel's most powerful features — the fact that
   forall loops can generate distributed memory parallelism in addition
-  to local, multi-core parallelism — can also be a place for simple
-  errors.  It is important, when writing forall-loops, to think about
-  the iterand expression and what computational resources it will use.
-  For example, here is an example of the sort of thing that can go
-  wrong:
+  to local, multi-core parallelism — can also be the cause of simple
+  errors that can kill performance.  When writing forall-loops, it is
+  important to consider the iterand expression and what computational
+  resources it will use.  Here is an example that illustrates how
+  things can go wrong:
 
 */
 
@@ -830,7 +883,7 @@ use IO;
 /*
 
   While the code, as written, will work properly, the comment is
-  incorrect in stating that the computation will be distributed.
+  incorrect in expecting that the computation will be distributed.
   Specifically, even though ``G`` is distributed and accessed within
   the loop, the forall loop's iterand is a range and ranges are not
   distributed.  As a result, the range's default iterator method will
@@ -852,6 +905,8 @@ use IO;
 
 */
 
+  G = -1;  // reset G
+
   forall g in G do
     g = here.id;
 
@@ -863,7 +918,7 @@ use IO;
 
 */
 
-  G = -1;
+  G = -1;  // reset G
 
   forall i in G.domain do
     G[i] = here.id;
@@ -874,6 +929,22 @@ use IO;
 
   In addition to iterating over arrays and domains, iterating over
   slices of arrays and domains is another technique for making sure
-  your forall-loop computations maintain locality and affinity.
-  
+  your forall-loop computations maintain locality and affinity.  For
+  example:
+
+*/
+
+  G = -1;
+
+  forall g in G[2..G.size-1] do
+    g = here.id;
+
+  writeln("The locales assigning to a slice of G were: ", G);
+
+/*
+
+  The lesson here is to make sure you're iterating over a distributed
+  expression when you want a forall-loop to use multiple locales when
+  executing a loop.
+
 */
