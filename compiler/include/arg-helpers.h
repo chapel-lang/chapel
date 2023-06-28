@@ -56,7 +56,7 @@ int64_t     str2int64(const char* str, bool userSupplied,
 
 // Functions for implementation specific erroring behavior
 // (calls out to INT_FATAL and the like in Chapel and using
-// cerr and the like in Chapeldoc) ---
+// cerr and the like in chpldoc) ---
 
 void arg_fatalError(const char *msg);
 void arg_fatalUserError(const char *msg);
