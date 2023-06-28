@@ -279,13 +279,12 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   if (auto ret = invalidAst->toReturn()) {
     if (blockingAst && blockingAst->isFunction()) {
       auto fn = blockingAst->toFunction();
-      wr.heading(kind_, type_,
-                 locationOnly(ret),
+      wr.heading(kind_, type_, ret,
                  "'return' statements with values are not allowed in iterators.");
       wr.message("The following 'return' statement has a value:");
       wr.code(ret, { ret->value() });
-      wr.note(locationOnly(fn), "inside '", fn->name(),
-                                "', which is declared as an iterator here:");
+      wr.note(locationOnly(fn), "'", fn->name(),
+                                "' is declared as an iterator here:");
       wr.codeForLocation(fn);
       if (allowingAst != nullptr) {
         auto allowingFn = allowingAst->toFunction();
