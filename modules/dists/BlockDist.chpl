@@ -1797,6 +1797,10 @@ class BoxedSync {
   var s: sync int; // int over bool to enable native qthread sync
   var res: T;
 
+  proc init(type T) {
+    this.T = T;
+  }
+
   proc readFE(): T {
     s.readFE();
     return res;

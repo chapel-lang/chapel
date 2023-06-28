@@ -872,6 +872,10 @@ module DistributedDeque {
     // gets added, as well as a barrier to prevent the head and tail from being cached.
     var size : atomic int;
 
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
+
     inline proc recycleNode() {
       // If we have cached a previous used node, reuse it here...
       if cached != nil {
