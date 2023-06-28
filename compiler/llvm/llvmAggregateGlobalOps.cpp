@@ -54,6 +54,7 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
@@ -694,7 +695,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         eltType = st->getValueOperand()->getType();
       }
       if (eltType) {
+#if HAVE_LLVM_VER >= 160
+        Alignment = DL->getABITypeAlign(eltType).value();
+#else
         Alignment = DL->getABITypeAlignment(eltType);
+#endif
       } else {
         assert(false && "expected eltType when computing natural alignment");
       }

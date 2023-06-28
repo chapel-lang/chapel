@@ -404,8 +404,8 @@ bool isTypeEquivalent(const llvm::DataLayout& layout, llvm::Type* a, llvm::Type*
   }
 
 
-  alignA = layout.getPrefTypeAlignment(a);
-  alignB = layout.getPrefTypeAlignment(b);
+  alignA = layout.getPrefTypeAlign(a).value();
+  alignB = layout.getPrefTypeAlign(b).value();
   sizeA = layout.getTypeStoreSize(a);
   sizeB = layout.getTypeStoreSize(b);
 
