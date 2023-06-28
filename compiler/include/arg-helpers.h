@@ -36,7 +36,7 @@
 
 // The following is implemented in Chapel but we duplicate the code
 // in chpldoc; though ideally the common implementation would be shared
-// rather than duplicated. 
+// rather than duplicated.
 
 typedef __uint8_t uint8_t;
 typedef __uint16_t uint16_t;
