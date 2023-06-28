@@ -1947,8 +1947,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
         fn->insertAtTail(new CallExpr("serializeDefaultImpl",
                                       fileArg,
                                       serializer,
-                                      fn->_this,
-                                      new_StringSymbol(ct->symbol->name)));
+                                      fn->_this));
       }
     }
 
@@ -1992,8 +1991,7 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
       fn->insertAtTail(new CallExpr("deserializeDefaultImpl",
                                     fileArg,
                                     deserializer,
-                                    fn->_this,
-                                    new_StringSymbol(ct->symbol->name)));
+                                    fn->_this));
     }
 
     normalize(fn);

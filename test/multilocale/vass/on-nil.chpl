@@ -46,7 +46,7 @@ on Locales[1] {
 
 writeln("PART 3b");
 {
-  var obj:object? = new object();
+  var obj:RootClass? = new RootClass();
   on Locales[1] {
     obj = nil;
     on Locales[2] {

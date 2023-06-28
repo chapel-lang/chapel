@@ -4,7 +4,7 @@ class C {
   proc x(i: real) do return 4;
 }
 
-var c = (new owned C()).borrow();
+var cc = new C(); var c = cc.borrow();
 c.y = (1, 2, 3);
 writeln(c);
 writeln(c.x);

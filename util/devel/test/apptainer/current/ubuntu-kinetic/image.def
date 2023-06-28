@@ -10,4 +10,4 @@ From: ubuntu:kinetic
     /provision-scripts/apt-get-llvm-14.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

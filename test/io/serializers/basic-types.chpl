@@ -2,7 +2,7 @@
 use IO;
 use List;
 
-use Json;
+use JSON;
 use BinaryIO;
 use FormatHelper;
 

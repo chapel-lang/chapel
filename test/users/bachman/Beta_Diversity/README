@@ -1,0 +1,6 @@
+This program normally requires the NetCDF module, but I have commented it out for the testing.
+So it should just compile with "chpl main.chpl --fast".
+
+It will take in a small input file, banda_ai_benthic.bin
+
+./main --in_name=banda_ai --map_type=benthic --window_size=1000

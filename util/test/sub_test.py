@@ -285,6 +285,15 @@ def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT'
             time.sleep(1)
             waited += 1
 
+# If CHPL_TEST_LIMIT_RUNNING_EXECUTABLES is set, use a file lock to serialize
+# process execution.
+def create_exec_limiter():
+    exec_limiter = execution_limiter.NoLock()
+    if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
+        exec_limiter = execution_limiter.FileLock()
+    return exec_limiter
+
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
@@ -504,7 +513,7 @@ def GetTimer(f):
     lines = ReadFileWithComments(f)
     if len(lines) != 1:
         sys.stdout.write('[Error "%s" must contain exactly one non-comment line '
-            'with the name of the timer located in %s to use. Using default ' 
+            'with the name of the timer located in %s to use. Using default '
             'timer %s.]\n' %(f, timersdir, defaultTimer))
         timer = defaultTimer
     else:
@@ -521,9 +530,9 @@ def GetTimer(f):
 # options are one of the below configuration specific parameters that are
 # checked for. E.G the current comm layer. commExecNums are the optional
 # compopt and execopt number to enable different .good files for different
-# compopts/execopts with explicitly specifying name. 
+# compopts/execopts with explicitly specifying name.
 def FindGoodFile(basename, commExecNums=['']):
-    
+
     goodfile = ''
     for commExecNum in commExecNums:
         # Try the machine specific .good
@@ -878,6 +887,19 @@ chpltasksstr='.tasks-'+chpltasks
 # Test options for all tests in this directory
 #
 
+#
+# directory-wide PRETEST
+# must be run first, in case is generates any of the following files
+#
+if os.access('./PRETEST', os.R_OK|os.X_OK):
+    sys.stdout.write('[Executing ./PRETEST %s]\n'%(compiler))
+    sys.stdout.flush()
+    p = py3_compat.Popen(['./PRETEST', compiler],
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.STDOUT)
+    sys.stdout.write(p.communicate()[0])
+    sys.stdout.flush()
+
 if os.getenv('CHPL_TEST_PERF')!=None:
     perftest=True
     perflabel=os.getenv('CHPL_TEST_PERF_LABEL')
@@ -1054,9 +1076,9 @@ if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
         compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
     else:
-        compperfdir=chpl_home+'/test/compperfdat/' 
+        compperfdir=chpl_home+'/test/compperfdat/'
 
-    # The env var CHPL_PRINT_PASSES_FILE will cause the 
+    # The env var CHPL_PRINT_PASSES_FILE will cause the
     # compiler to save the pass timings to specified file.
     if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
         printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
@@ -1172,6 +1194,7 @@ if os.access('./PREEXEC',os.R_OK|os.X_OK):
     globalPreexec='./PREEXEC'
 else:
     globalPreexec=None
+
 #
 # Start running tests
 #
@@ -1786,7 +1809,7 @@ for testname in testsrc:
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good or
             # testname.<configuration>.<compoptsnum>.good.
-            basename = test_filename 
+            basename = test_filename
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
@@ -1856,6 +1879,13 @@ for testname in testsrc:
 
             cleanup(execname)
             cleanup(printpassesfile)
+
+            # no-op exec limiter for the case where a lot of consecutive tests
+            # are compile only, in which case the non-stop chpl runs could
+            # cause interference with a running executable
+            with create_exec_limiter():
+                pass
+
             continue # on to next compopts
         else:
             compoutput = output # save for diff
@@ -1895,11 +1925,11 @@ for testname in testsrc:
         #
         sys.stdout.write('[Success compiling %s/%s]\n'%(localdir, test_filename))
 
-        # Note that compiler performance only times successful compilations. 
-        # Tests that are designed to fail before compilation is complete will 
-        # not get timed, so the total time compiling might be off slightly.   
+        # Note that compiler performance only times successful compilations.
+        # Tests that are designed to fail before compilation is complete will
+        # not get timed, so the total time compiling might be off slightly.
         if compperftest and not is_c_or_cpp_test:
-            # make the compiler performance directories if they don't exist 
+            # make the compiler performance directories if they don't exist
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
                 py3_compat.makedirs(compperfdir, exist_ok=True)
@@ -1913,8 +1943,8 @@ for testname in testsrc:
                 sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
                 timePasses = False
 
-            # so long as we have to the directories 
-            if timePasses: 
+            # so long as we have to the directories
+            if timePasses:
                 # We need to name the files differently for each compiler
                 # option. 0 is the default compoptsnum if there are no options
                 # listed so we don't need to clutter the names with that
@@ -1947,7 +1977,7 @@ for testname in testsrc:
                         if os.path.isfile(datFile):
                             os.unlink(datFile)
 
-            #delete the timing file     
+            #delete the timing file
             cleanup(printpassesfile)
 
 
@@ -2033,7 +2063,7 @@ for testname in testsrc:
             for var, val in [env.split('=', 1) for env in globalExecenv]:
                 testenv[var.strip()] = val.strip()
 
-            # The test environment is that of this process, 
+            # The test environment is that of this process,
             # augmented as specified
             if os.access(test_filename+execenvsuffix, os.R_OK):
                 args = [execname, execlog, compiler] + envCompopts + \
@@ -2139,12 +2169,7 @@ for testname in testsrc:
                 if skip_remaining_trials:
                     break
 
-                exec_limiter = execution_limiter.NoLock()
-                if os.getenv("CHPL_TEST_LIMIT_RUNNING_EXECUTABLES") is not None:
-                    exec_name = os.path.join(localdir, test_filename)
-                    exec_limiter = execution_limiter.FileLock()
-
-                with exec_limiter:
+                with create_exec_limiter():
                     exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
                     launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
                     sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
@@ -2331,19 +2356,19 @@ for testname in testsrc:
                         sys.stdout.write(p.communicate()[0])
 
                     if not perftest:
-                        # find the good file 
+                        # find the good file
 
                         basename = test_filename
                         commExecNum = ['']
 
                         # if there were multiple compopts/execopts find the
-                        # .good file that corresponds to that run 
+                        # .good file that corresponds to that run
                         if not onlyone:
                             commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
 
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
-                        # compopts/execopts or just the base .good file 
+                        # compopts/execopts or just the base .good file
                         if explicitexecgoodfile != None:
                             basename  = explicitexecgoodfile.replace('.good', '')
                             commExecNum = ['']

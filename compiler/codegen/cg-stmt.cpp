@@ -174,7 +174,11 @@ GenRet BlockStmt::codegen() {
     info->irBuilder->CreateBr(blockStmtBody);
 
     // Now add the body.
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtBody);
+#else
     func->getBasicBlockList().push_back(blockStmtBody);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
 
@@ -284,7 +288,11 @@ CondStmt::codegen() {
 
     info->irBuilder->CreateBr(condStmtIf);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), condStmtIf);
+#else
     func->getBasicBlockList().push_back(condStmtIf);
+#endif
     info->irBuilder->SetInsertPoint(condStmtIf);
 
     GenRet condValueRet = codegenValue(condExpr);
@@ -304,7 +312,11 @@ CondStmt::codegen() {
         condStmtThen,
         (elseStmt) ? condStmtElse : condStmtEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), condStmtThen);
+#else
     func->getBasicBlockList().push_back(condStmtThen);
+#endif
     info->irBuilder->SetInsertPoint(condStmtThen);
 
     info->lvt->addLayer();
@@ -314,7 +326,11 @@ CondStmt::codegen() {
     info->lvt->removeLayer();
 
     if(elseStmt) {
+#if HAVE_LLVM_VER >= 160
+      func->insert(func->end(), condStmtElse);
+#else
       func->getBasicBlockList().push_back(condStmtElse);
+#endif
       info->irBuilder->SetInsertPoint(condStmtElse);
 
       info->lvt->addLayer();
@@ -323,7 +339,11 @@ CondStmt::codegen() {
       info->lvt->removeLayer();
     }
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), condStmtEnd);
+#else
     func->getBasicBlockList().push_back(condStmtEnd);
+#endif
     info->irBuilder->SetInsertPoint(condStmtEnd);
 
     info->lvt->removeLayer();
@@ -369,7 +389,11 @@ GenRet GotoStmt::codegen() {
 
     llvm::BasicBlock *afterGoto = llvm::BasicBlock::Create(
         info->module->getContext(), FNAME("afterGoto"));
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), afterGoto);
+#else
     func->getBasicBlockList().push_back(afterGoto);
+#endif
     info->irBuilder->SetInsertPoint(afterGoto);
 
 #endif

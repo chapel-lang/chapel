@@ -1,5 +1,5 @@
 
-use IO, Json;
+use IO, JSON;
 
 proc main() {
   var f = openMemFile();

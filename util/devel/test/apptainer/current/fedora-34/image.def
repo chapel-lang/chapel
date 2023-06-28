@@ -10,4 +10,4 @@ From: fedora:34
     /provision-scripts/dnf-llvm.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

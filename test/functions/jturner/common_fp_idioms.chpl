@@ -27,20 +27,20 @@ for i in (1..3) {
   c(i) = i;
 }
 
-writeln(foldLeft(c, 0, lambda(x:int,y:int) { return x-y; }));
-writeln(foldRight(c, 0, lambda(x:int,y:int) { return x-y; }));
+writeln(foldLeft(c, 0, proc(x:int,y:int) { return x-y; }));
+writeln(foldRight(c, 0, proc(x:int,y:int) { return x-y; }));
 writeln(filter(c, odd));
 
-writeln(map(a, lambda(x:int) { return x+1; }));
-writeln(lambda(x:int) { return x+2; }(a));
-writeln(lambda(x:int) { return x+3; }( array(1, 2, 3, 4) ));
+writeln(map(a, proc(x:int) { return x+1; }));
+writeln((proc(x:int) { return x+2; })(a));
+writeln((proc(x:int) { return x+3; })( array(1, 2, 3, 4) ));
 
 writeln(drop(array(1, 2, 3, 4), 2));
 writeln(take(array(1, 2, 3, 4), 2));
 writeln(splitAt(array(1, 2, 3, 4), 2));
 
-writeln(dropWhile(array(1, 2, 3, 4), lambda(x:int) { return x <= 2; }));
-writeln(takeWhile(array(1, 2, 3, 4), lambda(x:int) { return x <= 2; }));
+writeln(dropWhile(array(1, 2, 3, 4), proc(x:int) { return x <= 2; }));
+writeln(takeWhile(array(1, 2, 3, 4), proc(x:int) { return x <= 2; }));
 
 writeln("3-D array");
 writeln(a);

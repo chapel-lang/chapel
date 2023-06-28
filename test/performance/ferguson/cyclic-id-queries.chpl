@@ -67,7 +67,7 @@ stop();
 report(maxGets=0, maxOns=1);
 
 writeln("Querying remote object...");
-var obj = new object();
+var obj = new RootClass();
 start();
 coforall loc in Locales do on loc {
   coforall tid in 1..here.maxTaskPar {

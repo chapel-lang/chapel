@@ -245,7 +245,11 @@ GenRet DefExpr::codegen() {
 
       info->irBuilder->CreateBr(blockLabel);
 
+#if HAVE_LLVM_VER >= 160
+      func->insert(func->end(), blockLabel);
+#else
       func->getBasicBlockList().push_back(blockLabel);
+#endif
       info->irBuilder->SetInsertPoint(blockLabel);
     }
 #endif
@@ -1497,8 +1501,8 @@ GenRet createTempVar(Type* t)
 
     llvm::AllocaInst* alloca = createVarLLVM(llTy);
     llvm::MaybeAlign alignment = getAlignment(t);
-    if (alignment.hasValue()) {
-      alloca->setAlignment(alignment.getValue());
+    if (alignment) {
+      alloca->setAlignment(*alignment);
     }
     ret.isLVPtr = GEN_PTR;
     ret.val = alloca;
@@ -2221,17 +2225,29 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
     info->irBuilder->CreateCondBr(
         codegenValue(cond).val, blockIfTrue, blockIfFalse);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockIfTrue);
+#else
     func->getBasicBlockList().push_back(blockIfTrue);
+#endif
     info->irBuilder->SetInsertPoint(blockIfTrue);
     info->irBuilder->CreateStore(values.a, tmp);
     info->irBuilder->CreateBr(blockEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockIfFalse);
+#else
     func->getBasicBlockList().push_back(blockIfFalse);
+#endif
     info->irBuilder->SetInsertPoint(blockIfFalse);
     info->irBuilder->CreateStore(values.b, tmp);
     info->irBuilder->CreateBr(blockEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockEnd);
+#else
     func->getBasicBlockList().push_back(blockEnd);
+#endif
     info->irBuilder->SetInsertPoint(blockEnd);
     ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMType(), tmp);
 
@@ -2726,8 +2742,8 @@ static GenRet codegenCallExprInner(GenRet function,
         // Create a temporary for holding the return value
         sret = createVarLLVM(chapelRetTy);
 
-        if (retAlignment.hasValue()) {
-          sret->setAlignment(retAlignment.getValue());
+        if (retAlignment) {
+          sret->setAlignment(*retAlignment);
         }
         llArgs.push_back(sret);
       }
@@ -3375,7 +3391,11 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
 
   INT_ASSERT(type->isSized());
   llvm::TypeSize ret = dl.getTypeAllocSize(type);
+#if HAVE_LLVM_VER >= 160
+  auto intValue = ret.getKnownMinValue();
+#else
   auto intValue = ret.getKnownMinSize();
+#endif
   llvm::Type* sizeTy = dl.getIntPtrType(ctx);
 
   return llvm::ConstantInt::get(sizeTy, intValue);
@@ -6031,7 +6051,7 @@ llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
                                     const char* name) {
 
   auto scopeName = llvm::MDString::get(ctx, name);
-  auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+  auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
   llvm::Metadata* Args[] = {dummy.get(), domain, scopeName};
   auto scope = llvm::MDNode::get(ctx, Args);
   // Remove the dummy and replace it with a self-reference.
@@ -6055,7 +6075,7 @@ DEFINE_PRIM(NO_ALIAS_SET) {
 
     if (info->noAliasDomain == NULL) {
       auto domainName = llvm::MDString::get(ctx, "Chapel no-alias");
-      auto dummy = llvm::MDNode::getTemporary(ctx, llvm::None);
+      auto dummy = llvm::MDNode::getTemporary(ctx, chpl::empty);
       llvm::Metadata* Args[] = {dummy.get(), domainName};
       info->noAliasDomain = llvm::MDNode::get(ctx, Args);
       // Remove the dummy and replace it with a self-reference.

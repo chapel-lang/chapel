@@ -14,6 +14,83 @@ The purpose of this flag is to identify portions of a program that use a
 language or library feature has recently changed meaning or which is
 expected to change meaning in the future.
 
+version 1.31, June 2023
+-----------------------
+
+Version 1.31 renames and adjusts two of range's parameters,
+formerly ``range.boundedType`` and ``range.stridable``,
+as well as the former domain parameter ``domain.stridable``.
+For details please see `Range Types` in the online documentation for `Version 1.30 <https://chapel-lang.org/docs/1.30/language/spec/ranges.html#range-types>`_ and `Version 1.31 <https://chapel-lang.org/docs/1.31/language/spec/ranges.html#range-types>`_.
+
+Range boundedType / bounds parameter
+************************************
+
+Prior to Version 1.31, the boundedness of a range ``r`` was determined
+by ``r.boundedType``. As of 1.31, it is determined by ``r.bounds``.
+At the same time, the type of this field changed from:
+
+.. code-block:: chapel
+
+    enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
+
+to:
+
+.. code-block:: chapel
+
+    enum boundKind { both, low, high, neither };
+
+This change helps make Chapel code shorter, improving its readability.
+
+When updating your code, simply update the names accordingly. For example,
+from:
+
+.. code-block:: chapel
+
+    if myRange.boundedType == BoundedRangeType.boundedLow then ....;
+
+to:
+
+.. code-block:: chapel
+
+    if myRange.bounds == boundKind.low then ....;
+
+Range and domain stridability / strides parameter
+*************************************************
+
+Prior to Version 1.31, ranges and domains had the parameter ``stridable``,
+which was a boolean that indicated whether the given range or domain
+allowed non-unit strides.
+As of 1.31, this parameter is replaced with ``strides`` whose type is:
+
+.. code-block:: chapel
+
+    enum strideKind { one, negOne, positive, negative, any };
+
+This change creates additional opportunities for optimization,
+for example in the cases where the range's stride is known at compile time
+to be positive or to be -1.
+This also avoids a terminology problem where ``stridable=false`` implied,
+incorrectly, that a range could not be strided. The ``strides`` values
+are now self-explanatory instead of the non-specific values
+``true`` and ``false``.
+
+When updating your code, update the field name and replace boolean
+values with enum values. For example:
+
+=============================== =============================================
+change from...                  to...
+=============================== =============================================
+``myRange.stridable``           ``myRange.strides``
+``if myRange.stridable then``   ``if myRange.strides != strideKind.one then``
+``range(stridable=false)``      ``range(strides=strideKind.one)``
+``range(stridable=true)``       ``range(strides=strideKind.any)``
+another potential replacement:  ``range(strides=strideKind.positive)``
+=============================== =============================================
+
+When getting an error like "assigning to a range with boundKind.positive
+from a range with boundKind.any", insert a cast to the desired range type.
+Analogous updates are needed in code operating on domains.
+
 version 1.28, September 2022
 ----------------------------
 

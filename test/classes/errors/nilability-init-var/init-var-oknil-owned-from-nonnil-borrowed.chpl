@@ -3,7 +3,7 @@
 class MyClass {
   var x: int;
 }
-
-var rhs = (new owned MyClass()).borrow();
+var ownRhs = new owned MyClass();
+var rhs = ownRhs.borrow();
 
 var lhs: owned MyClass? = rhs;

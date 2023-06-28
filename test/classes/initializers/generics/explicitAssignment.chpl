@@ -15,8 +15,8 @@ class Foo {
 }
 
 proc main() {
-  var a: borrowed Foo(real) = (new owned Foo(1)).borrow();
-  var b = (new owned Foo(1.0)).borrow();
-  writeln(a);
-  writeln(b);
+  var aObj = new Foo(1);   var a: borrowed Foo(real) = aObj.borrow();
+  var bObj = new Foo(1.0); var b = bObj.borrow();
+  writeln(a.borrow());
+  writeln(b.borrow());
 }

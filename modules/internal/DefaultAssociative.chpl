@@ -88,7 +88,7 @@ module DefaultAssociative {
 
       // set the rehash helpers
       this.table.rehashHelpers =
-        new DefaultAssociativeDomRehashHelper(this:unmanaged class);
+        new DefaultAssociativeDomRehashHelper(_to_unmanaged(this));
     }
     proc deinit() {
       // chpl__hashtable.deinit does all we need here
@@ -642,20 +642,20 @@ module DefaultAssociative {
     }
 
     proc _usingSerializers(f) param : bool {
-      if f.writing then return f.serializerType != nothing;
+      if f._writing then return f.serializerType != nothing;
       else return f.deserializerType != nothing;
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _usingSerializers(f) && !_isDefaultDeser(f) {
-      ref fmt = if f.writing then f.serializer else f.deserializer;
+      ref fmt = if f._writing then f.serializer else f.deserializer;
 
-      if f.writing then
+      if f._writing then
         fmt.startMap(f, dom.dsiNumIndices:uint);
       else
         fmt.startMap(f);
 
-      if f.writing {
+      if f._writing {
         for (key, val) in zip(this.dom, this) {
           fmt.writeKey(f, key);
           fmt.writeValue(f, val);
@@ -676,15 +676,15 @@ module DefaultAssociative {
     }
 
     proc _isDefaultDeser(f) param : bool {
-      if f.writing then return f.serializerType == IO.DefaultSerializer;
+      if f._writing then return f.serializerType == IO.DefaultSerializer;
       else return f.deserializerType == IO.DefaultDeserializer;
     }
 
     proc dsiSerialReadWrite(f, in printBraces=true, inout first = true) throws
     where _isDefaultDeser(f) {
-      ref fmt = if f.writing then f.serializer else f.deserializer;
+      ref fmt = if f._writing then f.serializer else f.deserializer;
 
-      if f.writing {
+      if f._writing {
         fmt.startArray(f, dom.dsiNumIndices:uint);
         fmt.startArrayDim(f, dom.dsiNumIndices:uint);
       } else {
@@ -692,7 +692,7 @@ module DefaultAssociative {
         fmt.startArrayDim(f);
       }
 
-      if f.writing {
+      if f._writing {
         for (key, val) in zip(this.dom, this) {
           fmt.writeArrayElement(f, val);
         }
@@ -713,7 +713,7 @@ module DefaultAssociative {
       var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-      if !f.writing && ischpl {
+      if !f._writing && ischpl {
         this.readChapelStyleAssocArray(f);
         return;
       }
@@ -721,7 +721,7 @@ module DefaultAssociative {
       printBraces &&= (isjson || ischpl);
 
       inline proc rwLiteral(lit:string) throws {
-        if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+        if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
       }
 
       if printBraces then rwLiteral("[");
@@ -731,12 +731,12 @@ module DefaultAssociative {
         else if isspace then rwLiteral(" ");
         else if isjson || ischpl then rwLiteral(", ");
 
-        if f.writing && ischpl {
+        if f._writing && ischpl {
           f.write(key);
           f._writeLiteral(" => ");
         }
 
-        if f.writing then f.write(val);
+        if f._writing then f.write(val);
         else val = f.read(eltType);
       }
 
@@ -920,13 +920,13 @@ module DefaultAssociative {
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
 
-    if !f.writing && ischpl {
+    if !f._writing && ischpl {
       halt("This form of I/O on a default array slice is not yet supported");
       return;
     }
 
     inline proc rwLiteral(lit:string) throws {
-      if f.writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
     }
 
     if isjson || ischpl then rwLiteral("[");
@@ -938,12 +938,12 @@ module DefaultAssociative {
       else if isspace then rwLiteral(" ");
       else if isjson || ischpl then rwLiteral(", ");
 
-      if f.writing && ischpl {
+      if f._writing && ischpl {
         f.write(key);
         f._writeLiteral(" => ");
       }
 
-      if f.writing then f.write(arr.dsiAccess(key));
+      if f._writing then f.write(arr.dsiAccess(key));
       else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 

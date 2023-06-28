@@ -1,7 +1,7 @@
 
 
 module FormatHelper {
-  use Json;
+  use JSON;
   use BinaryIO;
   use IO;
   use ChplFormat;

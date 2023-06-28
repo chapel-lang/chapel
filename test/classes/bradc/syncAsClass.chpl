@@ -1,4 +1,4 @@
-proc foo(o: object) {
+proc foo(o: RootClass) {
   writeln("I'm in foo()");
 }
 

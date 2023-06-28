@@ -9,12 +9,13 @@ module test {
   proc acceptsChildQ(arg:borrowed Child?) { }
 
   proc main() {
-    var c = (new owned Child(1, 2)).borrow();
+    var ownC = new owned Child(1, 2);
+    var c = ownC.borrow();
 
     // Check some coercions
-    var cu = c:unmanaged;
-    var cuc = c:unmanaged class;
-    var cuq = c:unmanaged class?;
+    var cu = new unmanaged Child(1, 2);
+    var cuc = cu:unmanaged class;
+    var cuq = cu:unmanaged class?;
     var cb = c:borrowed;
     var cbc = c:borrowed class;
     var cbq = c:borrowed class?;
@@ -107,7 +108,6 @@ module test {
       acceptsParentQ(cbq);
       acceptsChildQ(cbq);
     }
+    delete cu;
   }
 }
-
-

@@ -247,7 +247,6 @@ prototype module AtomicObjects {
   @chpldoc.nodoc
   extern type c_nodeid_t;
 
-  @chpldoc.nodoc
   extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_void_ptr) : wide_ptr_t;
 
   if numLocales >= 2**16 {

@@ -125,12 +125,12 @@ module ChapelArray {
 
   // original is the value this method shouldn't free, because it's the
   // canonical version. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original:object) : void  {
+  proc _freePrivatizedClass(pid:int, original:RootClass) : void  {
     // Do nothing for null pids.
     if pid == nullPid then return;
 
     coforall loc in Locales do on loc {
-      var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
+      var prv = chpl_getPrivatizedCopy(unmanaged RootClass, pid);
       if prv != original then
         delete prv;
 
@@ -780,9 +780,9 @@ module ChapelArray {
       if __primitive("method call resolves", _value, "dsiNewRectangularDom",
                      rank, idxType, stridable, ranges2) {
 
-        //RSDW: compilerWarning("the domain map '", _value.type:string,
-        // " needs to be updated from stridable: bool to strides: strideKind",
-        // " because 'stridable' is deprecated");
+        compilerWarning("the domain map '", _value.type:string,
+          "' needs to be updated from 'stridable: bool' to",
+          " 'strides: strideKind' because 'stridable' is deprecated");
 
         return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
       }
@@ -924,7 +924,6 @@ module ChapelArray {
     }
 
     pragma "no copy return"
-    @chpldoc.nodoc
     proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
       return new _array(nullPid, arrinst, _unowned=true);
@@ -2330,7 +2329,7 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x: locale) param do return true;
   proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param do return true;
   // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed RootClass) param do return false;
   proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   @chpldoc.nodoc
@@ -3680,7 +3679,6 @@ module ChapelArray {
   //   var A: [1..3] real;
   //   foo(A);
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
-  @chpldoc.nodoc
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
     if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);

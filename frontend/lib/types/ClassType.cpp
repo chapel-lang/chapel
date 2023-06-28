@@ -75,9 +75,9 @@ void ClassType::stringify(std::ostream& ss,
   // emit a space
   ss << " ";
 
-  // emit basic class name
-  CHPL_ASSERT(basicType_);
-  basicType_->stringify(ss, stringKind);
+  // emit manageable type name
+  CHPL_ASSERT(manageableType_);
+  manageableType_->stringify(ss, stringKind);
 
   // emit ? if nilable
   if (decorator_.isNilable()) {
@@ -89,27 +89,27 @@ void ClassType::stringify(std::ostream& ss,
 
 const owned<ClassType>&
 ClassType::getClassType(Context* context,
-                        const BasicClassType* basicType,
+                        const ManageableType* manageableType,
                         const Type* manager,
                         ClassTypeDecorator decorator) {
-  QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
+  QUERY_BEGIN(getClassType, context, manageableType, manager, decorator);
 
-  auto result = toOwned(new ClassType(basicType, manager, decorator));
+  auto result = toOwned(new ClassType(manageableType, manager, decorator));
 
   return QUERY_END(result);
 }
 
 const ClassType* ClassType::get(Context* context,
-                                const BasicClassType* basicType,
+                                const ManageableType* manageableType,
                                 const Type* manager,
                                 ClassTypeDecorator decorator) {
-  return getClassType(context, basicType, manager, decorator).get();
+  return getClassType(context, manageableType, manager, decorator).get();
 }
 
 
 const ClassType* ClassType::withDecorator(Context* context,
                                           ClassTypeDecorator decorator) const {
-  return ClassType::get(context, basicClassType(), manager(), decorator);
+  return ClassType::get(context, manageableType(), manager(), decorator);
 }
 
 

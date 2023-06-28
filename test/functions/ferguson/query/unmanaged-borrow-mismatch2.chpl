@@ -10,7 +10,7 @@ record Wrapper {
 proc g(x: Wrapper(unmanaged GenericClass)) {
   writeln(x, " : ", x.type:string);
 }
-
-var c = new Wrapper((new owned GenericClass(int, 3)).borrow());
+var obj = new owned GenericClass(int, 3);
+var c = new Wrapper(obj.borrow());
 
 g(c); // error - type mismatch

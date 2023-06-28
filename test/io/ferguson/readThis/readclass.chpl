@@ -41,7 +41,8 @@ class subthing : mything {
 
 
 {
-  var a = (new owned mything(1)).borrow();
+  var aOwn = new owned mything(1);
+  var a = aOwn.borrow();
 
   writeln("Writing ", a);
 
@@ -53,7 +54,8 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = (new owned mything(2)).borrow();
+  var bOwn = new owned mything(2);
+  var b = bOwn.borrow();
 
   r.read(b);
   r.close();
@@ -64,7 +66,8 @@ class subthing : mything {
 }
 
 {
-  var a = (new owned subthing(3,4)).borrow();
+  var aOwn = new owned subthing(3,4);
+  var a = aOwn.borrow();
 
   writeln("Writing ", a);
 
@@ -76,7 +79,8 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = (new owned subthing(5,6)).borrow();
+  var bOwn = new owned subthing(5,6);
+  var b = bOwn.borrow();
 
   r.read(b);
   r.close();
@@ -88,7 +92,8 @@ class subthing : mything {
 }
 
 {
-  var a = (new owned subthing(3,4)).borrow();
+  var aOwn = new owned subthing(3,4);
+  var a = aOwn.borrow();
 
   writeln("Writing ", a);
 
@@ -100,7 +105,8 @@ class subthing : mything {
 
   var r = f.reader();
 
-  var b = (new owned subthing(5,6)).borrow();
+  var bOwn = new owned subthing(5,6);
+  var b = bOwn.borrow();
   var c:borrowed mything = b;
 
   r.read(c);

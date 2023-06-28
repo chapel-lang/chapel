@@ -242,6 +242,7 @@ extern bool fReportVectorizedLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
+extern bool fReportGpu;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 extern bool fReportGpuTransformTime;
@@ -263,6 +264,7 @@ extern int fGPUBlockSize;
 const int gpuArchNameLen = 16;
 extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
+extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
 extern char gpuArch[gpuArchNameLen+1];
 

@@ -123,7 +123,6 @@ module ChapelIteratorSupport {
   //
   // This function IS executed at runtime - and 'x' is advanced once -
   // because the returned type is an array and so has a runtime component.
-  @chpldoc.nodoc
   proc chpl_elemTypeForReducingIterables(x) type {
 
     // Part 1 - get the first element yielded by 'x'
@@ -166,7 +165,7 @@ module ChapelIteratorSupport {
   // RTT is **initialized**. Important: no accessing the uninitialized RTTs.
   //
   // It took some acrobatics to get the domain's distribution type,
-  // rank, idxType, stridable from 'domType', and the same plus
+  // rank, idxType, strides from 'domType', and the same plus
   // (even more acrobatics) eltType from 'arrType'.
   // Ideally we'd get them **directly** from domType/arrType.
   //
@@ -276,7 +275,7 @@ module ChapelIteratorSupport {
     // a BaseDist subclass. We use 'defaultDist' for that.
     // The other args are always compile-time only.
     return chpl__buildDomainRuntimeType(defaultDist, domInst.rank,
-                                        domInst.idxType, domInst.stridable);
+                                        domInst.idxType, domInst.strides);
   }
 
   // Other kinds of arrays/domains are not supported.

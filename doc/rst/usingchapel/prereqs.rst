@@ -78,24 +78,23 @@ Installation
 
 We have used the following commands to install the above prerequisites:
 
-
-  * Alma Linux 8, 9.0, 9.1::
+  * Alma Linux 8, 9.0, 9.1, 9.2::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.15::
+  * Alpine 3.15, 3.17::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Alpine 3.17::
+  * Alpine 3.18::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
-      sudo apk add llvm14-dev clang14-dev
+      sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
 
 
   * Amazon Linux 2::
@@ -110,6 +109,13 @@ We have used the following commands to install the above prerequisites:
       sudo make install
       sudo update-alternatives --install /usr/bin/cmake cmake /usr/local/bin/cmake 1
       sudo yum install llvm-devel clang clang-devel
+
+
+  * Amazon Linux 2023::
+
+      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
+      sudo dnf install which diffutils
+      sudo dnf install clang clang-devel llvm-devel
 
 
   * Arch::
@@ -131,18 +137,25 @@ We have used the following commands to install the above prerequisites:
       sudo echo export CMAKE=cmake3 >> ~/.bashrc
 
 
-  * CentOS Stream 8, 9::
+  * CentOS Stream 8::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
-      sudo dnf install llvm-devel-14.0.6 clang-14.0.6 clang-devel-14.0.6
+      sudo dnf install llvm-devel clang clang-devel
+
+
+  * CentOS Stream 9::
+
+      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
+      sudo dnf install which diffutils
+      sudo dnf install llvm-devel-15.0.7 clang-15.0.7 clang-devel-15.0.7
 
 
   * Debian 10 "Buster"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
-      sudo apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libclang-cpp11-dev libedit-dev
+      sudo apt-get install llvm-13-dev llvm-13 llvm-13-tools clang-13 libclang-13-dev libclang-cpp13-dev libedit-dev
 
 
   * Debian 12 "Bookworm", 11 "Bullseye"::
@@ -152,7 +165,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 34, 35, 36::
+  * Fedora 34, 35, 36, 37::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -165,13 +178,19 @@ We have used the following commands to install the above prerequisites:
       sudo pkg install llvm13
 
 
-  * OpenSuse Leap 15.3, 15.4::
+  * FreeBSD 13.2::
+
+      sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake
+      sudo pkg install llvm
+
+
+  * OpenSuse Leap 15.3, 15.4, 15.5::
 
       sudo zypper install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git pkg-config cmake
       sudo zypper install llvm-devel clang-devel clang
 
 
-  * Rocky Linux 8, 9.0, 9.1::
+  * Rocky Linux 8, 9.0, 9.1, 9.2::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils

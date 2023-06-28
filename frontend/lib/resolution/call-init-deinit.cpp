@@ -453,6 +453,9 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     if (classType != nullptr && classType->manager() != nullptr) {
       // when default-initializing a shared C? or owned C?,
       // call e.g. shared.init(chpl_t=borrowed C?).
+      //
+      // Safe to use basicClassType() here because the type would otherwise
+      // be generic, but we know it's concrete.
       auto dec = classType->decorator().toBorrowed();
       auto t = ClassType::get(context,
                               classType->basicClassType(),
@@ -472,8 +475,16 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
         actuals.push_back(CallInfoActual(qt, fname));
       }
     }
+
+    // Get the 'root' instantiation
+    const CompositeType* calledCT = compositeType;
+    while (auto insn = calledCT->instantiatedFromCompositeType()) {
+      calledCT = insn;
+    }
+    auto calledType = QualifiedType(QualifiedType::VAR, calledCT);
+
     auto ci = CallInfo (/* name */ USTR("init"),
-                        /* calledType */ QualifiedType(),
+                        /* calledType */ calledType,
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,

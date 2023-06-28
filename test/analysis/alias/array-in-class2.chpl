@@ -8,7 +8,8 @@ class C {
 }
 
 proc main() {
-  var d = (new owned C()).borrow();
+  var dOwn = new owned C();
+  var d = dOwn.borrow();
 
   var A:[1..n] int; 
   // Now we cannot conclude that c doesn't alias d

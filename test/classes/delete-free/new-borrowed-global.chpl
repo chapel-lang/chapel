@@ -1,6 +1,7 @@
 module M1 {
   class C { var x: int; }
-  var global: borrowed C = (new owned C(1)).borrow();
+  var ownGlobal = new owned C(1);
+  var global: borrowed C = ownGlobal.borrow();
 }
 
 module M2 {

@@ -17,7 +17,8 @@ class Child : Parent {
 }
 
 proc main() {
-  var p:Parent = (new owned Child()).borrow();
+  var ownP = new owned Child();
+  var p:Parent = ownP.borrow();
   for x in p.myiter() do
     writeln("x ", x);
   for y in p do

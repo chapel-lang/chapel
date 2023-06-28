@@ -7,7 +7,7 @@ From: alpine:3.17
 %post
     /provision-scripts/apk-deps.sh
     # default llvm/clang version is 15
-    /provision-scripts/apk-llvm14.sh
+    /provision-scripts/apk-llvm.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

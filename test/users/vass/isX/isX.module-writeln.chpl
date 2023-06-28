@@ -25,7 +25,8 @@ const hetInstance = (101, 102.5, "hetInstance");
 class ClassType {
   var zzz: int;
 }
-const cInstance = (new owned ClassType(44444444)).borrow();
+const ownCInstance = new owned ClassType(44444444);
+const cInstance = ownCInstance.borrow();
 
 record RecordSmall {
   var xxx: int;
@@ -83,12 +84,13 @@ var enm:    EnumType;
 var homtup: HomTupType;
 var hettup: HetTupType;
 
-var cls:  borrowed ClassType = (new owned ClassType()).borrow();
+var ownCls = new owned ClassType();
+var cls:  borrowed ClassType = ownCls.borrow();
 var rec1: RecordSmall;
 var unn:  UnionType;
 
 var rng1: range;
-var rng2: range(uint(8), boundKind.neither, true);
+var rng2: range(uint(8), boundKind.neither, strideKind.negative);
 var dmp = defaultDist;
 var dom1: DomType1;
 var dom2: DomType2;

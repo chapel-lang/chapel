@@ -113,6 +113,11 @@ PRAGMA(CHPL__ITER, npr,
        "used as a marker to implement forall intents")
 // Marks chpl__iter things created for ForallStmt.
 PRAGMA(CHPL__ITER_NEWSTYLE, npr, "chpl__iter_newstyle", ncm)
+// TODO: Remove this pragma once we have an attribute or otherwise remove/rename
+// or nodoc the chpl_ prefix on symbols we want documented
+PRAGMA(CHPLDOC_IGNORE_CHPL_PREFIX, ypr,
+       "chpldoc ignore chpl prefix",
+       "generate chpldoc documentation for this symbol even though it starts with chpl_")
 PRAGMA(COBEGIN_OR_COFORALL, npr, "cobegin or coforall", ncm)
 PRAGMA(COBEGIN_OR_COFORALL_BLOCK, npr, "cobegin or coforall block", ncm)
 PRAGMA(COERCE_TEMP, npr,
@@ -269,6 +274,7 @@ PRAGMA(GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a g
 PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function calling convention to kernel launch")
 PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
+PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
@@ -363,6 +369,7 @@ PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early 
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
 PRAGMA(MAYBE_REF, npr, "maybe ref", "symbol can resolve to a ref")
 PRAGMA(SPLIT_INITED, npr, "split inited", "variable was initialized with split init")
+PRAGMA(USED_IN_TYPE, npr, "used in type", "call-expr temporary used in creating a type")
 PRAGMA(MAYBE_TYPE, npr, "maybe type", "symbol can resolve to a type")
 PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memory order (normally called memoryOrder)")
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")

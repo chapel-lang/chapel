@@ -82,6 +82,7 @@ _chpl ()
 --gpu-arch \
 --gpu-block-size \
 --gpu-ptxas-enforce-optimization \
+--gpu-specialization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -144,7 +145,6 @@ _chpl ()
 --log-dir \
 --log-ids \
 --log-module \
---log-node \
 --log-pass \
 --loop-invariant-code-motion \
 --main-module \
@@ -192,6 +192,7 @@ _chpl ()
 --no-force-vectorize \
 --no-formal-domain-checks \
 --no-gen-ids \
+--no-gpu-specialization \
 --no-html-print-block-ids \
 --no-html-wrap-lines \
 --no-ieee-float \
@@ -329,6 +330,7 @@ _chpl ()
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
+--report-gpu \
 --report-gpu-transform-time \
 --report-inlined-iterators \
 --report-inlining \

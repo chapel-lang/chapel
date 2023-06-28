@@ -76,19 +76,19 @@ record TargetLocaleComparator {
 //
 // rank:      generic domain rank
 // idxType:   generic domain index type
-// stridable: generic domain stridable parameter
+// strides:   generic domain stridable parameter
 // dist:      reference to distribution class
 // locDoms:   a non-distributed array of local domain classes
 // whole:     a non-distributed domain that defines the domain's indices
 //
 class SparseBlockDom: BaseSparseDomImpl {
   type sparseLayoutType;
-  param stridable: bool = false;  // TODO: remove default value eventually
+  param strides = strideKind.one;  // TODO: remove default value eventually
   const dist: unmanaged Block(rank, idxType, sparseLayoutType);
-  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, strides=strides);
   var locDoms: [dist.targetLocDom] unmanaged LocSparseBlockDom(rank, idxType,
-                                                 stridable, sparseLayoutType)?;
-  var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
+                                                 strides, sparseLayoutType)?;
+  var myLocDom: unmanaged LocSparseBlockDom(rank, idxType, strides,
                                             sparseLayoutType)?;
 
   // TODO: move towards init and away from nilable types
@@ -101,9 +101,8 @@ class SparseBlockDom: BaseSparseDomImpl {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
-         locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType, stridable,
-             // the cast to domain supports deprecation by Vass in 1.31 for #17131
-             sparseLayoutType, dist.getChunk(whole,localeIdx): domain(rank, idxType, stridable));
+         locDoms(localeIdx) = new unmanaged LocSparseBlockDom(rank, idxType,
+                   strides, sparseLayoutType, dist.getChunk(whole,localeIdx));
           //                    writeln("Back on ", here.id);
          if thisid == here.id then
            myLocDom = locDoms(localeIdx);
@@ -253,7 +252,7 @@ class SparseBlockDom: BaseSparseDomImpl {
     var arr = new unmanaged SparseBlockArr(eltType=eltType,
                                            rank=rank,
                                            idxType=idxType,
-                                           stridable=stridable,
+                                           strides=strides,
                                            sparseLayoutType=sparseLayoutType,
                                            dom=_to_unmanaged(this));
     arr.setup(initElts);
@@ -343,15 +342,15 @@ private proc getDefaultSparseDist(type sparseLayoutType) {
 //
 // rank: generic domain rank
 // idxType: generic domain index type
-// stridable: generic domain stridable parameter
+// strides: generic domain stridable parameter
 // mySparseBlock: a non-distributed domain that defines the local indices
 //
 class LocSparseBlockDom {
   param rank: int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
   type sparseLayoutType;
-  var parentDom: domain(rank, idxType, stridable);
+  var parentDom: domain(rank, idxType, strides);
   var sparseDist = getDefaultSparseDist(sparseLayoutType);
   var mySparseBlock: sparse subdomain(parentDom) dmapped sparseDist;
 
@@ -383,13 +382,13 @@ class LocSparseBlockDom {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // dom: reference to domain class
 // locArr: a non-distributed array of local array classes
 // myLocArr: optimized reference to here's local array class (or nil)
 //
 class SparseBlockArr: BaseSparseArr {
-  param stridable: bool;
+  param strides: strideKind;
   type sparseLayoutType = unmanaged DefaultDist;
 
   // INIT TODO: Can we address this constructor/initializer issue now?
@@ -398,14 +397,14 @@ class SparseBlockArr: BaseSparseArr {
   // the constructor for the workaround.
   var locArrDom: domain(rank,idxType);
   var locArr: [locArrDom] unmanaged LocSparseBlockArr(eltType, rank, idxType,
-                                                 stridable, sparseLayoutType)?;
-  var myLocArr: unmanaged LocSparseBlockArr(eltType, rank, idxType, stridable,
+                                                 strides, sparseLayoutType)?;
+  var myLocArr: unmanaged LocSparseBlockArr(eltType, rank, idxType, strides,
                                             sparseLayoutType)?;
 
-  proc init(type eltType, param rank, type idxType, param stridable,
+  proc init(type eltType, param rank, type idxType, param strides,
       type sparseLayoutType ,dom) {
     super.init(eltType=eltType, rank=rank, idxType=idxType, dom=dom);
-    this.stridable = stridable;
+    this.strides = strides;
     this.sparseLayoutType = sparseLayoutType;
     this.locArrDom = dom.dist.targetLocDom;
   }
@@ -417,7 +416,7 @@ class SparseBlockArr: BaseSparseArr {
         const locDom = dom.getLocDom(localeIdx);
         locArr(localeIdx) = new unmanaged LocSparseBlockArr(eltType, rank,
                                                             idxType,
-                                                            stridable,
+                                                            strides,
                                                             sparseLayoutType,
                                                             locDom,
                                                             initElts=initElts);
@@ -548,7 +547,7 @@ class SparseBlockArr: BaseSparseArr {
 // eltType: generic array element type
 // rank: generic array rank
 // idxType: generic array index type
-// stridable: generic array stridable parameter
+// strides: generic array stridable parameter
 // locDom: reference to local domain class
 // myElems: a non-distributed array of local elements
 //
@@ -556,9 +555,10 @@ class LocSparseBlockArr {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
   type sparseLayoutType;
-  const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable, sparseLayoutType);
+  const locDom: unmanaged LocSparseBlockDom(rank, idxType, strides,
+                                            sparseLayoutType);
   pragma "local field" pragma "unsafe"
   // may be initialized separately
   var myElems: [locDom.mySparseBlock] eltType;
@@ -566,15 +566,15 @@ class LocSparseBlockArr {
   proc init(type eltType,
             param rank: int,
             type idxType,
-            param stridable: bool,
+            param strides: strideKind,
             type sparseLayoutType,
-            const locDom: unmanaged LocSparseBlockDom(rank, idxType, stridable,
+            const locDom: unmanaged LocSparseBlockDom(rank, idxType, strides,
                                                       sparseLayoutType),
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
-    this.stridable = stridable;
+    this.strides = strides;
     this.sparseLayoutType = sparseLayoutType;
     this.locDom = locDom;
     this.myElems = locDom.mySparseBlock.buildArray(eltType, initElts=initElts);
@@ -706,10 +706,10 @@ override proc SparseBlockArr.dsiDisplayRepresentation() {
   }
 }
 
-inline proc _remoteAccessData.getDataIndex(param stridable, ind: rank*idxType) {
+inline proc _remoteAccessData.getDataIndex(param strides, ind: rank*idxType) {
   // modified from DefaultRectangularArr below
   var sum = origin;
-  if stridable {
+  if !strides.isOne() {
     for param i in 1..rank do
       sum += (ind(i) - off(i)) * blk(i) / abs(str(i)):idxType;
   } else {
@@ -819,7 +819,7 @@ proc SparseBlockDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
   var c = new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                              sparseLayoutType=sparseLayoutType,
-                             stridable=parentDom.stridable, dist=privdist,
+                             strides=parentDom.strides, dist=privdist,
                              whole=whole,
                              parentDom=parentDom);
   for i in c.dist.targetLocDom {
@@ -846,7 +846,7 @@ proc SparseBlockArr.dsiGetPrivatizeData() do return dom.pid;
 proc SparseBlockArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
   var c = new unmanaged SparseBlockArr(sparseLayoutType=sparseLayoutType,
-      eltType=eltType, rank=rank, idxType=idxType, stridable=stridable,
+      eltType=eltType, rank=rank, idxType=idxType, strides=strides,
       dom=privdom);
   for localeIdx in c.dom.dist.targetLocDom {
     c.locArr(localeIdx) = locArr(localeIdx);

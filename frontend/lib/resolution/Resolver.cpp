@@ -645,6 +645,14 @@ static void varArgTypeQueryError(Context* context,
   result.setType(errType);
 }
 
+static bool isCallToClassManager(const FnCall* call) {
+  auto ident = call->calledExpression()->toIdentifier();
+  if (!ident) return false;
+  auto name = ident->name();
+  return name == USTR("owned") || name == USTR("shared") ||
+         name == USTR("unmanaged") || name == USTR("borrowed");
+}
+
 // helper for resolveTypeQueriesFromFormalType
 void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
                                   const QualifiedType& actualType,
@@ -701,6 +709,18 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           }
         }
       }
+    } else if (isCallToClassManager(call) &&
+               call->numActuals() == 1 &&
+               actualTypePtr->isClassType()) {
+      // Strip the owned/shared/etc. for both the formal and the type
+      // This works since the recursive case expects the actual type to
+      // be a composite type, which manageable types are.
+
+      auto classArg = call->actual(0);
+      auto actualMt = actualTypePtr->toClassType()->manageableType();
+      resolveTypeQueries(classArg, QualifiedType(actualType.kind(), actualMt),
+                         isNonStarVarArg,
+                         /* isTopLevel */ false);
     } else {
       // Error if it is not calling a type constructor
       auto actualCt = actualTypePtr->toCompositeType();
@@ -1748,6 +1768,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
       CHPL_ASSERT(newCls);
       CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
       CHPL_ASSERT(cls->decorator().isBorrowed());
+      CHPL_ASSERT(cls->basicClassType());
       type = ClassType::get(context, cls->basicClassType(),
                             newCls->manager(),
                             newCls->decorator());
@@ -2057,28 +2078,32 @@ bool Resolver::enter(const uast::Conditional* cond) {
   }
 
   auto& condType = byPostorder.byAst(cond->condition()).type();
-  if (condType.isParamTrue()) {
-    // condition is param true, might as well only resolve `then` branch
-    cond->thenBlock()->traverse(*this);
-    if (cond->isExpressionLevel()) {
-      auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
-      r.setType(thenType);
-    }
-    // No need to visit children again, or visit `else` branch.
-    return false;
-  } else if (condType.isParamFalse()) {
-    auto elseBlock = cond->elseBlock();
-    if (elseBlock == nullptr) {
-      // no else branch. leave the type unknown.
+  if (!scopeResolveOnly) {
+    // Only do short-circuiting for regular resolution, not scope-resolution
+
+    if (condType.isParamTrue()) {
+      // condition is param true, might as well only resolve `then` branch
+      cond->thenBlock()->traverse(*this);
+      if (cond->isExpressionLevel()) {
+        auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
+        r.setType(thenType);
+      }
+      // No need to visit children again, or visit `else` branch.
+      return false;
+    } else if (condType.isParamFalse()) {
+      auto elseBlock = cond->elseBlock();
+      if (elseBlock == nullptr) {
+        // no else branch. leave the type unknown.
+        return false;
+      }
+      elseBlock->traverse(*this);
+      if (cond->isExpressionLevel()) {
+        auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
+        r.setType(elseType);
+      }
+      // No need to visit children again, especially `then` branch.
       return false;
     }
-    elseBlock->traverse(*this);
-    if (cond->isExpressionLevel()) {
-      auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
-      r.setType(elseType);
-    }
-    // No need to visit children again, especially `then` branch.
-    return false;
   }
 
   // We might as well visit the rest of the children here,
@@ -2349,15 +2374,16 @@ QualifiedType Resolver::getSuperType(Context* context,
   }
 
   if (auto classType = sub.type()->toClassType()) {
-    auto basicParentClass = classType->basicClassType()->parentClassType();
-    auto newClassType = ClassType::get(context,
-        basicParentClass,
-        /* no manager for borrowed class */ nullptr,
-        classType->decorator().toBorrowed());
-    return QualifiedType(sub.kind(), newClassType);
-  } else {
-    CHPL_REPORT(context, InvalidSuper, identForError, sub);
+    if (auto basicClass = classType->basicClassType()) {
+      auto basicParentClass = basicClass->parentClassType();
+      auto newClassType = ClassType::get(context,
+          basicParentClass,
+          /* no manager for borrowed class */ nullptr,
+          classType->decorator().toBorrowed());
+      return QualifiedType(sub.kind(), newClassType);
+    }
   }
+  CHPL_REPORT(context, InvalidSuper, identForError, sub);
   return QualifiedType();
 }
 
@@ -2850,6 +2876,11 @@ bool Resolver::enter(const Call* call) {
     initResolver->doDetectPossibleAssignmentToField(op);
   }
 
+  // Scope resolve without short-circuiting if we're only scope resolving.
+  if (scopeResolveOnly) {
+    return true;
+  }
+
   // handle && and || to not bother to evaluate the RHS
   // if the LHS is param and false/true, respectively.
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
@@ -2893,8 +2924,10 @@ void Resolver::exit(const Call* call) {
 
   auto op = call->toOpCall();
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
-    // these are handled in 'enter' to do param folding
-    return;
+    if (!scopeResolveOnly) {
+      // these are handled in 'enter' to do param folding
+      return;
+    }
   }
 
   if (op && (op->op() == USTR("==") || op->op() == USTR("!=") ||
@@ -2990,6 +3023,15 @@ void Resolver::exit(const Call* call) {
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
+  } else {
+    // For practical development/debugging, set the ResolvedExpression for
+    // this call in case resolution proceeds to the point where some other
+    // part of resolution assumes there is an entry for this call.
+    //
+    // Otherwise we would run into out_of_range exceptions when accessing
+    // the resolution result.
+    ResolvedExpression& r = byPostorder.byAst(call);
+    r.setType(QualifiedType());
   }
 
   inLeafCall = nullptr;
@@ -3213,6 +3255,12 @@ static const ClassType*
 getDecoratedClassForNew(Context* context, const New* node,
                         const ClassType* classType) {
   auto basic = classType->basicClassType();
+
+  if (!basic) {
+    context->error(node, "attempt to 'new' the generic 'class' type");
+    return nullptr;
+  }
+
   auto decorator = classType->decorator();
   const Type* manager = nullptr;
 
@@ -3482,6 +3530,27 @@ void Resolver::exit(const IndexableLoop* loop) {
   }
 }
 
+bool Resolver::enter(const DoWhile* loop) {
+  enterScope(loop);
+
+  // traversing the block directly will push its scope onto the stack, which would
+  // duplicate the enter we'll do here. So we just visit the children manually.
+  enterScope(loop->body());
+  for (auto child : loop->body()->children()) {
+    child->traverse(*this);
+  }
+  // traverse the condition in the same scope as the loop body.
+  loop->condition()->traverse(*this);
+  exitScope(loop->body());
+
+  return false;
+}
+
+void Resolver::exit(const DoWhile* loop) {
+  exitScope(loop);
+}
+
+
 // Returns 'true' if a single Id was scope-resolved, in which case the function
 // will also return via the ID and QualifiedType formals.
 static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
@@ -3592,6 +3661,7 @@ constructReduceScanOpClass(Resolver& resolver,
   bool converts, instantiates;
   if (opType.kind() != QualifiedType::TYPE ||
       !actualClass ||
+      !actualClass->basicClassType() ||
       !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
     CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
   }
@@ -3615,6 +3685,9 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
     auto scanOp = constructReduceScanOpClass(resolver, reduceOrScan, toLookUp, iterType);
     if (scanOp != nullptr) {
       // Since we found a ReduceScanOp, set the refersToId of the identifier.
+      //
+      // It's safe to call basicClassType since constructReduceScanOpClass
+      // ensures it's a basic class type.
       resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
                                   ident, scanOp->basicClassType()->id());
     }
@@ -3763,23 +3836,29 @@ bool Resolver::enter(const Catch* node) {
 
     ResolvedExpression& re = byPostorder.byAst(errVar);
 
+    bool isBasicClass = false;
     if (auto ct = re.type().type()->toClassType()) {
       bool converts = false;
       bool instantiates = false;
-      if (!ct->basicClassType()->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
-        // get the penultimate type in the chain
-        auto bct = ct->basicClassType();
-        while (!bct->parentClassType()->isObjectType()) {
-          bct = bct->parentClassType();
+      if (auto bct = ct->basicClassType()) {
+        isBasicClass = true;
+        if (!bct->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
+          // get the penultimate type in the chain
+          while (!bct->parentClassType()->isObjectType()) {
+            bct = bct->parentClassType();
+          }
+          context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
+        } else {
+          auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+          auto manager = AnyOwnedType::get(context);
+          auto ret = ClassType::get(context, bct, manager, dec);
+          auto qt = QualifiedType(re.type().kind(), ret->withDecorator(context, dec));
+          re.setType(qt); // replace type
         }
-        context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
       }
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
-      auto manager = AnyOwnedType::get(context);
-      auto ret = ClassType::get(context, ct->basicClassType(), manager, dec);
-      auto qt = QualifiedType(re.type().kind(), ret->withDecorator(context, dec));
-      re.setType(qt); // replace type
-    } else {
+    }
+
+    if (!isBasicClass) {
       context->error(errVar, "catch variable '%s' must be a class that inherits from Error", errVar->name().c_str());
     }
   } // TODO: is there an else case to handle here for catchall without an error variable (e.g. catch {})?

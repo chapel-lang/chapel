@@ -104,7 +104,7 @@ proc testDim(param rank : int, DestLocales : [], SrcLocales : []) {
   const len = if rank <= 2 then n else n/3;
   for i in 0..#rank do denseRanges(i) = 1..len;
 
-  var stridedRanges : rank*range(stridable=true);
+  var stridedRanges : rank*range(strides=strideKind.any);
   for i in 0..#rank do stridedRanges(i) = 1.. by (i + 2) # len;
 
   const Dense = {(...denseRanges)};

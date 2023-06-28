@@ -8,4 +8,4 @@ From: opensuse/leap:15.3
     /provision-scripts/zypper-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

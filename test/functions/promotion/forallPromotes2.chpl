@@ -42,7 +42,8 @@ proc foo(xy:(int, real)) {
   writeln(xy(0), " ", xy(1));
 }
 
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 /*
 forall (i,j) in zip(myC, 4..6) do

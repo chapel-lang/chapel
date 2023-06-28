@@ -859,6 +859,8 @@ module ArgumentParser {
     }
   }
 
+  private param globalLifetime = 0;
+
   /*
   A parser that performs the following functions:
 
@@ -963,7 +965,11 @@ module ArgumentParser {
                         Cannot be used in conjunction with `helpHandler`.
     */
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
-              in helpHandler:?h=none, helpMessage:?t=none) {
+              in helpHandler:?h=none, helpMessage:?t=none)
+      lifetime return globalLifetime
+      /* lifetime clause indicate result has global lifetime and is
+         a work-around for issue #22599. */
+    {
 
       if (!isNothingType(h) && !isNothingType(t)) then
         compilerError("Cannot set help message and help handler, choose one.");
@@ -977,8 +983,13 @@ module ArgumentParser {
       _exitAfterHelp = exitAfterHelp;
 
       var _helpHandler = new shared HelpHandler();
-      if !isNothingType(h) then
-        _helpHandler = helpHandler: shared h.chpl_t;
+      if !isNothingType(h) {
+        if isBorrowedClass(helpHandler)
+          then compilerError("Cannot initialize a help handler from a 'borrowed' class");
+        if !isSharedClass(helpHandler)
+          then _helpHandler = shared.adopt(helpHandler);
+          else _helpHandler = helpHandler;
+      }
 
       _help = new helpWrapper(_helpHandler);
       if isStringType(t) then

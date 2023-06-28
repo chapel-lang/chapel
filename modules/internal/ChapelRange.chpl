@@ -120,9 +120,17 @@ module ChapelRange {
     @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
     proc boundedType param do return bounds;
 
+    // deprecated by Vass in 1.31 to implement #17126
+    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
+    proc type boundedType param do return bounds;
+
     // deprecated by Vass in 1.31 to implement #17131
-    //RSDW: @deprecated("range.stridable is deprecated; please use '.strides' instead")
+    @deprecated("range.stridable is deprecated; please use '.strides' instead")
     proc stridable param do return !hasUnitStride();
+
+    // deprecated by Vass in 1.31 to implement #17131
+    @deprecated("range.stridable is deprecated; please use '.strides' instead")
+    proc type stridable param do return ! strides.isOne();
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
@@ -289,8 +297,8 @@ module ChapelRange {
     this.idxType     = idxType;
     this.bounds      = bounds;
     this.strides     = strides;
-    this._low        = _low;
-    this._high       = _high;
+    this._low        = _low: chpl__idxTypeToIntIdxType(idxType);
+    this._high       = _high: chpl__idxTypeToIntIdxType(idxType);
 
     if ! hasParamStrideAltvalAld() {
       this._stride    = _stride;
@@ -980,7 +988,7 @@ module ChapelRange {
   // to work around casting limitations in code that calculates the ordinals
   // for low/high of a pre-allocated enum range, ex., in range/domain followers
 
-  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high, stride) {
+  inline proc ref range.chpl_setFields(low, high, stride) {
     this._low  = chpl__idxToInt(low):  this.intIdxType;
     this._high = chpl__idxToInt(high): this.intIdxType;
     if this.hasParamStrideAltvalAld() {
@@ -993,7 +1001,7 @@ module ChapelRange {
     }
   }
 
-  @chpldoc.nodoc inline proc ref range.chpl_setFields(low, high) {
+  inline proc ref range.chpl_setFields(low, high) {
     compilerAssert(this.hasParamStride()); // otherwise stride = ?
     this._low  = chpl__idxToInt(low):  this.intIdxType;
     this._high = chpl__idxToInt(high): this.intIdxType;
@@ -1047,9 +1055,8 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_alignedLowAsIntForIter {
-    if stridable && !hasLowBound() && isFiniteIndexType() {
+    if !hasUnitStride() && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
       return alignedLowAsInt;
@@ -1143,9 +1150,8 @@ module ChapelRange {
       return helpAlignHigh(_high, _alignment, stride);
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_alignedHighAsIntForIter {
-    if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
+    if !hasUnitStride() && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
     } else {
       return alignedHighAsInt;
@@ -1263,7 +1269,6 @@ module ChapelRange {
     return lenAsUint: t;
   }
 
-  @chpldoc.nodoc
   proc range.chpl_sizeAsForIter(type t: integral): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
@@ -1316,7 +1321,6 @@ module ChapelRange {
                                   else this.alignedHighAsInt;
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_firstAsIntForIter {
     if this.bounds == boundKind.both {
       return this.firstAsInt;
@@ -1371,7 +1375,6 @@ module ChapelRange {
                                   else this.alignedLowAsInt;
   }
 
-  @chpldoc.nodoc
   inline proc range.chpl_lastAsIntForIter {
     if bounds == boundKind.both {
       return this.lastAsInt;
@@ -2035,8 +2038,8 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
-    r1._low = r2._low;
-    r1._high = r2._high;
+    r1._low = r2._low: r1.intIdxType;
+    r1._high = r2._high: r1.intIdxType;
 
     if ! r1.hasParamStrideAltvalAld() {
       r1._stride = r2.stride;
@@ -2080,14 +2083,12 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator -(r: range(?e,?b,?s), i: integral)
   {
-    type strType = chpl__rangeStrideType(e);
-
     return new range(e, b, s,
                      r._low - i,
                      r._high - i,
-                     r.stride : strType,
+                     r._stride,
                      chpl__idxToInt(r.alignment)-i,
-                     r.aligned);
+                     r._aligned, false);
   }
 
   // TODO can this be removed?
@@ -3622,7 +3623,6 @@ private inline proc rangeCastHelper(r, type t) throws {
   //# Internal helper functions.
   //#
 
-  @chpldoc.nodoc
   inline proc range.chpl__unTranslate(i) do
     return this - i;
 
@@ -3775,7 +3775,6 @@ private inline proc rangeCastHelper(r, type t) throws {
     }
   }
 
-  @chpldoc.nodoc
   proc chpl__idxTypeToIntIdxType(type idxType) type {
     if isIntegralType(idxType) {
       // integer idxTypes are their own integer idxType
@@ -3791,7 +3790,6 @@ private inline proc rangeCastHelper(r, type t) throws {
   // a single underscore where the standalone versions use double
   // underscores.  Reason: otherwise, the calls in range.init() try
   // to call the method version, which isn't currently legal.
-  @chpldoc.nodoc
   inline proc range.chpl_intToIdx(i) {
     return chpl__intToIdx(this.idxType, i);
   }

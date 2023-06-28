@@ -156,49 +156,10 @@ module Map {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'map.parSafe' is unstable")
     proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
-      _checkKeyAndValType(keyType, valType);
-      this.keyType = keyType;
-      this.valType = valType;
-      this.parSafe = parSafe;
-      if resizeThreshold <= 0 || resizeThreshold >= 1 {
-        warning("'resizeThreshold' must be between 0 and 1.",
-                        " 'resizeThreshold' will be set to 0.5");
-        this.resizeThreshold = 0.5;
-      } else {
-        this.resizeThreshold = resizeThreshold;
-      }
-      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
-                                  initialCapacity);
-    }
-
-    proc init(type keyType, type valType,
-              resizeThreshold=defaultHashTableResizeThreshold,
-              initialCapacity=16)
-      where isNonNilableClass(valType) {
-      _checkKeyAndValType(keyType, valType);
-      this.keyType = keyType;
-      this.valType = valType;
-      this.parSafe = false;
-      if resizeThreshold <= 0 || resizeThreshold >= 1 {
-        warning("'resizeThreshold' must be between 0 and 1.",
-                        " 'resizeThreshold' will be set to 0.5");
-        this.resizeThreshold = 0.5;
-      } else {
-        this.resizeThreshold = resizeThreshold;
-      }
-      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
-                                  initialCapacity);
-    }
-
-    @unstable("'Map.parSafe' is unstable")
-    proc init(type keyType, type valType, param parSafe,
-              resizeThreshold=defaultHashTableResizeThreshold,
-              initialCapacity=16)
-    where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -410,13 +371,13 @@ module Map {
       :arg k: The key to access
       :type k: keyType
 
-      :throws KeyNotFoundError: if `k` not in map, `valType` is not
-              default initializable, and proc is called in an attempt
-              to modify the map.
+      :throws KeyNotFoundError: if `k` is not in map and either `valType`
+              is not default initializable or this proc is not called
+              in an attempt to modify the map.
 
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref throws
+    proc ref this(k: keyType) ref
       where isDefaultInitializable(valType) {
       _warnForParSafeIndexing();
 
@@ -458,7 +419,7 @@ module Map {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    @deprecated(notes="'Map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
+    @deprecated(notes="'map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
     proc getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -477,7 +438,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
-    @deprecated(notes="'Map.getReference' is deprecated. Please rely on '[]' accessors instead.")
+    @deprecated(notes="'map.getReference' is deprecated. Please rely on '[]' accessors instead.")
     proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps initialized ',
@@ -499,8 +460,8 @@ module Map {
 
       :returns: A copy of the value at position `k`
      */
-    @deprecated(notes="'Map.getValue' is deprecated. Please rely on '[]' accessors instead.")
-    proc getValue(k: keyType) const throws {
+    @deprecated(notes="'map.getValue' is deprecated. Please rely on '[]' accessors instead.")
+    proc getValue(k: keyType) throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
@@ -525,9 +486,9 @@ module Map {
       :returns: A copy of the value at position `k` or a sentinel value
                 if the map does not have an entry at position `k`
     */
-    proc get(k: keyType, const sentinel: valType) const {
+    proc get(k: keyType, const sentinel: valType) {
       if !isCopyableType(valType) then
-        compilerError('cannot call `getValue()` for non-copyable ' +
+        compilerError('cannot call `get()` for non-copyable ' +
                       'map value type: ' + valType:string);
 
       _enter(); defer _leave();
@@ -540,8 +501,8 @@ module Map {
       }
     }
 
-    @deprecated(notes="'Map.getValue' is deprecated. Please use 'Map.get' instead.")
-    proc getValue(k: keyType, const sentinel: valType) const {
+    @deprecated(notes="'map.getValue' is deprecated. Please use 'map.get' instead.")
+    proc getValue(k: keyType, const sentinel: valType) {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
@@ -576,7 +537,7 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
-    @deprecated(notes="'Map.these' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.")
+    @deprecated(notes="'map.these' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.")
     iter these() const ref {
       for key in this.keys() {
         yield key;
@@ -601,7 +562,7 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
-    @deprecated(notes="'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.")
+    @deprecated(notes="'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.")
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
@@ -625,20 +586,10 @@ module Map {
       :yields: A reference to one of the values contained in this map.
     */
     iter values() ref
-    where !isNonNilableClass(valType) {
+    {
       foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].val;
-      }
-    }
-
-    @chpldoc.nodoc
-    iter values() const where isNonNilableClass(valType) {
-      try! {
-        foreach slot in table.allSlots() {
-          if table.isSlotFull(slot) then
-            yield table.table[slot].val: valType;
-        }
       }
     }
 
@@ -712,7 +663,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'map.parSafe' is unstable")
     proc init(type keyType, type valType, param parSafe,
               reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
@@ -785,7 +736,7 @@ module Map {
       _enter(); defer _leave();
       var first = true;
       proc rwLiteral(lit:string) throws {
-        if ch.writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
+        if ch._writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
       }
       rwLiteral("{");
       for slot in table.allSlots() {
@@ -798,23 +749,23 @@ module Map {
           ref tabEntry = table.table[slot];
           ref key = tabEntry.key;
           ref val = tabEntry.val;
-          if ch.writing then ch.write(key); else key = ch.read(key.type);
+          if ch._writing then ch.write(key); else key = ch.read(key.type);
           rwLiteral(": ");
-          if ch.writing then ch.write(val); else val = ch.read(val.type);
+          if ch._writing then ch.write(val); else val = ch.read(val.type);
         }
       }
       rwLiteral("}");
     }
 
     /*
-      Adds a key-value pair to the map. Method returns `false` if the key
-      already exists in the map.
+      Adds a key-value pair to the map. If the key `k` is already present
+      in the map, makes no changes and returns `false`.
 
      :arg k: The key to add to the map
-     :type k: keyType
+     :type k: ``keyType``
 
      :arg v: The value that maps to ``k``
-     :type v: valueType
+     :type v: ``valType``
 
      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.
@@ -832,20 +783,20 @@ module Map {
       return true;
     }
 
-    @deprecated(notes="'Map.set' is deprecated. Please use 'Map.replace' instead.")
+    @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
     proc set(k: keyType, in v: valType): bool {
       return this.replace(k, v);
     }
 
     /*
-      Sets the value associated with a key. Method returns `false` if the key
-      does not exist in the map.
+      Replaces the value associated with the key `k` with `v`. If the
+      key `k` is not in the map, makes no changes and returns `false`.
 
      :arg k: The key whose value needs to change
-     :type k: keyType
+     :type k: ``keyType``
 
      :arg v: The desired value to the key ``k``
-     :type k: valueType
+     :type v: ``valType``
 
      :returns: `true` if `k` was in the map and its value is updated with `v`.
                `false` otherwise.
@@ -874,7 +825,8 @@ module Map {
     }
 
     /*
-      Removes a key-value pair from the map, with the given key.
+     Removes the key `k` and its value from the map. If the key `k`
+     is not in the map, makes no changes and returns `false`.
 
      :arg k: The key to remove from the map
 
@@ -999,16 +951,23 @@ module Map {
     Returns `true` if the contents of two maps are the same.
 
     :arg a: A map to compare.
-    :type a: map
+    :type a: ``map``
 
     :arg b: A map to compare.
-    :type b: map (with same keyType and valType)
+    :type b: ``map(a.keyType, a.valType)``
 
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  operator map.==(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool {
+  operator map.==(const ref a: map(?), const ref b: map(?)): bool {
+    if a.keyType != b.keyType then
+      compilerError("cannot compare maps with different key types: ",
+                    a.keyType:string, " and ", b.keyType);
+    if a.valType != b.valType then
+      compilerError("cannot compare maps with different value types: ",
+                    a.valType:string, " and ", b.valType);
+    if a._size != b._size then
+      return false;
     try! {
       for key in a.keys() {
         if !b.contains(key) || a[key] != b[key] then
@@ -1026,16 +985,21 @@ module Map {
     Returns `true` if the contents of two maps are not the same.
 
     :arg a: A map to compare.
-    :type a: map
+    :type a: ``map``
 
     :arg b: A map to compare.
-    :type b: map (with same keyType and valType)
+    :type b: ``map(a.keyType, a.valType)``
 
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  operator map.!=(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool {
+  operator map.!=(const ref a: map(?), const ref b: map(?)): bool {
+    if a.keyType != b.keyType then
+      compilerError("cannot compare maps with different key types: ",
+                    a.keyType:string, " and ", b.keyType);
+    if a.valType != b.valType then
+      compilerError("cannot compare maps with different value types: ",
+                    a.valType:string, " and ", b.valType);
     return !(a == b);
   }
 

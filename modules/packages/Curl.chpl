@@ -265,8 +265,8 @@ module Curl {
         var tmp:c_void_ptr = arg.list:c_void_ptr;
         err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
       } else if arg.type == string || arg.type == bytes {
-        var tmp = arg.localize().c_str():c_void_ptr;
-        err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
+        err = curl_easy_setopt_ptr(curl, opt:CURLoption,
+                                   arg.localize().c_str():c_void_ptr);
       }
     } else {
       // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
@@ -533,7 +533,7 @@ module Curl {
                           end:int(64),
                           qioChannelPtr:qio_channel_ptr_t):errorCode {
         var curlch = new unmanaged CurlChannel();
-        curlch.curlf = this:unmanaged;
+        curlch.curlf = _to_unmanaged(this);
         curlch.qio_ch = qioChannelPtr;
         pluginChannel = curlch;
         return start_channel(curlch, start, end);

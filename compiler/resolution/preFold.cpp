@@ -1670,6 +1670,22 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_SIMPLE_TYPE_NAME: {
+    Type* t = call->get(1)->getValType();
+    if (AggregateType* at = toAggregateType(t)) {
+      const char* typeName = toString(at->getRootInstantiation());
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    } else {
+      const char* typeName = toString(t);
+      retval = new SymExpr(new_StringSymbol(typeName));
+
+      call->replace(retval);
+    }
+    break;
+  }
+
   case PRIM_NUM_FIELDS: {
     Type*          t          = canonicalDecoratedClassType(call->get(1)->getValType());
     AggregateType* classType  = toAggregateType(t);
@@ -2811,10 +2827,8 @@ static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
         "range.boundedType is deprecated; please use '.bounds' instead");
       retval = at->getField("bounds");
     } else if (!strcmp(requested, "stridable")) {
-#if 0 //RSDW
       USR_WARN(call,
         "range.stridable is deprecated; please use '.strides' instead");
-#endif
 
       // White lie: return a bogus value just so that the PRIM_QUERY case
       // in preFoldPrimOp() generates the call 'var.stridable'.

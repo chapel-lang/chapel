@@ -367,18 +367,27 @@ def validate_llvm_config():
             if not (bindir and os.path.isdir(bindir)):
                 error("llvm-config command {0} provides missing bin dir {1}"
                       .format(llvm_config, bindir))
-            clang_c = get_llvm_clang('c')[0]
-            clang_cxx = get_llvm_clang('c++')[0]
-            if not is_system_clang_version_ok(clang_c):
-                error("Missing or wrong version for clang at {0}".format(
-                      clang_c))
-            if not is_system_clang_version_ok(clang_cxx):
-                error("Missing or wrong version for clang++ at {0}".format(
-                      clang_cxx))
 
-            (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
-            if not noPackageErrors:
-              error(package_err)
+        (noPackageErrors, package_err) = check_llvm_packages(llvm_config)
+        if not noPackageErrors:
+            error(package_err)
+
+        clang_c = get_llvm_clang('c')[0]
+        clang_cxx = get_llvm_clang('c++')[0]
+        if clang_c == '':
+            error("Could not find clang with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CC.".format(llvm_config))
+        if clang_cxx == '':
+            error("Could not find clang++ with the same version as "
+                  "CHPL_LLVM_CONFIG={}. Please try setting CHPL_TARGET_CXX.".format(llvm_config))
+
+        if not is_system_clang_version_ok(clang_c):
+            error("Missing or wrong version for clang at {0}".format(
+                  clang_c))
+        if not is_system_clang_version_ok(clang_cxx):
+            error("Missing or wrong version for clang++ at {0}".format(
+                  clang_cxx))
+
 
 @memoize
 def get_system_llvm_config_bindir():
@@ -413,11 +422,55 @@ def is_system_clang_version_ok(clang_command):
     clang_version_out = get_clang_version(clang_command)
     return clang_version_out != None and llvm_version in clang_version_out
 
+# Given a lang argument of 'c' or 'c++'/'cxx', returns the value to use for
+# CHPL_LLVM_CLANG_C / CHPL_LLVM_CLANG_CXX when considering overrides for these
+# variables as well as for CHPL_TARGET_CC / CHPL_TARGET_CXX.
+# Returns a list where the 1st value is the command and additional values
+# are arguments to use.
+# Returns None if no override was present.
+@memoize
+def get_overriden_llvm_clang(lang):
+    lang_upper = lang.upper()
+    if lang_upper == 'C++':
+        lang_upper = 'CXX'
+
+    # Compute it based on setting CHPL_LLVM_CLANG_C/CXX
+    # or, if CHPL_TARGET_COMPILER=llvm, CHPL_TARGET_CC/CXX.
+    # These use split in order to separate the command out from
+    # any arguments passed to it.
+    tgt_llvm = overrides.get('CHPL_TARGET_COMPILER', 'llvm') == 'llvm'
+    if lang_upper == 'C':
+        llvm_clang_c = overrides.get('CHPL_LLVM_CLANG_C')
+        if llvm_clang_c:
+            return llvm_clang_c.split()
+        if tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CC')
+            if target_cc:
+                return target_cc.split()
+    elif lang_upper == 'CXX':
+        llvm_clang_cxx = overrides.get('CHPL_LLVM_CLANG_CXX')
+        if llvm_clang_cxx:
+            return llvm_clang_cxx.split()
+        if tgt_llvm:
+            target_cc = overrides.get('CHPL_TARGET_CXX')
+            if target_cc:
+                return target_cc.split()
+    else:
+        error('unknown lang value {}'.format(lang))
+
+    return None
+
 # given a lang argument of 'c' or 'c++'/'cxx', return the system clang command
 # to use. Checks that the clang version matches the version of llvm-config in
 # use. Returns '' if no acceptable system clang was found.
 @memoize
 def get_system_llvm_clang(lang):
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided[0]
+
+    # Otherwise, look for an acceptable clang in the
+    # llvm-config --bindir and in PATH.
     llvm_config = find_system_llvm_config()
     llvm_version_string = get_llvm_config_version(llvm_config)
 
@@ -443,6 +496,10 @@ def get_system_llvm_clang(lang):
             clang_path = clang_name + suffix
             if prefix is not None:
                 clang_path = os.path.join(prefix, clang_path)
+            # Use the full path to clang. For some reason, this is important
+            # on Alpine Linux for clang to find its own standard lib headers.
+            if '/' not in clang_path:
+                clang_path = which(clang_path)
             if is_system_clang_version_ok(clang_path):
                 return clang_path
     return ''
@@ -452,6 +509,11 @@ def get_system_llvm_clang(lang):
 # then necessary arguments
 @memoize
 def get_llvm_clang(lang):
+
+    # if it was provided by a user setting, just use that
+    provided = get_overriden_llvm_clang(lang)
+    if provided:
+        return provided
 
     clang = None
     llvm_val = get()
@@ -825,14 +887,15 @@ def filter_llvm_link_flags(flags):
         # LLVM 15 detects libzstd on some systems but doesn't include
         # the -L path from pkg-config (this can happen in a Spack configuration)
         # So, if we have '-lzstd', use pkg-config to get the link flags.
-        if flag == '-lzstd' and sys.platform != "darwin":
+        if flag == '-lzstd':
           import third_party_utils
-          link_bundled_args, link_system_args = (
-              third_party_utils.pkgconfig_get_system_link_args('libzstd'))
-          if link_system_args:
-              # found something with pkg-config, so use that instead
-              ret.extend(link_system_args)
-              continue
+          if third_party_utils.has_pkgconfig():
+              link_bundled_args, link_system_args = (
+                  third_party_utils.pkgconfig_get_system_link_args('libzstd'))
+              if link_system_args:
+                  # found something with pkg-config, so use that instead
+                  ret.extend(link_system_args)
+                  continue
         # otherwise, append -lzstd as usual
 
         ret.append(flag)

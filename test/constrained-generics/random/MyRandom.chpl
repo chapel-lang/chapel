@@ -613,7 +613,7 @@ module MyRandom {
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
                                    if ``x`` does not have both bounds
      */
-     proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+     proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
      {
        compilerError("RandomStreamInterface.choice called");
      }
@@ -1111,10 +1111,10 @@ module MyRandom {
                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
                                    if ``x`` does not have both bounds
      */
-      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: range(strides=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
-        var dom: domain(1,stridable=true);
+        var dom: domain(1,strides=strideKind.any);
 
         if x.boundedType != BoundedRangeType.bounded {
           throw new owned IllegalArgumentError('input range must be bounded');
@@ -1596,7 +1596,7 @@ module MyRandom {
           myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
         else
           myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
-        if !innerRange.stridable {
+        if innerRange.hasUnitStride() {
           var cursor = randlc_skipto(resultType, seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);
@@ -2660,7 +2660,7 @@ module MyRandom {
       }
 
       @chpldoc.nodoc
-      proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
+      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         compilerError("NPBRandomStream.choice() is not supported.");
@@ -2875,7 +2875,7 @@ module MyRandom {
           myStart += multiplier * ZD.indexOrder(((...outer), innerRange.low)).safeCast(int(64));
         else
           myStart += multiplier * ZD.indexOrder(innerRange.low).safeCast(int(64));
-        if !innerRange.stridable {
+        if innerRange.hasUnitStride() {
           cursor = randlc_skipto(seed, myStart);
           for i in innerRange do
             yield randlc(resultType, cursor);

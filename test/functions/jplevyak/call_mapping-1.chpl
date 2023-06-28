@@ -13,9 +13,12 @@ class E {
 var a : [d] int;
 var x = 1;
 var z = 1;
-var Y1 = (new owned C()).borrow();
-var Y2 = (new owned D()).borrow();
-var Y3 = (new owned E()).borrow();
+var ownY1 = new owned C();
+var Y1 = ownY1.borrow();
+var ownY2 = new owned D();
+var Y2 = ownY2.borrow();
+var ownY3 = new owned E();
+var Y3 = ownY3.borrow();
 
 a(x) = z;
 writeln(a(x));

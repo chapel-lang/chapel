@@ -115,6 +115,6 @@ proc next() { next_i += 1; return next_i; }
 //  testing purposes)
 //
 inline
-proc dist_eq(a, b) do return __primitive("ptr_eq", a._value:object, b._value:object);
+proc dist_eq(a, b) do return __primitive("ptr_eq", a._value:RootClass, b._value:RootClass);
 inline
-proc dist_neq(a, b) do return __primitive("ptr_neq", a._value:object, b._value:object);
+proc dist_neq(a, b) do return __primitive("ptr_neq", a._value:RootClass, b._value:RootClass);

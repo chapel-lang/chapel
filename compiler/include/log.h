@@ -51,7 +51,6 @@ extern char  log_module[FILENAME_MAX + 1];
 extern bool  fLogDir; // was --log-dir passed?
 
 extern bool  fLog;
-extern bool  fLogNode;
 extern bool  fLogIds;
 
 extern int   fdump_html;

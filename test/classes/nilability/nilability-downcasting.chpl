@@ -4,15 +4,17 @@ module test {
   class Child : Parent { var c:int; }
 
   proc main() {
-    var cb:borrowed Parent = (new owned Child(1, 2)).borrow();
+    var ownCb = new owned Child(1, 2);
+    var cb:borrowed Parent = ownCb.borrow();
     var cbq = cb:borrowed Parent?;
-    var cu = cb:unmanaged Parent;
-    var cuq = cb:unmanaged Parent?;
+    var cu:unmanaged Parent = new unmanaged Child(1, 2);
+    var cuq = cu:unmanaged Parent?;
 
-    var pb:borrowed Parent  = (new owned Parent(3)).borrow();
+    var ownPb = new owned Parent(3);
+    var pb:borrowed Parent  = ownPb.borrow();
     var pbq = pb:borrowed Parent?;
-    var pu = pb:unmanaged Parent;
-    var puq = pb:unmanaged Parent?;
+    var pu:unmanaged Parent = new unmanaged Parent(3);
+    var puq = pu:unmanaged Parent?;
 
     var nbq:borrowed Parent? = nil;
     var nuq:unmanaged Parent? = nil;
@@ -196,24 +198,6 @@ module test {
       writeln();
       writeln("casts to unmanaged Child");
 
-      // from cb
-      try {
-        writeln("cb:unmanaged Child");
-        var x = cb:unmanaged Child;
-        writeln(x.type:string, " ", x);
-      } catch e {
-        writeln(e);
-        halt("fail");
-      }
-      // from cbq
-      try {
-        writeln("cbq:unmanaged Child");
-        var x = cbq:unmanaged Child;
-        writeln(x.type:string, " ", x);
-      } catch e {
-        writeln(e);
-        halt("fail");
-      }
       // from cu
       try {
         writeln("cu:unmanaged Child");
@@ -232,24 +216,6 @@ module test {
         writeln(e);
         halt("fail");
       }
-      // from pb
-      try {
-        writeln("pb:unmanaged Child");
-        var x = pb:unmanaged Child;
-        writeln(x.type:string, " ", x);
-        halt("fail");
-      } catch e {
-        writeln(e);
-      }
-      // from pbq
-      try {
-        writeln("pbq:unmanaged Child");
-        var x = pbq:unmanaged Child;
-        writeln(x.type:string, " ", x);
-        halt("fail");
-      } catch e {
-        writeln(e);
-      }
       // from pu
       try {
         writeln("pu:unmanaged Child");
@@ -263,15 +229,6 @@ module test {
       try {
         writeln("puq:unmanaged Child");
         var x = puq:unmanaged Child;
-        writeln(x.type:string, " ", x);
-        halt("fail");
-      } catch e {
-        writeln(e);
-      }
-      // from nbq
-      try {
-        writeln("nbq:unmanaged Child");
-        var x = nbq:unmanaged Child;
         writeln(x.type:string, " ", x);
         halt("fail");
       } catch e {
@@ -294,20 +251,6 @@ module test {
       writeln();
       writeln("casts to unmanaged Child?");
 
-      // from cb
-      {
-        writeln("cb:unmanaged Child?");
-        var x = cb:unmanaged Child?;
-        writeln(x.type:string, " ", x);
-        assert(x != nil);
-      }
-      // from cbq
-      {
-        writeln("cbq:unmanaged Child?");
-        var x = cbq:unmanaged Child?;
-        writeln(x.type:string, " ", x);
-        assert(x != nil);
-      }
       // from cu
       {
         writeln("cu:unmanaged Child?");
@@ -321,20 +264,6 @@ module test {
         var x = cuq:unmanaged Child?;
         writeln(x.type:string, " ", x);
         assert(x != nil);
-      }
-      // from pb
-      {
-        writeln("pb:unmanaged Child?");
-        var x = pb:unmanaged Child?;
-        writeln(x.type:string, " ", x);
-        assert(x == nil);
-      }
-      // from pbq
-      {
-        writeln("pbq:unmanaged Child?");
-        var x = pbq:unmanaged Child?;
-        writeln(x.type:string, " ", x);
-        assert(x == nil);
       }
       // from pu
       {
@@ -350,13 +279,6 @@ module test {
         writeln(x.type:string, " ", x);
         assert(x == nil);
       }
-      // from nbq
-      {
-        writeln("nbq:unmanaged Child?");
-        var x = nbq:unmanaged Child?;
-        writeln(x.type:string, " ", x);
-        assert(x == nil);
-      }
       // from nuq
       {
         writeln("nuq:unmanaged Child?");
@@ -365,5 +287,7 @@ module test {
         assert(x == nil);
       }
     }
+    delete cu;
+    delete pu;
   }
 }

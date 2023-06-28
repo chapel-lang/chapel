@@ -7,7 +7,8 @@ class phone {
 
 var myFile = open("_test_fwritelnClassFile.txt", ioMode.cw).writer();
 
-var smh: borrowed phone = (new owned phone(name = "shannon", cell = 2065551212)).borrow();
+var ownSmh = new owned phone(name = "shannon", cell = 2065551212);
+var smh: borrowed phone = ownSmh.borrow();
 
 myFile.writeln(smh);
 

@@ -1,0 +1,1 @@
+illegal-assigns.chpl:11: error: assigning to a range with idxType color from a range with idxType int(8) without an explicit cast

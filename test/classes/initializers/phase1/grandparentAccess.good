@@ -1,2 +1,2 @@
-grandparentAccess.chpl:22: In initializer:
-grandparentAccess.chpl:23: error: Cannot access inherited field 'a' during phase 1
+grandparentAccess.chpl:21: In initializer:
+grandparentAccess.chpl:24: error: cannot access parent field "a" before super.init() or this.init()

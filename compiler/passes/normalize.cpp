@@ -1498,8 +1498,22 @@ void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement) {
             }
           }
         }
-        if (definedOutsideOfNode)
-          call->insertAtTail(new SymExpr(se->symbol()));
+        if (definedOutsideOfNode) {
+          bool alreadyThere = false;
+          // a cheap peephole optimization to avoid redundant variables
+          if (call->numActuals() > 0) {
+            if (SymExpr* haveSe = toSymExpr(call->get(1)))
+              if (haveSe->symbol() == se->symbol())
+                alreadyThere = true;
+            if (call->numActuals() > 1)
+              if (SymExpr* haveSe = toSymExpr(call->get(call->numActuals())))
+                if (haveSe->symbol() == se->symbol())
+                  alreadyThere = true;
+          }
+          if (!alreadyThere) {
+            call->insertAtTail(new SymExpr(se->symbol()));
+          }
+        }
       }
     }
   }
@@ -2440,6 +2454,7 @@ static void transformIfVar(CallExpr* primIfVar) {
 ************************************** | *************************************/
 
 static bool shouldInsertCallTemps(CallExpr* call);
+static bool containedInRuntimeTypeInit(CallExpr* call, bool ignorePosition);
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool moveMakesTypeAlias(CallExpr* call);
 static Expr* getCallTempInsertPoint(Expr* expr);
@@ -2480,6 +2495,10 @@ static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
 
   if (call->isPrimitive(PRIM_TYPEOF)) {
     tmp->addFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  if (containedInRuntimeTypeInit(call, true)) {
+    tmp->addFlag(FLAG_USED_IN_TYPE);
   }
 
   evaluateAutoDestroy(call, tmp);
@@ -2549,6 +2568,37 @@ static Expr* getCallTempInsertPoint(Expr* expr) {
   return stmt;
 }
 
+static bool containedInRuntimeTypeInit(CallExpr* call,
+                                       bool ignorePosition) {
+  Expr*     parentExpr = call->parentExpr;
+  CallExpr* parentCall = toCallExpr(parentExpr);
+  CallExpr* cur = parentCall;
+  CallExpr* sub = call;
+
+  // Look for a parent call that is either:
+  //  making an array type alias, or
+  //  passing the result into the 2nd argument of buildArrayRuntimeType.
+  while (cur != NULL) {
+    if (moveMakesTypeAlias(cur) == true) {
+      break;
+
+    } else if (cur->isNamed("chpl__buildArrayRuntimeType") &&
+               (ignorePosition || cur->get(2) == sub)) {
+      break;
+
+    } else if (cur->isNamed("chpl__distributed") &&
+               (ignorePosition || cur->get(1) == sub)) {
+      break;
+
+    } else {
+      sub = cur;
+      cur = toCallExpr(cur->parentExpr);
+    }
+  }
+
+  return cur != nullptr;
+}
+
 static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   Expr*     parentExpr = call->parentExpr;
   CallExpr* parentCall = toCallExpr(parentExpr);
@@ -2581,27 +2631,7 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
   // TODO: globalTemps needs updating only for isGlobalLoopExpr
   // once all temps are hoisted in this way.
   if (isGlobalLoopExpr || isCandidateGlobal) {
-    CallExpr* cur = parentCall;
-    CallExpr* sub = call;
-
-    // Look for a parent call that is either:
-    //  making an array type alias, or
-    //  passing the result into the 2nd argument of buildArrayRuntimeType.
-    while (cur != NULL) {
-      if (moveMakesTypeAlias(cur) == true) {
-        break;
-
-      } else if (cur->isNamed("chpl__buildArrayRuntimeType") == true &&
-                 cur->get(2)                                 == sub) {
-        break;
-
-      } else {
-        sub = cur;
-        cur = toCallExpr(cur->parentExpr);
-      }
-    }
-
-    if (cur) {
+    if (containedInRuntimeTypeInit(call, /* ignore position */ false)) {
       // Add to a set of temps to be hoisted into module scope, and later
       // auto-destroyed in the module deinit.
       globalTemps.insert(tmp);

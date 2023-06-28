@@ -5,7 +5,7 @@ byte index range
 ------------
 1..10
 idxType          = byteIndex
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -55,7 +55,7 @@ strided byte index range
 ------------
 1..20 by 2
 idxType          = byteIndex
-stridable        = true
+strides          = positive
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -105,7 +105,7 @@ low bounded byte index range
 ------------
 1..
 idxType          = byteIndex
-stridable        = false
+strides          = one
 bounds           = low
 isRangeType()    = true
 hasLowBound()    = true
@@ -150,7 +150,7 @@ high bounded byte index range
 ------------
 ..10
 idxType          = byteIndex
-stridable        = false
+strides          = one
 bounds           = high
 isRangeType()    = true
 hasLowBound()    = false

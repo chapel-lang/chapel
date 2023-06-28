@@ -4,6 +4,7 @@ class C {
   var x: probClass;
 }
 
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 writeln("myC = ", myC);

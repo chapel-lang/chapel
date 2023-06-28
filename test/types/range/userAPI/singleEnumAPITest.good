@@ -2,7 +2,7 @@ trivial enum range
 ------------
 red..red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -46,7 +46,7 @@ default trivial enum range
 ------------
 red..<red
 idxType          = color
-stridable        = false
+strides          = one
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -87,7 +87,7 @@ trivial strided enum range
 ------------
 red..red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
@@ -131,7 +131,7 @@ default trivial strided enum range
 ------------
 red..<red
 idxType          = color
-stridable        = true
+strides          = any
 bounds           = both
 isRangeType()    = true
 hasLowBound()    = true
