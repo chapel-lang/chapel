@@ -1,10 +1,10 @@
 module Construct_Graph
 {
-// Code to construct graph from the Edges (the array of Chapels records 
+// Code to construct graph from the Edges (the array of Chapels records
 // containing the vertex pairs )
 
 
-proc constructGraph(Edges:[?ArrD] , G) 
+proc constructGraph(Edges:[?ArrD] , G)
 {
    use Graph500_defs;
    use Sort;
@@ -17,8 +17,8 @@ proc constructGraph(Edges:[?ArrD] , G)
    forall e in Edges do {
       var u = e.start;
       var v = e.end;
-      Histogram$[u].add(1);
-      Histogram$[v].add(1);
+      Histogram$[u].write(Histogram$[u].read() + 1);
+      Histogram$[v].write(Histogram$[v].read() + 1);
    }
 
    // Resize Neighbor lists for each vertex based on Histogram
@@ -84,7 +84,7 @@ proc constructGraph(Edges:[?ArrD] , G)
         writeln ( "# of duplicates           ", duplicates );
 */
 
-//      Generate histogram of node distributions by number of outgoing edges        
+//      Generate histogram of node distributions by number of outgoing edges
         var max_edges = max reduce [v in G.Vertices] v.neighbor_count.read();
         writeln (" Maximum size of Neighbor list over all vertices: ",max_edges);
 

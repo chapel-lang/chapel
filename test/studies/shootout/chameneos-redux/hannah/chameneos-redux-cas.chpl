@@ -85,7 +85,7 @@ class Chameneos {
   proc init(id: int = 0,
             color: Color = Color.blue,
             meetings: int = 0,
-            meetingsWithSelf: int = 0) {
+            meetingsWithSelf: int(32) = 0) {
     this.id = id;
     this.color = color;
     this.meetings = meetings;

@@ -9,16 +9,16 @@ module analyze_RMAT_graph_1D_array {
   proc  generate_and_analyze_1D_array_RMAT_graph_representation {
 
     // -----------------------------------------------------------------
-    // compute a random power law graph with 2^SCALE vertices, using 
-    // the RMAT generator. Initially generate a list of triples. 
-    // Then convert it to a Chapel representation of a sparse graph, 
+    // compute a random power law graph with 2^SCALE vertices, using
+    // the RMAT generator. Initially generate a list of triples.
+    // Then convert it to a Chapel representation of a sparse graph,
     // timing this step (Kernel 1).  Finally, execute Kernels 2, 3 and 4
     // of SSCA #2, using identically the same code as in the various
     // torus cases.
     // -----------------------------------------------------------------
 
     use SSCA2_compilation_config_params, SSCA2_execution_config_consts;
-  
+
     use SSCA2_driver, SSCA2_RMAT_graph_generator_1Darray;
 
     use BlockDist;
@@ -42,14 +42,14 @@ module analyze_RMAT_graph_1D_array {
 
     // ------------------------------------------------------------------------
     // The data structures below are chosen to implement an irregular (sparse)
-    // graph using associative domains and arrays.  
+    // graph using associative domains and arrays.
     // Each node in the graph has a list of neighbors and a corresponding list
-    // of (integer) weights for the implicit edges.  
+    // of (integer) weights for the implicit edges.
     // The list of neighbors is really just a set; the only properties we need
     // are that we be able to build it (add vertices to it) and that we be
     // able to iterate over it.  Those properties are satisfied by Chapel's
     // associative domains, so each neighbor set is represented by an
-    // associative domain.  The weights are an integer array over the 
+    // associative domain.  The weights are an integer array over the
     // neighbor domain.
     //
     // We would have liked to have defined the global set of neighbors as
@@ -57,10 +57,10 @@ module analyze_RMAT_graph_1D_array {
     // Consequently we build an array of records, where each record provides
     // the neighbor set and the weights for a particular node.  The name
     // "row_struct" anticipates the planned use of sparse matrices for this same
-    // kind of graph structure.  
+    // kind of graph structure.
     // ------------------------------------------------------------------------
 
-    const vertex_domain = 
+    const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
         [1..N_VERTICES] dmapped Block ( [1..N_VERTICES] )
       else
@@ -80,6 +80,19 @@ module analyze_RMAT_graph_1D_array {
       var self_edges: int=0;
       var duplicates: int=0;
       var vlock$: sync bool = true;
+
+      proc init(type vertex, nd: domain(1) = {1..0}) {
+        this.vertex = vertex;
+        this.nd = nd;
+      }
+      proc init=(other: vertex_struct) {
+        this.nd = other.nd;
+        this.Neighbors = other.Neighbors;
+        this.neighbor_count = other.neighbor_count;
+        this.self_edges = other.self_edges;
+        this.duplicates = other.duplicates;
+        this.vlock$ = other.vlock$.readXX();
+      }
 
       proc is_a_neighbor (new_vertex_ID: vertex) {
          var is_member: bool = false;
@@ -129,7 +142,7 @@ module analyze_RMAT_graph_1D_array {
 
     }
 
-	
+
     class RMAT_Array1D_Graph {
       const vertices;
       var   Row      : [vertices] vertex_struct (index (vertices));
@@ -154,7 +167,7 @@ module analyze_RMAT_graph_1D_array {
           yield elem;
       }
 
-      proc   n_Neighbors (v : index (vertices) ) 
+      proc   n_Neighbors (v : index (vertices) )
       {return Row (v).neighbor_count;}
 
     }
@@ -166,8 +179,8 @@ module analyze_RMAT_graph_1D_array {
     // values for quadrant assignment.
     // ------------------------------------------------------------------
 
-    Gen_RMAT_graph_1D_array ( RMAT_a, RMAT_b, RMAT_c, RMAT_d, 
-		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G ); 
+    Gen_RMAT_graph_1D_array ( RMAT_a, RMAT_b, RMAT_c, RMAT_d,
+		     SCALE, N_VERTICES, n_raw_edges, MAX_EDGE_WEIGHT, G );
 
     execute_SSCA2 ( G );
     writeln (); writeln ();

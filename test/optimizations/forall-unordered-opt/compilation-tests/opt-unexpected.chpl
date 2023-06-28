@@ -184,6 +184,10 @@ local_instance2();
 
 record MyRecord {
   var x: atomic int;
+  proc init() {}
+  proc init=(other: MyRecord) {
+    this.x = other.x.read();
+  }
 }
 
 proc local_record() {

@@ -1,5 +1,6 @@
 class C {
   var s: sync int;
+  proc init() {}
 }
 
 begin {
