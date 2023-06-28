@@ -17,8 +17,8 @@ proc constructGraph(Edges:[?ArrD] , G)
    forall e in Edges do {
       var u = e.start;
       var v = e.end;
-      Histogram$[u].write(Histogram$[u].read() + 1);
-      Histogram$[v].write(Histogram$[v].read() + 1);
+      Histogram$[u].add(1);
+      Histogram$[v].add(1);
    }
 
    // Resize Neighbor lists for each vertex based on Histogram
