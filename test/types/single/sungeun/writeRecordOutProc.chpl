@@ -15,6 +15,12 @@ record myR {
   }
 }
 
+operator myR.=(ref lhs: myR, rhs: myR) {
+  lhs.x = rhs.x;
+  if rhs.sx.isFull then
+    lhs.sx.writeEF(rhs.sx.readFF());
+}
+
 var r: myR;
 
 r.x = 2*initval;
