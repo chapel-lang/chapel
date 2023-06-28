@@ -254,7 +254,7 @@ proc verifyResults(T) {
 record vlock {
   var l: atomic bool;
   proc init() {}
-  proc init(other: vlock) {
+  proc init=(other: vlock) {
     this.l = other.l.read();
   }
   proc lock() {
