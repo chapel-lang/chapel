@@ -156,7 +156,7 @@ module Map {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'map.parSafe' is unstable")
     proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
@@ -419,7 +419,7 @@ module Map {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    @deprecated(notes="'Map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
+    @deprecated(notes="'map.getBorrowed' is deprecated. Please rely on '[]' accessors instead.")
     proc getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -438,7 +438,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
-    @deprecated(notes="'Map.getReference' is deprecated. Please rely on '[]' accessors instead.")
+    @deprecated(notes="'map.getReference' is deprecated. Please rely on '[]' accessors instead.")
     proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps initialized ',
@@ -460,7 +460,7 @@ module Map {
 
       :returns: A copy of the value at position `k`
      */
-    @deprecated(notes="'Map.getValue' is deprecated. Please rely on '[]' accessors instead.")
+    @deprecated(notes="'map.getValue' is deprecated. Please rely on '[]' accessors instead.")
     proc getValue(k: keyType) throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -501,7 +501,7 @@ module Map {
       }
     }
 
-    @deprecated(notes="'Map.getValue' is deprecated. Please use 'Map.get' instead.")
+    @deprecated(notes="'map.getValue' is deprecated. Please use 'map.get' instead.")
     proc getValue(k: keyType, const sentinel: valType) {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -537,7 +537,7 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
-    @deprecated(notes="'Map.these' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.")
+    @deprecated(notes="'map.these' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.")
     iter these() const ref {
       for key in this.keys() {
         yield key;
@@ -562,7 +562,7 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
-    @deprecated(notes="'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.")
+    @deprecated(notes="'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.")
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
@@ -663,7 +663,7 @@ module Map {
     }
 
     @chpldoc.nodoc
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'map.parSafe' is unstable")
     proc init(type keyType, type valType, param parSafe,
               reader: fileReader, ref deserializer) throws {
       this.init(keyType, valType, parSafe);
@@ -783,7 +783,7 @@ module Map {
       return true;
     }
 
-    @deprecated(notes="'Map.set' is deprecated. Please use 'Map.replace' instead.")
+    @deprecated(notes="'map.set' is deprecated. Please use 'map.replace' instead.")
     proc set(k: keyType, in v: valType): bool {
       return this.replace(k, v);
     }
