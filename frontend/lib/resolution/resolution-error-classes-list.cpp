@@ -1182,7 +1182,6 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   // wr.message("Did you mean to use '.type'?");
 }
 
-
 /* end resolution errors */
 
 } // end namespace 'chpl'
