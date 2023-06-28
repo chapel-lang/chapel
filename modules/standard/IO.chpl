@@ -5806,7 +5806,7 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const cstr = x.localize().c_str();
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_scan_literal(false, _channel_internal,
                                          cstr, x.numBytes:c_ssize_t,
                                          ignore);
@@ -6020,7 +6020,7 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const cstr = x.localize().c_str();
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_print_literal(false, _channel_internal, cstr,
                                           x.numBytes:c_ssize_t);
     try _checkLiteralError(x, err, "writing", isLiteral=true);
@@ -10272,7 +10272,7 @@ proc fileReader._format_reader(
 {
   if r != nil then r!.hasRegex = false;
   if !error {
-    var fmt = fmtStr.localize().c_str();
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;
@@ -10367,7 +10367,7 @@ proc fileWriter._format_reader(
 {
   if r != nil then r!.hasRegex = false;
   if !error {
-    var fmt = fmtStr.localize().c_str();
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;

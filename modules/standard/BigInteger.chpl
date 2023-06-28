@@ -261,7 +261,7 @@ module BigInteger {
     @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
-      const str_  = str.localize().c_str();
+      const ref str_ = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
@@ -277,7 +277,7 @@ module BigInteger {
     proc init(str: string, base: int = 0, out error: errorCode) {
 
       this.complete();
-      const str_  = str.localize().c_str();
+      const ref str_ = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
@@ -312,7 +312,7 @@ module BigInteger {
      */
     proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
       this.complete();
-      const str_  = str.localize().c_str();
+      const ref str_ = str.localize().c_str();
       const base_ = base.safeCast(c_int);
 
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
