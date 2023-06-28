@@ -93,5 +93,7 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
 void earlyGpuTransforms();
+bool isLoopGpuBound(CForLoop* loop);
 void lateGpuTransforms();
+
 #endif

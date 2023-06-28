@@ -1323,6 +1323,10 @@ void lateGpuTransforms() {
   }
 }
 
+bool isLoopGpuBound(CForLoop* loop) {
+  return eligibleLoops.find(loop) != eligibleLoops.end();
+}
+
 // TODO: is LICM required for some loops to be eligible? thonk.
 
 /* Eligible loops are immediately placed into a conditional with a copy of
