@@ -1,1 +1,2 @@
+singleFieldTypeOnly.chpl:1: warning: relying on a compiler default initializer for a class with single elements is deprecated
 false

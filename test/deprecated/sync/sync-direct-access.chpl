@@ -175,11 +175,19 @@ test15();
 // they presented challenge during deprecation.
 class C {
   var s: sync int;
+  proc init() {}
 }
 var myC = new C();
 
 record R {
   var s: sync int;
+  proc init() {}
+  proc init=(other: R) {
+    this.s = other.s.readXX();
+  }
+  operator =(ref lhs: R, rhs: R) {
+    lhs.s.writeXF(rhs.s.readXX());
+  }
 }
 var myR = new R();
 myR.s.writeEF(1);
