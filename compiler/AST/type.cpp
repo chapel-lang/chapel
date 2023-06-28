@@ -1610,6 +1610,12 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCFnPtr);
 }
 
+bool isCVoidPtr(Type* t) {
+  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
+         t == dtCVoidPtr;
+}
+
 bool isClassLikeOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClassLike(t);

@@ -5684,10 +5684,7 @@ DEFINE_PRIM(CAST) {
         INT_FATAL("TODO - don't like type-punning record/union");
 
       } else if (src->symbol->hasFlag(FLAG_WIDE_CLASS) &&
-           /* (call->typeInfo()->symbol->hasFlag(FLAG_C_PTR_CLASS) && */
-           /* getDataClassType(call->typeInfo()->symbol)->typeInfo() == dtVoid) */
-          call->typeInfo() == dtCVoidPtr
-          ) {
+          isCVoidPtr(call->typeInfo())) {
         // Special case: If we are casting a wide-ptr to a c_void_ptr we need to ensure
         // that we perform the cast on the actual address portion of the wide-ptr. LouisJenkinsCS
         ret = codegenCast(call->typeInfo(), codegenRaddr(srcGen));

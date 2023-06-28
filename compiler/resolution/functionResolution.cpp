@@ -1530,18 +1530,16 @@ bool canCoerceAsSubtype(Type*     actualType,
     }
   }
 
-  // coerce c_ptr(t) to c_ptr(void)
-  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
-      /* formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) && getDataClassType(formalType->symbol)->typeInfo() == dtVoid */
-      formalType == dtCVoidPtr
-      )
+  // coerce from c_ptr(void) to primitive C void* and vice-versa
+  if (isCVoidPtr(actualType) && isCVoidPtr(formalType))
     return true;
 
-  // coerce c_array to c_void_ptr
-  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) &&
-      /* formalType->symbol->hasFlag(FLAG_C_PTR_CLASS) && getDataClassType(formalType->symbol)->typeInfo() == dtVoid */
-      formalType == dtCVoidPtr
-      )
+  // coerce c_ptr(t) to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_PTR_CLASS) && isCVoidPtr(formalType))
+    return true;
+
+  // coerce c_array to c_ptr(void)
+  if (actualType->symbol->hasFlag(FLAG_C_ARRAY) && isCVoidPtr(formalType))
     return true;
 
   // coerce c_array to c_ptr

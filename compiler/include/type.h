@@ -604,6 +604,7 @@ bool isClassLike(Type* t); // includes unmanaged, borrow, no ref
 bool isBuiltinGenericClassType(Type* t); // 'unmanaged' 'borrowed' etc
 bool isClassLikeOrManaged(Type* t); // includes unmanaged, borrow, owned, no ref
 bool isClassLikeOrPtr(Type* t); // includes c_ptr, ddata
+bool isCVoidPtr(Type* t); // includes both c_ptr(void) and primitive c_void_ptr
 bool isClassLikeOrNil(Type* t);
 bool isRecord(Type* t);
 bool isUserRecord(Type* t); // is it a record from the user viewpoint?
