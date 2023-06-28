@@ -20,7 +20,7 @@
 
 /**
  * This file contains various functions that are used by the command line
- * argument parser. This parser is used by both Chapel and chapeldoc.
+ * argument parser. This parser is used by both Chapel and chpldoc.
  * Some of the functions in this header are duplicated in both and
  * some have slightly different behavior.
  **/
@@ -36,9 +36,7 @@
 
 // The following is implemented in Chapel but we duplicate the code
 // in chpldoc; though ideally the common implementation would be shared
-// rather than duplicated. Due to default arguments we can't just redundantly
-// declare these so we control whether they're declared or not based on the
-// presence of a OUTSIDE_OF_CHPL_COMPILER macro
+// rather than duplicated. 
 
 typedef __uint8_t uint8_t;
 typedef __uint16_t uint16_t;
