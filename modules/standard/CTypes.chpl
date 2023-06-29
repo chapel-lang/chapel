@@ -84,12 +84,12 @@ module CTypes {
   type c_FILE_internal = if cFileTypeHasPointer then chpl_cFilePtr else chpl_cFile;
 
   /*
-
     A Chapel type alias for ``void*`` in C. Casts from integral types to
     ``c_void_ptr`` as well as casts from ``c_void_ptr`` to integral types are
     supported and behave similarly to those operations in C.
 
   */
+  @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
   type c_void_ptr = c_ptr(void);
 
 
@@ -102,9 +102,9 @@ module CTypes {
   /*
      :returns: true if the passed value is a NULL pointer (ie 0).
    */
-  @deprecated(notes="is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_void_ptr first if needed.")
+  @deprecated(notes="is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_ptr(void) first if needed.")
   inline proc is_c_nil(x):bool {
-    return __primitive("cast", c_void_ptr, x) == c_nil;
+    return __primitive("cast", c_ptr(void), x) == c_nil;
   }
 
   /*
@@ -112,13 +112,13 @@ module CTypes {
     Represents a local C pointer for the purpose of C integration. This type
     represents the equivalent to a C language pointer ``eltType*``. Instances of
     this type support assignment to other instances or ``nil``, ``==`` or ``!=``
-    comparison with a ``c_void_ptr`` or with ``nil``, and casting to another
-    ``c_ptr`` type or to the ``c_void_ptr`` type.
+    comparison with a ``c_ptr(void)`` or with ``nil``, and casting to another
+    ``c_ptr`` type or to the ``c_ptr(void)`` type.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
     strict aliasing rule. Casting to a char pointee type or across signedness,
-    or through an intermediate cast to ``c_void_ptr``, will not generate a
+    or through an intermediate cast to ``c_ptr(void)``, will not generate a
     warning.
 
     As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
@@ -171,10 +171,10 @@ module CTypes {
     }
     /* Print this pointer */
     inline proc writeThis(ch) throws {
-      (this:c_void_ptr).writeThis(ch);
+      (this:c_ptr(void)).writeThis(ch);
     }
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_void_ptr).writeThis(writer);
+      (this:c_ptr(void)).writeThis(writer);
     }
   }
 
@@ -215,10 +215,10 @@ module CTypes {
     }
     /* Print this pointer */
     inline proc writeThis(ch) throws {
-      (this:c_void_ptr).writeThis(ch);
+      (this:c_ptr(void)).writeThis(ch);
     }
     inline proc serialize(writer, ref serializer) throws {
-      (this:c_void_ptr).writeThis(writer);
+      (this:c_ptr(void)).writeThis(writer);
     }
   }
 
@@ -375,11 +375,13 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc c_void_ptr.writeThis(ch) throws {
+  inline proc c_ptr.writeThis(ch) throws
+      where this.eltType == void {
     ch.writef("0x%xu", this:c_uintptr);
   }
   @chpldoc.nodoc
-  inline proc c_void_ptr.serialize(writer, ref serializer) throws {
+  inline proc c_ptr.serialize(writer, ref serializer) throws
+      where this.eltType == void {
     this.writeThis(writer);
   }
 
@@ -411,8 +413,8 @@ module CTypes {
 
 
   @chpldoc.nodoc
-  inline operator :(x:c_fn_ptr, type t:c_void_ptr) {
-    return __primitive("cast", c_void_ptr, x);
+  inline operator :(x:c_fn_ptr, type t:c_ptr(void)) {
+    return __primitive("cast", c_ptr(void), x);
   }
 
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
@@ -513,8 +515,8 @@ module CTypes {
     return c_ptrTo(x[0]):c_ptrConst(e);
   }
   @chpldoc.nodoc
-  inline operator :(ref x:c_array, type t:c_void_ptr) {
-    return c_ptrTo(x[0]):c_void_ptr;
+  inline operator :(ref x:c_array, type t:c_ptr(void)) {
+    return c_ptrTo(x[0]):c_ptr(void);
   }
   @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
@@ -530,31 +532,36 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:_anyManagementAnyNilable) {
+  inline operator c_ptr.:(x:c_ptr(void), type t:_anyManagementAnyNilable)
+      where this.eltType == void {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      compilerError("invalid cast from c_void_ptr to "+ t:string +
+      compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");
     } else {
-      compilerError("invalid cast from c_void_ptr to managed type " + t:string);
+      compilerError("invalid cast from c_ptr(void) to managed type " + t:string);
     }
     return __primitive("cast", t, x);
   }
 
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:unmanaged class?) {
+  inline operator c_ptr.:(x:c_ptr(void), type t:unmanaged class?)
+      where this.eltType == void {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:borrowed class?) {
+  inline operator c_ptr.:(x:c_ptr(void), type t:borrowed class?)
+      where this.eltType == void {
     return __primitive("cast", t, x);
   }
 
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:borrowed, type t:c_void_ptr) {
+  inline operator c_ptr.:(x:borrowed, type t:c_ptr(void))
+      where this.eltType == void {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:unmanaged, type t:c_void_ptr) {
+  inline operator c_ptr.:(x:unmanaged, type t:c_ptr(void))
+      where this.eltType == void {
     return __primitive("cast", t, x);
   }
 
@@ -564,7 +571,8 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:_ddata, type t:c_void_ptr) {
+  inline operator c_ptr.:(x:_ddata, type t:c_ptr(void))
+      where this.eltType == void {
     return __primitive("cast", t, x);
   }
 
@@ -598,21 +606,23 @@ module CTypes {
   inline operator c_ptrConst.:(x:c_ptrConst, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
-  // casts from c_intptr / c_uintptr to c_void_ptr
+  // casts from c_intptr / c_uintptr to c_ptr(void)
   @chpldoc.nodoc
-  inline operator :(x:c_intptr, type t:c_void_ptr) do
+  inline operator :(x:c_intptr, type t:c_ptr(void)) do
     return __primitive("cast", t, x);
   @chpldoc.nodoc
-  inline operator :(x:c_uintptr, type t:c_void_ptr) do
+  inline operator :(x:c_uintptr, type t:c_ptr(void)) do
     return __primitive("cast", t, x);
 
-  // casts from int / uint to c_void_ptr
+  // casts from int / uint to c_ptr(void)
   // note that these are only used if c_intptr != int / c_uintptr != uint
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int do
+  inline operator c_ptr.:(x:int, type t:c_ptr(void))
+      where this.eltType == void && c_intptr != int do
     return __primitive("cast", t, x);
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint do
+  inline operator c_ptr.:(x:uint, type t:c_ptr(void))
+      where this.eltType == void && c_uintptr != uint do
     return __primitive("cast", t, x);
 
 
@@ -693,7 +703,7 @@ module CTypes {
   extern proc c_pointer_return_const(const ref x:?t):c_ptrConst(t);
   pragma "fn synchronization free"
   @chpldoc.nodoc
-  extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
+  extern proc c_pointer_diff(a:c_ptr(void), b:c_ptr(void),
                              eltSize:c_ptrdiff):c_ptrdiff;
 
   /*
@@ -859,21 +869,21 @@ module CTypes {
   }
 
   /*
-    Returns a :type:`c_void_ptr` to the heap instance of a class type.
+    Returns a :type:`c_ptr(void)` to the heap instance of a class type.
 
-    Note that the existence of this ``c_void_ptr`` has no impact on the lifetime
+    Note that the existence of this ``c_ptr(void)`` has no impact on the lifetime
     of the instance.  The returned pointer will be invalid if the instance is
     freed or even reallocated.
   */
-  inline proc c_ptrTo(ref c: class): c_void_ptr
+  inline proc c_ptrTo(ref c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr;
+    return c : c_ptr(void);
   }
-  inline proc c_ptrTo(ref c: class?): c_void_ptr
+  inline proc c_ptrTo(ref c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr;
+    return c : c_ptr(void);
   }
 
   @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
@@ -892,15 +902,15 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
-  inline proc c_ptrToConst(const ref c: class): c_void_ptr
+  inline proc c_ptrToConst(const ref c: class): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr;
+    return c : c_ptr(void);
   }
-  inline proc c_ptrToConst(const ref c: class?): c_void_ptr
+  inline proc c_ptrToConst(const ref c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
-    return c : c_void_ptr;
+    return c : c_ptr(void);
   }
 
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
@@ -1084,7 +1094,7 @@ module CTypes {
     :arg size: the number of elements to allocate space for
     :arg clear: whether to initialize all bits of allocated memory to 0
     :arg alignment: Memory alignment of the allocation, which must be a power of
-                    two and a multiple of `c_sizeof(c_void_ptr)`. Alignment of 0
+                    two and a multiple of `c_sizeof(c_ptr(void))`. Alignment of 0
                     is invalid and taken to mean default alignment.
     :returns: a c_ptr(eltType) to allocated memory
    */
@@ -1093,7 +1103,7 @@ module CTypes {
       alignment: c_size_t = 0) : c_ptr(eltType) {
     const alloc_size = size * c_sizeof(eltType);
     const aligned : bool = (alignment != 0);
-    var ptr : c_void_ptr = nil;
+    var ptr : c_ptr(void) = nil;
 
     // pick runtime allocation function based on requested zeroing + alignment
     if (!aligned) {
@@ -1119,7 +1129,7 @@ module CTypes {
         assert(alignment <= (one << p));
         if alignment != (one << p) then
           halt("allocate called with non-power-of-2 alignment ", alignment);
-        if alignment < c_sizeof(c_void_ptr) then
+        if alignment < c_sizeof(c_ptr(void)) then
           halt("allocate called with alignment smaller than pointer size");
       }
 
@@ -1139,10 +1149,10 @@ module CTypes {
   /* Free memory that was allocated with :proc:`allocate`.
 
     :arg data: the c_ptr to memory that was allocated. Note that both
-               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+               `c_ptr(t)` and `c_ptr(void)` can be passed to this argument.
     */
   @unstable("'deallocate' is unstable, and may be renamed or moved")
-  inline proc deallocate(data: c_void_ptr) {
+  inline proc deallocate(data: c_ptr(void)) {
     chpl_here_free(data);
   }
 
@@ -1186,7 +1196,7 @@ module CTypes {
     :arg eltType: the type of the elements to allocate
     :arg alignment: the memory alignment of the allocation
                     which must be a power of two and a multiple
-                    of ``c_sizeof(c_void_ptr)``.
+                    of ``c_sizeof(c_ptr(void))``.
     :arg size: the number of elements to allocate space for
     :returns: a ``c_ptr(eltType)`` to allocated memory
     */
@@ -1210,7 +1220,7 @@ module CTypes {
       assert(aln <= (one << p));
       if aln != (one << p) then
         halt("c_aligned_alloc called with non-power-of-2 alignment ", aln);
-      if alignment < c_sizeof(c_void_ptr) then
+      if alignment < c_sizeof(c_ptr(void)) then
         halt("c_aligned_alloc called with alignment smaller than pointer size");
     }
 
@@ -1223,10 +1233,10 @@ module CTypes {
   /* Free memory that was allocated with :proc:`c_calloc` or :proc:`c_malloc`.
 
     :arg data: the c_ptr to memory that was allocated. Note that both
-               `c_ptr(t)` and `c_void_ptr` can be passed to this argument.
+               `c_ptr(t)` and `c_ptr(void)` can be passed to this argument.
     */
   @deprecated("'c_free' is deprecated; use ':proc:`deallocate`'")
-  inline proc c_free(data: c_void_ptr) {
+  inline proc c_free(data: c_ptr(void)) {
     chpl_here_free(data);
   }
 
@@ -1241,7 +1251,7 @@ module CTypes {
   proc chpl_isAnyCPtr(type t) param do return false;
 
   /*
-     Returns true if t is a c_ptr, c_ptrConst, or c_void_ptr type.
+     Returns true if t is a c_ptr, c_ptrConst, or c_ptr(void) type.
    */
   @deprecated("isAnyCPtr is deprecated")
   proc isAnyCPtr(type t) param do return chpl_isAnyCPtr(t);
@@ -1265,9 +1275,9 @@ module CTypes {
    */
   pragma "fn synchronization free"
   @deprecated(notes=":proc:`c_memmove` is deprecated; please use :proc:`POSIX.memmove` instead")
-  inline proc c_memmove(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
+  inline proc c_memmove(dest:c_ptr(void), const src:c_ptr(void), n: integral) {
     pragma "fn synchronization free"
-    extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+    extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
     memmove(dest, src, n.safeCast(c_size_t));
   }
 
@@ -1283,9 +1293,9 @@ module CTypes {
    */
   pragma "fn synchronization free"
   @deprecated(notes=":proc:`c_memcpy` is deprecated; please use :proc:`POSIX.memcpy` instead")
-  inline proc c_memcpy(dest:c_void_ptr, const src:c_void_ptr, n: integral) {
+  inline proc c_memcpy(dest:c_ptr(void), const src:c_ptr(void), n: integral) {
     pragma "fn synchronization free"
-    extern proc memcpy (dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+    extern proc memcpy (dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
     memcpy(dest, src, n.safeCast(c_size_t));
   }
 
@@ -1300,9 +1310,9 @@ module CTypes {
    */
   pragma "fn synchronization free"
   @deprecated(notes=":proc:`c_memcmp` is deprecated; please use :proc:`POSIX.memcmp` instead")
-  inline proc c_memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: integral) {
+  inline proc c_memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: integral) {
     pragma "fn synchronization free"
-    extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t) : c_int;
+    extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t) : c_int;
     return memcmp(s1, s2, n.safeCast(c_size_t)).safeCast(int);
   }
 
@@ -1319,9 +1329,9 @@ module CTypes {
    */
   pragma "fn synchronization free"
   @deprecated(notes=":proc:`c_memset` is deprecated; please use :proc:`POSIX.memset` instead")
-  inline proc c_memset(s:c_void_ptr, c:integral, n: integral) {
+  inline proc c_memset(s:c_ptr(void), c:integral, n: integral) {
     pragma "fn synchronization free"
-    extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t) : c_void_ptr;
+    extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t) : c_ptr(void);
     memset(s, c.safeCast(c_int), n.safeCast(c_size_t));
     return s;
   }
