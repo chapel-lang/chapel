@@ -189,6 +189,7 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
     if (auto inFn = resolver.symbol->toFunction()) {
       switch (inFn->returnIntent()) {
         case Function::DEFAULT_RETURN_INTENT:
+        case Function::OUT:
         case Function::CONST:
           fnReturnsRegularValue = true;
           break;
