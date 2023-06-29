@@ -374,14 +374,17 @@ module CTypes {
     lhs = c_ptrTo(rhs[0]);
   }
 
+  // This type alias is a hack to enable defining writeThis on c_ptr(void)
+  // specifically, which is necessary to enable writeThis on things that
+  // implicitly convert to c_ptr(void).
   @chpldoc.nodoc
-  inline proc c_ptr.writeThis(ch) throws
-      where this.eltType == void {
+  type writable_c_ptr_void = c_ptr(void);
+  @chpldoc.nodoc
+  inline proc writable_c_ptr_void.writeThis(ch) throws {
     ch.writef("0x%xu", this:c_uintptr);
   }
   @chpldoc.nodoc
-  inline proc c_ptr.serialize(writer, ref serializer) throws
-      where this.eltType == void {
+  inline proc writable_c_ptr_void.serialize(writer, ref serializer) throws {
     this.writeThis(writer);
   }
 

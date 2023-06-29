@@ -247,7 +247,10 @@ prototype module AtomicObjects {
   @chpldoc.nodoc
   extern type c_nodeid_t;
 
-  extern proc chpl_return_wide_ptr_node(c_nodeid_t, c_ptr(void)) : wide_ptr_t;
+  @chpldoc.nodoc
+  type type_c_void_ptr = c_ptr(void);
+
+  extern proc chpl_return_wide_ptr_node(c_nodeid_t, type_c_void_ptr) : wide_ptr_t;
 
   if numLocales >= 2**16 {
     writeln("[WARNING]: AtomicObjects currently only supports up to 65535 locales!");
