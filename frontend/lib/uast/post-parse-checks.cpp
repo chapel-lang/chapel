@@ -862,7 +862,7 @@ void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "'const' return intent is unstable and may work differently"
-             " in the future");
+             " in the future; please use 'out' intent instead");
 }
 
 void
