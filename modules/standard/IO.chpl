@@ -7788,7 +7788,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-  Write ``numBytes`` of data from a :type:`~CTypes.c_ptr(void)` to a ``fileWriter``
+  Write ``numBytes`` of data from a ``CTypes.c_ptr(void)`` to a ``fileWriter``
 
   The data are written to the file one byte at a time.
 
@@ -7796,7 +7796,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
     This method provides no protection against attempting to access invalid
     memory
 
-  :arg ptr: a typeless :type:`~CTypes.c_ptr(void)` to some valid memory
+  :arg ptr: a ``c_ptr(void)`` to some valid memory
   :arg numBytes: the number of bytes to write
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
@@ -8454,11 +8454,11 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
-   :type:`~CTypes.c_ptr(void)`
+   ``CTypes.c_ptr(void)``
 
    Note that data are read from the file one byte at a time.
 
-   :arg ptr: a typeless :type:`~CTypes.c_ptr(void)` to some memory — existing
+   :arg ptr: a ``c_ptr(void)`` to some memory — existing
              values will be overwritten
    :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
    :returns: the number of bytes that were read. this can be less than
