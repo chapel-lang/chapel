@@ -2616,11 +2616,11 @@ static llvm::Error setupRemarks(llvm::LLVMContext &Context,
 
   return llvm::Error::success();
 }
-#endif
 
 static bool shouldShowLLVMRemarks() {
   return *llvmRemarksFilters != '\0' || !llvmRemarksFunctionsToShow.empty();
 }
+#endif
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
