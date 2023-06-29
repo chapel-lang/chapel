@@ -100,7 +100,6 @@ The Chapel names for C types are:
   c_ushort
   ssize_t
   size_t
-  c_void_ptr
   c_ptr(T)
   c_ptrConst(T)
   c_array(T,n)
@@ -115,21 +114,20 @@ Chapel types to always be usable):
   c_float  // (a real(32) in Chapel)
   c_double // (a real(64) in Chapel)
 
-c_void_ptr, c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
+c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
 described in the next section.
 
 
 Pointer and String Types
 ------------------------
 
-Chapel supports the following C pointer types: c_void_ptr, c_ptr(T),
+Chapel supports the following C pointer types: c_ptr(T),
 c_ptrConst(T), c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
 
 These types are the same as C types:
 
 .. code-block:: text
 
-  c_void_ptr is void*
   c_ptr(T) is T*
   c_ptrConst(T) is const T*
   c_string is const char*
@@ -137,7 +135,7 @@ These types are the same as C types:
   c_array(T,n) is T[n]
 
 Note that in some cases, a ref argument intent may be used in place of
-c_void_ptr or c_ptr(T), and const ref intent in place of c_ptrConst(T).
+c_ptr(T), and const ref intent in place of c_ptrConst(T).
 
 These pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
@@ -149,14 +147,6 @@ longer valid, or to memory that has been freed. The Chapel language makes no
 effort to extend a variable's lifetime if it is converted in some manner to a C
 pointer.
 
-c_void_ptr
-~~~~~~~~~~
-
-The c_void_ptr type is provided as an opaque C pointer. Since the type is
-unknown, there is no way to dereference this pointer. In addition, it is not
-possible to construct a c_void_ptr directly in Chapel. Normally, a C function
-will return the void pointer, which will be passed to other C functions.
-
 c_ptr(T)
 ~~~~~~~~
 
@@ -166,6 +156,10 @@ communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
 indexing to get a reference to the i'th element (starting from 0).
+
+The c_ptr(void) type is an opaque C pointer. Since the type is void (unknown),
+there is no way to dereference this pointer. Normally, a C function will return
+the void pointer, which will be passed to other C functions.
 
 c_ptrConst(T)
 ~~~~~~~~~~~~~
@@ -1030,10 +1024,10 @@ operator in C.
 There is also special behavior for ``c_ptrTo`` on class types. In Chapel, a
 class variable is actually some information on the stack containing a pointer to
 the "real" instance on the heap. Calling ``c_ptrTo()`` on a class type will give
-a ``c_void_ptr`` to the instance on the heap. Memory-managed heap instances will
-still be deallocated according to Chapel memory-management rules regardless of
-any pointer created to them this way. In the case of an ``unmanaged`` instance,
-it is possible to safely go back the other direction:
+a ``c_ptr(void)`` to the instance on the heap. Memory-managed heap instances
+will still be deallocated according to Chapel memory-management rules regardless
+of any pointer created to them this way. In the case of an ``unmanaged``
+instance, it is possible to safely go back the other direction:
 
 .. code-block:: chapel
 
@@ -1051,7 +1045,7 @@ it is possible to safely go back the other direction:
     writeln(c.getX());
 
     // get pointer to instance
-    var p: c_void_ptr = c_ptrTo(c);
+    var p: c_ptr(void) = c_ptrTo(c);
     writeln(p);
 
     // create another unmanaged Foo pointing to the same instance

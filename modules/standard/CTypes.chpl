@@ -112,8 +112,13 @@ module CTypes {
     Represents a local C pointer for the purpose of C integration. This type
     represents the equivalent to a C language pointer ``eltType*``. Instances of
     this type support assignment to other instances or ``nil``, ``==`` or ``!=``
-    comparison with a ``c_ptr(void)`` or with ``nil``, and casting to another
-    ``c_ptr`` type or to the ``c_ptr(void)`` type.
+    comparison with ``nil``, and casting to another ``c_ptr`` type.
+
+    ``c_ptr(void)`` represents an opaque pointer with special functionality.
+    Casts from integral types to ``c_ptr(void)`` as well as casts from
+    ``c_ptr(void)`` to integral types are supported and behave similarly to
+    those operations in C. Casting a ``c_ptr(void)`` to or from a ``c_ptr(t)``
+    of any pointee type is allowed.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
@@ -910,11 +915,11 @@ module CTypes {
   }
 
   /*
-    Returns a :type:`c_ptr(void)` to the heap instance of a class type.
+    Returns a ``c_ptr(void)`` to the heap instance of a class type.
 
-    Note that the existence of this ``c_ptr(void)`` has no impact on the lifetime
-    of the instance.  The returned pointer will be invalid if the instance is
-    freed or even reallocated.
+    Note that the existence of this ``c_ptr(void)`` has no impact on the
+    lifetime of the instance.  The returned pointer will be invalid if the
+    instance is freed or even reallocated.
   */
   inline proc c_ptrTo(ref c: class): c_ptr(void)
     where cPtrToLogicalValue == true
