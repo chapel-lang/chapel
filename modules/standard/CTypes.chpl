@@ -392,6 +392,12 @@ module CTypes {
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
   }
+  pragma "last resort"
+  @chpldoc.nodoc
+  // specialization needed to assign a raw_c_void_ptr into a c_ptr(void)
+  inline operator c_ptr.=(ref lhs:c_ptr(void), rhs:c_ptr(void)) {
+    __primitive("=", lhs, rhs);
+  }
 
   @chpldoc.nodoc
   inline operator c_ptrConst.=(ref lhs:c_ptrConst, rhs:c_ptrConst) {
@@ -472,6 +478,12 @@ module CTypes {
     }
     return __primitive("cast", t, x);
   }
+  // c_ptr(void) specialization to allow implicit conversion of casted value
+  pragma "last resort"
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr(void), type t:c_ptr) {
+    return __primitive("cast", t, x);
+  }
   @chpldoc.nodoc
   inline operator c_ptrConst.:(x:c_ptrConst, type t:c_ptrConst) {
     // emit warning for C strict aliasing violations
@@ -532,8 +544,7 @@ module CTypes {
   }
   pragma "last resort"
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr(void), type t:_anyManagementAnyNilable)
-      where this.eltType == void {
+  inline operator :(x:c_ptr(void), type t:_anyManagementAnyNilable) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
       compilerError("invalid cast from c_ptr(void) to "+ t:string +
                     " - cast to "+ _to_nilable(t):string +" instead");
@@ -544,66 +555,49 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr(void), type t:unmanaged class?)
-      where this.eltType == void {
+  inline operator :(x:c_ptr(void), type t:unmanaged class?) {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr(void), type t:borrowed class?)
-      where this.eltType == void {
-    return __primitive("cast", t, x);
-  }
-
-  @chpldoc.nodoc
-  inline operator c_ptr.:(x:borrowed, type t:c_ptr(void))
-      where this.eltType == void {
-    return __primitive("cast", t, x);
-  }
-  @chpldoc.nodoc
-  inline operator c_ptr.:(x:unmanaged, type t:c_ptr(void))
-      where this.eltType == void {
+  inline operator :(x:c_ptr(void), type t:borrowed class?) {
     return __primitive("cast", t, x);
   }
 
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr, type t:_ddata)
+  inline operator :(x:borrowed, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+  @chpldoc.nodoc
+  inline operator :(x:unmanaged, type t:c_ptr(void)) {
+    return __primitive("cast", t, x);
+  }
+
+  @chpldoc.nodoc
+  inline operator :(x:c_ptr, type t:_ddata)
       where t.eltType == x.eltType || x.eltType == void {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:_ddata, type t:c_ptr(void))
-      where this.eltType == void {
+  inline operator :(x:_ddata, type t:c_ptr(void)) {
     return __primitive("cast", t, x);
   }
 
-  // casts from c pointer to c_intptr / c_uintptr
+  // Casts from c pointer to c_intptr / c_uintptr
+  // Due to implicit conversion to c_ptr(void), don't need to define c_array or
+  // c_ptrConst versions.
   @chpldoc.nodoc
-  inline operator :(x:c_ptr, type t:c_intptr) do
+  inline operator :(x:c_ptr(void), type t:c_intptr) do
     return __primitive("cast", t, x);
   @chpldoc.nodoc
-  inline operator :(x:c_ptr, type t:c_uintptr) do
+  inline operator :(x:c_ptr(void), type t:c_uintptr) do
     return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator :(x:c_ptrConst, type t:c_intptr) do
-    return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator :(x:c_ptrConst, type t:c_uintptr) do
-    return __primitive("cast", t, x);
-
-
   // casts from c pointer to int / uint
   // note that these are only used if c_intptr != int / c_uintptr != uint
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int do
+  inline operator :(x:c_ptr(void), type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint do
-    return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator c_ptrConst.:(x:c_ptrConst, type t:int) where c_intptr != int do
-    return __primitive("cast", t, x);
-  @chpldoc.nodoc
-  inline operator c_ptrConst.:(x:c_ptrConst, type t:uint) where c_uintptr != uint do
+  inline operator :(x:c_ptr(void), type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   // casts from c_intptr / c_uintptr to c_ptr(void)
@@ -617,12 +611,12 @@ module CTypes {
   // casts from int / uint to c_ptr(void)
   // note that these are only used if c_intptr != int / c_uintptr != uint
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:int, type t:c_ptr(void))
-      where this.eltType == void && c_intptr != int do
+  inline operator :(x:int, type t:c_ptr(void))
+      where c_intptr != int do
     return __primitive("cast", t, x);
   @chpldoc.nodoc
-  inline operator c_ptr.:(x:uint, type t:c_ptr(void))
-      where this.eltType == void && c_uintptr != uint do
+  inline operator :(x:uint, type t:c_ptr(void))
+      where c_uintptr != uint do
     return __primitive("cast", t, x);
 
 
@@ -631,8 +625,24 @@ module CTypes {
       where a.eltType == b.eltType || a.eltType == void || b.eltType == void {
     return __primitive("ptr_eq", a, b);
   }
+  // special c_ptr(void) versions of == and != are needed to allow comparing
+  // raw_c_void_ptrs, via their implicit conversion to c_ptr(void)
+  pragma "last resort"
   @chpldoc.nodoc
-  inline operator c_ptr.==(a: c_ptr, b: _nilType) {
+  inline operator ==(a: c_ptr(void), b: c_ptr(void)) {
+    return __primitive("ptr_eq", a, b);
+  }
+  pragma "last resort"
+  @chpldoc.nodoc
+  inline operator !=(a: c_ptr(void), b: c_ptr(void)) {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: c_ptr, b: _nilType) {
+    return __primitive("ptr_eq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: _nilType, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
   @chpldoc.nodoc
@@ -641,7 +651,11 @@ module CTypes {
     return __primitive("ptr_eq", a, b);
   }
   @chpldoc.nodoc
-  inline operator c_ptrConst.==(a: c_ptrConst, b: _nilType) {
+  inline operator ==(a: c_ptrConst, b: _nilType) {
+    return __primitive("ptr_eq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: _nilType, b: c_ptrConst) {
     return __primitive("ptr_eq", a, b);
   }
 
@@ -651,7 +665,11 @@ module CTypes {
     return __primitive("ptr_neq", a, b);
   }
   @chpldoc.nodoc
-  inline operator c_ptr.!=(a: c_ptr, b: _nilType) {
+  inline operator !=(a: c_ptr, b: _nilType) {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: _nilType, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
   @chpldoc.nodoc
@@ -661,6 +679,10 @@ module CTypes {
   }
   @chpldoc.nodoc
   inline operator c_ptrConst.!=(a: c_ptrConst, b: _nilType) {
+    return __primitive("ptr_neq", a, b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: _nilType, b: c_ptrConst) {
     return __primitive("ptr_neq", a, b);
   }
 
