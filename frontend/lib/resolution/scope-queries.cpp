@@ -2744,6 +2744,7 @@ static void countReturnIntents(Context* context,
       Function::ReturnIntent reti = parsing::idToFnReturnIntent(context, id);
       switch (reti) {
         case Function::DEFAULT_RETURN_INTENT:
+        case Function::OUT:
         case Function::CONST:
           nValue++;
           break;
