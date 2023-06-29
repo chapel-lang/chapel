@@ -157,9 +157,10 @@ pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
 indexing to get a reference to the i'th element (starting from 0).
 
-The c_ptr(void) type is an opaque C pointer. Since the type is void (unknown),
-there is no way to dereference this pointer. Normally, a C function will return
-the void pointer, which will be passed to other C functions.
+The c_ptr(void) type is an opaque C pointer, corresponding to ``void*`` in C.
+Since the type is void (unknown), there is no way to dereference this pointer.
+Normally, a C function will return the void pointer, which will be passed to
+other C functions.
 
 c_ptrConst(T)
 ~~~~~~~~~~~~~

@@ -114,11 +114,11 @@ module CTypes {
     this type support assignment to other instances or ``nil``, ``==`` or ``!=``
     comparison with ``nil``, and casting to another ``c_ptr`` type.
 
-    ``c_ptr(void)`` represents an opaque pointer with special functionality.
-    Casts from integral types to ``c_ptr(void)`` as well as casts from
-    ``c_ptr(void)`` to integral types are supported and behave similarly to
-    those operations in C. Casting a ``c_ptr(void)`` to or from a ``c_ptr(t)``
-    of any pointee type is allowed.
+    ``c_ptr(void)`` represents an opaque pointer with special functionality,
+    corresponding to ``void*`` in C. Casts from integral types to
+    ``c_ptr(void)`` as well as casts from ``c_ptr(void)`` to integral types are
+    supported and behave similarly to those operations in C. Casting a
+    ``c_ptr(void)`` to or from a ``c_ptr(t)`` of any pointee type is allowed.
 
     Casting directly to a ``c_ptr`` of another pointee type is supported, but
     will emit a safety warning for casts that can lead to violation of C's
