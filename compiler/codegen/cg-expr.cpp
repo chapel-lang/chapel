@@ -5685,7 +5685,7 @@ DEFINE_PRIM(CAST) {
 
       } else if (src->symbol->hasFlag(FLAG_WIDE_CLASS) &&
           isCVoidPtr(call->typeInfo())) {
-        // Special case: If we are casting a wide-ptr to a c_void_ptr we need to ensure
+        // Special case: If we are casting a wide-ptr to a c_ptr(void) we need to ensure
         // that we perform the cast on the actual address portion of the wide-ptr. LouisJenkinsCS
         ret = codegenCast(call->typeInfo(), codegenRaddr(srcGen));
 

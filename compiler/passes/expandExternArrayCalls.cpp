@@ -51,13 +51,13 @@
 //      chpl__extern_array_print_array(c_ptrTo(x), n);
 //    }
 //
-// If no element type is specified for the array a c_void_ptr will be used. If
+// If no element type is specified for the array a c_ptr(void) will be used. If
 // we leave out the element type in the example above the result would be:
 //
-//    extern proc chpl__extern_array_print_array(x: c_void_ptr, n: int);
+//    extern proc chpl__extern_array_print_array(x: c_ptr(void), n: int);
 //
 //    inline proc print_array(x: [], n: int) {
-//      chpl__extern_array_print_array((c_ptrTo(x)):c_void_ptr, n);
+//      chpl__extern_array_print_array((c_ptrTo(x)):c_ptr(void), n);
 //    }
 
 bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
