@@ -61,7 +61,7 @@ record buf {
   }
 
   proc _memchr(c : uint(8), arr : []) {
-    extern proc memchr(s:c_void_ptr, c : c_int, n : c_size_t) : c_void_ptr;
+    extern proc memchr(s:c_ptr(void), c : c_int, n : c_size_t) : c_ptr(void);
     const ptr = c_ptrTo(arr);
     const ret = memchr(ptr, c:c_int, arr.size:c_size_t);
     if ret != nil {

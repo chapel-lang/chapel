@@ -4,8 +4,8 @@
 
 use CTypes;
 
-extern proc chpl_gpu_memset(addr: c_void_ptr, val, size);
-extern proc chpl_gpu_copy_device_to_host(dst: c_void_ptr, src: c_void_ptr, n): void;
+extern proc chpl_gpu_memset(addr: c_ptr(void), val, size);
+extern proc chpl_gpu_copy_device_to_host(dst: c_ptr(void), src: c_ptr(void), n): void;
 
 config const n = 3;
 

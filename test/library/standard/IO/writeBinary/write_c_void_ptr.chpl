@@ -9,6 +9,6 @@ testCptrToArray(openWriter("./c_ptr_out/cvoidptr64.bin"), 64);
 proc testCptrToArray(writer, param isize: int) {
     var a = [0,1,2,3,4,5,6,7,8,9] : uint(isize);
     var p : c_ptr(uint(isize)) = c_ptrTo(a);
-    var pv = p : c_void_ptr;
+    var pv = p : c_ptr(void);
     writer.writeBinary(pv, 10 * (isize / 8));
 }

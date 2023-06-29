@@ -46,7 +46,7 @@ iter HDFSmap(dataFile: string, namenode: string = "default", port: int(32) = 0) 
 
 
   // use const instead of var -- better optimizations this way
-  const hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
+  const hdfsFS: c_ptr(void) = HDFS.hdfsConnect(namenode.localize().c_str(), port);
   const fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
   const blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize); // incr 0?
   const blockCount = HDFS.chadoopGetBlockCount(blockHosts);
@@ -101,10 +101,10 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
     var Blockies: [blockOwners] domain(int);
 
     // Setup replication across our locales
-    const hdfsFS_PL:        [rcDomain] c_void_ptr;
+    const hdfsFS_PL:        [rcDomain] c_ptr(void);
     const fileInfo_PL:      [rcDomain] chadoopFileInfo;
-    const dataFileLocal_PL: [rcDomain] c_void_ptr; 
-    const blockHosts_PL:    [rcDomain] c_void_ptr;
+    const dataFileLocal_PL: [rcDomain] c_ptr(void); 
+    const blockHosts_PL:    [rcDomain] c_ptr(void);
     const blockCount_PL:    [rcDomain] c_int;
     const length_PL:        [rcDomain] int(32);
     // ====================== END ==========================================
@@ -113,7 +113,7 @@ iter HDFSmap(param tag: iterKind, dataFile: string, namenode: string = "default"
       on loc {
 
         //======================== File connection =========================
-        var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), port);
+        var hdfsFS: c_ptr(void) = HDFS.hdfsConnect(namenode.localize().c_str(), port);
         assert(HDFS.IS_NULL(hdfsFS) == HDFS.IS_NULL_FALSE, "Failed to connect to HDFS");
 
         var fileInfo      = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());

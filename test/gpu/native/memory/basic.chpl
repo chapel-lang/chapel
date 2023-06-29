@@ -2,8 +2,8 @@ use CTypes;
 
 
 extern proc chpl_gpu_get_alloc_size(arg): c_size_t;
-extern proc chpl_gpu_copy_device_to_host(dst: c_void_ptr, src: c_void_ptr, n): void;
-extern proc chpl_gpu_copy_host_to_device(dst: c_void_ptr, src: c_void_ptr, n): void;
+extern proc chpl_gpu_copy_device_to_host(dst: c_ptr(void), src: c_ptr(void), n): void;
+extern proc chpl_gpu_copy_host_to_device(dst: c_ptr(void), src: c_ptr(void), n): void;
 extern proc chpl_gpu_is_device_ptr(ptr): bool;
 
 config const n = 3;
@@ -68,7 +68,7 @@ on here.gpus[0] {
   var expandedPtrDev = chpl_here_realloc(ptrDev, n*2, 0);
   writeln("Allocated ", chpl_gpu_get_alloc_size(expandedPtrDev), " bytes on gpu");
 
-  chpl_gpu_copy_host_to_device((expandedPtrDev:c_ptr(c_uchar)+n):c_void_ptr, ptrHst, n);
+  chpl_gpu_copy_host_to_device((expandedPtrDev:c_ptr(c_uchar)+n):c_ptr(void), ptrHst, n);
 
   writeln("Data copied to device");
 
