@@ -877,7 +877,7 @@ Parallel Loops
   forall i in 1..10 do
     G[i] = i;
 
-  writeln("After the incorrect forall, G is: ", G);
+  writeln("After the non-distributed forall, G is: ", G);
   
 
 /*
@@ -939,7 +939,7 @@ Parallel Loops
   forall g in G[2..G.size-1] do
     g = here.id;
 
-  writeln("The locales assigning to a slice of G were: ", G);
+  writeln("The locales assigning to a slice of G were: ", G[2..G.size-1]);
 
 /*
 
