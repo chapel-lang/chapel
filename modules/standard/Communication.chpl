@@ -44,7 +44,7 @@ module Communication {
    :arg srcLocID: ID of the source locale
    :arg numBytes: Number of bytes to copy
   */
-  inline proc get(dest: c_void_ptr, src: c_void_ptr, srcLocID: int,
+  inline proc get(dest: c_ptr(void), src: c_ptr(void), srcLocID: int,
                   numBytes: integral) {
     if boundsChecking then {
       if srcLocID < 0 || srcLocID >= chpl_numNodes {
@@ -71,7 +71,7 @@ module Communication {
    :arg destLocID: ID of the destination locale
    :arg numBytes: Number of bytes to copy
   */
-  inline proc put(dest: c_void_ptr, src: c_void_ptr, destLocID: int,
+  inline proc put(dest: c_ptr(void), src: c_ptr(void), destLocID: int,
                   numBytes: integral) {
     if boundsChecking then {
       if destLocID < 0 || destLocID >= chpl_numNodes {

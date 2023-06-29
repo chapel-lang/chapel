@@ -64,7 +64,7 @@ module String {
                                               buf:c_string,
                                               buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
-  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):errorCode;
+  private extern proc qio_encode_char_buf(dst:c_ptr(void), chr:int(32)):errorCode;
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
@@ -458,11 +458,11 @@ module String {
                                     length: int,
                                     numCodepoints: int) : string {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
     import OS.POSIX.memcpy;
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 

@@ -1514,8 +1514,8 @@ module YAML {
 
       var emitter: yaml_emitter_t;
       var event: yaml_event_t;
-      memset(c_ptrTo(emitter):c_void_ptr, 0, c_sizeof(yaml_emitter_t));
-      memset(c_ptrTo(event):c_void_ptr, 0, c_sizeof(yaml_event_t));
+      memset(c_ptrTo(emitter):c_ptr(void), 0, c_sizeof(yaml_emitter_t));
+      memset(c_ptrTo(event):c_ptr(void), 0, c_sizeof(yaml_event_t));
       this.emitter = emitter;
       this.event = event;
     }
@@ -1533,7 +1533,7 @@ module YAML {
     // -------- context management --------
 
     proc LibYamlEmitter.openContext(styleHint = YamlDocumentStyle.Default) throws {
-      memset(c_ptrTo(emitter):c_void_ptr, 0, c_sizeof(yaml_emitter_t));
+      memset(c_ptrTo(emitter):c_ptr(void), 0, c_sizeof(yaml_emitter_t));
       if !yaml_emitter_initialize(c_ptrTo(this.emitter))
         then throw new YamlEmitterError("Failed to initialize emitter");
 
@@ -1568,7 +1568,7 @@ module YAML {
     }
 
     proc LibYamlEmitter.openFile(path: string, styleHint = YamlDocumentStyle.Default) throws {
-      memset(c_ptrTo(emitter):c_void_ptr, 0, c_sizeof(yaml_emitter_t));
+      memset(c_ptrTo(emitter):c_ptr(void), 0, c_sizeof(yaml_emitter_t));
       if !yaml_emitter_initialize(c_ptrTo(this.emitter))
         then throw new YamlEmitterError("Failed to initialize emitter");
 
@@ -1787,8 +1787,8 @@ module YAML {
     proc LibYamlParser.init() {
       var p: yaml_parser_t;
       var e: yaml_event_t;
-      memset(c_ptrTo(p):c_void_ptr, 0, c_sizeof(yaml_parser_t));
-      memset(c_ptrTo(e):c_void_ptr, 0, c_sizeof(yaml_event_t));
+      memset(c_ptrTo(p):c_ptr(void), 0, c_sizeof(yaml_parser_t));
+      memset(c_ptrTo(e):c_ptr(void), 0, c_sizeof(yaml_event_t));
       this.parser = p;
       this.event = e;
       this.cachedEvent = (EventType.None, 0, 0);

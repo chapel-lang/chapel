@@ -3853,7 +3853,7 @@ module ChapelArray {
   //   extern proc foo(X: []);
   //   var A: [1..3] real;
   //   foo(A);
-  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  // 'castToVoidStar' says whether we should cast the result to c_ptr(void)
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
     if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
@@ -3864,7 +3864,7 @@ module ChapelArray {
     use CTypes;
     const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
-      return ptr: c_void_ptr;
+      return ptr: c_ptr(void);
     else
       return ptr;
   }
