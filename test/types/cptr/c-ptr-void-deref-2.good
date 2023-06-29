@@ -1,0 +1,1 @@
+c-ptr-void-deref-2.chpl:6: error: Cannot dereference a void pointer; cast to a non-opaque pointee type first.

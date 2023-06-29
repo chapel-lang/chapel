@@ -161,12 +161,20 @@ module CTypes {
       Does the equivalent of ptr[i] in C.
     */
     inline proc this(i: integral) ref {
+      if (this.eltType == void) {
+        compilerError("Cannot dereference a void pointer; cast to a " +
+                      "non-opaque pointee type first.");
+      }
       return __primitive("array_get", this, i);
     }
     /* Get element pointed to directly by this pointer. If the pointer
       refers to an array, this will return ptr[0].
     */
     inline proc deref() ref {
+      if (this.eltType == void) {
+        compilerError("Cannot dereference a void pointer; cast to a " +
+                      "non-opaque pointee type first.");
+      }
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
@@ -204,6 +212,10 @@ module CTypes {
        Provides a ``const ref`` which cannot be used to modify the element.
     */
     inline proc this(i: integral) const ref {
+      if (this.eltType == void) {
+        compilerError("Cannot dereference a void pointer; cast to a " +
+                      "non-opaque pointee type first.");
+      }
       return __primitive("array_get", this, i);
     }
     /* Get element pointed to directly by this pointer. If the pointer
@@ -211,6 +223,10 @@ module CTypes {
        Provides a ``const ref`` which cannot be used to modify the element.
     */
     inline proc deref() const ref {
+      if (this.eltType == void) {
+        compilerError("Cannot dereference a void pointer; cast to a " +
+                      "non-opaque pointee type first.");
+      }
       return __primitive("array_get", this, 0);
     }
     /* Print this pointer */
