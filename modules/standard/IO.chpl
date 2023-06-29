@@ -590,7 +590,7 @@ enum ioMode {
   cw = 2,
   rw = 3,
   cwr = 4,
-  @unstable("append mode for :record:`fileWriter`s is unstable")
+  @unstable("append mode for is unstable")
   a = 5,
 }
 
