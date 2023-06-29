@@ -15,7 +15,7 @@ extern "struct allInts" record allInts {
 extern "struct misc" record misc {
   var a : c_char;
   var b : c_string;
-  var c : c_void_ptr;
+  var c : c_ptr(void);
   var d : c_ptr(c_int);
 }
 
