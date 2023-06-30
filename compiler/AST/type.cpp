@@ -1170,7 +1170,6 @@ void initPrimitiveTypes() {
   // used in some runtime interfaces
   dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
-  dtCVoidPtr->symbol->addFlag(FLAG_EXTERN);
   dtCVoidPtr->defaultValue = gNil;
 
   dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
