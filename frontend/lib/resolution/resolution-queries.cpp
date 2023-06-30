@@ -962,6 +962,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (t->isUnknownType())
     return Type::MAYBE_GENERIC;
 
+  if (auto pt = t->toCPtrType()) {
+    // Mimics the fields logic: if any field is non-concrete, the whole
+    // type is generic. Logically, the c_ptr has a single field, the element
+    // type.
+    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) == Type::CONCRETE) {
+      return Type::CONCRETE;
+    } else {
+      return Type::GENERIC;
+    }
+  }
+
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
   CHPL_ASSERT(t->isCompositeType() || t->isClassType());
@@ -2551,6 +2562,67 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  UniqueString name = ci.name();
+
+  if (name == USTR("c_ptr")) {
+    // Should we compute the generic version of the type (e.g. c_ptr(?))
+    bool useGenericType = false;
+
+    // There should be 0 or 1 actuals depending on if it is ?
+    if (ci.hasQuestionArg()) {
+      // handle int(?)
+      if (ci.numActuals() != 0) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+      useGenericType = true;
+    } else {
+      // handle int(?t) or int(16)
+      if (ci.numActuals() != 1) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+
+      QualifiedType qt = ci.actual(0).type();
+      if (qt.type() && qt.type()->isAnyType()) {
+        useGenericType = true;
+      }
+    }
+
+    if (useGenericType) {
+      return CPtrType::get(context);
+    }
+
+    QualifiedType qt;
+    if (ci.numActuals() > 0)
+      qt = ci.actual(0).type();
+
+    const Type* t = qt.type();
+    if (t == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+    if (t->isUnknownType() || t->isErroneousType()) {
+      // Just propagate the Unknown / Erroneous type
+      // without raising any errors
+      return t;
+    }
+
+    if (!qt.isType()) {
+      // raise an error b/c of type mismatch
+      context->error(astForErr, "invalid c_ptr type construction");
+      return ErroneousType::get(context);
+    }
+
+    return CPtrType::get(context, qt);
+  }
+
+  return nullptr;
+}
+
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
@@ -2602,6 +2674,10 @@ static const Type* resolveFnCallSpecialType(Context* context,
   }
 
   if (auto t = getNumericType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getCPtrType(context, astForErr, ci)) {
     return t;
   }
 

@@ -828,6 +828,12 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         return instantiate();
       }
     }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      if (actualPt->isInstantiationOf(context, formalPt)) {
+        return instantiate();
+      }
+    }
   }
 
   return fail();

@@ -29,6 +29,7 @@ target_sources(ChplFrontend-obj
                ClassTypeDecorator.cpp
                ComplexType.cpp
                CompositeType.cpp
+               CPtrType.cpp
                DomainType.cpp
                EnumType.cpp
                ErroneousType.cpp
