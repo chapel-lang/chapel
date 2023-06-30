@@ -336,6 +336,15 @@ endif
 endif
 
 #
+# Avoid a spurious warning in gcc 13, about a "possibly dangling reference"
+# when a function returns a reference to something on the heap. For more info
+# see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-dangling-reference
+endif
+
+#
 # 2016/03/28: Help to protect the Chapel compiler from a partially
 # characterized GCC optimizer regression when the compiler is being
 # compiled with gcc 5.X.

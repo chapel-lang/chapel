@@ -249,7 +249,7 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     // specify output
     clFlags.push_back("-o");
     clFlags.push_back(tmpOutput);
-    const std::vector<std::string> cc1args =
+    const std::vector<std::string>& cc1args =
         getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
 
     std::vector<const char*> cc1argsCstrs;
@@ -327,7 +327,7 @@ precompiledHeaderContainsNameQuery(Context* context,
     std::string dummyFile = context->chplHome() + "/runtime/etc/rtmain.c";
     clFlags.push_back(dummyFile);
 
-    const std::vector<std::string> cc1args =
+    const std::vector<std::string>& cc1args =
       getCC1Arguments(context, clFlags, /* forGpuCodegen */ false);
 
     std::vector<const char*> cc1argsCstrs;
