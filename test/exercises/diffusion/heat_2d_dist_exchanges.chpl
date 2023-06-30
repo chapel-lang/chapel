@@ -36,11 +36,7 @@ const tidXMax = u.targetLocales().dim(0).high - 1,
 // barrier for one-task-per-locale
 var b = new barrier(u.targetLocales().size);
 
-// sets of local arrays owned by each locale
-var localArrays = [d in u.targetLocales().domain] new localArraySet();
-
 enum Edge { N, E, S, W }
-
 class localArraySet {
   // which of the global indices does this locale own
   // used to index into the global array.
@@ -98,6 +94,9 @@ class localArraySet {
     this.a <=> this.b;
   }
 }
+
+// sets of local arrays owned by each locale
+var localArrays = [d in u.targetLocales().domain] new localArraySet();
 
 proc main() {
   if runCommDiag then startVerboseComm();

@@ -29,44 +29,62 @@ u[
   (0.5 / dy):int..<(1.0 / dy + 1):int
 ] = 2;
 
+// ghost vector type for creating a skyline array below
+record GhostVec {
+  var d: domain(1);
+  var v: [d] real;
+
+  proc init() do this.d = {0..0};
+  proc init(r: range(int, boundKind.both, strideKind.one)) do
+    this.d = {r};
+}
+
 // set up array of ghost vectors over same locale distribution as 'u'
 var ghostVecs: [u.targetLocales().domain] [0..<4] GhostVec;
 
-
-param L = 0, R = 1, T = 2, B = 3;
+// numbers for indexing into local array edges
+param N = 0, S = 1, E = 2, W = 3;
 
 // number of tasks per dimension based on Block distributions decomposition
-const tidXMax = u.targetLocales().dim(0).high - 1,
-      tidYMax = u.targetLocales().dim(1).high - 1;
+const tidXMax = u.targetLocales().dim(0).high,
+      tidYMax = u.targetLocales().dim(1).high;
+
+// barrier for one-task-per-locale
 var b = new barrier(numLocales);
 
-if runCommDiag then startVerboseComm();
+proc main() {
+  if runCommDiag then startCommDiagnostics();
 
-// execute the FD compuation with one task per locale
-coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
-  // initialize ghost vectors
-  ghostVecs[tidX, tidY][L] = new GhostVec(u.localSubdomain().dim(1).expand(1));
-  ghostVecs[tidX, tidY][R] = new GhostVec(u.localSubdomain().dim(1).expand(1));
-  ghostVecs[tidX, tidY][T] = new GhostVec(u.localSubdomain().dim(0).expand(1));
-  ghostVecs[tidX, tidY][B] = new GhostVec(u.localSubdomain().dim(0).expand(1));
+  // execute the FD compuation with one task per locale
+  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
+    // initialize ghost vectors
+    ghostVecs[tidX, tidY][N] = new GhostVec(u.localSubdomain().dim(1).expand(1));
+    ghostVecs[tidX, tidY][S] = new GhostVec(u.localSubdomain().dim(1).expand(1));
+    ghostVecs[tidX, tidY][E] = new GhostVec(u.localSubdomain().dim(0).expand(1));
+    ghostVecs[tidX, tidY][W] = new GhostVec(u.localSubdomain().dim(0).expand(1));
 
-  // synchronize across tasks
-  b.barrier();
+        writeln(loc.id, " ", u.localSubdomain(), "\n", ghostVecs);
 
-  // run the portion of the FD computation owned by this task
-  work(tidX, tidY);
+    // synchronize across tasks
+    b.barrier();
+
+    // run the portion of the FD computation owned by this task
+    work(tidX, tidY);
+  }
+
+  if runCommDiag {
+    stopCommDiagnostics();
+    printCommDiagnosticsTable();
+  }
+
+  // print final results
+  const mean = (+ reduce u) / u.size,
+        stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
+
+  writeln(abs(0.102424 - stdDev) < 1e-6);
+  writeln(stdDev);
+  writeln(u);
 }
-
-if runCommDiag {
-  stopVerboseComm();
-  printCommDiagnosticsTable();
-}
-
-// print final results
-const mean = (+ reduce u) / u.size,
-      stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
-
-writeln((0.102424 - stdDev) < 1e-6);
 
 proc work(tidX: int, tidY: int) {
   // declare two local sub-arrays with room to store neighboring locale's edges
@@ -74,33 +92,37 @@ proc work(tidX: int, tidY: int) {
         localIndicesBuffered = localIndices.expand(1),
         localIndicesInner = localIndices[indicesInner];
 
-  var uLocal1, uLocal2: [localIndicesBuffered] real;
+  var uLocal1, uLocal2: [localIndicesBuffered] real = 1;
 
   // populate local arrays with initial conditions from global array
   uLocal1[localIndices] = u[localIndices];
   uLocal2 = uLocal1;
 
   // convenient constants for indexing into edges of local array
-  const LL = localIndicesBuffered.dim(0).low,
-        RR = localIndicesBuffered.dim(0).high,
-        BB = localIndicesBuffered.dim(1).low,
-        TT = localIndicesBuffered.dim(1).high;
+  const WW = localIndicesBuffered.dim(1).low,
+        EE = localIndicesBuffered.dim(1).high,
+        SS = localIndicesBuffered.dim(0).high,
+        NN = localIndicesBuffered.dim(0).low;
 
   // preliminarily populate ghost regions for neighboring locales
-  if tidX > 0       then ghostVecs[tidX-1, tidY][R].v = uLocal1[LL+1, ..];
-  if tidX < tidXMax then ghostVecs[tidX+1, tidY][L].v = uLocal1[RR-1, ..];
-  if tidY > 0       then ghostVecs[tidX, tidY-1][B].v = uLocal1[.., TT-1];
-  if tidY < tidYMax then ghostVecs[tidX, tidY+1][T].v = uLocal1[.., BB+1];
+  if tidY > 0       then ghostVecs[tidX, tidY-1][E].v = uLocal1[.., WW+1];
+  if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal1[.., EE-1];
+  if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal1[NN+1, ..];
+  if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal1[SS-1, ..];
+
+  b.barrier();
+
+  writeln("on thread: (", tidX, ", ", tidY, "): \n ", uLocal1, "\n", ghostVecs[tidX, tidY], "\n");
 
   b.barrier();
 
   // run FD computation
   for 1..nt {
     // populate local edges from ghost regions
-    if tidX > 0       then uLocal1[LL, ..] = ghostVecs[tidX, tidY][L].v;
-    if tidX < tidXMax then uLocal1[RR, ..] = ghostVecs[tidX, tidY][R].v;
-    if tidY > 0       then uLocal1[.., TT] = ghostVecs[tidX, tidY][T].v;
-    if tidY < tidYMax then uLocal1[.., BB] = ghostVecs[tidX, tidY][B].v;
+    if tidY > 0       then uLocal1[.., WW] = ghostVecs[tidX, tidY][W].v;
+    if tidY < tidYMax then uLocal1[.., EE] = ghostVecs[tidX, tidY][E].v;
+    if tidX > 0       then uLocal1[NN, ..] = ghostVecs[tidX, tidY][N].v;
+    if tidX < tidXMax then uLocal1[SS, ..] = ghostVecs[tidX, tidY][S].v;
 
     // compute the FD kernel in parallel
     forall (i, j) in localIndicesInner {
@@ -111,11 +133,13 @@ proc work(tidX: int, tidY: int) {
                 (uLocal1[i, j-1] - 2 * uLocal1[i, j] + uLocal1[i, j+1]);
     }
 
+    b.barrier();
+
     // populate ghost regions for neighboring locales
-    if tidX > 0       then ghostVecs[tidX-1, tidY][R].v = uLocal2[LL+1, ..];
-    if tidX < tidXMax then ghostVecs[tidX+1, tidY][L].v = uLocal2[RR-1, ..];
-    if tidY > 0       then ghostVecs[tidX, tidY-1][B].v = uLocal2[.., TT-1];
-    if tidY < tidYMax then ghostVecs[tidX, tidY+1][T].v = uLocal2[.., BB+1];
+    if tidY > 0       then ghostVecs[tidX, tidY-1][E].v = uLocal2[.., WW+1];
+    if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal2[.., EE-1];
+    if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal2[NN+1, ..];
+    if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal2[SS-1, ..];
 
     // synchronize with other tasks
     b.barrier();
@@ -126,13 +150,4 @@ proc work(tidX: int, tidY: int) {
 
   // store results in global array
   u[localIndices] = uLocal1[localIndices];
-}
-
-record GhostVec {
-  var d: domain(1);
-  var v: [d] real;
-
-  proc init() do this.d = {0..0};
-  proc init(r: range(int, boundKind.both, strideKind.one)) do
-    this.d = {r};
 }
