@@ -32,7 +32,10 @@ u[
 // set up array of ghost vectors over same locale distribution as 'u'
 var ghostVecs: [u.targetLocales().domain] [0..<4] GhostVec;
 
+
 param L = 0, R = 1, T = 2, B = 3;
+
+// number of tasks per dimension based on Block distributions decomposition
 const tidXMax = u.targetLocales().dim(0).high - 1,
       tidYMax = u.targetLocales().dim(1).high - 1;
 var b = new barrier(numLocales);
@@ -40,18 +43,18 @@ var b = new barrier(numLocales);
 if runCommDiag then startVerboseComm();
 
 // execute the FD compuation with one task per locale
-coforall (loc, (i, j)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
+coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
   // initialize ghost vectors
-  for param edge in 0..<4 {
+  for param edge in [L, R, T, B] {
     param xy = if edge < 2 then 1 else 0;
-    ghostVecs[i, j][edge] = new GhostVec(u.localSubdomain().dim(xy).expand(1));
+    ghostVecs[tidX, tidY][edge] = new GhostVec(u.localSubdomain().dim(xy).expand(1));
   }
 
   // synchronize across tasks
   b.barrier();
 
   // run the portion of the FD computation owned by this task
-  work(i, j);
+  work(tidX, tidY);
 }
 
 if runCommDiag {
