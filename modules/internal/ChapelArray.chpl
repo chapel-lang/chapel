@@ -505,7 +505,7 @@ module ChapelArray {
 
 
   pragma "last resort"
-  proc chpl__distributed(d: _distribution, expr, definedConst: bool) {
+  proc chpl__distributed(d, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
 
