@@ -30,8 +30,8 @@ u[
 ] = 2;
 
 // number of tasks per dimension based on Block distributions decomposition
-const tidXMax = u.targetLocales().dim(0).high - 1,
-      tidYMax = u.targetLocales().dim(1).high - 1;
+const tidXMax = u.targetLocales().dim(0).high,
+      tidYMax = u.targetLocales().dim(1).high;
 
 // barrier for one-task-per-locale
 var b = new barrier(u.targetLocales().size);
@@ -67,25 +67,26 @@ class localArraySet {
   }
 
   proc ref copyInitialConditions(const ref u: [] real) {
+    this.a = 1.0;
     this.a[this.globalIndices] = u[globalIndices];
     this.b = this.a;
   }
 
   proc fillBuffer(edge: Edge, values: [] real) {
     select edge {
-      when Edge.N do this.a[.., this.indices.dim(1).high] = values;
-      when Edge.E do this.a[this.indices.dim(0).high, ..] = values;
-      when Edge.S do this.a[.., this.indices.dim(1).low] = values;
-      when Edge.W do this.a[this.indices.dim(0).low, ..] = values;
+      when Edge.N do this.a[this.indices.dim(0).low, ..] = values;
+      when Edge.S do this.a[this.indices.dim(0).high, ..] = values;
+      when Edge.E do this.a[.., this.indices.dim(1).high] = values;
+      when Edge.W do this.a[.., this.indices.dim(1).low] = values;
     }
   }
 
   proc getEdge(edge: Edge) {
     select edge {
-      when Edge.N do return this.a[.., this.indices.dim(1).high - 1];
-      when Edge.E do return this.a[this.indices.dim(0).high - 1, ..];
-      when Edge.S do return this.a[.., this.indices.dim(1).low + 1];
-      when Edge.W do return this.a[this.indices.dim(0).low + 1, ..];
+      when Edge.N do return this.a[this.indices.dim(0).low+1, ..];
+      when Edge.S do return this.a[this.indices.dim(0).high-1, ..];
+      when Edge.E do return this.a[.., this.indices.dim(1).high-1];
+      when Edge.W do return this.a[.., this.indices.dim(1).low+1];
     }
     return this.a[this.indices.dim(0).low, ..]; // never actually returned
   }
@@ -94,6 +95,8 @@ class localArraySet {
     this.a <=> this.b;
   }
 }
+
+// !!! TODO: put localArrays on their respective target locales
 
 // sets of local arrays owned by each locale
 var localArrays = [d in u.targetLocales().domain] new localArraySet();
@@ -108,6 +111,8 @@ proc main() {
     localArrays[tidX, tidY] = new localArraySet(u.localSubdomain(here), indicesInner);
     localArrays[tidX, tidY].copyInitialConditions(u);
 
+    b.barrier();
+
     // run the portion of the FD computation owned by this task
     work(tidX, tidY);
   }
@@ -121,22 +126,25 @@ proc main() {
   const mean = (+ reduce u) / u.size,
         stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
-  writeln((0.102424 - stdDev) < 1e-6);
+  writeln(abs(0.102424 - stdDev) < 1e-6);
+  writeln(u);
 }
 
 proc work(tidX: int, tidY: int) {
   var uLocal: borrowed localArraySet = localArrays[tidX, tidY];
 
   // preliminarily populate ghost regions for neighboring locales
-  if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-  if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-  if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-  if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+  if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
+  if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+  if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
+  if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
 
   b.barrier();
 
   // run FD computation
   for 1..nt {
+
+    // writeln("(", tidX, ", ", tidY, ")\n", uLocal.a, "\n");
 
     // compute the FD kernel in parallel
     forall (i, j) in uLocal.compIndices {
@@ -147,15 +155,17 @@ proc work(tidX: int, tidY: int) {
                 (uLocal.a[i, j-1] - 2 * uLocal.a[i, j] + uLocal.a[i, j+1]);
     }
 
+    b.barrier();
+
     uLocal.swap();
 
     b.barrier();
 
     // populate ghost regions for neighboring locales
-    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
+    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
+    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
 
     b.barrier();
   }

@@ -19,7 +19,7 @@ const dx : real = xLen / (nx - 1),       // grid spacing in x
 // define block distributed array
 const indices = {0..<nx, 0..<ny},
       indicesInner = indices.expand(-1),
-      INDICES = indices dmapped Block(indicesInner);
+      INDICES = Block.createDomain(indices);
 var u: [INDICES] real;
 
 // apply initial conditions
@@ -63,8 +63,6 @@ proc main() {
     ghostVecs[tidX, tidY][E] = new GhostVec(u.localSubdomain().dim(0).expand(1));
     ghostVecs[tidX, tidY][W] = new GhostVec(u.localSubdomain().dim(0).expand(1));
 
-        writeln(loc.id, " ", u.localSubdomain(), "\n", ghostVecs);
-
     // synchronize across tasks
     b.barrier();
 
@@ -82,8 +80,6 @@ proc main() {
         stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
 
   writeln(abs(0.102424 - stdDev) < 1e-6);
-  writeln(stdDev);
-  writeln(u);
 }
 
 proc work(tidX: int, tidY: int) {
@@ -109,10 +105,6 @@ proc work(tidX: int, tidY: int) {
   if tidY < tidYMax then ghostVecs[tidX, tidY+1][W].v = uLocal1[.., EE-1];
   if tidX > 0       then ghostVecs[tidX-1, tidY][S].v = uLocal1[NN+1, ..];
   if tidX < tidXMax then ghostVecs[tidX+1, tidY][N].v = uLocal1[SS-1, ..];
-
-  b.barrier();
-
-  writeln("on thread: (", tidX, ", ", tidY, "): \n ", uLocal1, "\n", ghostVecs[tidX, tidY], "\n");
 
   b.barrier();
 
