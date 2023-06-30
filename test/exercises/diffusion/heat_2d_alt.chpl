@@ -32,73 +32,12 @@ u[
 // number of tasks per dimension based on Block distributions decomposition
 const tidXMax = u.targetLocales().dim(0).high - 1,
       tidYMax = u.targetLocales().dim(1).high - 1;
-var b = new barrier(numLocales);
 
-if runCommDiag then startVerboseComm();
+// barrier for one-task-per-locale
+var b = new barrier(u.targetLocales().size);
 
+// sets of local arrays owned by each locale
 var localArrays = [d in u.targetLocales().domain] new localArraySet();
-
-// execute the FD compuation with one task per locale
-coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
-
-  // create local arrays owned by this task
-  var uLocal = new localArraySet(u.localSubdomain(here), indicesInner);
-  uLocal.copyInitialConditions(u);
-  localArrays[tidX, tidY] = uLocal;
-
-  // run the portion of the FD computation owned by this task
-  work(tidX, tidY, uLocal);
-}
-
-if runCommDiag {
-  stopVerboseComm();
-  printCommDiagnosticsTable();
-}
-
-// print final results
-const mean = (+ reduce u) / u.size,
-      stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
-
-writeln((0.102424 - stdDev) < 1e-6);
-
-
-proc work(tidX: int, tidY: int, uLocal: borrowed localArraySet) {
-  // preliminarily populate ghost regions for neighboring locales
-  if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-  if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-  if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-  if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
-
-  b.barrier();
-
-  // run FD computation
-  for 1..nt {
-
-    // compute the FD kernel in parallel
-    forall (i, j) in uLocal.compIndices {
-      uLocal.b[i, j] = uLocal.a[i, j] +
-              nu * dt / dy**2 *
-                (uLocal.a[i-1, j] - 2 * uLocal.a[i, j] + uLocal.a[i+1, j]) +
-              nu * dt / dx**2 *
-                (uLocal.a[i, j-1] - 2 * uLocal.a[i, j] + uLocal.a[i, j+1]);
-    }
-
-    uLocal.swap();
-
-    b.barrier();
-
-    // populate ghost regions for neighboring locales
-    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
-    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
-    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
-    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
-
-    b.barrier();
-  }
-
-  // store results in global array
-  u[uLocal.globalIndices] = uLocal.a[uLocal.globalIndices];
-}
 
 enum Edge { N, E, S, W }
 
@@ -145,17 +84,83 @@ class localArraySet {
     }
   }
 
-  proc getEdge(edge: Edge) [] real {
+  proc getEdge(edge: Edge) {
     select edge {
       when Edge.N do return this.a[.., this.indices.dim(1).high - 1];
       when Edge.E do return this.a[this.indices.dim(0).high - 1, ..];
       when Edge.S do return this.a[.., this.indices.dim(1).low + 1];
       when Edge.W do return this.a[this.indices.dim(0).low + 1, ..];
     }
-    return [0.0, 0.0];
+    return this.a[this.indices.dim(0).low, ..]; // never actually returned
   }
 
   proc swap() {
     this.a <=> this.b;
   }
+}
+
+proc main() {
+  if runCommDiag then startVerboseComm();
+
+  // execute the FD computation with one task per locale
+  coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
+
+    // initialize local arrays owned by this task
+    localArrays[tidX, tidY] = new localArraySet(u.localSubdomain(here), indicesInner);
+    localArrays[tidX, tidY].copyInitialConditions(u);
+
+    // run the portion of the FD computation owned by this task
+    work(tidX, tidY);
+  }
+
+  if runCommDiag {
+    stopVerboseComm();
+    printCommDiagnosticsTable();
+  }
+
+  // print final results
+  const mean = (+ reduce u) / u.size,
+        stdDev = sqrt((+ reduce (u - mean)**2) / u.size);
+
+  writeln((0.102424 - stdDev) < 1e-6);
+}
+
+proc work(tidX: int, tidY: int) {
+  var uLocal: borrowed localArraySet = localArrays[tidX, tidY];
+
+  // preliminarily populate ghost regions for neighboring locales
+  if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
+  if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
+  if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
+  if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+
+  b.barrier();
+
+  // run FD computation
+  for 1..nt {
+
+    // compute the FD kernel in parallel
+    forall (i, j) in uLocal.compIndices {
+      uLocal.b[i, j] = uLocal.a[i, j] +
+              nu * dt / dy**2 *
+                (uLocal.a[i-1, j] - 2 * uLocal.a[i, j] + uLocal.a[i+1, j]) +
+              nu * dt / dx**2 *
+                (uLocal.a[i, j-1] - 2 * uLocal.a[i, j] + uLocal.a[i, j+1]);
+    }
+
+    uLocal.swap();
+
+    b.barrier();
+
+    // populate ghost regions for neighboring locales
+    if tidX > 0       then localArrays[tidX-1, tidY].fillBuffer(Edge.E, uLocal.getEdge(Edge.W));
+    if tidX < tidXMax then localArrays[tidX+1, tidY].fillBuffer(Edge.W, uLocal.getEdge(Edge.E));
+    if tidY > 0       then localArrays[tidX, tidY-1].fillBuffer(Edge.S, uLocal.getEdge(Edge.N));
+    if tidY < tidYMax then localArrays[tidX, tidY+1].fillBuffer(Edge.N, uLocal.getEdge(Edge.S));
+
+    b.barrier();
+  }
+
+  // store results in global array
+  u[uLocal.globalIndices] = uLocal.a[uLocal.globalIndices];
 }
