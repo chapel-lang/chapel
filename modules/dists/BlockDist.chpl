@@ -504,18 +504,6 @@ record Block {
     }
   }
 
-  @chpldoc.nodoc
-  inline operator ==(d1: Block(?), d2: Block(?)) {
-    if (d1._value == d2._value) then
-      return true;
-    return d1._value.dsiEqualDMaps(d2._value);
-  }
-
-  @chpldoc.nodoc
-  inline operator !=(d1: Block(?), d2: Block(?)) {
-    return !(d1 == d2);
-  }
-
   // This alternative declaration of Sort.defaultComparator
   // prevents transitive use of module Sort.
   proc chpl_defaultComparator() {
@@ -546,7 +534,21 @@ record Block {
                                        strides.toStridable(), ranges);
   }
 */
+
+  @chpldoc.nodoc
+  inline operator ==(d1: Block(?), d2: Block(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: Block(?), d2: Block(?)) {
+    return !(d1 == d2);
+  }
 }
+
+
 
 @chpldoc.nodoc
 @unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
