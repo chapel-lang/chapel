@@ -1897,6 +1897,11 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
+  // Intercept the standard library `c_ptr` and turn it into the builtin type.
+  if (id == CPtrType::getId(context)) {
+    return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
+  }
+
   // if the id is contained within this symbol,
   // get the type information from the resolution result.
   //

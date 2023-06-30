@@ -65,6 +65,8 @@ class CPtrType final : public Type {
   static const CPtrType* get(Context* context);
   static const CPtrType* get(Context* context, const QualifiedType& eltType);
 
+  static const ID& getId(Context* context);
+
   const QualifiedType& eltType() const {
     return eltType_;
   }

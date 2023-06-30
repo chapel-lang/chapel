@@ -53,5 +53,12 @@ const CPtrType* CPtrType::get(Context* context, const QualifiedType& eltType) {
                                eltType).get();
 }
 
+const ID& CPtrType::getId(Context* context) {
+  QUERY_BEGIN(getId, context);
+  UniqueString path = UniqueString::get(context, "CTypes.c_ptr");
+  ID result { path, -1, 0 };
+  return QUERY_END(result);
+}
+
 } // end namespace types
 } // end namespace chpl
