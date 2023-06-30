@@ -347,14 +347,12 @@ record Block {
     this._instance = value;
   }
 
-  
-  /*
     proc init(_pid : int, _instance, _unowned : bool) {
       this._pid      = _pid;
       this._instance = _instance;
       this._unowned  = _unowned;
     }
-  */
+
     proc init(value) {
       this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
       this._instance = _to_unmanaged(value);
@@ -1047,6 +1045,13 @@ proc LocBlock.init(param rank, type idxType, param dummy: bool) where dummy {
 
 
 ////// BlockDom and LocBlockDom methods /////////////////////////////////////
+
+proc BlockDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new Block(dist.pid, dist, _unowned=true);
+  else
+    return new Block(nullPid, dist, _unowned=true);
+}
 
 override proc BlockDom.dsiDisplayRepresentation() {
   writeln("whole = ", whole);

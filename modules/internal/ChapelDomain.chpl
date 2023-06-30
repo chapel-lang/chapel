@@ -1176,7 +1176,17 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
-    proc dist do return _getDistribution(_value.dist);
+    proc dist {
+      use Reflection;
+      if canResolveMethod(_value, "dsiGetDist") {
+//      if __primitive("method call resolves", _value, "dsiGetDist") {
+        return _value.dsiGetDist();
+      } else {
+        // TODO: Remove this branch and conditional once _distribution is
+        // retired
+        return _getDistribution(_value.dist);
+      }
+    }
 
     /* Return the number of dimensions in this domain */
     proc rank param {

@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc Block.printBB() {
-  writeln("boundingBox = ", boundingBox);
+  writeln("boundingBox = ", this.boundingBox);
 }
 
 proc DefaultAssociativeDom.printTableSize() {
@@ -19,4 +19,8 @@ proc main() {
   writeln(DA.type:string, ".printTableSize()");
   DA.printTableSize();
   writeln();
+}
+
+operator :(type t: Block(?), type res: string) {
+  return "I'm a Block!";
 }
