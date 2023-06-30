@@ -93,8 +93,8 @@ void ExpandExternArrayCalls::process(FnSymbol* fn) {
           new BlockStmt(
             new CallExpr("c_ptr", eltType->remove())));
     } else {
-      // generic arrays are replaced with 'c_ptr(void)'
-      // TODO: figure out how to use actual c_ptr(void) instead of raw version
+      // generic arrays are replaced with 'raw_c_void_ptr'
+      // TODO: use c_ptr(void) instead of raw version
       SET_LINENO(formal);
       formal->typeExpr->replace(
           new BlockStmt(
