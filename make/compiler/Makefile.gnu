@@ -337,8 +337,9 @@ endif
 
 #
 # Avoid a spurious warning in gcc 13, about a "possibly dangling reference"
-# when a function returns a reference to something on the heap. For more info
-# see https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
+# when a function returns a reference (even though it's something gauranteed to
+# be allocated on the heap). For more info see
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
 #
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-dangling-reference
