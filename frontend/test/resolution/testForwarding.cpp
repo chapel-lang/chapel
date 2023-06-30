@@ -432,7 +432,7 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isErroneousType());
 
-  int numExpected = isVar ? 3 : 2;
+  unsigned int numExpected = isVar ? 3 : 2;
   assert(guard.numErrors() == numExpected);
 
   auto first = "Cannot resolve call to 'bar': no matching candidates";
