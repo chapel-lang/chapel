@@ -9,7 +9,7 @@ use BlockDist;
 const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
-const dist = new unmanaged Block(dummyBB);
+const dist = new Block(dummyBB);
 
 // Any computations here, should not involve 'dist'. //
 
@@ -46,7 +46,7 @@ and destroys the original. We have a .future on this.
 For now, do this instead:
 */
 
-const distTemp = new unmanaged Block(dummyBB);
+const distTemp = new Block(dummyBB);
 const DM = new dmap(distTemp);
 
 DM.changeBoundingBox(1..4);
@@ -71,7 +71,7 @@ calling changeBoundingBox() will affect only future domains/arrays
 created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
-proc Block.changeBoundingBox(newBB) {
+proc BlockGuts.changeBoundingBox(newBB) {
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms_containing_dist != 0 then
