@@ -107,10 +107,24 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
     print "Mailing to everyone\n";
 }
 
+# Persist the test summary to a (summary.txt) in the workspace.
+# Summary.txt wull be used by Jenkins to send emails in case of a failure.
+writeSummary ($revision,
+     $starttime,
+     $endtime ,
+     $crontab ,
+     $testdirs ,
+     $numtestssummary ,
+     $summary ,
+     $prevsummary ,
+     $sortedsummary );
+
 $mailsubject = "$subjectid $config_name";
 $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
+    
+    
     print "Trying... $mailcommand\n";
     open(MAIL, $mailcommand);
 

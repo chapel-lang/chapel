@@ -139,5 +139,58 @@ sub endMailChplenv {
 
     $mystr;
 }
+sub writeSummary {
+    my $revision = $_[0];
+    my $starttime = $_[1];
+    my $endtime = $_[2];
+    my $crontab = $_[3];
+    my $testdirs = $_[4];
+    my $numtestssummary = $_[5];
+    my $summary = $_[6];
+    my $prevsummary = $_[7];
+    my $sortedsummary = $_[8];
+    
+    my $filename = '$chplhomedir/summary.txt';
+    print "Writing Testing summary... \n";
+    open(SF, '>', $filename) or die $!;
 
+    print SF startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
+    print SF "$numtestssummary\n";
+    print SF "$summary\n";
+    print SF endMailHeader();
+        print SF "--- New Errors -------------------------------\n";
+        print SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print SF "\n";
+
+        print SF "--- Resolved Errors --------------------------\n";
+        print SF `LC_ALL=C comm -23 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print SF "\n";
+
+        print SF "--- New Passing Future tests------------------\n";
+        print SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print SF "\n";
+
+        print SF "--- Passing Future tests ---------------------\n";
+        print SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Success"`;
+        print SF "\n";
+
+        print SF "--- New Passing Suppress tests------------------\n";
+        print SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print SF "\n";
+
+        print SF "--- Passing Suppress tests ---------------------\n";
+        print SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$suppressmarker" | grep "\\[Success"`;
+        print SF "\n";
+
+        print SF "--- Unresolved Errors ------------------------\n";
+        print SF `LC_ALL=C comm -12 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
+        print SF "\n";
+
+        print SF "--- New Failing Future tests -----------------\n";
+        print SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep "$futuremarker" | grep "\\[Error"`;
+        print SF "\n";
+    print SF      
+    print SF endMailChplenv();
+    close(SF);
+}
 return(1);
