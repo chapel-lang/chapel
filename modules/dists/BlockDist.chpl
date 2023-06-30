@@ -473,9 +473,9 @@ record Block {
       }
       return x;
     }
-
+*/
     proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-
+/*
     proc readThis(f) throws {
       f.read(_value);
     }
@@ -808,7 +808,7 @@ proc BlockGuts.dsiAssign(other: this.type) {
 // Block distributions are equivalent if they share the same bounding
 // box and target locale set.
 //
-proc BlockGuts.dsiEqualDMaps(that: Block(?)) {
+proc BlockGuts.dsiEqualDMaps(that: BlockGuts(?)) {
   return (this.rank == that.rank &&
           this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales));
