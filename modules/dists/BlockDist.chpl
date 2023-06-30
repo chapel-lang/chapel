@@ -495,13 +495,14 @@ record Block {
     }
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-
+*/
     /*
        Return an array of locales over which this distribution was declared.
     */
     proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
+  /*
   }
 
   // This alternative declaration of Sort.defaultComparator
