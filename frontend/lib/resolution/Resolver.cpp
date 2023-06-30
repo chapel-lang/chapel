@@ -344,11 +344,9 @@ Resolver::createForParentClassScopeResolve(Context* context,
                                            const AggregateDecl* decl,
                                            ResolutionResultByPostorderID& byId)
 {
-  auto parentId = decl->id().parentSymbolId(context);
-  auto parent = parsing::idToAst(context, parentId);
-  auto ret = Resolver(context, parent, byId, /* poiScope */ nullptr);
+  auto ret = Resolver(context, decl, byId, /* poiScope */ nullptr);
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
-  ret.byPostorder.setupForSymbol(parent);
+  ret.byPostorder.setupForSymbol(decl);
   ret.scopeResolveOnly = true;
   return ret;
 }
@@ -419,13 +417,16 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
         if (const AstNode* parentClassExpr = c->parentClass()) {
           // Resolve the parent class type expression
           ResolutionResultByPostorderID r;
-          // TODO: Seems like we should just be able to call
-          // 'resolveIdentifier' here. As-is, going through normal traversal is
-          // a bit muddled by the parentClassExpr technically being a child of
-          // 'c'.
           auto visitor =
             Resolver::createForParentClassScopeResolve(context, c, r);
-          parentClassExpr->traverse(visitor);
+          // Parsing excludes non-identifiers as parent class expressions.
+          //
+          // Intended to avoid calling methodReceiverScopes() recursively.
+          // Uses the empty 'savecReceiverScopes' because the class expression
+          // can't be a method anyways.
+          visitor.resolveIdentifier(parentClassExpr->toIdentifier(),
+                                    visitor.savedReceiverScopes);
+
 
           ResolvedExpression& re = r.byAst(parentClassExpr);
           if (re.toId().isEmpty()) {
@@ -538,8 +539,14 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
     } else if (auto agg = symbol->toAggregateDecl()) {
       // Lacking any more specific information, use the parent aggregate ID
       // if available.
-      if (outId) *outId = agg->id();
-      return true;
+      //
+      // TODO: when enabled for 'scopeResolveOnly' we must start issuing
+      // errors for cyclic class hierarchies and an inability to find
+      // parent class expressions.
+      if (!scopeResolveOnly) {
+        if (outId) *outId = agg->id();
+        return true;
+      }
     }
   }
 
