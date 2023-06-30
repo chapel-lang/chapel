@@ -377,7 +377,7 @@ record Block {
     }
 
     forwarding _value except targetLocales;
-  /*
+
     inline proc _do_destroy() {
       if ! _unowned && ! _instance.singleton() {
         on _instance {
@@ -396,7 +396,7 @@ record Block {
     proc deinit() {
       _do_destroy();
     }
-  */
+
     proc clone() {
       return new Block(_value.dsiClone());
     }
