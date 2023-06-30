@@ -3060,6 +3060,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
   }
 }
 
+// TODO: Could/should this be a parsing query?
 static bool isInsideForwarding(Context* context, const Call* call) {
   bool insideForwarding = false;
   if (call != nullptr) {
