@@ -2450,7 +2450,9 @@ void Resolver::resolveIdentifier(const Identifier* ident,
       ID builtinId = id;
       if (type.hasTypePtr()) {
         if (auto cl = type.type()->toClassType()) {
-          builtinId = cl->basicClassType()->id();
+          if (auto basic = cl->basicClassType()) {
+            builtinId = basic->id();
+          }
         } else if (auto ct = type.type()->toCompositeType()) {
           builtinId = ct->id();
         }
