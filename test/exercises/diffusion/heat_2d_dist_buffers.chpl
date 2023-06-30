@@ -45,10 +45,10 @@ if runCommDiag then startVerboseComm();
 // execute the FD compuation with one task per locale
 coforall (loc, (tidX, tidY)) in zip(u.targetLocales(), u.targetLocales().domain) do on loc {
   // initialize ghost vectors
-  for param edge in [L, R, T, B] {
-    param xy = if edge < 2 then 1 else 0;
-    ghostVecs[tidX, tidY][edge] = new GhostVec(u.localSubdomain().dim(xy).expand(1));
-  }
+  ghostVecs[tidX, tidY][L] = new GhostVec(u.localSubdomain().dim(1).expand(1));
+  ghostVecs[tidX, tidY][R] = new GhostVec(u.localSubdomain().dim(1).expand(1));
+  ghostVecs[tidX, tidY][T] = new GhostVec(u.localSubdomain().dim(0).expand(1));
+  ghostVecs[tidX, tidY][B] = new GhostVec(u.localSubdomain().dim(0).expand(1));
 
   // synchronize across tasks
   b.barrier();
