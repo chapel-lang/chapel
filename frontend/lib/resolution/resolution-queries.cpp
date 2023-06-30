@@ -2906,35 +2906,17 @@ gatherAndFilterCandidatesForwarding(Context* context,
   if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
-    // Possible recursion here when resolving a function call in a forwarding
-    // statement:
-    //     record R { forwarding foo(); }
-    // We need to try resolving 'foo()' as a method on 'R', which eventually
-    // leads us back to this path here.
-    //
-    // By skipping the 'resolveForwardingExprs' check below, we effectively
-    // prevent forwarding statements from containing expressions that
-    // themselves require forwarding. For example, if you had a couple of
-    // forwarding statements like:
-    //     forwarding b;
-    //     forwarding bar();
-    // The 'isQueryRunning' check below would prevent resolving a method
-    // 'bar()' on 'b'.
-    //
-    if (!context->isQueryRunning(resolveForwardingExprs,
-                                std::make_tuple(ct))) {
-      auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
-      const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
-                                                       useDefaults);
-      const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
-      if (fields.numForwards() > 0 ||
-          exprs.numForwards() > 0) {
-        // and check for cycles
-        bool cycleFound = emitErrorForForwardingCycles(context, ct);
-        if (cycleFound == false) {
-          forwards.addForwarding(fields);
-          forwards.addForwarding(exprs);
-        }
+    auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
+    const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
+                                                     useDefaults);
+    const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+    if (fields.numForwards() > 0 ||
+        exprs.numForwards() > 0) {
+      // and check for cycles
+      bool cycleFound = emitErrorForForwardingCycles(context, ct);
+      if (cycleFound == false) {
+        forwards.addForwarding(fields);
+        forwards.addForwarding(exprs);
       }
     }
   }
@@ -2947,6 +2929,11 @@ gatherAndFilterCandidatesForwarding(Context* context,
     int numForwards = forwards.numForwards();
     for (int i = 0; i < numForwards; i++) {
       QualifiedType forwardType = forwards.forwardingToType(i);
+
+      // an error occurred, skip it
+      if (forwardType.isUnknown() || forwardType.hasTypePtr() == false)
+        continue;
+
       std::vector<CallInfoActual> actuals;
       // compute the actuals
       // first, the method receiver (from the forwarded type)
@@ -3073,6 +3060,27 @@ gatherAndFilterCandidatesForwarding(Context* context,
   }
 }
 
+static bool isInsideForwarding(Context* context, const Call* call) {
+  bool insideForwarding = false;
+  if (call != nullptr) {
+    auto p = parsing::parentAst(context, call);
+    while (p != nullptr) {
+      // If we encounter an aggregate or function, we're definitely not in
+      // a forwarding statement.
+      if (p->isAggregateDecl() || p->isFunction()) break;
+
+      if (p->isForwardingDecl()) {
+        insideForwarding = true;
+        break;
+      }
+
+      p = parsing::parentAst(context, p);
+    }
+  }
+
+  return insideForwarding;
+}
+
 // Returns candidates (including instantiating candidates)
 // for resolving CallInfo 'ci'.
 //
@@ -3153,7 +3161,28 @@ gatherAndFilterCandidates(Context* context,
   // If no candidates were found and it's a method, try forwarding
   if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
     const Type* receiverType = ci.actual(0).type().type();
-    if (typeUsesForwarding(context, receiverType)) {
+
+    // TODO: Should this information come as a boolean argument set by the
+    // Resolver? It would be less expensive to set a boolean on Resolver once
+    // we encounter a ForwardingDecl.
+    //
+    // Possible recursion here when resolving a function call in a forwarding
+    // statement:
+    //     record R { forwarding foo(); }
+    // We need to try resolving 'foo()' as a method on 'R', which eventually
+    // leads us back to this path here.
+    //
+    // By skipping the gathering of forwarding candidates below, we also
+    // prevent forwarding statements from containing expressions that
+    // themselves require forwarding. For example, if you had a couple of
+    // forwarding statements like:
+    //     forwarding b;
+    //     forwarding bar();
+    // The 'isInsideForwarding' check below would prevent resolving a method
+    // 'bar()' on 'b'.
+
+    if (typeUsesForwarding(context, receiverType) &&
+        !isInsideForwarding(context, call)) {
       CandidatesVec nonPoiCandidates;
       CandidatesVec poiCandidates;
       ForwardingInfoVec nonPoiForwardingTo;

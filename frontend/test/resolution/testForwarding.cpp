@@ -395,15 +395,12 @@ static void testExpr() {
   assert(qt.type()->isIntType());
 }
 
-// Test an attempt to forward to an expression that itself requires forwarding
-static void testForwardForwardExpr() {
-  printf("testForwardForwardExpr\n");
-
+static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  const char* contents =
+  std::string contents =
     R""""(
     record A {
       proc foo() {
@@ -419,11 +416,13 @@ static void testForwardForwardExpr() {
       }
     }
 
+    proc ident(arg) { return arg; }
+
     record R {
       var b : B;
 
       forwarding b;
-      forwarding bar();
+      )"""" + stmt + R""""(
     }
 
     var r : R;
@@ -433,15 +432,30 @@ static void testForwardForwardExpr() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isErroneousType());
 
-  assert(guard.numErrors() == 2);
+  int numExpected = isVar ? 3 : 2;
+  assert(guard.numErrors() == numExpected);
 
   auto first = "Cannot resolve call to 'bar': no matching candidates";
   assert(guard.error(0)->message() == first);
 
+  if (isVar) {
+    // TODO: Why the extra message in the var case?
+    assert(guard.error(1)->message() == first);
+  }
+
   auto second = "Cannot resolve call to 'foo': no matching candidates";
-  assert(guard.error(1)->message() == second);
+  assert(guard.error(guard.numErrors()-1)->message() == second);
 
   guard.realizeErrors();
+}
+
+// Test an attempt to forward to an expression that itself requires forwarding
+static void testForwardForwardExpr() {
+  printf("testForwardForwardExpr\n");
+
+  forwardForwardHelper("forwarding bar();");
+  forwardForwardHelper("forwarding ident(bar());");
+  forwardForwardHelper("forwarding var x = bar();", /*isVar=*/true);
 }
 
 // TODO: forwarding with only, except
