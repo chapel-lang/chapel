@@ -33,7 +33,12 @@ class CPtrType final : public Type {
 
   CPtrType(const CPtrType* instantiatedFrom, QualifiedType eltType)
     : Type(typetags::CPtrType), instantiatedFrom_(instantiatedFrom),
-      eltType_(std::move(eltType)) {}
+      eltType_(std::move(eltType)) {
+    // not an instantiation -> eltType_ should be empty
+    CHPL_ASSERT(instantiatedFrom_ != nullptr || eltType_ == QualifiedType());
+    // is an instantiation -> eltType should not be empty
+    CHPL_ASSERT(instantiatedFrom_ == nullptr || eltType_ != QualifiedType());
+  }
 
   bool contentsMatchInner(const Type* other) const override {
     auto rhs = (CPtrType*) other;
@@ -88,6 +93,9 @@ class CPtrType final : public Type {
 
     return false;
   }
+
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
 };
 
 } // end namespace types

@@ -60,5 +60,16 @@ const ID& CPtrType::getId(Context* context) {
   return QUERY_END(result);
 }
 
+void CPtrType::stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const {
+  USTR("c_ptr").stringify(ss, stringKind);
+
+  if (instantiatedFrom_) {
+    ss << "(";
+    eltType_.stringify(ss, stringKind);
+    ss << ")";
+  }
+}
+
 } // end namespace types
 } // end namespace chpl
