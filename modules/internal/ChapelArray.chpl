@@ -746,7 +746,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistDMapValue(x: record) {
-    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
+//    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
     return chpl__buildDistValue(x);
   }
 
