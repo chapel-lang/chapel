@@ -1309,7 +1309,7 @@ module ChapelBase {
       return x;
     } else if isCoercible(t, int) || isCoercible(t, uint) {
       return x != 0;
-    } else if isSubtype(t, c_ptr) || isSubtype(t, c_ptr(void)) {
+    } else if isSubtype(t, c_ptr) {
       return x != nil;
     } else {
       use Reflection;
