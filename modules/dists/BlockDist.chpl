@@ -494,9 +494,9 @@ record Block {
     proc serialize(writer, ref serializer) throws {
       writer.write(_value);
     }
+*/
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
-*/
     /*
        Return an array of locales over which this distribution was declared.
     */
