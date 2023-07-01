@@ -935,9 +935,31 @@ module ChapelArray {
     return d1._value.dsiEqualDMaps(d2._value);
   }
 
+  // This is temporary while we work on retiring _distribution
+  @chpldoc.nodoc
+  inline operator ==(d1: _distribution(?), d2: record) param {
+    return false;
+  }
+
+  // This is temporary while we work on retiring _distribution
+  @chpldoc.nodoc
+  inline operator ==(d1: record, d2: _distribution(?)) param {
+    return false;
+  }
+
   @chpldoc.nodoc
   inline operator !=(d1: _distribution(?), d2: _distribution(?)) {
     return !(d1 == d2);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: _distribution(?), d2: record) param {
+    return true;
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: record, d2: _distribution(?)) param {
+    return true;
   }
 
   // This alternative declaration of Sort.defaultComparator
