@@ -1156,7 +1156,7 @@ static void processSyntacticDistributions(CallExpr* call) {
             call->insertAtHead(new CallExpr("chpl__buildDistValue", newExpr));
 
             processManagedNew(newExpr);
-          }            
+          }
         }
       }
     }
