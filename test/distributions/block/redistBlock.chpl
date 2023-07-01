@@ -1,7 +1,7 @@
 use BlockDist;
-config param useDmap = false;
+
 var n = 10;
-var B = if useDmap then new dmap(new Block({1..n})) else new Block({1..n});
+var B = new Block({1..n});
 var D = {1..n} dmapped B;
 var A: [D] real;
 
@@ -38,7 +38,7 @@ inspectDist(A);
 for i in 1..10 {
   D = {1..0}; // reset domain to avoid need to preserve data
   n *= 2;
-  B = if useDmap then new dmap(new Block({1..n})) else new Block({1..n});
+  B = new Block({1..n});
   D = {1..n};
   inspectDist(A);
 
