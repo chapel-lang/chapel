@@ -485,10 +485,11 @@ record Block {
       ret.readThis(reader);
       return ret;
     }
-
+*/
     proc writeThis(f) throws {
       f.write(_value);
     }
+  /*
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writer.write(_value);
