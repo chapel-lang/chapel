@@ -1192,7 +1192,7 @@ module ChapelDomain {
     /* The ``idxType`` as represented by an integer type.  When
        ``idxType`` is an enum type, this evaluates to ``int``.
        Otherwise, it evaluates to ``idxType``. */
-    @deprecated("'domain.intIdxType' is deprecated; please let us know if you are relying on it")
+    @deprecated("'.intIdxType' on domains is deprecated; please let us know if you're relying on it")
     proc intIdxType type {
       return chpl_integralIdxType;
     }
