@@ -321,7 +321,6 @@ This example demonstrates a Block-distributed sparse domain and array:
 */
 
 pragma "ignore noinit"
-@chpldoc.nodoc
 record Block {
   var _pid:int;  // only used when privatized
   pragma "owned"
@@ -570,6 +569,7 @@ operator =(ref a: Block(?), b: Block(?)) {
 }
 
 
+@chpldoc.nodoc
 class BlockGuts : BaseDist {
   param rank: int;
   type idxType = int;
