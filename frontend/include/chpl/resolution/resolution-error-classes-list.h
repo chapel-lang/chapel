@@ -27,9 +27,7 @@
 // Calls to the ERROR_CLASS/WARNING_CLASS/etc. macros should list the new
 // error's name first, followed a list of types describing error details.
 //
-// Errors are grouped by which compilation stage they relate to, and sorted
-// alphabetically within these groups. Groups themselves are ordered by the
-// order their compilation stages occur in.
+// Errors/warnings/etc should be ordered alphabetically by name.
 //
 // Also, the macro calls in this file should each be on a single line,
 // even though that makes long lines that are normally avoided.
