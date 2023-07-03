@@ -134,6 +134,8 @@ _chpl ()
 --llvm \
 --llvm-print-ir \
 --llvm-print-ir-stage \
+--llvm-remarks \
+--llvm-remarks-function \
 --llvm-wide-opt \
 --local \
 --local-checks \
@@ -438,6 +440,8 @@ _chpl ()
 --license \
 --live-analysis \
 --llvm \
+--llvm-remarks \
+--llvm-remarks-function \
 --llvm-wide-opt \
 --local \
 --local-checks \
