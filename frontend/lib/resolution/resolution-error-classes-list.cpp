@@ -296,9 +296,12 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
-  auto msg = std::get<std::string>(info);
   auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "in extern C: ", msg);
+  auto isFromCCompiler = std::get<bool>(info);
+  auto msg = std::get<std::string>(info);
+  // If outputting a message from the C compiler, specify that.
+  wr.heading(kind_, type_, loc,
+             (isFromCCompiler ? "C compiler output: " : ""), msg);
 }
 
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {

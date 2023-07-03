@@ -282,7 +282,10 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
-      context->error(externBlockId, "error running clang on extern block");
+      CHPL_REPORT(context, ExternCCompilation,
+                  parsing::locateId(context, externBlockId),
+                  /* C compiler error */ false,
+                  "error running clang on extern block");
 
       // Report Clang errors and warnings to the Context.
       // we expect warnings are being treated as errors
@@ -299,7 +302,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
                      presumedLoc.getLine(), presumedLoc.getColumn());
         // TODO: also output diagnostic options after message ([-Werror] etc)
         CHPL_REPORT(context, ExternCCompilation, externErrorLoc,
-                    (*it).second.c_str());
+                    /* C compiler error */ true,
+                    /* error message */ (*it).second.c_str());
       }
 
       ok = false;
