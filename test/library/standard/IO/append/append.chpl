@@ -4,7 +4,7 @@ config var filename = "test.txt";
 
 {
   var f = open(filename, ioMode.cw);
-  var w = f.writer(locking=false);
+  var w = f.writer();
   w.writeln("hello world from writeln");
   w.writeln("hello world from writeln again");
   w.close();
@@ -12,11 +12,8 @@ config var filename = "test.txt";
 }
 
 {
-  writeln(ioHintSet.mmap(false)._internal);
-  // works with ioHintSet.fromFlag(QIO_METHOD_FREADFWRITE)
-  // ioHintSet.fromFlag(QIO_METHOD_FREADFWRITE)
-  var f = open(filename, ioMode.a); // open then close without a write is fine
-  var a = f.writer(); //region=f.size..
+  var f = open(filename, ioMode.a);
+  var a = f.writer();
   a.writeln("world hello");
   a.close();
   f.close();
