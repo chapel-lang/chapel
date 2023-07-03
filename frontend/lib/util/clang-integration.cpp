@@ -284,8 +284,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     if (!Clang->ExecuteAction(*genPchAction)) {
       context->error(externBlockId, "error running clang on extern block");
 
-      // save Clang errors warnings to context
-      // all warnings should be treated as errors
+      // Report Clang errors and warnings to the Context.
+      // we expect warnings are being treated as errors
       CHPL_ASSERT(diagClient->getNumWarnings() == 0);
       const clang::SourceManager& sm = Clang->getSourceManager();
       for (auto it = diagClient->err_begin(); it != diagClient->err_end();
@@ -298,7 +298,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
             Location(UniqueString::get(context, presumedLoc.getFilename()),
                      presumedLoc.getLine(), presumedLoc.getColumn());
         // TODO: also output diagnostic options after message ([-Werror] etc)
-        context->error(externErrorLoc, "%s", (*it).second.c_str());
+        CHPL_REPORT(context, ExternCCompilation, externErrorLoc,
+                    (*it).second.c_str());
       }
 
       ok = false;

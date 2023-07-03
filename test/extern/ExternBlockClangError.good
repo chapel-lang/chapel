@@ -1,2 +1,2 @@
 ExternBlockClangError.chpl:1: error: error running clang on extern block
-ExternBlockClangError.chpl:3: error: no previous prototype for function 'bar'
+ExternBlockClangError.chpl:3: error: in extern C: no previous prototype for function 'bar'

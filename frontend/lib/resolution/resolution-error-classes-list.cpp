@@ -295,6 +295,12 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<std::string>(info);
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "in extern C: ", msg);
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
   const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
