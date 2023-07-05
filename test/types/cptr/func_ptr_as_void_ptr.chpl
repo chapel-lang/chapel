@@ -1,3 +1,5 @@
+use CTypes;
+
 extern record MyRec {
   var x: c_void_ptr;
 }

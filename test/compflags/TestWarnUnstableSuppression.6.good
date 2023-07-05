@@ -1,5 +1,7 @@
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
 $CHPL_HOME/modules/standard/Reflection.chpl:nnnn: warning: chpl_unstableStandardSymbolForTesting is unstable
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In function '_modestring':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: append mode is unstable
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: In method 'deinit':
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved
 $CHPL_HOME/modules/standard/Errors.chpl:nnnn: In initializer:

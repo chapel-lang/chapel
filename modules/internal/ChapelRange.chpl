@@ -155,7 +155,7 @@ module ChapelRange {
      be more of an implementation detail than a user-facing
      feature. */
   @chpldoc.nodoc
-  proc range.intIdxType type {
+  proc range.chpl_integralIdxType type {
     return chpl__idxTypeToIntIdxType(idxType);
   }
 
@@ -329,7 +329,7 @@ module ChapelRange {
                            " from a range with strideKind.", s:string);
 
     param isEnumBool = isFiniteIdxType(idxType);
-    type bt = other.intIdxType;
+    type bt = other.chpl_integralIdxType;
     const low  = if isEnumBool && !other.hasLowBound()
                  then finiteIdxTypeLow(idxType):bt
                  else other._low;
@@ -989,8 +989,8 @@ module ChapelRange {
   // for low/high of a pre-allocated enum range, ex., in range/domain followers
 
   inline proc ref range.chpl_setFields(low, high, stride) {
-    this._low  = chpl__idxToInt(low):  this.intIdxType;
-    this._high = chpl__idxToInt(high): this.intIdxType;
+    this._low  = chpl__idxToInt(low):  this.chpl_integralIdxType;
+    this._high = chpl__idxToInt(high): this.chpl_integralIdxType;
     if this.hasParamStrideAltvalAld() {
       if boundsChecking then verifyAppropriateStide(this.strides, stride);
     } else {
@@ -1003,8 +1003,8 @@ module ChapelRange {
 
   inline proc ref range.chpl_setFields(low, high) {
     compilerAssert(this.hasParamStride()); // otherwise stride = ?
-    this._low  = chpl__idxToInt(low):  this.intIdxType;
-    this._high = chpl__idxToInt(high): this.intIdxType;
+    this._low  = chpl__idxToInt(low):  this.chpl_integralIdxType;
+    this._high = chpl__idxToInt(high): this.chpl_integralIdxType;
   }
 
   /* Returns the range's aligned low bound. If this bound is
@@ -1421,7 +1421,7 @@ module ChapelRange {
     }
     if ! hasPosNegUnitStride()
     {
-      var s = abs(_stride):intIdxType;
+      var s = abs(_stride):chpl_integralIdxType;
       if chpl__diffMod(i, _alignment, s) != 0
         then return false;
     }
@@ -1597,12 +1597,12 @@ proc range.safeCast(type t: range(?)) {
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = if isNothingValue(this._alignment) then 0
-                     else this._alignment.safeCast(intIdxType);
+                     else this._alignment.safeCast(chpl_integralIdxType);
     tmp._aligned = this.aligned;
   }
 
-  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.intIdxType);
-  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.intIdxType);
+  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.chpl_integralIdxType);
+  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.chpl_integralIdxType);
 
   return tmp;
 }
@@ -1657,12 +1657,12 @@ private inline proc rangeCastHelper(r, type t) throws {
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = r.stride: tmp._stride.type;
     tmp._alignment = if isNothingValue(r._alignment) then 0
-                     else r._alignment: tmp.intIdxType;
+                     else r._alignment: tmp.chpl_integralIdxType;
     tmp._aligned = r.aligned;
   }
 
-  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.intIdxType;
-  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.intIdxType;
+  tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.chpl_integralIdxType;
+  tmp._high = (if r.hasHighBound() then chpl__idxToInt(r.highBound:dstType) else r._high): tmp.chpl_integralIdxType;
 
   return tmp;
 }
@@ -1758,7 +1758,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("indexOrder -- Undefined on a range with ambiguous alignment.");
 
-    if ! contains(ind) then return (-1):intIdxType;
+    if ! contains(ind) then return (-1):chpl_integralIdxType;
     if strides.isOne() {
       if this.hasLowBound() then
         return chpl__idxToInt(ind) - _low;
@@ -1767,9 +1767,9 @@ private inline proc rangeCastHelper(r, type t) throws {
         return _high - chpl__idxToInt(ind);
     } else {
       if this.hasFirst() then
-        return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):intIdxType;
+        return ((chpl__idxToInt(ind):strType - chpl__idxToInt(this.first):strType) / _stride):chpl_integralIdxType;
     }
-    return (-1):intIdxType;
+    return (-1):chpl_integralIdxType;
   }
 
   /* Returns the zero-based ``ord``-th element of this range's represented
@@ -1877,7 +1877,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   */
   proc range.expand(offset: integral)
   {
-    const i = offset.safeCast(chpl__signedType(intIdxType));
+    const i = offset.safeCast(chpl__signedType(chpl_integralIdxType));
     return new range(idxType, bounds, strides,
                      _low-i,
                      _high+i,
@@ -1901,7 +1901,7 @@ private inline proc rangeCastHelper(r, type t) throws {
 
   @chpldoc.nodoc
   proc range._effAlmt() param  where  hasParamAlignmentVal()
-    do return 0: intIdxType;
+    do return 0: chpl_integralIdxType;
 
   // Return an interior portion of this range.
   pragma "last resort"
@@ -1946,7 +1946,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       if abs(offset):uint > this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
-    const i = (abs(offset)).safeCast(intIdxType);
+    const i = (abs(offset)).safeCast(chpl_integralIdxType);
     if offset < 0 then
       return new range(idxType, bounds, strides,
                        _low, _low - 1 + i,
@@ -1994,7 +1994,7 @@ private inline proc rangeCastHelper(r, type t) throws {
    */
   proc range.exterior(offset: integral)
   {
-    const i = (abs(offset)).safeCast(intIdxType);
+    const i = (abs(offset)).safeCast(chpl_integralIdxType);
     if offset < 0 then
       return new range(idxType, bounds, strides,
                        _low - i,
@@ -2038,8 +2038,8 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
-    r1._low = r2._low: r1.intIdxType;
-    r1._high = r2._high: r1.intIdxType;
+    r1._low = r2._low: r1.chpl_integralIdxType;
+    r1._high = r2._high: r1.chpl_integralIdxType;
 
     if ! r1.hasParamStrideAltvalAld() {
       r1._stride = r2.stride;
@@ -2058,7 +2058,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline operator +(r: range(?e, ?b, ?s), offset: integral)
   {
-    const i = offset:r.intIdxType;
+    const i = offset:r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(e);
 
     return new range(e, b, s,
@@ -2157,7 +2157,7 @@ private inline proc rangeCastHelper(r, type t) throws {
           then (true, r.chpl_alignedHighAsIntForIter)
         else
           if ! r.hasPosNegUnitStride() then (r.aligned, r._alignment)
-                                       else (false, 0:r.intIdxType);
+                                       else (false, 0:r.chpl_integralIdxType);
 
     return new range(i, b, newStrides, lw, hh, st, alt, ald);
   }
@@ -2227,7 +2227,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("can't apply '.offset()' to a range whose 'idxType' only has one value");
     }
 
-    var offs = offset.safeCast(intIdxType);
+    var offs = offset.safeCast(chpl_integralIdxType);
     if hasUnitStride() {
       if !this.hasLowBound() then
         compilerError("can't invoke 'offset' on an unstrided range with no low bound");
@@ -2259,7 +2259,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     if this.isAmbiguous() then
       HaltWrappers.unimplementedFeatureHalt("slicing of an unaligned range");
 
-    // the new idxType, intIdxType, strType are inherited from `this`
+    // the new idxType, chpl_integralIdxType, strType are inherited from `this`
 
     /////////// Step 1: intersect the unaligned spans ///////////
 
@@ -2288,7 +2288,7 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     // If the result type is unsigned, don't let the low bound go negative.
     // This is a kludge.  We should really obey type coercion rules. (hilde)
-    if (isUintType(intIdxType)) { if (lo1 < 0) then lo1 = 0; }
+    if (isUintType(chpl_integralIdxType)) { if (lo1 < 0) then lo1 = 0; }
 
     //
     // These are mixed int/uint min/max functions that return a value
@@ -2370,8 +2370,8 @@ private inline proc rangeCastHelper(r, type t) throws {
 
 
     emptyIntersection = false;
-    var newlo = myMax(lo1, lo2):intIdxType;
-    var newhi = myMin(hi1, hi2):intIdxType;
+    var newlo = myMax(lo1, lo2):chpl_integralIdxType;
+    var newhi = myMin(hi1, hi2):chpl_integralIdxType;
 
     if (emptyIntersection) {
       newlo = chpl__defaultLowBound(idxType, newBoundKind);
@@ -2448,15 +2448,15 @@ private inline proc rangeCastHelper(r, type t) throws {
     /////////// allocate the result ///////////
 
     var result = new range(idxType, newBoundKind, newStrideKind,
-                           newlo, newhi, newStride, 0:intIdxType, true, false);
+                           newlo, newhi, newStride, 0:chpl_integralIdxType, true, false);
 
     /////////// Step 3: choose the alignment ///////////
 
     // We require that `this` be unambiguous. The result will always be, too.
 
     if ! newStrideKind.isPosNegOne() && newAbsStride > 1 {
-      var al1 = (chpl__idxToInt(this.alignment) % st1:intIdxType):int;
-      var al2 = (chpl__idxToInt(other.alignment) % st2:other.intIdxType):int;
+      var al1 = (chpl__idxToInt(this.alignment) % st1:chpl_integralIdxType):int;
+      var al2 = (chpl__idxToInt(other.alignment) % st2:other.chpl_integralIdxType):int;
       var newAlignmentIsInAl2 = false;
 
       if other.isAmbiguous() {
@@ -2490,7 +2490,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       if newAlignmentIsInAl2 then
       {
         if al2 < 0 then al2 += newAbsStride;
-        result._alignment = al2: intIdxType;
+        result._alignment = al2: chpl_integralIdxType;
       } else
       if (al2 - al1) % g != 0 then
       {
@@ -2500,7 +2500,7 @@ private inline proc rangeCastHelper(r, type t) throws {
         result._low = chpl__defaultLowBound(idxType, newBoundKind);
         result._high = chpl__defaultHighBound(idxType, newBoundKind);
         result._alignment = if this.hasPositiveStride()
-                            then 1:intIdxType else 0:intIdxType;
+                            then 1:chpl_integralIdxType else 0:chpl_integralIdxType;
         // todo: what should be the alignment of an empty range?
         // _alignment == _low, so it won't print.
       }
@@ -2512,8 +2512,8 @@ private inline proc rangeCastHelper(r, type t) throws {
         // offset is in the range [-(lcm-1), lcm-1]
         // not needed: if offset < 0 then offset += lcm;
 
-        // Now offset can be safely cast to intIdxType.
-        result._alignment = al1:intIdxType + offset:intIdxType * st1:intIdxType / g:intIdxType;
+        // Now offset can be safely cast to chpl_integralIdxType.
+        result._alignment = al1:chpl_integralIdxType + offset:chpl_integralIdxType * st1:chpl_integralIdxType / g:chpl_integralIdxType;
 
         if result._alignment:int < 0 {
           result._alignment += newAbsStride;
@@ -2551,7 +2551,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     if boundsChecking && r.isAmbiguous() then
       boundsCheckHalt("count -- Cannot count off elements from a range which is ambiguously aligned.");
 
-    type resultType = r.intIdxType;
+    type resultType = r.chpl_integralIdxType;
     type strType = chpl__rangeStrideType(resultType);
 
     proc absSameType() {
@@ -2743,7 +2743,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   proc range.checkIfIterWillOverflow(shouldHalt=true) {
     if isFiniteIdxType(idxType) then
       return false;
-    return chpl_checkIfRangeIterWillOverflow(this.intIdxType, this._low, this._high,
+    return chpl_checkIfRangeIterWillOverflow(this.chpl_integralIdxType, this._low, this._high,
         this.stride, this.chpl_firstAsIntForIter, this.chpl_lastAsIntForIter, shouldHalt);
   }
 
@@ -3179,14 +3179,14 @@ private inline proc rangeCastHelper(r, type t) throws {
     // stride like the bounded iterators. However, all that gets you is the
     // ability to use .low over .first. The additional code isn't
     // worth it just for that.
-    var i: intIdxType;
+    var i: chpl_integralIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = max(intIdxType) - stride: intIdxType;
+    const end = max(chpl_integralIdxType) - stride: chpl_integralIdxType;
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive("<=", i, end),
-                      __primitive("+=", i, stride: intIdxType)) {
+                      __primitive("+=", i, stride: chpl_integralIdxType)) {
       yield chpl_intToIdx(i);
     }
     if i > end {
@@ -3215,13 +3215,13 @@ private inline proc rangeCastHelper(r, type t) throws {
     // Apart from the computation of 'end' and the comparison used to
     // terminate the C for loop, this iterator follows the bounded-low
     // case above.  See it for additional comments.
-    var i: intIdxType;
+    var i: chpl_integralIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = min(intIdxType) - stride: intIdxType;
+    const end = min(chpl_integralIdxType) - stride: chpl_integralIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", i, end),
-                      __primitive("+=", i, stride: intIdxType)) {
+                      __primitive("+=", i, stride: chpl_integralIdxType)) {
       yield chpl_intToIdx(i);
     }
     if i < end {
@@ -3249,14 +3249,14 @@ private inline proc rangeCastHelper(r, type t) throws {
       // must use first/last since we have no knowledge of stride
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
-      var i: intIdxType;
+      var i: chpl_integralIdxType;
       const start = chpl_firstAsIntForIter;
-      const end: intIdxType = if this._low > this._high then start
-                              else chpl_lastAsIntForIter + stride: intIdxType;
+      const end: chpl_integralIdxType = if this._low > this._high then start
+                              else chpl_lastAsIntForIter + stride: chpl_integralIdxType;
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
-                        __primitive("+=", i, stride: intIdxType)) {
+                        __primitive("+=", i, stride: chpl_integralIdxType)) {
         yield chpl_intToIdx(i);
       }
     } else {
@@ -3278,7 +3278,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       // don't need to check if isAmbiguous since stride is one
 
       // can use low/high instead of first/last since stride is one
-      var i: intIdxType;
+      var i: chpl_integralIdxType;
       const start = chpl__idxToInt(lowBoundForIter(this));
       const end = chpl__idxToInt(highBoundForIter(this));
 
@@ -3286,14 +3286,14 @@ private inline proc rangeCastHelper(r, type t) throws {
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("<=", i, end),
-                        __primitive("+=", i, 1: intIdxType)) {
+                        __primitive("+=", i, 1: chpl_integralIdxType)) {
         yield chpl_intToIdx(i);
       }
      else // stride == -1
       while __primitive("C for loop",
                         __primitive( "=", i, end),
                         __primitive(">=", i, start),
-                        __primitive("-=", i, 1: intIdxType)) {
+                        __primitive("-=", i, 1: chpl_integralIdxType)) {
         yield chpl_intToIdx(i);
       }
     } else {
@@ -3323,14 +3323,14 @@ private inline proc rangeCastHelper(r, type t) throws {
     if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
-    var i: intIdxType;
+    var i: chpl_integralIdxType;
     const start = this.first;
     const end = if this._low > this._high then start else this.last;
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", highBoundForIter(this), lowBoundForIter(this)),  // execute at least once?
-                      __primitive("+=", i, stride: intIdxType)) {
+                      __primitive("+=", i, stride: chpl_integralIdxType)) {
       yield i;
       if i == end then break;
     }
@@ -3354,7 +3354,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       chpl_debug_writeln("*** In range standalone iterator:");
     }
 
-    const len = this.sizeAs(intIdxType);
+    const len = this.sizeAs(chpl_integralIdxType);
     const numChunks = if __primitive("task_get_serial") then
                       1 else _computeNumChunks(len);
 
@@ -3398,7 +3398,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     const numSublocs = here._getChildCount();
 
     if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
-      const len = this.sizeAs(intIdxType);
+      const len = this.sizeAs(chpl_integralIdxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;
       const minIndicesPerTask = dataParMinGranularity;
@@ -3435,7 +3435,7 @@ private inline proc rangeCastHelper(r, type t) throws {
           }
           const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
           const locRange = lo..hi;
-          const locLen = locRange.sizeAs(intIdxType);
+          const locLen = locRange.sizeAs(chpl_integralIdxType);
           // Divide the locale's tasks approximately evenly
           // among the sublocales
           const numSublocTasks = (if chunk < dptpl % numChunks
@@ -3457,7 +3457,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       }
 
     } else {
-      var v = this.chpl_sizeAsForIter(intIdxType);
+      var v = this.chpl_sizeAsForIter(chpl_integralIdxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
@@ -3521,7 +3521,7 @@ private inline proc rangeCastHelper(r, type t) throws {
         myFollowThis.hasPosNegUnitStride()     ) ||
        myFollowThis.hasLast()
     {
-      const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
+      const flwlen = myFollowThis.sizeAs(myFollowThis.chpl_integralIdxType);
       if boundsChecking {
         if this.hasLast() {
           // this check is for typechecking only
@@ -3706,7 +3706,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   }
 
   // Get the simple expression 'start + stride*count' to typecheck.
-  // Use example: low + i:intIdxType * stride.
+  // Use example: low + i:chpl_integralIdxType * stride.
   // Use explicit conversions, no other additional runtime work.
   proc chpl__addRangeStrides(start, stride, count): start.type {
     proc convert(a,b) param do
