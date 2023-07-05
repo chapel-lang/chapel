@@ -2516,13 +2516,16 @@ static void codegenGpuGlobals() {
 #endif
 
 #ifdef HAVE_LLVM
+// Implements the RemarkSerializer interface for LLVM
+// For each remark to be outputted (after filtering for pass names), `emit()` is called
+// We can then do further filtering and  control how the remarks are printed
 struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
-  ChapelRemarkSerializer(llvm::raw_ostream &OS)
+  ChapelRemarkSerializer(llvm::raw_ostream& OS)
       : llvm::remarks::RemarkSerializer(
             llvm::remarks::Format::Unknown, OS,
             llvm::remarks::SerializerMode::Standalone) {}
 
-  void emit(const llvm::remarks::Remark &Remark) override {
+  void emit(const llvm::remarks::Remark& Remark) override {
 
     llvm::StringRef funcCName = Remark.FunctionName;
     const char* astr_funcCName = astr(funcCName.str());
@@ -2576,7 +2579,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
   }
   // just use the YAML (default) meta serializer, which gets encoded in the asm
   std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
-      llvm::raw_ostream &OS,
+      llvm::raw_ostream& OS,
       chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
     return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
         OS, ExternalFilename);
@@ -2596,12 +2599,13 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
 };
 
 // based on `llvm::setupLLVMOptimizationRemarks`
-static llvm::Error setupRemarks(llvm::LLVMContext &Context,
-                                llvm::raw_ostream &OS,
+static llvm::Error setupRemarks(llvm::LLVMContext& Context,
+                                llvm::raw_ostream& OS,
                                 llvm::StringRef RemarksPasses) {
   std::unique_ptr<llvm::remarks::RemarkSerializer> RemarkSerializer =
       std::make_unique<ChapelRemarkSerializer>(OS);
 
+  // Create the main remark streamer.
   Context.setMainRemarkStreamer(std::make_unique<llvm::remarks::RemarkStreamer>(
       std::move(RemarkSerializer)));
 
@@ -2610,8 +2614,7 @@ static llvm::Error setupRemarks(llvm::LLVMContext &Context,
       *Context.getMainRemarkStreamer()));
 
   if (!RemarksPasses.empty())
-    if (llvm::Error E =
-            Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+    if (llvm::Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
       return llvm::make_error<llvm::LLVMRemarkSetupPatternError>(std::move(E));
 
   return llvm::Error::success();
