@@ -1,0 +1,2 @@
+feature request: currently append only works correctly with one fileWriter
+#9992

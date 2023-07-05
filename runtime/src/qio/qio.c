@@ -799,6 +799,11 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
   if( err ) {
     return err;
   } else {
+    // if append, set the initial position to be the length
+    if( rc & O_APPEND ) {
+      initial_pos = initial_length;
+    }
+
     rc &= O_ACCMODE;
     // When setting the file mode, we pretend no matter what
     // that stdin is read-only and stdout/stderr are write-only.
