@@ -115,6 +115,34 @@ static void checkSyncSingleAtomicDefaultInit() {
 }
 
 
+// if its returned by not ref and its not a move
+static void checkSyncSingleAtomicReturnByCopy() {
+
+  const char* astrCompilerCopySyncSingle = astr("chpl__compilerGeneratedCopySyncSingle");
+
+  //checks for return by anything by ref
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+
+    // skip function which supports deprecation
+    if(fn->name == astrCompilerCopySyncSingle) continue;
+
+    bool isSync = isOrContainsSyncType(fn->retType, false, false);
+    bool isSingle = isOrContainsSingleType(fn->retType, false, false);
+    bool isAtomic = isOrContainsAtomicType(fn->retType, false, false);
+    bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
+
+    bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
+    bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
+    bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
+
+    bool shouldWarn = !isRef && !isInitAutoCopy && !isNoCopy && !isCoerce &&
+                        (isSync || isSingle || isAtomic);
+
+    if(shouldWarn) {
+      USR_WARN(fn, "returning a%s by %s is deprecated", isSync ? " sync" : (isSingle ? " single" : "n atomic"), retTagDescrString(fn->retTag));
+    }
+  }
+}
 
 void
 checkResolved() {
@@ -177,6 +205,7 @@ checkResolved() {
   checkExportedProcs();
 
   checkSyncSingleAtomicDefaultInit();
+  checkSyncSingleAtomicReturnByCopy();
 }
 
 
