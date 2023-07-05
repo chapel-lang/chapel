@@ -1,0 +1,5 @@
+listParSafe.chpl:4: warning: 'list.parSafe' is unstable
+listParSafe.chpl:5: warning: 'list.parSafe' is unstable
+listParSafe.chpl:6: warning: 'list.parSafe' is unstable
+listParSafe.chpl:7: warning: 'list.parSafe' is unstable
+listParSafe.chpl:8: warning: 'list.parSafe' is unstable
