@@ -123,8 +123,9 @@ static void checkSyncSingleAtomicReturnByCopy() {
   //checks for return by anything by ref
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
-    // skip function which supports deprecation
+    // skip functions which support deprecation
     if(fn->name == astrCompilerCopySyncSingle) continue;
+    if(fn->hasFlag(FLAG_DEPRECATED)) continue;
 
     bool isSync = isOrContainsSyncType(fn->retType, false, false);
     bool isSingle = isOrContainsSingleType(fn->retType, false, false);
