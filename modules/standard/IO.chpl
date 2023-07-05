@@ -6386,9 +6386,6 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
   return false;
 }
 
-// TODO: a.hasUnitStride() (or even a.strides.isOne() ) vs
-// a.strides == strideKind.one is more readable, but currently undocumented
-
 /*
   Read a line into an array of bytes.
 
