@@ -134,9 +134,14 @@ static void checkSyncSingleAtomicReturnByCopy() {
     bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
     bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
     bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
+    bool isDefaultInit = fn->name == astr_defaultOf;
 
-    bool shouldWarn = !isRef && !isInitAutoCopy && !isNoCopy && !isCoerce &&
-                        (isSync || isSingle || isAtomic);
+    bool shouldWarn = !isRef && 
+                      !isInitAutoCopy &&
+                      !isNoCopy &&
+                      !isCoerce &&
+                      !isDefaultInit &&
+                      (isSync || isSingle || isAtomic);
 
     if(shouldWarn) {
       USR_WARN(fn, "returning a%s by %s is deprecated", isSync ? " sync" : (isSingle ? " single" : "n atomic"), retTagDescrString(fn->retTag));
