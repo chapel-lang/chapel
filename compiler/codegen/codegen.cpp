@@ -2535,16 +2535,10 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
       fn = funcIt->second;
     }
 
-    // couldn't get from map, do the slow way with a loop through the FnSymbols
-    if(fn == nullptr) {
-      for_alive_in_Vec(FnSymbol, gFn, gFnSymbols) {
-        const char* cname = gFn->cname;
-        if(astr_funcCName == cname) {
-          fn = gFn;
-          break;
-        }
-      }
-    }
+    // TODO: if the function was not in `functionCNameAstrToSymbol`, then `fn`
+    // could still be a nullptr. In non-developer runs this will get filtered
+    // out, but in a developer run it would be nice to be able to get better
+    // source information for these functions
 
     // if fn is still nullptr and not developer, skip it
     if(fn == nullptr && !developer) return;
