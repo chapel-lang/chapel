@@ -596,6 +596,125 @@ static void testControlFlow15() {
   , ControlFlowResult::FallsThrough);
 }
 
+static void testControlFlow16() {
+  testControlFlow(
+      R"""(
+      if true then return 1;
+
+      var b = false;
+      if b then /* fall through to the default return */
+      )"""
+  , ControlFlowResult::AllPathsReturn);
+}
+
+static void testControlFlowYield1() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      yield "hello";
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "could not determine return type for function");
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
+// returning without a value in an iterator is allowed.
+static void testControlFlowYield2() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      return;
+      yield "hello";
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  auto resolvedFunction = resolveConcreteFunction(context, fn->id());
+  assert(resolvedFunction->returnType().type());
+  assert(resolvedFunction->returnType().type()->isIntType());
+}
+
+// returning with a value is not allowed in an iterator.
+static void testControlFlowYield3() {
+  auto program = R"""(
+    iter myIter() {
+      yield 1;
+      return 2;
+      yield 3;
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::DisallowedControlFlow);
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
+static void testControlFlowYield4() {
+  auto program = R"""(
+    proc myIter() {
+      yield 1;
+    }
+    )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+
+  auto mod = parseModule(context, program);
+  assert(mod);
+  auto child = mod->stmt(0);
+  assert(child);
+  auto fn = child->toFunction();
+  assert(fn);
+
+  std::ignore = resolveConcreteFunction(context, fn->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::DisallowedControlFlow);
+
+  // Already checked expected errors above.
+  guard.realizeErrors();
+}
+
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -635,5 +754,11 @@ int main() {
   testControlFlow13();
   testControlFlow14();
   testControlFlow15();
+  testControlFlow16();
+
+  testControlFlowYield1();
+  testControlFlowYield2();
+  testControlFlowYield3();
+  testControlFlowYield4();
   return 0;
 }

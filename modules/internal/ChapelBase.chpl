@@ -3377,7 +3377,7 @@ module ChapelBase {
     if zippered && isTuple(iterable) then
       return chpl_boundedCoforallSize(iterable[0], zippered=false);
     else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
-      return iterable.sizeAs(iterable.intIdxType);
+      return iterable.size;
     else
       compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }

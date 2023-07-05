@@ -563,11 +563,11 @@ constants have the same meaning as the following strings passed to ``fopen()`` i
    * - ``ioMode.cwr``
      - ``"w+"``
      - same as ``ioMode.cw``, but reading from the file is also allowed.
-
-.. TODO: Support append / create-exclusive modes:
    * - ``ioMode.a``
      - ``"a"``
      - open a file for appending, creating it if it does not exist.
+
+.. TODO: Support append / create-exclusive modes:
    * - ``ioMode.ar``
      - ``"a+"``
      - same as ``ioMode.a``, but reading from the file is also allowed.
@@ -579,12 +579,19 @@ constants have the same meaning as the following strings passed to ``fopen()`` i
      - same as ``ioMode.cwx``, but reading from the file is also allowed.
 
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
+
+.. warning::
+
+   ``ioMode.a`` is unstable and subject to change. It currently only supports
+   one :record:`fileWriter` at a time.
 */
 enum ioMode {
   r = 1,
   cw = 2,
   rw = 3,
   cwr = 4,
+  @unstable("append mode is unstable")
+  a = 5,
 }
 
 @deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
@@ -2075,6 +2082,7 @@ private param _r = "r";
 private param _rw  = "r+";
 private param _cw = "w";
 private param _cwr = "w+";
+private param _a = "a";
 
 @chpldoc.nodoc
 proc _modestring(mode:ioMode) {
@@ -2084,6 +2092,7 @@ proc _modestring(mode:ioMode) {
     when ioMode.rw do return _rw;
     when ioMode.cw do return _cw;
     when ioMode.cwr do return _cwr;
+    when ioMode.a do return _a;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
   }
 }
@@ -5806,7 +5815,7 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const cstr = x.localize().c_str();
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_scan_literal(false, _channel_internal,
                                          cstr, x.numBytes:c_ssize_t,
                                          ignore);
@@ -6020,7 +6029,7 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    const cstr = x.localize().c_str();
+    const ref cstr = x.localize().c_str();
     const err = qio_channel_print_literal(false, _channel_internal, cstr,
                                           x.numBytes:c_ssize_t);
     try _checkLiteralError(x, err, "writing", isLiteral=true);
@@ -10272,7 +10281,7 @@ proc fileReader._format_reader(
 {
   if r != nil then r!.hasRegex = false;
   if !error {
-    var fmt = fmtStr.localize().c_str();
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;
@@ -10367,7 +10376,7 @@ proc fileWriter._format_reader(
 {
   if r != nil then r!.hasRegex = false;
   if !error {
-    var fmt = fmtStr.localize().c_str();
+    const ref fmt = fmtStr.localize().c_str();
     while cur < len {
       gotConv = false;
       if error then break;

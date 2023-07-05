@@ -175,6 +175,7 @@ static void countByReturnIntent(const DisambiguationContext& dctx,
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
+      case Function::OUT:
       case Function::CONST:
         nValue++;
         break;
@@ -205,6 +206,7 @@ gatherByReturnIntent(const DisambiguationContext& dctx,
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
+      case Function::OUT:
       case Function::CONST:
         CHPL_ASSERT(ret.bestValue() == nullptr);
         ret.setBestValue(fn);
@@ -240,6 +242,7 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
 
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
+      case Function::OUT:
       case Function::CONST:
         valueCandidates.push_back(c);
         break;

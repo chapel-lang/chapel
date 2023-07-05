@@ -2082,7 +2082,9 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
   Args ret;
   init_args(&sArgState, argv[0], mainAddr);
   init_arg_desc(&sArgState, docs_arg_desc);
-  process_args(&sArgState, argc, argv);
+  if(!process_args(&sArgState, argc, argv)) {
+    clean_exit(1);
+  }
   ret.author = std::string(fDocsAuthor);
   if (fDocsCommentLabel[0] != '\0') {
     ret.commentStyle = std::string(fDocsCommentLabel);

@@ -23,6 +23,7 @@
 #include "AstVisitor.h"
 #include "build.h"
 #include "codegen.h"
+#include "llvmVer.h"
 #include "LayeredValueTable.h"
 
 #ifdef HAVE_LLVM
@@ -76,7 +77,11 @@ GenRet DoWhileStmt::codegen()
     info->irBuilder->CreateBr(blockStmtBody);
 
     // Now add the body.
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtBody);
+#else
     func->getBasicBlockList().push_back(blockStmtBody);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtBody);
     info->lvt->addLayer();
@@ -88,7 +93,11 @@ GenRet DoWhileStmt::codegen()
     // Add the condition block.
     blockStmtEndCond = llvm::BasicBlock::Create(info->module->getContext(), FNAME("blk_end_cond"));
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEndCond);
+#else
     func->getBasicBlockList().push_back(blockStmtEndCond);
+#endif
 
     // Insert an explicit branch from the body block to the loop condition.
     info->irBuilder->CreateBr(blockStmtEndCond);
@@ -108,7 +117,11 @@ GenRet DoWhileStmt::codegen()
 
     info->irBuilder->CreateCondBr(condValue, blockStmtBody, blockStmtEnd);
 
+#if HAVE_LLVM_VER >= 160
+    func->insert(func->end(), blockStmtEnd);
+#else
     func->getBasicBlockList().push_back(blockStmtEnd);
+#endif
 
     info->irBuilder->SetInsertPoint(blockStmtEnd);
 

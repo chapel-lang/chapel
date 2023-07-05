@@ -2165,6 +2165,7 @@ for testname in testsrc:
             # Run program (with timeout)
             #
             skip_remaining_trials = False
+            exec_status = 0
             for count in range(numTrials):
                 if skip_remaining_trials:
                     break
@@ -2190,7 +2191,7 @@ for testname in testsrc:
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         (stdout, stderr) = p.communicate()
                         output = py3_compat.concat_streams(stdout, stderr)
-                        status = p.returncode
+                        exec_status = p.returncode
 
                         # Check for well-known failure modes
                         launcher_error, thistimeout = translateOutput(output)
@@ -2217,9 +2218,9 @@ for testname in testsrc:
                                              stdin=my_stdin, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         (stdout, stderr) = p.communicate()
                         output = py3_compat.concat_streams(stdout, stderr)
-                        status = p.returncode
+                        exec_status = p.returncode
 
-                        if status == 222:
+                        if exec_status == 222:
                             exectimeout = True
                             sys.stdout.write('%s[Error: Timed out executing program %s/%s'%
                                             (futuretest, localdir, test_filename))
@@ -2262,7 +2263,7 @@ for testname in testsrc:
                         stderrOutput = p.stderr.read()
                         output = py3_compat.concat_streams(stdoutOutput, stderrOutput)
                         p.poll()
-                        status = p.returncode
+                        exec_status = p.returncode
 
                 # executable is done running
 
@@ -2436,29 +2437,34 @@ for testname in testsrc:
                     if perfdate == None:
                         perfdate = datetime.date.today().strftime("%m/%d/%y")
 
-                    sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
-                    sys.stdout.flush()
-                    p = py3_compat.Popen([utildir+'/test/computePerfStats',
-                                         perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
-                                         stdout=subprocess.PIPE)
-                    sys.stdout.write('%s'%(p.communicate()[0]))
-                    sys.stdout.flush()
+                    # if the program exited with a non-zero exit code, don't attempt to collect performance keys
+                    status = 0
+                    if exec_status == 0:
+                        sys.stdout.write('[Executing %s/test/computePerfStats %s %s %s %s %s %s]\n'%(utildir, perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate))
+                        sys.stdout.flush()
+                        p = py3_compat.Popen([utildir+'/test/computePerfStats',
+                                            perfexecname, perfdir, keyfile, execlog, str(exectimeout), perfdate],
+                                            stdout=subprocess.PIPE)
+                        sys.stdout.write('%s'%(p.communicate()[0]))
+                        sys.stdout.flush()
 
-                    status = p.returncode
-                    if not exectimeout and not launcher_error:
-                        if status == 0:
-                            os.unlink(execlog)
-                            sys.stdout.write('%s[Success '%(futuretest))
-                        else:
-                            sys.stdout.write('%s[Error '%(futuretest))
-                        sys.stdout.write('matching performance keys for %s/%s'%
-                                        (localdir, test_filename))
-                        if status!=0:
-                            printTestVariation(compoptsnum, compoptslist,
-                                               execoptsnum, execoptslist);
-                        sys.stdout.write(']\n')
+                        status = p.returncode
+                        if not exectimeout and not launcher_error:
+                            if status == 0:
+                                os.unlink(execlog)
+                                sys.stdout.write('%s[Success '%(futuretest))
+                            else:
+                                sys.stdout.write('%s[Error '%(futuretest))
+                            sys.stdout.write('matching performance keys for %s/%s'%
+                                            (localdir, test_filename))
+                            if status!=0:
+                                printTestVariation(compoptsnum, compoptslist,
+                                                execoptsnum, execoptslist);
+                            sys.stdout.write(']\n')
+                    else:
+                        sys.stdout.write('[Error execution failed for %s]\n'%(test_name))
 
-                    if exectimeout or status != 0:
+                    if exectimeout or status != 0 or exec_status != 0:
                         break
 
         cleanup(execname, len(compoptslist) > 1)

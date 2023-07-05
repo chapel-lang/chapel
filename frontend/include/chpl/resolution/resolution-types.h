@@ -1646,6 +1646,12 @@ class ResolvedFields {
     forwarding_.push_back(ForwardingDetail(forwardingId, receiverType));
   }
 
+  void addForwarding(const ResolvedFields& other) {
+    for (int i = 0; i < other.numForwards(); i++) {
+      addForwarding(other.forwardingStmt(i), other.forwardingToType(i));
+    }
+  }
+
   void finalizeFields(Context* context);
 
   /** Returns true if this is a generic type */

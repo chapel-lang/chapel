@@ -1,21 +1,18 @@
-class Student {
-}
+class Student { }
+class BadStudent: Student { }
+class GoodStudent: Student { }
+class ExcellentStudent: Student { }
 
-class BadStudent: Student {
-}
-
-class GoodStudent: Student {
-}
-
-class ExcellentStudent: Student {
-}
+type acceptableStudentTypes =
+  (borrowed GoodStudent, borrowed ExcellentStudent);
+  // currently has to be concrete, see #10172
 
 class AdvancedBasketWeaving {
-  var acceptableStudentTypes = ((new owned GoodStudent()).borrow(), (new owned ExcellentStudent()).borrow());
-
   proc accept(student: borrowed Student) {
     for param i in 0..acceptableStudentTypes.size-1 {
-      if student: acceptableStudentTypes(i).type? != nil then return "YES!";
+      if student: acceptableStudentTypes(i)? != nil {
+        return "YES!";
+      }
     }
     return "Computer says 'No'";
   }

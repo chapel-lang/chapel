@@ -112,10 +112,10 @@ struct Visitor {
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
+  void checkBorrowFromNew(const FnCall* node);
   void checkConstVarNoInit(const Variable* node);
   void checkConfigVar(const Variable* node);
   void checkExportVar(const Variable* node);
-  void checkBorrowFromNew(const Variable* node);
   void checkOperatorNameValidity(const Function* node);
   void checkEmptyProcedureBody(const Function* node);
   void checkExternProcedure(const Function* node);
@@ -212,7 +212,13 @@ enum class ControlFlowModifier {
 
 static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
                                             const Return* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER && ctrl->value() != nullptr) {
+      // can't return a value from an iterator.
+      return ControlFlowModifier::BLOCKS;
+    }
+    return ControlFlowModifier::ALLOWS;
+  }
   if (node->isForall() || node->isForeach() || node->isCoforall() ||
       node->isOn() || node->isBegin() || node->isSync() || node->isCobegin()) {
     return ControlFlowModifier::BLOCKS;
@@ -222,7 +228,14 @@ static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
 
 static ControlFlowModifier nodeAllowsYield(const AstNode* node,
                                            const Yield* ctrl) {
-  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (auto fn = node->toFunction()) {
+    if (fn->kind() == Function::ITER) {
+      return ControlFlowModifier::ALLOWS;
+    } else {
+      // Can't yield from non-function.
+      return ControlFlowModifier::BLOCKS;
+    }
+  }
   if (node->isBegin()) {
     return ControlFlowModifier::BLOCKS;
   }
@@ -592,6 +605,37 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   }
 }
 
+void Visitor::checkBorrowFromNew(const FnCall* node) {
+  // look for patterns along these lines:
+  //   const x = (new C()).borrow()
+  //   var x = f((new owned C()).borrow())
+  // These worked in 1.31 but will no longer work in 1.32.
+  bool emitWarning = false;
+
+  if (auto c = node->toFnCall())
+    if (auto r = c->calledExpression())
+      if (auto dot = r->toDot())
+        if (dot->field() == USTR("borrow"))
+          if (auto receiver = dot->receiver())
+            if (auto call = receiver->toFnCall())
+              if (auto called = call->calledExpression())
+                if (called->isNew())
+                  if (const AstNode* decl = searchParentsForDecl(node, nullptr))
+                    if (auto v = decl->toVariable())
+                      if (auto ini = v->initExpression())
+                        if (ini->contains(node))
+                          if (v->kind() == Variable::VAR ||
+                              v->kind() == Variable::CONST)
+                            emitWarning = true;
+
+  if (emitWarning)
+    warn(node, "Class created by nested 'new' will be "
+               "deinitialized before the borrow can be used. "
+               "Please update this code to use a separate "
+               "variable to store the new class");
+}
+
+
 // TODO: Extend to all 'VarLikeDecl' instead of just variables?
 void Visitor::checkConstVarNoInit(const Variable* node) {
   if (!node->initExpression()) return;
@@ -659,31 +703,6 @@ void Visitor::checkExportVar(const Variable* node) {
   if (node->linkage() == Decl::EXPORT) {
     error(node, "export variables are not yet supported.");
   }
-}
-
-void Visitor::checkBorrowFromNew(const Variable* node) {
-  // look for either of the following patterns:
-  //   const x = (new C()).borrow()
-  //   var x = (new owned C()).borrow()
-  // These worked in 1.31 but will no longer work in 1.32.
-  // This warning can be removed in 1.33.
-  if (!node->initExpression()) return;
-
-  if (node->kind() != Variable::VAR && node->kind() != Variable::CONST)
-    return;
-
-  if (auto c = node->initExpression()->toFnCall())
-    if (auto r = c->calledExpression())
-      if (auto dot = r->toDot())
-        if (dot->field() == USTR("borrow"))
-          if (auto receiver = dot->receiver())
-            if (auto call = receiver->toFnCall())
-              if (auto called = call->calledExpression())
-                if (called->isNew())
-                  warn(node, "Class created by nested 'new' will be "
-                             "deinitialized before the borrow can be used. "
-                             "Please update this code to use a separate "
-                             "variable to store the new class");
 }
 
 void Visitor::checkOperatorNameValidity(const Function* node) {
@@ -843,7 +862,7 @@ void Visitor::checkConstReturnIntent(const Function* node) {
   if (node->returnIntent() != Function::CONST) return;
   if (!shouldEmitUnstableWarning(node)) return;
   warn(node, "'const' return intent is unstable and may work differently"
-             " in the future");
+             " in the future; please use 'out' intent instead");
 }
 
 void
@@ -1244,13 +1263,13 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
+  checkBorrowFromNew(node);
 }
 
 void Visitor::visit(const Variable* node) {
   checkConstVarNoInit(node);
   checkConfigVar(node);
   checkExportVar(node);
-  checkBorrowFromNew(node);
 }
 
 void Visitor::visit(const TypeQuery* node) {

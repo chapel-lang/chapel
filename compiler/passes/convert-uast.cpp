@@ -2624,7 +2624,7 @@ struct Converter {
   static RetTag convertRetTag(uast::Function::ReturnIntent returnIntent) {
     switch (returnIntent) {
       case uast::Function::DEFAULT_RETURN_INTENT:
-        return RET_VALUE;
+      case uast::Function::OUT:
       case uast::Function::CONST:
         return RET_VALUE;
       case uast::Function::CONST_REF:

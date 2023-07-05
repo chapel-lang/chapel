@@ -170,7 +170,7 @@ GEN_CFLAGS += $(C_STD)
 # On Ubuntu, gcc complains about multiline comments in some versions
 # of Clang header files.
 #
-WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
+WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wno-error=missing-braces
 WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment -Wmissing-braces
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)

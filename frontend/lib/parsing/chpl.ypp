@@ -2631,6 +2631,7 @@ proc_iter_or_op:
 
 opt_ret_tag:
     %prec TNOELSE   { $$ = Function::DEFAULT_RETURN_INTENT; }
+| TOUT              { $$ = Function::OUT; }
 | TCONST            { $$ = Function::CONST; }
 | TCONST TREF       { $$ = Function::CONST_REF; }
 | TREF              { $$ = Function::REF; }
