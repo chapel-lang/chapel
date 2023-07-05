@@ -355,9 +355,12 @@ bool
 CanPassResult::canConvertCPtr(Context* context,
                               const Type* actualT,
                               const Type* formalT) {
-  if (auto actualPtr = actualT->toCPtrType()) {
+  if (actualT->isCPtrType()) {
     if (auto formalPtr = formalT->toCPtrType()) {
       return formalPtr->isVoidPtr();
+    } else {
+      // Check for old c_void_ptr behavior.
+      return formalT->isCVoidPtrType();
     }
   }
 
