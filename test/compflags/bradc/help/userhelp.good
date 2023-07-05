@@ -126,9 +126,6 @@ LLVM Code Generation Options:
                                       optimizations
       --mllvm <flags>                 LLVM flags (can be specified multiple
                                       times)
-      --llvm-remarks <regex>          Print LLVM optimization remarks
-      --llvm-remarks-function <name>  Print LLVM optimization remarks only for
-                                      these functions
 
 Compilation Trace Options:
       --[no-]print-commands           [Don't] print system commands

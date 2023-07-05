@@ -498,16 +498,6 @@ OPTIONS
     Pass an option to the LLVM optimization and transformation passes.
     This option can be specified multiple times.
 
-**\--llvm-remarks <filter>**
-
-    Enable printing LLVM optimization remarks with given regular expression
-    filter. Can be combined with **\--llvm-remarks-function**.
-
-**\--llvm-remarks-function <function names>**
-    
-    Enable printing LLVM optimization remarks for specific functions. Functions
-    are listed as a comma separated string. Can be combined with
-    **\--llvm-remarks**.
 
 *Compilation Trace Options*
 

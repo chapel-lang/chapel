@@ -2538,7 +2538,7 @@ struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
     // couldn't get from map, do the slow way with a loop through the FnSymbols
     if(fn == nullptr) {
       for_alive_in_Vec(FnSymbol, gFn, gFnSymbols) {
-        const char* cname = astr(gFn->cname);
+        const char* cname = gFn->cname;
         if(astr_funcCName == cname) {
           fn = gFn;
           break;

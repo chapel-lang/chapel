@@ -440,8 +440,6 @@ _chpl ()
 --license \
 --live-analysis \
 --llvm \
---llvm-remarks \
---llvm-remarks-function \
 --llvm-wide-opt \
 --local \
 --local-checks \
