@@ -730,12 +730,12 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       if (call->numActuals() == 1) {
         if (auto tq = call->actual(0)->toTypeQuery()) {
           if (auto pt = actualTypePtr->toCPtrType()) {
-            ResolvedExpression& resolvedWidth = byPostorder.byAst(tq);
+            ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
             if (isNonStarVarArg) {
-              varArgTypeQueryError(context, call->actual(0), resolvedWidth);
+              varArgTypeQueryError(context, call->actual(0), resolvedElt);
             } else {
-              resolvedWidth.setType(QualifiedType(QualifiedType::TYPE,
-                                                  pt->eltType()));
+              resolvedElt.setType(QualifiedType(QualifiedType::TYPE,
+                                                pt->eltType()));
             }
           }
         }

@@ -2573,14 +2573,14 @@ static const Type* getCPtrType(Context* context,
 
     // There should be 0 or 1 actuals depending on if it is ?
     if (ci.hasQuestionArg()) {
-      // handle int(?)
+      // handle c_ptr(?)
       if (ci.numActuals() != 0) {
         context->error(astForErr, "invalid c_ptr type construction");
         return ErroneousType::get(context);
       }
       useGenericType = true;
     } else {
-      // handle int(?t) or int(16)
+      // handle c_ptr(?t) or int(eltT)
       if (ci.numActuals() != 1) {
         context->error(astForErr, "invalid c_ptr type construction");
         return ErroneousType::get(context);
