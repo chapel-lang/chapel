@@ -1,7 +1,7 @@
 use BlockDist;
 
 proc Block.printBB() {
-  // The use of 'this.' in the following is a workaround for #22656
+  // The use of 'this.' in the following is a workaround for #22656/#5979
   writeln("boundingBox = ", this.boundingBox);
 }
 
@@ -20,8 +20,4 @@ proc main() {
   writeln(DA.type:string, ".printTableSize()");
   DA.printTableSize();
   writeln();
-}
-
-operator :(type t: Block(?), type res: string) {
-  return "I'm a Block!";
 }

@@ -509,7 +509,6 @@ module ChapelArray {
     compilerError("'dmapped' can currently only be applied to domains.");
   }
 
-
   //
   // Array-view utility functions
   //

@@ -21,7 +21,7 @@
 //
 // The Block distribution is defined with six classes:
 //
-//   BlockGuts       : distribution class
+//   BlockGuts   : distribution class
 //   BlockDom    : domain class
 //   BlockArr    : array class
 //   LocBlock    : local distribution class (per-locale instances)
@@ -472,87 +472,26 @@ record Block {
       var ranges: rank*range(idxType, boundKind.both, strides);
       return newRectangularDom(rank, idxType, strides, ranges, definedConst);
     }
-  /*
-    proc newAssociativeDom(type idxType, param parSafe: bool=true) {
-      var x = _value.dsiNewAssociativeDom(idxType, parSafe);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
 
-    proc newSparseDom(param rank: int, type idxType, dom: domain) {
-      var x = _value.dsiNewSparseDom(rank, idxType, dom);
-      if x.linksDistribution() {
-        _value.add_dom(x);
-      }
-      return x;
-    }
-*/
     proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
-/*
-    proc readThis(f) throws {
-      f.read(_value);
-    }
 
-    // TODO: Can't this be an initializer?
-    @chpldoc.nodoc
-    proc type deserializeFrom(reader, ref deserializer) throws {
-      var ret : this;
-      ret.readThis(reader);
-      return ret;
-    }
-*/
     proc writeThis(f) throws {
       f.write(_value);
     }
-  /*
+
     @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writer.write(_value);
     }
-*/
 
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
+
     /*
        Return an array of locales over which this distribution was declared.
     */
     proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
-  /*
-  }
-
-  // This alternative declaration of Sort.defaultComparator
-  // prevents transitive use of module Sort.
-  proc chpl_defaultComparator() {
-    use Sort;
-    return defaultComparator;
-  }
-
-  @chpldoc.nodoc
-  proc shouldReturnRvalueByValue(type t) param {
-    if !PODValAccess then return false;
-    if isPODType(t) then return true;
-    return false;
-  }
-
-  // supports deprecation by Vass in 1.31 to implement #17131
-  // A compatibility wrapper that allows code to work with domain maps
-  // whether they have been converted from stridable to strides or not.
-  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-    if __primitive("resolves",
-                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
-    then
-      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    else
-      return dist.dsiNewRectangularDom(rank, idxType,
-                                       strides.toStridable(), ranges);
-  }
-*/
 
   @chpldoc.nodoc
   inline operator ==(d1: Block(?), d2: Block(?)) {
