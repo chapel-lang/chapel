@@ -29,14 +29,16 @@ namespace types {
 
 const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
                                              const CPtrType* instantiatedFrom,
-                                             QualifiedType eltType) {
+                                             const Type* eltType) {
   QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType);
   auto result = toOwned(new CPtrType(instantiatedFrom, eltType));
   return QUERY_END(result);
 }
 
 bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other) const {
-  auto r = resolution::canPass(context, eltType_, other->eltType_);
+  auto r = resolution::canPass(context,
+                               QualifiedType(QualifiedType::TYPE, eltType_),
+                               QualifiedType(QualifiedType::TYPE, other->eltType_));
   // instantiation and same-type passing are allowed here
   return r.passes() && !r.promotes() && !r.converts();
 }
@@ -44,10 +46,10 @@ bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other)
 const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
-                               /* eltType */ QualifiedType()).get();
+                               /* eltType */ nullptr).get();
 }
 
-const CPtrType* CPtrType::get(Context* context, const QualifiedType& eltType) {
+const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
                                eltType).get();
@@ -64,9 +66,9 @@ void CPtrType::stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const {
   USTR("c_ptr").stringify(ss, stringKind);
 
-  if (instantiatedFrom_) {
+  if (eltType_) {
     ss << "(";
-    eltType_.stringify(ss, stringKind);
+    eltType_->stringify(ss, stringKind);
     ss << ")";
   }
 }

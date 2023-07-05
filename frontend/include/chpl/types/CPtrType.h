@@ -29,15 +29,15 @@ namespace types {
 class CPtrType final : public Type {
  private:
   const CPtrType* instantiatedFrom_;
-  QualifiedType eltType_;
+  const Type* eltType_;
 
-  CPtrType(const CPtrType* instantiatedFrom, QualifiedType eltType)
+  CPtrType(const CPtrType* instantiatedFrom, const Type* eltType)
     : Type(typetags::CPtrType), instantiatedFrom_(instantiatedFrom),
-      eltType_(std::move(eltType)) {
+      eltType_(eltType) {
     // not an instantiation -> eltType_ should be empty
-    CHPL_ASSERT(instantiatedFrom_ != nullptr || eltType_ == QualifiedType());
+    CHPL_ASSERT(instantiatedFrom_ != nullptr || eltType_ == nullptr);
     // is an instantiation -> eltType should not be empty
-    CHPL_ASSERT(instantiatedFrom_ == nullptr || eltType_ != QualifiedType());
+    CHPL_ASSERT(instantiatedFrom_ == nullptr || eltType_ != nullptr);
   }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -54,7 +54,7 @@ class CPtrType final : public Type {
 
   static const owned<CPtrType>& getCPtrType(Context* context,
                                             const CPtrType* instantiatedFrom,
-                                            QualifiedType eltType);
+                                            const Type* eltType);
 
   const CPtrType* instantiatedFromCPtrType() const {
     // at present, only expecting a single level of instantiated-from.
@@ -68,11 +68,11 @@ class CPtrType final : public Type {
  public:
 
   static const CPtrType* get(Context* context);
-  static const CPtrType* get(Context* context, const QualifiedType& eltType);
+  static const CPtrType* get(Context* context, const Type* eltType);
 
   static const ID& getId(Context* context);
 
-  const QualifiedType& eltType() const {
+  const Type* eltType() const {
     return eltType_;
   }
 

@@ -2617,7 +2617,7 @@ static const Type* getCPtrType(Context* context,
       return ErroneousType::get(context);
     }
 
-    return CPtrType::get(context, qt);
+    return CPtrType::get(context, qt.type());
   }
 
   return nullptr;

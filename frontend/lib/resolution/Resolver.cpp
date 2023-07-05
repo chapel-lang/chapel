@@ -734,7 +734,8 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
             if (isNonStarVarArg) {
               varArgTypeQueryError(context, call->actual(0), resolvedWidth);
             } else {
-              resolvedWidth.setType(pt->eltType());
+              resolvedWidth.setType(QualifiedType(QualifiedType::TYPE,
+                                                  pt->eltType()));
             }
           }
         }

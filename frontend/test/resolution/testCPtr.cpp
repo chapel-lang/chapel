@@ -84,7 +84,7 @@ static void test1() {
   testCPtrArg("c_ptr", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
     assert(fn);
     assert(t);
-    auto eltT = t->eltType().type();
+    auto eltT = t->eltType();
     assert(eltT && eltT->isIntType());
     assert(eltT->toIntType()->isDefaultWidth());
   });
@@ -94,7 +94,7 @@ static void test2() {
   testCPtrArg("c_ptr", "c_ptr(real)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
     assert(fn);
     assert(t);
-    auto eltT = t->eltType().type();
+    auto eltT = t->eltType();
     assert(eltT && eltT->isRealType());
     assert(eltT->toRealType()->isDefaultWidth());
   });
@@ -104,7 +104,7 @@ static void test3() {
   testCPtrArg("c_ptr(int(?w))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
     assert(fn);
     assert(t);
-    auto eltT = t->eltType().type();
+    auto eltT = t->eltType();
     assert(eltT && eltT->isIntType());
     assert(eltT == IntType::get(eg.context(), 32));
   });
@@ -114,7 +114,7 @@ static void test4() {
   testCPtrArg("c_ptr(rec(?t))", "c_ptr(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
     assert(fn);
     assert(t);
-    auto eltT = t->eltType().type();
+    auto eltT = t->eltType();
     assert(eltT && eltT->isRecordType());
     auto rt = eltT->toRecordType();
     assert(rt->name() == "rec");
@@ -141,7 +141,7 @@ static void test7() {
   testCPtrArg("c_ptr(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
     assert(fn);
     assert(t);
-    auto eltT = t->eltType().type();
+    auto eltT = t->eltType();
     assert(eltT && eltT->isIntType());
     assert(eltT->toIntType()->isDefaultWidth());
   });
