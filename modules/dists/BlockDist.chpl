@@ -348,7 +348,7 @@ record Block {
     this.rank = rank;
     this.idxType = idxType;
     this.sparseLayoutType = sparseLayoutType;
-    this._pid = _newPrivatizedClass(value);
+    this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
     this._instance = value;
   }
 
