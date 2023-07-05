@@ -1,0 +1,1 @@
+default-init.chpl:n: warning: relying on a compiler default initializer for a AT with atomic elements is deprecated

@@ -1,2 +1,3 @@
 syncFieldTypeOnlyGeneric.chpl:1: warning: compiler generated default initializers for classes with 'sync' fields are deprecated, please supply an 'init' method
+syncFieldTypeOnlyGeneric.chpl:3: warning: returning a sync by value is deprecated
 false

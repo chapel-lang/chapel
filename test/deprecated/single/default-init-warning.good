@@ -1,1 +1,2 @@
 default-init.chpl:n: warning: compiler generated default initializers for AT with 'single' fields are deprecated, please supply an 'init' method
+default-init.chpl:n: warning: returning a single by value is deprecated
