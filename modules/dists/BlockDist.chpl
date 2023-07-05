@@ -327,7 +327,7 @@ record Block {
   type sparseLayoutType = unmanaged DefaultDist;
   var _pid:int;  // only used when privatized
   pragma "owned"
-  var _instance: BlockGuts(rank, idxType, sparseLayoutType); // generic, but an instance of a subclass of BaseDist
+  var _instance: BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType));
   var _unowned:bool; // 'true' for the result of 'getDistribution',
                      // in which case, the record destructor should
                      // not attempt to delete the _instance.
