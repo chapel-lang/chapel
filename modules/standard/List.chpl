@@ -202,6 +202,7 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
     @unstable("'list.parSafe' is unstable")
     proc init(type eltType, param parSafe=false) {
       _checkType(eltType);
@@ -240,6 +241,7 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
     @unstable("'list.parSafe' is unstable")
     proc init(other: list(?t), param parSafe=false) {
       if !isCopyableType(this.type.eltType) then
@@ -282,6 +284,7 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
     @unstable("'list.parSafe' is unstable")
     proc init(other: [?d] ?t, param parSafe=false) {
       _checkType(t);
@@ -340,6 +343,7 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
     @unstable("'list.parSafe' is unstable")
     proc init(other: range(?t), param parSafe=false) {
       _checkType(t);
@@ -388,6 +392,7 @@ module List {
       :arg parSafe: If `true`, this list will use parallel safe operations.
       :type parSafe: `param bool`
     */
+    pragma "last resort"
     @unstable("'list.parSafe' is unstable")
     proc init(other: _iteratorRecord, param parSafe=false) {
       // get the type yielded by the iterator
