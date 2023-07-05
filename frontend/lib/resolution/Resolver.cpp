@@ -419,7 +419,14 @@ gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
           ResolutionResultByPostorderID r;
           auto visitor =
             Resolver::createForParentClassScopeResolve(context, c, r);
-          parentClassExpr->traverse(visitor);
+          // Parsing excludes non-identifiers as parent class expressions.
+          //
+          // Intended to avoid calling methodReceiverScopes() recursively.
+          // Uses the empty 'savecReceiverScopes' because the class expression
+          // can't be a method anyways.
+          visitor.resolveIdentifier(parentClassExpr->toIdentifier(),
+                                    visitor.savedReceiverScopes);
+
 
           ResolvedExpression& re = r.byAst(parentClassExpr);
           if (re.toId().isEmpty()) {
@@ -529,6 +536,17 @@ bool Resolver::getMethodReceiver(QualifiedType* outType, ID* outId) {
         if (outId) *outId = byPostorder.byAst(ident).toId();
       }
       return true;
+    } else if (auto agg = symbol->toAggregateDecl()) {
+      // Lacking any more specific information, use the parent aggregate ID
+      // if available.
+      //
+      // TODO: when enabled for 'scopeResolveOnly' we must start issuing
+      // errors for cyclic class hierarchies and an inability to find
+      // parent class expressions.
+      if (!scopeResolveOnly) {
+        if (outId) *outId = agg->id();
+        return true;
+      }
     }
   }
 
@@ -566,6 +584,12 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
 QualifiedType Resolver::methodReceiverType() {
   if (typedSignature && typedSignature->untyped()->isMethod()) {
     return typedSignature->formalType(0);
+  } else if (inCompositeType != nullptr) {
+    // We might find this case useful when resolving a forwarding statement.
+    //
+    // TODO: 'CONST_REF' probably isn't the right choice here. What we really
+    // want is the qualifier of the variable we're resolving this on.
+    return QualifiedType(QualifiedType::CONST_REF, inCompositeType);
   }
 
   return QualifiedType();
@@ -2235,7 +2259,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
       if (isPotentialSuper(ident)) {
         // We found a single ID, and it's just 'super'.
         return { BorrowedIdsWithName::createWithBuiltinId() };
-      } else {
+      } else if (!resolvingCalledIdent) {
         auto pair = namesWithErrorsEmitted.insert(ident->name());
         if (pair.second) {
           // insertion took place so emit the error
@@ -2428,7 +2452,20 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     } else if (id.isEmpty()) {
       type = typeForBuiltin(context, ident->name());
       result.setIsBuiltin(true);
-      result.setToId(id);
+
+      // Some builtin types have a more useful ID than an empty ID
+      ID builtinId = id;
+      if (type.hasTypePtr()) {
+        if (auto cl = type.type()->toClassType()) {
+          if (auto basic = cl->basicClassType()) {
+            builtinId = basic->id();
+          }
+        } else if (auto ct = type.type()->toCompositeType()) {
+          builtinId = ct->id();
+        }
+      }
+      result.setToId(builtinId);
+
       result.setType(type);
       return;
     }
