@@ -49,7 +49,8 @@ class CPtrType final : public Type {
   void markUniqueStringsInner(Context* context) const override {}
 
   Genericity genericity() const override {
-    return MAYBE_GENERIC;
+    if (!eltType_) return GENERIC;
+    return eltType_->genericity();
   }
 
   static const owned<CPtrType>& getCPtrType(Context* context,
