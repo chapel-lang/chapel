@@ -322,9 +322,12 @@ This example demonstrates a Block-distributed sparse domain and array:
 
 pragma "ignore noinit"
 record Block {
+  param rank: int;
+  type idxType = int;
+  type sparseLayoutType = unmanaged DefaultDist;
   var _pid:int;  // only used when privatized
   pragma "owned"
-  var _instance; // generic, but an instance of a subclass of BaseDist
+  var _instance: BlockGuts(rank, idxType, sparseLayoutType); // generic, but an instance of a subclass of BaseDist
   var _unowned:bool; // 'true' for the result of 'getDistribution',
                      // in which case, the record destructor should
                      // not attempt to delete the _instance.
@@ -342,17 +345,26 @@ record Block {
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity,
                                           rank, idxType, sparseLayoutType);
+    this.rank = rank;
+    this.idxType = idxType;
+    this.sparseLayoutType = sparseLayoutType;
     this._pid = _newPrivatizedClass(value);
     this._instance = value;
   }
 
     proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
+      this.sparseLayoutType = _instance.sparseLayoutType;
       this._pid      = _pid;
       this._instance = _instance;
       this._unowned  = _unowned;
     }
 
     proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
+      this.sparseLayoutType = value.sparseLayoutType;
       this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
       this._instance = _to_unmanaged(value);
     }
@@ -361,6 +373,12 @@ record Block {
     // does not match the type of 'other'. That case is handled by the compiler
     // via coercions.
     proc init=(const ref other : Block(?)) {
+      /*
+      this.init(other.rank, other.idxType, other.sparseLayoutType, other_value.dsiClone()
+      this.rank = other.rank;
+      this.idxtype = other.idxType;
+      this.sparseLayoutType = other.sparseLayoutType;
+      */
       var value = other._value.dsiClone();
       this.init(value);
     }

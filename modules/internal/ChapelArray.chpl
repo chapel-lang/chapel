@@ -727,6 +727,12 @@ module ChapelArray {
     return y.type;
   }
 
+  proc chpl__buildDistType(type t: record) type {
+  // TODO: Enable this before merge
+//    compilerWarning("Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'");
+    return t;
+  }
+
   proc chpl__buildDistType(type t) {
     compilerError("illegal domain map type specifier - must be a subclass of BaseDist");
   }
@@ -746,6 +752,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistDMapValue(x: record) {
+  // TODO: Enable this before merge
 //    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
     return chpl__buildDistValue(x);
   }
