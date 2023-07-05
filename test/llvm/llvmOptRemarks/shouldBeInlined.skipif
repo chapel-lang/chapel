@@ -1,0 +1,4 @@
+# test will fail some cases if used in a --fast configuration
+COMPOPTS <= --fast
+# test only does something if LLVM is the backed
+CHPL_TARGET_COMPILER != llvm
