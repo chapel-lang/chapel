@@ -275,7 +275,6 @@ bool fReportBlocking = false;
 bool fReportOptimizedLoopIterators = false;
 bool fReportInlinedIterators = false;
 bool fReportVectorizedLoops = false;
-bool fReportMissedVectorization = false;
 bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
@@ -737,21 +736,6 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
     llvmRemarksFunctionsToShow.push_back(n);
   }
 }
-
-// static void setLLVMRemarks(const ArgumentDescription* desc, const char* arg) {
-//   // Append arg to the end of llvmFlags.
-
-//   // add a space if there are already arguments here
-//   std::cout << std::string(arg) << "\n";
-// }
-
-// static void setLLVMRemarksFilter(const ArgumentDescription* desc, const char* arg) {
-//   // Append arg to the end of llvmFlags.
-
-//   // add a space if there are already arguments here
-//   std::cout << std::string(arg) << "\n";
-// }
-
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
  addLibFile(libraryFilename);
