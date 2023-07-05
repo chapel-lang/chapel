@@ -128,13 +128,12 @@ proc main(args: [] string) {
     process(data, sectionStart, data.size-2);
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
   //
   // Necessary for now because list `readWriteThis` includes formatting chars,
   // while arrays do not.
   //
-  stdoutBin.write(data.toArray());
+  stdoutBin.writeBinary(data.toArray());
 }
 
 proc process(ref data, in start, in end) {
