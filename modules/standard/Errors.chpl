@@ -135,10 +135,21 @@ module Errors {
   }
 
   /*
-   A `CodepointSplittingError` is thrown if an attempt to slice a string with
+   A `CodepointSplitError` is thrown if an attempt to slice a string with
    byteIndex-based ranges where the range boundaries does not align with
    codepoint boundaries.
    */
+  class CodepointSplitError: Error {
+    proc init(info: string) {
+      super.init(info);
+    }
+
+    override proc message() {
+      return "Attempting to split a multi-byte codepoint. " + _msg;
+    }
+  }
+
+  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
   class CodepointSplittingError: Error {
     proc init(info: string) {
       super.init(info);
