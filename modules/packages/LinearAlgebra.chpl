@@ -2223,7 +2223,18 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   .. note::
 
-   A temporary copy of ``A`` will be created within this computation.
+    A temporary copy of ``A`` will be created within this computation.
+
+  .. note::
+
+    Arrays with strided domains are not supported.
+
+  .. note::
+
+    Arrays whose domains have nonzero offsets are supported. ``U`` inherits the
+    row indexing of ``A``, while ``Vh`` inherits the column indexing of ``A``.
+    The columns of ``U``, rows of ``Vh``, and ``s`` all share the same 0-based
+    indexing.
 
   .. note::
 
@@ -2231,7 +2242,8 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+    && Adom.strides == strideKind.one {
   if isDistributed(A) then
     compilerError("svd does not support distributed vectors/matrices");
 
@@ -2248,11 +2260,11 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [0..<min((...A.shape))] realType;
-  // Unitary matrix, U
-  var u: [0..<m, 0..<m] t;
-  // Unitary matrix V^T (or V^H)
-  var vt: [0..<n, 0..<n] t;
+  var s: [0..<min(m,n)] realType;
+  // Unitary matrix, U, inherits row offset of A
+  var u: [Adom.dim(0), 0..<m] t;
+  // Unitary matrix V^T (or V^H), inherits column offset of A
+  var vt: [0..<n, Adom.dim(1)] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
