@@ -2621,7 +2621,7 @@ static llvm::Error setupRemarks(llvm::LLVMContext& Context,
 }
 
 static bool shouldShowLLVMRemarks() {
-  return *llvmRemarksFilters != '\0' || !llvmRemarksFunctionsToShow.empty();
+  return !llvmRemarksFilters.empty() || !llvmRemarksFunctionsToShow.empty();
 }
 #endif
 

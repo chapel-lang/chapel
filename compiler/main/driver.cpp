@@ -329,7 +329,7 @@ static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
 
 std::string llvmFlags;
-char llvmRemarksFilters[128];
+std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
 
 bool fPrintAdditionalErrors;
@@ -729,6 +729,11 @@ static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
 
   llvmFlags += arg;
 }
+
+static void setLLVMRemarksFilters(const ArgumentDescription* desc, const char* arg) {
+  llvmRemarksFilters = std::string(arg);
+}
+
 static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char* arg) {
   std::vector<std::string> fNames;
   splitString(std::string(arg), fNames, ",");
@@ -1150,7 +1155,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
- {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S128", &llvmRemarksFilters, NULL, NULL},
+ {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
 
  {"", ' ', NULL, "Compilation Trace Options", NULL, NULL, NULL, NULL},
