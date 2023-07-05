@@ -352,6 +352,19 @@ bool CanPassResult::canConvertNumeric(Context* context,
 }
 
 bool
+CanPassResult::canConvertCPtr(Context* context,
+                              const Type* actualT,
+                              const Type* formalT) {
+  if (auto actualPtr = actualT->toCPtrType()) {
+    if (auto formalPtr = formalT->toCPtrType()) {
+      return formalPtr->isVoidPtr();
+    }
+  }
+
+  return false;
+}
+
+bool
 CanPassResult::canConvertParamNarrowing(Context* context,
                                         const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
@@ -661,6 +674,10 @@ CanPassResult CanPassResult::canConvert(Context* context,
   // can we convert with param narrowing?
   if (canConvertParamNarrowing(context, actualQT, formalQT))
     return convert(PARAM_NARROWING);
+
+  if (canConvertCPtr(context, actualT, formalT)) {
+    return convert(OTHER);
+  }
 
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {

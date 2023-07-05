@@ -77,6 +77,11 @@ class CPtrType final : public Type {
     return eltType_;
   }
 
+  bool isVoidPtr() const {
+    if (eltType_ == nullptr) return false;
+    return eltType_->isVoidType();
+  }
+
   bool isInstantiationOf(Context* context,
                          const CPtrType* genericType) const {
     auto thisFrom = instantiatedFromCPtrType();

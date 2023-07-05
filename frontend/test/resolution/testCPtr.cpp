@@ -147,6 +147,14 @@ static void test7() {
   });
 }
 
+static void test8() {
+  testCPtrArg("c_ptr(void)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(t);
+    assert(t->isVoidPtr());
+    // expect no errors; this should be valid.
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -155,4 +163,5 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 }
