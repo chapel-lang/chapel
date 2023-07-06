@@ -267,13 +267,9 @@ llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
-  const llvm::DataLayout& layout = info->module->getDataLayout();
-  llvm::LLVMContext &ctx = info->llvmContext;
   llvm::AllocaInst* val = NULL;
 
-  val = makeAllocaAndLifetimeStart(irBuilder, layout, ctx, type, name);
-  info->currentStackVariables.push_back(
-      std::pair<llvm::AllocaInst*, llvm::Type*>(val, type));
+  val = createAllocaInFunctionEntry(irBuilder, type, name);
 
   return val;
 }

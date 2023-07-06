@@ -938,5 +938,4 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
   return ChangedFn;
 }
 
-
 #endif
