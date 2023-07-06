@@ -32,15 +32,7 @@ sub mysystem {
 
             if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
                 
-                writeSummary ($revision,
-     $starttime,
-     $endtime ,
-     $crontab ,
-     $testdirs ,
-     $numtestssummary ,
-     $summary ,
-     $prevsummary ,
-     $sortedsummary );
+                writeSummary ($revision, $starttime,$endtime , $crontab , $testdirs , $numtestssummary , $summary , $prevsummary, $sortedsummary );
                 print "Trying to mail message... using $mailcommand\n";
                 open(MAIL, $mailcommand);
                 
@@ -166,8 +158,8 @@ sub writeSummary {
     print "Writing Testing summary... \n";
     print "filename ... $filename \n";
     print $SF startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, $testdirs);
-    print $SF "$numtestssummary\n";
-    print $SF "$summary\n";
+    print $SF "$numtestssummary \n";
+    print $SF "$summary \n";
     print $SF endMailHeader();
         print $SF "--- New Errors -------------------------------\n";
         print $SF `LC_ALL=C comm -13 $prevsummary $sortedsummary | grep -v "^.Summary:" | grep -v "$futuremarker" | grep -v "$suppressmarker"`;
