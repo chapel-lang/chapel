@@ -878,6 +878,7 @@ if ($runtests == 0) {
     }
 
 # FIXME: Pass correct args here!
+     print "Got here .. calling nightly email \n";
     `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
 
 #
