@@ -875,8 +875,6 @@ bool AggregateGlobalOpsOpt::run(Function &F) {
   bool ChangedFn = false;
   bool DebugThis = DEBUG;
 
-  printf("In AggregateGlobalOpsOpt::run\n");
-
   if( debugThisFn[0] && F.getName() == debugThisFn ) {
     DebugThis = true;
   }
