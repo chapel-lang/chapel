@@ -136,7 +136,7 @@ $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
 
 if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
     
-    
+    $passed = 1;
     # print "Trying... $mailcommand\n";
     # open(MAIL, $mailcommand);
 
@@ -196,11 +196,11 @@ if ($debug == 0) {
 
 if($passed == 0)
 {
-     print "Got here passed == 0";
+    print "Got here passed == 0 \n";
     exit 0;
 
 }
 else{
-     print "Got here passed != 0";
+    print "Got here passed != 0 \n";
     exit 1;
 }

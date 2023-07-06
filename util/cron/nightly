@@ -879,9 +879,9 @@ if ($runtests == 0) {
 
 # FIXME: Pass correct args here!
      print "Got here .. calling nightly email \n";
-   $passed=0; 
+   
    $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-
+   print "Did the test pass .. $passed \n";
 #
 # analyze memory leaks tests
 #
@@ -907,11 +907,11 @@ if ($runtests == 0) {
     }
 }
 if ($passed == 1) {
-    print "Failed";
+    print "Failed \n";
 exit 1;
 }
 else{
-     print "Passed";
+     print "Passed \n";
 exit 0;
 }    
 
