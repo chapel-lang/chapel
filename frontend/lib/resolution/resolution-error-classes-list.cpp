@@ -299,14 +299,10 @@ void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
   auto externBlockId = std::get<ID>(info);
   auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
   wr.heading(kind_, type_, externBlockId,
-             "error running clang on extern block");
-  // Print C compilation errors, if present
-  if (errors.size() > 0) {
-    wr.note(externBlockId,
-            "clang reported the following errors for this extern block");
-    for (const auto& error : errors) {
-      wr.note(error.first, error.second);
-    }
+             std::string("error running clang on extern block") +
+                 (errors.size() > 0 ? " - clang errors follow:" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, "error: " + error.second);
   }
 }
 
