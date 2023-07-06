@@ -5,8 +5,8 @@ const S = {1..n};
 const R = {1..n,1..n};
 const BDom: domain(1) dmapped Cyclic(startIdx=S.low)=S;
 const CDom: domain(2) dmapped Cyclic(startIdx=R.low)=R;
-//const BDist = new dmap(new Block(boundingBox=S));
-//const RDist = new dmap(new Block(boundingBox=R));
+//const BDist = new Block(boundingBox=S);
+//const RDist = new Block(boundingBox=R);
 //const BDom : domain(1) dmapped BDist=S;
 
 //var A : [[1..n] dmapped Block(rank=1,boundingBox=[1..n])] int;

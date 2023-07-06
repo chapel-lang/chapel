@@ -71,7 +71,7 @@ calling changeBoundingBox() will affect only future domains/arrays
 created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
-proc BlockGuts.changeBoundingBox(newBB) {
+proc Block.changeBoundingBox(newBB) {
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms_containing_dist != 0 then

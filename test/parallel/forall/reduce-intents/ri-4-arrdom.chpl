@@ -22,7 +22,7 @@ proc setupDistributions() {
     return defaultDist;
 
   else if distType == DistType.block then
-    return new dmap(new Block(rank=2, boundingBox={1..d, 1..d}));
+    return new Block(rank=2, boundingBox={1..d, 1..d});
 
   else if distType == DistType.cyclic then
     return new dmap(new Cyclic(startIdx=(0,0)));

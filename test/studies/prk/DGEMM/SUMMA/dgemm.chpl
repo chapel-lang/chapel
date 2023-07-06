@@ -27,7 +27,7 @@ const vecRange = 0..#order;
 const matrixSpace = {vecRange, vecRange};
 
 const matrixDom = matrixSpace dmapped if useBlockDist then
-                      new dmap(new Block(boundingBox=matrixSpace)) else
+                      new Block(boundingBox=matrixSpace) else
                       defaultDist;
 
 var A = Matrix(matrixDom, dtype),

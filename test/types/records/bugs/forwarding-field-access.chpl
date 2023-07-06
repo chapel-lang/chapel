@@ -1,8 +1,8 @@
-record S {
+class S {
   var x = 42;
 }
 
-record R {
+class R {
   forwarding var s: S;
 }
 

@@ -1,1 +1,2 @@
+dmap-block.chpl:3: warning: Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'
 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0

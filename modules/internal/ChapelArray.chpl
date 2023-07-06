@@ -675,8 +675,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistType(type t: record) type {
-  // TODO: Enable this before merge
-//    compilerWarning("Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'");
+    compilerWarning("Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'");
     return t;
   }
 
@@ -699,8 +698,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistDMapValue(x: record) {
-  // TODO: Enable this before merge
-//    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
+    compilerWarning("Using 'dmap' for this distribution type is deprecated; simply use 'new <DistName>(args)'");
     return chpl__buildDistValue(x);
   }
 

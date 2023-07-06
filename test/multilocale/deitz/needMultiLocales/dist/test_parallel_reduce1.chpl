@@ -2,8 +2,8 @@ use BlockDist;
 
 config const tasksPerLocale=2, m=8, iters=100, verbose=false;
 
-const Dist = new dmap(new Block(rank=1, boundingBox={1..m},
-                                dataParTasksPerLocale=tasksPerLocale));
+const Dist = new Block(rank=1, boundingBox={1..m},
+                                dataParTasksPerLocale=tasksPerLocale);
 const Dom: domain(1) dmapped Dist = {1..m};
 var A, B: [Dom] real;
 
