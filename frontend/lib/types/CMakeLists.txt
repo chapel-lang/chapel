@@ -33,6 +33,7 @@ target_sources(ChplFrontend-obj
                DomainType.cpp
                EnumType.cpp
                ErroneousType.cpp
+               ExternType.cpp
                ImagType.cpp
                IntType.cpp
                NilType.cpp
