@@ -205,7 +205,15 @@ void CallInfo::prepareActuals(Context* context,
     auto actual = call->actual(i);
 
     if (isQuestionMark(actual)) {
-      if (questionArg == nullptr) {
+      if (call->isTuple()) {
+        // Expressions like (?,?,?)
+        UniqueString byName;
+        auto qt = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+        actuals.push_back(CallInfoActual(qt, byName));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(actual);
+        }
+      } else if (questionArg == nullptr) {
         questionArg = actual;
       } else {
         CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
