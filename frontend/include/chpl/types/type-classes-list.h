@@ -42,6 +42,7 @@
 TYPE_NODE(AnyType)
 TYPE_NODE(CStringType)
 TYPE_NODE(ErroneousType)
+TYPE_NODE(ExternType)
 TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
 TYPE_NODE(UnknownType)

@@ -32,6 +32,7 @@
 #include "chpl/types/DomainType.h"
 #include "chpl/types/EnumType.h"
 #include "chpl/types/ErroneousType.h"
+#include "chpl/types/ExternType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/NilType.h"
