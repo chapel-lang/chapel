@@ -344,10 +344,10 @@ record Block {
                                           dataParTasksPerLocale,
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity,
-                                          rank, idxType, sparseLayoutType);
+                                          rank, idxType, _to_unmanaged(sparseLayoutType));
     this.rank = rank;
     this.idxType = idxType;
-    this.sparseLayoutType = sparseLayoutType;
+    this.sparseLayoutType = _to_unmanaged(sparseLayoutType);
     this._pid = if _isPrivatized(value) then _newPrivatizedClass(value) else nullPid;
     this._instance = value;
   }
