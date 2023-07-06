@@ -147,9 +147,7 @@ module List {
     /* The type of the elements contained in this list. */
     type eltType;
 
-    /*
-      If `true`, this list will perform parallel safe operations.
-    */
+    /*If `true`, this list will perform parallel safe operations.*/
     @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
     param parSafe = false;
 
@@ -239,7 +237,7 @@ module List {
     */
     pragma "last resort"
     @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
-    proc init(other: list(?t), param parSafe=false) {
+    proc init(other: list(?t), param parSafe=other.parSafe) {
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that " +
                       "cannot be copied");
