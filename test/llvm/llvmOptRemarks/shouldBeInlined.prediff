@@ -12,4 +12,12 @@ cat $TMPFILE > $OUTFILE
 grep 'foo_chpl' < $OUTFILE > $TMPFILE
 cat $TMPFILE > $OUTFILE
 
+# filter out any line that doesn't refer to 'chpl_user_main'
+grep 'chpl_user_main' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
+# filter 'cost=...' and 'threshold=...'
+sed -E 's/(cost|threshold)=-?[0-9]+/\1=N/g' < $OUTFILE > $TMPFILE
+cat $TMPFILE > $OUTFILE
+
 rm $TMPFILE

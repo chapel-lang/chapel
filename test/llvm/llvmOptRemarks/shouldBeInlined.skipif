@@ -2,3 +2,5 @@
 COMPOPTS <= --fast
 # test only does something if LLVM is the backed
 CHPL_TARGET_COMPILER != llvm
+# test only LLVM 15 or greater
+CHPL_LLVM_VERSION>=15
