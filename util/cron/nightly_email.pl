@@ -71,6 +71,7 @@ if ($status == 0) {
     $summary = "Tests run: failed";
 }
 
+
 $knownumtests = 1;
 if ($status == 0) {
     $oldnumtests = $oldsucc + $oldfail;
@@ -81,7 +82,15 @@ if ($status == 0) {
     $numtestssummary = "unknown number of Tests";
     $knownumtests = 0;
 }
-
+writeSummary ($revision,
+     $starttime,
+     $endtime ,
+     $crontab ,
+     $testdirs ,
+     $numtestssummary ,
+     $summary ,
+     $prevsummary ,
+     $sortedsummary );
 
 #
 # send mail
