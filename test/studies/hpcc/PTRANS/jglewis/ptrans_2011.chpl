@@ -42,10 +42,10 @@ module HPCC_PTRANS {
 
     // declare domains (index sets) for matrix and transpose
 
-    const matrix_domain     : domain (2) dmapped new dmap (
-                              Matrix_Block_Dist) = { 1..n_rows, 1..n_cols },
-          transpose_domain  : domain (2) dmapped new dmap (
-                              Transpose_Block_Dist) = { 1..n_cols, 1..n_rows };
+    const matrix_domain     : domain (2) dmapped
+                              Matrix_Block_Dist = { 1..n_rows, 1..n_cols },
+          transpose_domain  : domain (2) dmapped
+                              Transpose_Block_Dist = { 1..n_cols, 1..n_rows };
 
     var A                  : [matrix_domain   ] real, 
         C                  : [transpose_domain] real,
