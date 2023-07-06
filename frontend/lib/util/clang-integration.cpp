@@ -282,12 +282,8 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     clang::GeneratePCHAction* genPchAction = new clang::GeneratePCHAction();
     // run action and capture results
     if (!Clang->ExecuteAction(*genPchAction)) {
-      CHPL_REPORT(context, ExternCCompilation,
-                  parsing::locateId(context, externBlockId),
-                  /* C compiler error */ false,
-                  "error running clang on extern block");
-
       // Report Clang errors and warnings to the Context.
+      std::vector<std::pair<Location, std::string>> errorInfo;
       // we expect warnings are being treated as errors
       CHPL_ASSERT(diagClient->getNumWarnings() == 0);
       const clang::SourceManager& sm = Clang->getSourceManager();
@@ -301,11 +297,10 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
             Location(UniqueString::get(context, presumedLoc.getFilename()),
                      presumedLoc.getLine(), presumedLoc.getColumn());
         // TODO: also output diagnostic options after message ([-Werror] etc)
-        CHPL_REPORT(context, ExternCCompilation, externErrorLoc,
-                    /* C compiler error */ true,
-                    /* error message */ (*it).second.c_str());
+        const auto externErrorMsg = (*it).second;
+        errorInfo.emplace_back(externErrorLoc, externErrorMsg);
       }
-
+      CHPL_REPORT(context, ExternCCompilation, externBlockId, errorInfo);
       ok = false;
     }
 

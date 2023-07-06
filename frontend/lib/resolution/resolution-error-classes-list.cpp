@@ -296,12 +296,18 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isFromCCompiler = std::get<bool>(info);
-  auto msg = std::get<std::string>(info);
-  // If outputting a message from the C compiler, specify that.
-  wr.heading(kind_, type_, loc,
-             (isFromCCompiler ? "C compiler output: " : ""), msg);
+  auto externBlockId = std::get<ID>(info);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
+  wr.heading(kind_, type_, externBlockId,
+             "error running clang on extern block");
+  // Print C compilation errors, if present
+  if (errors.size() > 0) {
+    wr.note(externBlockId,
+            "clang reported the following errors for this extern block");
+    for (const auto& error : errors) {
+      wr.note(error.first, error.second);
+    }
+  }
 }
 
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
