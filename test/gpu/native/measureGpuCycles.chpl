@@ -32,8 +32,9 @@ on here.gpus[0] {
     if showTimingResults then
       writeln("Diff is: ",
         (clockDiff[i] : real) / (gpuClocksPerSec(0) : real));
-    if clockDiff[i] < 0 {
-      writeln("Unexpected negative result, i= ", i,  " clockDiff[i]=", clockDiff[i]);
+    if clockDiff[i] <= 0 {
+      writeln("Unexpected negative or zero result: i= ", i,  " clockDiff[i]=",
+        clockDiff[i]);
     }
   }
 }
