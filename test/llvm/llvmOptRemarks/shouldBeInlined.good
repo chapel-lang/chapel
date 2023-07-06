@@ -1,1 +1,1 @@
-shouldBeInlined.chpl:n:0: opt passed for 'inline' - 'foo_chpl' inlined into 'chpl_user_main' with (cost=-15020, threshold=375)
+shouldBeInlined.chpl:n:0: opt passed for 'inline' - 'foo_chpl' inlined into 'chpl_user_main' with (cost=N, threshold=N)
