@@ -46,9 +46,9 @@
   Lists are not parallel safe by default, but can be made parallel safe by
   setting the param formal `parSafe` to true in any list constructor. When
   constructed from another list, the new list will inherit the parallel safety
-  mode of its originating list (note that the ``parSafe`` mode is currently
+  mode of its originating list. Note that the ``parSafe`` mode is currently
   unstable and will eventually be replaced by a standalone parallel-safe list
-  type).
+  type.
 
   Inserts and removals into a list are O(n) worst case and should be performed
   with care. Appends into a list have an amortized speed of O(1). Indexing
@@ -149,12 +149,8 @@ module List {
 
     /*
       If `true`, this list will perform parallel safe operations.
-
-      .. warning::
-        ``parSafe`` is unstable. This feature will eventually be replaced by a
-        standalone parallel-safe list type.
-
     */
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future");
     param parSafe = false;
 
     @chpldoc.nodoc
@@ -203,7 +199,7 @@ module List {
       :type parSafe: `param bool`
     */
     pragma "last resort"
-    @unstable("'list.parSafe' is unstable")
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(type eltType, param parSafe=false) {
       _checkType(eltType);
       this.eltType = eltType;
@@ -225,7 +221,7 @@ module List {
         compilerError("Cannot copy list with element type that " +
                       "cannot be copied");
       this.eltType = t;
-      this.parSafe = false;
+      this.parSafe = other.parSafe;
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -242,7 +238,7 @@ module List {
       :type parSafe: `param bool`
     */
     pragma "last resort"
-    @unstable("'list.parSafe' is unstable")
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: list(?t), param parSafe=false) {
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that " +
@@ -285,7 +281,7 @@ module List {
       :type parSafe: `param bool`
     */
     pragma "last resort"
-    @unstable("'list.parSafe' is unstable")
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: [?d] ?t, param parSafe=false) {
       _checkType(t);
       if !isCopyableType(t) then
@@ -344,7 +340,7 @@ module List {
       :type parSafe: `param bool`
     */
     pragma "last resort"
-    @unstable("'list.parSafe' is unstable")
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: range(?t), param parSafe=false) {
       _checkType(t);
       this.eltType = t;
@@ -393,7 +389,7 @@ module List {
       :type parSafe: `param bool`
     */
     pragma "last resort"
-    @unstable("'list.parSafe' is unstable")
+    @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
     proc init(other: _iteratorRecord, param parSafe=false) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
