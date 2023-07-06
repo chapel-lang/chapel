@@ -1,1 +1,2 @@
-CHPL_GPU=cpu
+# This test covers features we don't support in cpu-as-device mode
+CHPL_GPU==cpu

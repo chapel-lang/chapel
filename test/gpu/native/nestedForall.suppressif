@@ -1,0 +1,5 @@
+# This is currently failing to produce the same number of launches with using
+# cpu-as-device mode.  Given that part of the purpose of using this mode is to
+# determine what the expected behavior would be with GPUs this is a little
+# disconcerting.
+CHPL_GPU==cpu
