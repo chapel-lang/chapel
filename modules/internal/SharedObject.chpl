@@ -566,14 +566,15 @@ module SharedObject {
   // supported in the compiler via a call to borrow() and
   // sometimes uses this cast.
   @chpldoc.nodoc
-  inline operator :(pragma "nil from arg" const ref x:_shared, type t:borrowed) where isSubtype(t,x.chpl_t) {
+  inline operator :(pragma "nil from arg" const ref x:_shared, type t:borrowed)
+    where isSubtype(t, x.chpl_t) {
     return x.borrow();
   }
 
   // cast to shared?, no class downcast
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:shared class, type t:shared class?)
-    where isSubtype(x.chpl_t,_to_nonnil(t.chpl_t))
+    where isSubtype(x.chpl_t, t.chpl_t:class)
   {
     return new _shared(true, _to_nilable(t.chpl_t), x);
   }
@@ -581,7 +582,7 @@ module SharedObject {
   // cast to shared?, no class downcast
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" in x:shared class?, type t:shared class?)
-    where isSubtype(x.chpl_t,t.chpl_t)
+    where isSubtype(x.chpl_t, t.chpl_t)
   {
     return new _shared(true, t.chpl_t, x);
   }
@@ -589,7 +590,7 @@ module SharedObject {
   // cast to shared!, no class downcast, no casting away nilability
   @chpldoc.nodoc
   inline operator :(in x:shared class, type t:shared class)
-    where isSubtype(x.chpl_t,t.chpl_t)
+    where isSubtype(x.chpl_t, t.chpl_t)
   {
     return new _shared(true, t.chpl_t, x);
   }
@@ -597,7 +598,7 @@ module SharedObject {
   // cast to shared!, no class downcast, casting away nilability
   @chpldoc.nodoc
   inline operator :(in x:shared class?, type t:shared class) throws
-    where isSubtype(_to_nonnil(x.chpl_t),t.chpl_t)
+    where isSubtype(x.chpl_t:class, t.chpl_t)
   {
     if x.chpl_p == nil {
       throw new owned NilClassError();
@@ -609,7 +610,7 @@ module SharedObject {
   // this version handles downcast to non-nil shared
   @chpldoc.nodoc
   inline operator :(const ref x:shared class?, type t:shared class) throws
-    where isProperSubtype(t.chpl_t,_to_nonnil(x.chpl_t))
+    where isProperSubtype(t.chpl_t, x.chpl_t:class)
   {
     if x.chpl_p == nil {
       throw new owned NilClassError();
@@ -621,7 +622,7 @@ module SharedObject {
   }
   @chpldoc.nodoc
   inline operator :(const ref x:shared class, type t:shared class) throws
-    where isProperSubtype(t.chpl_t,x.chpl_t)
+    where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // the following line can throw ClassCastError
     var p = try _to_unmanaged(x.chpl_p):_to_nonnil(_to_unmanaged(t.chpl_t));
@@ -633,7 +634,7 @@ module SharedObject {
   // this version handles downcast to nilable shared
   @chpldoc.nodoc
   inline operator :(pragma "nil from arg" const ref x:shared class?, type t:shared class?)
-    where isProperSubtype(t.chpl_t,x.chpl_t)
+    where isProperSubtype(t.chpl_t, x.chpl_t)
   {
     // this cast returns nil if the dynamic type is not compatible
     var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
@@ -641,7 +642,7 @@ module SharedObject {
   }
   @chpldoc.nodoc
   inline operator :(const ref x:shared class, type t:shared class?)
-    where isProperSubtype(t.chpl_t,_to_nilable(x.chpl_t))
+    where isProperSubtype(t.chpl_t, x.chpl_t:class?)
   {
     // this cast returns nil if the dynamic type is not compatible
     var p = _to_unmanaged(x.chpl_p):_to_nilable(_to_unmanaged(t.chpl_t));
