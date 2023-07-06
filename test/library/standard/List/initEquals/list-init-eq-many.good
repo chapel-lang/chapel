@@ -4,7 +4,7 @@ a:list(int(64),false) = [1, 2]
 b:list(int(64),false) = [1, 2]
 c:list(int(64),true) = [1, 2]
 y:list(int(64),true) = [1, 2]
-d:list(int(64),false) = [1, 2]
+d:list(int(64),true) = [1, 2]
 e:list(int(64),false) = [1, 2]
 f:list(int(64),true) = [1, 2]
 initCopyFromList
