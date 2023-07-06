@@ -1,9 +1,7 @@
-var s = "you cannot split this pie: 🥧";
-
-try {
-  var x = s[(s.find(": ")+1)..];
-} catch e: CodepointSplittingError {
-  writeln(e.message());
-} catch e {
-  writeln("caught wrong error type!");
+proc splitString(s: string, needle: string) {
+  try {
+    return s[s.find(needle)];
+  } catch e:CodepointSplittingError {
+    return "";
+  }
 }

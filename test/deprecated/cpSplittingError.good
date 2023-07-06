@@ -1,1 +1,2 @@
-cpSplittingError.chpl:5: warning: CodepointSplittingError is deprecated; please use CodepointSplitError instead
+cpSplittingError.chpl:1: In function 'splitString':
+cpSplittingError.chpl:4: warning: CodepointSplittingError is deprecated; please use CodepointSplitError instead
