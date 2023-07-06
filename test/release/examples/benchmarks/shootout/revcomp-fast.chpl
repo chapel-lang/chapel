@@ -53,9 +53,8 @@ proc main(args: [] string) {
   }
 
   // write the data out to stdout once all tasks have completed
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-  stdoutBin.write(data);
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+  stdoutBin.writeBinary(data);
 }
 
 // process a sequence from both ends, replacing each extreme element
