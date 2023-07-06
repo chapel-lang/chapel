@@ -337,7 +337,7 @@ endif
 
 #
 # Avoid a spurious warning in gcc 13, about a "possibly dangling reference"
-# when a function returns a reference (even though it's something gauranteed to
+# when a function returns a reference (even though it's something guaranteed to
 # be allocated on the heap). For more info see
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
 #
