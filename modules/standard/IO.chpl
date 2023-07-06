@@ -6424,8 +6424,8 @@ proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.
  */
 proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
                          stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-            a.isRectangular() && a.hasUnitStride()
+      where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+            (t == uint(8) || t == int(8))
 {
   if maxSize > a.size
     then throw new IllegalArgumentError("'maxSize' argument exceeds size of array in readLine");
@@ -7239,8 +7239,8 @@ proc fileReader.readAll(ref b: bytes): int throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readAll(ref a: [?d] ?t): int throws
-  where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-        a.isRectangular() && a.hasUnitStride()
+  where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+        (t == uint(8) || t == int(8))
 {
   var i = d.low;
 
@@ -7974,7 +7974,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0;
@@ -8024,8 +8024,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
-  where d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
@@ -8233,9 +8233,9 @@ config param ReadBinaryArrayReturnInt = false;
                                values are read.
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8295,7 +8295,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8357,9 +8357,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
                                ``data.size`` values are read.
 */
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
@@ -8397,9 +8397,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true &&
-    d.rank == 1 && d.isRectangular() && d.hasUnitStride() && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
@@ -8919,8 +8919,9 @@ proc read(type t ...?numTypes) throws {
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
-      where (t == uint(8) || t == int(8)) && a.rank == 1 &&
-            a.isRectangular() && a.hasUnitStride() {
+  where a.rank == 1 && a.isRectangular() && a.strides == strideKind.one &&
+        (t == uint(8) || t == int(8))
+{
   return stdin.readLine(a, maxSize, stripNewline);
 }
 
