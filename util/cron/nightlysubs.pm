@@ -33,15 +33,16 @@ sub mysystem {
             if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
                 
                 writeSummary ($revision, $starttime,$endtime , $crontab , $testdirs , $numtestssummary , $summary , $prevsummary, $sortedsummary );
-                print "Trying to mail message... using $mailcommand\n";
-                open(MAIL, $mailcommand);
+                $fatal = 1;
+                #print "Trying to mail message... using $mailcommand\n";
+                # open(MAIL, $mailcommand);
                 
-                print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
-                print MAIL "ERROR $errorname: $status\n";
-                print MAIL "(workspace left at $tmpdir)\n";
-                print MAIL endMailHeader();
-                print MAIL endMailChplenv();
-                close(MAIL);
+                # print MAIL startMailHeader($revision, $rawlog, $starttime, $endtime, $crontab, "");
+                # print MAIL "ERROR $errorname: $status\n";
+                # print MAIL "(workspace left at $tmpdir)\n";
+                # print MAIL endMailHeader();
+                # print MAIL endMailChplenv();
+                # close(MAIL);
             } else {
                 print "CHPL_TEST_NOMAIL: No $mailcommand\n";
             }

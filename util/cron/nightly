@@ -879,7 +879,8 @@ if ($runtests == 0) {
 
 # FIXME: Pass correct args here!
      print "Got here .. calling nightly email \n";
-    `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
+   $passed=0; 
+   $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
 
 #
 # analyze memory leaks tests
@@ -905,5 +906,12 @@ if ($runtests == 0) {
         mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
-
+if ($passed == 1) {
+    print "Failed";
+exit 1;
+}
+else{
+     print "Passed";
 exit 0;
+}    
+

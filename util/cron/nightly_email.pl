@@ -6,6 +6,7 @@ use lib "$FindBin::Bin";
 use nightlysubs;
 
 $num_args = $#ARGV + 1;
+
 if ($num_args != 16) {
     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
     print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
@@ -69,6 +70,7 @@ if ($status == 0) {
     $summary = "Tests run: $cursucc Successes ($delsucc), $curfail Failures ($delfail)";
 } else {
     $summary = "Tests run: failed";
+    $passed = 1;
 }
 
 
@@ -113,6 +115,7 @@ if ($newfailures == 0 && $newresolved == 0 && $newpassingfutures == 0 && $newpas
     print "Mailing to minimal group\n";
     $recipient = $nochangerecipient;
 } else {
+    $passed = 1;
     print "Mailing to everyone\n";
 }
 
@@ -189,4 +192,13 @@ if ($debug == 0) {
     if ($status == 0) {
         system("cp -pv $sortedsummary $prevsummary");
     }
+}
+
+if($passed == 0)
+{
+    exit 0;
+
+}
+else{
+    exit 1;
 }
