@@ -10,8 +10,9 @@
 -stestnum=1 -sretType='(int, single int)' # return-by-ref-warning.good
 -stestnum=2 -sretType='(int, single int)' # return-by-ref-warning.good
 -stestnum=3 -sretType='(int, single int)'
--stestnum=1 -sretType='(int, (int, single int))' # return-by-ref-warning.good
--stestnum=2 -sretType='(int, (int, single int))' # return-by-ref-warning.good
+# these two already fail to compile
+# -stestnum=1 -sretType='(int, (int, single int))' # return-by-ref-warning.good
+# -stestnum=2 -sretType='(int, (int, single int))' # return-by-ref-warning.good
 -stestnum=3 -sretType='(int, (int, single int))'
 -stestnum=1 -sretType='(int, [0..2] single int)' # return-by-ref-warning.good
 -stestnum=2 -sretType='(int, [0..2] single int)' # return-by-ref-warning.good

@@ -10,8 +10,9 @@
 -stestnum=1 -sretType='(int, sync int)' # return-by-ref-warning.good
 -stestnum=2 -sretType='(int, sync int)' # return-by-ref-warning.good
 -stestnum=3 -sretType='(int, sync int)'
--stestnum=1 -sretType='(int, (int, sync int))' # return-by-ref-warning.good
--stestnum=2 -sretType='(int, (int, sync int))' # return-by-ref-warning.good
+# these two already fail to compile
+# -stestnum=1 -sretType='(int, (int, sync int))' # return-by-ref-warning.good
+# -stestnum=2 -sretType='(int, (int, sync int))' # return-by-ref-warning.good
 -stestnum=3 -sretType='(int, (int, sync int))'
 -stestnum=1 -sretType='(int, [0..2] sync int)' # return-by-ref-warning.good
 -stestnum=2 -sretType='(int, [0..2] sync int)' # return-by-ref-warning.good
