@@ -21,7 +21,7 @@ To use AddressSanitizer with Chapel-generated executables only:
 
      export CHPL_MEM=cstdlib
      export CHPL_TASKS=fifo
-     export CHPL_LLVM=none   # or set CHPL_TARGET_COMPILER=clang, gnu, etc.
+     export CHPL_LLVM=none   # or set CHPL_TARGET_COMPILER to gnu, clang, etc.
      export CHPL_SANITIZE_EXE=address
      export ASAN_OPTIONS="use_sigaltstack=0,detect_leaks=0"
 
