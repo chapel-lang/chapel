@@ -49,6 +49,7 @@ sub mysystem {
         }
 
         if ($fatal != 0) {
+         print "Got here...$fatal != 0 ";
             exit 1;
         }
     }
