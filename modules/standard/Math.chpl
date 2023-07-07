@@ -367,7 +367,7 @@ module Math {
     return chpl_cosh(z);
   }
 
-  /* Returns :proc:`ceil`\(`m`/`n`),
+  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -376,7 +376,7 @@ module Math {
   proc divceil(param m: integral, param n: integral) param do
     return chpl_divceil(m, n);
 
-  /* Returns :proc:`ceil`\(`m`/`n`),
+  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
