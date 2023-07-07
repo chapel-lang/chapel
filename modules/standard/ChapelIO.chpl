@@ -842,11 +842,10 @@ module ChapelIO {
     if f.matchLiteral(" align ") {
       const alignVal = f.read(chpl_integralIdxType);
       if hasParamStrideAltvalAld() {
-        // It is valid to align this range. We do not store its alignment
-        // at runtime because the alignment always normalizes to 0.
+        // It is valid to align any range. In this case we do not store
+        // the alignment at runtime because it always normalizes to 0.
       } else {
         _alignment = chpl__mod(alignVal, _stride);
-        _aligned = true;
       }
     }
   }

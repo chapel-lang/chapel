@@ -42,6 +42,8 @@ module ChapelRange {
      whereas the new rule reverses such direction. */
   config param newSliceRule = false;
 
+  private param unalignedMark = -1;
+
   // This enum is documented directly in the spec to fit the presentation flow.
   @chpldoc.nodoc
   enum boundKind { both, low, high, neither };
@@ -94,19 +96,9 @@ module ChapelRange {
   // index type.  This means that for an unsigned index type, a maximal range can
   // be reached in no less than two strides.
   //
-  // Alignments are taken modulo the stride, so if the stride is one,
-  // even a nonzero alignment has no effect.  The alignment of a range
-  // is relative to the low bound if it exists, otherwise relative to
-  // the high bound if it exists, otherwise absolute.
+  // Alignments are stored modulo abs(stride).
+  // Unaligned ranges store unalignedMark as their alignment.
   //
-  // The _aligned flag is used to track whether a range has a non-ambiguous alignment.
-  // All range literals have ambiguous alignment, but since they have a stride of 1
-  // their isAmbiguous() is false.
-  // The _aligned bit can also be set through the application of an explicit alignment.
-  //
-
-  // I think the record itself should not be documented, but the above comment
-  // should be moved to the top-level module documentation.
   pragma "plain old data"
   pragma "range"
   @chpldoc.nodoc
@@ -137,15 +129,12 @@ module ChapelRange {
     var _stride    : if strides.isPosNegOne() then nothing
                      else chpl__rangeStrideType(idxType); // signed stride
     var _alignment : if strides.isPosNegOne() then nothing
-                     else chpl__idxTypeToIntIdxType(idxType); // alignment
-    var _aligned   : if strides.isPosNegOne() then nothing else bool;
-
-    proc strType type do  return chpl__rangeStrideType(idxType);
-
-    proc chpl__promotionType() type {
-      return idxType;
-    }
+                     else chpl__rangeStrideType(idxType); // alignment or -1
   }
+
+  proc range.strType type do return chpl__rangeStrideType(idxType);
+
+  proc range.chpl__promotionType() type do return idxType;
 
   /* The ``idxType`` as represented by an integer type.  When
      ``idxType`` is an enum type, this evaluates to ``int``.
@@ -155,9 +144,8 @@ module ChapelRange {
      be more of an implementation detail than a user-facing
      feature. */
   @chpldoc.nodoc
-  proc range.chpl_integralIdxType type {
+  proc range.chpl_integralIdxType type do
     return chpl__idxTypeToIntIdxType(idxType);
-  }
 
   // Helper routines for unbounded ranges of enum or bool types
   // ----------------------------------------------------------
@@ -281,8 +269,7 @@ module ChapelRange {
               _low = chpl__defaultLowBound(idxType, bounds),
               _high = chpl__defaultHighBound(idxType, bounds),
               _stride = strides.defaultStride():chpl__rangeStrideType(idxType),
-              _alignment = 0:chpl__idxTypeToIntIdxType(idxType),
-              _aligned = true);
+              alignmentValue = 0:chpl__rangeStrideType(idxType));
   }
 
   // This is an initializer for defining a range value in terms of its
@@ -294,6 +281,25 @@ module ChapelRange {
                   param strides: strideKind,
                   _low, _high, _stride, _alignment, _aligned,
                   param normalizeAlignment=true) {
+    type almtType = chpl__rangeStrideType(idxType);
+    const alignmentValue =
+      if strides.isPosNegOne() /*hasParamStrideAltvalAld()*/ then none else
+        if !_aligned then unalignedMark: almtType else
+          if normalizeAlignment then chpl__mod(_alignment, _stride): almtType
+            else _alignment;
+
+    this.init(idxType, bounds, strides,
+              _low, _high, _stride, alignmentValue);
+  }
+
+  // This is an initializer like the above except the alignment argument
+  // is expected to be "the normalized alignment or unalignedMark".
+  //
+  @chpldoc.nodoc
+  proc range.init(type idxType,
+                  param bounds : boundKind,
+                  param strides: strideKind,
+                  _low, _high, _stride, alignmentValue) {
     this.idxType     = idxType;
     this.bounds      = bounds;
     this.strides     = strides;
@@ -302,9 +308,7 @@ module ChapelRange {
 
     if ! hasParamStrideAltvalAld() {
       this._stride    = _stride;
-      this._alignment = if normalizeAlignment
-        then chpl__mod(_alignment, _stride) else _alignment;
-      this._aligned   = _aligned;
+      this._alignment =  alignmentValue;
 
       if boundsChecking then verifyAppropriateStide(strides, _stride);
     }
@@ -337,10 +341,11 @@ module ChapelRange {
                  then finiteIdxTypeHigh(idxType):bt
                  else other._high;
 
-    const str = (if strides.isOne() then 1 else if strides.isNegOne() then -1
-                  else other.stride) :chpl__rangeStrideType(idxType);
+    const str = other.stride: chpl__rangeStrideType(idxType);
 
-    var alignment = chpl__idxToInt(other.alignment);
+    var alignment = ( if other.hasParamAlignmentField()
+                      then 0 else other._alignment ): str.type;
+
     if isEnumBool && !other.aligned {
       if isPositiveStride(strides, str) {
         alignment = finiteIdxTypeLow(idxType);;
@@ -350,10 +355,7 @@ module ChapelRange {
     }
 
     this.init(idxType, bounds, strides,
-              low, high,
-              str,
-              alignment,
-              other.aligned || isEnumBool);
+              low, high, str, alignment);
   }
 
   /////////////////////////////////
@@ -362,7 +364,7 @@ module ChapelRange {
   proc range.displayRepresentation(msg: string = ""): void {
     operator :(arg: nothing, type t: string) param do return "none";
     chpl_debug_writeln(msg, "range(", _low:string, "..", _high:string, " by ",
-          _stride:string, " align ", _aligned:string, " ", _alignment:string,
+          _stride:string, " align ", _alignment:string,
           " : ", idxType:string, ",", bounds:string, ",", strides:string, ")");
   }
 
@@ -630,14 +632,15 @@ module ChapelRange {
 
   /* Returns the range's alignment. */
   inline proc range.alignment where !hasParamAlignment() do
-    return chpl_intToIdx(if hasParamAlignmentVal() then 0 else _alignment);
+    return chpl_intToIdx(if hasParamAlignmentField() then 0 else _alignment);
 
   @chpldoc.nodoc proc range.alignment param where hasParamAlignment() do return
     if isEnum(idxType) then chpl__orderToEnum(0, idxType) else 0: idxType;
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
-  inline proc range.aligned where !hasParamAligned() do return _aligned;
+  inline proc range.aligned where !hasParamAligned() do
+    return _alignment != unalignedMark;
 
   @chpldoc.nodoc proc range.aligned param where hasParamAligned() do
     return true;
@@ -648,11 +651,11 @@ module ChapelRange {
   @chpldoc.nodoc proc range.hasParamStride() param do
     return hasPosNegUnitStride();
 
-  @chpldoc.nodoc proc range.hasParamAlignmentVal() param do
+  @chpldoc.nodoc proc range.hasParamAlignmentField() param do
     return hasPosNegUnitStride();
 
   @chpldoc.nodoc proc range.hasParamAlignment() param do
-    return hasParamAlignmentVal() &&
+    return hasParamAlignmentField() &&
            (isIntegral(idxType) || isEnum(idxType) || isBool(idxType));
 
   @chpldoc.nodoc proc range.hasParamAligned() param do
@@ -796,7 +799,6 @@ module ChapelRange {
       if ! dest.hasParamStrideAltvalAld() {
         dest._stride    = src._stride;
         dest._alignment = src._alignment;
-        dest._aligned   = src._aligned;
       }
     }
   }
@@ -997,7 +999,7 @@ module ChapelRange {
       this._stride    = stride: this.strType;
       const first     = if this.hasPositiveStride() then low else high;
       this._alignment = chpl__mod(chpl__idxToInt(first), stride): this.strType;
-      this._aligned   = true;
+      if boundsChecking then assert(this.aligned); // not -1
     }
   }
 
@@ -1065,7 +1067,9 @@ module ChapelRange {
 
   private inline proc helpAlignLow(l, a, s) {
     // Adjust _low upward by the difference between _alignment and _low.
-    return l + chpl__diffMod(a, l, s);
+    // If we are using the alignment value, the range should be aligned
+    // therefore alignment is >= 0 and can be cast to chpl_integralIdxType.
+    return l + chpl__diffMod(a: l.type, l, s);
   }
 
 
@@ -1160,7 +1164,9 @@ module ChapelRange {
 
   private inline proc helpAlignHigh(h, a, s) {
     // Adjust _high downward by the difference between _high and _alignment.
-    return h - chpl__diffMod(h, a, s);
+    // If we are using the alignment value, the range should be aligned
+    // therefore alignment is >= 0 and can be cast to chpl_integralIdxType.
+    return h - chpl__diffMod(h, a: h.type, s);
   }
 
   /* Returns ``true`` if this range is naturally aligned, ``false``
@@ -1421,8 +1427,7 @@ module ChapelRange {
     }
     if ! hasPosNegUnitStride()
     {
-      var s = abs(_stride):chpl_integralIdxType;
-      if chpl__diffMod(i, _alignment, s) != 0
+      if chpl__mod(i, _stride) != _alignment
         then return false;
     }
     return true;
@@ -1532,7 +1537,6 @@ module ChapelRange {
     // the following can be 'if none == none ...'
         if r1._stride != r2._stride then return false;
         if r1._alignment != r2._alignment then return false;
-        if r1._aligned != r2._aligned then return false;
     return true;
   }
 
@@ -1587,18 +1591,16 @@ proc range.safeCast(type t: range(?)) {
   if t.idxType == this.idxType then return
     if this.hasParamStrideAltvalAld() && ! t.hasParamStrideAltvalAld()
     then new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this.stride, 0, false, false)
+                   this._low, this._high, this.stride, 0)
     else new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this._stride,
-                   this._alignment, this._aligned, false);
+                   this._low, this._high, this._stride, this._alignment);
 
   var tmp: t;
 
   if ! tmp.hasParamStrideAltvalAld() {
     tmp._stride = this.stride.safeCast(tmp.strType);
     tmp._alignment = if isNothingValue(this._alignment) then 0
-                     else this._alignment.safeCast(chpl_integralIdxType);
-    tmp._aligned = this.aligned;
+                     else this._alignment.safeCast(tmp.strType);
   }
 
   tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.chpl_integralIdxType);
@@ -1655,10 +1657,9 @@ private inline proc rangeCastHelper(r, type t) throws {
   }
 
   if ! tmp.hasParamStrideAltvalAld() {
-    tmp._stride = r.stride: tmp._stride.type;
+    tmp._stride = r.stride: tmp.strType;
     tmp._alignment = if isNothingValue(r._alignment) then 0
-                     else r._alignment: tmp.chpl_integralIdxType;
-    tmp._aligned = r.aligned;
+                     else r._alignment: tmp.strType;
   }
 
   tmp._low = (if r.hasLowBound() then chpl__idxToInt(r.lowBound:dstType) else r._low): tmp.chpl_integralIdxType;
@@ -1699,8 +1700,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                           idxType, boundKind.both, other.strides,
                           if other.hasLowBound() then other._low else _low,
                           if other.hasHighBound() then other._high else _high,
-                          other._stride, other._alignment,
-                          true, false);
+                          other._stride, other._alignment);
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
@@ -1881,7 +1881,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     return new range(idxType, bounds, strides,
                      _low-i,
                      _high+i,
-                     _stride, _alignment, _aligned);
+                     _stride, _alignment);
   }
 
   @chpldoc.nodoc
@@ -1890,17 +1890,14 @@ private inline proc rangeCastHelper(r, type t) throws {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
   }
 
-
-
-
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   @chpldoc.nodoc
-  inline proc range._effAlmt() where !hasParamAlignmentVal()
+  inline proc range._effAlmt() where !hasParamAlignmentField()
     do return _alignment;
 
   @chpldoc.nodoc
-  proc range._effAlmt() param  where  hasParamAlignmentVal()
+  proc range._effAlmt() param  where  hasParamAlignmentField()
     do return 0: chpl_integralIdxType;
 
   // Return an interior portion of this range.
@@ -1911,8 +1908,6 @@ private inline proc rangeCastHelper(r, type t) throws {
     compilerError("interior is not supported on unbounded ranges");
   }
 
-  // TODO: hilde
-  // Set _aligned to true only if stridable.
   /* Returns a range with ``offset`` elements from the interior portion of this
      range. If ``offset`` is positive, take elements from the high end, and if
      ``offset`` is negative, take elements from the low end.
@@ -1950,15 +1945,15 @@ private inline proc rangeCastHelper(r, type t) throws {
     if offset < 0 then
       return new range(idxType, bounds, strides,
                        _low, _low - 1 + i,
-                       _stride, _alignment, _aligned, false);
+                       _stride, _alignment);
     if offset > 0 then
       return new range(idxType, bounds, strides,
                        _high + 1 - i, _high,
-                       _stride, _alignment, _aligned, false);
+                       _stride, _alignment);
     // if i == 0 then
     return new range(idxType, bounds, strides,
                      _low, _high,
-                     _stride, _alignment, _aligned, false);
+                     _stride, _alignment);
   }
 
   pragma "last resort"
@@ -1999,16 +1994,16 @@ private inline proc rangeCastHelper(r, type t) throws {
       return new range(idxType, bounds, strides,
                        _low - i,
                        _low - 1,
-                       _stride, _alignment, _aligned, false);
+                       _stride, _alignment);
     if offset > 0 then
       return new range(idxType, bounds, strides,
                        _high + 1,
                        _high + i,
-                       _stride, _alignment, _aligned, false);
+                       _stride, _alignment);
     // if i == 0 then
     return new range(idxType, bounds, strides,
                      _low, _high,
-                     _stride, _alignment, _aligned, false);
+                     _stride, _alignment);
   }
 
   @chpldoc.nodoc
@@ -2043,8 +2038,8 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     if ! r1.hasParamStrideAltvalAld() {
       r1._stride = r2.stride;
-      r1._alignment = chpl__idxToInt(r2.alignment);
-      r1._aligned = r2.aligned;
+      r1._alignment = if isNothingValue(r2._alignment) then 0
+                      else r2._alignment;
     }
   }
 
@@ -2052,19 +2047,15 @@ private inline proc rangeCastHelper(r, type t) throws {
   // Range arithmetic.
   //
   // Shifts and entire range to the right or left.
-  // Absolute alignment is not preserved
-  // (That is, the alignment shifts along with the range.)
+  // The alignment shifts along with the range.
   //
   @chpldoc.nodoc
-  inline operator +(r: range(?e, ?b, ?s), offset: integral)
+  inline operator +(r: range(?e, ?b, ?s), i: integral)
   {
-    const i = offset:r.chpl_integralIdxType;
-    type strType = chpl__rangeStrideType(e);
-
     return new range(e, b, s,
                      r._low + i,
                      r._high + i,
-                     r.stride : strType,
+                     r._stride,
                      chpl__idxToInt(r.alignment)+i,
                      r.aligned);
   }
@@ -2088,7 +2079,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                      r._high - i,
                      r._stride,
                      chpl__idxToInt(r.alignment)-i,
-                     r._aligned, false);
+                     r.aligned);
   }
 
   // TODO can this be removed?
@@ -2157,7 +2148,7 @@ private inline proc rangeCastHelper(r, type t) throws {
           then (true, r.chpl_alignedHighAsIntForIter)
         else
           if ! r.hasPosNegUnitStride() then (r.aligned, r._alignment)
-                                       else (false, 0:r.chpl_integralIdxType);
+                                       else (false,     0:r.strType);
 
     return new range(i, b, newStrides, lw, hh, st, alt, ald);
   }
@@ -2182,9 +2173,9 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     if step == -1 then return if r.hasParamStrideAltvalAld()
       then new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                 r._low, r._high, none, none, none, false)
+                     r._low, r._high, none, none)
       else new range(r.idxType, r.bounds, chpl_strideProduct(r, step),
-                 r._low, r._high, -r._stride, r._alignment, r._aligned, false);
+                     r._low, r._high, -r._stride, r._alignment);
 
     return chpl_by_help(r, step, chpl_strideProduct(r, step));
   }
@@ -2448,15 +2439,15 @@ private inline proc rangeCastHelper(r, type t) throws {
     /////////// allocate the result ///////////
 
     var result = new range(idxType, newBoundKind, newStrideKind,
-                           newlo, newhi, newStride, 0:chpl_integralIdxType, true, false);
+                           newlo, newhi, newStride, 0:strType);
 
     /////////// Step 3: choose the alignment ///////////
 
     // We require that `this` be unambiguous. The result will always be, too.
 
     if ! newStrideKind.isPosNegOne() && newAbsStride > 1 {
-      var al1 = (chpl__idxToInt(this.alignment) % st1:chpl_integralIdxType):int;
-      var al2 = (chpl__idxToInt(other.alignment) % st2:other.chpl_integralIdxType):int;
+      var al1 = chpl__idxToInt(this.alignment): int;
+      var al2 = chpl__idxToInt(other.alignment): int;
       var newAlignmentIsInAl2 = false;
 
       if other.isAmbiguous() {
@@ -2490,7 +2481,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       if newAlignmentIsInAl2 then
       {
         if al2 < 0 then al2 += newAbsStride;
-        result._alignment = al2: chpl_integralIdxType;
+        result._alignment = al2: strType;
       } else
       if (al2 - al1) % g != 0 then
       {
@@ -2499,10 +2490,11 @@ private inline proc rangeCastHelper(r, type t) throws {
           HaltWrappers.boundsCheckHalt("could not represent range slice - it needs to be empty, but the slice type is not bounded");
         result._low = chpl__defaultLowBound(idxType, newBoundKind);
         result._high = chpl__defaultHighBound(idxType, newBoundKind);
-        result._alignment = if this.hasPositiveStride()
-                            then 1:chpl_integralIdxType else 0:chpl_integralIdxType;
-        // todo: what should be the alignment of an empty range?
-        // _alignment == _low, so it won't print.
+        result._alignment = ( if this.hasPositiveStride()
+                              then result._low else result._high ): strType;
+
+        // todo: what should be _low, _high, _alignment of an empty range?
+        // for now, ensure that printing it does not print 'align nnn'
       }
       else
       { // non-empty intersection
@@ -2510,17 +2502,15 @@ private inline proc rangeCastHelper(r, type t) throws {
         // x and/or the diff may negative, even with a uint source range.
         var offset = (al2 - al1) * x;
         // offset is in the range [-(lcm-1), lcm-1]
-        // not needed: if offset < 0 then offset += lcm;
 
-        // Now offset can be safely cast to chpl_integralIdxType.
-        result._alignment = al1:chpl_integralIdxType + offset:chpl_integralIdxType * st1:chpl_integralIdxType / g:chpl_integralIdxType;
+        result._alignment = al1:strType + offset:strType * st1 / g;
 
-        if result._alignment:int < 0 {
+        if result._alignment < 0 {
           result._alignment += newAbsStride;
-          assert(result._alignment >= 0);
+          if boundsChecking then assert(result._alignment >= 0);
         } else if result._alignment >= newAbsStride {
           result._alignment -= newAbsStride;
-          assert(result._alignment < newAbsStride);
+          if boundsChecking then assert(result._alignment < newAbsStride);
         }
       }
     }
@@ -2570,8 +2560,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                          _low = r._low,
                          _high = r._low - absSameType(),
                          _stride = r.stride,
-                         _alignment = r._alignment,
-                         _aligned = r.aligned, false);
+                         alignmentValue = r._alignment);
       } else if (r.hasHighBound()) {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
@@ -2579,8 +2568,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                          _low = r._high + absSameType(),
                          _high = r._high,
                          _stride = r.stride,
-                         _alignment = r._alignment,
-                         _aligned = r.aligned, false);
+                         alignmentValue = r._alignment);
       } else {
         return new range(idxType = r.idxType,
                          bounds = boundKind.both,
@@ -2590,8 +2578,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                          _high = chpl__defaultHighBound(r.idxType,
                                                         boundKind.both),
                          _stride = r.stride,
-                         _alignment = r._alignment,
-                         _aligned = r.aligned, false);
+                         alignmentValue = r._alignment);
       }
     }
 
@@ -2661,7 +2648,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                      strides = r.strides,
                      _low = lo,
                      _high = hi,
-                     r._stride, r._alignment, r._aligned, false);
+                     r._stride, r._alignment);
   }
 
   // TODO: Do we really want to support this?  Arkouda currently relies
@@ -3634,6 +3621,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   // Return the number in the range 0 <= result < b that is congruent to a (mod b)
   //
   proc chpl__mod(dividend:integral, modulus:integral)
+    where numBits(dividend.type) >= numBits(modulus.type)
   {
     type t = modulus.type;
     var m = modulus;
@@ -3642,11 +3630,28 @@ private inline proc rangeCastHelper(r, type t) throws {
     // `poison`.
     if isIntType(t) && m < 0 && m != min(t) then m = -m;
 
-    var tmp = dividend % m;
+    var tmp = dividend % (m: dividend.type);
+    if isInt(dividend) then
+      if tmp < 0 then tmp += (m: dividend.type);
+
+    return tmp;
+  }
+
+  proc chpl__mod(dividend:integral, modulus:integral)
+    where numBits(dividend.type) < numBits(modulus.type) && isInt(modulus)
+  {
+    type t = modulus.type;
+    var m = modulus;
+    // The extra check for `m != min(t)` is required to avoid an optimizer
+    // (especially LLVM) determining that `-min(t)` is undefined and inserting
+    // `poison`.
+    if isIntType(t) && m < 0 && m != min(t) then m = -m;
+
+    var tmp = (dividend: t) % m;
     if isInt(dividend) then
       if tmp < 0 then tmp += m;
 
-    return tmp:dividend.type;
+    return tmp: dividend.type;
   }
 
 
@@ -3672,8 +3677,8 @@ private inline proc rangeCastHelper(r, type t) throws {
     var subMod = chpl__mod(subtrahend, m);
 
     return if minMod < subMod
-      then (m  - (subMod - minMod)): minuend.type
-      else (minMod - subMod): minuend.type;
+      then m: minuend.type  - (subMod - minMod)
+      else minMod - subMod;
   }
 
   proc chpl__diffMod(minuend : integral,

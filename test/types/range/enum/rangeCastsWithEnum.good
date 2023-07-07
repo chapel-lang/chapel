@@ -43,21 +43,6 @@ rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indic
 rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(64)) from function 'tryCasts'
   rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: In initializer:
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: add a cast :uint(64) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: called as range.init(type idxType = uint(64), param bounds = boundKind.both, param strides = strideKind.any, _low: uint(64), _high: uint(64), _stride: int(64), _alignment: uint(64), _aligned: bool, param normalizeAlignment = true)
-  within internal functions (use --print-callstack-on-error to see)
-  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(64)) from function 'tryCasts'
-  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: In function 'helpAlignLow':
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: add a cast :uint(64) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: called as helpAlignLow(l: uint(64), a: uint(64), s: int(64))
-  within internal functions (use --print-callstack-on-error to see)
-  rangeCastsWithEnum.chpl:56: called as printRange(r: range(uint(64),both,any)) from function 'tryCast'
-  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(64)) from function 'tryCasts'
-  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
 rangeCastsWithEnum.chpl:32: In function 'tryCast':
 rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
@@ -66,21 +51,6 @@ rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indic
 rangeCastsWithEnum.chpl:32: In function 'tryCast':
 rangeCastsWithEnum.chpl:47: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
 rangeCastsWithEnum.chpl:55: warning: Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually
-  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(8)) from function 'tryCasts'
-  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: In initializer:
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: add a cast :uint(8) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: called as range.init(type idxType = uint(8), param bounds = boundKind.both, param strides = strideKind.any, _low: uint(8), _high: uint(8), _stride: int(8), _alignment: uint(8), _aligned: bool, param normalizeAlignment = true)
-  within internal functions (use --print-callstack-on-error to see)
-  rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(8)) from function 'tryCasts'
-  rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: In function 'helpAlignLow':
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: warning: int->uint implicit conversion is unstable
-$CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: note: add a cast :uint(8) to avoid this warning
-  $CHPL_HOME/modules/internal/ChapelRange.chpl:nnnn: called as helpAlignLow(l: uint(8), a: uint(8), s: int(8))
-  within internal functions (use --print-callstack-on-error to see)
-  rangeCastsWithEnum.chpl:56: called as printRange(r: range(uint(8),both,any)) from function 'tryCast'
   rangeCastsWithEnum.chpl:29: called as tryCast(r: range(size,both,one), type t = uint(8)) from function 'tryCasts'
   rangeCastsWithEnum.chpl:22: called as tryCasts(r: range(size,both,one))
 rangeCastsWithEnum.chpl:32: In function 'tryCast':
