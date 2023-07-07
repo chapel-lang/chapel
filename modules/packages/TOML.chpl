@@ -149,7 +149,7 @@ module TomlParser {
   @chpldoc.nodoc
   class Parser {
 
-    var source: Source;
+    var source: unmanaged Source;
     var rootTable: shared Toml;
     var curTable: string;
 
