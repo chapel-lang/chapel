@@ -1,8 +1,34 @@
 use CTypes;
+use BlockDist;
+use CommDiagnostics;
 
-config const n = 10;
+config param cArrSize = 3;
+config const arrSize = 10;
 
-var A, B: [1..n] c_array(int, 3);
-A = B;
+const space = 1..arrSize;
 
-writeln(A);
+const drDom = {space};
+const blockDom = {space} dmapped Block({space});
+
+testBulkComm(drDom, drDom);
+testBulkComm(drDom, blockDom);
+testBulkComm(blockDom, drDom);
+testBulkComm(blockDom, blockDom);
+
+proc testBulkComm(srcDom, dstDom) {
+  var Src: [srcDom] c_array(int, cArrSize);
+  for src in Src {
+    for param i in 0..#cArrSize {
+      src[i] = i+1;
+    }
+  }
+
+  var Dst: [dstDom] c_array(int, 3);
+
+  startCommDiagnostics();
+  Dst = Src;
+  stopCommDiagnostics();
+  printCommDiagnosticsTable();
+
+  writeln(Dst);
+}
