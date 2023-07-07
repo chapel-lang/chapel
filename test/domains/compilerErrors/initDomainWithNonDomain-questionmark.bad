@@ -1,7 +1,0 @@
-initDomainWithNonDomain-questionmark.chpl:4: error: unresolved call 'chpl__buildDomainRuntimeType(DefaultDist, _uninstantiated)'
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note: this candidate did not match: chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxType = int, param strides: strideKind = strideKind.one)
-initDomainWithNonDomain-questionmark.chpl:4: note: because actual argument #2 with type '_uninstantiated'
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note: is passed to formal 'param rank: int(64)'
-initDomainWithNonDomain-questionmark.chpl:4: note: other candidates are:
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note:   chpl__buildDomainRuntimeType(dist: _distribution, type idxType, param parSafe: bool = true)
-$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note:   chpl__buildDomainRuntimeType(dist: _distribution, param rank: int, type idxType = int, param stridable: bool)
