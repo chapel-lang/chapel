@@ -626,7 +626,7 @@ module ChapelDistribution {
 
   record SparseIndexBuffer {
     param rank: int;
-    var obj: BaseSparseDom;
+    var obj: borrowed BaseSparseDom;
 
     type idxType = if rank==1 then int else rank*int;
     var bufDom = domain(1);
