@@ -2699,22 +2699,20 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
-
   // If the type is simple, just set the argument's type directly.
-  // Otherwise, give it the block we just created.
-  if (exprType->body.length == 1) {
-    Type* type = exprType->body.only()->typeInfo();
+  Expr* only = fieldDef->exprType;
+
+  if (only) {
+    Type* type = only->typeInfo();
     if (type != dtUnknown && type != dtAny) {
       arg->type = type;
-
-    } else {
-      arg->typeExpr = exprType;
+      return;
     }
-
-  } else {
-    arg->typeExpr = exprType;
   }
+
+  // Otherwise, copy the block and use it
+  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+  arg->typeExpr = exprType;
 }
 
 bool AggregateType::handleSuperFields(FnSymbol*                    fn,
