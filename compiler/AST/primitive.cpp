@@ -234,6 +234,9 @@ returnInfoVal(CallExpr* call) {
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+  if(t->symbol->hasFlag(FLAG_GENERIC))
+    // this will result in error later on
+    return QualifiedType(t, QUAL_REF);
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
