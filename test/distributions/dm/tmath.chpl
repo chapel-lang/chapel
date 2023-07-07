@@ -1,6 +1,7 @@
 // This tests the utility functions in BlockCycDim against those in Math.
 
 use BlockCycDim;
+use Math;
 
 testtype( int(64));
 testtype(uint(64));
