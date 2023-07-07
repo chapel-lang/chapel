@@ -638,6 +638,7 @@ module Math {
      current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
      floating-point exception.
   */
+  @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x: real(64)): real(64) {
     return chpl_nearbyint(x);
   }
@@ -646,6 +647,7 @@ module Math {
      current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
      floating-point exception.
   */
+  @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x : real(32)): real(32) {
     return chpl_nearbyint(x);
   }
