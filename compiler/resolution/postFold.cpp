@@ -126,6 +126,25 @@ Expr* postFold(Expr* expr) {
 
         if (doFoldAway) {
           retval = se->copy();
+          // if call is RHS of a PRIM_MOVE setting a temporary,
+          // record existence of ? argument by setting FLAG_MARKED_GENERIC.
+          if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+            if (parentCall->isPrimitive(PRIM_MOVE)) {
+              if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+                bool hasQuestionArg = false;
+                for_actuals(actual, call) {
+                  if (SymExpr* act = toSymExpr(actual)) {
+                    if (act->symbol() == gUninstantiated) {
+                      hasQuestionArg = true;
+                    }
+                  }
+                }
+                if (hasQuestionArg && lhsSe->symbol()->hasFlag(FLAG_TEMP)) {
+                  lhsSe->symbol()->addFlag(FLAG_MARKED_GENERIC);
+                }
+              }
+            }
+          }
           call->replace(retval);
         }
       }
