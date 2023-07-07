@@ -197,10 +197,10 @@ if ($debug == 0) {
 if($passed == 0)
 {
     print "Got here passed == 0 \n";
-    exit 0;
+    return 0;
 
 }
 else{
     print "Got here passed != 0 \n";
-    exit 1;
+    return 1;
 }
