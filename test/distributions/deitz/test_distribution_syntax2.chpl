@@ -3,7 +3,7 @@ config const n: int = 4;
 {
   use BlockDist;
 
-  var Dist: Block(rank=2,?) = new Block(boundingBox={1..n,1..n});
+  var Dist: Block(rank=2) = new Block(boundingBox={1..n,1..n});
   var Dom: domain(2) dmapped Dist = {1..n,1..n} dmapped Dist;
   var Arr: [Dom] 2*int;
 
