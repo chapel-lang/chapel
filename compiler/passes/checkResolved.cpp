@@ -138,7 +138,7 @@ static void checkSyncSingleAtomicReturnByCopy() {
     bool isDefaultInit = fn->name == astr_defaultOf;
     bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
 
-    bool shouldWarn = !isRef && 
+    bool shouldWarn = !isRef &&
                       !isInitAutoCopy &&
                       !isNoCopy &&
                       !isCoerce &&
