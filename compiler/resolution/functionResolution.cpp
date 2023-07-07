@@ -13686,6 +13686,50 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
+void checkSurprisingGenericDecls(DefExpr* def, bool isField) {
+  if (def == nullptr) {
+    return;
+  }
+
+  Symbol* sym = def->sym;
+
+  bool hasQuestionArg = false;
+  if (sym && def->exprType) {
+    if (CallExpr* call = toCallExpr(def->exprType)) {
+      for_actuals(actual, call) {
+        if (SymExpr* act = toSymExpr(actual)) {
+          if (act->symbol() == gUninstantiated) {
+            hasQuestionArg = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (def->exprType) {
+    Type* declType = def->exprType->typeInfo();
+    if (declType->symbol->hasFlag(FLAG_GENERIC) &&
+        !hasQuestionArg &&
+        !sym->hasFlag(FLAG_MARKED_GENERIC) &&
+        !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+      if (isField && isClassLikeOrManaged(declType)) {
+        auto dec = classTypeDecorator(declType);
+        if (isDecoratorUnknownManagement(dec)) {
+          USR_WARN(sym, "field is declared with generic memory management");
+          USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
+          USR_PRINT("if generic memory management is desired, "
+                    "use a 'type' field to store the class type");
+        }
+      }
+      /*if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
+        USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
+                      "storing any domain", isField?"field":"variable");
+      }*/
+    }
+  }
+}
+
+
 void startGenerousResolutionForErrors() {
   generousResolutionForErrors++;
 }
