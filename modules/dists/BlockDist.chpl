@@ -21,7 +21,7 @@
 //
 // The Block distribution is defined with six classes:
 //
-//   BlockGuts   : distribution class
+//   BlockImpl   : distribution class
 //   BlockDom    : domain class
 //   BlockArr    : array class
 //   LocBlock    : local distribution class (per-locale instances)
@@ -80,7 +80,7 @@ config param testFastFollowerOptimization = false;
 config param disableBlockLazyRAD = defaultDisableLazyRADOpt;
 
 //
-// BlockGuts Distribution Class
+// BlockImpl Distribution Class
 //
 //   The fields dataParTasksPerLocale, dataParIgnoreRunningTasks, and
 //   dataParMinGranularity can be changed, but changes are
@@ -327,7 +327,7 @@ record Block {
   type sparseLayoutType = unmanaged DefaultDist;
   var _pid:int;  // only used when privatized
   pragma "owned"
-  var _instance: BlockGuts(rank, idxType, _to_unmanaged(sparseLayoutType));
+  var _instance: BlockImpl(rank, idxType, _to_unmanaged(sparseLayoutType));
   var _unowned:bool; // 'true' for the result of 'getDistribution',
                      // in which case, the record destructor should
                      // not attempt to delete the _instance.
@@ -340,7 +340,7 @@ record Block {
             param rank = boundingBox.rank,
             type idxType = boundingBox.idxType,
             type sparseLayoutType = unmanaged DefaultDist) {
-    const value = new unmanaged BlockGuts(boundingBox, targetLocales,
+    const value = new unmanaged BlockImpl(boundingBox, targetLocales,
                                           dataParTasksPerLocale,
                                           dataParIgnoreRunningTasks,
                                           dataParMinGranularity,
@@ -527,7 +527,7 @@ operator =(ref a: Block(?), b: Block(?)) {
 
 
 @chpldoc.nodoc
-class BlockGuts : BaseDist {
+class BlockImpl : BaseDist {
   param rank: int;
   type idxType = int;
   var boundingBox: domain(rank, idxType);
@@ -543,8 +543,8 @@ class BlockGuts : BaseDist {
 //
 // Local Block Distribution Class
 //
-// rank : generic rank that matches BlockGuts.rank
-// idxType: generic index type that matches BlockGuts.idxType
+// rank : generic rank that matches BlockImpl.rank
+// idxType: generic index type that matches BlockImpl.idxType
 // myChunk: a non-distributed domain that defines this locale's indices
 //
 class LocBlock {
@@ -565,7 +565,7 @@ class LocBlock {
 //
 class BlockDom: BaseRectangularDom {
   type sparseLayoutType;
-  const dist: unmanaged BlockGuts(rank, idxType, sparseLayoutType);
+  const dist: unmanaged BlockImpl(rank, idxType, sparseLayoutType);
   var locDoms: [dist.targetLocDom] unmanaged LocBlockDom(rank, idxType, strides);
   var whole: domain(rank, idxType, strides);
 }
@@ -659,12 +659,12 @@ class LocBlockArr {
 }
 
 
-////// BlockGuts and LocBlock methods ///////////////////////////////////////////
+////// BlockImpl and LocBlock methods ///////////////////////////////////////////
 
 //
-// BlockGuts initializer for clients of the Block distribution
+// BlockImpl initializer for clients of the Block distribution
 //
-proc BlockGuts.init(boundingBox: domain,
+proc BlockImpl.init(boundingBox: domain,
                 targetLocales: [] locale = Locales,
                 dataParTasksPerLocale=getDataParTasksPerLocale(),
                 dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks(),
@@ -739,7 +739,7 @@ proc BlockGuts.init(boundingBox: domain,
 }
 
 @unstable(category="experimental", reason="'Block.redistribute()' is currently unstable due to lack of design review and is being made available as a prototype")
-proc BlockGuts.redistribute(const in newBbox) {
+proc BlockImpl.redistribute(const in newBbox) {
   const newBboxDims = newBbox.dims();
   const pid = this.pid;
   coforall (locid, loc, locdist) in zip(targetLocDom, targetLocales, locDist) {
@@ -754,7 +754,7 @@ proc BlockGuts.redistribute(const in newBbox) {
 }
 
 
-proc BlockGuts.dsiAssign(other: this.type) {
+proc BlockImpl.dsiAssign(other: this.type) {
   if (this.targetLocDom != other.targetLocDom ||
       || reduce (this.targetLocales != other.targetLocales)) {
     halt("Block distribution assignments currently require the target locale arrays to match");
@@ -767,7 +767,7 @@ proc BlockGuts.dsiAssign(other: this.type) {
 // Block distributions are equivalent if they share the same bounding
 // box and target locale set.
 //
-proc BlockGuts.dsiEqualDMaps(that: BlockGuts(?)) {
+proc BlockImpl.dsiEqualDMaps(that: BlockImpl(?)) {
   return (this.rank == that.rank &&
           this.boundingBox == that.boundingBox &&
           this.targetLocales.equals(that.targetLocales));
@@ -776,12 +776,12 @@ proc BlockGuts.dsiEqualDMaps(that: BlockGuts(?)) {
 //
 // Block distributions are not equivalent to other domain maps.
 //
-proc BlockGuts.dsiEqualDMaps(that) param {
+proc BlockImpl.dsiEqualDMaps(that) param {
   return false;
 }
 
-proc BlockGuts.dsiClone() {
-  return new unmanaged BlockGuts(boundingBox, targetLocales,
+proc BlockImpl.dsiClone() {
+  return new unmanaged BlockImpl(boundingBox, targetLocales,
                    dataParTasksPerLocale, dataParIgnoreRunningTasks,
                    dataParMinGranularity,
                    rank,
@@ -789,14 +789,14 @@ proc BlockGuts.dsiClone() {
                    sparseLayoutType);
 }
 
-override proc BlockGuts.dsiDestroyDist() {
+override proc BlockImpl.dsiDestroyDist() {
   coforall ld in locDist do {
     on ld do
       delete ld;
   }
 }
 
-override proc BlockGuts.dsiDisplayRepresentation() {
+override proc BlockImpl.dsiDisplayRepresentation() {
   writeln("boundingBox = ", boundingBox);
   writeln("targetLocDom = ", targetLocDom);
   writeln("targetLocales = ", for tl in targetLocales do tl.id);
@@ -807,7 +807,7 @@ override proc BlockGuts.dsiDisplayRepresentation() {
     writeln("locDist[", tli, "].myChunk = ", locDist[tli].myChunk);
 }
 
-override proc BlockGuts.dsiNewRectangularDom(param rank: int, type idxType,
+override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
                                          param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
@@ -839,7 +839,7 @@ override proc BlockGuts.dsiNewRectangularDom(param rank: int, type idxType,
   return dom;
 }
 
-override proc BlockGuts.dsiNewSparseDom(param rank: int, type idxType,
+override proc BlockImpl.dsiNewSparseDom(param rank: int, type idxType,
                                     dom: domain) {
   var ret =  new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
@@ -853,7 +853,7 @@ override proc BlockGuts.dsiNewSparseDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockGuts.writeThis(x) throws {
+proc BlockImpl.writeThis(x) throws {
   x.writeln("Block");
   x.writeln("-------");
   x.writeln("distributes: ", boundingBox);
@@ -865,11 +865,11 @@ proc BlockGuts.writeThis(x) throws {
       " owns chunk: ", locDist(locid).myChunk);
 }
 
-proc BlockGuts.dsiIndexToLocale(ind: idxType) where rank == 1 {
+proc BlockImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(targetLocsIdx(ind));
 }
 
-proc BlockGuts.dsiIndexToLocale(ind: rank*idxType) {
+proc BlockImpl.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(targetLocsIdx(ind));
 }
 
@@ -877,7 +877,7 @@ proc BlockGuts.dsiIndexToLocale(ind: rank*idxType) {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-proc BlockGuts.getChunk(inds, locid) {
+proc BlockImpl.getChunk(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -907,11 +907,11 @@ proc BlockGuts.getChunk(inds, locid) {
 //
 // get the index into the targetLocales array for a given distributed index
 //
-proc BlockGuts.targetLocsIdx(ind: idxType) where rank == 1 {
+proc BlockImpl.targetLocsIdx(ind: idxType) where rank == 1 {
   return targetLocsIdx((ind,));
 }
 
-proc BlockGuts.targetLocsIdx(ind: rank*idxType) {
+proc BlockImpl.targetLocsIdx(ind: rank*idxType) {
   var result: rank*int;
   for param i in 0..rank-1 do
     result(i) = max(0, min(targetLocDom.dim(i).sizeAs(int)-1,
@@ -922,7 +922,7 @@ proc BlockGuts.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
-iter BlockGuts.activeTargetLocales(const space : domain = boundingBox) {
+iter BlockImpl.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low  = chpl__tuplify(targetLocsIdx(locSpace.low));
   const high = chpl__tuplify(targetLocsIdx(locSpace.high));
@@ -1576,7 +1576,7 @@ override proc BlockDom.dsiSupportsAutoLocalAccess() param {
 
 ///// Privatization and serialization ///////////////////////////////////////
 
-proc BlockGuts.init(other: BlockGuts, privateData,
+proc BlockImpl.init(other: BlockImpl, privateData,
                 param rank = other.rank,
                 type idxType = other.idxType,
                 type sparseLayoutType = other.sparseLayoutType) {
@@ -1592,20 +1592,20 @@ proc BlockGuts.init(other: BlockGuts, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-override proc BlockGuts.dsiSupportsPrivatization() param do return true;
+override proc BlockImpl.dsiSupportsPrivatization() param do return true;
 
-proc BlockGuts.dsiGetPrivatizeData() {
+proc BlockImpl.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
           dataParTasksPerLocale, dataParIgnoreRunningTasks, dataParMinGranularity);
 }
 
-proc BlockGuts.dsiPrivatize(privatizeData) {
-  return new unmanaged BlockGuts(_to_unmanaged(this), privatizeData);
+proc BlockImpl.dsiPrivatize(privatizeData) {
+  return new unmanaged BlockImpl(_to_unmanaged(this), privatizeData);
 }
 
-proc BlockGuts.dsiGetReprivatizeData() do return boundingBox.dims();
+proc BlockImpl.dsiGetReprivatizeData() do return boundingBox.dims();
 
-proc BlockGuts.dsiReprivatize(other, reprivatizeData) {
+proc BlockImpl.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
   targetLocDom = other.targetLocDom;
   targetLocales = other.targetLocales;
@@ -1720,11 +1720,11 @@ proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc BlockGuts.dsiTargetLocales() const ref {
+proc BlockImpl.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
-proc BlockGuts.chpl__locToLocIdx(loc: locale) {
+proc BlockImpl.chpl__locToLocIdx(loc: locale) {
   for locIdx in targetLocDom do
     if (targetLocales[locIdx] == loc) then
       return (true, locIdx);
