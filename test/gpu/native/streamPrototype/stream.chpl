@@ -109,8 +109,8 @@ proc main() {
       execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
-    /*const validAnswer = verifyResults(A, B, C);        // verify...*/
-    printResults(true, execTime);               // ...and print the results
+    const validAnswer = verifyResults(A, B, C);        // verify...
+    printResults(validAnswer, execTime);               // ...and print the results
   }
   if useGpuDiags {
     stopGpuDiagnostics();
