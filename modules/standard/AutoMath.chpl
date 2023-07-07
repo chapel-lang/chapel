@@ -2047,19 +2047,45 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_rint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
      exception.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc rint(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'rint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc rint(x: real(64)): real(64) {
+    return chpl_rint(x);
+  }
 
+  @chpldoc.nodoc
+  inline proc chpl_rint(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rint(x: real(64)): real(64);
+    return rint(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_rint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
      exception.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'rint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc rint(x : real(32)): real(32) {
+    return chpl_rint(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc chpl_rint(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc rintf(x: real(32)): real(32);

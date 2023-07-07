@@ -652,6 +652,24 @@ module Math {
     return chpl_nearbyint(x);
   }
 
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`rint` may raise the "inexact"
+     floating-point exception.
+  */
+  @unstable("rint is unstable while we design more thorough rounding support")
+  inline proc rint(x: real(64)): real(64) {
+    return chpl_rint(x);
+  }
+
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
+     exception.
+  */
+  @unstable("rint is unstable while we design more thorough rounding support")
+  inline proc rint(x : real(32)): real(32) {
+    return chpl_rint(x);
+  }
+
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(64)): real(64) {
     return chpl_sin(x);
