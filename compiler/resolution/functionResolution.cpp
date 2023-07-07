@@ -13721,10 +13721,10 @@ void checkSurprisingGenericDecls(DefExpr* def, bool isField) {
                     "use a 'type' field to store the class type");
         }
       }
-      /*if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
+      if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
         USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
                       "storing any domain", isField?"field":"variable");
-      }*/
+      }
     }
   }
 }
