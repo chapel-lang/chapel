@@ -1,3 +1,4 @@
+// deprecated by Jade in 1.32, should be moved to test/types/ after deprecation period as compile failures
 config param testnum: int = 1;
 config type retType = sync int;
 
