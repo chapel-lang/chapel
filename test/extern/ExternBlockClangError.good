@@ -1,2 +1,3 @@
-ExternBlockClangError.chpl:1: error: error running clang on extern block -- clang errors follow:
+ExternBlockClangError.chpl:1: error: running clang on extern block failed -- clang errors follow
+ExternBlockClangError.chpl:4: note: error: unused variable 'x'
 ExternBlockClangError.chpl:3: note: error: no previous prototype for function 'bar'

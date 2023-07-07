@@ -1,6 +1,7 @@
 extern {
   extern void foo(void);
   void bar(void) {
+    int x;
     foo();
   }
 }

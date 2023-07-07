@@ -200,6 +200,26 @@ const std::vector<std::string>& getCC1Arguments(Context* context,
   return QUERY_END(result);
 }
 
+#ifdef HAVE_LLVM
+// Helper method to store a diagnostic message from Clang compilation into a
+// form we can use for error reporting.
+static void saveClangDiagnostic(
+    const std::pair<clang::SourceLocation, std::string>& diagnostic,
+    std::string kind, const clang::SourceManager& sm, Context* context,
+    std::vector<std::pair<Location, std::string>>& errorInfo) {
+  // Use "presumed" location to report correct line number within .chpl file
+  // using #line directives.
+  const clang::PresumedLoc presumedLoc = sm.getPresumedLoc(diagnostic.first);
+  assert(presumedLoc.isValid());
+  const Location externErrorLoc =
+      Location(UniqueString::get(context, presumedLoc.getFilename()),
+               presumedLoc.getLine(), presumedLoc.getColumn());
+  const std::string externErrorMsg = kind + ": " + diagnostic.second;
+  // TODO: also output diagnostic options after message ([-Werror] etc)
+  errorInfo.emplace_back(externErrorLoc, externErrorMsg);
+}
+#endif
+
 /* returns the precompiled header file data
    args are the clang driver arguments
    externBlockId is the ID of the extern block containing code to precompile */
@@ -284,22 +304,17 @@ createClangPrecompiledHeader(Context* context, ID externBlockId) {
     if (!Clang->ExecuteAction(*genPchAction)) {
       // Report Clang errors and warnings to the Context.
       std::vector<std::pair<Location, std::string>> errorInfo;
-      // we expect warnings are being treated as errors
-      CHPL_ASSERT(diagClient->getNumWarnings() == 0);
       const clang::SourceManager& sm = Clang->getSourceManager();
       for (auto it = diagClient->err_begin(); it != diagClient->err_end();
            it++) {
-        // get "presumed" location to report correct line number in .chpl file
-        // using #line directives
-        const clang::PresumedLoc presumedLoc = sm.getPresumedLoc((*it).first);
-        assert(presumedLoc.isValid());
-        const auto externErrorLoc =
-            Location(UniqueString::get(context, presumedLoc.getFilename()),
-                     presumedLoc.getLine(), presumedLoc.getColumn());
-        // TODO: also output diagnostic options after message ([-Werror] etc)
-        const auto externErrorMsg = (*it).second;
-        errorInfo.emplace_back(externErrorLoc, externErrorMsg);
+        saveClangDiagnostic((*it), "error", sm, context, errorInfo);
       }
+      for (auto it = diagClient->warn_begin(); it != diagClient->warn_end();
+           it++) {
+        saveClangDiagnostic((*it), "warning", sm, context, errorInfo);
+      }
+      // could also gather notes and remarks from the TextDiagnosticBuffer here
+      // (using note_begin, remark_begin iterators)
       CHPL_REPORT(context, ExternCCompilation, externBlockId, errorInfo);
       ok = false;
     }
