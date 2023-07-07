@@ -1193,10 +1193,10 @@ module ChapelRange {
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
   proc range.isAmbiguous() param where hasPosNegUnitStride() do
-    return false;
+    return !aligned;
 
   @chpldoc.nodoc proc range.isAmbiguous() where ! hasPosNegUnitStride() do
-    return !aligned && (stride > 1 || stride < -1);
+    return !aligned;
 
   private inline proc hasAmbiguousAlignmentForIter(r) param
     where r.hasPosNegUnitStride() || isFiniteIdxType(r.idxType) {
@@ -1890,16 +1890,6 @@ private inline proc rangeCastHelper(r, type t) throws {
     compilerError("can't apply '.expand()' to a range whose 'idxType' only has one value");
   }
 
-  // Compute the alignment of the range returned by this.interior()
-  // and this.exterior(). Keep it private.
-  @chpldoc.nodoc
-  inline proc range._effAlmt() where !hasParamAlignmentField()
-    do return _alignment;
-
-  @chpldoc.nodoc
-  proc range._effAlmt() param  where  hasParamAlignmentField()
-    do return 0: chpl_integralIdxType;
-
   // Return an interior portion of this range.
   pragma "last resort"
   @chpldoc.nodoc
@@ -2133,24 +2123,35 @@ private inline proc rangeCastHelper(r, type t) throws {
       compilerError("the step argument of the 'by' operator is too large and cannot be represented within the range's stride type " + strType:string);
   }
 
+  // Implements the definition of 'by' in #19717 comment from 2022-10-12
+  //
   proc chpl_by_help(r: range(?i,?b,?s), step, param newStrides) {
     const lw = r._low,
           hh = r._high,
-          st: r.strType = r.stride * step:r.strType;
+          st = r.stride * step:r.strType;
 
-    const (ald, alt) =
-      if r.isAmbiguous() then (false, r._effAlmt())
-      else
-        // we could talk about aligned bounds
-        if      hasLowBoundForIter(r)  && isPositiveStride(newStrides, st)
-          then (true, r.chpl_alignedLowAsIntForIter)
-        else if hasHighBoundForIter(r) && isNegativeStride(newStrides, st)
-          then (true, r.chpl_alignedHighAsIntForIter)
-        else
-          if ! r.hasPosNegUnitStride() then (r.aligned, r._alignment)
-                                       else (false,     0:r.strType);
+    compilerAssert(! newStrides.isPosNegOne()); // handled directly in 'by'
 
-    return new range(i, b, newStrides, lw, hh, st, alt, ald);
+    if r.isAmbiguous() then return
+      if st == 1 || st == -1 then newZeroAlmtRange() else newUnalignedRange();
+
+    if isPositiveStride(newStrides, st) then
+      // start from the low index
+      return if hasLowBoundForIter(r)
+             then newAlignedRange(r.chpl_alignedLowAsIntForIter)
+             else if st == 1 then newZeroAlmtRange() else newUnalignedRange();
+    else
+      // start from the high index
+      return if hasHighBoundForIter(r)
+             then newAlignedRange(r.chpl_alignedHighAsIntForIter)
+             else if st == -1 then newZeroAlmtRange() else newUnalignedRange();
+
+    proc newAlignedRange(alignment) do
+      return new range(i, b, newStrides, lw, hh, st, alignment, true, true);
+    proc newZeroAlmtRange() do // if |st|==1 then the range is always aligned
+      return new range(i, b, newStrides, lw, hh, st, 0: r.strType);
+    inline proc newUnalignedRange() do
+      return new range(i, b, newStrides, lw, hh, st, unalignedMark: r.strType);
   }
 
   // This is the definition of the 'by' operator for ranges.
