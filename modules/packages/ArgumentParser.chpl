@@ -662,7 +662,7 @@ module ArgumentParser {
     // the name of the binary for the USAGE message
     var _binaryName: string;
     // use the generator to build help and usage messages
-    var _helpGenerator: HelpGenerator;
+    var _helpGenerator: owned HelpGenerator;
 
     proc init(helpHandler=new shared HelpHandler(), binaryName="") {
       _helpHandler=helpHandler;
