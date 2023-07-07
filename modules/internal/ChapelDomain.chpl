@@ -1549,7 +1549,7 @@ module ChapelDomain {
       var _rhsPid: int;
 
       @chpldoc.nodoc
-      var _oldLhsDomainCopy: domain;
+      var _oldLhsDomainCopy: domain(?);
 
       @chpldoc.nodoc
       param _checks: bool;
