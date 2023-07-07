@@ -2630,17 +2630,16 @@ static void helpComputeClangArgs(std::string& clangCC,
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
-    "-Wall",
-    "-Werror",
-    "-Wpointer-arith",
-    "-Wwrite-strings",
-    "-Wno-strict-aliasing",
-    "-Wmissing-declarations",
-    "-Wmissing-prototypes",
-    "-Wstrict-prototypes",
-    "-Wmissing-format-attribute",
+    "-Werror=pointer-arith",
+    "-Werror=write-strings",
+    "-Werror=missing-declarations",
+    "-Werror=missing-prototypes",
+    "-Werror=strict-prototypes",
+    "-Werror=missing-format-attribute",
     // clang can't tell which functions we use
     "-Wno-unused-function",
+    // Chapel C backend normally throws this
+    "-Wno-strict-aliasing",
     NULL};
 
   const char* clang_debug = "-g";
