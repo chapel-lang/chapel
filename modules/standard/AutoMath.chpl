@@ -1143,12 +1143,22 @@ module AutoMath {
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divfloorpos
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /*
     A variant of :proc:`divfloor` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divfloorpos(m: integral, n: integral) {
+    return chpl_divfloorpos(m, n);
+  }
+
+  @chpldoc.nodoc
+  proc chpl_divfloorpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divfloorpos() accepts only arguments of signed integer types");
     return m / n;

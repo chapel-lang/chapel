@@ -411,6 +411,15 @@ module Math {
   */
   proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
 
+  /*
+    A variant of :proc:`divfloor` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divfloorpos(m: integral, n: integral) {
+    return chpl_divfloorpos(m, n);
+  }
 
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
