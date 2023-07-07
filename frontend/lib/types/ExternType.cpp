@@ -11,6 +11,12 @@ const owned<ExternType>& ExternType::getExternType(Context* context,
   return QUERY_END(result);
 }
 
+void ExternType::stringify(std::ostream& ss,
+                           chpl::StringifyKind stringKind) const {
+  ss << "extern type ";
+  linkageName().stringify(ss, stringKind);
+}
+
 const ExternType* ExternType::get(Context* context, UniqueString linkageName) {
   return getExternType(context, linkageName).get();
 }

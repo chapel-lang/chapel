@@ -26,7 +26,7 @@
 namespace chpl {
 namespace types {
 
-class ExternType : public Type {
+class ExternType final : public Type {
  private:
   UniqueString linkageName_;
 
@@ -50,6 +50,9 @@ class ExternType : public Type {
                                                 UniqueString linkageName);
 
  public:
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
+
   inline UniqueString linkageName() const { return linkageName_; }
 
   static const ExternType* get(Context* context, UniqueString linkageName);
