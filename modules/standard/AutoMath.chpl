@@ -1098,14 +1098,22 @@ module AutoMath {
     return (m - 1) / n + 1;
   }
 
-
+  // When removing this deprecated function, be sure to remove chpl_divfloor and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divfloor(param m: integral, param n: integral) param do return
+    chpl_divfloor(m, n);
+
+  @chpldoc.nodoc
+  proc chpl_divfloor(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -1113,13 +1121,21 @@ module AutoMath {
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divfloor and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
+
+  @chpldoc.nodoc
+  proc chpl_divfloor(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
