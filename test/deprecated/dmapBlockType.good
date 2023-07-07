@@ -1,1 +1,0 @@
-dmapBlockType.chpl:3: warning: Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'

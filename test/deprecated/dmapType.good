@@ -1,0 +1,2 @@
+dmapType.chpl:3: warning: Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'
+dmapType.chpl:4: warning: Using 'dmap' with this distribution type is deprecated; simply use '<DistName>(args)'
