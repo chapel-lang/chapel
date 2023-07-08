@@ -9,7 +9,7 @@ proc show(r):string {
   if r.hasHighBound() then ret += r.highBound:string;
   if !r.hasUnitStride() {
     ret += " by " + r.stride:string;
-    ret += " align " + if r.aligned then r.alignment:string else "?";
+    ret += " align " + if r.isAligned() then r.alignment:string else "?";
   }
   return ret;
 }

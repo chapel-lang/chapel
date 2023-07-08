@@ -9,3 +9,20 @@ could be provided, e.g.
 
 Right now 1..5 by 2 and 1..5 by 2 align ? print out the same,
 which is unsatisfactory.
+
+2023-07 note: currently an ambiguously-aligned range is not allowed
+as the first argument of slicing; also, slicing always produces
+an aligned range. Therefore the following expressions are illegal
+and even switching the order of the arguments will not produce
+unaligned ranges. So I replaced them with single unaligned ranges:
+
+    (1.. by -2)(0..5)
+    (1.. by -2)(1..5)
+    (1.. by -2)(2..5)
+    (.. by 2)(1..5)
+    (.. by -2)(1..5)
+    (.. by -2)(1..5 by -3)
+
+These changes also reduce the appeal of this feature, as we no longer
+have situations where two ranges print the same and one is aligned
+and the other one is not.
