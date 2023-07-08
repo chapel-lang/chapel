@@ -803,7 +803,7 @@ module ChapelIO {
       f._writeLiteral(" by ");
       f.write(stride);
 
-      if stride != -1 && aligned && ! isNaturallyAligned() {
+      if stride != -1 && isAligned() && ! chpl_isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
       f._writeLiteral(" align ");

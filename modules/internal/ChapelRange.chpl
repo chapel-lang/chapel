@@ -346,7 +346,7 @@ module ChapelRange {
     var alignment = ( if other.hasParamAlignmentField()
                       then 0 else other._alignment ): str.type;
 
-    if isEnumBool && !other.aligned {
+    if isEnumBool && ! other.isAligned() {
       if isPositiveStride(strides, str) {
         alignment = finiteIdxTypeLow(idxType);;
       } else {
@@ -639,11 +639,21 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
-  inline proc range.aligned where !hasParamAligned() do
+  inline proc range.isAligned() where !hasParamAligned() do
     return _alignment != unalignedMark;
 
-  @chpldoc.nodoc proc range.aligned param where hasParamAligned() do
+  @chpldoc.nodoc proc range.isAligned() param where hasParamAligned() do
     return true;
+
+  /* Returns ``true`` if the range's alignment is unambiguous,
+     ``false`` otherwise. */
+  @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
+  inline proc range.aligned where !hasParamAligned() do
+    return isAligned();
+
+  @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
+  @chpldoc.nodoc proc range.aligned param where hasParamAligned() do
+    return isAligned();
 
   // Does this kind of range store the stride/alignment/aligned at runtime
   //  and/or is its stride/alignment/aligned a param?
@@ -999,7 +1009,7 @@ module ChapelRange {
       this._stride    = stride: this.strType;
       const first     = if this.hasPositiveStride() then low else high;
       this._alignment = chpl__mod(chpl__idxToInt(first), stride): this.strType;
-      if boundsChecking then assert(this.aligned); // not -1
+      if boundsChecking then assert(this.isAligned()); // not -1
     }
   }
 
@@ -1047,9 +1057,9 @@ module ChapelRange {
 
   @chpldoc.nodoc
   inline proc range.alignedLowAsInt {
-    if isAmbiguous() {
+    if ! isAligned() then
       halt("Can't query the aligned bounds of an ambiguously aligned range");
-    }
+
     if this.hasPosNegUnitStride() then
       return _low;
     else
@@ -1145,9 +1155,9 @@ module ChapelRange {
 
   @chpldoc.nodoc
   inline proc range.alignedHighAsInt {
-    if isAmbiguous() {
+    if ! isAligned() then
       halt("Can't query the aligned bounds of an ambiguously aligned range");
-    }
+
     if this.hasPosNegUnitStride() then
       return _high;
     else
@@ -1171,7 +1181,18 @@ module ChapelRange {
 
   /* Returns ``true`` if this range is naturally aligned, ``false``
      otherwise. */
+  @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
   proc range.isNaturallyAligned()
+    where ! hasPosNegUnitStride() && bounds != boundKind.neither
+  do return chpl_isNaturallyAligned();
+
+  @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
+  @chpldoc.nodoc proc range.isNaturallyAligned() param
+    where hasPosNegUnitStride() || bounds == boundKind.neither
+  do return chpl_isNaturallyAligned();
+
+  // tells whether omitting the 'align' clause results in the same range
+  proc range.chpl_isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
   do if bounds == boundKind.both {
     // If the stride is positive, we must be aligned on the low bound.
@@ -1186,17 +1207,19 @@ module ChapelRange {
     return hasNegativeStride() && this.alignedHighAsInt == _high;
   }
 
-  @chpldoc.nodoc proc range.isNaturallyAligned() param
+  proc range.chpl_isNaturallyAligned() param
     where hasPosNegUnitStride() || bounds == boundKind.neither
     do return hasPosNegUnitStride();
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
+  @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
   proc range.isAmbiguous() param where hasPosNegUnitStride() do
-    return !aligned;
+    return ! isAligned();
 
+  @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
   @chpldoc.nodoc proc range.isAmbiguous() where ! hasPosNegUnitStride() do
-    return !aligned;
+    return ! isAligned();
 
   private inline proc hasAmbiguousAlignmentForIter(r) param
     where r.hasPosNegUnitStride() || isFiniteIdxType(r.idxType) {
@@ -1204,7 +1227,7 @@ module ChapelRange {
   }
 
   private inline proc hasAmbiguousAlignmentForIter(r) {
-    return r.isAmbiguous();
+    return ! r.isAligned();
   }
 
   /* Returns ``true`` if the sequence represented by the range is
@@ -1216,7 +1239,7 @@ module ChapelRange {
       if _low > _high then
         return true;
     }
-    if boundsChecking && isAmbiguous() then
+    if boundsChecking && ! isAligned() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
       return this.bounds == boundKind.both && this.alignedLowAsInt > this.alignedHighAsInt;
@@ -1303,7 +1326,7 @@ module ChapelRange {
   // todo: what about ranges over enums, bool?
   /* Returns ``true`` if the range has a first index, ``false`` otherwise. */
   inline proc range.hasFirst() do
-    return if isAmbiguous() || isEmpty() then false else
+    return if ! isAligned() || isEmpty() then false else
             if hasPositiveStride() then hasLowBound() else hasHighBound();
 
   @chpldoc.nodoc
@@ -1356,7 +1379,7 @@ module ChapelRange {
   // todo: what about ranges over enums, bool?
   /* Returns ``true`` if the range has a last index, ``false`` otherwise. */
   inline proc range.hasLast() do
-    return if isAmbiguous() || isEmpty() then false else
+    return if ! isAligned() || isEmpty() then false else
             if hasPositiveStride() then hasHighBound() else hasLowBound();
 
   @chpldoc.nodoc
@@ -1413,7 +1436,7 @@ module ChapelRange {
       if _low > _high then return false;
     }
 
-    if this.isAmbiguous() then return false;
+    if ! this.isAligned() then return false;
 
     const i = chpl__idxToInt(ind);
 
@@ -1442,7 +1465,7 @@ module ChapelRange {
       if _low > _high then return other.size == 0;
     }
 
-    if this.isAmbiguous() || other.isAmbiguous() then return false;
+    if ! this.isAligned() || ! other.isAligned() then return false;
 
     if this.bounds == boundKind.both && this.sizeAs(uint) == 0 then
       return other.bounds == boundKind.both && other.sizeAs(uint) == 0;
@@ -1468,11 +1491,11 @@ module ChapelRange {
   {
     // An ambiguous ranges cannot equal an unambiguous one
     //  even if all their parameters match.
-    if r1.isAmbiguous() != r2.isAmbiguous() then return false;
+    if r1.isAligned() != r2.isAligned() then return false;
 
     // As a special case, two ambiguous ranges compare equal
     // if their representations are identical.
-    if r1.isAmbiguous() then return chpl_ident(r1, r2);
+    if ! r1.isAligned() then return chpl_ident(r1, r2);
 
     if r1.bounds == boundKind.both {
 
@@ -1684,7 +1707,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       if _low > _high then return false;
     }
 
-    if this.isAmbiguous() || other.isAmbiguous()
+    if ! this.isAligned() || ! other.isAligned()
       then return false;
 
     return true;
@@ -1693,7 +1716,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   inline proc range.boundsCheck(other: range(?e,?b,?s))
   {
-    if this.isAmbiguous() || other.isAmbiguous()
+    if ! this.isAligned() || ! other.isAligned()
       then return false;
 
     var boundedOther = new range(
@@ -1718,7 +1741,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   /* private */ proc ref range.alignLow()
   {
-    if boundsChecking && this.isAmbiguous() then
+    if boundsChecking && ! this.isAligned() then
       HaltWrappers.boundsCheckHalt("alignLow -- Cannot be applied to a range with ambiguous alignment.");
 
     if ! hasPosNegUnitStride() then _low = this.alignedLowAsInt;
@@ -1729,7 +1752,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   @chpldoc.nodoc
   /* private */ proc ref range.alignHigh()
   {
-    if boundsChecking && this.isAmbiguous() then
+    if boundsChecking && ! this.isAligned() then
       HaltWrappers.boundsCheckHalt("alignHigh -- Cannot be applied to a range with ambiguous alignment.");
 
     if ! hasPosNegUnitStride() then _high = this.alignedHighAsInt;
@@ -1755,7 +1778,7 @@ private inline proc rangeCastHelper(r, type t) throws {
    */
   proc range.indexOrder(ind: idxType)
   {
-    if boundsChecking && this.isAmbiguous() then
+    if boundsChecking && ! this.isAligned() then
       HaltWrappers.boundsCheckHalt("indexOrder -- Undefined on a range with ambiguous alignment.");
 
     if ! contains(ind) then return (-1):chpl_integralIdxType;
@@ -1792,7 +1815,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       if !hasFirst() then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a range that has no first index");
 
-      if isAmbiguous() then
+      if ! isAligned() then
         HaltWrappers.boundsCheckHalt("invoking orderToIndex on a range that is ambiguously aligned");
 
       if ord < 0 then
@@ -2047,7 +2070,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                      r._high + i,
                      r._stride,
                      chpl__idxToInt(r.alignment)+i,
-                     r.aligned);
+                     r.isAligned());
   }
 
   // TODO can this be removed?
@@ -2069,7 +2092,7 @@ private inline proc rangeCastHelper(r, type t) throws {
                      r._high - i,
                      r._stride,
                      chpl__idxToInt(r.alignment)-i,
-                     r.aligned);
+                     r.isAligned());
   }
 
   // TODO can this be removed?
@@ -2132,7 +2155,7 @@ private inline proc rangeCastHelper(r, type t) throws {
 
     compilerAssert(! newStrides.isPosNegOne()); // handled directly in 'by'
 
-    if r.isAmbiguous() then return
+    if ! r.isAligned() then return
       if st == 1 || st == -1 then newZeroAlmtRange() else newUnalignedRange();
 
     if isPositiveStride(newStrides, st) then
@@ -2248,7 +2271,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   proc const range.chpl_slice(other: range(?), param forceNewRule: bool)
   {
     // Disallow slicing of an unaligned range, at least for now.
-    if this.isAmbiguous() then
+    if ! this.isAligned() then
       HaltWrappers.unimplementedFeatureHalt("slicing of an unaligned range");
 
     // the new idxType, chpl_integralIdxType, strType are inherited from `this`
@@ -2451,7 +2474,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       var al2 = chpl__idxToInt(other.alignment): int;
       var newAlignmentIsInAl2 = false;
 
-      if other.isAmbiguous() {
+      if ! other.isAligned() {
         // choice (C) in the comment from 2021-09-30 in #20462
         al2 = al1;
         if al2 < 0 then al2 += st1;
@@ -2539,7 +2562,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   }
 
   proc chpl_count_help(r, count: integral) {
-    if boundsChecking && r.isAmbiguous() then
+    if boundsChecking && ! r.isAligned() then
       boundsCheckHalt("count -- Cannot count off elements from a range which is ambiguously aligned.");
 
     type resultType = r.chpl_integralIdxType;
@@ -3263,7 +3286,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     if (useOptimizedRangeIterators) {
       if boundsChecking then checkIfIterWillOverflow();
 
-      // don't need to check if isAmbiguous since stride is one
+      // don't need to check if !isAligned() since stride is one
 
       // can use low/high instead of first/last since stride is one
       var i: chpl_integralIdxType;
@@ -3499,7 +3522,7 @@ private inline proc rangeCastHelper(r, type t) throws {
       }
     }
     if boundsChecking && ! myFollowThis.hasFirst() {
-      if ! (!myFollowThis.isAmbiguous() && myFollowThis.isEmpty()) then
+      if ! (myFollowThis.isAligned() && myFollowThis.isEmpty()) then
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
 
@@ -3598,7 +3621,7 @@ private inline proc rangeCastHelper(r, type t) throws {
     if x.stride != 1 {
       ret += " by " + x.stride:string;
 
-      if x.stride != -1 && x.aligned && ! x.isNaturallyAligned() then
+      if x.stride != -1 && x.isAligned() && ! x.chpl_isNaturallyAligned() then
       // Write out the alignment only if it differs from natural alignment.
       // We take alignment modulo the stride for consistency.
        ret += " align " + x.alignment:string;
