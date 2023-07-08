@@ -211,7 +211,7 @@ semantically-blocking call to :proc:`Socket.send()` allow other Chapel tasks
 to be scheduled on the OS thread as supported by the tasking layer.
 Internally, the ZMQ module uses non-blocking calls to ``zmq_send()`` and
 ``zmq_recv()`` to transfer data, and yields to the tasking layer via
-`chpl_task_yield()` when the call would otherwise block.
+`currentTask.yieldExecution()` when the call would otherwise block.
 
 Limitations and Future Work
 +++++++++++++++++++++++++++
@@ -904,7 +904,7 @@ module ZMQ {
         while(-1 == zmq_msg_send(msg, classRef.socket,
                                  (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
-            chpl_task_yield();
+            currentTask.yieldExecution();
           else {
             try throw_socket_error(errno, "send");
           }
@@ -921,7 +921,7 @@ module ZMQ {
                               numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
-            chpl_task_yield();
+            currentTask.yieldExecution();
           else {
             try throw_socket_error(errno, "send");
           }
@@ -981,7 +981,7 @@ module ZMQ {
         while (-1 == zmq_msg_recv(msg, classRef.socket,
                                   (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
-            chpl_task_yield();
+            currentTask.yieldExecution();
           else {
             try throw_socket_error(errno, "recv");
           }
@@ -1021,7 +1021,7 @@ module ZMQ {
                               numBytes(T):c_size_t,
                               (ZMQ_DONTWAIT | flags):c_int)) {
           if errno == EAGAIN then
-            chpl_task_yield();
+            currentTask.yieldExecution();
           else {
             try throw_socket_error(errno, "recv");
           }

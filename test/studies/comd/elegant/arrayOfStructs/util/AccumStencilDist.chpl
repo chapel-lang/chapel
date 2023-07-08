@@ -195,7 +195,7 @@ class LocAccumStencilArr {
   // not have an on statement around the while loop below (to avoid
   // the repeated on's from calling testAndSet()).
   inline proc lockLocRAD() {
-    while locRADLock.testAndSet() do chpl_task_yield();
+    while locRADLock.testAndSet() do currentTask.yieldExecution();
   }
 
   inline proc unlockLocRAD() {

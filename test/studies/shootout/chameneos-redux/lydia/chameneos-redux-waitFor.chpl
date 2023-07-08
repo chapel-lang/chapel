@@ -112,7 +112,7 @@ class Chameneos {
         } else {
           // Attend meeting
 
-          // This version uses waitFor instead of chpl_task_yield
+          // This version uses waitFor instead of currentTask.yieldExecution
           meetingCompleted.waitFor(true);
 
           meetingCompleted.write(false, memoryOrder.release);

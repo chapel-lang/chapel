@@ -250,7 +250,7 @@ record vlock {
     this.l = other.l.read();
   }
   proc lock() {
-    on this do while l.testAndSet() != false do chpl_task_yield();
+    on this do while l.testAndSet() != false do currentTask.yieldExecution();
   }
   proc unlock() {
     l.write(false);

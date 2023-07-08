@@ -1334,7 +1334,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
             // Make sure no other task is currently reading this block
             on bp {
               while (bp.isReading()) {
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
             }
             // Write the block

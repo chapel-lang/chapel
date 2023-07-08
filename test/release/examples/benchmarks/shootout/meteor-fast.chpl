@@ -353,7 +353,7 @@ record BackoffSpinLock {
       lockAttempts += 1;
       if (lockAttempts & maxLockAttempts) == 0 {
         maxLockAttempts >>= 1;
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
   }

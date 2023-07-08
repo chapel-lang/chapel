@@ -46,7 +46,7 @@ module ChapelLocks {
     inline proc lock() {
       on this do
         while l.read() || l.testAndSet(memoryOrder.acquire) do
-          chpl_task_yield();
+          currentTask.yieldExecution();
     }
 
     inline proc unlock() {

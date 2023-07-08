@@ -747,7 +747,7 @@ module DistributedBag {
           break;
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
 
@@ -763,7 +763,7 @@ module DistributedBag {
           }
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       return false;
@@ -1033,7 +1033,7 @@ module DistributedBag {
                   }
                 }
               }
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
         }
@@ -1102,7 +1102,7 @@ module DistributedBag {
                 }
 
                 // Backoff
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
 
               iterations = iterations + 1;
@@ -1213,7 +1213,7 @@ module DistributedBag {
                               }
 
                               // Backoff...
-                              chpl_task_yield();
+                              currentTask.yieldExecution();
                             }
                           }
                         }
@@ -1224,7 +1224,7 @@ module DistributedBag {
                       ref recvSegment = segments[segmentIdx];
                       while true {
                         if recvSegment.currentStatus == STATUS_UNLOCKED && recvSegment.acquireWithStatus(STATUS_ADD) then break;
-                        chpl_task_yield();
+                        currentTask.yieldExecution();
                       }
 
                       // Add stolen elements to segment...
@@ -1256,7 +1256,7 @@ module DistributedBag {
               }
 
               // Backoff to maximum...
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
 

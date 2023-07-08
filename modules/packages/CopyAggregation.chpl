@@ -195,7 +195,7 @@ module CopyAggregation {
         _flushBuffer(loc, bufferIdx, freeData=false);
         opsUntilYield = yieldFrequency;
       } else if opsUntilYield == 0 {
-        chpl_task_yield();
+        currentTask.yieldExecution();
         opsUntilYield = yieldFrequency;
       } else {
         opsUntilYield -= 1;
@@ -297,7 +297,7 @@ module CopyAggregation {
         _flushBuffer(loc, bufferIdx, freeData=false);
         opsUntilYield = yieldFrequency;
       } else if opsUntilYield == 0 {
-        chpl_task_yield();
+        currentTask.yieldExecution();
         opsUntilYield = yieldFrequency;
       } else {
         opsUntilYield -= 1;

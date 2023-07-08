@@ -17,7 +17,7 @@ proc foo(type t, u: t, v: t, name) {
       done.writeEF(true);
       write  ("2: value has changed to ", s.readFF());
       writeln(" and it is ", if s.isFull then "full" else "empty");
-      chpl_task_yield();
+      currentTask.yieldExecution();
       writeln("2: after sleeping, value is still ", s.readXX());
       s.reset();
       writeln("2: value has been reset to ", s.readFE());

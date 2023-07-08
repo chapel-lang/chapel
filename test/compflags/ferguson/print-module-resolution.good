@@ -46,6 +46,8 @@ OwnedObject
   from print-module-resolution.ChapelStandard.OwnedObject
 MemConsistency
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics.MemConsistency
+currentTask
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics.currentTask
 Atomics
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics
 ChapelLocks
