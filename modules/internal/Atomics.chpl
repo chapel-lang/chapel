@@ -370,6 +370,7 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
+    @unstable("'compareAndSwap' is unstable")
     inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", bool)
@@ -565,6 +566,7 @@ module Atomics {
        Stores `desired` as the new value, if and only if the original value is
        equal to `expected`. Returns `true` if `desired` was stored.
     */
+    @unstable("'compareAndSwap' is unstable")
     inline proc compareAndSwap(expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "local fn" pragma "fast-on safe extern function"
       extern externFunc("compare_exchange_strong", valType)

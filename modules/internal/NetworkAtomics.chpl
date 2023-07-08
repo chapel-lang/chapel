@@ -103,6 +103,7 @@ module NetworkAtomics {
       return this.compareExchange(expected, desired, success, failure);
     }
 
+    @unstable("'compareAndSwap' is unstable")
     inline proc compareAndSwap(expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", int(64))
         proc atomic_cmpxchg(ref expected:int(64), ref desired:int(64), l:int(32), obj:c_ptr(void), ref result:uint(32), succ:memory_order, fail:memory_order): void;
@@ -215,6 +216,7 @@ module NetworkAtomics {
       return this.compareExchange(expected, desired, success, failure);
     }
 
+    @unstable("'compareAndSwap' is unstable")
     inline proc compareAndSwap(expected:valType, desired:valType, param order: memoryOrder = memoryOrder.seqCst): bool {
       pragma "insert line file info" extern externFunc("cmpxchg", valType)
         proc atomic_cmpxchg(ref expected:valType, ref desired:valType, l:int(32), obj:c_ptr(void), ref result:uint(32), succ:memory_order, fail:memory_order): void;
