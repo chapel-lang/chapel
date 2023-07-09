@@ -259,6 +259,9 @@ struct ReturnTypeInferrer {
   bool enter(const Conditional* cond, RV& rv);
   void exit(const Conditional* cond, RV& rv);
 
+  bool enter(const Select* sel, RV& rv);
+  void exit(const Select* sel, RV& rv);
+
   bool enter(const Return* ret, RV& rv);
   void exit(const Return* ret, RV& rv);
 
@@ -375,6 +378,17 @@ void ReturnTypeInferrer::enterScope(const uast::AstNode* node) {
   if (auto condNode = node->toConditional()) {
     newFrame->subFrames.emplace_back(condNode->thenBlock());
     newFrame->subFrames.emplace_back(condNode->elseBlock());
+  } else if (auto selNode = node->toSelect()) {
+    bool hasOtherwise = false;
+    for (auto when : selNode->whenStmts()) {
+      if (when->isOtherwise()) hasOtherwise = true;
+      newFrame->subFrames.emplace_back(when);
+    }
+    if (!hasOtherwise) {
+      // If an 'otherwise' case is not present, then we treat it as a
+      // non-returning 'branch'.
+      newFrame->subFrames.emplace_back(nullptr);
+    }
   } else if (auto tryNode = node->toTry()) {
     newFrame->subFrames.emplace_back(tryNode->body());
     for (auto clause : tryNode->handlers()) {
@@ -402,8 +416,10 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
   // Integrate sub-frame information.
   if (poppingFrame->subFrames.size() > 0) {
     bool allReturnOrThrow = true;
+    bool allSkip = true;
     for (auto& subFrame : poppingFrame->subFrames) {
       if (subFrame.skip) continue;
+      allSkip = false;
 
       if (subFrame.frame == nullptr || !subFrame.frame->returnsOrThrows) {
         allReturnOrThrow = false;
@@ -411,7 +427,8 @@ void ReturnTypeInferrer::exitScope(const uast::AstNode* node) {
       }
     }
 
-    parentReturnsOrThrows = allReturnOrThrow;
+    // If all subframes skipped, then there were no returns.
+    parentReturnsOrThrows = !allSkip && allReturnOrThrow;
   }
 
   if (returnFrames.size() > 0) {
@@ -479,6 +496,65 @@ bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
 }
 void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
   exitScope(cond);
+}
+
+bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
+  enterScope(sel);
+
+  bool foundParamTrue = false;
+  int otherwise = -1;
+
+  for (int i = 0; i < sel->numWhenStmts(); i++) {
+    if (foundParamTrue) {
+      // previous case was param-true, so we skip all subsequent frames
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[i].skip = true;
+      continue;
+    }
+
+    auto when = sel->whenStmt(i);
+    if (when->isOtherwise()) {
+      CHPL_ASSERT(otherwise == -1);
+      otherwise = i;
+      continue;
+    }
+
+    bool anyParamTrue = false;
+    bool allParamFalse = true;
+
+    for (auto caseExpr : when->caseExprs()) {
+      auto res = rv.byAst(caseExpr);
+
+      anyParamTrue = anyParamTrue || res.type().isParamTrue();
+      allParamFalse = allParamFalse && res.type().isParamFalse();
+    }
+
+    if (allParamFalse) {
+      // statically never resolves, so skip this case
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[i].skip = true;
+    } else {
+      when->traverse(rv);
+    }
+
+    if (anyParamTrue) {
+      foundParamTrue = true;
+    }
+  }
+
+  if (otherwise != -1) {
+    if (foundParamTrue) {
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames[otherwise].skip = true;
+    } else {
+      sel->whenStmt(otherwise)->traverse(rv);
+    }
+  }
+
+  return false;
+}
+void ReturnTypeInferrer::exit(const Select* sel, RV& rv) {
+  exitScope(sel);
 }
 
 bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
