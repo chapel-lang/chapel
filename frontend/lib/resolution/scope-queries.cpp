@@ -265,6 +265,7 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
+         || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
          || asttags::isSync(tag);
