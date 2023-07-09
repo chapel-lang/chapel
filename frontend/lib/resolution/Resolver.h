@@ -469,6 +469,9 @@ struct Resolver {
   bool enter(const uast::Conditional* cond);
   void exit(const uast::Conditional* cond);
 
+  bool enter(const uast::Select* sel);
+  void exit(const uast::Select* sel);
+
   bool enter(const uast::Literal* literal);
   void exit(const uast::Literal* literal);
 

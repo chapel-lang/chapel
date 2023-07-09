@@ -2180,6 +2180,89 @@ bool Resolver::enter(const uast::Conditional* cond) {
 void Resolver::exit(const uast::Conditional* cond) {
 }
 
+bool Resolver::enter(const uast::Select* sel) {
+  sel->expr()->traverse(*this);
+
+  auto exprType = byPostorder.byAst(sel->expr()).type();
+
+  enterScope(sel);
+
+  const Scope* scope = scopeStack.back();
+  bool foundParamTrue = false;
+  int otherwise = -1;
+
+  for (int i = 0; i < sel->numWhenStmts(); i++) {
+    auto when = sel->whenStmt(i);
+    bool allParamFalse = true;
+    bool anyParamTrue = false;
+
+    if (when->isOtherwise()) {
+      CHPL_ASSERT(otherwise == -1);
+      otherwise = i;
+      continue;
+    }
+
+    // Resolve all the when-cases
+    for (auto caseExpr : when->caseExprs()) {
+      caseExpr->traverse(*this);
+
+      if (!scopeResolveOnly) {
+        auto caseResult = byPostorder.byAst(caseExpr);
+        auto caseType = caseResult.type();
+        std::vector<CallInfoActual> actuals;
+        actuals.push_back(CallInfoActual(exprType, UniqueString()));
+        actuals.push_back(CallInfoActual(caseType, UniqueString()));
+        auto ci = CallInfo (/* name */ USTR("=="),
+                            /* calledType */ QualifiedType(),
+                            /* isMethodCall */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ false,
+                            actuals);
+        auto c = resolveGeneratedCall(context, caseExpr, ci, scope, poiScope);
+        handleResolvedAssociatedCall(caseResult, caseExpr, ci, c,
+                                     AssociatedAction::COMPARE,
+                                     caseExpr->id());
+
+        auto type = c.exprType();
+        anyParamTrue = anyParamTrue || type.isParamTrue();
+        allParamFalse = allParamFalse && type.isParamFalse();
+        byPostorder.byAst(caseExpr).setType(type);
+      }
+    }
+
+    if (!scopeResolveOnly && allParamFalse) {
+      // case will never be true, so do not resolve the statement
+      continue;
+    } else {
+      // Otherwise, resolve the body.
+      when->stmt(0)->traverse(*this);
+    }
+
+    // Current behavior is to ignore when-stmts following a param-true
+    // condition.
+    //
+    // TODO: Should we keep resolving when-cases and warn for param-true
+    // cases further down the line?
+    if (anyParamTrue) {
+      foundParamTrue = true;
+      break;
+    }
+  }
+
+  // If one of the when-stmts is statically true, we should not resolve the
+  // 'otherwise' statement, should one exist.
+  if (foundParamTrue == false && otherwise != -1) {
+    sel->whenStmt(otherwise)->stmt(0)->traverse(*this);
+  }
+
+  exitScope(sel);
+
+  return false;
+}
+
+void Resolver::exit(const uast::Select* sel) {
+}
+
 bool Resolver::enter(const Literal* literal) {
   ResolvedExpression& result = byPostorder.byAst(literal);
   result.setType(typeForLiteral(context, literal));
