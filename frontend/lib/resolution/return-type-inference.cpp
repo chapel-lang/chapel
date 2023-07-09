@@ -775,6 +775,12 @@ static bool helpComputeReturnType(Context* context,
     CHPL_ASSERT(fn);
 
     if (const AstNode* retType = fn->returnType()) {
+      // Cannot return the correct "return type" for something value-less like
+      // "param : int".
+      if (fn->returnIntent() == Function::ReturnIntent::PARAM) {
+        return false;
+      }
+
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
       auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
