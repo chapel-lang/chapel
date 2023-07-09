@@ -2233,7 +2233,7 @@ bool Resolver::enter(const uast::Select* sel) {
     if (!scopeResolveOnly && allParamFalse) {
       // case will never be true, so do not resolve the statement
       continue;
-    } else {
+    } else if (when->numStmts() > 0) {
       // Otherwise, resolve the body.
       when->stmt(0)->traverse(*this);
     }
@@ -2252,7 +2252,10 @@ bool Resolver::enter(const uast::Select* sel) {
   // If one of the when-stmts is statically true, we should not resolve the
   // 'otherwise' statement, should one exist.
   if (foundParamTrue == false && otherwise != -1) {
-    sel->whenStmt(otherwise)->stmt(0)->traverse(*this);
+    auto other = sel->whenStmt(otherwise);
+    if (other->numStmts() > 0) {
+      other->stmt(0)->traverse(*this);
+    }
   }
 
   exitScope(sel);
