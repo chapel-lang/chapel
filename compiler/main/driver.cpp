@@ -57,6 +57,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
+#include "llvm/Support/CommandLine.h"
 #if HAVE_LLVM_VER >= 140
 #include "llvm/MC/TargetRegistry.h"
 #else
@@ -723,11 +724,21 @@ static void setLDFlags(const ArgumentDescription* desc, const char* arg) {
 static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of llvmFlags.
 
+#ifdef HAVE_LLVM
   // add a space if there are already arguments here
   if( llvmFlags.length() > 0 )
     llvmFlags += ' ';
 
   llvmFlags += arg;
+
+  if (0 == strcmp(arg, "--help")) {
+    std::vector<const char*> Args = {"chpl --mllvm", "--help", nullptr};
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
+#else
+  printf("Cannot use '--mllvm': this 'chpl' was built without LLVM support\n");
+  clean_exit(1);
+#endif
 }
 
 static void setLLVMRemarksFilters(const ArgumentDescription* desc, const char* arg) {

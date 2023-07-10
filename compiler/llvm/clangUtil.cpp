@@ -1794,7 +1794,9 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
 
     std::vector<const char*> Args;
-    Args.push_back("chpl-llvm-opts");
+    Args.push_back("chpl --mllvm"); // pretend this is the name of the program
+                                    // so it shows 'chpl --mllvm --help'
+                                    // if the option was not recognized
     for (auto & i : vec) {
       Args.push_back(i.c_str());
     }
