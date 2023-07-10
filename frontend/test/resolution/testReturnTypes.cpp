@@ -715,6 +715,317 @@ static void testControlFlowYield4() {
   guard.realizeErrors();
 }
 
+std::string ops = R"""(
+  operator ==(x:int, y:int) { return __primitive("==", x, y); }
+  operator ==(param x:int, param y:int) param { return __primitive("==", x, y); }
+  operator ==(type A, type B) param : bool { return __primitive("==", A, B); }
+)""";
+
+static void testSelectVals() {
+  {
+    // Basic test case
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo(arg:int) {
+      select arg {
+        when 1 do return 1;
+        when 2 do return 2;
+        when 3 do return 3;
+        otherwise do return 0;
+      }
+    }
+
+    var x = foo(1);
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    assert(qt.type()->isIntType());
+  }
+  {
+    // Recognize that cases do not all return the same type
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo(arg:int) {
+      select arg {
+        when 1 do return 1;
+        when 2 do return 2;
+        when 3 do return "hello";
+        otherwise do return 0;
+      }
+    }
+
+    var x = foo(1);
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    assert(qt.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == "could not determine return type for function");
+    guard.realizeErrors();
+  }
+  {
+    // Recognize that all cases return, so the final 'return' isn't considered.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo(arg:int) {
+      select arg {
+        when 1 do return 1;
+        when 2 do return 2;
+        when 3 do return 3;
+        otherwise do return 0;
+      }
+
+      return "hello";
+    }
+
+    var x = foo(1);
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    assert(qt.type()->isIntType());
+  }
+  {
+    // Without an 'otherwise', we should consider the final 'return'.
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = ops + R"""(
+    proc foo(arg:int) {
+      select arg {
+        when 1 do return 1;
+        when 2 do return 2;
+        when 3 do return 3;
+      }
+
+      return "hello";
+    }
+
+    var x = foo(1);
+    )""";
+    QualifiedType qt = resolveTypeOfXInit(context,
+                                         program);
+    assert(qt.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == "could not determine return type for function");
+    guard.realizeErrors();
+  }
+}
+
+using stringMap = std::map<std::string, std::string>;
+
+static void testSelectCases(std::string base,
+                            stringMap vals) {
+  for (auto pair : vals) {
+    std::string program = base + "type x = foo(" + pair.first + ");";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    QualifiedType qt = resolveTypeOfXInit(context, program);
+    std::stringstream ss;
+    qt.type()->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    if (ss.str() != pair.second) {
+      printf("[DEBUG] %s != %s\n", ss.str().c_str(), pair.second.c_str());
+    }
+    assert(ss.str() == pair.second);
+  }
+}
+
+static void testSelectTypes() {
+  {
+    // basic type usage
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) type {
+      select T {
+        when int do return int;
+        when real do return real;
+        when string do return string;
+        otherwise do return complex;
+      }
+    }
+    )""";
+
+    stringMap vals = {{"int", "int(64)"},
+                      {"real", "real(64)"},
+                      {"string", "string"},
+                      {"uint", "complex(128)"}};
+
+    testSelectCases(fooFunc, vals);
+  }
+  {
+    // mutiple cases in a single 'when'
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) type {
+      select T {
+        when int, uint, real do return int;
+        when string, bytes do return string;
+        otherwise do return nothing;
+      }
+    }
+    )""";
+
+    stringMap vals = {{"int", "int(64)"},
+                      {"uint", "int(64)"},
+                      {"real", "int(64)"},
+                      {"string", "string"},
+                      {"bytes", "string"},
+                      {"bool", "nothing"}};
+
+    testSelectCases(fooFunc, vals);
+  }
+  {
+    // demonstrate that cases are ignored after first param-true
+    std::string program = ops + R"""(
+    proc foo(type T) type {
+      select T {
+        when int do return int;
+        when real {
+          badCall(0); // should never attempt to resolve this
+          return real;
+        }
+        otherwise {
+          anotherBadCall(1);
+          return complex;
+        }
+      }
+    }
+    type x = foo(int);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isIntType());
+  }
+  {
+    // demonstrate that in the case of duplicates, the first is always chosen.
+    std::string program = ops + R"""(
+    proc foo(type T) type {
+      select T {
+        when int do return int;
+        when int do return real;
+        when int do return string;
+        otherwise do return nothing;
+      }
+    }
+    type x = foo(int);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+    assert(qt.type()->isIntType());
+  }
+}
+
+static void testSelectParams() {
+  {
+    // basic param usage
+    std::string fooFunc = ops + R"""(
+    proc foo(param p) type {
+      select p {
+        when 1 do return int;
+        when 2 do return real;
+        when 3 do return string;
+        otherwise do return nothing;
+      }
+    }
+    )""";
+
+    stringMap vals = {{"1", "int(64)"},
+                      {"2", "real(64)"},
+                      {"3", "string"},
+                      {"4", "nothing"},
+                      {"0", "nothing"}};
+
+    testSelectCases(fooFunc, vals);
+  }
+  {
+    // mutiple cases in a single 'when'
+    std::string fooFunc = ops + R"""(
+    proc foo(param p) type {
+      select p {
+        when 1, 2, 3 do return int;
+        when 4, 5, 6 do return real;
+        otherwise do return nothing;
+      }
+    }
+    )""";
+
+    stringMap vals = {{"1", "int(64)"},
+                      {"2", "int(64)"},
+                      {"3", "int(64)"},
+                      {"4", "real(64)"},
+                      {"5", "real(64)"},
+                      {"6", "real(64)"},
+                      {"0", "nothing"}};
+
+    testSelectCases(fooFunc, vals);
+  }
+  {
+    // Show that 'otherwise' should still resolve when a param-true case is
+    // not present.
+    std::string program = ops + R"""(
+    var myGlobal = 100;
+    proc foo(param p) type {
+      select p {
+        when 1 do return int; // always false for this test
+        when myGlobal do return real;
+        otherwise do return nothing;
+      }
+    }
+    type x = foo(5);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+
+    assert(qt.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == "could not determine return type for function");
+    guard.realizeErrors();
+  }
+  {
+    // Show that non-param cases *preceding* param-true cases should still
+    // resolve, in case their value matches at execution time.
+    std::string program = ops + R"""(
+    var myGlobal = 100;
+    proc foo(param p) type {
+      select p {
+        when myGlobal do return int;
+        when 1 do return string; // always true for this test
+        otherwise do return nothing;
+      }
+    }
+    type x = foo(1);
+    )""";
+
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+    auto qt = resolveTypeOfXInit(context, program);
+
+    assert(qt.isErroneousType());
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == "could not determine return type for function");
+    guard.realizeErrors();
+  }
+}
+
 // TODO: test param coercion (param int(32) = 1 and param int(64) = 2)
 // looks like canPass doesn't handle this very well.
 
@@ -760,5 +1071,10 @@ int main() {
   testControlFlowYield2();
   testControlFlowYield3();
   testControlFlowYield4();
+
+  testSelectVals();
+  testSelectTypes();
+  testSelectParams();
+
   return 0;
 }

@@ -1135,6 +1135,7 @@ class AssociatedAction {
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
     INFER_TYPE,
+    COMPARE,      // == , e.g., for select-statements
   };
 
  private:

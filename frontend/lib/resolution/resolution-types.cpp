@@ -880,6 +880,8 @@ const char* AssociatedAction::kindToString(Action a) {
       return "reduce-scan";
     case INFER_TYPE:
       return "infer-type";
+    case COMPARE:
+      return "compare";
     // no default to get a warning if new Actions are added
   }
 
