@@ -8,11 +8,11 @@ source $CWD/common.bash
 export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="host-jemalloc"
 
-$result = $CWD/nightly -cron -hellos ${nightly_args}
-if [ $result -ne 0 ]
-then
-      echo "Test failed " 
-      exit 1
-else
-      echo "Test suceeded"
-fi
+$CWD/nightly -cron -hellos ${nightly_args}
+if [ $? -ne 0 ] 
+   then
+     log_error "chpl pidigits.chpl failed to compile" 
+     exit 1
+   else
+     log_info "Compiled pidigits.chpl"  
+   fi   
