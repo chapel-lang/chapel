@@ -135,21 +135,11 @@ module Errors {
   }
 
   /*
-    A ``CodepointSplitError`` is a subclass of :class:`Error` thrown when
-    slicing a string with byteIndex-based ranges where the range
-    boundaries do not align with codepoint boundaries.
-
-    .. method:: proc init(info: string)
-
-    .. method:: override proc message()
+    A ``CodepointSplitError`` is thrown when slicing a string with
+    byteIndex-based ranges where the range boundaries do not align
+    with codepoint boundaries.
   */
-  type CodepointSplitError = chpl_CodepointSplitError;
-
-  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
-  type CodepointSplittingError = chpl_CodepointSplitError;
-
-  @chpldoc.nodoc
-  class chpl_CodepointSplitError: Error {
+  class CodepointSplitError: Error {
     proc init(info: string) {
       super.init(info);
     }
@@ -158,6 +148,9 @@ module Errors {
       return "Attempting to split a multi-byte codepoint. " + _msg;
     }
   }
+
+  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
+  type CodepointSplittingError = CodepointSplitError;
 
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
