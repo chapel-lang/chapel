@@ -2295,11 +2295,20 @@ module ChapelArray {
     return true;
   }
 
+  /*proc chpl__supportedDataTypeForBulkTransfer(type t: c_array) param { return true;}*/
+
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
     // These types cannot be default initialized
     if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
       return false;
+    } else if isSubtype(t, c_array) {
+      // c_array is a record that is not POD. Although it is bulk-transferrable.
+      // We need a more general mechanism to allow non-POD types to be
+      // transferred, or redefine what POD is. For now, allow bulk transfer
+      // between two arrays of c_arrays.
+
+      return chpl__supportedDataTypeForBulkTransfer(t.eltType);
     } else if isRecordType(t) || isTupleType(t) {
       // TODO: The current implementations of isPODType and
       //       supportedDataTypeForBulkTransfer do not completely align. I'm
