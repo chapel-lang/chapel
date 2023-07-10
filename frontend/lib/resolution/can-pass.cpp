@@ -352,6 +352,22 @@ bool CanPassResult::canConvertNumeric(Context* context,
 }
 
 bool
+CanPassResult::canConvertCPtr(Context* context,
+                              const Type* actualT,
+                              const Type* formalT) {
+  if (actualT->isCPtrType()) {
+    if (auto formalPtr = formalT->toCPtrType()) {
+      return formalPtr->isVoidPtr();
+    } else {
+      // Check for old c_void_ptr behavior.
+      return formalT->isCVoidPtrType();
+    }
+  }
+
+  return false;
+}
+
+bool
 CanPassResult::canConvertParamNarrowing(Context* context,
                                         const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
@@ -662,6 +678,10 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (canConvertParamNarrowing(context, actualQT, formalQT))
     return convert(PARAM_NARROWING);
 
+  if (canConvertCPtr(context, actualT, formalT)) {
+    return convert(OTHER);
+  }
+
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
@@ -836,6 +856,12 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
       }
 
       if (actualCt->isInstantiationOf(context, formalCt)) {
+        return instantiate();
+      }
+    }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      if (actualPt->isInstantiationOf(context, formalPt)) {
         return instantiate();
       }
     }

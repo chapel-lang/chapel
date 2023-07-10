@@ -660,6 +660,21 @@ static bool isCallToIntEtc(const AstNode* formalTypeExpr) {
   return false;
 }
 
+static bool isCallToCPtr(const AstNode* formalTypeExpr) {
+  if (auto call = formalTypeExpr->toFnCall()) {
+    if (auto calledAst = call->calledExpression()) {
+      if (auto calledIdent = calledAst->toIdentifier()) {
+        UniqueString n = calledIdent->name();
+        if (n == USTR("c_ptr")) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 static void varArgTypeQueryError(Context* context,
                                  const AstNode* node,
                                  ResolvedExpression& result) {
@@ -729,6 +744,22 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
               auto it = IntType::get(context, 0);
               auto qt = QualifiedType(QualifiedType::PARAM, it, p);
               resolvedWidth.setType(qt);
+            }
+          }
+        }
+      }
+    } else if (isCallToCPtr(formalTypeExpr)) {
+      // If it is e.g. c_ptr(TypeQuery), resolve the type query to the eltType
+      // Set the type that we know (since it was passed in)
+      if (call->numActuals() == 1) {
+        if (auto tq = call->actual(0)->toTypeQuery()) {
+          if (auto pt = actualTypePtr->toCPtrType()) {
+            ResolvedExpression& resolvedElt = byPostorder.byAst(tq);
+            if (isNonStarVarArg) {
+              varArgTypeQueryError(context, call->actual(0), resolvedElt);
+            } else {
+              resolvedElt.setType(QualifiedType(QualifiedType::TYPE,
+                                                pt->eltType()));
             }
           }
         }
@@ -1889,6 +1920,11 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     auto kind = qualifiedTypeKindForId(context, id);
     const Type* type = nullptr;
     return QualifiedType(kind, type);
+  }
+
+  // Intercept the standard library `c_ptr` and turn it into the builtin type.
+  if (id == CPtrType::getId(context)) {
+    return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
   }
 
   // if the id is contained within this symbol,

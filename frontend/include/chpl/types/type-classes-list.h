@@ -46,6 +46,7 @@ TYPE_NODE(NilType)
 TYPE_NODE(NothingType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
+TYPE_NODE(CPtrType)
 
 // TODO:
 // migrate BytesType / StringType to something backed by the modules

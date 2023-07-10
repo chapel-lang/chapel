@@ -189,6 +189,7 @@ struct Converter {
 
   // type conversion helpers
   Type* convertClassType(const types::QualifiedType qt);
+  Type* convertCPtrType(const types::QualifiedType qt);
   Type* convertEnumType(const types::QualifiedType qt);
   Type* convertFunctionType(const types::QualifiedType qt);
   Type* convertBasicClassType(const types::QualifiedType qt);
@@ -3972,6 +3973,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::IntType:   return convertIntType(qt);
     case typetags::RealType:   return convertRealType(qt);
     case typetags::UintType:   return convertUintType(qt);
+    case typetags::CPtrType:   return convertCPtrType(qt);
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -3992,6 +3994,11 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     // want a C++ compiler error if a case is missing in the above
   }
   INT_FATAL("should not be reached");
+  return nullptr;
+}
+
+Type* Converter::convertCPtrType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
   return nullptr;
 }
 

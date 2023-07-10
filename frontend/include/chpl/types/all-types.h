@@ -28,6 +28,7 @@
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/CompositeType.h"
+#include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
 #include "chpl/types/EnumType.h"
 #include "chpl/types/ErroneousType.h"

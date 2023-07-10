@@ -97,6 +97,11 @@ class CanPassResult {
                     const types::Type* actualT,
                     const types::Type* formalT);
 
+  static bool
+  canConvertCPtr(Context* context,
+                 const types::Type* actualT,
+                 const types::Type* formalT);
+
   static bool canConvertParamNarrowing(Context* context,
                                        const types::QualifiedType& actualType,
                                        const types::QualifiedType& formalType);
