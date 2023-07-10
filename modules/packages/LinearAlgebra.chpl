@@ -1458,7 +1458,7 @@ proc isZero(A: [?D] ?eltType) where isDenseMatrix(A) {
 private proc _isZero(A: [?D] ?eltType) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
-  
+
   for (i, j) in D {
     if A[i, j] != 0 then return false;
   }
