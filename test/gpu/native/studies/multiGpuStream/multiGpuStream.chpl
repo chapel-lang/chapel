@@ -10,6 +10,7 @@ config const validate = false;
 config const printOutput = false;
 config const reportIndividual = true;
 config const reportAggregate = true;
+config const SI = true;
 
 config const perGpuVecSize = 100;
 const numGpus = here.gpus.size;
@@ -77,23 +78,28 @@ if validate {
   assert(isclose(result, expected));
 }
 
+const tputFactor = if SI then 1e9 else 1<<30;
+const tputUnit = if SI then "GB/s" else "GiB/s";
+
 var aggThroughput = 0.0;
 for gpuId in here.gpus.domain {
   const ref t = gpuTimes[gpuId];
   const perVectorNumBytes = perGpuVecSize*numBytes(elemType);
-  const throughput = (3*perVectorNumBytes/t.kernel)*1e-9;
+  const throughput = (3*perVectorNumBytes/t.kernel)/tputFactor;
   aggThroughput += throughput;
 
   if reportIndividual {
     write("GPU ", gpuId);
     writeln("\t", t);
 
-    writeln("\tHost to Dev BW (GB/s): ", ((perVectorNumBytes*2)/t.hostToDev)*1e-9);
-    writeln("\tDev to Host BW (GB/s): ", (perVectorNumBytes/t.devToHost)*1e-9);
-    writeln("\tKernel throughput (GB/s): ", throughput);
+    writef("\tHost to Dev BW (%s): %r\n", tputUnit,
+           ((perVectorNumBytes*2)/t.hostToDev)/tputFactor);
+    writef("\tDev to Host BW (%s): %r\n", tputUnit,
+            (perVectorNumBytes/t.devToHost)/tputFactor);
+    writef("\tKernel throughput (%s): %r\n", tputUnit, throughput);
   }
 }
 
 if reportAggregate {
-  writeln("Aggregate performance (GB/s): ", aggThroughput);
+  writef("Aggregate performance (%s): %r\n", tputUnit, aggThroughput);
 }
