@@ -5,6 +5,7 @@ use lib "$FindBin::Bin";
 
 use nightlysubs;
 
+
 $num_args = $#ARGV + 1;
 
 if ($num_args != 16) {
@@ -197,10 +198,13 @@ if ($debug == 0) {
 if($passed == 0)
 {
     print "Got here passed == 0 \n";
-    return 0;
+  
 
 }
 else{
     print "Got here passed != 0 \n";
-    return 1;
+    
 }
+
+print "Here ..";
+exit($passed);
