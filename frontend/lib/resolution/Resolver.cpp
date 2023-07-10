@@ -1242,7 +1242,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     if (typeExpr == nullptr && initExpr == nullptr &&
         var->linkage() == uast::Decl::EXTERN &&
         var->storageKind() == QualifiedType::TYPE) {
-      debuggerBreakHere();
       // creating an opaque external type.
 
       CHPL_ASSERT(var->isVariable());
