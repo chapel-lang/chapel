@@ -2012,10 +2012,21 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertCalledKeyword(const uast::AstNode* node) {
+  Expr* convertCalledKeyword(const uast::AstNode* node,
+                             const uast::Call* inCall) {
     astlocMarker markAstLoc(node->id());
 
     Expr* ret = nullptr;
+
+    // check to see if the call actuals are just a ?
+    bool justQuestionMark = false;
+    if (inCall->numActuals() == 1) {
+      if (auto ident = inCall->actual(0)->toIdentifier()) {
+        if (ident->name() == USTR("?")) {
+          justQuestionMark = true;
+        }
+      }
+    }
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
@@ -2031,9 +2042,13 @@ struct Converter {
       } else if (name == USTR("index")) {
         ret = new CallExpr("chpl__buildIndexType");
       } else if (name == USTR("domain")) {
-        auto base = "chpl__buildDomainRuntimeType";
-        auto dist = new UnresolvedSymExpr("defaultDist");
-        ret = new CallExpr(base, dist);
+        if (justQuestionMark) {
+          ret = new UnresolvedSymExpr("_domain");
+        } else {
+          auto base = "chpl__buildDomainRuntimeType";
+          auto dist = new UnresolvedSymExpr("defaultDist");
+          ret = new CallExpr(base, dist);
+        }
       } else if (name == USTR("unmanaged")) {
         ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
       } else if (name == USTR("borrowed")) {
@@ -2125,7 +2140,7 @@ struct Converter {
       INT_ASSERT(nodeTypeExpr);
 
       // Try to convert a called keyword, if not then use defaults.
-      Expr* typeExpr = convertCalledKeyword(nodeTypeExpr);
+      Expr* typeExpr = convertCalledKeyword(nodeTypeExpr, node);
       bool isCalledKeyword = true;
       if (!typeExpr) {
         typeExpr = convertAST(nodeTypeExpr);
@@ -2152,7 +2167,7 @@ struct Converter {
       return expr;
 
     // If a keyword produces a call, just use that instead of making one.
-    } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
+    } else if (Expr* expr = convertCalledKeyword(calledExpression, node)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
     } else if (CallExpr* callExpr = convertModuleDotCall(node)) {

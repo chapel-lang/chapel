@@ -1869,6 +1869,8 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
+  checkSurprisingGenericDecls(field->defPoint, /* isField */ true);
+
   return retval;
 }
 
@@ -2143,6 +2145,24 @@ static const char* buildTypeSignature(AggregateType* at) {
 void AggregateType::processGenericFields() {
   if (foundGenericFields) {
     return;
+  }
+
+  // convert domain(?) into domain
+  // but do not convert range(?) into range (if it is generic with defaults)
+  for_fields(field, this) {
+    if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == gUninstantiated) {
+            auto baseType = toAggregateType(call->baseExpr->typeInfo());
+            if (!baseType->mIsGenericWithDefaults) {
+              call->replace(call->baseExpr->remove());
+              field->addFlag(FLAG_MARKED_GENERIC);
+            }
+          }
+        }
+      }
+    }
   }
 
   std::set<AggregateType*> visited;
@@ -2699,22 +2719,20 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 }
 
 void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
-  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
-
   // If the type is simple, just set the argument's type directly.
-  // Otherwise, give it the block we just created.
-  if (exprType->body.length == 1) {
-    Type* type = exprType->body.only()->typeInfo();
+  Expr* only = fieldDef->exprType;
+
+  if (only) {
+    Type* type = only->typeInfo();
     if (type != dtUnknown && type != dtAny) {
       arg->type = type;
-
-    } else {
-      arg->typeExpr = exprType;
+      return;
     }
-
-  } else {
-    arg->typeExpr = exprType;
   }
+
+  // Otherwise, copy the block and use it
+  BlockStmt* exprType = new BlockStmt(fieldDef->exprType->copy(), BLOCK_TYPE);
+  arg->typeExpr = exprType;
 }
 
 bool AggregateType::handleSuperFields(FnSymbol*                    fn,
