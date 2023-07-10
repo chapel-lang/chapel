@@ -54,6 +54,7 @@ coforall (gpu, id) in zip(here.gpus, here.gpus.domain) do on gpu {
   gpuTimer.clear();
 
 
+  // curIter == 0 is a warm up iteration that's not timed
   for curIter in 0..iters {
     if curIter == 1 then gpuTimer.start();
     if usePromotion {
