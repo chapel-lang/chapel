@@ -135,9 +135,9 @@ module Errors {
   }
 
   /*
-   A `CodepointSplitError` is thrown if an attempt to slice a string with
-   byteIndex-based ranges where the range boundaries does not align with
-   codepoint boundaries.
+    A ``CodepointSplitError`` is a subclass of :class:`Error` thrown when
+    slicing a string with byteIndex-based ranges where the range
+    boundaries do not align with codepoint boundaries.
 
     .. method:: proc init(info: string)
 
