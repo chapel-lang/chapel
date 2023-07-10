@@ -2688,6 +2688,8 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 static const Type* resolveFnCallSpecialType(Context* context,
                                             const AstNode* astForErr,
                                             const CallInfo& ci) {
+  // none of the special type function calls are methods; we can stop here.
+  if (ci.isMethodCall()) return nullptr;
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {

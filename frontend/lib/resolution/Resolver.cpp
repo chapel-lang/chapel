@@ -287,6 +287,7 @@ Resolver::createForInitialFieldStmt(Context* context,
   ret.inCompositeType = compositeType;
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -305,6 +306,7 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   ret.substitutions = &compositeType->substitutions();
   ret.defaultsPolicy = defaultsPolicy;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -320,6 +322,7 @@ Resolver::createForInstantiatedSignatureFields(Context* context,
   ret.substitutions = &substitutions;
   ret.defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
+  ret.fieldTypesOnly = true;
   return ret;
 }
 
@@ -2665,7 +2668,32 @@ bool Resolver::enter(const NamedDecl* decl) {
 
   enterScope(decl);
 
-  return true;
+  // This logic exists to prioritize the field's type expression when
+  // resolving a field's type. If the type expression is concrete, then we
+  // do not need to resolve the init-expression. This is beneficial in cases
+  // where the init-expression would otherwise result in recursive resolution.
+  //
+  // TODO: Initializers will need to check the compatibility of the type
+  // expression and initialization expression.
+  if (!scopeResolveOnly && fieldTypesOnly && decl == curStmt) {
+    auto field = decl->toVarLikeDecl();
+    if (field->typeExpression() != nullptr &&
+        field->initExpression() != nullptr &&
+        field->storageKind() != Qualifier::TYPE &&
+        field->storageKind() != Qualifier::PARAM) {
+      field->typeExpression()->traverse(*this);
+      auto res = byPostorder.byAst(field->typeExpression());
+      auto g = getTypeGenericity(context, res.type().type());
+      if (g != Type::CONCRETE) {
+        field->initExpression()->traverse(*this);
+      }
+      return false;
+    } else {
+      return true;
+    }
+  } else {
+    return true;
+  }
 }
 
 void Resolver::exit(const NamedDecl* decl) {
