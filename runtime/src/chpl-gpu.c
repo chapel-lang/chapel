@@ -121,9 +121,12 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, ...) {
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
                  chpl_task_getRequestedSubloc(),
+                 chpl_lookupFilename(fn),
+                 ln,
                  name,
                  nargs);
 
@@ -153,10 +156,13 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                         ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
+                 "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %lld\n",
                  chpl_task_getRequestedSubloc(),
+                 chpl_lookupFilename(fn),
+                 ln,
                  name,
                  nargs,
                  num_threads);
