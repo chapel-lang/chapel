@@ -22,6 +22,12 @@ const ProblemSpace = {0..#numGpus*perGpuVecSize};
 
 // noinit and local for faster initialization
 var A, B, C: [ProblemSpace] real = noinit;
+
+// our single-GPU basic Stream avoids using `fillRandom` because it's behavior
+// is uncertain on the GPU. Here, we are creating the input on host, so it
+// should be technically safe to use `fillRandom` here, but I am avoiding it to
+// be consistent. See https://github.com/chapel-lang/chapel/issues/22708 for
+// `fillRandom` on GPUs.
 local {
   B = 1;
   C = 2;
