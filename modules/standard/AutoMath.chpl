@@ -1040,7 +1040,6 @@ module AutoMath {
   proc divceil(param m: integral, param n: integral) param do
     return chpl_divceil(m, n);
 
-  @chpldoc.nodoc
   proc chpl_divceil(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
@@ -1062,7 +1061,6 @@ module AutoMath {
   @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
 
-  @chpldoc.nodoc
   proc chpl_divceil(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
@@ -1085,7 +1083,6 @@ module AutoMath {
     return chpl_divceilpos(m, n);
   }
 
-  @chpldoc.nodoc
   proc chpl_divceilpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divceilpos() accepts only arguments of signed integer types");
@@ -1106,7 +1103,6 @@ module AutoMath {
   proc divfloor(param m: integral, param n: integral) param do return
     chpl_divfloor(m, n);
 
-  @chpldoc.nodoc
   proc chpl_divfloor(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
@@ -1128,7 +1124,6 @@ module AutoMath {
   @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
 
-  @chpldoc.nodoc
   proc chpl_divfloor(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
@@ -1151,7 +1146,6 @@ module AutoMath {
     return chpl_divfloorpos(m, n);
   }
 
-  @chpldoc.nodoc
   proc chpl_divfloorpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divfloorpos() accepts only arguments of signed integer types");
@@ -2008,7 +2002,6 @@ module AutoMath {
     return chpl_nearbyint(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_nearbyint(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2032,7 +2025,6 @@ module AutoMath {
     return chpl_nearbyint(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_nearbyint(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
@@ -2054,7 +2046,6 @@ module AutoMath {
     return chpl_rint(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_rint(x: real(64)): real(64) {
     // Note: this extern proc was originally free standing.  It might be
     // reasonable to make it that way again when the deprecated version is
@@ -2078,7 +2069,6 @@ module AutoMath {
     return chpl_rint(x);
   }
 
-  @chpldoc.nodoc
   inline proc chpl_rint(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
