@@ -435,6 +435,21 @@ class LocBlockArr {
     this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
   }
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param strides: strideKind,
+            const locDom: unmanaged LocBlockDom(rank, idxType, strides),
+            data: _ddata(eltType),
+            size: int) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.strides = strides;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myBlock.buildArrayWith(eltType, data, size);
+  }
+
   // guard against dynamic dispatch resolution trying to resolve
   // write()ing out an array of sync vars and hitting the sync var
   // type's compilerError()
@@ -935,6 +950,46 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
                                             locDomsElt,
                                             initElts=initElts);
+      locArrTempElt = LBA;
+      if here.id == creationLocale then
+        myLocArrTemp = LBA;
+    }
+  }
+  delete dummyLBA, dummyLBD;
+
+  var arr = new unmanaged BlockArr(eltType=eltType, rank=rank, idxType=idxType,
+       strides=strides, sparseLayoutType=sparseLayoutType,
+       dom=_to_unmanaged(dom), locArr=locArrTemp, myLocArr=myLocArrTemp);
+
+  // formerly in BlockArr.setup()
+  if arr.doRADOpt && disableBlockLazyRAD then arr.setupRADOpt();
+
+  return arr;
+}
+
+proc BlockDom.dsiBuildArrayThrowing(type eltType, size: int) throws {
+  const dom = this;
+  const creationLocale = here.id;
+  const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
+  const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
+                                             strides, dummyLBD, false);
+  var locArrTemp: [dom.dist.targetLocDom]
+        unmanaged LocBlockArr(eltType, rank, idxType, strides) = dummyLBA;
+  var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, strides)?;
+
+  // formerly in BlockArr.setup()
+  coforall (loc, locDomsElt, locArrTempElt)
+           in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
+           with (ref myLocArrTemp) {
+    on loc {
+      var what = false;
+      var data = _ddata_allocate_noinit(eltType, size, what);
+
+      if data == nil then
+        throw new Error("Could not allocate memory");
+      
+      const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, strides,
+                                            locDomsElt, data=data, size=size);
       locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
