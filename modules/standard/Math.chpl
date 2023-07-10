@@ -394,7 +394,7 @@ module Math {
     return chpl_divceilpos(m, n);
   }
 
-  /* Returns :proc:`floor`\(`m`/`n`),
+  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -403,7 +403,7 @@ module Math {
   proc divfloor(param m: integral, param n: integral) param do return
     chpl_divfloor(m, n);
 
-  /* Returns :proc:`floor`\(`m`/`n`),
+  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
