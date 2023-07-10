@@ -880,8 +880,9 @@ if ($runtests == 0) {
 # FIXME: Pass correct args here!
      print "Got here .. calling nightly email \n";
    
-  my $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-   print "Did the test pass .. $passed \n";
+  # my $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
+   my $passed = mysystem(`$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`);
+   print "\n \n _____________   Did the test pass .. $passed \n";
 #
 # analyze memory leaks tests
 #
@@ -906,7 +907,7 @@ if ($runtests == 0) {
         mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
-if ($passed == 1) {
+if ($passed != 0) {
     print "Failed \n";
 exit 1;
 }
