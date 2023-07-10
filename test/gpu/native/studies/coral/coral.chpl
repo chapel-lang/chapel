@@ -157,8 +157,17 @@ proc main(args: [] string) {
       // Create Block distribution of interior of PNG
       const offset = nx+1; // maybe needs to be +1 to account for truncation?
       const Inner = ImageSpace.expand(-offset);
+
+      /*
+
+      The code below can be used to use multiple locales. It is something
+      that existed in the original implementation, so we are keeping it for
+      now.
+       
       const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
       const D = Inner dmapped Block(Inner, targetLocales=myTargetLocales);
+
+      */
       var OutputArray : [Inner] real(64); // D
 
       const locArrayDomain = Array.domain;
