@@ -55,13 +55,7 @@ Roots
 Rounding
 --------
 :proc:`ceil`
-:proc:`divceil`
-:proc:`divceilpos`
-:proc:`divfloor`
-:proc:`divfloorpos`
 :proc:`floor`
-:proc:`nearbyint`
-:proc:`rint`
 :proc:`round`
 :proc:`trunc`
 

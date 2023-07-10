@@ -96,6 +96,17 @@ Exponential Functions
 :proc:`expm1`
 :proc:`ldexp`
 
+.. _math-rounding:
+
+Rounding
+--------
+:proc:`divceil`
+:proc:`divceilpos`
+:proc:`divfloor`
+:proc:`divfloorpos`
+:proc:`nearbyint`
+:proc:`rint`
+
 .. _math-gamma:
 
 Gamma Functions
