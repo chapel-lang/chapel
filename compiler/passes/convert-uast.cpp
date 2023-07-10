@@ -191,6 +191,7 @@ struct Converter {
   Type* convertClassType(const types::QualifiedType qt);
   Type* convertCPtrType(const types::QualifiedType qt);
   Type* convertEnumType(const types::QualifiedType qt);
+  Type* convertExternType(const types::QualifiedType qt);
   Type* convertFunctionType(const types::QualifiedType qt);
   Type* convertBasicClassType(const types::QualifiedType qt);
   Type* convertRecordType(const types::QualifiedType qt);
@@ -3971,6 +3972,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     // declared types
     case typetags::ClassType:   return convertClassType(qt);
     case typetags::EnumType:   return convertEnumType(qt);
+    case typetags::ExternType:   return convertExternType(qt);
     case typetags::FunctionType:   return convertFunctionType(qt);
 
     case typetags::ArrayType: return dtUnknown;
@@ -4023,6 +4025,11 @@ Type* Converter::convertClassType(const types::QualifiedType qt) {
 }
 
 Type* Converter::convertEnumType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertExternType(const types::QualifiedType qt) {
   INT_FATAL("not implemented yet");
   return nullptr;
 }
