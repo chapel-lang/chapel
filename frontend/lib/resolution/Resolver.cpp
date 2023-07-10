@@ -2632,17 +2632,23 @@ bool Resolver::enter(const NamedDecl* decl) {
 
   enterScope(decl);
 
+  // This logic exists to prioritize the field's type expression when
+  // resolving a field's type. If the type expression is concrete, then we
+  // do not need to resolve the init-expression. This is beneficial in cases
+  // where the init-expression would otherwise result in recursive resolution.
+  //
   // TODO: Initializers will need to check the compatibility of the type
   // expression and initialization expression.
   if (!scopeResolveOnly && fieldTypesOnly && decl == curStmt) {
     auto field = decl->toVarLikeDecl();
     if (field->typeExpression() != nullptr &&
+        field->initExpression() != nullptr &&
         field->storageKind() != Qualifier::TYPE &&
         field->storageKind() != Qualifier::PARAM) {
       field->typeExpression()->traverse(*this);
       auto res = byPostorder.byAst(field->typeExpression());
       auto g = getTypeGenericity(context, res.type().type());
-      if (g != Type::CONCRETE && field->initExpression() != nullptr) {
+      if (g != Type::CONCRETE) {
         field->initExpression()->traverse(*this);
       }
       return false;
