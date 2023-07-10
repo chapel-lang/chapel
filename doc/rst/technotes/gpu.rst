@@ -254,6 +254,12 @@ tests where access to GPUs may be limited. In this mode:
   ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
   will be created per locale.
 
+* Inner loops in loop nests that consist of GPU-eligible loops will be reported
+  as kernel launch whereas in regular GPU modes, such loops will not be launched
+  as a kernel as the execution will already be on the GPU. This may cause in
+  increased kernel launches reported by the :mod:`GpuDiagnostics` utilities with
+  loop nests and multidimensional loops.
+
 .. warning::
 
   This mode should not be used for performance studies. Application correctness
