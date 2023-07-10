@@ -9,4 +9,3 @@ export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="host-jemalloc"
 
 $CWD/nightly -cron -hellos ${nightly_args}
-exit 1
