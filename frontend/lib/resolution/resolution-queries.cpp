@@ -2580,7 +2580,7 @@ static const Type* getCPtrType(Context* context,
       }
       useGenericType = true;
     } else {
-      // handle c_ptr(?t) or int(eltT)
+      // handle c_ptr(?t) or c_ptr(eltT)
       if (ci.numActuals() != 1) {
         context->error(astForErr, "invalid c_ptr type construction");
         return ErroneousType::get(context);
