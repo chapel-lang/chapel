@@ -295,6 +295,17 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto externBlockId = std::get<ID>(info);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
+  wr.heading(kind_, type_, externBlockId,
+             "running clang on extern block failed",
+             (errors.size() > 0 ? " -- clang errors follow" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, error.second);
+  }
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
   const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
