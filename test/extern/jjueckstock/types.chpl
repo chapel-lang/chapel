@@ -34,7 +34,7 @@ module OuterModule {
   var strct: C.my_struct = new my_struct(42, c_ptrToConst_helper("bar"):c_string);
   writeln(strct.foo);
   try {
-    writeln(string.createCopyingBuffer(strct.bar:c_ptrConst(c_uchar)));
+    writeln(string.createCopyingBuffer(strct.bar:c_ptrConst(c_char)));
   }
   catch e: DecodeError {
     writeln("Decode error creating string");

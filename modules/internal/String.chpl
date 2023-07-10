@@ -57,12 +57,12 @@ module String {
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
-                                          buf:c_ptrConst(c_uchar),
+                                          buf:c_ptrConst(c_char),
                                           buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                               ref nbytes:c_int,
-                                              buf:c_ptrConst(c_uchar),
+                                              buf:c_ptrConst(c_char),
                                               buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
   private extern proc qio_encode_char_buf(dst:c_ptr(void), chr:int(32)):errorCode;
@@ -2642,7 +2642,7 @@ module String {
   @chpldoc.nodoc
   operator :(cs: c_string, type t: string)  {
     try {
-      return string.createCopyingBuffer(cs:c_ptrConst(c_uchar));
+      return string.createCopyingBuffer(cs:c_ptrConst(c_char));
     }
     catch {
       halt("Casting a non-UTF-8 c_string to string");

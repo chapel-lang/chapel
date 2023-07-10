@@ -1436,19 +1436,6 @@ void Visitor::visit(const CStringLiteral* node) {
   checkCStringLiteral(node);
 }
 
-// Duplicate the contents of 'idIsInBundledModule', while skipping the
-// call to 'filePathForId', because at this point the `setFilePathForId`
-// setter query may not have been run yet.
-bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
-  UniqueString modules = chpl::parsing::bundledModulePath(context);
-  if (modules.isEmpty()) return true;
-  // check for internal module paths
-  if (parsing::filePathIsInInternalModule(context, filepath)) return false;
-  // check for standard module paths
-  if (parsing::filePathIsInStandardModule(context, filepath)) return false;
-  bool ret = !filepath.startsWith(modules);
-  return ret;
-}
 
 } // end anonymous namespace
 

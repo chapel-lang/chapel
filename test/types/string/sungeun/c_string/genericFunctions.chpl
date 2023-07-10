@@ -61,7 +61,7 @@ var vs: string;
 // s should be c_string for these
 {
   proc g(s) {
-    checkType(c_ptrConst(c_uchar), s.type);
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   g(c_ptrToConst_helper(vs));
@@ -73,7 +73,7 @@ var vs: string;
 {
   proc f(type gtype, g, s) {
     checkType(gtype, g.type);
-    checkType(c_ptrConst(c_uchar), s.type);
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   f(int, 3, c_ptrToConst_helper(vs));
@@ -85,7 +85,7 @@ var vs: string;
 {
   proc f(s, type gtype, g = 3.14) {
     checkType(gtype, g.type);
-    checkType(c_ptrConst(c_uchar), s.type);
+    checkType(c_ptrConst(c_char), s.type);
   }
 
   f(c_ptrToConst_helper(vs), real);

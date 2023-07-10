@@ -274,11 +274,11 @@ module unitTest {
   }
 
   proc concat_c_ptr0(type t, useExpr=false) {
-    writeln("=== concat: string + c_ptrConst(c_uchar)");
+    writeln("=== concat: string + c_ptrConst(c_char)");
     const m0 = allMemoryUsed();
     {
       const s: t = "s";
-      const cs: c_ptrConst(c_uchar) = c_ptrToConst_helper("0");
+      const cs: c_ptrConst(c_char) = c_ptrToConst_helper("0");
       try! {
         if useExpr {
           writeMe(s+string.createCopyingBuffer(cs));
@@ -292,10 +292,10 @@ module unitTest {
   }
 
   proc concat_c_ptr1(type t, useExpr=false) {
-    writeln("=== concat: c_ptrConst(c_uchar) + string");
+    writeln("=== concat: c_ptrConst(c_char) + string");
     const m0 = allMemoryUsed();
     {
-      const cs: c_ptrConst(c_uchar) = c_ptrToConst_helper("s");
+      const cs: c_ptrConst(c_char) = c_ptrToConst_helper("s");
       const s: t = "0";
       try! {
         if useExpr {
@@ -310,12 +310,12 @@ module unitTest {
   }
 
   proc concat_c_ptr2(type t, useExpr=false) {
-    writeln("=== concat: remote string + c_ptrConst(c_uchar)");
+    writeln("=== concat: remote string + c_ptrConst(c_char)");
     const m0 = allMemoryUsed();
     {
       const s: t = "s";
       on Locales[numLocales-1] {
-        const cs: c_ptrConst(c_uchar) = c_ptrToConst_helper("r");
+        const cs: c_ptrConst(c_char) = c_ptrToConst_helper("r");
         try! {
           if useExpr {
             writeMe(s+string.createCopyingBuffer(cs));
@@ -330,12 +330,12 @@ module unitTest {
   }
 
   proc concat_c_ptr3(type t, useExpr=false) {
-    writeln("=== concat: c_ptrConst(c_uchar) + remote string");
+    writeln("=== concat: c_ptrConst(c_char) + remote string");
     const m0 = allMemoryUsed();
     {
       const s: t = "0";
       on Locales[numLocales-1] {
-        const cs: c_ptrConst(c_uchar) = c_ptrToConst_helper("s");
+        const cs: c_ptrConst(c_char) = c_ptrToConst_helper("s");
         try! {
           if useExpr {
             writeMe(string.createCopyingBuffer(cs)+s);

@@ -34,7 +34,7 @@ use Regex;
 
 /* Gets environment variables for spawn commands */
 proc getEnv(name: string): string {
-  extern proc getenv(name : c_ptrConst(c_uchar)) : c_ptrConst(c_uchar);
+  extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
   var cname = c_ptrToConst_helper(name);
   var value = getenv(cname);
   return string.createCopyingBuffer(value);
@@ -427,7 +427,7 @@ extern "struct timespec" record chpl_timespec {
 proc getLastModified(filename: string) : int {
   use CTypes;
 
-  extern proc sys_stat(filename: c_ptrConst(c_uchar), ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = c_ptrToConst_helper(filename);

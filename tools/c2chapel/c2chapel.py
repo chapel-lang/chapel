@@ -43,7 +43,7 @@ try:
     from pycparser import c_parser, c_ast, parse_file
     from pycparserext import ext_c_parser
 except ImportError as e:
-    sys.exit("Unable to import pycparser: " + str(e));
+    sys.exit("Unable to import pycparser: " + str(e))
 
 import argparse
 import os.path
@@ -216,7 +216,7 @@ def getIntentInfo(ty):
     if type(curType) == c_ast.PtrDecl:
         ptrType = toChapelType(curType)
 
-    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
+    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "unsigned char") or isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
         if ptrType and "const" in curType.type.quals:
             refIntent = "const "
         refIntent += "ref"
@@ -239,7 +239,7 @@ def computeArgs(pl):
     for (i, arg) in enumerate(pl.params):
         if type(arg) == c_ast.EllipsisParam:
             formals.append(VARARGS_STR)
-            ptrFormals.append(VARARGS_STR);
+            ptrFormals.append(VARARGS_STR)
         else:
             (intent, typeName, ptrTypeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
@@ -271,9 +271,9 @@ def isPointerTo(ty, text):
 def toChapelType(ty):
     if isPointerTo(ty, "char"):
         if "const" in ty.type.quals:
-            return "c_ptrConst(" + "c_uchar" + ")"
+            return "c_ptrConst(" + "c_char" + ")"
         else:
-            return "c_ptr(" + "c_uchar" + ")"
+            return "c_ptr(" + "c_char" + ")"
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
         eltType = toChapelType(ty.type)
         if eltType is not None:
@@ -533,7 +533,7 @@ def genTypedefs(defs):
                     isUnion = isinstance(node.type.type, c_ast.Union)
                     structOrUnion = "union" if isUnion else "struct"
                     genComment("Opaque " + structOrUnion + "?")
-                    gen = "extern union " if isUnion else "extern record ";
+                    gen = "extern union " if isUnion else "extern record "
                     gen += name + " {};\n"
                     print(gen)
                 else:

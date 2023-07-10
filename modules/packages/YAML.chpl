@@ -1356,8 +1356,8 @@ module YAML {
       var minor: c_int;
     }
     extern record yaml_tag_directive_t {
-      var handle: c_ptrConst(c_uchar);
-      var prefix: c_ptrConst(c_uchar);
+      var handle: c_ptrConst(c_char);
+      var prefix: c_ptrConst(c_char);
     }
 
     // ----------------------------------------------------
@@ -1891,7 +1891,7 @@ module YAML {
     // Filesystem stuff
     // ----------------------------------------------------
 
-    private extern proc fopen(filename: c_ptrConst(c_uchar), mode: c_ptrConst(c_uchar)): c_ptr(c_FILE);
+    private extern proc fopen(filename: c_ptrConst(c_char), mode: c_ptrConst(c_char)): c_ptr(c_FILE);
     private extern proc fclose(file: c_ptr(c_FILE)): c_int;
     private extern proc fseek(file: c_ptr(c_FILE), offset: c_long, origin: c_int): c_int;
     private extern proc tmpfile(): c_ptr(c_FILE);

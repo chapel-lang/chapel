@@ -3,5 +3,5 @@ unhandledType.chpl:3: warning: the type 'c_string' is deprecated; use the varian
 unhandledType.chpl:2: warning: Unknown Fortran KIND generating interface for C type: c_string
 unhandledType.chpl:2: warning: Unknown Fortran type generating interface for C type: c_string
 unhandledType.chpl:6: In function 'takesCptr':
-unhandledType.chpl:6: warning: Unknown Fortran KIND generating interface for C type: c_ptrConst_uint8_t_chpl
-unhandledType.chpl:6: warning: Unknown Fortran type generating interface for C type: c_ptrConst_uint8_t_chpl
+unhandledType.chpl:6: warning: Unknown Fortran KIND generating interface for C type: c_ptrConst_int8_t_chpl
+unhandledType.chpl:6: warning: Unknown Fortran type generating interface for C type: c_ptrConst_int8_t_chpl

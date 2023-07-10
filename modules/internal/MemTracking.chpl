@@ -74,12 +74,12 @@ module MemTracking
   proc chpl_memTracking_returnConfigVals(ref ret_memTrack: bool,
                                          ref ret_memStats: bool,
                                          ref ret_memLeaksByType: bool,
-                                         ref ret_memLeaksByDesc: c_ptrConst(c_uchar),
+                                         ref ret_memLeaksByDesc: c_ptrConst(c_char),
                                          ref ret_memLeaks: bool,
                                          ref ret_memMax: c_size_t,
                                          ref ret_memThreshold: c_size_t,
-                                         ref ret_memLog: c_ptrConst(c_uchar),
-                                         ref ret_memLeaksLog: c_ptrConst(c_uchar)) {
+                                         ref ret_memLog: c_ptrConst(c_char),
+                                         ref ret_memLeaksLog: c_ptrConst(c_char)) {
     ret_memTrack = memTrack;
     ret_memStats = memStats;
     ret_memLeaksByType = memLeaksByType;

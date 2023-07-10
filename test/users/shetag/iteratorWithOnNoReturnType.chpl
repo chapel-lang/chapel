@@ -2,7 +2,7 @@ use CTypes;
 
 config const n = 10;
 
-extern proc printf(fmt:c_ptrConst(c_uchar), x...);
+extern proc printf(fmt:c_ptrConst(c_char), x...);
 
 iter g() {
   var loc = 0;

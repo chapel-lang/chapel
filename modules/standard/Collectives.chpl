@@ -294,7 +294,7 @@ module Collectives {
         const myc = count.fetchSub(1);
         if myc<=1 {
           if hackIntoCommBarrier {
-            extern proc chpl_comm_barrier(msg: c_ptrConst(c_uchar));
+            extern proc chpl_comm_barrier(msg: c_ptrConst(c_char));
             chpl_comm_barrier(c_ptrToConst_helper("local barrier call"));
           }
           const alreadySet = done.testAndSet();

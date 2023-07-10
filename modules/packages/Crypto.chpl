@@ -1276,7 +1276,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
     extern proc CHPL_OpenSSL_add_all_digests();
-    extern proc EVP_get_digestbyname(name: c_ptrConst(c_uchar)): CONST_EVP_MD_PTR;
+    extern proc EVP_get_digestbyname(name: c_ptrConst(c_char)): CONST_EVP_MD_PTR;
 
     extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
@@ -1289,7 +1289,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
     extern proc EVP_sha256(): CONST_EVP_MD_PTR;
 
-    extern proc PKCS5_PBKDF2_HMAC(pass: c_ptrConst(c_uchar),
+    extern proc PKCS5_PBKDF2_HMAC(pass: c_ptrConst(c_char),
                                   passlen: c_int,
                                   const salt: c_ptr(c_uchar),
                                   saltlen: c_int,

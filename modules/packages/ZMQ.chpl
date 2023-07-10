@@ -256,9 +256,9 @@ module ZMQ {
   extern type zmq_msg_t;
 
   // C API
-  private extern proc zmq_bind(sock: c_ptr(void), endpoint: c_ptrConst(c_uchar)): c_int;
+  private extern proc zmq_bind(sock: c_ptr(void), endpoint: c_ptrConst(c_char)): c_int;
   private extern proc zmq_close(ctx: c_ptr(void)): c_int;
-  private extern proc zmq_connect(sock: c_ptr(void), endpoint: c_ptrConst(c_uchar)): c_int;
+  private extern proc zmq_connect(sock: c_ptr(void), endpoint: c_ptrConst(c_char)): c_int;
   private extern proc zmq_ctx_new(): c_ptr(void);
   private extern proc zmq_ctx_term(ctx: c_ptr(void)): c_int;
   private extern proc zmq_errno(): c_int;

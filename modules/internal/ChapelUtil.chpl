@@ -139,7 +139,7 @@ module ChapelUtil {
       compilerError("config variables of atomic type are not supported");
 
     try! {
-      var str = string.createCopyingBuffer(x:c_ptrConst(c_uchar));
+      var str = string.createCopyingBuffer(x:c_ptrConst(c_char));
       if t == string {
         return str;
       } else {
@@ -162,7 +162,7 @@ module ChapelUtil {
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;
     pragma "fn synchronization free"
-    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_uchar);
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_char);
     // This is odd.  Why are the strings inside the array getting destroyed?
     pragma "no auto destroy"
     var array: [0..#local_arg.argc] string;
@@ -181,15 +181,15 @@ module ChapelUtil {
   proc chpl_get_mli_connection(arg: chpl_main_argument) {
     var local_arg = arg;
     pragma "fn synchronization free"
-    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_uchar);
-    var flag: c_ptrConst(c_uchar) = chpl_get_argument_i(local_arg,
+    extern proc chpl_get_argument_i(ref args:chpl_main_argument, i:int(32)):c_ptrConst(c_char);
+    var flag: c_ptrConst(c_char) = chpl_get_argument_i(local_arg,
                                              (local_arg.argc-2): int(32));
     if (flag != "--chpl-mli-socket-loc") {
       try! halt("chpl_get_mli_connection called with unexpected arguments, missing "
            + "'--chpl-mli-socket-loc <connection>', instead got " +
            string.createCopyingBuffer(flag));
     }
-    var result: c_ptrConst(c_uchar) = chpl_get_argument_i(local_arg,
+    var result: c_ptrConst(c_char) = chpl_get_argument_i(local_arg,
                                                (local_arg.argc-1): int(32));
     return result;
   }
@@ -201,7 +201,7 @@ module ChapelUtil {
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
 
-  extern proc allocate_string_literals_buf(s: int): c_ptrConst(c_uchar);
+  extern proc allocate_string_literals_buf(s: int): c_ptrConst(c_char);
   extern proc deallocate_string_literals_buf(): void;
 
   // Support for module deinit functions.
@@ -212,21 +212,21 @@ module ChapelUtil {
   // in compiler/resolution/functionResolution.cpp:resolveSupportForModuleDeinits()
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) {
     chpl_moduleDeinitFuns =
-      new unmanaged chpl_ModuleDeinit(moduleName:c_ptrConst(c_uchar), deinitFun, chpl_moduleDeinitFuns);
+      new unmanaged chpl_ModuleDeinit(moduleName:c_ptrConst(c_char), deinitFun, chpl_moduleDeinitFuns);
   }
 
   export proc chpl_deinitModules() {
-    extern proc printf(fmt:c_ptrConst(c_uchar));
-    extern proc printf(fmt:c_ptrConst(c_uchar), arg:c_ptrConst(c_uchar));
+    extern proc printf(fmt:c_ptrConst(c_char));
+    extern proc printf(fmt:c_ptrConst(c_char), arg:c_ptrConst(c_char));
     extern proc chpl_execute_module_deinit(deinitFun:c_fn_ptr);
 
     if printModuleDeinitOrder then
-      printf(c_ptrToConst_helper("Deinitializing Modules:\n"));
+      printf(("Deinitializing Modules:\n").c_ptr_c_char());
     var prev = chpl_moduleDeinitFuns;
     while prev {
       const curr = prev!;
       if printModuleDeinitOrder then
-        printf(c_ptrToConst_helper("  %s\n"), curr.moduleName);
+        printf(("  %s\n").c_ptr_c_char(), curr.moduleName);
       chpl_execute_module_deinit(curr.deinitFun);
       prev = curr.prevModule;
       delete curr;

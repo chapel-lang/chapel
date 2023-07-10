@@ -1,12 +1,13 @@
 
 use functionGen;
+use CTypes;
 
 proc main() {
   test_ints(1, -42);
 
   test_unsigned(1:uint, 42:uint);
 
-  test_strings("hello world");
+  test_strings("hello world".c_ptr_c_char());
 
   var x = 42;
   writeln("x before = ", x);

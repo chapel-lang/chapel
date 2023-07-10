@@ -5,13 +5,13 @@ var cs: c_string = "this is a c_string";
 
 writeln(b);
 writeln(s);
-writeln(string.createCopyingBuffer(cs:c_ptrConst(c_uchar)));
+writeln(string.createCopyingBuffer(cs:c_ptrConst(c_char)));
 writeln();
 
 // TEST INITIALIZERS
 writeln("Initializer tests");
 var b_from_s = s:bytes;
-var b_from_cs = bytes.createCopyingBuffer(cs:c_ptrConst(c_uchar));
+var b_from_cs = bytes.createCopyingBuffer(cs:c_ptrConst(c_char));
 
 var c_char_arr = allocate(uint(8), 4);
 c_char_arr[0] = 65; //A

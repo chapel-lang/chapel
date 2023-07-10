@@ -51,7 +51,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
   if (dir != nil) {
     ent = readdir(dir);
     while (ent != nil) {
-      const filename = string.createCopyingBuffer(ent.d_name():c_ptrConst(c_uchar));
+      const filename = string.createCopyingBuffer(ent.d_name():c_ptrConst(c_char));
       if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           //

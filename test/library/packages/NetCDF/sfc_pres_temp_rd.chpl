@@ -62,7 +62,7 @@ proc main {
   var ndims_in, nvars_in, ngatts_in, unlimdimid_in: c_int;
 
   /* Open the file. */
-  cdfError(nc_open(filename, NC_NOWRITE, ncid));
+  cdfError(nc_open(c_ptrToConst_helper(filename):c_ptrConst(c_char), NC_NOWRITE, ncid));
 
   /* There are a number of inquiry functions in netCDF which can be
      used to learn about an unknown netCDF file. NC_INQ tells how
@@ -81,8 +81,8 @@ proc main {
 
   /* Get the varids of the latitude and longitude coordinate
      variables. */
-  cdfError(nc_inq_varid(ncid, latName, lat_varid));
-  cdfError(nc_inq_varid(ncid, lonName, lon_varid));
+  cdfError(nc_inq_varid(ncid, c_ptrToConst_helper(latName):c_ptrConst(c_char), lat_varid));
+  cdfError(nc_inq_varid(ncid, c_ptrToConst_helper(lonName):c_ptrConst(c_char), lon_varid));
 
   /* Read the coordinate variable data. */
   cdfError(nc_get_var_float(ncid, lat_varid, latsIn[0]));
@@ -102,8 +102,8 @@ proc main {
 
   /* Get the varids of the pressure and temperature netCDF
      variables. */
-  cdfError(nc_inq_varid(ncid, presName, pres_varid));
-  cdfError(nc_inq_varid(ncid, tempName, temp_varid));
+  cdfError(nc_inq_varid(ncid, c_ptrToConst_helper(presName):c_ptrConst(c_char), pres_varid));
+  cdfError(nc_inq_varid(ncid, c_ptrToConst_helper(tempName):c_ptrConst(c_char), temp_varid));
 
   /* Read the data. Since we know the contents of the file we know
      that the data arrays in this program are the correct size to
@@ -120,28 +120,28 @@ proc main {
         return 2;
       }
 
-  extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_string, p: c_ptr(void)): c_int;
+  extern proc nc_get_att_text_void_ptr(ncid: c_int, varid: c_int, field: c_ptrConst(c_char), p: c_ptr(void)): c_int;
 
   /* Each of the netCDF variables has a "units" attribute. Let's read
      them and check them. */
-  cdfError(nc_get_att_text_void_ptr(ncid, lat_varid, units, latUnitsIn.ptr()));
+  cdfError(nc_get_att_text_void_ptr(ncid, lat_varid, c_ptrToConst_helper(units):c_ptrConst(c_char), latUnitsIn.ptr()));
   if latUnitsIn.ptr(): c_string: string != latUnits {
     writeln("Bad units for latUnits");
     return 2;
   }
 
-  cdfError(nc_get_att_text_void_ptr(ncid, lon_varid, units, lonUnitsIn.ptr()));
+  cdfError(nc_get_att_text_void_ptr(ncid, lon_varid, c_ptrToConst_helper(units):c_ptrConst(c_char), lonUnitsIn.ptr()));
   if lonUnitsIn.ptr(): c_string: string != lonUnits {
     writeln("Bad units for lonUnits");
     return 2;
   }
 
-  cdfError(nc_get_att_text_void_ptr(ncid, pres_varid, units, presUnitsIn.ptr()));
+  cdfError(nc_get_att_text_void_ptr(ncid, pres_varid, c_ptrToConst_helper(units):c_ptrConst(c_char), presUnitsIn.ptr()));
   if presUnitsIn.ptr(): c_string: string != presUnits {
     writeln("Bad units for presUnits");
     return 2;
   }
-  cdfError(nc_get_att_text_void_ptr(ncid, temp_varid, units, tempUnitsIn.ptr()));
+  cdfError(nc_get_att_text_void_ptr(ncid, temp_varid, c_ptrToConst_helper(units):c_ptrConst(c_char), tempUnitsIn.ptr()));
   if tempUnitsIn.ptr(): c_string: string != tempUnits {
     writeln("Bad units for tempUnits");
     return 2;

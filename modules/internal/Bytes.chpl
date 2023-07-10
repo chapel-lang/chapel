@@ -1309,7 +1309,7 @@ module Bytes {
   */
   @deprecated("the type 'c_string' is deprecated")
   operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
-    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_uchar));
+    lhs = bytes.createCopyingBuffer(rhs_c:c_ptrConst(c_char));
   }
 
   //

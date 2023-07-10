@@ -8,7 +8,7 @@ proc rcs() {
   return cs;
 }
 
-checkType(c_ptrConst(c_uchar), rcs().type);
+checkType(c_ptrConst(c_char), rcs().type);
 
 proc rcss():string {
   var s = c_ptrToConst_helper("hi");

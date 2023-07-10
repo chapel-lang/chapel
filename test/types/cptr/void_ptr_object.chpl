@@ -34,12 +34,25 @@ proc main() {
 
 
   // cast c_string to c_ptrConst(c_uchar)
-  var my_cstr_ptrConst = my_cstr:c_ptrConst(c_uchar);
-  assert(my_cstr_ptrConst != mynil);
+  var my_cstr_ptrConst_uchar = my_cstr:c_ptrConst(c_uchar);
+  assert(my_cstr_ptrConst_uchar != mynil);
   // cast c_ptrConst(c_uchar) back to c_string
-  var my_cstr4 = my_cstr_ptrConst:c_string;
+  var my_cstr4 = my_cstr_ptrConst_uchar:c_string;
   assert(my_cstr == my_cstr4);
 
+  // cast c_string to c_ptrConst(c_char)
+  var my_cstr_ptrConst_char = my_cstr:c_ptrConst(c_char);
+  assert(my_cstr_ptrConst_char != mynil);
+  // cast c_ptrConst(c_char) back to c_string
+  var my_cstr5 = my_cstr_ptrConst_char:c_string;
+  assert(my_cstr == my_cstr5);
+
+  // cast c_string to c_ptr(c_char)
+  var my_cstr_ptr_char = my_cstr:c_ptr(c_char);
+  assert(my_cstr_ptr_char != mynil);
+  // cast c_ptr(c_char) back to c_string
+  var my_cstr6 = my_cstr_ptr_char:c_string;
+  assert(my_cstr == my_cstr6);
 
   delete c;
 }

@@ -754,10 +754,10 @@ module OS {
     // Note: O_RSYNC
     // is documented in POSIX but doesn't seem to exist on Mac OS
 
-    extern proc creat(path:c_ptrConst(c_uchar), mode:mode_t = 0):c_int;
-    inline proc open(path:c_ptrConst(c_uchar), oflag:c_int, mode:mode_t = 0:mode_t)
+    extern proc creat(path:c_ptrConst(c_char), mode:mode_t = 0):c_int;
+    inline proc open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t = 0:mode_t)
                   :c_int {
-      extern proc chpl_os_posix_open(path:c_ptrConst(c_uchar), oflag:c_int, mode:mode_t)
+      extern proc chpl_os_posix_open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t)
                     :c_int;
       return chpl_os_posix_open(path, oflag, mode);
     }
@@ -765,17 +765,17 @@ module OS {
     //
     // stdlib.h
     //
-    extern proc getenv(name:c_ptrConst(c_uchar)):c_ptrConst(c_uchar);
-    @deprecated("the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_uchar)' instead")
+    extern proc getenv(name:c_ptrConst(c_char)):c_ptrConst(c_char);
+    @deprecated("the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_char)' instead")
     extern proc getenv(name:c_string):c_ptr(c_char);
 
     //
     // string.h
     //
-    extern proc strerror(errnum:c_int):c_ptrConst(c_uchar);
+    extern proc strerror(errnum:c_int):c_ptrConst(c_char);
     // extern proc strerror(errnum:c_int):c_string;
-    extern proc strlen(s:c_ptrConst(c_uchar)):c_size_t;
-    @deprecated("the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_uchar)' instead")
+    extern proc strlen(s:c_ptrConst(c_char)):c_size_t;
+    @deprecated("the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_char)' instead")
     extern proc strlen(s:c_string):c_size_t;
 
     //
@@ -895,8 +895,8 @@ module OS {
       var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
     }
 
-    extern proc chmod(path:c_ptrConst(c_uchar), mode:mode_t):c_int;
-    extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_uchar),
+    extern proc chmod(path:c_ptrConst(c_char), mode:mode_t):c_int;
+    extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_char),
                                           buf:c_ptr(struct_stat)):c_int;
 
     //
@@ -1549,7 +1549,7 @@ module OS {
   sys_strerror_syserr_str(error
                           : errorCode, out err_in_strerror
                           : c_int)
-      : c_ptrConst(c_uchar);
+      : c_ptrConst(c_char);
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1557,9 +1557,9 @@ module OS {
   private proc quote_string(s:string, len:c_ssize_t) {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
-                                 ptr:c_ptrConst(c_uchar), len:c_ssize_t,
+                                 ptr:c_ptrConst(c_char), len:c_ssize_t,
                                  ref ret:c_ptr(c_uchar), ti: c_ptr(void)): errorCode;
-    extern proc qio_strdup(s: c_ptrConst(c_uchar)): c_ptrConst(c_uchar);
+    extern proc qio_strdup(s: c_ptrConst(c_char)): c_ptrConst(c_char);
 
     var ret: c_ptr(c_uchar);
     // 34 is ASCII double quote

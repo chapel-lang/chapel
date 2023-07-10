@@ -27,11 +27,11 @@ proc main {
 
   /* Create the file. The NC_CLOBBER parameter tells netCDF to
    * overwrite this file, if it already exists. */
-  cdfError(nc_create(c_ptrToConst_helper(filename), NC_CLOBBER, ncid));
+  cdfError(nc_create(c_ptrToConst_helper(filename):c_ptrConst(c_char), NC_CLOBBER, ncid));
 
   /* Define the dimensions. NetCDF will hand back an ID for each. */
-  cdfError(nc_def_dim(ncid, c"x", NX, x_dimid));
-  cdfError(nc_def_dim(ncid, "y", NY, y_dimid));
+  cdfError(nc_def_dim(ncid, c_ptrToConst_helper("x"):c_ptrConst(c_char), NX, x_dimid));
+  cdfError(nc_def_dim(ncid, c_ptrToConst_helper("y"):c_ptrConst(c_char), NY, y_dimid));
 
   /* The dimids array is used to pass the IDs of the dimensions of
    * the variable. */
@@ -40,7 +40,7 @@ proc main {
 
   /* Define the variable. The type of the variable in this case is
    * NC_INT (4-byte integer). */
-  cdfError(nc_def_var(ncid, c"data", NC_INT, NDIMS, dimids[0], varid));
+  cdfError(nc_def_var(ncid, c_ptrToConst_helper("data"):c_ptrConst(c_char), NC_INT, NDIMS, dimids[0], varid));
 
   /* End define mode. This tells netCDF we are done defining
    * metadata. */

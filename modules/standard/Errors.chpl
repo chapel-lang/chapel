@@ -417,7 +417,7 @@ module Errors {
     var nameC: c_string = __primitive("class name by id", cid);
     var nameS: string;
     try! {
-      nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_uchar));
+      nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_char));
     }
     return nameS;
   }
@@ -502,13 +502,13 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_uncaught_error(err: unmanaged Error) {
-    extern proc chpl_error_preformatted(ptr:c_ptrConst(c_uchar));
+    extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
     const myFileC:c_string = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
-      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_uchar));
+      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
     }
     const myLine = __primitive("_get_user_line");
 
@@ -516,7 +516,7 @@ module Errors {
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
-      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_uchar));
+      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
     }
     const thrownLine = err.thrownLine;
 

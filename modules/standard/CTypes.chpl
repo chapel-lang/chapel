@@ -571,12 +571,6 @@ module CTypes {
     return __primitive("cast", t, x);
   }
   @chpldoc.nodoc
-  inline operator c_void_ptr.:(x:c_ptr(void), type t:string) {
-    try! {
-      return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
-    }
-  }
-  @chpldoc.nodoc
   inline operator c_ptr.:(x:c_ptr, type t:string) {
     try! {
       return string.createAdoptingBuffer(__primitive("ref to string", x):c_ptr(c_uchar));
@@ -911,7 +905,7 @@ module CTypes {
   }
 
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_uchar)
+  inline proc c_ptrToConst_helper(const ref s: string): c_ptrConst(c_char)
   {
     if _local == false && s.locale_id != chpl_nodeID then
       halt("Cannot call c_ptrToConst() on a remote string");
@@ -920,11 +914,11 @@ module CTypes {
         return nil;
       }
     }
-    return c_pointer_return_const(s.buff[0]);
+    return c_pointer_return_const(s.buff[0]):c_ptrConst(c_char);
   }
 
   @chpldoc.nodoc
-  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_uchar)
+  inline proc c_ptrToConst_helper(const ref b: bytes): c_ptrConst(c_char)
   {
     if _local == false && b.locale_id != chpl_nodeID then
       halt("Cannot call c_ptrToConst() on a remote bytes");
@@ -933,7 +927,7 @@ module CTypes {
         return nil;
       }
     }
-    return c_pointer_return_const(b.buff[0]);
+    return c_pointer_return_const(b.buff[0]):c_ptrConst(c_char);
   }
 
   @chpldoc.nodoc
@@ -1466,4 +1460,15 @@ module CTypes {
     memset(s, c.safeCast(c_int), n.safeCast(c_size_t));
     return s;
   }
+
+  inline proc string.c_ptr_c_char() : c_ptrConst(c_char) {
+    use BytesStringCommon;
+    return get_c_char_const_ptr_common(this);
+  }
+
+  inline proc bytes.c_ptr_c_char() : c_ptrConst(c_char) {
+    use BytesStringCommon;
+    return get_c_char_const_ptr_common(this);
+  }
+
 }

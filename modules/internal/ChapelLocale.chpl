@@ -328,7 +328,7 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t do return __primitive("_wide_get_locale", this);
 
     proc hostname: string {
-      extern proc chpl_nodeName(): c_ptrConst(c_uchar);
+      extern proc chpl_nodeName(): c_ptrConst(c_char);
       var hname: string;
       on this {
         try! {

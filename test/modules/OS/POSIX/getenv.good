@@ -1,7 +1,7 @@
 getenv.chpl:2: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 getenv.chpl:3: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
-getenv.chpl:2: warning: the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_uchar)' instead
-getenv.chpl:3: warning: the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_uchar)' instead
+getenv.chpl:2: warning: the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_char)' instead
+getenv.chpl:3: warning: the type 'c_string' is deprecated; use the variant of 'getenv' that takes a 'c_ptrConst(c_char)' instead
 expectedValue
 this line is intentionally empty
 expectedValue

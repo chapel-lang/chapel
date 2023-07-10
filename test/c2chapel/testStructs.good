@@ -1,6 +1,3 @@
-testStructs.chpl:13: In function 'main':
-testStructs.chpl:21: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
-testStructs.chpl:22: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 intStruct contents:
 a = 1
 b = 2

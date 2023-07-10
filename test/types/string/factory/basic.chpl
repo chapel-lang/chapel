@@ -121,3 +121,33 @@ cPtrConst[3] = 0:uint(8);
     writeln(sOwned);
   }
 }
+
+writeln();
+
+const cPtrConstChar = allocate(c_char, 4);
+cPtrConstChar[0] = 65:uint(8);
+cPtrConstChar[1] = 66:uint(8);
+cPtrConstChar[2] = 67:uint(8);
+cPtrConstChar[3] = 0:uint(8);
+{
+  // there should be 1 allocate, 2 frees
+  writeln("Initialize from c_ptrConst(c_char)");
+
+  try! {
+    var sNew = string.createCopyingBuffer(cPtrConstChar, length=3, size=4);
+    var sBorrowed = string.createBorrowingBuffer(cPtrConstChar, length=3, size=4);
+    var sOwned = string.createAdoptingBuffer(cPtrConstChar, length=3, size=4);
+
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+
+    cPtrConstChar[1] = 32:uint(8);
+
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+  }
+}
+
+writeln();

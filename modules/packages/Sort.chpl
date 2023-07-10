@@ -3663,7 +3663,7 @@ record DefaultComparator {
    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
    */
 
-  @deprecated(notes="the type 'c_string' is deprecated; use the variant of 'keyPart' that accepts 'c_ptrConst(c_uchar)' instead")
+  @deprecated(notes="the type 'c_string' is deprecated; use the variant of 'keyPart' that accepts 'c_ptrConst(c_char)' instead")
   inline
   proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
     return keyPart(c_ptrToConst_helper(x), i);
@@ -3673,14 +3673,14 @@ record DefaultComparator {
    Default ``keyPart`` method for sorting `c_string`.
    See also `The .keyPart method`_.
 
-   :arg x: the `c_ptrConst(c_uchar)` to sort
+   :arg x: the `c_ptrConst(c_char)` to sort
    :arg i: the part number requested
 
    :returns: ``(0, byte i of string)`` or ``(-1, 0)`` if byte ``i`` is ``0``
    */
 
   inline
-  proc keyPart(x:c_ptrConst(c_uchar), i:int):(int(8), uint(8)) {
+  proc keyPart(x:c_ptrConst(c_char), i:int):(int(8), uint(8)) {
     var ptr = x;
     var byte = ptr[i];
     var section = if byte != 0 then 0:int(8) else -1:int(8);

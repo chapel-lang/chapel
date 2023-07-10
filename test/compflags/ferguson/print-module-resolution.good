@@ -12,26 +12,26 @@ OS
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX.OS
 POSIX
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.POSIX
+Communication
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.ByteBufferHelpers.Communication
+ByteBufferHelpers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.ByteBufferHelpers
+CString
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.NVStringFactory.String.CString
+StringCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.NVStringFactory.String.StringCasts
+String
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.NVStringFactory.String
+NVStringFactory
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.NVStringFactory
+BytesCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.Bytes.BytesCasts
+Bytes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon.Bytes
+BytesStringCommon
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes.BytesStringCommon
 CTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.CTypes
-Communication
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers.Communication
-ByteBufferHelpers
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
-NVStringFactory
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.NVStringFactory
-BytesCasts
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes.BytesCasts
-Bytes
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.Bytes
-BytesStringCommon
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon
-CString
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.CString
-StringCasts
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.StringCasts
-String
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String
 ChplConfig
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig
 ChapelTaskData

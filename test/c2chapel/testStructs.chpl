@@ -18,13 +18,10 @@ proc main() {
   intStruct_print(x);
 
   var y : stringStruct;
-  y.a = c"Hello";
-  y.b = c"World";
+  y.a = "Hello".c_ptr_c_char();
+  y.b = "World".c_ptr_c_char();
   stringStruct_print(y);
 
-  // TODO: Should c2chapel convert c_string to c_ptrConst now or should we
-  // deprecate it and update c2chapel to generate 2 signatures for a cycle
-  // or can we just remove the c_string generation?
   // var yy : stringStruct;
   // yy.a = c_ptrToConst_helper("Hello");
   // yy.b = c_ptrToConst_helper("World");

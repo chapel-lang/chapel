@@ -2,4 +2,4 @@ cStringLiteral.chpl:2: warning: the type 'c_string' is deprecated and with it, C
 cStringLiteral.chpl:2: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 cStringLiteral.chpl:2: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 [domain(1,int(64),one)] c_string
-[domain(1,int(64),one)] c_ptrConst(uint(8))
+[domain(1,int(64),one)] c_ptrConst(int(8))

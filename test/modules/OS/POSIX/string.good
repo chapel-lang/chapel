@@ -1,7 +1,7 @@
 string.chpl:2: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
 string.chpl:3: warning: the type 'c_string' is deprecated and with it, C string literals; use 'c_ptrToConst("string")' or 'c_ptrTo("string")' from the 'CTypes' module instead
-string.chpl:2: warning: the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_uchar)' instead
-string.chpl:3: warning: the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_uchar)' instead
+string.chpl:2: warning: the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_char)' instead
+string.chpl:3: warning: the type 'c_string' is deprecated; use the variant of 'strlen' that takes a 'c_ptrConst(c_char)' instead
 0
 18
 18

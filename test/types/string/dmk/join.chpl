@@ -29,9 +29,9 @@ proc main() {
     if s1c != s2c {
       writeln("Mismatched!");
       writeln("  s1  = ", s1);
-      writeln("  s1c = ", string.createCopyingBuffer(s1c:c_ptrConst(c_uchar)));
+      writeln("  s1c = ", string.createCopyingBuffer(s1c:c_ptrConst(c_char)));
       writeln("  s2  = ", s2);
-      writeln("  s2c = ", string.createCopyingBuffer(s2c:c_ptrConst(c_uchar)));
+      writeln("  s2c = ", string.createCopyingBuffer(s2c:c_ptrConst(c_char)));
     }
   }
 }

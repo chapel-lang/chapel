@@ -363,7 +363,7 @@ proc dirname(path: string): string {
    :rtype: `string`
 */
  proc expandVars(path: string): string {
-  extern proc sys_getenv(name:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):c_int;
+  extern proc sys_getenv(name:c_ptrConst(c_char), ref string_out:c_ptr(c_uchar)):c_int;
 
    var path_p: string = path;
    var varChars: string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_";
@@ -588,7 +588,7 @@ proc normPath(path: string): string {
 */
 proc realPath(path: string): string throws {
   import OS.errorCode;
-  extern proc chpl_fs_realpath(path: c_ptrConst(c_uchar), ref shortened: c_ptr(c_uchar)): errorCode;
+  extern proc chpl_fs_realpath(path: c_ptrConst(c_char), ref shortened: c_ptr(c_uchar)): errorCode;
 
   var res: c_ptr(c_uchar);
   var err = chpl_fs_realpath(c_ptrToConst_helper(unescape(path)), res);

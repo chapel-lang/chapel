@@ -417,13 +417,13 @@ extern const in6addr_loopback:sys_in6_addr_t;
 // external functions for 'sys_sockaddr_t' implementation
 private extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
 private extern proc sys_getsockaddr_family(const ref addr: sys_sockaddr_t):c_int;
-private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptrConst(c_uchar), port: c_uint, family: c_int):c_int;
+private extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptrConst(c_char), port: c_uint, family: c_int):c_int;
 private extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
 private extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
 private extern proc sys_host_sys_sockaddr_t(const ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
 private extern proc sys_port_sys_sockaddr_t(const ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
 private extern proc sys_strerror(error:c_int, ref string_out:c_ptr(c_uchar)):c_int;
-private extern proc sys_readlink(path:c_ptrConst(c_uchar), ref string_out:c_ptr(c_uchar)):c_int;
+private extern proc sys_readlink(path:c_ptrConst(c_char), ref string_out:c_ptr(c_uchar)):c_int;
 
 extern const AF_INET: c_int;
 extern const AF_INET6: c_int;
@@ -462,7 +462,7 @@ extern record sys_sockaddr_t {
                                 `host` and `family`.
   */
   @chpldoc.nodoc
-  proc set(host: c_ptrConst(c_uchar), port: c_uint, family: c_int) throws {
+  proc set(host: c_ptrConst(c_char), port: c_uint, family: c_int) throws {
     var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
     if err_out != 1 {
       throw new IllegalArgumentError("Incompatible Address and Family");
@@ -584,7 +584,7 @@ private extern proc sys_fcntl_long(fd:c_int, cmd:c_int, arg:c_long, ref ret_out:
 private extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):c_int;
 private extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
-private extern proc getaddrinfo(node:c_ptrConst(c_uchar), service:c_ptrConst(c_uchar), ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
+private extern proc getaddrinfo(node:c_ptrConst(c_char), service:c_ptrConst(c_char), ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
 private extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
 private extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;

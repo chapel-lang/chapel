@@ -87,7 +87,7 @@ module BytesStringCommon {
 
   // 2019/8/22 Engin: This proc needs to be inlined to avoid an Intel compiler
   // issue (#448 chapel-private)
-  @deprecated("the type 'c_string' is deprecated; use 'c_ptrConst(c_uchar)' instead")
+  @deprecated("the type 'c_string' is deprecated; use 'c_ptrConst(c_char)' instead")
   inline proc getCStr(const ref x: ?t): c_string {
     assertArgType(t, "getCStr");
     if !compiledForSingleLocale() && x.locale_id != chpl_nodeID then
@@ -96,6 +96,17 @@ module BytesStringCommon {
     var buff: bufferType = x.buff;
     var asCString = __primitive("cast", c_string, buff);
     return asCString;
+  }
+
+
+  inline proc get_c_char_const_ptr_common(const ref x: ?t): c_ptrConst(c_char) {
+    assertArgType(t, "get_c_char_const_ptr_common");
+    if _local == false && x.locale_id != chpl_nodeID then
+      halt("Cannot call .c_ptr_c_char() on a remote " + t:string);
+
+    var buff: bufferType = x.buff;
+    var ptr = c_ptrToConst_helper(x):c_ptrConst(c_char);
+    return ptr;
   }
 
   /*

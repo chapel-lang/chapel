@@ -26,7 +26,7 @@ sync {
 
 use CTypes;
 record myRptr {
-  var base: c_ptrConst(c_uchar);
+  var base: c_ptrConst(c_char);
 }
 
 pragma "init copy fn"

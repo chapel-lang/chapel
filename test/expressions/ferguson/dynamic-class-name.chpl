@@ -3,7 +3,7 @@ proc getNameFromClass(obj:borrowed RootClass) : string
 {
   var cid =  __primitive("getcid", obj);
   var cs: c_string = __primitive("class name by id", cid);
-  var str = string.createCopyingBuffer(cs:c_ptrConst(c_uchar));
+  var str = string.createCopyingBuffer(cs:c_ptrConst(c_char));
   return str;
 }
 

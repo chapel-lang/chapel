@@ -38,14 +38,14 @@ module GPU
   use ChplConfig;
 
   pragma "codegen for CPU and GPU"
-  extern proc chpl_gpu_write(const str : c_ptrConst(c_uchar)) : void;
+  extern proc chpl_gpu_write(const str : c_ptrConst(c_char)) : void;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_printTimeDelta(
-    msg : c_ptrConst(c_uchar), start : uint, stop : uint) : void;
+    msg : c_ptrConst(c_char), start : uint, stop : uint) : void;
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
@@ -120,7 +120,7 @@ module GPU
     To convert to seconds divide by 'gpuClocksPerSec()'
   */
   @chpldoc.nodoc
-  proc gpuPrintTimeDelta(msg : c_ptrConst(c_uchar), start : uint, stop : uint) : void {
+  proc gpuPrintTimeDelta(msg : c_ptrConst(c_char), start : uint, stop : uint) : void {
     chpl_gpu_printTimeDelta(msg, start, stop);
   }
 

@@ -156,7 +156,7 @@ module LocaleModelHelpSetup {
     // current node.  For this reason (as well), the constructor (or
     // at least this setup method) must be run on the node it is
     // intended to describe.
-    extern proc chpl_nodeName(): c_ptrConst(c_uchar);
+    extern proc chpl_nodeName(): c_ptrConst(c_char);
     var _node_name: string;
     try! {
       _node_name = string.createCopyingBuffer(chpl_nodeName());

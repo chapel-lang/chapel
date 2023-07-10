@@ -1,5 +1,5 @@
 use CTypes;
-extern proc return_string_test():c_ptrConst(c_uchar);
+extern proc return_string_test():c_ptrConst(c_char);
 extern proc return_string_arg_test(ref str: c_ptr(c_uchar));
 
 writeln("returned string ", string.createCopyingBuffer(return_string_test()));

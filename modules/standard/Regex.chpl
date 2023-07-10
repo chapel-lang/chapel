@@ -362,8 +362,8 @@ extern record qio_regex_options_t {
 @chpldoc.nodoc
 extern proc qio_regex_null():qio_regex_t;
 private extern proc qio_regex_init_default_options(ref options:qio_regex_options_t);
-private extern proc qio_regex_create_compile(str:c_ptrConst(c_uchar), strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
-private extern proc qio_regex_create_compile_flags(str:c_ptrConst(c_uchar), strlen:int(64), flags:c_ptrConst(c_uchar), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile(str:c_ptrConst(c_char), strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile_flags(str:c_ptrConst(c_char), strlen:int(64), flags:c_ptrConst(c_char), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 @chpldoc.nodoc
 extern proc qio_regex_create_compile_flags_2(str:c_ptr(void), strlen:int(64), flags:c_ptr(void), flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 private extern proc qio_regex_retain(const ref compiled:qio_regex_t);
@@ -377,7 +377,7 @@ private extern proc qio_regex_borrow_pattern(const ref regex:qio_regex_t, ref pa
 extern proc qio_regex_get_ncaptures(const ref regex:qio_regex_t):int(64);
 @chpldoc.nodoc
 extern proc qio_regex_ok(const ref regex:qio_regex_t):bool;
-private extern proc qio_regex_error(const ref regex:qio_regex_t):c_ptrConst(c_uchar);
+private extern proc qio_regex_error(const ref regex:qio_regex_t):c_ptrConst(c_char);
 
 @chpldoc.nodoc
 extern const QIO_REGEX_ANCHOR_UNANCHORED:c_int;
@@ -394,8 +394,8 @@ extern record qio_regex_string_piece_t {
 
 private extern proc qio_regex_string_piece_isnull(ref sp:qio_regex_string_piece_t):bool;
 
-private extern proc qio_regex_match(const ref re:qio_regex_t, text:c_ptrConst(c_uchar), textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, ref submatch:qio_regex_string_piece_t, nsubmatch:int(64)):bool;
-private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(c_uchar), repllen:int(64), text:c_ptrConst(c_uchar), textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_ptr(c_uchar), ref replaced_len:int(64)):int(64);
+private extern proc qio_regex_match(const ref re:qio_regex_t, text:c_ptrConst(c_char), textlen:int(64), startpos:int(64), endpos:int(64), anchor:c_int, ref submatch:qio_regex_string_piece_t, nsubmatch:int(64)):bool;
+private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(c_char), repllen:int(64), text:c_ptrConst(c_char), textlen:int(64), startpos:int(64), endpos:int(64), global:bool, ref replaced:c_ptr(c_uchar), ref replaced_len:int(64)):int(64);
 
 // These two could be folded together if we had a way
 // to check if a default argument was supplied

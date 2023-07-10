@@ -58,17 +58,17 @@ proc main {
   }
 
   /* Create the file. */
-  cdfError(nc_create(c_ptrToConst_helper(filename), NC_CLOBBER, ncid));
+  cdfError(nc_create(c_ptrToConst_helper(filename):c_ptrConst(c_char), NC_CLOBBER, ncid));
 
   /* Define the dimensions. */
-  cdfError(nc_def_dim(ncid, latName, nlat, latDimId));
-  cdfError(nc_def_dim(ncid, lonName, nlon, lonDimId));
+  cdfError(nc_def_dim(ncid, c_ptrToConst_helper(latName):c_ptrConst(c_char), nlat, latDimId));
+  cdfError(nc_def_dim(ncid, c_ptrToConst_helper(lonName):c_ptrConst(c_char), nlon, lonDimId));
 
   /* Define coordinate netCDF variables.  They will hold the
      coordinate information, that is, the latitudes and longitudes. A
      varid is returned for each. */
-  cdfError(nc_def_var(ncid, latName, NC_FLOAT, 1, latDimId, latVarId));
-  cdfError(nc_def_var(ncid, lonName, NC_FLOAT, 1, lonDimId, lonVarId));
+  cdfError(nc_def_var(ncid, c_ptrToConst_helper(latName):c_ptrConst(c_char), NC_FLOAT, 1, latDimId, latVarId));
+  cdfError(nc_def_var(ncid, c_ptrToConst_helper(lonName):c_ptrConst(c_char), NC_FLOAT, 1, lonDimId, lonVarId));
 
   /* Define units attributes for coordinate vars. This attaches a
      text attribute to each of the coordinate variables, containing
@@ -77,26 +77,26 @@ proc main {
      not use null-terminated strings. In general it is up to the
      reading C program to ensure that it puts null-terminators on
      strings where necessary. */
-  cdfError(nc_put_att_text(ncid, latVarId, units,
-                           degNorth.numBytes, c_ptrToConst_helper(degNorth)));
-  cdfError(nc_put_att_text(ncid, lonVarId, units,
-                           degEast.numBytes, c_ptrToConst_helper(degEast)));
+  cdfError(nc_put_att_text(ncid, latVarId, c_ptrToConst_helper(units):c_ptrConst(c_char),
+                           degNorth.numBytes, c_ptrToConst_helper(degNorth):c_ptrConst(c_char)));
+  cdfError(nc_put_att_text(ncid, lonVarId, c_ptrToConst_helper(units):c_ptrConst(c_char),
+                           degEast.numBytes, c_ptrToConst_helper(degEast):c_ptrConst(c_char)));
 
   /* Define the netCDF variables. The dimids array is used to pass
      the dimids of the dimensions of the variables. */
   dimids[0] = latDimId;
   dimids[1] = lonDimId;
 
-  cdfError(nc_def_var(ncid, presName, NC_FLOAT,
+  cdfError(nc_def_var(ncid, c_ptrToConst_helper(presName):c_ptrConst(c_char), NC_FLOAT,
                       ndims, dimids[0], presVarId));
-  cdfError(nc_def_var(ncid, tempName, NC_FLOAT,
+  cdfError(nc_def_var(ncid, c_ptrToConst_helper(tempName):c_ptrConst(c_char), NC_FLOAT,
                       ndims, dimids[0], tempVarId));
 
   /* Define units attributes for vars. */
-  cdfError(nc_put_att_text(ncid, presVarId, c_ptrToConst_helper(units),
-                           presUnits.numBytes:c_size_t, c_ptrToConst_helper(presUnits)));
-  cdfError(nc_put_att_text(ncid, tempVarId, c_ptrToConst_helper(units),
-                           tempUnits.numBytes:c_size_t, c_ptrToConst_helper(tempUnits)));
+  cdfError(nc_put_att_text(ncid, presVarId, c_ptrToConst_helper(units):c_ptrConst(c_char),
+                           presUnits.numBytes:c_size_t, c_ptrToConst_helper(presUnits):c_ptrConst(c_char)));
+  cdfError(nc_put_att_text(ncid, tempVarId, c_ptrToConst_helper(units):c_ptrConst(c_char),
+                           tempUnits.numBytes:c_size_t, c_ptrToConst_helper(tempUnits):c_ptrConst(c_char)));
 
   /* End define mode. */
   cdfError(nc_enddef(ncid));

@@ -731,7 +731,7 @@ module MPI {
   private module C_Env {
     use CTypes;
     // Helper routines to access the environment
-    extern proc getenv(name : c_ptrConst(c_uchar)) : c_ptrConst(c_uchar);
-    extern proc setenv(name : c_ptrConst(c_uchar), envval : c_ptrConst(c_uchar), overwrite : c_int) : c_int;
+    extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+    extern proc setenv(name : c_ptrConst(c_char), envval : c_ptrConst(c_char), overwrite : c_int) : c_int;
   }
 }
