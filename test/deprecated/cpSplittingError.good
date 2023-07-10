@@ -1,0 +1,2 @@
+cpSplittingError.chpl:5: warning: CodepointSplittingError is deprecated; please use CodepointSplitError instead
+Attempting to split a multi-byte codepoint. Byte-based string slice is not aligned to codepoint boundaries. The byte at low boundary 27 is not the first byte of a UTF-8 codepoint

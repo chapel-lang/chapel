@@ -415,7 +415,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -439,7 +440,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -488,7 +490,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -514,7 +517,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -547,7 +551,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -570,7 +575,8 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
     :returns: A new `string`
   */
@@ -595,7 +601,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -620,7 +627,8 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: Throws a :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
      :returns: A new `string`
   */
@@ -670,8 +678,8 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws DecodeError: if `decodePolicy.strict` is passed to the `policy`
-            argument and `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -698,8 +706,8 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-             argument and `x` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
     :returns: A new `string`
   */
@@ -733,7 +741,8 @@ module String {
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: a :class:`~Errors.DecodeError` if `x` contains non-UTF-8
+       characters.
 
      :returns: A new `string`
   */
@@ -765,7 +774,8 @@ module String {
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: a :class:`~Errors.DecodeError` if `x` contains non-UTF-8
+       characters.
 
      :returns: A new `string`
   */
@@ -1619,8 +1629,8 @@ module String {
 
     :arg r: range of the indices the new string should be made from
 
-    :throws CodepointSplittingError: if slicing results in splitting a
-            multi-byte codepoint.
+    :throws: throws a :class:`~Errors.CodepointSplitError`: if slicing results
+      in splitting a multi-byte codepoint.
 
     :returns: a new string that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.

@@ -895,8 +895,9 @@ module Bytes {
                   - `decodePolicy.escape` escapes each illegal byte with
                     private use codepoints
 
-    :throws DecodeError: if `decodePolicy.strict` is passed to the `policy`
-            argument and the :type:`bytes` contains non-UTF-8 characters.
+    :throws: Throws a :class:`~Errors.DecodeError` if `decodePolicy.strict` is
+      passed to the `policy` argument and the :type:`bytes` contains non-UTF-8
+      characters.
 
     :returns: A UTF-8 string.
   */
