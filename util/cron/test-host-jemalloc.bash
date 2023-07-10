@@ -8,4 +8,11 @@ source $CWD/common.bash
 export CHPL_HOST_MEM="jemalloc"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="host-jemalloc"
 
-$CWD/nightly -cron -hellos ${nightly_args}
+$result = $CWD/nightly -cron -hellos ${nightly_args}
+if [ $result -ne 0 ]
+then
+      echo "Test failed " 
+      exit 1
+else
+      echo "Test suceeded"
+fi
