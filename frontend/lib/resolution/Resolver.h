@@ -63,6 +63,7 @@ struct Resolver {
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
+  bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
