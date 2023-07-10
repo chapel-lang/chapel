@@ -908,11 +908,11 @@ if ($runtests == 0) {
     }
 }
 if ($passed != 0) {
-    print "Failed \n";
+    print "$passed Failed \n";
 exit 1;
 }
 else{
-     print "Passed \n";
+     print "----- $passed Passed \n";
 exit 0;
 }    
 
