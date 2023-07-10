@@ -23,7 +23,7 @@ proc testBulkComm(srcDom, dstDom) {
     }
   }
 
-  var Dst: [dstDom] c_array(int, 3);
+  var Dst: [dstDom] c_array(int, cArrSize);
 
   startCommDiagnostics();
   Dst = Src;
