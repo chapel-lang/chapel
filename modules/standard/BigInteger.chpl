@@ -558,8 +558,8 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
-  inline operator :(src: bool, type toType: bigint): bigint throws {
-    return new bigint(src:int);
+  inline operator :(x: bool, type t: bigint): bigint throws {
+    return new bigint(x:int);
   }
 
   @chpldoc.nodoc
