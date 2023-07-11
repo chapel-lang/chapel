@@ -2972,7 +2972,25 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
-        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
+
+        // but arrange for e.g. var x: range to use var x: range()
+        // TODO: why doesn't the resolver handle this?
+        Expr* typeExpr = defExpr->exprType->remove();
+        if (SymExpr* se = toSymExpr(typeExpr)) {
+          if (isTypeSymbol(se->symbol())) {
+            AggregateType* at = nullptr;
+            Type* t = se->typeInfo();
+            if (DecoratedClassType* dct = toDecoratedClassType(t))
+              at = dct->getCanonicalClass();
+            else
+              at = toAggregateType(t);
+
+            if (at != nullptr && at->isGenericWithDefaults())
+              typeExpr = new CallExpr(se->symbol());
+          }
+        }
+
+        defExpr->insertAfter(new CallExpr(PRIM_MOVE, tt, typeExpr));
         defExpr->insertAfter(def);
 
         typeTemp = tt;
