@@ -13667,13 +13667,15 @@ static bool primInitIsUnacceptableGeneric(CallExpr* call, Type* type) {
   // If it is generic then try to resolve the default type constructor
   // for better error reporting.
   if (AggregateType* at = toAggregateType(canonicalDecoratedClassType(type))) {
-    SET_LINENO(call);
-    CallExpr* typeCall = new CallExpr(at->symbol);
-    call->replace(typeCall);
+    if (at->isGenericWithDefaults()) {
+      SET_LINENO(call);
+      CallExpr* typeCall = new CallExpr(at->symbol);
+      call->replace(typeCall);
 
-    retval = (tryResolveCall(typeCall) == NULL);
+      retval = (tryResolveCall(typeCall) == NULL);
 
-    typeCall->replace(call);
+      typeCall->replace(call);
+    }
   }
 
   return retval;
