@@ -3541,6 +3541,40 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   }
 }
 
+static void warnForCallConcreteType(CallExpr* call, Type* t) {
+  AggregateType* at = nullptr;
+  Type* callTypeExpr = call->baseExpr->getValType();
+  if (DecoratedClassType* dct = toDecoratedClassType(callTypeExpr))
+    at = dct->getCanonicalClass();
+  else
+    at = toAggregateType(callTypeExpr);
+
+  bool onlyQuestionMarkArg = false;
+  if (call && call->numActuals() == 1)
+    if (SymExpr* se = toSymExpr(call->get(1)))
+      if (se->symbol() == gUninstantiated)
+        onlyQuestionMarkArg = true;
+
+  if (at != nullptr && at->isGenericWithSomeDefaults() &&
+      t->symbol->hasFlag(FLAG_GENERIC) && !onlyQuestionMarkArg) {
+    USR_WARN(call, "unstable type construction with some generic defaults");
+    USR_PRINT(at, "this type construction might ignore field defaults in the type declared here  but that may change");
+  } else if (at != nullptr && call->numActuals() == 0) {
+    if (at->isGenericWithDefaults()) {
+      // it's OK; e.g. range() means use the defaults
+    } else {
+      gdbShouldBreakHere();
+      USR_WARN(call, "unnecessary type construction call");
+      const char* typeExprStr = toString(at, /* decorate classes */ false);
+      if (at->isGeneric()) {
+        USR_PRINT(at, "'%s' is generic without defaults", typeExprStr);
+      } else {
+        USR_PRINT(at, "'%s' has no generic fields", typeExprStr);
+      }
+      USR_PRINT(call, "remove the ()");
+    }
+  }
+}
 
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
@@ -3603,6 +3637,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       }
     }
     warnForPartialInstantiationNoQ(call, ret);
+    warnForCallConcreteType(call, ret);
   }
 
   if (ret != NULL) {
