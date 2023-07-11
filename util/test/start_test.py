@@ -1595,6 +1595,12 @@ class FileHandlerWithException(logging.FileHandler):
         logging.FileHandler.handleError(self, record)
         raise OSError("fatal error, logging.FileHandler")
 
+    def emit(self, record):
+        record.msg = re.sub('\033\\[\\d+m', '', record.msg)
+        logging.FileHandler.emit(self, record)
+
+
+
 class CommandError(Exception):
     def __init__(self, retcode, cmd, output=None):
         self.retcode = retcode
