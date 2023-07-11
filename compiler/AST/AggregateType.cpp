@@ -1021,13 +1021,23 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   if (isBlockStmt(expr) == false) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
     expr->replace(block);
+    bool callTypeCtor = false;
+
     if (isSymExpr(expr) && toSymExpr(expr)->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
         expr->typeInfo()->symbol->hasFlag(FLAG_GENERIC) &&
         isPrimitiveType(expr->typeInfo()) == false) {
+
+      AggregateType* at = toAggregateType(canonicalClassType(expr->typeInfo()));
+      if (at != nullptr)
+        callTypeCtor = at->isGenericWithDefaults();
+    }
+
+    if (callTypeCtor) {
       block->insertAtTail(new CallExpr(expr->typeInfo()->symbol));
     } else {
       block->insertAtTail(expr);
     }
+
     normalize(block);
     expr = block;
     if (CallExpr* last = toCallExpr(block->body.tail)) {
