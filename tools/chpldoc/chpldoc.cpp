@@ -1515,6 +1515,15 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
+    visitChildren(e);
+    return getResult(true);
+  }
+
+  owned<RstResult> visit(const EnumElement* e) {
+    debuggerBreakHere();
+    if (isNoDoc(e)) return {};
+    indentDepth_++;
+    show("enum element", e);
     return getResult();
   }
 
@@ -1881,6 +1890,7 @@ struct CommentVisitor {
 
   DEF_ENTER(Module, true)
   DEF_ENTER(TypeDecl, true)
+  DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
 
