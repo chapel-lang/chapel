@@ -3542,23 +3542,26 @@ static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
 }
 
 static void warnForCallConcreteType(CallExpr* call, Type* t) {
-  AggregateType* at = nullptr;
   Type* callTypeExpr = call->baseExpr->getValType();
-  if (DecoratedClassType* dct = toDecoratedClassType(callTypeExpr))
-    at = dct->getCanonicalClass();
-  else
-    at = toAggregateType(callTypeExpr);
+  AggregateType* at = toAggregateType(canonicalClassType(callTypeExpr));
 
-  bool onlyQuestionMarkArg = false;
-  if (call && call->numActuals() == 1)
-    if (SymExpr* se = toSymExpr(call->get(1)))
-      if (se->symbol() == gUninstantiated)
-        onlyQuestionMarkArg = true;
+  // ignore generic management for this check
+  t = canonicalClassType(t);
+
+  bool foundQuestionMarkArg = false;
+  for_actuals(actual, call) {
+    if (SymExpr* se = toSymExpr(actual)) {
+      if (se->symbol() == gUninstantiated) {
+        foundQuestionMarkArg = true;
+      }
+    }
+  }
 
   if (at != nullptr && at->isGenericWithSomeDefaults() &&
-      t->symbol->hasFlag(FLAG_GENERIC) && !onlyQuestionMarkArg) {
+      t->symbol->hasFlag(FLAG_GENERIC) && !foundQuestionMarkArg) {
+    gdbShouldBreakHere();
     USR_WARN(call, "unstable type construction with some generic defaults");
-    USR_PRINT(at, "this type construction might ignore field defaults in the type declared here  but that may change");
+    USR_PRINT(at, "this type construction might ignore field defaults in the type declared here but that may change");
   } else if (at != nullptr && call->numActuals() == 0) {
     if (at->isGenericWithDefaults()) {
       // it's OK; e.g. range() means use the defaults
