@@ -558,6 +558,11 @@ module BigInteger {
   }
 
   @chpldoc.nodoc
+  inline operator :(x: bool, type t: bigint): bigint throws {
+    return new bigint(x:int);
+  }
+
+  @chpldoc.nodoc
   inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
