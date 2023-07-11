@@ -8,6 +8,9 @@ sub writeSummary{
 
 #$num_args = $#ARGV + 1;
 $num_args = @_;
+print " ****** Number of arguments ******* @_ ";
+print " ****** Number of arguments ******* $num_args ";
+
 if ($num_args != 16) {
     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
     print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
@@ -15,23 +18,23 @@ if ($num_args != 16) {
     print "         \$endtime \$crontab \$testdirs \$debug\n";
     exit 1;
 }
-
-$status = $ARGV[0];
-$rawsummary = $ARGV[1];
-$sortedsummary = $ARGV[2];
-$prevsummary = $ARGV[3];
-$mailer = $ARGV[4];
-$nochangerecipient = $ARGV[5];
-$recipient = $ARGV[6];
-$subjectid = $ARGV[7];
-$config_name = $ARGV[8];
-$revision = $ARGV[9];
-$rawlog = $ARGV[10];
-$starttime = $ARGV[11];
-$endtime = $ARGV[12];
-$crontab = $ARGV[13];
-$testdirs = $ARGV[14];
-$debug = $ARGV[15];
+my ($rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+# $status = $ARGV[0];
+# $rawsummary = $ARGV[1];
+# $sortedsummary = $ARGV[2];
+# $prevsummary = $ARGV[3];
+# $mailer = $ARGV[4];
+# $nochangerecipient = $ARGV[5];
+# $recipient = $ARGV[6];
+# $subjectid = $ARGV[7];
+# $config_name = $ARGV[8];
+# $revision = $ARGV[9];
+# $rawlog = $ARGV[10];
+# $starttime = $ARGV[11];
+# $endtime = $ARGV[12];
+# $crontab = $ARGV[13];
+# $testdirs = $ARGV[14];
+# $debug = $ARGV[15];
 
 
 # Ensure the "previous" summary exists, e.g. if this is the first run of the
