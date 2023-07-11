@@ -11,7 +11,7 @@ $num_args = @_;
 print " ****** Number of arguments ******* @_ ";
 print " ****** Number of arguments ******* $num_args ";
 
-if ($num_args != 16) {
+if ($num_args != 15) {
     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
     print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
     print "         \$subjectid \$config_name \$revision \$rawlog \$starttime \n";
@@ -19,7 +19,8 @@ if ($num_args != 16) {
     exit 1;
 }
 my ($rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
-# $status = $ARGV[0];
+
+ $status = 0;
 # $rawsummary = $ARGV[1];
 # $sortedsummary = $ARGV[2];
 # $prevsummary = $ARGV[3];
