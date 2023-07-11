@@ -1,5 +1,5 @@
 class D { var x = 1; }
-class C: D { var y = 2; }
+class C: D { var y = 2; type t = int; }
 operator **(d:borrowed D,i:int) do return d.x..i;
 
 write("C(): ");

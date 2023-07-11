@@ -1,2 +1,5 @@
 throwNew.chpl:2: In method 'f':
+throwNew.chpl:3: warning: unnecessary type construction call
+$CHPL_HOME/modules/standard/Errors.chpl:42: note: 'Error' has no generic fields
+throwNew.chpl:3: note: remove the ()
 throwNew.chpl:3: error: Cannot throw a type: 'Error'. Did you forget the keyword 'new'?
