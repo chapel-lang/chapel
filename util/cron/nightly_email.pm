@@ -18,9 +18,9 @@ print " ****** Number of arguments ******* $num_args ";
 #     print "         \$endtime \$crontab \$testdirs \$debug\n";
 #     exit 1;
 # }
-my ($rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
+my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
- $status = 0;
+ #$status = 0;
 # $rawsummary = $ARGV[1];
 # $sortedsummary = $ARGV[2];
 # $prevsummary = $ARGV[3];
