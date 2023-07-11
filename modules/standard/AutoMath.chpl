@@ -55,13 +55,7 @@ Roots
 Rounding
 --------
 :proc:`ceil`
-:proc:`divceil`
-:proc:`divceilpos`
-:proc:`divfloor`
-:proc:`divfloorpos`
 :proc:`floor`
-:proc:`nearbyint`
-:proc:`rint`
 :proc:`round`
 :proc:`trunc`
 
@@ -1032,13 +1026,21 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_divceil and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divceil(param m: integral, param n: integral) param do
+    return chpl_divceil(m, n);
+
+  proc chpl_divceil(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -1046,13 +1048,20 @@ module AutoMath {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divceil and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`ceil`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+
+  proc chpl_divceil(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -1060,25 +1069,41 @@ module AutoMath {
       if isNonnegative(n) then m / n
       else                     (m + n + 1) / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divceilpos
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /*
     A variant of :proc:`divceil` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divceilpos(m: integral, n: integral) {
+    return chpl_divceilpos(m, n);
+  }
+
+  proc chpl_divceilpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divceilpos() accepts only arguments of signed integer types");
     return (m - 1) / n + 1;
   }
 
-
+  // When removing this deprecated function, be sure to remove chpl_divfloor and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divfloor(param m: integral, param n: integral) param do return
+    chpl_divfloor(m, n);
+
+  proc chpl_divfloor(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -1086,13 +1111,20 @@ module AutoMath {
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divfloor and
+  // move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns :proc:`floor`\(`m`/`n`),
      i.e., the fraction `m`/`n` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) do return
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
+
+  proc chpl_divfloor(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -1100,12 +1132,21 @@ module AutoMath {
       if isNonnegative(n) then (m - n + 1) / n
       else                     m / n;
 
+  // When removing this deprecated function, be sure to remove chpl_divfloorpos
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /*
     A variant of :proc:`divfloor` that performs no runtime checks.
     The user must ensure that both arguments are strictly positive
     (not 0) and are of a signed integer type (not `uint`).
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc divfloorpos(m: integral, n: integral) {
+    return chpl_divfloorpos(m, n);
+  }
+
+  proc chpl_divfloorpos(m: integral, n: integral) {
     if !isIntType(m.type) || !isIntType(n.type) then
       compilerError("divfloorpos() accepts only arguments of signed integer types");
     return m / n;
@@ -1948,19 +1989,43 @@ module AutoMath {
   inline proc NAN param : real(64) do return chpl_NAN;
 
 
+  // When removing this deprecated function, be sure to remove chpl_nearbyint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
      floating-point exception.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc nearbyint(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'nearbyint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc nearbyint(x: real(64)): real(64) {
+    return chpl_nearbyint(x);
+  }
 
+  inline proc chpl_nearbyint(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc nearbyint(x: real(64)): real(64);
+    return nearbyint(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_nearbyint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
      floating-point exception.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'nearbyint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc nearbyint(x : real(32)): real(32) {
+    return chpl_nearbyint(x);
+  }
+
+  inline proc chpl_nearbyint(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc nearbyintf(x: real(32)): real(32);
@@ -1968,19 +2033,43 @@ module AutoMath {
   }
 
 
+  // When removing this deprecated function, be sure to remove chpl_rint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
      exception.
   */
-  pragma "fn synchronization free"
-  pragma "codegen for CPU and GPU"
-  extern proc rint(x: real(64)): real(64);
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'rint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
+  inline proc rint(x: real(64)): real(64) {
+    return chpl_rint(x);
+  }
 
+  inline proc chpl_rint(x: real(64)): real(64) {
+    // Note: this extern proc was originally free standing.  It might be
+    // reasonable to make it that way again when the deprecated version is
+    // removed
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rint(x: real(64)): real(64);
+    return rint(x);
+  }
+
+  // When removing this deprecated function, be sure to remove chpl_rint
+  // and move its contents into Math.chpl to reduce the symbols living in this
+  // module.
   /* Returns the rounded integral value of the argument `x` determined by the
      current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
      exception.
   */
+  pragma "last resort"
+  @deprecated(notes="In an upcoming release 'rint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   inline proc rint(x : real(32)): real(32) {
+    return chpl_rint(x);
+  }
+
+  inline proc chpl_rint(x : real(32)): real(32) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc rintf(x: real(32)): real(32);

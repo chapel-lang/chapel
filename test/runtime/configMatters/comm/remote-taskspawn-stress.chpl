@@ -1,4 +1,4 @@
-use Time;
+use Time, Math;
 
 config const numSpawns = 1000;
 config const printTimings = false;

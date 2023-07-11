@@ -1,9 +1,3 @@
-// nearbyint.chpl
-// 
-// AUTO-GENERATED, DO NOT EDIT.  See generate_tests/ directory.
-// 
-
-use Math;
 proc roundIfClose(x: real) {
   const eps = 1e-8;
   if abs(x) < eps then return 0.0; // special case, to avoid -0.0

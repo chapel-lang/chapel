@@ -1,5 +1,3 @@
-use Math;
-
 proc launch(a,b) {
   writeln("divceil(", a, ":", a.type:string, ",",
           b, ":", b.type:string, ") = ", divceil(a,b));

@@ -96,6 +96,17 @@ Exponential Functions
 :proc:`expm1`
 :proc:`ldexp`
 
+.. _math-rounding:
+
+Rounding
+--------
+:proc:`divceil`
+:proc:`divceilpos`
+:proc:`divfloor`
+:proc:`divfloorpos`
+:proc:`nearbyint`
+:proc:`rint`
+
 .. _math-gamma:
 
 Gamma Functions
@@ -367,6 +378,60 @@ module Math {
     return chpl_cosh(z);
   }
 
+  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divceil(param m: integral, param n: integral) param do
+    return chpl_divceil(m, n);
+
+  /* Returns :proc:`~AutoMath.ceil`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded up to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
+
+  /*
+    A variant of :proc:`divceil` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  @unstable("divceilpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divceilpos(m: integral, n: integral) {
+    return chpl_divceilpos(m, n);
+  }
+
+  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divfloor(param m: integral, param n: integral) param do return
+    chpl_divfloor(m, n);
+
+  /* Returns :proc:`~AutoMath.floor`\(`m`/`n`),
+     i.e., the fraction `m`/`n` rounded down to the nearest integer.
+
+     If the arguments are of unsigned type, then
+     fewer conditionals will be evaluated at run time.
+  */
+  proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
+
+  /*
+    A variant of :proc:`divfloor` that performs no runtime checks.
+    The user must ensure that both arguments are strictly positive
+    (not 0) and are of a signed integer type (not `uint`).
+  */
+  @unstable("divfloorpos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
+  proc divfloorpos(m: integral, n: integral) {
+    return chpl_divfloorpos(m, n);
+  }
+
   /* Returns the error function of the argument `x`. */
   inline proc erf(x: real(64)): real(64) {
     return chpl_erf(x);
@@ -578,6 +643,42 @@ module Math {
   */
   inline proc log2(val: uint(?w)) {
     return chpl_log2(val);
+  }
+
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
+     floating-point exception.
+  */
+  @unstable("nearbyint is unstable while we design more thorough rounding support")
+  inline proc nearbyint(x: real(64)): real(64) {
+    return chpl_nearbyint(x);
+  }
+
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
+     floating-point exception.
+  */
+  @unstable("nearbyint is unstable while we design more thorough rounding support")
+  inline proc nearbyint(x : real(32)): real(32) {
+    return chpl_nearbyint(x);
+  }
+
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`rint` may raise the "inexact"
+     floating-point exception.
+  */
+  @unstable("rint is unstable while we design more thorough rounding support")
+  inline proc rint(x: real(64)): real(64) {
+    return chpl_rint(x);
+  }
+
+  /* Returns the rounded integral value of the argument `x` determined by the
+     current rounding direction.  :proc:`rint` may raise the "inexact" floating-point
+     exception.
+  */
+  @unstable("rint is unstable while we design more thorough rounding support")
+  inline proc rint(x : real(32)): real(32) {
+    return chpl_rint(x);
   }
 
   /* Returns the sine of the argument `x`. */

@@ -1999,6 +1999,7 @@ module ShallowCopy {
 }
 @chpldoc.nodoc
 module SequentialInPlacePartitioning {
+  private use Math;
   private param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
 
   // Returns the count for each bucket
@@ -2111,6 +2112,7 @@ module SequentialInPlacePartitioning {
 @chpldoc.nodoc
 module TwoArrayPartitioning {
   private use BlockDist;
+  private use Math;
   private use super.MSBRadixSort;
   public use List only list;
   import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
