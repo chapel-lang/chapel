@@ -21,7 +21,7 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
-
+use nightly_email;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
@@ -882,7 +882,7 @@ if ($runtests == 0) {
    
   # my $passed = `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
  #`$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
- require '$chplhomedir/util/cron/nightly_email.pl';
+ #require '$chplhomedir/util/cron/nightly_email.pl';
  my $passed=writeSummary($rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug);
    print "\n \n _____________   Did the test pass .. $? \n";
 #
