@@ -4,12 +4,12 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
-sub writeSummary{
+sub writeFile{
 
-#$num_args = $#ARGV + 1;
+#num_args = $#ARGV + 1;
 $num_args = @_;
-print " ****** Number of arguments ******* @_ ";
-print " ****** Number of arguments ******* $num_args ";
+print " ****** Number of arguments ******* length(@_) \n";
+print " ****** Number of arguments ******* $num_args \n ";
 
 # if ($num_args != 15) {
 #     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
@@ -20,22 +20,22 @@ print " ****** Number of arguments ******* $num_args ";
 # }
 my ($status, $rawsummary, $sortedsummary, ,$prevsummary, $mailer, $nochangerecipient, $recipient, $subjectid, $config_name, $revision, $rawlog, $starttime, $endtime, $crontab, $testdirs, $debug)=@_;
 
- #$status = 0;
-# $rawsummary = $ARGV[1];
-# $sortedsummary = $ARGV[2];
-# $prevsummary = $ARGV[3];
-# $mailer = $ARGV[4];
-# $nochangerecipient = $ARGV[5];
-# $recipient = $ARGV[6];
-# $subjectid = $ARGV[7];
-# $config_name = $ARGV[8];
-# $revision = $ARGV[9];
-# $rawlog = $ARGV[10];
-# $starttime = $ARGV[11];
-# $endtime = $ARGV[12];
-# $crontab = $ARGV[13];
-# $testdirs = $ARGV[14];
-# $debug = $ARGV[15];
+ $status = $_[0];
+$rawsummary = $_[1];
+$sortedsummary = $_[2];
+$prevsummary = $_[3];
+$mailer = $_[4];
+$nochangerecipient = $_[5];
+$recipient = $_[6];
+$subjectid = $_[7];
+$config_name = $_[8];
+$revision = $_[9];
+$rawlog = $_[10];
+$starttime = $_[11];
+$endtime = $_[12];
+$crontab = $_[13];
+$testdirs = $_[14];
+$debug = $_[15];
 
 
 # Ensure the "previous" summary exists, e.g. if this is the first run of the
