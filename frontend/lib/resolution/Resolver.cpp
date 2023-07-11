@@ -1239,7 +1239,23 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       initExprT = r.type();
     }
 
-    if (!typeExprT.hasTypePtr() && useType != nullptr) {
+    if (typeExpr == nullptr && initExpr == nullptr &&
+        var->linkage() == uast::Decl::EXTERN &&
+        var->storageKind() == QualifiedType::TYPE) {
+      // creating an opaque external type.
+
+      CHPL_ASSERT(var->isVariable());
+      auto linkageNameNode = var->linkageName();
+      CHPL_ASSERT(linkageNameNode == nullptr || linkageNameNode->isStringLiteral());
+
+      UniqueString linkageName = var->name();
+      if (linkageNameNode) {
+        linkageName = linkageNameNode->toStringLiteral()->value();
+      }
+      qtKind = QualifiedType::TYPE;
+      typePtr = ExternType::get(context, linkageName);
+      paramPtr = nullptr;
+    } else if (!typeExprT.hasTypePtr() && useType != nullptr) {
       // use type from argument to resolveNamedDecl
       typeExprT = QualifiedType(QualifiedType::TYPE, useType);
       typePtr = typeExprT.type();
@@ -1258,6 +1274,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         // However, a `this` formal lacks a type expression if it belongs to a
         // primary method. This does not, however, mean that its type should be
         // AnyType; it is not adjusted here.
+
         typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
