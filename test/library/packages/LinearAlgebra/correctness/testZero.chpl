@@ -8,3 +8,6 @@ var A = Matrix(n,m,eltType=int(64));
 
 writeln(isZero(A));
 
+var B = eye(n);
+writeln(isZero(B));
+
