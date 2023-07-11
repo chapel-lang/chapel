@@ -12,6 +12,24 @@ bang-vs-new-etc.chpl:135: warning: z18b = xx : class? : unmanaged C?  expected: 
 bang-vs-new-etc.chpl:143: warning: z19b = new C()? : unmanaged  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:146: warning: z19c = new C?() :unmanaged  expected: unmanaged C?  actual: unmanaged C?
 bang-vs-new-etc.chpl:151: warning: z19d = new C(): unmanaged class?  expected: unmanaged C?  actual: unmanaged C?
+bang-vs-new-etc.chpl:161: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:161: note: remove the ()
+bang-vs-new-etc.chpl:167: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:167: note: remove the ()
+bang-vs-new-etc.chpl:170: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:170: note: remove the ()
+bang-vs-new-etc.chpl:174: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:174: note: remove the ()
+bang-vs-new-etc.chpl:177: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:177: note: remove the ()
+bang-vs-new-etc.chpl:180: warning: unnecessary type construction call
+bang-vs-new-etc.chpl:6: note: 'C' has no generic fields
+bang-vs-new-etc.chpl:180: note: remove the ()
 bang-vs-new-etc.chpl:202: warning: z24 = tm().tmeth?  expected: D(int(64))?  actual: D(int(64))?
 bang-vs-new-etc.chpl:205: warning: z25a = shared D(int)?  expected: shared D(int(64))?  actual: shared D(int(64))?
 bang-vs-new-etc.chpl:208: warning: z25b = unmanaged D?(string)  expected: unmanaged D(string)?  actual: unmanaged D(string)?
