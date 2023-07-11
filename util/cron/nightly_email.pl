@@ -4,10 +4,10 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
+sub writeSummary{
 
-
-$num_args = $#ARGV + 1;
-
+#$num_args = $#ARGV + 1;
+$num_args = @_;
 if ($num_args != 16) {
     print "usage: nightly_email.pl \$status \$rawsummary \$sortedsummary \n";
     print "         \$prevsummary \$mailer \$nochangerecipient \$recipient \n";
@@ -207,4 +207,6 @@ else{
 }
 
 print "Here ..";
-exit($passed);
+return $passed;
+
+}
