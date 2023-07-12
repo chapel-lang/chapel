@@ -62,6 +62,12 @@ module ExternalArray {
   }
 
   pragma "no copy return"
+  proc makeArrayFromPtr(value: c_ptr, dom: domain) {
+    var data = chpl_make_external_array_ptr(value : c_void_ptr, dom.size);
+    return makeArrayFromExternArray(data, value.eltType, dom);
+  }
+
+  pragma "no copy return"
   proc makeArrayFromExternArray(value: chpl_external_array, type eltType) {
     var dom = defaultDist.dsiNewRectangularDom(rank=1,
                                                idxType=int,
@@ -73,6 +79,23 @@ module ExternalArray {
                                                   idxType=dom.idxType,
                                                   strides=dom.strides,
                                                   dom=dom,
+                                                  data=value.elts: _ddata(eltType),
+                                                  externFreeFunc=value.freer,
+                                                  externArr=true,
+                                                  _borrowed=true);
+    dom.add_arr(arr, locking = false);
+    return _newArray(arr);
+  }
+
+  pragma "no copy return"
+  proc makeArrayFromExternArray(value: chpl_external_array, type eltType, dom: domain) where dom.isRectangular() {
+    if dom.size != value.num_elts then
+      halt("tried to create array with domain of size ", dom.size, " with external array of ", value.num_elts, " elements");
+    var arr = new unmanaged DefaultRectangularArr(eltType=eltType,
+                                                  rank=dom.rank,
+                                                  idxType=dom.idxType,
+                                                  strides=dom.strides,
+                                                  dom=dom._value,
                                                   data=value.elts: _ddata(eltType),
                                                   externFreeFunc=value.freer,
                                                   externArr=true,
