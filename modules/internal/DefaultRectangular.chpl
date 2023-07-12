@@ -700,6 +700,19 @@ module DefaultRectangular {
                                                  initElts=initElts);
     }
 
+    proc createArrayOrThrow(type eltType) throws {
+      var callPostAlloc:bool;
+      var data = _ddata_allocate_noinit(eltType, ranges(0).size, callPostAlloc);
+      if data == nil then
+        throw new Error("Could not allocate memory");
+      return new unmanaged DefaultRectangularArr(eltType=eltType, rank=rank,
+                                                 idxType=idxType,
+                                                 strides=strides,
+                                                 dom=_to_unmanaged(this),
+                                                 data=data,
+                                                 initElts=true);
+    }
+
     proc dsiBuildArrayWith(type eltType, data:_ddata(eltType), allocSize:int) {
 
       var allocRange:range(idxType) = (ranges(0).lowBound)..#allocSize;
