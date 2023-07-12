@@ -3,6 +3,7 @@ on here.gpus[0] {
     f();
     g();
     h();
+    i();
 }
 
 proc f() {
@@ -22,4 +23,9 @@ proc g() {
 inline proc h() {
     writeln(+ reduce (1..100));
     writeln(+ reduce (1..100));
+}
+
+proc i() {
+    var A: [0..#100] int;
+    A = 1;
 }

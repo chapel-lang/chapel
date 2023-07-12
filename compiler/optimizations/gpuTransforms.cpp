@@ -661,35 +661,11 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   }
 }
 
-static bool isWrapperSymbol(Symbol* sym) {
-  return sym->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
-         sym->hasFlag(FLAG_COBEGIN_OR_COFORALL) ||
-         sym->hasFlag(FLAG_ON) ||
-         sym->hasFlag(FLAG_ON_BLOCK);
-}
-
-static Symbol* findParentFunction(Symbol* sym) {
-  // Skip all generated / wrapper fnctions.
-  while (sym && isFnSymbol(sym) && isWrapperSymbol(sym)) {
-    auto fn = toFnSymbol(sym);
-    if (fn->calledBy->size() < 1) return sym;
-    auto firstCall = fn->calledBy->head();
-    if (!firstCall) return sym;
-    sym = firstCall->parentSymbol;
-  }
-  return sym;
-}
-
 static const char* getLoopName(CForLoop* loop) {
-  auto parentFn = findParentFunction(loop->parentSymbol);
-  const char* name = nullptr;
-  if (parentFn && !isWrapperSymbol(parentFn)) {
-    name = astr(parentFn->name, "_");
-  } else {
-    name = astr("");
-  }
+  auto filename = loop->astloc.filename();
   auto line = loop->astloc.stringLineno();
-  return astr("chpl_gpu_kernel_", name, "line", line);
+  auto moduleName = chpl::uast::Builder::filenameToModulename(filename);
+  return astr("chpl_gpu_kernel_", moduleName.c_str(), "_line_", line);
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
