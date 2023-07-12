@@ -20,8 +20,6 @@ var f = open("test.txt", ioMode.cwr),
 f.writer().writef("an R: %?\n", r);
 
 var r2 = new R(2);
-f.reader().readf("an R: %?\n", r);
-
-writeln(r2);
+f.reader().readf("an R: %?\n", r2);
 
 writeln(r == r2);
