@@ -23,6 +23,9 @@ module IO {
   extern "syserr" type errorCode;
   extern type qio_channel_ptr_t;
   private extern proc qio_int_to_err(a:int(32)):errorCode;
+  // Using raw_c_void_ptr as we can't access c_ptr(void) in minimal modules.
+  // TODO: Use c_ptr(void) instead, likely via compiler support for c_ptr, or
+  // by making it accessible in minimal modules if we don't do compiler support.
   extern type raw_c_void_ptr = chpl__c_void_ptr;
 
   export proc chpl_qio_setup_plugin_channel(file:raw_c_void_ptr, ref plugin_ch:raw_c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):errorCode {
