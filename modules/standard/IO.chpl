@@ -10889,8 +10889,9 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     var gotConv:bool;
     var style:iostyleInternal;
 
-    if fmtStr.count("%t") > 0 then
-      compilerWarning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+    if fmtStr.count("%t") > 0 {
+      warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+    }
 
     param argTypeLen = k+5;
     // we don't use a tuple here so that we can pass this to writefOne as a
@@ -11018,7 +11019,7 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
     var end:c_size_t;
 
     if fmtStr.count("%t") > 0 then
-      compilerWarning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'deserialize' method instead");
+      warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'deserialize' method instead");
 
     param argTypeLen = k+5;
     // we don't use a tuple here for being able to use conv_helper. This will be
@@ -11393,7 +11394,7 @@ proc fileReader.skipField() throws {
  */
 proc string.format(args ...?k): string throws {
   if this.count("%t") > 0
-    then compilerWarning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+    then warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
 
   try {
     return chpl_do_format(this, (...args));

@@ -1,6 +1,6 @@
-pcnt_t_format_specifier.chpl:9: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
-$CHPL_HOME/modules/standard/IO.chpl:11468: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
-pcnt_t_format_specifier.chpl:12: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
-pcnt_t_format_specifier.chpl:18: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'deserialize' method instead
 "a string" 	 1 	 1
 (a string, 2, 2)
+pcnt_t_format_specifier.chpl:9: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
+pcnt_t_format_specifier.chpl:9: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
+pcnt_t_format_specifier.chpl:12: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead
+pcnt_t_format_specifier.chpl:18: warning: The '%t' format specifier is deprecated; please use '%?' to trigger the types 'deserialize' method instead
