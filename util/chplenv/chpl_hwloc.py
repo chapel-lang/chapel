@@ -47,8 +47,9 @@ def get_link_args():
                                           'hwloc', ucp=get_uniq_cfg_path())
     elif hwloc_val == 'system':
         # Check that hwloc version is OK
-        sub = subprocess.run(['pkg-config', '--exists', 'hwloc >= 2.0'])
-        if sub.returncode != 0:
+        exists, retcode, my_out, my_err = try_run_command(
+                            ['pkg-config', '--atleast-version=2.0', 'hwloc'])
+        if exists and retcode != 0:
           err = "CHPL_HWLOC=system requires hwloc >= 2.0"
           error(err, ValueError)
 
