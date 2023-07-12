@@ -48,9 +48,9 @@ def get_link_args():
     elif hwloc_val == 'system':
         # Check that hwloc version is OK
         exists, retcode, my_out, my_err = try_run_command(
-                            ['pkg-config', '--atleast-version=2.0', 'hwloc'])
+                            ['pkg-config', '--atleast-version=2.1', 'hwloc'])
         if exists and retcode != 0:
-          err = "CHPL_HWLOC=system requires hwloc >= 2.0"
+          err = "CHPL_HWLOC=system requires hwloc >= 2.1"
           error(err, ValueError)
 
         return ([ ], ['-lhwloc'])
