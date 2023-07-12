@@ -63,7 +63,7 @@ module ExternalArray {
 
   pragma "no copy return"
   proc makeArrayFromPtr(value: c_ptr, dom: domain) {
-    var data = chpl_make_external_array_ptr(value : c_void_ptr, dom.size);
+    var data = chpl_make_external_array_ptr(value : c_ptr(void), dom.size);
     return makeArrayFromExternArray(data, value.eltType, dom);
   }
 
