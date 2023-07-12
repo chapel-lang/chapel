@@ -394,12 +394,10 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
 
 
 void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n) {
-/*  hipStream_t stream;
+  hipStream_t stream;
   hipStreamCreateWithFlags(&stream, hipStreamNonBlocking);
-  cuMemcpyAsync((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n, stream);
-  return stream;*/
-  assert(false);
-  return NULL;
+  hipMemcpyAsync((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n, hipMemcpyDefault, stream);
+  return stream;
 }
 
 void chpl_gpu_impl_comm_wait(void *stream) {
