@@ -10847,6 +10847,14 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         // a regex. So we just don't handle it.
         err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
+        select style.aggregate_style {
+          when QIO_AGGREGATE_FORMAT_BRACES do // %t
+            warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+          when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
+            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel Format Serializer instead");
+          when QIO_AGGREGATE_FORMAT_JSON do  // %jt
+            warning("The '%jt' format specifier is deprecated; please use '%?' with the Json Serializer instead");
+        }
         try _writeOne(iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         try _writeOne(iokind.dynamic, arg, origLocale);
@@ -11393,8 +11401,14 @@ proc fileReader.skipField() throws {
   :throws SystemError: Thrown if the string could not be formatted for another reason.
  */
 proc string.format(args ...?k): string throws {
-  if this.count("%t") > 0
-    then warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+  // if this.count("%t") > 0
+  //   then warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+  // if this.count("%jt") > 0
+  //   then warning("The '%jt' format specifier is unstable; please use the '%?' specifier with the JSON serializer instead");
+  // if this.count("%ht") > 0
+  //   then warning("The '%ht' format specifier is unstable; please use the '%?' specifier with the Chapel-Format serializer instead");
+  // if this.count("%|t") > 0
+  //   then warning("The '%|t' format specifier is unstable; please use the '%?' specifier with the Binary formatter instead")
 
   try {
     return chpl_do_format(this, (...args));
