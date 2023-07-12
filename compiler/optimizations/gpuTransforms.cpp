@@ -689,7 +689,7 @@ static const char* getLoopName(CForLoop* loop) {
     name = astr("");
   }
   auto line = loop->astloc.stringLineno();
-  return astr("chpl_gpu_kernel_", name, line);
+  return astr("chpl_gpu_kernel_", name, "line", line);
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
