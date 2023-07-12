@@ -235,6 +235,10 @@ Primitive numeric/boolean/enum Chapel types are POD types as well.
  */
 @chpldoc.nodoc // I don't think we want to make this public yet
 proc isPODType(type t) param {
+  use CTypes;
+  if isSubtype(t, c_array) then
+    return isPODType(t.eltType);
+
   return __primitive("is pod type", t);
 }
 @chpldoc.nodoc
