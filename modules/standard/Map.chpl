@@ -818,7 +818,7 @@ module Map {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrRemove(in k: keyType, in v: valType) {
+    proc addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       table.fillSlot(slot, k, v);
@@ -826,7 +826,7 @@ module Map {
     
     @deprecated(notes="'map.addOrSet' is deprecated. Please use 'map.addOrReplace' instead.")
     proc addOrSet(in k: keyType, in v: valType) {
-      addOrRemove(k, v);
+      addOrReplace(k, v);
     }
 
     /*
