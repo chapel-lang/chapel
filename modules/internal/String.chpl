@@ -45,6 +45,7 @@ module String {
   use CTypes;
   use ByteBufferHelpers;
   use BytesStringCommon;
+  use ChplConfig only compiledForSingleLocale;
   import OS.{errorCode};
 
   use CString;
@@ -922,7 +923,7 @@ module String {
     // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -1009,7 +1010,7 @@ module String {
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -1272,7 +1273,7 @@ module String {
                current locale, otherwise a deep copy is performed.
   */
   inline proc string.localize() : string {
-    if _local || this.locale_id == chpl_nodeID {
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return string.createBorrowingBuffer(this);
     } else {
       const x:string = this; // assignment makes it local
