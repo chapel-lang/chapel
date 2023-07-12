@@ -29,6 +29,11 @@
 // should feel free to reimplement them in some other way.
 module LocaleModelHelpMem {
   private use ChapelStandard, CTypes;
+  // TODO: use c_ptr(void) instead of raw_c_void_ptr. Currently, doing so
+  // causes a segfault in the compiled executable. This seems to be related to
+  // some quirk with how we invoke chpl_here_free with the result of a call to
+  // the cast_to_void_star primitive. See related private issue #5082.
+  // Anna, July 2023.
   extern type raw_c_void_ptr = chpl__c_void_ptr;
 
   //////////////////////////////////////////
