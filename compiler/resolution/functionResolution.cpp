@@ -3559,14 +3559,12 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
 
   if (at != nullptr && at->isGenericWithSomeDefaults() &&
       t->symbol->hasFlag(FLAG_GENERIC) && !foundQuestionMarkArg) {
-    gdbShouldBreakHere();
     USR_WARN(call, "unstable type construction with some generic defaults");
     USR_PRINT(at, "this type construction might ignore field defaults in the type declared here but that may change");
   } else if (at != nullptr && call->numActuals() == 0) {
     if (at->isGenericWithDefaults()) {
       // it's OK; e.g. range() means use the defaults
     } else {
-      gdbShouldBreakHere();
       USR_WARN(call, "unnecessary type construction call");
       const char* typeExprStr = toString(at, /* decorate classes */ false);
       if (at->isGeneric()) {
