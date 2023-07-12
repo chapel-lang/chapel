@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+use ChplConfig only compiledForSingleLocale;
+
 //
 // Private Distribution, Domain, and Array
 //  Defines PrivateSpace, an instance of PrivateDom
@@ -169,8 +171,6 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 }
 
 class PrivateArr: BaseRectangularArr {
-  use ChplConfig only compiledForSingleLocale;
-
   var dom: unmanaged PrivateDom(rank, idxType, strides);
 
   // may be initialized separately
