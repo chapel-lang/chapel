@@ -827,7 +827,7 @@ module ConcurrentMap {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) throws {
+    proc addOrReplace(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) throws {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
@@ -853,7 +853,7 @@ module ConcurrentMap {
     */
     proc extend(m : ConcurrentMap(keyType, valType)) throws {
       forall (key, value) in m with (var tok = getToken()) {
-        addOrSet(key, value, tok);
+        addOrReplace(key, value, tok);
       }
     }
 
