@@ -1,0 +1,1 @@
+cannot catch a type alias of a class in the ASAN config: https://github.com/chapel-lang/chapel/issues/22720
