@@ -1422,6 +1422,7 @@ private extern const QIO_CONV_ARG_TYPE_CHAR:c_int;
 private extern const QIO_CONV_ARG_TYPE_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_BINARY_STRING:c_int;
 private extern const QIO_CONV_ARG_TYPE_REPR:c_int;
+private extern const QIO_CONV_ARG_TYPE_SERDE:c_int;
 private extern const QIO_CONV_ARG_TYPE_REGEX:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL:c_int;
 private extern const QIO_CONV_ARG_TYPE_NONE_LITERAL:c_int;
@@ -10847,6 +10848,8 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         err = qio_format_error_write_regex();
       } when QIO_CONV_ARG_TYPE_REPR {
         try _writeOne(iokind.dynamic, arg, origLocale);
+      } when QIO_CONV_ARG_TYPE_SERDE {
+        try _writeOne(iokind.dynamic, arg, origLocale);
       } otherwise {
         // Unhandled argument type!
         throw new owned IllegalArgumentError("args(" + i:string + ")",
@@ -11180,6 +11183,8 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
+              try _readOne(iokind.dynamic, args(i), origLocale);
+            } when QIO_CONV_ARG_TYPE_SERDE {
               try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
