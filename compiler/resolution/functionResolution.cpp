@@ -4967,6 +4967,25 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
             (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
           if (SymExpr* se = toSymExpr(actual)) {
             CallExpr* call = userCall(info.call);
+            if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
+              for_fields(field, at) {
+                bool hasDefault = false;
+                bool isGenericField = at->fieldIsGeneric(field, hasDefault);
+                if (!field->hasFlag(FLAG_TYPE_VARIABLE) &&
+                    !field->hasFlag(FLAG_PARAM) &&
+                    isGenericField && hasDefault) {
+                  USR_FATAL_CONT(se->symbol(),
+                                 "default initialization with type '%s' "
+                                 "is not yet supported", toString(at));
+                  USR_PRINT(field, "field '%s' is a generic value",
+                            field->name);
+                  USR_PRINT(field,
+                            "consider separately declaring a type field for it "
+                            "or using a 'new' call");
+                  USR_STOP();
+                }
+              }
+            }
             splitInitMissingTypeError(se->symbol(), call, false);
             printedError = true;
           }
