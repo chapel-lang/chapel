@@ -2282,6 +2282,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("expand() is unstable and its behavior may change in the future")
     proc expand(off: integral ...rank) do return expand(off);
 
     /* Return a new domain that is the current domain expanded by
@@ -2293,6 +2294,7 @@ module ChapelDomain {
        it means to expand a range.
 
      */
+    @unstable("expand() is unstable and its behavior may change in the future")
     proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2312,6 +2314,7 @@ module ChapelDomain {
        See :proc:`ChapelRange.range.expand` for further information about what
        it means to expand a range.
      */
+    @unstable("expand() is unstable and its behavior may change in the future")
     proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do

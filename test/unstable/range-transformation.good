@@ -1,6 +1,7 @@
 range-transformation.chpl:4: warning: range.translate() is unstable and it's behavior may change in the future
 range-transformation.chpl:5: warning: range.interior() is unstable and it's behavior may change in the future
 range-transformation.chpl:6: warning: range.exterior() is unstable and it's behavior may change in the future
+range-transformation.chpl:7: warning: range.expand() is unstable and it's behavior may change in the future
 range-transformation.chpl:11: warning: translate() is unstable and its behavior may change in the future
 range-transformation.chpl:12: warning: translate() is unstable and its behavior may change in the future
 range-transformation.chpl:13: warning: translate() is unstable and its behavior may change in the future
@@ -10,3 +11,6 @@ range-transformation.chpl:17: warning: interior() is unstable and its behavior m
 range-transformation.chpl:19: warning: exterior() is unstable and its behavior may change in the future
 range-transformation.chpl:20: warning: exterior() is unstable and its behavior may change in the future
 range-transformation.chpl:21: warning: exterior() is unstable and its behavior may change in the future
+range-transformation.chpl:23: warning: expand() is unstable and its behavior may change in the future
+range-transformation.chpl:24: warning: expand() is unstable and its behavior may change in the future
+range-transformation.chpl:25: warning: expand() is unstable and its behavior may change in the future

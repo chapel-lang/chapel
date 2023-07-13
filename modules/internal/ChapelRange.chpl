@@ -1899,6 +1899,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      the result is :math:`(l-i,h+i,s,a)`.  If the operand range is
      ambiguously aligned, then so is the resulting range.
   */
+  @unstable("range.expand() is unstable and it's behavior may change in the future")
   proc range.expand(offset: integral)
   {
     const i = offset.safeCast(chpl__signedType(chpl_integralIdxType));
