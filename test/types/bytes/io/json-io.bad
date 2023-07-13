@@ -1,0 +1,6 @@
+testing default stdout: (foo = 10, bar = some bytes)
+testing json stdout: {"foo":10, "bar":b"some bytes"}
+Writing JSON: {"foo": 4, "bar":b"some written bytes"}
+uncaught BadFormatError: bad format: missing string start (while reading string with path TMP_FILE_PATH offset 17)
+  json-io.chpl:27: thrown here
+  json-io.chpl:27: uncaught here

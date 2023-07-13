@@ -10857,7 +10857,11 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         }
         try _writeOne(iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
-        try _writeOne(iokind.dynamic, arg, origLocale);
+        if serializerType != nothing {
+          this._serializeOne(arg, origLocale);
+        } else {
+          try _writeOne(iokind.dynamic, arg, origLocale);
+        }
       } otherwise {
         // Unhandled argument type!
         throw new owned IllegalArgumentError("args(" + i:string + ")",
@@ -11201,7 +11205,11 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               }
               try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
-              try _readOne(iokind.dynamic, args(i), origLocale);
+              if deserializerType != nothing {
+                this._deserializeOne(args(i), origLocale);
+              } else {
+                try _readOne(iokind.dynamic, args(i), origLocale);
+              }
             } when QIO_CONV_SET_CAPTURE {
               if r == nil {
                 err = qio_format_error_bad_regex();

@@ -1,4 +1,4 @@
-testing default stdout: (foo = 10, bar = b"some bytes")
+testing default stdout: (foo = 10, bar = some bytes)
 testing json stdout: {"foo":10, "bar":b"some bytes"}
 Writing JSON: {"foo": 4, "bar":b"some written bytes"}
 got is true

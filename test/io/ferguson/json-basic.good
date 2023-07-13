@@ -1,0 +1,57 @@
+testing default stdout: (a = 1, b = 2)
+testing json stdout: {"a":1, "b":2}
+Writing JSON: 
+got is false
+Read: (a = 0, b = 0)
+Writing JSON:  
+got is false
+Read: (a = 0, b = 0)
+Writing JSON: {"c":3}
+bad format error
+got is false
+Read: (a = 0, b = 0)
+Writing JSON: {"a":1, "b":2}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"a" : 1, "b" : 2}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":1, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"junk":3,"b":1, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"b":1, "junk":3, "a":2}
+
+Read: (a = 2, b = 1)
+Writing JSON: {"b":2, "a":1, "junk":3}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":3, "other junk" : "bla\"rg", "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":[],"junk1":[1], "junk2" : [ 2,3 ],"junk3":["a","b","c"], "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":2, "junk":{}, "junk1" : {"a":-1}, "junk2":{"a":-1,"b":-1},  "a":1}
+
+Read: (a = 1, b = 2)
+Writing JSON: {"b":1, "record":{"a":-1, "b":-2, "c":[{"a":"-3", "b":"-4"},-5, "d"]}, "a":2}
+
+Read: (a = 2, b = 1)
+json-basic.chpl:9: warning: The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead
+json-basic.chpl:10: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead
+json-basic.chpl:27: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:48: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:72: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:95: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:115: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:136: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:157: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:177: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:199: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:220: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:240: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:260: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead
+json-basic.chpl:280: warning: The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead

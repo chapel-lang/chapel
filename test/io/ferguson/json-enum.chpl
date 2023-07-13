@@ -9,18 +9,20 @@ record MyRecord {
 
 var f = openTempFile();
 
+var jsonOut = stdout.withSerializer(JsonSerializer);
+
 {
-  var writer = f.writer();
+  var writer = f.writer(serializer = new JsonSerializer());
   var r:MyRecord = new MyRecord("Hello", MyEnum.Type3);
-  writef("Writting JSON: %jt\n", r);
-  writer.writef("%jt", r);
+  jsonOut.writef("Writing JSON: %?\n", r);
+  writer.writef("%?", r);
   writer.close();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
   var r:MyRecord;
-  reader.readf("%jt", r);
+  reader.readf("%?", r);
   writeln("Read: ", r);
   reader.close();
 }

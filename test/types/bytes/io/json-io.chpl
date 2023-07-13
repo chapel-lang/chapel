@@ -1,4 +1,4 @@
-use IO;
+use IO, JSON;
 
 record Rec {
   var foo: int;
@@ -7,8 +7,8 @@ record Rec {
 
 var r = new Rec(10, "some bytes":bytes);
 
-writef("testing default stdout: %t\n", r);
-writef("testing json stdout: %jt\n", r);
+writef("testing default stdout: %?\n", r);
+stdout.withSerializer(JsonSerializer).writef("testing json stdout: %?\n", r);
 
 var f = openTempFile();
 {
@@ -20,11 +20,11 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader();
+  var reader = f.reader(deserializer = new JsonDeserializer());
 
   var r: Rec;
 
-  var got = reader.readf("%jt", r);
+  var got = reader.readf("%?", r);
 
   writeln("got is ", got);
   writeln("Read: ", r);

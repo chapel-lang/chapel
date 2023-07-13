@@ -142,7 +142,7 @@ proc main () {
   tsetup.start();
 
   writef ("NAS Parallel Benchmarks 2.4 -- IS Benchmark\n" );
-  writef (" Size:                       %{#########}  (class %t)\n", nkeys, probClass);
+  writef (" Size:                       %{#########}  (class %?)\n", nkeys, probClass);
   writef (" Iterations:                 %{#########}\n",maxIterations);
   if printNumLocales then
     writef (" Number of locales:          %{#########}\n",numLocales);
@@ -193,7 +193,7 @@ proc main () {
   // Now complete output
 
   writef("\n\n IS Benchmark Completed\n");
-  writef(" Class           =                         %t\n",probClass);
+  writef(" Class           =                         %?\n",probClass);
   writef(" Size            = %{#########################}\n",nkeys);
   writef(" Iterations      = %{#########################}\n",maxIterations);
   if (printTime) {

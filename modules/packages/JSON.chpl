@@ -390,7 +390,7 @@ module JSON {
         var x : readType;
         reader._readOne(reader.kind, x, here);
         return x;
-      } else if isStringType(readType) {
+      } else if isStringType(readType) || isBytesType(readType) {
         // TODO: Ideally something like:
         //   reader.readf("%{\"S\"}", tmp);
         // But this doesn't work well with escape strings...
