@@ -13777,7 +13777,18 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   }
 }
 
-void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr, bool isField) {
+static bool isBuiltinGenericType(Type* t) {
+  return isBuiltinGenericClassType(t) ||
+         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
+         t == dtAnyBool || t == dtAnyEnumerated ||
+         t == dtNumeric || t == dtIntegral ||
+         t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtAnyPOD ||
+         t == dtOwned || t == dtShared;
+}
+
+void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
+                                 bool definitelyField) {
   if (sym == nullptr || typeExpr == nullptr) {
     return;
   }
@@ -13789,25 +13800,50 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr, bool isField) {
     } else {
       declType = typeExpr->typeInfo();
     }
+
     if (declType->symbol->hasFlag(FLAG_GENERIC) &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
         !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-      if (isField && isClassLikeOrManaged(declType)) {
+
+      // is it a field? check to see if it's a temp within an initializer
+      // initializing field (in which case, we should think about
+      // this as a field).
+      bool isField = definitelyField;
+      if (sym->hasFlag(FLAG_TEMP)) {
+        for_SymbolSymExprs(se, sym) {
+          if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+            if (inCall->isPrimitive(PRIM_SET_MEMBER) && se == inCall->get(3)) {
+              isField = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (isClassLikeOrManaged(declType)) {
         auto dec = classTypeDecorator(declType);
-        if (isDecoratorUnknownManagement(dec)) {
+        if (isField && isDecoratorUnknownManagement(dec)) {
           USR_WARN(sym, "field is declared with generic memory management");
           USR_PRINT("consider adding 'owned', 'shared', or 'borrowed'");
           USR_PRINT("if generic memory management is desired, "
                     "use a 'type' field to store the class type");
-          // consider the class type ignoring management for
-          // the rest of the checks.
-          declType = canonicalClassType(declType);
         }
+
+        // consider the class type ignoring management for
+        // the rest of the checks.
+        declType = canonicalClassType(declType);
+      }
+
+
+      // supress the warning for builtin types like
+      // 'integral', 'record', 'borrowed'.
+      if (isBuiltinGenericType(declType)) {
+        return;
       }
 
       bool hasQuestionArg = false;
 
-      // if it is a variable, the type would end up in a type-expr-temp,
+      // If it is a variable, the type would end up in a type-expr-temp,
       // so find our way through that, checking for question mark args
       // such as 'R(?)', which will prevent the warning.
       while (true) {
