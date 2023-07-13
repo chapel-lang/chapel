@@ -141,8 +141,8 @@ static void checkSyncSingleAtomicReturnByCopy() {
     bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
     bool isDefaultOf = fn->name == astr_defaultOf;
     bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
-    bool optOut = !isInitAutoCopy && !isNoCopy &&
-                  !isCoerce && !isDefaultOf && !isAliasing;
+    bool optOut = isInitAutoCopy || isNoCopy ||
+                  isCoerce || isDefaultOf || isAliasing;
 
     bool shouldWarn = !optOut && !isRef && (isSync || isSingle || isAtomic);
 
