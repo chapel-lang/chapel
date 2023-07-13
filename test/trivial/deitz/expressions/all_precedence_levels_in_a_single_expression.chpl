@@ -1,9 +1,9 @@
 class D { var x = 1; }
-class C: D { var y = 2; type t = int; }
+class C: D { var y = 2; }
 operator **(d:borrowed D,i:int) do return d.x..i;
 
-write("C(): ");
-writeln(borrowed C():string);
+write("C: ");
+writeln(borrowed C:string);
 write("new C(): ");
 writeln((new owned C()).borrow());
 write("new C():D: ");
