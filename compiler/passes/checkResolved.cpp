@@ -131,9 +131,9 @@ static void checkSyncSingleAtomicReturnByCopy() {
     if (fn->name == astrCompilerCopySyncSingle) continue;
     if (fn->hasFlag(FLAG_DEPRECATED)) continue;
 
-    bool isSync = isOrContainsSyncType(fn->retType, false, false);
-    bool isSingle = isOrContainsSingleType(fn->retType, false, false);
-    bool isAtomic = isOrContainsAtomicType(fn->retType, false, false);
+    bool isSync = isOrContainsSyncType(fn->retType, false);
+    bool isSingle = isOrContainsSingleType(fn->retType, false);
+    bool isAtomic = isOrContainsAtomicType(fn->retType, false);
     bool isRef = fn->returnsRefOrConstRef() || fn->retType->isRef();
 
     bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
