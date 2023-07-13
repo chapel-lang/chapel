@@ -84,20 +84,29 @@ static void checkForClassAssignOps(FnSymbol* fn) {
 static void checkSyncSingleAtomicDefaultInit() {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
     bool hasCompilerGeneratedInit = false;
+    bool hasCompilerGeneratedCopyInit = false;
     for (auto fn : at->methods) {
-      if (fn && (fn->isDefaultInit() || fn->isDefaultCopyInit())) {
+      if (fn && fn->isDefaultInit()) {
         hasCompilerGeneratedInit = true;
+        break;
+      }
+      if (fn && fn->isDefaultCopyInit()) {
+        hasCompilerGeneratedCopyInit = true;
         break;
       }
     }
 
-    if (hasCompilerGeneratedInit) {
+    if (hasCompilerGeneratedInit || hasCompilerGeneratedCopyInit) {
       for_fields(field, at) {
         bool isSync = isOrContainsSyncType(field->type);
         bool isSingle = isOrContainsSingleType(field->type);
         bool isAtomic = isOrContainsAtomicType(field->type);
         if (isSync || isSingle || isAtomic) {
-          USR_WARN(at, "relying on a compiler default initializer for a %s with %s elements is deprecated", at->aggregateString(), isSync ? "sync" : (isSingle ? "single" : "atomic"));
+          USR_WARN(at,
+                  "compiler generated default initializers for %s with '%s' "
+                  "fields are deprecated, please supply an 'init%s' method",
+                  at->isClass() ? "classes" : (at->isRecord() ? "records" : "unions"),
+                  isSync ? "sync" : (isSingle ? "single" : "atomic"), hasCompilerGeneratedCopyInit ? "=" : "");
         }
       }
     }

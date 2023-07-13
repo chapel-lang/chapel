@@ -1,2 +1,2 @@
-syncFieldTypeOnlyAlias.chpl:3: warning: relying on a compiler default initializer for a class with sync elements is deprecated
+syncFieldTypeOnlyAlias.chpl:3: warning: compiler generated default initializers for classes with 'sync' fields are deprecated, please supply an 'init' method
 false
