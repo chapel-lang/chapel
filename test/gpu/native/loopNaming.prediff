@@ -1,2 +1,2 @@
 #! /bin/sh
-grep 'Kernel:' $2 > $2.temp && mv $2.temp $2
+grep 'Kernel:.\+loopNaming' $2 > $2.temp && mv $2.temp $2
