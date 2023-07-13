@@ -591,7 +591,7 @@ module DistributedMap {
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
     @chpldoc.nodoc
-    proc setUnlocked(k: keyType, in v: valType): bool {
+    proc setUnlocked(in k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
       var res: bool;
