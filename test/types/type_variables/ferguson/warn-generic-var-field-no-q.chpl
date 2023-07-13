@@ -22,5 +22,13 @@ proc main() {
   myvar2 = new GR(int, 2);
   myvar3 = new GR(int, 3);
   myvar4 = new GR(int, 4);
+
+  genericFn(GR);
+
   compilerError("done");
+}
+
+proc genericFn(type t) {
+  var x: t;
+  x = new GR(int, 5);
 }
