@@ -3557,6 +3557,29 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
     }
   }
 
+  // Decide if it's actually not supposed to be a type construction,
+  // e.g. var x = R(); is supposed to be var x = new R();
+  // and this new warning isn't helpful in that case.
+  if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      if (SymExpr* lhsSe = toSymExpr(parentCall->get(1))) {
+        if (lhsSe->symbol()->hasFlag(FLAG_TEMP)) {
+          for_SymbolSymExprs(se, lhsSe->symbol()) {
+            if (se != lhsSe) {
+              if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+                // is the init-expr using the temp we are considering?
+                if (inCall->isPrimitive(PRIM_INIT_VAR) &&
+                    se == inCall->get(2)) {
+                  return;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (at != nullptr && at->isGenericWithSomeDefaults() &&
       t->symbol->hasFlag(FLAG_GENERIC) && !foundQuestionMarkArg) {
     USR_WARN(call, "unstable type construction with some generic defaults");
