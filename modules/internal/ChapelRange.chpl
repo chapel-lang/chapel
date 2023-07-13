@@ -1856,6 +1856,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
+   @unstable("range.translate() is unstable and it's behavior may change in the future")
   inline proc range.translate(offset: integral) do
     return this + offset;
 

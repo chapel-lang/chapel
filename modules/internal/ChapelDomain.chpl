@@ -2436,6 +2436,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     @chpldoc.nodoc
+    @unstable("translate() is unstable and its behavior may change in the future")
     proc translate(off: integral ...rank) do return translate(off);
 
     /* Return a new domain that is the current domain translated by
@@ -2445,6 +2446,7 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("translate() is unstable and its behavior may change in the future")
     proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2459,6 +2461,7 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("translate() is unstable and its behavior may change in the future")
     proc translate(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
