@@ -1,4 +1,8 @@
 range-transformation.chpl:4: warning: range.translate() is unstable and it's behavior may change in the future
+range-transformation.chpl:5: warning: range.interior() is unstable and it's behavior may change in the future
 range-transformation.chpl:10: warning: translate() is unstable and its behavior may change in the future
 range-transformation.chpl:11: warning: translate() is unstable and its behavior may change in the future
 range-transformation.chpl:12: warning: translate() is unstable and its behavior may change in the future
+range-transformation.chpl:14: warning: interior() is unstable and its behavior may change in the future
+range-transformation.chpl:15: warning: interior() is unstable and its behavior may change in the future
+range-transformation.chpl:16: warning: interior() is unstable and its behavior may change in the future

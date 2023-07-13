@@ -1949,6 +1949,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      bounds of the resulting range. If the operand range is
      ambiguously aligned, then so is the resulting range.
    */
+   @unstable("range.interior() is unstable and it's behavior may change in the future")
   proc range.interior(offset: integral)
   {
     if boundsChecking then
