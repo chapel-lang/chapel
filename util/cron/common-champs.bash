@@ -8,6 +8,10 @@ COMMON_DIR=/cy/users/chapelu
 
 export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
 
+pushd $CHAMPS_COMMON_DIR
+git pull
+popd
+
 # All CHAMPS testing is currently on a cray-cs
 module list
 
