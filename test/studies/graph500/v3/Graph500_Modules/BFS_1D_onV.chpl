@@ -2,7 +2,7 @@
 //John Feo <john.feo@pnl.gov> and Kristi Maschhoff <kristyn@cray.com> in 2010.
 
 // This version incorporates ideas from Kamesh Madduri's implementation
-// in terms of using a 1D distribution of the Vertex records, maintaining 
+// in terms of using a 1D distribution of the Vertex records, maintaining
 // a distributed queue, and sending work to the locale which owns a particular
 // vertex. Chapel accomplishes this using the Chapel on statement
 // The beauty here is that we are able to preserve the basic simplicity and
@@ -53,7 +53,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
         forall v in G.Neighbors (u) do on v {
 
-          if ( visited$ (v).readXX() < 0 ) 
+          if ( visited$ (v).readXX() < 0 )
           {
             if (visited$ (v).readFE() < 0 )
             {
@@ -72,12 +72,12 @@ proc BFS ( root : vertex_id, ParentTree, G )
 
 // barrier needed to insure all updates to Next_Level are complete
 
-      var myc = count;
+      var myc = count.readFE();
       if myc==1 {
-        barrier=true;
+        barrier.writeEF(true);
       } else {
-        count = myc-1;
-        barrier;
+        count.writeEF(myc-1);
+        barrier.readXX();
       }
 
 

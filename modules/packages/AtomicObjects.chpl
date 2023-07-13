@@ -434,6 +434,12 @@ prototype module AtomicObjects {
     proc init(type objType) {
       this.objType = objType;
     }
+
+    proc init=(other: _ABAInternal) {
+      this.objType = other.objType;
+      this._ABA_ptr = other._ABA_ptr.read();
+      this._ABA_cnt = other._ABA_cnt.read();
+    }
   }
 
   /*
@@ -486,6 +492,15 @@ prototype module AtomicObjects {
       } else {
         atomicVar.write(ptr);
       }
+    }
+
+    proc init=(other: AtomicObject) {
+      this.objType = other.objType;
+      this.hasABASupport = other.hasABASupport;
+      this.hasGlobalSupport = other.hasGlobalSupport;
+      if hasABASupport
+        then this.atomicVar = other.atomicVar;
+        else this.atomicVar = other.atomicVar.read();
     }
 
     @chpldoc.nodoc

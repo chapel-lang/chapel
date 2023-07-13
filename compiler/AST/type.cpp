@@ -1793,6 +1793,73 @@ bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
 
+// Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != NULL) eltType = ts->type;
+
+  return eltType;
+}
+
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  do {
+    eltType = arrayElementType(arrayType);
+    arrayType = toAggregateType(eltType);
+  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+  return eltType;
+}
+
+static bool isOrContains(Type *type, Flag flag, bool canBeTypeVar = false) {
+  if (type == nullptr) {
+    return false;
+  } else if (type->symbol->hasFlag(flag)) {
+    return true;
+  } else if (canBeTypeVar && !type->symbol->hasFlag(FLAG_TYPE_VARIABLE)) {
+    // in the base case, this function should not return true for something like
+    // type T = sync int;
+    // But when searching tuples and arrays, this is needed
+    return true;
+  } else {
+    Type* vt = type->getValType();
+    if (isDecoratedClassType(vt)) {
+      vt = canonicalClassType(vt)->getValType();
+    }
+    if (AggregateType* at = toAggregateType(vt)) {
+      // get backing array instance and recurse
+      if (at->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* eltType = finalArrayElementType(at);
+        if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+      } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+        // if its a tuple, search the tuple type substitutions
+        for (const auto& ns: at->substitutionsPostResolve) {
+          Type* eltType = ns.value->type;
+          if (isOrContains(eltType, flag, true /*can be type var*/)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+bool isOrContainsSyncType(Type* t) { return isOrContains(t, FLAG_SYNC); }
+bool isOrContainsSingleType(Type* t) { return isOrContains(t, FLAG_SINGLE); }
+bool isOrContainsAtomicType(Type* t) { return isOrContains(t, FLAG_ATOMIC_TYPE); }
+
+
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
 

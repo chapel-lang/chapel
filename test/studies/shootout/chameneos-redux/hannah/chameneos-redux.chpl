@@ -58,6 +58,16 @@ class Chameneos {
   var meetingsWithSelf : int;
   var meetingCompleted$ : sync bool;
 
+  proc init(id: int = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
+
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the complement of the
      color of the Chameneos it met with, and change to the complement of that

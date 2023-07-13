@@ -82,6 +82,16 @@ class Chameneos {
   var meetingsWithSelf : int;
   var meetingCompleted : atomic bool;
 
+  proc init(id: int = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
+
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the
@@ -131,7 +141,7 @@ class Chameneos {
     peer.meetings += 1;
     peer.meetingsWithSelf += is_same;
     peer.meetingCompleted.write(true, memoryOrder.release);
-    
+
     color = newColor;
     meetings += 1;
     meetingsWithSelf += is_same;

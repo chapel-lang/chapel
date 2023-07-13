@@ -82,6 +82,16 @@ class Chameneos {
   var meetingsWithSelf : int;
   var meetingCompleted : atomic uint(32);
 
+  proc init(id: int(32) = 0,
+            color: Color = Color.blue,
+            meetings: int = 0,
+            meetingsWithSelf: int = 0) {
+    this.id = id;
+    this.color = color;
+    this.meetings = meetings;
+    this.meetingsWithSelf = meetingsWithSelf;
+  }
+
   /* start tells a Chameneos to go to a given MeetingPlace, where it may meet
      with another Chameneos.  If it does, it will get the other's color and
      use this color and its own to compute the color both will have after the

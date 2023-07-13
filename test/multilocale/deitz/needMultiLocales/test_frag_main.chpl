@@ -15,7 +15,7 @@ proc fragmentedMain() {
   if useVerboseComm then startVerboseCommHere();
 
   if rank == size-1 {
-    chpl_send_int(token, 0); 
+    chpl_send_int(token, 0);
   }
 
   chpl_recv_int(token, (rank-1+size)%size);
@@ -37,6 +37,7 @@ class list {
   var head, tail: shared node?;
   var lock$: sync bool;
   var signal$: sync bool;
+  proc init() {}
 }
 
 use PrivateDist;
