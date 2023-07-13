@@ -10849,11 +10849,11 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
       } when QIO_CONV_ARG_TYPE_REPR {
         select style.aggregate_style {
           when QIO_AGGREGATE_FORMAT_BRACES do // %t
-            warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
+            warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'serialize' method instead");
           when QIO_AGGREGATE_FORMAT_CHPL do  // %ht
-            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel Format Serializer instead");
+            warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Serializer instead");
           when QIO_AGGREGATE_FORMAT_JSON do  // %jt
-            warning("The '%jt' format specifier is deprecated; please use '%?' with the Json Serializer instead");
+            warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Serializer instead");
         }
         try _writeOne(iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
@@ -10896,10 +10896,6 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
     var conv:qio_conv_t;
     var gotConv:bool;
     var style:iostyleInternal;
-
-    if fmtStr.count("%t") > 0 {
-      warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
-    }
 
     param argTypeLen = k+5;
     // we don't use a tuple here so that we can pass this to writefOne as a
@@ -11025,9 +11021,6 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
     var gotConv:bool;
     var style:iostyleInternal;
     var end:c_size_t;
-
-    if fmtStr.count("%t") > 0 then
-      warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'deserialize' method instead");
 
     param argTypeLen = k+5;
     // we don't use a tuple here for being able to use conv_helper. This will be
@@ -11198,6 +11191,14 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
                 }
               }
             } when QIO_CONV_ARG_TYPE_REPR {
+              select style.array_style {
+                when QIO_ARRAY_FORMAT_SPACE do // %t
+                  warning("The '%t' format specifier is deprecated; please use '%?' to invoke the type's 'deserialize' method instead");
+                when QIO_ARRAY_FORMAT_CHPL do  // %ht
+                  warning("The '%ht' format specifier is deprecated; please use '%?' with the Chapel-Format Deserializer instead");
+                when QIO_ARRAY_FORMAT_JSON do  // %jt
+                  warning("The '%jt' format specifier is deprecated; please use '%?' with the JSON Deserializer instead");
+              }
               try _readOne(iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               try _readOne(iokind.dynamic, args(i), origLocale);
@@ -11401,15 +11402,6 @@ proc fileReader.skipField() throws {
   :throws SystemError: Thrown if the string could not be formatted for another reason.
  */
 proc string.format(args ...?k): string throws {
-  // if this.count("%t") > 0
-  //   then warning("The '%t' format specifier is deprecated; please use '%?' to trigger the types 'serialize' method instead");
-  // if this.count("%jt") > 0
-  //   then warning("The '%jt' format specifier is unstable; please use the '%?' specifier with the JSON serializer instead");
-  // if this.count("%ht") > 0
-  //   then warning("The '%ht' format specifier is unstable; please use the '%?' specifier with the Chapel-Format serializer instead");
-  // if this.count("%|t") > 0
-  //   then warning("The '%|t' format specifier is unstable; please use the '%?' specifier with the Binary formatter instead")
-
   try {
     return chpl_do_format(this, (...args));
   } catch e: IllegalArgumentError {
