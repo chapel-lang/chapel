@@ -3567,9 +3567,14 @@ static void warnForCallConcreteType(CallExpr* call, Type* t) {
           for_SymbolSymExprs(se, lhsSe->symbol()) {
             if (se != lhsSe) {
               if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
-                // is the init-expr using the temp we are considering?
-                if (inCall->isPrimitive(PRIM_INIT_VAR) &&
+                // is a var init using the temp we are considering?
+                if ((inCall->isPrimitive(PRIM_INIT_VAR) ||
+                     inCall->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)) &&
                     se == inCall->get(2)) {
+                  return;
+                }
+                // is it in 'throw Error()' ?
+                if (inCall->isNamed("chpl_fix_thrown_error")) {
                   return;
                 }
               }
