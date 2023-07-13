@@ -8227,6 +8227,8 @@ void resolveInitVar(CallExpr* call) {
     // If the target type is generic, compute the appropriate instantiation
     // type.
     if (genericTgt) {
+      checkSurprisingGenericDecls(dst, targetTypeExpr, nullptr);
+
       Type* inst = getInstantiationType(srcType, NULL, targetType, NULL, call,
                                         /* allowCoercion */ true,
                                         /* implicitBang */ false,
@@ -12905,7 +12907,7 @@ static void resolvePrimInit(CallExpr* call) {
 
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      checkSurprisingGenericDecls(val, typeExpr, /*isField*/ false);
+      checkSurprisingGenericDecls(val, typeExpr, nullptr);
       resolvePrimInit(call, val, resolveTypeAlias(se));
     } else {
       USR_FATAL(call, "invalid type specification");
@@ -13787,8 +13789,10 @@ static bool isBuiltinGenericType(Type* t) {
          t == dtOwned || t == dtShared;
 }
 
+std::set<Symbol*> gAlreadyWarnedSurprisingGenericSyms;
+
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
-                                 bool definitelyField) {
+                                 AggregateType* forFieldInHere) {
   if (sym == nullptr || typeExpr == nullptr) {
     return;
   }
@@ -13808,12 +13812,28 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       // is it a field? check to see if it's a temp within an initializer
       // initializing field (in which case, we should think about
       // this as a field).
-      bool isField = definitelyField;
-      if (sym->hasFlag(FLAG_TEMP)) {
+      bool isField = false;
+
+      if (forFieldInHere) {
+        AggregateType* ct = forFieldInHere->getRootInstantiation();
+        Symbol* field = ct->getField(sym->name);
+        isField = true;
+        sym = field;
+      } else if (sym->hasFlag(FLAG_TEMP)) {
         for_SymbolSymExprs(se, sym) {
-          if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
-            if (inCall->isPrimitive(PRIM_SET_MEMBER) && se == inCall->get(3)) {
+          if (CallExpr* c = toCallExpr(se->parentExpr)) {
+            if ((c->isPrimitive(PRIM_SET_MEMBER) ||
+                 c->isPrimitive(PRIM_INIT_FIELD)) && se == c->get(3)) {
               isField = true;
+
+              // replace 'sym' with the field for the error location
+              AggregateType* ct = toAggregateType(c->get(1)->getValType());
+              ct = ct->getRootInstantiation();
+              SymExpr* nameSe = toSymExpr(c->get(2));
+              VarSymbol* nameVar = toVarSymbol(nameSe->symbol());
+              const char* name = astr(nameVar->immediate->v_string.c_str());
+              Symbol* field = ct->getField(name);
+              sym = field;
               break;
             }
           }
@@ -13877,6 +13897,12 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       }
 
       if (declType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg) {
+        auto pair = gAlreadyWarnedSurprisingGenericSyms.insert(sym);
+        if (!pair.second) {
+          // don't warn twice for the same variable/field
+          return;
+        }
+
         if (declType->symbol->hasFlag(FLAG_DOMAIN)) {
           USR_WARN(sym, "please use 'domain(?)' for the type of a generic %s "
                         "storing any domain", isField?"field":"variable");

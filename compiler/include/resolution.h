@@ -392,7 +392,7 @@ void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx);
 //   var x: domain;
 // as a field or variable (it should be, var x: domain(?)).
 void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
-                                 bool definitelyField);
+                                 AggregateType* forFieldInHere);
 
 // These enable resolution for functions that don't really match
 // according to the language definition in order to get more errors

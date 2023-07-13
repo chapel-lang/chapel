@@ -1881,8 +1881,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
-  checkSurprisingGenericDecls(field, field->defPoint->exprType,
-                              /* isField */ true);
+  checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
   return retval;
 }
