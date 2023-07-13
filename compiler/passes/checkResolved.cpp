@@ -115,7 +115,11 @@ static void checkSyncSingleAtomicDefaultInit() {
 }
 
 
-// if its returned by not ref and its not a move
+// This function is checking for any function which returns a a non-default
+// copyable type (sync/single/atomic). This has exclusions for functions that
+// are no copying like array aliases or explicit "no copy" functions. This
+// includes functions which return a type which is a container for that type
+// like an array or tuple.
 static void checkSyncSingleAtomicReturnByCopy() {
 
   const char* astrCompilerCopySyncSingle = astr("chpl__compilerGeneratedCopySyncSingle");
@@ -124,8 +128,8 @@ static void checkSyncSingleAtomicReturnByCopy() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
 
     // skip functions which support deprecation
-    if(fn->name == astrCompilerCopySyncSingle) continue;
-    if(fn->hasFlag(FLAG_DEPRECATED)) continue;
+    if (fn->name == astrCompilerCopySyncSingle) continue;
+    if (fn->hasFlag(FLAG_DEPRECATED)) continue;
 
     bool isSync = isOrContainsSyncType(fn->retType, false, false);
     bool isSingle = isOrContainsSingleType(fn->retType, false, false);
@@ -135,19 +139,18 @@ static void checkSyncSingleAtomicReturnByCopy() {
     bool isInitAutoCopy = fn->hasEitherFlag(FLAG_INIT_COPY_FN, FLAG_AUTO_COPY_FN);
     bool isNoCopy = fn->hasEitherFlag(FLAG_NO_COPY, FLAG_NO_COPY_RETURN) || fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED);
     bool isCoerce = fn->hasFlag(FLAG_COERCE_FN);
-    bool isDefaultInit = fn->name == astr_defaultOf;
+    bool isDefaultOf = fn->name == astr_defaultOf;
     bool isAliasing = fn->hasFlag(FLAG_RETURNS_ALIASING_ARRAY);
+    bool optOut = !isInitAutoCopy && !isNoCopy &&
+                  !isCoerce && !isDefaultOf && !isAliasing;
 
-    bool shouldWarn = !isRef &&
-                      !isInitAutoCopy &&
-                      !isNoCopy &&
-                      !isCoerce &&
-                      !isDefaultInit &&
-                      !isAliasing &&
-                      (isSync || isSingle || isAtomic);
+    bool shouldWarn = !optOut && !isRef && (isSync || isSingle || isAtomic);
 
-    if(shouldWarn) {
-      USR_WARN(fn, "returning a%s by %s is deprecated", isSync ? " sync" : (isSingle ? " single" : "n atomic"), retTagDescrString(fn->retTag));
+    if (shouldWarn) {
+      USR_WARN(fn,
+               "returning a%s by %s is deprecated",
+               isSync ? " sync" : (isSingle ? " single" : "n atomic"),
+               retTagDescrString(fn->retTag));
     }
   }
 }
