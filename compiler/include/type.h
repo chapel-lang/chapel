@@ -626,9 +626,9 @@ bool isSyncType(const Type* t);
 bool isSingleType(const Type* t);
 bool isAtomicType(const Type* t);
 
-bool isOrContainsSyncType(Type* t);
-bool isOrContainsSingleType(Type* t);
-bool isOrContainsAtomicType(Type* t);
+bool isOrContainsSyncType(Type* t, bool canBeTypeVar = false, bool checkRefs = true);
+bool isOrContainsSingleType(Type* t, bool canBeTypeVar = false, bool checkRefs = true);
+bool isOrContainsAtomicType(Type* t, bool canBeTypeVar = false, bool checkRefs = true);
 
 bool isRefIterType(Type* t);
 
