@@ -1852,7 +1852,7 @@ static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
   }
   return false;
 }
-bool isOrContainsSyncType(Type* t, bool checkRefs) { 
+bool isOrContainsSyncType(Type* t, bool checkRefs) {
   return isOrContains(t, FLAG_SYNC, checkRefs);
 }
 bool isOrContainsSingleType(Type* t, bool checkRefs) {
