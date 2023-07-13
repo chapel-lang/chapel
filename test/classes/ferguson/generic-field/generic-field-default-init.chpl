@@ -3,7 +3,7 @@ record GenericRecord {
 }
 
 class GenericClass {
-  var f:GenericRecord;
+  var f:GenericRecord(?);
 }
 
 proc test() {
