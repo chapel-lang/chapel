@@ -587,8 +587,10 @@ struct Converter {
 
     // check for a reserved word
     auto name = node->name();
-    if (auto remap = reservedWordRemapForIdent(name)) {
-      return remap;
+    if (!inImportOrUse) {
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      }
     }
 
     // otherwise use an UnresolvedSymExpr
