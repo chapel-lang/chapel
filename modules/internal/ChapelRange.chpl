@@ -1776,6 +1776,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        (0..10 by 2).indexOrder(4) == 2
        (3..5 by 2).indexOrder(4) == -1
    */
+  @unstable("range.indexOrder() is unstable and its behavior may change in the future")
   proc range.indexOrder(ind: idxType)
   {
     if boundsChecking && ! this.isAligned() then
@@ -1809,6 +1810,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        3..5.orderToIndex(1)  == 4
        0..10 by 2.orderToIndex(2) == 4
    */
+  @unstable("range.orderToIndex() is unstable and its behavior may change in the future")
   proc range.orderToIndex(ord: integral): idxType
   {
     if boundsChecking {
@@ -1856,7 +1858,7 @@ private inline proc rangeCastHelper(r, type t) throws {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
-   @unstable("range.translate() is unstable and it's behavior may change in the future")
+   @unstable("range.translate() is unstable and its behavior may change in the future")
   inline proc range.translate(offset: integral) do
     return this + offset;
 
@@ -1899,7 +1901,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      the result is :math:`(l-i,h+i,s,a)`.  If the operand range is
      ambiguously aligned, then so is the resulting range.
   */
-  @unstable("range.expand() is unstable and it's behavior may change in the future")
+  @unstable("range.expand() is unstable and its behavior may change in the future")
   proc range.expand(offset: integral)
   {
     const i = offset.safeCast(chpl__signedType(chpl_integralIdxType));
@@ -1950,7 +1952,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      bounds of the resulting range. If the operand range is
      ambiguously aligned, then so is the resulting range.
    */
-   @unstable("range.interior() is unstable and it's behavior may change in the future")
+   @unstable("range.interior() is unstable and its behavior may change in the future")
   proc range.interior(offset: integral)
   {
     if boundsChecking then
@@ -2003,7 +2005,7 @@ private inline proc rangeCastHelper(r, type t) throws {
      If the operand range is ambiguously aligned, then so is the resulting
      range.
    */
-  @unstable("range.exterior() is unstable and it's behavior may change in the future")
+  @unstable("range.exterior() is unstable and its behavior may change in the future")
   proc range.exterior(offset: integral)
   {
     const i = (abs(offset)).safeCast(chpl_integralIdxType);
@@ -2240,6 +2242,7 @@ private inline proc rangeCastHelper(r, type t) throws {
   /* Returns a range whose alignment is this range's first index plus ``offset``.
      If the range has no first index, a runtime error is generated.
    */
+  @unstable("range.offset() is unstable and its behavior may change in the future")
   proc range.offset(in offset: integral)
   {
     if (chpl__singleValIdxType(idxType)) {
